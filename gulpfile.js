@@ -5,6 +5,7 @@ const gulp = require('gulp')
 
 const build = require('./tasks/build')
 const buildPreview = require('./tasks/build-preview')
+const format = require('./tasks/format')
 const lint = require('./tasks/lint')
 const pack = require('./tasks/pack')
 const preview = require('./tasks/preview')
@@ -16,8 +17,18 @@ const previewSiteDestDir = path.join(buildDir, 'preview-site')
 const srcDir = 'src'
 const destDir = path.join(previewSiteDestDir, '_')
 
+const jsFiles = [
+  'gulpfile.js',
+  'tasks/**/*.js',
+  path.join(srcDir, '{helpers,js}/**/*.js')
+]
+
 gulp.task('lint', () =>
-  lint(['gulpfile.js', 'tasks/**/*.js', path.join(srcDir, '{helpers,js}/**/*.js')])
+  lint(jsFiles)
+)
+
+gulp.task('format', () =>
+  format(jsFiles)
 )
 
 gulp.task('build', () =>

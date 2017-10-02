@@ -3,7 +3,6 @@
 const browserSync = require('browser-sync')
 const debounce = require('lodash.debounce')
 const chokidar = require('chokidar')
-const fs = require('fs')
 
 module.exports = (dest, opts) => {
   opts = opts || {}
@@ -18,8 +17,8 @@ module.exports = (dest, opts) => {
     reloadDebounce: 200,
     ui: false,
     server: {
-      baseDir: dest
-    }
+      baseDir: dest,
+    },
   })
 
   const watch = opts.watch

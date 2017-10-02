@@ -3,15 +3,13 @@
 const fs = require('fs')
 const handlebars = require('handlebars')
 const map = require('map-stream')
-const merge = require('merge-stream')
-const minimatch = require('minimatch')
 const path = require('path')
 const requireFromString = require('require-from-string')
 const vfs = require('vinyl-fs')
 const yaml = require('js-yaml')
 
 module.exports = async (src, dest, siteSrc, siteDest) => {
-  const [layouts,,] = await Promise.all([
+  const [layouts] = await Promise.all([
     compileLayouts(src),
     registerPartials(src),
     registerHelpers(src),
@@ -27,7 +25,7 @@ module.exports = async (src, dest, siteSrc, siteDest) => {
       mockUIModel['siteRootUrl'] = path.join(siteRootPath, 'index.html')
       mockUIModel['uiRootPath'] = path.join(siteRootPath, '_')
       mockUIModel['contents'] = file.contents.toString().trimRight()
-      file.contents = new Buffer(compiledLayout(mockUIModel))
+      file.contents = Buffer.from(compiledLayout(mockUIModel))
       next(null, file)
     }))
     .pipe(vfs.dest(siteDest))

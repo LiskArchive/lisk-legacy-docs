@@ -6,7 +6,8 @@ const gulp = require('gulp')
 const build = require('./tasks/build')
 const buildPreview = require('./tasks/build-preview')
 const format = require('./tasks/format')
-const lint = require('./tasks/lint')
+const lintCss = require('./tasks/lint-css')
+const lintJs = require('./tasks/lint-js')
 const pack = require('./tasks/pack')
 const preview = require('./tasks/preview')
 
@@ -23,7 +24,9 @@ const jsFiles = [
   path.join(srcDir, '{helpers,js}/**/*.js'),
 ]
 
-gulp.task('lint', () => lint(jsFiles))
+gulp.task('lint:css', () => lintCss(`${srcDir}/css/**/*.css`))
+gulp.task('lint:js', () => lintJs(jsFiles))
+gulp.task('lint', ['lint:css', 'lint:js'])
 
 gulp.task('format', () => format(jsFiles))
 

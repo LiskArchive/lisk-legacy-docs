@@ -21,13 +21,15 @@ module.exports = () => {
     }
   })
 
-  function format(file, encoding, callback) {
+  function format (file, encoding, callback) {
     if (file.isNull()) {
       return callback(null, file)
     }
 
     if (file.isStream()) {
-      return callback(new PluginError('gulp-prettier-eslint', 'Streaming not supported'))
+      return callback(
+        new PluginError('gulp-prettier-eslint', 'Streaming not supported')
+      )
     }
 
     const input = file.contents.toString('utf8')

@@ -7,4 +7,4 @@ module.exports = (files) =>
   vfs
     .src(files)
     .pipe(prettier())
-    .pipe(vfs.dest(file => file.base))
+    .pipe(vfs.dest((file) => file.base))

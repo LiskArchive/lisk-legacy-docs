@@ -32,7 +32,7 @@ module.exports = () => {
       )
     }
 
-    const input = file.contents.toString('utf8')
+    const input = file.contents.toString()
     const output = prettierEslint({ text: input })
 
     if (input === output) {

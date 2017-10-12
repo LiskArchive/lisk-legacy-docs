@@ -36,9 +36,11 @@ module.exports = (src, dest) => {
 
     vfs
       .src('js/vendor/*.js', Object.assign({ read: false }, opts))
-      .pipe(tap((file) => {
-        file.contents = browserify(file.relative, { basedir: src, detectGlobals: false }).bundle()
-      }))
+      .pipe(
+        tap((file) => {
+          file.contents = browserify(file.relative, { basedir: src, detectGlobals: false }).bundle()
+        })
+      )
       .pipe(buffer())
       .pipe(uglify()),
 

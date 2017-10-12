@@ -1,4 +1,4 @@
-var hljs = window.hljs = require('highlight.js/lib/highlight')
+var hljs = (window.hljs = require('highlight.js/lib/highlight'))
 hljs.registerLanguage('apache', require('highlight.js/lib/languages/apache'))
 hljs.registerLanguage('asciidoc', require('highlight.js/lib/languages/asciidoc'))
 hljs.registerLanguage('bash', require('highlight.js/lib/languages/bash'))

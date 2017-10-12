@@ -9,11 +9,7 @@ const vfs = require('vinyl-fs')
 const yaml = require('js-yaml')
 
 module.exports = async (src, dest, siteSrc, siteDest) => {
-  const [layouts] = await Promise.all([
-    compileLayouts(src),
-    registerPartials(src),
-    registerHelpers(src),
-  ])
+  const [layouts] = await Promise.all([compileLayouts(src), registerPartials(src), registerHelpers(src)])
 
   const mockUIModel = loadSampleUIModel(siteSrc)
 
@@ -22,10 +18,7 @@ module.exports = async (src, dest, siteSrc, siteDest) => {
     .pipe(
       map((file, next) => {
         const compiledLayout = layouts['default.hbs']
-        const siteRootPath = path.relative(
-          path.dirname(file.path),
-          path.resolve(siteSrc)
-        )
+        const siteRootPath = path.relative(path.dirname(file.path), path.resolve(siteSrc))
         mockUIModel['siteRootPath'] = siteRootPath
         mockUIModel['siteRootUrl'] = path.join(siteRootPath, 'index.html')
         mockUIModel['uiRootPath'] = path.join(siteRootPath, '_')
@@ -75,10 +68,7 @@ function compileLayouts (src) {
       .src('layouts/*.hbs', { base: src, cwd: src })
       .pipe(
         map((file, next) => {
-          layouts[file.basename] = handlebars.compile(
-            file.contents.toString(),
-            { preventIndent: true }
-          )
+          layouts[file.basename] = handlebars.compile(file.contents.toString(), { preventIndent: true })
           next(null, file)
         })
       )
@@ -88,7 +78,5 @@ function compileLayouts (src) {
 }
 
 function loadSampleUIModel (siteSrc) {
-  return yaml.safeLoad(
-    fs.readFileSync(path.join(siteSrc, 'ui-model.yml'), 'utf8')
-  )
+  return yaml.safeLoad(fs.readFileSync(path.join(siteSrc, 'ui-model.yml'), 'utf8'))
 }

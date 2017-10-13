@@ -17,7 +17,7 @@ module.exports = async (src, dest, siteSrc, siteDest) => {
     .src('**/*.html', { base: siteSrc, cwd: siteSrc })
     .pipe(
       map((file, next) => {
-        const compiledLayout = layouts['default.hbs']
+        const compiledLayout = layouts[file.stem === '404' ? '404.hbs' : 'default.hbs']
         const siteRootPath = path.relative(path.dirname(file.path), path.resolve(siteSrc))
         mockUIModel['siteRootPath'] = siteRootPath
         mockUIModel['siteRootUrl'] = path.join(siteRootPath, 'index.html')

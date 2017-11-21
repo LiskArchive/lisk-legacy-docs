@@ -57,6 +57,7 @@ module.exports = (src, dest) => {
     vfs
       .src('js/vendor/*.js', Object.assign({ read: false }, opts))
       .pipe(
+        // see https://gulpjs.org/recipes/browserify-multiple-destination.html
         tap((file) => {
           file.contents = browserify(file.relative, { basedir: src, detectGlobals: false }).bundle()
         })

@@ -14,7 +14,7 @@ const preview = require('./tasks/preview')
 const bundleName = 'ui'
 const buildDir = 'build'
 const previewSiteSrcDir = 'preview-site-src'
-const previewSiteDestDir = path.join(buildDir, 'preview-site')
+const previewSiteDestDir = 'public'
 const srcDir = 'src'
 const destDir = path.join(previewSiteDestDir, '_')
 

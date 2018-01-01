@@ -3,12 +3,13 @@
 
   var navContainer = document.querySelector('.navigation-container')
   var navToggle = document.querySelector('.navigation-toggle')
-  var domainNav = navContainer.querySelector('[data-panel=domain]')
+  var menuPanel = navContainer.querySelector('[data-panel=menu]')
+  var currentPageItem = document.querySelector('.nav-menu .is-current-page')
   var state = getState() || {}
 
   navContainer.querySelector('.current').addEventListener('click', function () {
     var currentPanel = document.querySelector('.navigation .is-active[data-panel]')
-    var selectPanel = currentPanel.dataset.panel === 'domain' ? 'explore' : 'domain'
+    var selectPanel = currentPanel.dataset.panel === 'menu' ? 'explore' : 'menu'
     currentPanel.classList.toggle('is-active')
     document.querySelector('.navigation [data-panel=' + selectPanel + ']').classList.toggle('is-active')
   })
@@ -16,6 +17,8 @@
   navToggle.addEventListener('click', toggleNavigation)
   // don't let click events propagate outside of navigation container
   navContainer.addEventListener('click', concealEvent)
+
+  if (currentPageItem) activateCurrentPath(currentPageItem)
 
   find('.nav-menu').forEach(function (navTree) {
     var panel = navTree.parentElement.dataset.panel
@@ -47,11 +50,23 @@
 
   saveState()
 
-  scrollItemIntoView(state.scroll || 0, domainNav, document.querySelector('.nav-menu .is-current-page .nav-link'))
-  domainNav.addEventListener('scroll', function () {
-    state.scroll = Math.round(domainNav.scrollTop)
+  scrollItemIntoView(state.scroll || 0, menuPanel, currentPageItem && currentPageItem.querySelector('.nav-link'))
+
+  menuPanel.addEventListener('scroll', function () {
+    state.scroll = Math.round(menuPanel.scrollTop)
     saveState()
   })
+
+  function activateCurrentPath (navItem) {
+    var ancestorClasses
+    var ancestor = navItem.parentNode
+    while (!(ancestorClasses = ancestor.classList).contains('nav-menu')) {
+      if (ancestor.tagName === 'LI' && ancestorClasses.contains('nav-item')) {
+        ancestorClasses.add('is-active', 'is-current-path')
+      }
+      ancestor = ancestor.parentNode
+    }
+  }
 
   function toggleNavigation (e) {
     if (navToggle.classList.contains('is-active')) {
@@ -85,7 +100,7 @@
     })
   }
 
-  function getState (domain, version) {
+  function getState (component, version) {
     var data = window.sessionStorage.getItem('nav-state')
     if (data) {
       return JSON.parse(data)
@@ -97,9 +112,7 @@
   }
 
   function scrollItemIntoView (scrollPosition, parent, el) {
-    if (el === null) {
-      return (parent.scrollTop = scrollPosition)
-    }
+    if (!el) return (parent.scrollTop = scrollPosition)
 
     var margin = 10
 

@@ -11,7 +11,7 @@ const yaml = require('js-yaml')
 module.exports = async (src, dest, siteSrc, siteDest) => {
   const [layouts] = await Promise.all([compileLayouts(src), registerPartials(src), registerHelpers(src)])
 
-  const mockUIModel = loadSampleUIModel(siteSrc)
+  const uiModel = loadSampleUiModel(siteSrc)
 
   vfs
     .src('**/*.html', { base: siteSrc, cwd: siteSrc })
@@ -19,11 +19,11 @@ module.exports = async (src, dest, siteSrc, siteDest) => {
       map((file, next) => {
         const compiledLayout = layouts[file.stem === '404' ? '404.hbs' : 'default.hbs']
         const siteRootPath = path.relative(path.dirname(file.path), path.resolve(siteSrc))
-        mockUIModel['siteRootPath'] = siteRootPath
-        mockUIModel['siteRootUrl'] = path.join(siteRootPath, 'index.html')
-        mockUIModel['uiRootPath'] = path.join(siteRootPath, '_')
-        mockUIModel['contents'] = file.contents.toString().trimRight()
-        file.contents = Buffer.from(compiledLayout(mockUIModel))
+        uiModel.siteRootPath = siteRootPath
+        uiModel.siteRootUrl = path.join(siteRootPath, 'index.html')
+        uiModel.uiRootPath = path.join(siteRootPath, '_')
+        uiModel.page.contents = file.contents.toString().trim()
+        file.contents = Buffer.from(compiledLayout(uiModel))
         next(null, file)
       })
     )
@@ -77,6 +77,6 @@ function compileLayouts (src) {
   })
 }
 
-function loadSampleUIModel (siteSrc) {
+function loadSampleUiModel (siteSrc) {
   return yaml.safeLoad(fs.readFileSync(path.join(siteSrc, 'ui-model.yml'), 'utf8'))
 }

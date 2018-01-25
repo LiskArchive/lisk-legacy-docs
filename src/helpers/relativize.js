@@ -1,6 +1,6 @@
 'use strict'
 
-const path = require('path')
+const { posix: path } = require('path')
 
 // TODO memoize
 module.exports = (from, to) => {

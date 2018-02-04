@@ -28,7 +28,7 @@
     window.removeEventListener('load', jumpOnLoad)
   })
 
-  Array.prototype.slice.call(document.querySelectorAll('.doc a[href^="#"]')).forEach(function (el) {
+  Array.prototype.slice.call(document.querySelectorAll('a[href^="#"]')).forEach(function (el) {
     var hash, target
     if ((hash = el.hash.slice(1)) && (target = document.getElementById(hash))) {
       el.addEventListener('click', jumpToAnchor.bind(target))

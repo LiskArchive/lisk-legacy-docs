@@ -50,9 +50,7 @@
 
   if (currentPageItem) {
     activateCurrentPath(currentPageItem).forEach(function (itemId) {
-      if (expandedItems.indexOf(itemId) < 0) {
-        expandedItems.push(itemId)
-      }
+      if (expandedItems.indexOf(itemId) < 0) expandedItems.push(itemId)
     })
   }
 
@@ -81,9 +79,7 @@
   }
 
   function toggleNavigation (e) {
-    if (navToggle.classList.contains('is-active')) {
-      return closeNavigation(e)
-    }
+    if (navToggle.classList.contains('is-active')) return closeNavigation(e)
     document.documentElement.classList.add('is-clipped--nav')
     navToggle.classList.add('is-active')
     navContainer.classList.add('is-active')
@@ -114,9 +110,7 @@
 
   function getState (component, version) {
     var data = window.sessionStorage.getItem('nav-state')
-    if (data) {
-      return JSON.parse(data)
-    }
+    if (data) return JSON.parse(data)
   }
 
   function saveState () {
@@ -127,7 +121,6 @@
     if (!el) return (parent.scrollTop = scrollPosition)
 
     var margin = 10
-
     var overTheTop = el.offsetTop - scrollPosition < 0
     var belowTheBottom = el.offsetTop - scrollPosition + el.offsetHeight > parent.offsetHeight
 

@@ -18,8 +18,6 @@
   // don't let click events propagate outside of navigation container
   navContainer.addEventListener('click', concealEvent)
 
-  if (currentPageItem) activateCurrentPath(currentPageItem)
-
   find('.nav-menu').forEach(function (navTree) {
     var panel = navTree.parentElement.dataset.panel
     find('.nav-item', navTree).forEach(function (item, idx) {
@@ -36,17 +34,25 @@
     })
   })
 
-  if (!state.expandedItems) {
-    state.expandedItems = getExpandedItems()
-    saveState()
+  var expandedItems = state.expandedItems || (state.expandedItems = [])
+
+  if (expandedItems.length) {
+    find(
+      expandedItems
+        .map(function (itemId) {
+          return '.nav-item[data-id="' + itemId + '"]'
+        })
+        .join(',')
+    ).forEach(function (item) {
+      item.classList.add('is-active')
+    })
   }
 
-  state.expandedItems.forEach(function (itemId) {
-    var item = document.querySelector('.nav-item[data-id="' + itemId + '"]')
-    if (item) {
-      item.classList.add('is-active')
-    }
-  })
+  if (currentPageItem) {
+    activateCurrentPath(currentPageItem).forEach(function (itemId) {
+      if (expandedItems.indexOf(itemId) < 0) expandedItems.push(itemId)
+    })
+  }
 
   saveState()
 
@@ -58,20 +64,22 @@
   })
 
   function activateCurrentPath (navItem) {
+    var ids = [navItem.dataset.id]
     var ancestorClasses
     var ancestor = navItem.parentNode
     while (!(ancestorClasses = ancestor.classList).contains('nav-menu')) {
       if (ancestor.tagName === 'LI' && ancestorClasses.contains('nav-item')) {
         ancestorClasses.add('is-active', 'is-current-path')
+        ids.push(ancestor.dataset.id)
       }
       ancestor = ancestor.parentNode
     }
+    navItem.classList.add('is-active')
+    return ids
   }
 
   function toggleNavigation (e) {
-    if (navToggle.classList.contains('is-active')) {
-      return closeNavigation(e)
-    }
+    if (navToggle.classList.contains('is-active')) return closeNavigation(e)
     document.documentElement.classList.add('is-clipped--nav')
     navToggle.classList.add('is-active')
     navContainer.classList.add('is-active')
@@ -102,9 +110,7 @@
 
   function getState (component, version) {
     var data = window.sessionStorage.getItem('nav-state')
-    if (data) {
-      return JSON.parse(data)
-    }
+    if (data) return JSON.parse(data)
   }
 
   function saveState () {
@@ -115,7 +121,6 @@
     if (!el) return (parent.scrollTop = scrollPosition)
 
     var margin = 10
-
     var overTheTop = el.offsetTop - scrollPosition < 0
     var belowTheBottom = el.offsetTop - scrollPosition + el.offsetHeight > parent.offsetHeight
 

@@ -4,14 +4,18 @@ const fs = require('fs')
 const handlebars = require('handlebars')
 const map = require('map-stream')
 const path = require('path')
+const { promisify } = require('util')
 const requireFromString = require('require-from-string')
 const vfs = require('vinyl-fs')
 const yaml = require('js-yaml')
 
 module.exports = async (src, dest, siteSrc, siteDest) => {
-  const [layouts] = await Promise.all([compileLayouts(src), registerPartials(src), registerHelpers(src)])
-
-  const uiModel = loadSampleUiModel(siteSrc)
+  const [uiModel, layouts] = await Promise.all([
+    loadSampleUiModel(siteSrc),
+    compileLayouts(src),
+    registerPartials(src),
+    registerHelpers(src),
+  ])
 
   vfs
     .src('**/*.html', { base: siteSrc, cwd: siteSrc })
@@ -30,10 +34,14 @@ module.exports = async (src, dest, siteSrc, siteDest) => {
     .pipe(vfs.dest(siteDest))
 }
 
+function loadSampleUiModel (siteSrc) {
+  return promisify(fs.readFile)(path.join(siteSrc, 'ui-model.yml'), 'utf8').then((contents) => yaml.safeLoad(contents))
+}
+
 function registerPartials (src) {
   return new Promise((resolve, reject) => {
     vfs
-      .src(['partials/*.hbs'], { base: src, cwd: src })
+      .src('partials/*.hbs', { base: src, cwd: src })
       .pipe(
         map((file, next) => {
           handlebars.registerPartial(file.stem, file.contents.toString())
@@ -48,7 +56,7 @@ function registerPartials (src) {
 function registerHelpers (src) {
   return new Promise((resolve, reject) => {
     vfs
-      .src(['helpers/*.js'], { base: src, cwd: src })
+      .src('helpers/*.js', { base: src, cwd: src })
       .pipe(
         map((file, next) => {
           const helperFunction = requireFromString(file.contents.toString())
@@ -75,8 +83,4 @@ function compileLayouts (src) {
       .on('error', reject)
       .on('end', () => resolve(layouts))
   })
-}
-
-function loadSampleUiModel (siteSrc) {
-  return yaml.safeLoad(fs.readFileSync(path.join(siteSrc, 'ui-model.yml'), 'utf8'))
 }

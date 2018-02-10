@@ -7,6 +7,7 @@ const concat = require('gulp-concat')
 const cssnano = require('cssnano')
 const fs = require('fs')
 const imagemin = require('gulp-imagemin')
+const map = require('map-stream')
 const merge = require('merge-stream')
 const mkdirp = require('mkdirp')
 const path = require('path')
@@ -15,7 +16,6 @@ const postcssCalc = require('postcss-calc')
 const postcssImport = require('postcss-import')
 const postcssUrl = require('postcss-url')
 const postcssVar = require('postcss-custom-properties')
-const tap = require('gulp-tap')
 const uglify = require('gulp-uglify')
 const vfs = require('vinyl-fs')
 
@@ -58,8 +58,9 @@ module.exports = (src, dest) => {
       .src('js/vendor/*.js', Object.assign({ read: false }, opts))
       .pipe(
         // see https://gulpjs.org/recipes/browserify-multiple-destination.html
-        tap((file) => {
+        map((file, next) => {
           file.contents = browserify(file.relative, { basedir: src, detectGlobals: false }).bundle()
+          next(null, file)
         })
       )
       .pipe(buffer())

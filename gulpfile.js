@@ -1,5 +1,6 @@
 'use strict'
 
+const connect = require('gulp-connect')
 const path = require('path')
 const gulp = require('gulp')
 
@@ -28,11 +29,14 @@ gulp.task('format', () => format(jsFiles))
 
 gulp.task('build', () => build(srcDir, destDir))
 
-gulp.task('build:preview', ['build'], () => buildPreview(srcDir, destDir, previewSiteSrcDir, previewSiteDestDir))
+gulp.task('build:preview', ['build'], () =>
+  buildPreview(srcDir, destDir, previewSiteSrcDir, previewSiteDestDir, connect.reload)
+)
 
 gulp.task('preview', ['build:preview'], () =>
   preview(previewSiteDestDir, {
     port: 5252,
+    livereload: process.env.LIVERELOAD === 'true',
     watch: {
       src: [srcDir, previewSiteSrcDir],
       onChange: () => gulp.start('build:preview'),

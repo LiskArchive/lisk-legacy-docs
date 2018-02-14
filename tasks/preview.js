@@ -1,30 +1,29 @@
 'use strict'
 
-const browserSync = require('browser-sync')
-const debounce = require('lodash.debounce')
+const connect = require('gulp-connect')
 const chokidar = require('chokidar')
 
-module.exports = (dest, opts) => {
-  opts = opts || {}
-
-  browserSync({
-    files: dest,
-    ghostMode: false,
-    notify: false,
-    open: false,
-    port: opts.port,
-    reloadDelay: 200,
-    reloadDebounce: 200,
-    ui: false,
-    server: {
-      baseDir: dest,
-    },
-  })
-
-  const watch = opts.watch
-  if (watch && watch.src && watch.onChange) {
-    const onChangeThrottled = debounce(watch.onChange, 300)
-    const watcher = chokidar.watch(watch.src, { ignoreInitial: true })
-    watcher.on('all', () => onChangeThrottled())
+module.exports = (serveDir, opts) => {
+  let watch
+  if (opts) {
+    opts = Object.assign({}, opts)
+    watch = opts.watch
+    delete opts.watch
+  } else {
+    opts = {}
   }
+
+  let onStart
+  if (watch && watch.src && watch.onChange) {
+    onStart = () => {
+      chokidar
+        .watch(watch.src, { ignoreInitial: true })
+        .on('add', watch.onChange)
+        .on('change', watch.onChange)
+        .on('unlink', watch.onChange)
+    }
+  }
+
+  opts.root = serveDir
+  connect.server(opts, onStart)
 }

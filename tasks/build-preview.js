@@ -9,7 +9,7 @@ const requireFromString = require('require-from-string')
 const vfs = require('vinyl-fs')
 const yaml = require('js-yaml')
 
-module.exports = async (src, dest, siteSrc, siteDest) => {
+module.exports = async (src, dest, siteSrc, siteDest, sink) => {
   const [uiModel, layouts] = await Promise.all([
     loadSampleUiModel(siteSrc),
     compileLayouts(src),
@@ -17,7 +17,7 @@ module.exports = async (src, dest, siteSrc, siteDest) => {
     registerHelpers(src),
   ])
 
-  vfs
+  const stream = vfs
     .src('**/*.html', { base: siteSrc, cwd: siteSrc })
     .pipe(
       map((file, next) => {
@@ -32,6 +32,9 @@ module.exports = async (src, dest, siteSrc, siteDest) => {
       })
     )
     .pipe(vfs.dest(siteDest))
+
+  if (sink) stream.pipe(sink())
+  return stream
 }
 
 function loadSampleUiModel (siteSrc) {

@@ -5,7 +5,8 @@
   var navToggle = document.querySelector('.navigation-toggle')
   var menuPanel = navContainer.querySelector('[data-panel=menu]')
   var currentPageItem = document.querySelector('.nav-menu .is-current-page')
-  var state = getState() || {}
+  var navState = getNavState()
+  var menuState = getMenuState(navState, navContainer.dataset.component, navContainer.dataset.version)
 
   navContainer.querySelector('.current').addEventListener('click', function () {
     var currentPanel = document.querySelector('.navigation .is-active[data-panel]')
@@ -29,12 +30,12 @@
     var li = btn.parentElement
     btn.addEventListener('click', function () {
       li.classList.toggle('is-active')
-      state.expandedItems = getExpandedItems()
-      saveState()
+      menuState.expandedItems = getExpandedItems()
+      saveNavState()
     })
   })
 
-  var expandedItems = state.expandedItems || (state.expandedItems = [])
+  var expandedItems = menuState.expandedItems || (menuState.expandedItems = [])
 
   if (expandedItems.length) {
     find(
@@ -54,13 +55,13 @@
     })
   }
 
-  saveState()
+  saveNavState()
 
-  scrollItemIntoView(state.scroll || 0, menuPanel, currentPageItem && currentPageItem.querySelector('.nav-link'))
+  scrollItemIntoView(menuState.scroll || 0, menuPanel, currentPageItem && currentPageItem.querySelector('.nav-link'))
 
   menuPanel.addEventListener('scroll', function () {
-    state.scroll = Math.round(menuPanel.scrollTop)
-    saveState()
+    menuState.scroll = Math.round(menuPanel.scrollTop)
+    saveNavState()
   })
 
   function activateCurrentPath (navItem) {
@@ -108,13 +109,18 @@
     })
   }
 
-  function getState (component, version) {
+  function getNavState () {
     var data = window.sessionStorage.getItem('nav-state')
-    if (data) return JSON.parse(data)
+    return data && (data = JSON.parse(data)).__version__ === '1' ? data : { __version__: '1' }
   }
 
-  function saveState () {
-    window.sessionStorage.setItem('nav-state', JSON.stringify(state))
+  function getMenuState (navState, component, version) {
+    var key = version + '@' + component
+    return navState[key] || (navState[key] = {})
+  }
+
+  function saveNavState () {
+    window.sessionStorage.setItem('nav-state', JSON.stringify(navState))
   }
 
   function scrollItemIntoView (scrollPosition, parent, el) {

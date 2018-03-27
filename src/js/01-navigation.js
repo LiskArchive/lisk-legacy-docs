@@ -3,35 +3,38 @@
 
   var navContainer = document.querySelector('.navigation-container')
   var navToggle = document.querySelector('.navigation-toggle')
-  var menuPanel = navContainer.querySelector('[data-panel=menu]')
-  var currentPageItem = menuPanel.querySelector('.is-current-page')
-  var navState = getNavState()
-  var menuState = getMenuState(navState, navContainer.dataset.component, navContainer.dataset.version)
-
-  navContainer.querySelector('.current').addEventListener('click', function () {
-    var currentPanel = navContainer.querySelector('.is-active[data-panel]')
-    var selectPanel = currentPanel.dataset.panel === 'menu' ? 'explore' : 'menu'
-    currentPanel.classList.toggle('is-active')
-    navContainer.querySelector('[data-panel=' + selectPanel + ']').classList.toggle('is-active')
-  })
 
   navToggle.addEventListener('click', toggleNavigation)
   // don't let click events propagate outside of navigation container
   navContainer.addEventListener('click', concealEvent)
 
-  find('.nav-menu', menuPanel).forEach(function (navTree) {
-    var panel = navTree.parentElement.dataset.panel
-    find('.nav-item', navTree).forEach(function (item, idx) {
-      item.setAttribute('data-id', [panel, item.dataset.depth, idx].join('-'))
-    })
+  var menuPanel = navContainer.querySelector('[data-panel=menu]')
+  if (!menuPanel) return
+
+  var navState = getNavState()
+  var menuState = getMenuState(navState, navContainer.dataset.component, navContainer.dataset.version)
+
+  navContainer.querySelector('.current').addEventListener('click', function () {
+    var currentPanel = navContainer.querySelector('.is-active[data-panel]')
+    var activatePanel = currentPanel.dataset.panel === 'menu' ? 'explore' : 'menu'
+    currentPanel.classList.toggle('is-active')
+    navContainer.querySelector('[data-panel=' + activatePanel + ']').classList.toggle('is-active')
   })
 
+  // menu group arrows
   find('.nav-toggle', menuPanel).forEach(function (btn) {
     var li = btn.parentElement
     btn.addEventListener('click', function () {
       li.classList.toggle('is-active')
       menuState.expandedItems = getExpandedItems()
       saveNavState()
+    })
+  })
+
+  find('.nav-menu', menuPanel).forEach(function (navTree) {
+    var panel = navTree.parentElement.dataset.panel
+    find('.nav-item', navTree).forEach(function (item, idx) {
+      item.setAttribute('data-id', [panel, item.dataset.depth, idx].join('-'))
     })
   })
 
@@ -50,6 +53,7 @@
     })
   }
 
+  var currentPageItem = menuPanel.querySelector('.is-current-page')
   if (currentPageItem) {
     activateCurrentPath(currentPageItem).forEach(function (itemId) {
       if (expandedItems.indexOf(itemId) < 0) expandedItems.push(itemId)

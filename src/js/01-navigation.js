@@ -140,7 +140,6 @@
   }
 
   function find (selector, from) {
-    from = from || document
-    return [].slice.call(from.querySelectorAll(selector))
+    return [].slice.call((from || document).querySelectorAll(selector))
   }
 })()

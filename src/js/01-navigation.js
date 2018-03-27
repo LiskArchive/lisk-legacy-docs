@@ -3,36 +3,35 @@
 
   var navContainer = document.querySelector('.navigation-container')
   var navToggle = document.querySelector('.navigation-toggle')
-  var menuPanel = navContainer.querySelector('[data-panel=menu]')
-  var currentPageItem = document.querySelector('.nav-menu .is-current-page')
-  var navState = getNavState()
-  var menuState = getMenuState(navState, navContainer.dataset.component, navContainer.dataset.version)
-
-  navContainer.querySelector('.current').addEventListener('click', function () {
-    var currentPanel = document.querySelector('.navigation .is-active[data-panel]')
-    var selectPanel = currentPanel.dataset.panel === 'menu' ? 'explore' : 'menu'
-    currentPanel.classList.toggle('is-active')
-    document.querySelector('.navigation [data-panel=' + selectPanel + ']').classList.toggle('is-active')
-  })
 
   navToggle.addEventListener('click', toggleNavigation)
   // don't let click events propagate outside of navigation container
   navContainer.addEventListener('click', concealEvent)
 
-  find('.nav-menu').forEach(function (navTree) {
-    var panel = navTree.parentElement.dataset.panel
-    find('.nav-item', navTree).forEach(function (item, idx) {
-      item.setAttribute('data-id', [panel, item.dataset.depth, idx].join('-'))
-    })
+  var menuPanel = navContainer.querySelector('[data-panel=menu]')
+  if (!menuPanel) return
+
+  var navState = getNavState()
+  var menuState = getMenuState(navState, navContainer.dataset.component, navContainer.dataset.version)
+
+  navContainer.querySelector('.context').addEventListener('click', function () {
+    var currentPanel = navContainer.querySelector('.is-active[data-panel]')
+    var activatePanel = currentPanel.dataset.panel === 'menu' ? 'explore' : 'menu'
+    currentPanel.classList.toggle('is-active')
+    navContainer.querySelector('[data-panel=' + activatePanel + ']').classList.toggle('is-active')
   })
 
-  find('.nav-toggle').forEach(function (btn) {
+  find('.nav-toggle', menuPanel).forEach(function (btn) {
     var li = btn.parentElement
     btn.addEventListener('click', function () {
       li.classList.toggle('is-active')
       menuState.expandedItems = getExpandedItems()
       saveNavState()
     })
+  })
+
+  find('.nav-item', menuPanel).forEach(function (item, idx) {
+    item.setAttribute('data-id', 'menu-' + item.dataset.depth + '-' + idx)
   })
 
   var expandedItems = menuState.expandedItems || (menuState.expandedItems = [])
@@ -43,12 +42,14 @@
         .map(function (itemId) {
           return '.nav-item[data-id="' + itemId + '"]'
         })
-        .join(',')
+        .join(','),
+      menuPanel
     ).forEach(function (item) {
       item.classList.add('is-active')
     })
   }
 
+  var currentPageItem = menuPanel.querySelector('.is-current-page')
   if (currentPageItem) {
     activateCurrentPath(currentPageItem).forEach(function (itemId) {
       if (expandedItems.indexOf(itemId) < 0) expandedItems.push(itemId)
@@ -104,7 +105,7 @@
   }
 
   function getExpandedItems () {
-    return find('.nav-menu .is-active').map(function (item) {
+    return find('.is-active', menuPanel).map(function (item) {
       return item.dataset.id
     })
   }
@@ -140,7 +141,6 @@
   }
 
   function find (selector, from) {
-    from = from || document
-    return [].slice.call(from.querySelectorAll(selector))
+    return [].slice.call((from || document).querySelectorAll(selector))
   }
 })()

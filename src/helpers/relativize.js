@@ -4,7 +4,7 @@ const { posix: path } = require('path')
 
 // TODO memoize
 module.exports = (from, to) => {
-  if (to.charAt() === '#') return to
+  if (!from || to.charAt() === '#') return to
   let hash = ''
   const hashIdx = to.indexOf('#')
   if (~hashIdx) {

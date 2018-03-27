@@ -4,29 +4,29 @@
   var navContainer = document.querySelector('.navigation-container')
   var navToggle = document.querySelector('.navigation-toggle')
   var menuPanel = navContainer.querySelector('[data-panel=menu]')
-  var currentPageItem = document.querySelector('.nav-menu .is-current-page')
+  var currentPageItem = menuPanel.querySelector('.is-current-page')
   var navState = getNavState()
   var menuState = getMenuState(navState, navContainer.dataset.component, navContainer.dataset.version)
 
   navContainer.querySelector('.current').addEventListener('click', function () {
-    var currentPanel = document.querySelector('.navigation .is-active[data-panel]')
+    var currentPanel = navContainer.querySelector('.is-active[data-panel]')
     var selectPanel = currentPanel.dataset.panel === 'menu' ? 'explore' : 'menu'
     currentPanel.classList.toggle('is-active')
-    document.querySelector('.navigation [data-panel=' + selectPanel + ']').classList.toggle('is-active')
+    navContainer.querySelector('[data-panel=' + selectPanel + ']').classList.toggle('is-active')
   })
 
   navToggle.addEventListener('click', toggleNavigation)
   // don't let click events propagate outside of navigation container
   navContainer.addEventListener('click', concealEvent)
 
-  find('.nav-menu').forEach(function (navTree) {
+  find('.nav-menu', menuPanel).forEach(function (navTree) {
     var panel = navTree.parentElement.dataset.panel
     find('.nav-item', navTree).forEach(function (item, idx) {
       item.setAttribute('data-id', [panel, item.dataset.depth, idx].join('-'))
     })
   })
 
-  find('.nav-toggle').forEach(function (btn) {
+  find('.nav-toggle', menuPanel).forEach(function (btn) {
     var li = btn.parentElement
     btn.addEventListener('click', function () {
       li.classList.toggle('is-active')
@@ -43,7 +43,8 @@
         .map(function (itemId) {
           return '.nav-item[data-id="' + itemId + '"]'
         })
-        .join(',')
+        .join(','),
+      menuPanel
     ).forEach(function (item) {
       item.classList.add('is-active')
     })
@@ -104,7 +105,7 @@
   }
 
   function getExpandedItems () {
-    return find('.nav-menu .is-active').map(function (item) {
+    return find('.is-active', menuPanel).map(function (item) {
       return item.dataset.id
     })
   }

@@ -14,7 +14,7 @@
   var navState = getNavState()
   var menuState = getMenuState(navState, navContainer.dataset.component, navContainer.dataset.version)
 
-  navContainer.querySelector('.current').addEventListener('click', function () {
+  navContainer.querySelector('.context').addEventListener('click', function () {
     var currentPanel = navContainer.querySelector('.is-active[data-panel]')
     var activatePanel = currentPanel.dataset.panel === 'menu' ? 'explore' : 'menu'
     currentPanel.classList.toggle('is-active')

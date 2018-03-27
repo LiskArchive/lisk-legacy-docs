@@ -21,7 +21,6 @@
     navContainer.querySelector('[data-panel=' + activatePanel + ']').classList.toggle('is-active')
   })
 
-  // menu group arrows
   find('.nav-toggle', menuPanel).forEach(function (btn) {
     var li = btn.parentElement
     btn.addEventListener('click', function () {
@@ -31,11 +30,8 @@
     })
   })
 
-  find('.nav-menu', menuPanel).forEach(function (navTree) {
-    var panel = navTree.parentElement.dataset.panel
-    find('.nav-item', navTree).forEach(function (item, idx) {
-      item.setAttribute('data-id', [panel, item.dataset.depth, idx].join('-'))
-    })
+  find('.nav-item', menuPanel).forEach(function (item, idx) {
+    item.setAttribute('data-id', 'menu-' + item.dataset.depth + '-' + idx)
   })
 
   var expandedItems = menuState.expandedItems || (menuState.expandedItems = [])

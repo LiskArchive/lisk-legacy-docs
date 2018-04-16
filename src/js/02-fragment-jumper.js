@@ -24,6 +24,7 @@
     var hash, target
     if ((hash = window.location.hash) && (target = document.getElementById(hash.slice(1)))) {
       jumpToAnchor.bind(target)()
+      setTimeout(jumpToAnchor.bind(target), 0)
     }
     window.removeEventListener('load', jumpOnLoad)
   })

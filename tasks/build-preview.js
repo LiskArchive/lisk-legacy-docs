@@ -23,6 +23,7 @@ module.exports = async (src, dest, siteSrc, siteDest, sink) => {
       map((file, next) => {
         const compiledLayout = layouts[file.stem === '404' ? '404.hbs' : 'default.hbs']
         const siteRootPath = path.relative(path.dirname(file.path), path.resolve(siteSrc))
+        uiModel.env = process.env
         uiModel.siteRootPath = siteRootPath
         uiModel.siteRootUrl = path.join(siteRootPath, 'index.html')
         uiModel.uiRootPath = path.join(siteRootPath, '_')

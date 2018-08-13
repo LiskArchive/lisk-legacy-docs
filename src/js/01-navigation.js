@@ -135,12 +135,12 @@
 
   function scrollItemIntoView (scrollPosition, parent, el) {
     console.log('scrolling item into view')
-    console.log(el)
+    console.log('stored value: ' + scrollPosition)
     if (!el) return (parent.scrollTop = scrollPosition)
 
     var margin = 10
     var overTheTop = el.offsetTop - scrollPosition < 0
-    var belowTheBottom = el.offsetTop - scrollPosition + el.offsetHeight > parent.offsetHeight
+    var belowTheBottom = (el.offsetTop - scrollPosition + el.offsetHeight) > parent.offsetHeight
 
     if (overTheTop) {
       parent.scrollTop = el.offsetTop - margin

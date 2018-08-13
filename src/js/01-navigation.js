@@ -134,6 +134,8 @@
   }
 
   function scrollItemIntoView (scrollPosition, parent, el) {
+    console.log('scrolling item into view')
+    console.log(el)
     if (!el) return (parent.scrollTop = scrollPosition)
 
     var margin = 10
@@ -147,6 +149,7 @@
     } else {
       parent.scrollTop = scrollPosition
     }
+    console.log('set scrollTop to ' + parent.scrollTop)
   }
 
   function find (selector, from) {

@@ -1,6 +1,8 @@
 # Lisk Documentation
 
 - [Workflow](#workflow)
+  - [Adding new content](#adding-new-content)
+  - [Releasing new versions](#releasing-new-versions)
 - [Style Guidelines](#style-guidelines)
   - [Writing in Markdown](#writing-in-markdown)
     - [Headings](#headings)
@@ -13,9 +15,51 @@
   
 ## Workflow
 
-This section describes general processes that need to be followed when contributing to the lisk-docs codebase.
+This section describes general processes that need to be followed when contributing to the `lisk-docs` codebase.
 
+Each product has its own **development branch**, `dev-{product}`. 
+This development branches are a subtree of the `lisk-docs` repository,
+which contain only the relevant documentation files of the respective product.
+These branches contain the latest changes in the documentation of the product,
+e.g. documentation for unreleased software versions.
 
+For each new version of the product, that needs updates / changes in the documentation,
+a corresponding Milestone and Branch will be created. 
+
+E.g. For Lisk Core version 1.1.0 
+- the Milestone would be: `Core 1.1.0`
+- the **version branch** would be: `dev-core-1-1-0`
+
+The master branch always contains the official state of the Lisk documentation, which should be identical with content in https://docs.lisk.io
+
+New issues must be labeled after Product, and should be added to a Milestone.
+
+### Adding new content
+
+1. **Create an issue:** If the corresponding issue for the content you want to add does not exist yet,
+please create the issue first.
+Remember to specify Labels and Milestone for the issue, as much as you can.
+2. Before working on an issue, **make sure the issue is assigned to you.**
+3. **Clone** the `lisk-docs` repository from github: `git clone git@github.com:LiskHQ/lisk-docs.git`
+(in case you haven't done that already).
+4. Check out the branch you want to write documentation for: `git checkout dev-{product}-{version}`
+or **pull latest changes** : `git pull origin dev-{product}-{version}`
+Be sure `{version}` matches the version mentioned in the corresponding issue.
+5. Check out a new branch from the version branch which will contain all the changes to solve the issue you are working on.
+**Name the branch** in this pattern: `123-description-of-the-branch`, where `123` is the issue number of the issue you are trying to solve.
+6. Make your changes as intended, commit them and **push it back to github**: `git push origin 123-description-of-the-branch`
+7. On github, create a PR as usual: Reference the issue it solves, and add a short summary of the made changes.
+
+### Releasing new Versions
+
+When all issues that belong to a Milestone are closed, the current version branch is merged into the development branch.
+
+The development branch is then tagged with the corresponding version number.
+
+At release date of the new version, all new content from the `dev-` branches is merged into the `master` branch.
+
+The master branch gets a new tag each time new content from the `dev`-branches is merged.
+The tag is simple date format, so e.g. new content got merged into `master` at february the 15th 2018, the tag for master would be `lisk-docs-2018-02-15`
 
 ## Style Guidelines
 

@@ -2,6 +2,7 @@
 
 - [Workflow](#workflow)
   - [Adding new content](#adding-new-content)
+  - [Hotfixes](#hotfixes)
   - [Releasing new versions](#releasing-new-versions)
 - [Style Guidelines](#style-guidelines)
   - [Writing in Markdown](#writing-in-markdown)
@@ -18,19 +19,32 @@
 This section describes general processes that need to be followed when contributing to the `lisk-docs` codebase.
 
 Each product has its own **development branch**, `dev-{product}`. 
-This development branches are a subtree of the `lisk-docs` repository,
+This development branches are a [subtree](https://git-scm.com/book/en/v1/Git-Tools-Subtree-Merging) of the `lisk-docs` repository,
 which contain only the relevant documentation files of the respective product.
 These branches contain the latest changes in the documentation of the product,
 e.g. documentation for unreleased software versions.
 
+The subtrees are created with the following command:
+```
+git subtree split -P <name-of-folder> -b <name-of-new-branch>
+```
+
 For each new version of the product, that needs updates / changes in the documentation,
-a corresponding Milestone and Branch will be created. 
+a corresponding Milestone and Branch will be created.
+Each **version branch** is branched from the development branch for the repective product. 
 
 E.g. For Lisk Core version 1.1.0 
 - the Milestone would be: `Core 1.1.0`
-- the **version branch** would be: `dev-core-1-1-0`
+- the version branch would be: `dev-core-1-1-0`
 
-The master branch always contains the official state of the Lisk documentation, which should be identical with content in https://docs.lisk.io
+**Example:** How to create a new version branch for lisk-elements 2.0 documentation.
+```
+git checkout dev-elements // change to dev-branch
+git pull origin dev-elements // pull latest changes
+git checkout -b dev-elements-2-0-0 // create version branch
+```
+
+The master branch always contains the official state of the Lisk documentation, which should be identical with content in [https://docs.lisk.io](https://docs.lisk.io).
 
 New issues must be labeled after Product, and should be added to a Milestone.
 
@@ -50,15 +64,42 @@ Be sure `{version}` matches the version mentioned in the corresponding issue.
 6. Make your changes as intended, commit them and **push it back to github**: `git push origin 123-description-of-the-branch`
 7. On github, create a PR as usual: Reference the issue it solves, and add a short summary of the made changes.
 
+### Hotfixes
+
+Hotfixes are changes that affect the current version of the documentation, as it can be found under https://docs.lisk.io.
+
+1. First, create a **patch branch** from master:
+```
+git checkout master
+git pull origin master
+git checkout -b dev-commander-{version}-p1 // create patch branch
+```
+
+2. Make your changes and push to github:
+```
+git push origin dev-commander-{version}-p1
+```
+On Github, create a Pull Request with `master` as base branch.
+
+3. Port the changes back to the `dev-` branches, when necessary:
+```
+git merge -s subtree dev-commander master
+```
+
 ### Releasing new Versions
 
-When all issues that belong to a Milestone are closed, the current version branch is merged into the development branch.
+When all issues that belong to a Milestone are closed, the current version branch is merged into the `dev-` branch.
 
-The development branch is then tagged with the corresponding version number.
+The `dev-` branch is then tagged with the corresponding version number.
 
-At release date of the new version, all new content from the `dev-` branches is merged into the `master` branch.
+At release date of the new version, all new content from the development branches is merged into the `master` branch.
 
-The master branch gets a new tag each time new content from the `dev`-branches is merged.
+**Example:** Merging changes from a development branch into master:
+```
+git merge -s subtree master dev-core
+```
+
+The master branch gets a new tag each time new content from the `dev-` branches is merged.
 The tag is simple date format, so e.g. new content got merged into `master` at february the 15th 2018, the tag for master would be `lisk-docs-2018-02-15`
 
 ## Style Guidelines
@@ -92,8 +133,6 @@ Use Headings to structure the content of each page.
 ```
 
 #### Cross-reference links
-
-
 
 Info | Note 
 --- | --- 

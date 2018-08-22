@@ -1,45 +1,3 @@
-Author: max
-
-----
-
-Created: 2018-01-25
-
-----
-
-Updated: 2018-07-10
-
-----
-
-Metadescription: This section of the Lisk Documentation introduces the Lisk Protocol. First we explain the purpose of Lisk and the LSK token.
-
-----
-
-Metakeywords: protocol
-
-----
-
-Title: The Lisk Protocol
-
-----
-
-Opengraphtitle: The Lisk Protocol
-
-----
-
-Opengraphimage: lisk_docu_blog_protocol.png
-
-----
-
-Opengraphdescription: 
-
-----
-
-Htmltitle: The Lisk Protocol | Lisk Documentation
-
-----
-
-Content: 
-
 # The Lisk Protocol
 
 ## Table of contents
@@ -62,23 +20,3 @@ The utility token used in the Lisk ecosystem is known as Lisk (LSK).
 This token is used to pay the fees associated with sending transactions on the network. Each token also allows the holder to vote for delegates that secure the network within the Lisk DPoS (Delegated Proof of Stake) consensus protocol.
 
 LSK tokens can be acquired through a number of ways, such as purchasing them from an exchange or from another individual using Fiat or Bitcoin (BTC).
-
-----
-
-Logo: protocol-logo_24px.svg
-
-----
-
-Whatsnext: asusual
-
-----
-
-Whatsnextheadline: 
-
-----
-
-Whatsnextpagelinktext: 
-
-----
-
-Whatsnextpagelink: 

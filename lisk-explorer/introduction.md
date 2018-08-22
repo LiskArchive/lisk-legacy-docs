@@ -1,45 +1,3 @@
-Author: lucas
-
-----
-
-Created: 2018-04-24
-
-----
-
-Updated: 2018-06-25
-
-----
-
-Metadescription: Lisk Explorer is a tool that visualizes the vast information from Lisk's blockchain such as transaction activity, block height and delegate status .
-
-----
-
-Metakeywords: Lisk Explorer documentation
-
-----
-
-Title: Lisk Explorer
-
-----
-
-Opengraphtitle: Lisk Explorer Documentation
-
-----
-
-Opengraphimage: lisk_docu_blog_explorer.png
-
-----
-
-Opengraphdescription: 
-
-----
-
-Htmltitle: Lisk Explorer | Lisk Documentation
-
-----
-
-Content: 
-
 # Lisk Explorer Documentation
 
 ## Table of contents
@@ -72,7 +30,3 @@ Testnet is an independent replica of the Lisk Mainnet intended as an area to reh
 ## Codebase
 
 You can find the codebase at our [Lisk Explorer Github](https://github.com/LiskHQ/lisk-explorer) page.
-
-----
-
-Logo: explorer-logo_24px.svg

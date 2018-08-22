@@ -1,49 +1,3 @@
-Author: diego
-
-----
-
-Created: 2018-04-25
-
-----
-
-Updated: 2018-07-26
-
-----
-
-Metadescription: Lisk Elements is a collection of JavaScript libraries containing several modules, each covering a distinct region of Lisk-related functionality.
-
-----
-
-Metakeywords: Lisk Elements
-
-----
-
-Title: Lisk Elements
-
-----
-
-Opengraphtitle: Lisk Elements Documentation
-
-----
-
-Opengraphimage: lisk_docu_blog_elements.png
-
-----
-
-Opengraphdescription: 
-
-----
-
-Htmltitle: Lisk Elements | Lisk Documentation
-
-----
-
-Logo: elements-logo_24px.svg
-
-----
-
-Content: 
-
 # Lisk Elements Documentation
 
 ## Table of contents
@@ -85,19 +39,3 @@ Please be sure to read and follow our [Contribution Guidelines](https://github.c
 If you have any further questions please join our [Gitter](https://gitter.im/LiskHQ/lisk).
 
 (...columns)
-
-----
-
-Whatsnext: asusual
-
-----
-
-Whatsnextheadline: 
-
-----
-
-Whatsnextpagelinktext: 
-
-----
-
-Whatsnextpagelink: 

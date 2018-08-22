@@ -1,41 +1,3 @@
-Author: mona
-
-----
-
-Created: 2018-05-15
-
-----
-
-Updated: 2018-07-26
-
-----
-
-Metadescription: This section details how to install Lisk Core through Docker. We suggest using `docker-compose` to run Lisk and its dependencies in Docker containers.
-
-----
-
-Metakeywords: Lisk Core Docker install
-
-----
-
-Title: Docker
-
-----
-
-Opengraphtitle: Lisk Core Docker Installation
-
-----
-
-Opengraphimage: 
-
-----
-
-Opengraphdescription: 
-
-----
-
-Content: 
-
 # Lisk Core Docker Installation
 
 ## Run Lisk in Docker
@@ -190,27 +152,3 @@ docker-compose ps
 ```
 
 To learn more about Docker Compose please refer to the [Official Focumentation](https://docs.docker.com/compose/gettingstarted/).
-
-----
-
-Htmltitle: Lisk Core - Docker Installation | Lisk Documentation
-
-----
-
-Iframe: 
-
-----
-
-Whatsnext: asusual
-
-----
-
-Whatsnextheadline: 
-
-----
-
-Whatsnextpagelinktext: 
-
-----
-
-Whatsnextpagelink: 

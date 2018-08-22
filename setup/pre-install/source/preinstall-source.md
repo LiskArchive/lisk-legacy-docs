@@ -1,41 +1,3 @@
-Author: mona
-
-----
-
-Created: 2018-05-15
-
-----
-
-Updated: 2018-06-29
-
-----
-
-Metadescription: This document details the prerequisites to install Lisk Core 1.0.0 from a Source installation using tagged releases on Github.
-
-----
-
-Metakeywords: Lisk Core Source Pre-install
-
-----
-
-Title: Source
-
-----
-
-Opengraphtitle: Lisk Core Source Pre-install
-
-----
-
-Opengraphimage: 
-
-----
-
-Opengraphdescription: 
-
-----
-
-Content: 
-
 # Lisk Core Source Pre-Install
 
 This document details the prerequisites to install Lisk Core 1.0.0 from a Source installation using tagged releases on Github.
@@ -291,11 +253,3 @@ ping
 And you should get the result `PONG`.
 
 If you have finished all above steps successfully, your system is ready for installation of Lisk Core.
-
-----
-
-Htmltitle: Lisk Core - Source Pre-install | Lisk Documentation
-
-----
-
-Iframe: 

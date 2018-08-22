@@ -1,41 +1,3 @@
-Author: diego
-
-----
-
-Created: 2018-05-15
-
-----
-
-Updated: 2018-07-19
-
-----
-
-Metadescription: Discover how to install Lisk Core from Source. Once complete, you will have a functioning node on the Lisk Network.
-
-----
-
-Metakeywords: Lisk Core, Lisk, core, Setup, Installation, Source, Mainnet, Testnet, main network, test network
-
-----
-
-Title: Source
-
-----
-
-Opengraphtitle: Lisk Core Source Installation
-
-----
-
-Opengraphimage: 
-
-----
-
-Opengraphdescription: 
-
-----
-
-Content: 
-
 # Lisk Core Source Installation
 
 This section details how to install Lisk Core from Source. When completed, you will have a functioning node on the Lisk Network. If you are looking to upgrade your current Lisk Core installation, please see [Upgrade from Source](/documentation/lisk-core/upgrade/source).
@@ -136,27 +98,3 @@ After customizing the config to fit your needs and saving it, you can test it by
 ```shell
 sudo logrotate /etc/logrotate.conf --debug
 ```
-
-----
-
-Htmltitle: Lisk Core - Source Installation | Lisk Documentation
-
-----
-
-Iframe: 
-
-----
-
-Whatsnext: asusual
-
-----
-
-Whatsnextheadline: 
-
-----
-
-Whatsnextpagelinktext: 
-
-----
-
-Whatsnextpagelink: 

@@ -1,41 +1,3 @@
-Author: juan
-
-----
-
-Created: 2018-05-15
-
-----
-
-Updated: 2018-08-08
-
-----
-
-Metadescription: Discover how to install Lisk Core using pre-built binary packages. Once completed, you will have a functioning node on the Lisk Network.
-
-----
-
-Metakeywords: Lisk Core Binary Install
-
-----
-
-Title: Binary
-
-----
-
-Opengraphtitle: Lisk Core Binary Installation
-
-----
-
-Opengraphimage: 
-
-----
-
-Opengraphdescription: 
-
-----
-
-Content: 
-
 # Lisk Core Binary Installation
 
 This section details how to install Lisk Core using pre-built binary packages. Once completed, you will have a functioning node on the Lisk Network. If you are looking to upgrade your current Lisk Core installation, please see the [Upgrade Binary](/documentation/lisk-core/upgrade/binary) section.
@@ -137,23 +99,3 @@ After customizing the config to fit your needs and saving it, you can test it by
 ```shell
 sudo logrotate /etc/logrotate.conf --debug
 ```
-
-----
-
-Htmltitle: Lisk Core - Binary Installation | Lisk Documentation
-
-----
-
-Whatsnext: custom
-
-----
-
-Whatsnextheadline: What's next?
-
-----
-
-Whatsnextpagelinktext: Lisk Core User Guide
-
-----
-
-Whatsnextpagelink: documentation/lisk-core/user-guide

@@ -1,41 +1,3 @@
-Author: mona
-
-----
-
-Created: 2018-05-15
-
-----
-
-Updated: 2018-07-10
-
-----
-
-Metadescription: Learn how to prepare your system for the installation of Lisk Core.  This guide takes you through installation of important dependencies and user creation.
-
-----
-
-Metakeywords: Lisk Core Binary Pre-Installation Setup
-
-----
-
-Title: Binary
-
-----
-
-Opengraphtitle: Lisk Core Binary Pre-install
-
-----
-
-Opengraphimage: 
-
-----
-
-Opengraphdescription: 
-
-----
-
-Content: 
-
 # Lisk Core Binary Pre-Install
 
 This document will detail how to prepare a system for the installation of Lisk Core.  It will guide you through the installation of important dependencies, as well as user creation.
@@ -87,27 +49,3 @@ sudo adduser lisk
 ## MacOS Installation Prerequisites
 
 Ensure you are logged in as admin user. Create a new User called 'Lisk', as described [here](https://support.apple.com/kb/PH25796?locale=en_GB).
-
-----
-
-Htmltitle: Lisk Core - Binary Pre-Install | Lisk Documentation
-
-----
-
-Iframe: 
-
-----
-
-Whatsnext: custom
-
-----
-
-Whatsnextheadline: What's next?
-
-----
-
-Whatsnextpagelinktext: Installation from Binary
-
-----
-
-Whatsnextpagelink: documentation/lisk-core/setup/install/binary

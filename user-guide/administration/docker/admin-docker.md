@@ -1,45 +1,3 @@
-Author: diego
-
-----
-
-Created: 2018-06-19
-
-----
-
-Updated: 2018-07-19
-
-----
-
-Metadescription: This guide details how to work with a Docker based Lisk Core installation. Find a list of all commands that can be used to manage your Lisk node.
-
-----
-
-Metakeywords: Lisk Core Docker, Commands, Administration, Admin, Manage
-
-----
-
-Title: Docker
-
-----
-
-Htmltitle: Lisk Core - Docker Administration | Lisk Administration
-
-----
-
-Opengraphtitle: Lisk Core Docker Administration
-
-----
-
-Opengraphimage: 
-
-----
-
-Opengraphdescription: 
-
-----
-
-Content: 
-
 # Lisk Core Docker Administration
 
 This section details how to work with a Docker based Lisk Core installation.  Listed below are the available basic commands which can be used to manage your Docker based Lisk node. For more details, see each commands reference below. A brief summary of all commands and associated flags has been provided for advanced users.
@@ -94,19 +52,3 @@ Adding an array component as environment variable in your docker compose is a bi
 - LISK_FORGING_DELEGATES_1=<encrypted_passphrase>:<publickey>
 ```
 </boxinfo>
-
-----
-
-Whatsnext: asusual
-
-----
-
-Whatsnextheadline: 
-
-----
-
-Whatsnextpagelinktext: 
-
-----
-
-Whatsnextpagelink: 

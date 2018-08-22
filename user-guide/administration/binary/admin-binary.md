@@ -1,45 +1,3 @@
-Author: diego
-
-----
-
-Created: 2018-06-19
-
-----
-
-Updated: 2018-07-26
-
-----
-
-Metadescription: This guide details how to work with a Binary installation of Lisk Core. Find a list of basic commands that can be used to manage your Lisk node.
-
-----
-
-Metakeywords: lisk core binary, administration, commands
-
-----
-
-Title: Binary
-
-----
-
-Htmltitle: Lisk Core - Binary Administration | Lisk Documentation
-
-----
-
-Opengraphtitle: Lisk Core Binary Administration
-
-----
-
-Opengraphimage: 
-
-----
-
-Opengraphdescription: 
-
-----
-
-Content: 
-
 # Lisk Core Binary Administration
 
 ## Table of contents
@@ -204,19 +162,3 @@ This command is used to stop all database instances apart from the Lisk process.
 ```shell
 bash lisk.sh stop_db
 ```
-
-----
-
-Whatsnext: custom
-
-----
-
-Whatsnextheadline: What's next?
-
-----
-
-Whatsnextpagelinktext: Lisk Core API Specification
-
-----
-
-Whatsnextpagelink: documentation/lisk-core/user-guide/api

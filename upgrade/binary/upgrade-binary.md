@@ -1,41 +1,3 @@
-Author: mona
-
-----
-
-Created: 2018-05-15
-
-----
-
-Updated: 2018-06-26
-
-----
-
-Metadescription: This section will instruct you how to upgrade Lisk Core from Binary. Get started by first choosing the network your node is connected to (Mainnet or Testnet).
-
-----
-
-Metakeywords: Lisk Core Binary Upgrade
-
-----
-
-Title: Binary
-
-----
-
-Opengraphtitle: Lisk Core Binary Upgrade
-
-----
-
-Opengraphimage: 
-
-----
-
-Opengraphdescription: 
-
-----
-
-Content: 
-
 # Lisk Core Binary Upgrade
 
 In order to upgrade Lisk Core from Binary please follow the instructions below.  If you wish to **migrate a 0.9 node to Lisk Core 1.0**, we recommend you to go directly to the [Migration page](/documentation/lisk-core/upgrade/migration) for a full step-by-step guide. 
@@ -141,11 +103,3 @@ bash installLisk.sh install -r test
 ######Important
 You will be prompted for your installation directory, pressing 'enter' will choose the default.
 </boxwarning>
-
-----
-
-Htmltitle: Lisk Core - Binary Upgrade | Lisk Documentation
-
-----
-
-Iframe: 

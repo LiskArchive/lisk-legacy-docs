@@ -1,41 +1,3 @@
-Author: diego
-
-----
-
-Created: 2018-06-04
-
-----
-
-Updated: 2018-08-09
-
-----
-
-Metadescription: This 0.9 to 1.0 Lisk Core Migration Guide details the steps needed to upgrade one's Lisk Core node from 0.9 to 1.0
-
-----
-
-Metakeywords: Lisk Core Migrations
-
-----
-
-Title: Migration
-
-----
-
-Opengraphtitle: Lisk Core Migration
-
-----
-
-Opengraphimage: 
-
-----
-
-Opengraphdescription: 
-
-----
-
-Content: 
-
 # Lisk Core Migration
 
 Lisk Core `v1.0.0` is a hard fork which includes several changes. A height iss picked in order to proceed with a simultaneous global upgrade. This way the probabilities of creating forks are lower. 
@@ -164,23 +126,4 @@ Usage: lisk_bridge.sh <-h <BLOCKHEIGHT>> [-s <DIRECTORY>] [-n <NETWORK>]
 
 Example: bash lisk_bridge.sh -h 50000000 -n test -s /home/lisk/lisk-test
 Set the LISK_MASTER_PASSWORD environment variable if you want to do secrets migration in non-interactive mode```
-
-----
-
-Htmltitle: Lisk Core - Migration | Lisk Documentation
-
-----
-
-Whatsnext: asusual
-
-----
-
-Whatsnextheadline: 
-
-----
-
-Whatsnextpagelinktext: 
-
-----
-
-Whatsnextpagelink: 
+```

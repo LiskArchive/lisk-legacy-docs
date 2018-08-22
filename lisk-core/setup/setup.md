@@ -1,41 +1,3 @@
-Author: mona
-
-----
-
-Created: 2018-05-15
-
-----
-
-Updated: 2018-07-19
-
-----
-
-Metadescription: This section of the Lisk Documentation introduces advanced technical users how to set up a Lisk node on the network.
-
-----
-
-Metakeywords: Lisk Core Setup, node
-
-----
-
-Title: Setup
-
-----
-
-Opengraphtitle: Lisk Core Setup
-
-----
-
-Opengraphimage: 
-
-----
-
-Opengraphdescription: 
-
-----
-
-Content: 
-
 # Lisk Core Setup
 
 ## Table of contents
@@ -65,23 +27,3 @@ Docker adds support for additional platforms upon which to run a Lisk node, e.g.
 This is made for anyone wishing to develop on the Lisk Core codebase. It also comes with an extensive test-suite, detailed in `README.md`. Installation from Source enables a developer to work on the newest codebase for Lisk Core, which might not have been tagged for a release.
 
 (...columns)
-
-----
-
-Htmltitle: Lisk Core - Setup | Lisk Documentation
-
-----
-
-Whatsnext: asusual
-
-----
-
-Whatsnextheadline: 
-
-----
-
-Whatsnextpagelinktext: 
-
-----
-
-Whatsnextpagelink: 

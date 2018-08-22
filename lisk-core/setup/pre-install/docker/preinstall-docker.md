@@ -1,41 +1,3 @@
-Author: mona
-
-----
-
-Created: 2018-05-15
-
-----
-
-Updated: 2018-06-24
-
-----
-
-Metadescription: Prepare your system to run Lisk Core as a Docker based container. To run Lisk in Docker you must install the Docker Engine.
-
-----
-
-Metakeywords: Lisk Core Docker Pre-install
-
-----
-
-Title: Docker
-
-----
-
-Opengraphtitle: Lisk Core Docker Pre-install
-
-----
-
-Opengraphimage: 
-
-----
-
-Opengraphdescription: 
-
-----
-
-Content: 
-
 # Lisk Core Docker Pre-install
 
 This document will detail how to prepare a system to run Lisk Core as a Docker based container. In order to run Lisk in Docker a user must first install the Docker Engine. Additionally it is recommended to install Docker Compose for convenience.
@@ -80,11 +42,3 @@ In order to connect to the desired network with Lisk Core , please ensure that t
 | Devnet | 4000          | 5000        |
 
 These are the default ports for connecting with the network, these can be altered later in `config.json`.
-
-----
-
-Htmltitle: Lisk Core - Docker Pre-install | Lisk Documentation
-
-----
-
-Iframe: 

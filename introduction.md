@@ -1,49 +1,3 @@
-Author: max
-
-----
-
-Created: 2018-01-25
-
-----
-
-Updated: 2018-07-26
-
-----
-
-Metadescription: Lisk Commander aims to be a low entry point and the most convenient tool for developers who are looking for an efficient way of coding with a CLI.
-
-----
-
-Metakeywords: Lisk Commander, CLI
-
-----
-
-Title: Lisk Commander
-
-----
-
-Opengraphtitle: Lisk Commander Documentation
-
-----
-
-Opengraphimage: lisk_docu_blog_commander.png
-
-----
-
-Opengraphdescription: 
-
-----
-
-Htmltitle: Lisk Commander | Lisk Documentation
-
-----
-
-Logo: commander-logo_24px.svg
-
-----
-
-Content: 
-
 # Lisk Commander Documentation
 
 ## Table of contents
@@ -61,19 +15,3 @@ Lisk Commander allows you to communicate with a remote or local node and carry o
 ######Note
 With our relaunch we have introduced a new name for Lisk Commander, which was previously known as Lisky. Please be aware that at some places of this documentation the name still needs to be remain unchanged.
 </boxinfo>
-
-----
-
-Whatsnext: asusual
-
-----
-
-Whatsnextheadline: 
-
-----
-
-Whatsnextpagelinktext: 
-
-----
-
-Whatsnextpagelink: 

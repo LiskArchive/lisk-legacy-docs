@@ -1,29 +1,3 @@
-Author: max
-
-----
-
-Created: 2018-02-06
-
-----
-
-Updated: 2018-08-08
-
-----
-
-Metadescription: The Lisk Core configuration file is located in the root directory of the Lisk Core repository. This is an overview to better understand the config.json file.
-
-----
-
-Metakeywords: Lisk Core Configuration, config
-
-----
-
-Title: Configuration
-
-----
-
-Content: 
-
 # Lisk Core Configuration
 
 The general config file for Lisk Core is located in the root directory of the Lisk Core repository.  We give you an overview for a greater understanding of the `config.json` file and a description of each parameter.
@@ -310,35 +284,3 @@ If SSL Port configured above `ssl.options.port` is within well known ports range
 ```
 
 To verify all you have properly configured your node, open the web client using `https://MY_IP_OR_HOST`. You should now see a secure SSL connection.
-
-----
-
-Opengraphtitle: Lisk Core Configuration
-
-----
-
-Opengraphimage: 
-
-----
-
-Opengraphdescription: 
-
-----
-
-Htmltitle: Lisk Core - Configuration User Guide | Lisk Documentation
-
-----
-
-Whatsnext: asusual
-
-----
-
-Whatsnextheadline: 
-
-----
-
-Whatsnextpagelinktext: 
-
-----
-
-Whatsnextpagelink: 

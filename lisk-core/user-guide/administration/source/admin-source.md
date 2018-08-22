@@ -1,45 +1,3 @@
-Author: diego
-
-----
-
-Created: 2018-06-19
-
-----
-
-Updated: 2018-07-19
-
-----
-
-Metadescription: This guide explains how to manage a Source installation of Lisk Core. PM2 is included in the installation document and will be used in this reference.
-
-----
-
-Metakeywords: lisk core source, administration, commands
-
-----
-
-Title: Source
-
-----
-
-Htmltitle: Lisk Core - Source Administration | Lisk Documentation
-
-----
-
-Opengraphtitle: Lisk Core Source Administration
-
-----
-
-Opengraphimage: 
-
-----
-
-Opengraphdescription: 
-
-----
-
-Content: 
-
 # Lisk Core Source Administration
 
 This section details how to manage a Source installation of Lisk Core. Source installations for use in production are recommended to use a process manager. PM2 is included in the installation document and will be used in this reference.
@@ -119,19 +77,3 @@ createdb lisk_test
 gunzip -fcq blockchain.db.gz | psql -d lisk_test
 pm2 start lisk
 ```
-
-----
-
-Whatsnext: asusual
-
-----
-
-Whatsnextheadline: 
-
-----
-
-Whatsnextpagelinktext: 
-
-----
-
-Whatsnextpagelink: 

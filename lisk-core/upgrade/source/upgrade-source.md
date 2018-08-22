@@ -1,41 +1,3 @@
-Author: mona
-
-----
-
-Created: 2018-05-15
-
-----
-
-Updated: 2018-06-26
-
-----
-
-Metadescription: To upgrade Lisk Core from Source, follow the instructions specific to the network (Mainnet or Testnet) your node is connected to.
-
-----
-
-Metakeywords: Lisk Core Source Upgrade
-
-----
-
-Title: Source
-
-----
-
-Opengraphtitle: Lisk Core Source Upgrade
-
-----
-
-Opengraphimage: 
-
-----
-
-Opengraphdescription: 
-
-----
-
-Content: 
-
 # Lisk Core Source Upgrade
 
 This section details how to upgrade Lisk Core from source. If you wish to **migrate a 0.9 node to Lisk Core 1.0**, we recommend you to go directly to the [Migration page](/documentation/lisk-core/upgrade/migration) for a full step-by-step guide.
@@ -77,7 +39,3 @@ pm2 start lisk
 ######Important
 You have to enable forging manually after upgrade. Please follow this guide to [enable forging on your delegate node](/documentation/lisk-core/user-guide/configuration#forging) for further details. 
 </boxwarning>
-
-----
-
-Htmltitle: Lisk Core - Source Upgrade | Lisk Documentation

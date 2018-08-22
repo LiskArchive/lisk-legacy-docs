@@ -1,49 +1,3 @@
-Title: Lisk Core
-
-----
-
-Author: max
-
-----
-
-Created: 2018-01-25
-
-----
-
-Updated: 2018-07-23
-
-----
-
-Metadescription: Lisk Core is the program that implements the Lisk Protocol. Every machine must set it up in order to run a node that allows for participation in the network.
-
-----
-
-Metakeywords: lisk core, intro, docs, documentation
-
-----
-
-Opengraphtitle: Lisk Core Documentation
-
-----
-
-Opengraphimage: lisk_docu_blog_core.png
-
-----
-
-Opengraphdescription: 
-
-----
-
-Htmltitle: Lisk Core | Lisk Documentation
-
-----
-
-Logo: core-logo_24px.svg
-
-----
-
-Content: 
-
 # Lisk Core Documentation
 
 ## Table of contents
@@ -147,19 +101,3 @@ Please be sure to read and follow our [Contribution Guidelines](https://github.c
 If you have any further questions please join our [Gitter](https://gitter.im/LiskHQ/lisk).
 
 (...columns)
-
-----
-
-Whatsnext: asusual
-
-----
-
-Whatsnextheadline: What's next?
-
-----
-
-Whatsnextpagelinktext: The Lisk Protocol
-
-----
-
-Whatsnextpagelink: documentation/lisk-protocol

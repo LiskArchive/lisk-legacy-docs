@@ -124,3 +124,4 @@ The following is a representation of the resulting JSON object that will be broa
     ...
 }
 ```
+The final size of the transaction, with the signature, is 157 bytes. With a second signature it will be 221 bytes.

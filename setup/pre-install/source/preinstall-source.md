@@ -1,7 +1,7 @@
 # Lisk Core Source Pre-Install
 
 This document details the prerequisites to install Lisk Core 1.0.0 from a Source installation using tagged releases on Github.
-To complete the installation there are prerequisites that need to be fulfilled.  If you have already performed these, please proceed to the [Installation](/documentation/lisk-core/setup/install/source) page.
+To complete the installation there are prerequisites that need to be fulfilled.  If you have already performed these, please proceed to the [Installation](lisk-core/setup/install/source) page.
 
 ### Steps:
 
@@ -17,14 +17,11 @@ To complete the installation there are prerequisites that need to be fulfilled. 
 
 Firstly, please determine if your platform can install Lisk Core from source.
 
-<boxsuccess markdown="1">
-
 ###### Supported Platforms
 - Ubuntu 14.04 (LTS) x86_64
 - Ubuntu 16.04 (LTS) x86_64
 - MacOS 10.12 (Sierra)
 - MacOS 10.13 (High Sierra)
-</boxsuccess>
 
 ## 1. Open necessary ports
 
@@ -46,9 +43,9 @@ In order to run and manage a Lisk Core node in the future, please create a separ
 
 ### Ubuntu
 
-<boxinfo markdown="1">
-The `lisk` user itself **does not need** any `sudo` rights to run Lisk Core.
-</boxinfo>
+Info | Note 
+--- | --- 
+![info note](info-icon.png "Info Note") | The `lisk` user itself **does not need** any `sudo` rights to run Lisk Core.
     
 ```shell
 sudo adduser lisk
@@ -93,9 +90,9 @@ sudo apt-get install -y git
 brew install git
 ```
 
-## 5. Node.js (<https://nodejs.org/>)
+## 5. Node.js
 
-Node.js serves as the underlying engine for code execution.
+[Node.js](https://nodejs.org/) serves as the underlying engine for code execution.
 
 Install System wide via package manager, like so:
 
@@ -220,11 +217,9 @@ Stop redis:
 brew services stop redis
 ```
 
-<boxwarning markdown="1">
-######Important
-Lisk does not run on the redis default port of `6379`. Instead it is configured to run on port: `6380`. 
-Due to this, in order to run Lisk, you have one of two options:
-</boxwarning>
+Info | Note 
+--- | --- 
+![info note](info-icon.png "Info Note") | Lisk does not run on the redis default port of `6379`. Instead it is configured to run on port: `6380`. Due to this, in order to run Lisk, you have one of two options:
 
 1. **Change the Lisk configuration**
 

@@ -4,11 +4,8 @@ This document will detail how to prepare a system to run Lisk Core as a Docker b
 
 Determine if your platform can run Docker.
 
-<boxsuccess markdown="1">
-
 ###### Supported Platforms
 Please refer to https://docs.docker.com/engine/installation/#desktop
-</boxsuccess>
 
 ## Mac OS X
 
@@ -26,7 +23,7 @@ Please note that Docker for Windows includes Docker Compose.
 Please refer to https://docs.docker.com/engine/installation/#server
 To install Docker Compose, please refer to: https://docs.docker.com/compose/install/
 Install `make` using your package manager. For example, use `apt-get` if running Ubuntu:
-```
+```shell
 sudo apt-get install make
 ```
 

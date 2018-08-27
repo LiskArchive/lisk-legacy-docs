@@ -2,9 +2,9 @@
 
 Subcategories | Description
 --- | ---
-[Binary](/documentation/lisk-core/user-guide/administration/binary) | Administration using Binary
-[Docker](/documentation/lisk-core/user-guide/administration/docker) | Administration using Docker
-[Source](/documentation/lisk-core/user-guide/administration/source) | Administration for Installation from Source
+[Binary](lisk-core/user-guide/administration/binary/admin-binary.md) | Administration using Binary
+[Docker](lisk-core/user-guide/administration/docker/admin-docker.md) | Administration using Docker
+[Source](lisk-core/user-guide/administration/source/admin-source.md) | Administration for Installation from Source
 
 In this section you can find a list of the basic commands needed to manage your Lisk node on the different distributions, e.g.:
 
@@ -18,8 +18,8 @@ In this section you can find a list of the basic commands needed to manage your 
 A snapshot is a backup of the complete blockchain. It can be used to speed up the sync process, instead of having to validate all transactions starting from genesis block to current block height.
 Lisk provides official snapshots of the blockchain, see [http://snapshots.lisk.io](http://snapshots.lisk.io).
 
-<boxinfo markdown="1">
-[Creating own snapshots](/documentation/lisk-core/user-guide/administration/binary#create-snapshot) is only supported for Lisk Core Binary distributions.
-Rebuilding from snapshot is explained for each distribution in the Administration section.
-</boxinfo>
+Info | Note 
+--- | --- 
+![info note](info-icon.png "Info Note") | [Creating own snapshots](lisk-core/user-guide/administration/binary/admin-binary.md#create-snapshot) is only supported for Lisk Core Binary distributions. Rebuilding from snapshot is explained for each distribution in the Administration section.
+
 

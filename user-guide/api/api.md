@@ -1,41 +1,3 @@
-Author: mona
-
-----
-
-Created: 2018-05-22
-
-----
-
-Updated: 2018-07-20
-
-----
-
-Metadescription: Access the Lisk Explorer API to get data like pricing from exchanges, delegate lists, top accounts, latest blocks and latest transactions.
-
-----
-
-Metakeywords: lisk explorer api
-
-----
-
-Title: API
-
-----
-
-Opengraphtitle: Lisk Explorer API
-
-----
-
-Opengraphimage: 
-
-----
-
-Opengraphdescription: 
-
-----
-
-Content: 
-
 # Lisk Explorer API
 
 ## List of endpoints
@@ -1045,23 +1007,3 @@ Retrieves transactions list involving a given block.
   "transactions": []
 }
 ```
-
-----
-
-Htmltitle: Lisk Explorer API | Lisk Documentation
-
-----
-
-Whatsnext: asusual
-
-----
-
-Whatsnextheadline: 
-
-----
-
-Whatsnextpagelinktext: 
-
-----
-
-Whatsnextpagelink: 

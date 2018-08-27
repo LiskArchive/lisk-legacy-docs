@@ -1,29 +1,3 @@
-Author: max
-
-----
-
-Created: 2018-01-25
-
-----
-
-Updated: 2018-07-17
-
-----
-
-Metadescription: Lisk uses cryptographic hashing in order to secure all aspects of the system. EdDSA provides a fast mechanism for hashing and providing security.
-
-----
-
-Metakeywords: Security, key pair
-
-----
-
-Title: Security
-
-----
-
-Content: 
-
 # Lisk Security
 
 Lisk uses elliptic curve cryptography and cryptographic hashing in order to secure all aspects of the system. The system uses [EdDSA](https://tools.ietf.org/html/rfc8032) as it provides a robust and fast mechanism for hashing and providing security.
@@ -60,35 +34,3 @@ Lisk also offers the option of an additional layer of security. Using a  [specif
 
 ## Multisignature
 Lisk also supports multisignature accounts as another security system for users requiring even greater security. A multisignature account is an account that requires multiple keys to authorize a transaction. Any user can enable multisignature on their account by issuing a [special transaction](/documentation/lisk-protocol/transactions#multisignature-registration-transaction) specifying a group of n keys and the minimum number m of signatures required to authorize a transaction. Once this is done, it is mandatory that any transactions originating from that account must be signed by at least m out of the n keys for the transaction to be processed.
-
-----
-
-Opengraphtitle: Lisk Protocol - Security
-
-----
-
-Opengraphimage: 
-
-----
-
-Opengraphdescription: 
-
-----
-
-Htmltitle: Lisk Protocol - Security | Lisk Documentation
-
-----
-
-Whatsnext: asusual
-
-----
-
-Whatsnextheadline: 
-
-----
-
-Whatsnextpagelinktext: 
-
-----
-
-Whatsnextpagelink: 

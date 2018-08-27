@@ -1,29 +1,3 @@
-Author: max
-
-----
-
-Created: 2018-01-25
-
-----
-
-Updated: 2018-07-17
-
-----
-
-Metadescription: This section of the Lisk Protocol reviews technical details about our Block Headers, Block Payload and Block Generation.
-
-----
-
-Metakeywords: block generation, block header
-
-----
-
-Title: Blocks
-
-----
-
-Content: 
-
 # Lisk Blocks 
 
 A blockchain is composed of blocks. Each block is composed of a header and a list of transactions. When a delegate is assigned a slot in a delegate round, and has their node running, that delegate generates the next block and confirms up to 25 transactions from the transaction pool. These confirmed transactions will be added to the payload of the block and subsequently signed by the delegate.
@@ -93,35 +67,3 @@ The maximum size of a block payload can then be determined as 58150 bytes if eve
 ## Block Generation
 
 Block generation occurs every 10 seconds within the Lisk network using a DPoS (Delegated Proof of Stake) consensus protocol. Delegates further use [broadhash consensus](/documentation/lisk-protocol/consensus#broadhash-consensus) as a guidance strategy to generate the block in order to prevent forks in the network.
-
-----
-
-Opengraphtitle: Lisk Protocol - Blocks & Block Generation | Lisk Documentation
-
-----
-
-Opengraphimage: 
-
-----
-
-Opengraphdescription: 
-
-----
-
-Htmltitle: Lisk Protocol - Blocks & Block Generation
-
-----
-
-Whatsnext: asusual
-
-----
-
-Whatsnextheadline: 
-
-----
-
-Whatsnextpagelinktext: 
-
-----
-
-Whatsnextpagelink: 

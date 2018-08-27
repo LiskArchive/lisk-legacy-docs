@@ -1,29 +1,3 @@
-Author: max
-
-----
-
-Created: 2018-01-25
-
-----
-
-Updated: 2018-08-06
-
-----
-
-Metadescription: This section of the Lisk Protocol reviews our blockchain transactions by type as well as transaction signing, balance transfer and more.
-
-----
-
-Metakeywords: blockchain transactions
-
-----
-
-Title: Transactions
-
-----
-
-Content: 
-
 # Lisk Transactions
 
 An overview of the transactions available on Lisk's network are shown below.  The different transaction types are explained in detail in the respective sections below. Some transaction types are currently disabled (as of 1.0 Core version) since the corresponding functionality is not implemented yet.
@@ -382,35 +356,3 @@ The following is a representation of the resulting JSON object that will be broa
 ```
 
 The final size of the transaction, with the signature, is 157 bytes, with a second signature it is 221 bytes.
-
-----
-
-Opengraphtitle: Lisk Protocol - Blockchain Transactions
-
-----
-
-Opengraphimage: 
-
-----
-
-Opengraphdescription: 
-
-----
-
-Htmltitle: Lisk Protocol - Blockchain Transactions | Lisk Documentation
-
-----
-
-Whatsnext: asusual
-
-----
-
-Whatsnextheadline: 
-
-----
-
-Whatsnextpagelinktext: 
-
-----
-
-Whatsnextpagelink: 

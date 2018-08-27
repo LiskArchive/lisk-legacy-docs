@@ -1,29 +1,3 @@
-Author: max
-
-----
-
-Created: 2018-01-25
-
-----
-
-Updated: 2018-08-08
-
-----
-
-Metadescription: This User Guide for Lisk Commander lists and details how to execute all of the available basic commands.
-
-----
-
-Metakeywords: lisk commander commands
-
-----
-
-Title: Commands
-
-----
-
-Content:
-
 # Lisk Commander Commands
 
 ## List of commands
@@ -866,35 +840,3 @@ lisk> set api.network main
 	"message": "Successfully set api.network to main."
 }
 ```
-
-----
-
-Opengraphtitle: Lisk Commander Commands
-
-----
-
-Opengraphimage:
-
-----
-
-Opengraphdescription:
-
-----
-
-Htmltitle: Lisk Commander - Commands User Guide | Lisk Documentation
-
-----
-
-Whatsnext: asusual
-
-----
-
-Whatsnextheadline:
-
-----
-
-Whatsnextpagelinktext:
-
-----
-
-Whatsnextpagelink:

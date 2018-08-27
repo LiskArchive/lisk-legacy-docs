@@ -1,29 +1,3 @@
-Author: max
-
-----
-
-Created: 2018-01-25
-
-----
-
-Updated: 2018-07-12
-
-----
-
-Metadescription: Welcome to the Lisk Commander User Guide! This section details important information on how to use and configuring Lisk Commander.
-
-----
-
-Metakeywords: Lisk Commander User Guide, Config, Configuration
-
-----
-
-Title: User Guide
-
-----
-
-Content: 
-
 # Lisk Commander User Guide
 
 This guide details important information on how to use and configure Lisk Commander.
@@ -73,18 +47,3 @@ Pass arguments and options directly from the command line. E.g.:
  $ lisk get delegate lightcurve  --json
 ```
 
-----
-
-Opengraphtitle: Lisk Commander User Guide
-
-----
-
-Opengraphimage: 
-
-----
-
-Opengraphdescription: 
-
-----
-
-Htmltitle: Lisk Commander User Guide | Lisk Documentation

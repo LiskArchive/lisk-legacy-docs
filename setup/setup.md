@@ -1,41 +1,3 @@
-Author: shusetsu
-
-----
-
-Created: 2018-05-22
-
-----
-
-Updated: 2018-08-13
-
-----
-
-Metadescription: This section details how to install Lisk Commander. Lisk Commander requires Node.js as the underlying engine for code execution.
-
-----
-
-Metakeywords: lisk commander, install, setup, installation
-
-----
-
-Title: Setup
-
-----
-
-Opengraphtitle: Lisk Commander Setup
-
-----
-
-Opengraphimage: 
-
-----
-
-Opengraphdescription: 
-
-----
-
-Content: 
-
 # Lisk Commander Setup
 
 - [Pre-Installation](/documentation/lisk-commander/setup#pre-installation)
@@ -131,27 +93,3 @@ npm link
 ```
 
 This will also add Lisk Commander to your PATH, but you won't have to repeat the process if you pull or create a new build. Be aware that any previous globally installed `lisk-commander` version will get overridden with this local version.
-
-----
-
-Htmltitle: Lisk Commander - Setup | Lisk Documentation
-
-----
-
-Whatsnext: asusual
-
-----
-
-Whatsnextheadline: 
-
-----
-
-Whatsnextpagelinktext: 
-
-----
-
-Whatsnextpagelink: 
-
-----
-
-Swaggerurl: 

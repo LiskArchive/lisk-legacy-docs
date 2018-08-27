@@ -8,7 +8,7 @@
 [Source](/documentation/lisk-core/setup/pre-install/source) | [Source](/documentation/lisk-core/setup/pre-install/source)
 
 ## How to set up a Lisk node on the network
-Each subcategory offers a specific guide for each (tooltip: distribution text: distribution) of Lisk Core. The 3 supported distributions for Lisk Core are presented below:
+Each subcategory offers a specific guide for each distribution of Lisk Core. The 3 supported distributions for Lisk Core are presented below:
 
 ### Binary
 The **default** way to setup Lisk Core.

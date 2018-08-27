@@ -12,24 +12,24 @@ Lisk Core is the program that implements the [Lisk Protocol](lisk-protocol). Eve
 - Contribute to the decentralisation of the Lisk network
 - Explore data recorded on the Lisk blockchain
 - Post transactions to the Lisk blockchain
-- Enable/Disable (tooltip: forging text: forging) for a registered delegate
+- Enable/Disable forging for a registered delegate
 - Configure Lisk Core to specific needs, as required
 
 An instance of Lisk Core is generally detailed in two different ways: 
 
 Info | Note 
 --- | --- 
-![info note](info-icon.png "Info Note") | A Lisk Core instance connected to a network is referred to as a Lisk **(tooltip: node text: Node)**. 
+![info note](info-icon.png "Info Note") | A Lisk Core instance connected to a network is referred to as a Lisk **Node**. 
 
 Info | Note 
 --- | --- 
-![info note](info-icon.png "Info Note") | A Lisk Node connected to other Lisk Nodes is referred to as a Lisk **(tooltip: peer text: Peer)**.
+![info note](info-icon.png "Info Note") | A Lisk Node connected to other Lisk Nodes is referred to as a Lisk **Peer**.
 
 Both meanings refer to a machine which, after installing and executing Lisk Core, become a server. The server participates in the network and provides blockchain data to its clients.
 
 ## Networks
 
-Lisk Core can be connected to different (tooltip: network text: networks). There are two key public networks, entirely independent of each other, that are always accessible: **Mainnet** and **Testnet**. 
+Lisk Core can be connected to different networks. There are two key public networks, entirely independent of each other, that are always accessible: **Mainnet** and **Testnet**. 
 
 ### Mainnet
 Mainnet is where the true Lisk economy exists. On this network, Lisk users are able to transfer LSK tokens from one account to another, register accounts as delegates, vote for another delegates or register dApps. It can be explored via the [Lisk Explorer](https://explorer.lisk.io).

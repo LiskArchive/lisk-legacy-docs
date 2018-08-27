@@ -1,29 +1,3 @@
-Author: max
-
-----
-
-Created: 2018-01-25
-
-----
-
-Updated: 2018-07-10
-
-----
-
-Metadescription: Consensus is a critical aspect of any blockchain system. Lisk utilizes Delegated Proof of Stake (DPoS) as the consensus algorithm to maintain the network.
-
-----
-
-Metakeywords: Consensus Algorithm, DPoS
-
-----
-
-Title: Consensus Algorithm
-
-----
-
-Content: 
-
 # Lisk's Consensus Algorithm
 
 Lisk uses Delegated Proof of Stake ([DPoS](https://lisk.io/academy/blockchain-basics/how-does-blockchain-work/delegated-proof-of-stake/)) as its consensus protocol. 
@@ -80,35 +54,3 @@ The block reward linearly decreases over the lifetime of the network, providing 
 The second incentive provided by the system comes in the form of round fees. A delegate round, described above, comes to a close after the number of specified blocks have been generated. During the closure process, all transactional fees are aggregated and subsequently split between all active participants in the round. These fees can provide reward for each participant apart from the block generation reward, provided there is significant transactional activity in the system.
 
 It is possible for a delegate to forge more than one block within a single round earning more block rewards. In most circumstances this will not occur, however occasionally a delegate node may be offline during the delegate's assigned slot and subsequently will not generate a block. This forces another delegate to step in and generate the block at the end of the round.
-
-----
-
-Opengraphtitle: Lisk Protocol - Consensus Algorithm
-
-----
-
-Opengraphimage: 
-
-----
-
-Opengraphdescription: 
-
-----
-
-Htmltitle: Lisk Protocol - Consensus Algorithm | Lisk Documentation
-
-----
-
-Whatsnext: asusual
-
-----
-
-Whatsnextheadline: 
-
-----
-
-Whatsnextpagelinktext: 
-
-----
-
-Whatsnextpagelink: 

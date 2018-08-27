@@ -1,31 +1,3 @@
-Author: max
-
-----
-
-Created: 2018-01-25
-
-----
-
-Updated: 2018-06-23
-
-----
-
-Metadescription: This section of the Lisk Protocol documents deprecated transaction types that are no longer supported, but still active within the system.
-
-----
-
-Metakeywords: deprecated transactions
-
-----
-
-Title: Deprecated Transactions
-
-----
-
-Content: 
-
----
-
 ##Deprecated Transactions
 
 This section acts as historical documentation and is presented for transaction types that are no longer supported, but still active within the system. These transactions refer to legacy applications support and should not be used. 
@@ -152,21 +124,3 @@ The following is a representation of the resulting JSON object that will be broa
     ...
 }
 ```
-
-The final size of the transaction, with the signature, is 157 bytes. With a second signature it will be 221 bytes.
-
-----
-
-Opengraphtitle: Lisk Protocol - Deprecated Transactions
-
-----
-
-Opengraphimage: 
-
-----
-
-Opengraphdescription: 
-
-----
-
-Htmltitle: Lisk Protocol - Deprecated Transactions | Lisk Documentation

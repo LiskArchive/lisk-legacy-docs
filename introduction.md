@@ -1,14 +1,14 @@
 # Lisk Core Documentation
 
 ## Table of contents
-[Setup](lisk-core/setup) | [Upgrade](lisk-core/upgrade) | [User Guide](lisk-core/user-guide) | 
+[Setup](setup/setup.md) | [Upgrade](upgrade/upgrade.md) | [User Guide](user-guide/user-guide.md) | 
 --- | --- | ---
-[Pre-Installation](lisk-core/setup/pre-install) | [Binary](lisk-core/upgrade/binary) | [Administration](lisk-core/user-guide/administration)
-[Installation](lisk-core/setup/install) | [Docker](lisk-core/upgrade/docker) | [Configuration](lisk-core/user-guide/configuration)
-[Troubleshooting](lisk-core/troubleshooting) | [Source](lisk-core/upgrade/source) |  [API](lisk-core/user-guide/api)
-| | [Migration](lisk-core/upgrade/migration)| |
+[Pre-Installation](setup/pre-install/preinstallation.md) | [Binary](pgrade/binary/upgrade-binary.md) | [Administration](ser-guide/administration)
+[Installation](setup/install/installation.md) | [Docker](lisk-core/upgrade/docker/upgrade-docker) | [Configuration](user-guide/configuration)
+[Troubleshooting](/lisk-core/troubleshooting/troubleshooting.md) | [Source](upgrade/source/upgrade-source) |  [API](user-guide/api)
+| | [Migration](/lisk-core/upgrade/migration/migration.md)| |
 
-Lisk Core is the program that implements the [Lisk Protocol](lisk-protocol). Every machine must set it up in order to run a node that allows for participation in the network. Setting up Lisk Core enables a user to:
+Lisk Core is the program that implements the [Lisk Protocol](/lisk-protocol/introduction.md). Every machine must set it up in order to run a node that allows for participation in the network. Setting up Lisk Core enables a user to:
 - Contribute to the decentralisation of the Lisk network
 - Explore data recorded on the Lisk blockchain
 - Post transactions to the Lisk blockchain
@@ -38,7 +38,7 @@ Mainnet is where the true Lisk economy exists. On this network, Lisk users are a
 Testnet is an independent replica of the Lisk Mainnet intended as an area to rehearse upgrades before they take place on the Lisk Mainet. This is where new versions and fixes of Lisk Core are tested. It can be explored via [Lisk Testnet Explorer](https://testnet-explorer.lisk.io).
 
 Each connects to a network specified in the config file [`config.json`](https://github.com/LiskHQ/lisk/blob/development/config.json#L2). 
-When a user decides which network they wish to connect to, they must follow the correspondent tutorial in the [Setup](lisk-core/setup) section.
+When a user decides which network they wish to connect to, they must follow the correspondent tutorial in the [Setup](setup/setup.md) section.
 
 ## Components
 The Lisk Core consists of 4 main components:

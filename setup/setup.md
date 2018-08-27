@@ -1,11 +1,11 @@
 # Lisk Core Setup
 
 ## Table of contents
-[Pre-Installation](/documentation/lisk-core/setup/pre-install/binary) | [Installation](/documentation/lisk-core/setup/install/binary) 
+[Pre-Installation](pre-install/preinstallation.md) | [Installation](install/installation.md) 
 --- | ---
-[Binary](/documentation/lisk-core/setup/pre-install/binary) | [Binary](/documentation/lisk-core/setup/pre-install/binary) 
-[Docker](/documentation/lisk-core/setup/pre-install/docker) | [Docker](/documentation/lisk-core/setup/pre-install/docker)
-[Source](/documentation/lisk-core/setup/pre-install/source) | [Source](/documentation/lisk-core/setup/pre-install/source)
+[Binary](pre-install/binary/preinstall-binary.md) | [Binary](install/binary/installation-binary.md) 
+[Docker](pre-install/docker) | [Docker](pre-install/docker/installation-docker.md)
+[Source](pre-install/source) | [Source](pre-install/source/installation-source.md)
 
 ## How to set up a Lisk node on the network
 Each subcategory offers a specific guide for each distribution of Lisk Core. The 3 supported distributions for Lisk Core are presented below:

@@ -10,7 +10,7 @@ This document will detail how to prepare a system for the installation of Lisk C
 - MacOS 10.12 (Sierra)
 - MacOS 10.13 (High Sierra)
 
-To complete the installation there are prerequisites that need to be fulfilled.  If you have already performed these, please proceed to the [Installation](lisk-core/setup/install/binary/installation-binary.md) page. Please follow the instructions below to load the required software to your system.
+To complete the installation there are prerequisites that need to be fulfilled.  If you have already performed these, please proceed to the [Installation](../../install/binary/installation-binary.md) page. Please follow the instructions below to load the required software to your system.
 
 ## Open the necessary ports
 

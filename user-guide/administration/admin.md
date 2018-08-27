@@ -2,9 +2,9 @@
 
 Subcategories | Description
 --- | ---
-[Binary](lisk-core/user-guide/administration/binary/admin-binary.md) | Administration using Binary
-[Docker](lisk-core/user-guide/administration/docker/admin-docker.md) | Administration using Docker
-[Source](lisk-core/user-guide/administration/source/admin-source.md) | Administration for Installation from Source
+[Binary](binary/admin-binary.md) | Administration using Binary
+[Docker](docker/admin-docker.md) | Administration using Docker
+[Source](source/admin-source.md) | Administration for Installation from Source
 
 In this section you can find a list of the basic commands needed to manage your Lisk node on the different distributions, e.g.:
 
@@ -20,6 +20,6 @@ Lisk provides official snapshots of the blockchain, see [http://snapshots.lisk.i
 
 Info | Note 
 --- | --- 
-![info note](info-icon.png "Info Note") | [Creating own snapshots](lisk-core/user-guide/administration/binary/admin-binary.md#create-snapshot) is only supported for Lisk Core Binary distributions. Rebuilding from snapshot is explained for each distribution in the Administration section.
+![info note](info-icon.png "Info Note") | [Creating own snapshots](binary/admin-binary.md#create-snapshot) is only supported for Lisk Core Binary distributions. Rebuilding from snapshot is explained for each distribution in the Administration section.
 
 

@@ -147,8 +147,8 @@ Important | Note
 
 In order to enable your node to forge, you need first to insert some encrypted data into the config file under forging.delegates array. To encrypt your passphrase, we offer and recommend one of the following alternatives:
 
-- [Lisk Commander](lisk-commander/user-guide/commands/commands.md) via `encrypt passphrase` command
-- [Cryptography module from Lisk Elements](lisk-elements/user-guide/cryptography/cryptography.md)
+- [Lisk Commander](/lisk-commander/user-guide/commands/commands.md) via `encrypt passphrase` command
+- [Cryptography module from Lisk Elements](/lisk-elements/user-guide/cryptography/cryptography.md)
 
 We explain further the first alternative. First, make sure you have installed Lisk Commander in a secure environment. Upon completion, please follow the commands below to generate the encryptedPassphrase:
 

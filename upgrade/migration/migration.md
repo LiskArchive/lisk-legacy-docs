@@ -10,12 +10,12 @@ The above should be enough to complete the migration. For more curious users, we
 - [Check configuration changes](#configuration-changes-from-09-to-10)
 - [Migrate your config file](#migrate-configuration)
  - [Migrate Passphrases](#migrate-passphrases)
-- [Enable forging](lisk-core/user-guide/configuration/configuration.md#forging) (optional, just if you need to forge)
+- [Enable forging](/lisk-core/user-guide/configuration/configuration.md#forging) (optional, just if you need to forge)
 - [Lisk Bridge Command Reference](#lisk-bridge-command-reference)
 
 ## Prepare your workspace
 We assume that you have already installed Lisk Core and are familiar with the application. Nevertheless, we want to highlight a couple things to double-check:
-- Revisit the [setup](lisk-core/setup/setup.md) steps before continuing. Supported Linux distributions are Ubuntu 14.04 LTS through and including Ubuntu 18.04 LTS.
+- Revisit the [setup](/lisk-core/setup/setup.md) steps before continuing. Supported Linux distributions are Ubuntu 14.04 LTS through and including Ubuntu 18.04 LTS.
 - Verify that the following ports are open, depending on the network:
 
 | Network | httpPort(HTTP) | wsPort(TCP) |
@@ -39,7 +39,7 @@ Where `<network>` can either be `main` or `test`.
 
 The bridge script will run and wait for the specified height of the network and upon reaching this height , will invoke installLisk.sh in order to update the code, migrate the database to the new model and update the config files
 
-When the script arrives to your config file, it will prompt you asking for a password in the case where it finds a passphrase. It will encrypt and migrate that passphrase to the new format. You can find more information in the [following sections](migration#migrate-configuration). If you want to avoid this prompt and make a full-automated migration, add the next environment variable to your system:
+When the script arrives to your config file, it will prompt you asking for a password in the case where it finds a passphrase. It will encrypt and migrate that passphrase to the new format. You can find more information in the [following sections](#migrate-configuration). If you want to avoid this prompt and make a full-automated migration, add the next environment variable to your system:
 ```shell
 export LISK_MASTER_PASSWORD=XXXXXXXX
 ``` 
@@ -66,7 +66,7 @@ bash installLisk.sh upgrade -c -h
 </boxinfo>
 
 ## Configuration changes from 0.9 to 1.0
-Lisk has a variety of configurations under `config.json`. Each of them are thoroughly explained in [this section](lisk-core/user-guide/configuration). Running nodes behave according to which configuration you choose in that file. Remember if you modify anything, you need to restart the node to apply it.
+Lisk has a variety of configurations under `config.json`. Each of them are thoroughly explained in [this section](../../user-guide/configuration/configuration.md). Running nodes behave according to which configuration you choose in that file. Remember if you modify anything, you need to restart the node to apply it.
 
 During the course of development we have introduced some changes in the configuration which are not backward compatible. They are strictly related to the version you are running. This section will describe each of these changes for your reference:
 
@@ -112,7 +112,7 @@ We found some secrets in your config, if you want to migrate, please type in you
 To perform automatic passphrase migration, type-in the password of your choice. If you type a word with a minimum of 5 characters, the script will create the `forging.delegates` array in the new configuration file.  The same password will be used for every passphrase presented in the old config file.
 
 #### Manually
-You can also migrate your passphrases one by one. You will be able to encrypt every passphrase with a different password. In order to do so, install [Lisk Commander](lisk-commander/setup) and use [encrypt passphrase command](lisk-commander/user-guide/commands#encrypt-passphrase).
+You can also migrate your passphrases one by one. You will be able to encrypt every passphrase with a different password. In order to do so, install [Lisk Commander](/lisk-commander/setup/setup.md) and use [encrypt passphrase command](/lisk-commander/user-guide/commands/commands.md#encrypt-passphrase).
 
 ## Lisk Bridge Command Reference
 For reference, here is the lisk_bridge.sh usage help:

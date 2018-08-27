@@ -1,41 +1,3 @@
-Author: diego
-
-----
-
-Created: 2018-04-25
-
-----
-
-Updated: 2018-06-25
-
-----
-
-Metadescription: This Lisk Elements user guide is your resource for interacting with the `transactions` endpoint provided by the Lisk public API.
-
-----
-
-Metakeywords: lisk elements transactions
-
-----
-
-Title: Transactions Resource
-
-----
-
-Opengraphtitle: Lisk Elements API: Transactions Resource
-
-----
-
-Opengraphimage: 
-
-----
-
-Opengraphdescription: 
-
-----
-
-Content: 
-
 # Lisk Elements API Client: Transactions Resource
 
 This is a resource for interacting with the `transactions` endpoint provided by the Lisk public API. Each of the following methods can be accessed via the `transactions` property of an `APIClient` instance.
@@ -109,7 +71,3 @@ client.transactions.broadcast({
         console.log(res.data);
     })
 ```
-
-----
-
-Htmltitle: Lisk Elements API Client - Transactions Resource | Lisk Documentation

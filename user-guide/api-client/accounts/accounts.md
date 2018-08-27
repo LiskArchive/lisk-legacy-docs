@@ -1,41 +1,3 @@
-Author: diego
-
-----
-
-Created: 2018-04-25
-
-----
-
-Updated: 2018-06-25
-
-----
-
-Metadescription: This Lisk Elements user guide is your resource for interacting with the `accounts` endpoint provided by the Lisk public API.
-
-----
-
-Metakeywords: Lisk Elements Accounts Resource
-
-----
-
-Title: Accounts Resource
-
-----
-
-Opengraphtitle: Lisk Elements API: Accounts Resource
-
-----
-
-Opengraphimage: 
-
-----
-
-Opengraphdescription: 
-
-----
-
-Content: 
-
 # Lisk Elements API Client: Accounts Resource
 
 This is a resource for interacting with the `accounts` endpoint provided by the Lisk public API. Each of the following methods can be accessed via the `accounts` property of an `APIClient` instance.
@@ -124,7 +86,3 @@ client.accounts.getMultisignatureMemberships('15434119221255134066L')
         console.log(res.data);
     })
 ```
-
-----
-
-Htmltitle: Lisk Elements API Client - Accounts Resource | Lisk Documentation

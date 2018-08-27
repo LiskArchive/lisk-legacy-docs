@@ -1,41 +1,3 @@
-Author: 
-
-----
-
-Created: 2018-05-22
-
-----
-
-Updated: 2018-07-19
-
-----
-
-Metadescription: Learn how to install Lisk Elements quickly and easily. Lisk Elements requires Node.js as the underlying engine for code execution.
-
-----
-
-Metakeywords: Lisk Elements, installation, setup, install
-
-----
-
-Title: Setup
-
-----
-
-Opengraphtitle: Lisk Elements Setup
-
-----
-
-Opengraphimage: 
-
-----
-
-Opengraphdescription: 
-
-----
-
-Content: 
-
 # Lisk Elements Setup
 
 - [Pre-Installation](/documentation/lisk-elements/setup#pre-installation)
@@ -116,23 +78,3 @@ Or minified:
 ```html
 <script src="https://js.lisk.io/lisk-elements-1.0.0.min.js"></script>
 ```
-
-----
-
-Htmltitle: Lisk Elements - Setup | Lisk Documentation
-
-----
-
-Whatsnext: asusual
-
-----
-
-Whatsnextheadline: 
-
-----
-
-Whatsnextpagelinktext: 
-
-----
-
-Whatsnextpagelink: 

@@ -1,45 +1,3 @@
-Author: diego
-
-----
-
-Created: 2018-04-25
-
-----
-
-Updated: 2018-07-17
-
-----
-
-Metadescription: Welcome to the Lisk Documentation. Here you'll find comprehensive guides and technical documentation to help you start working with Lisk as quickly as possible.
-
-----
-
-Metakeywords: lisk elements cryptography
-
-----
-
-Title: Cryptography
-
-----
-
-Opengraphtitle: Lisk Elements Cryptography
-
-----
-
-Opengraphimage: 
-
-----
-
-Opengraphdescription: 
-
-----
-
-Htmltitle: Lisk Elements - Cryptography User Guide | Lisk Documentation
-
-----
-
-Content: 
-
 # Lisk Elements Cryptography
 
 The Lisk Elements cryptography module provides all the cryptographic functionality necessary when interacting with the Lisk ecosystem.
@@ -836,19 +794,3 @@ cryptography.verifyMessageWithTwoPublicKeys({
     secondSignature: '97196d262823166ec9ae5145238479effe00204e763d43cc9539cc711277a6652e8266aace3622f9e8a08cd5de08115c06db15fee71a44a98172cfab58f91c01',
 }); // true
 ```
-
-----
-
-Whatsnext: asusual
-
-----
-
-Whatsnextheadline: 
-
-----
-
-Whatsnextpagelinktext: 
-
-----
-
-Whatsnextpagelink: 

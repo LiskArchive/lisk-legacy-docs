@@ -1,41 +1,3 @@
-Author: diego
-
-----
-
-Created: 2018-04-25
-
-----
-
-Updated: 2018-06-25
-
-----
-
-Metadescription: Please refer to this documentation as a resource for interacting with the `dapps` endpoint provided by the Lisk public API.
-
-----
-
-Metakeywords: lisk elements dapps
-
-----
-
-Title: DApps Resource
-
-----
-
-Opengraphtitle: Lisk Elements API: DApps Resource
-
-----
-
-Opengraphimage: 
-
-----
-
-Opengraphdescription: 
-
-----
-
-Content: 
-
 # Lisk Elements API Client: DApps Resource
 
 This is a resource for interacting with the `dapps` endpoint provided by the Lisk public API. Each of the following methods can be accessed via the `dapps` property of an `APIClient` instance.
@@ -66,7 +28,3 @@ client.dapps.get({ name: 'LiskKitties' })
         console.log(res.data);
     })
 ```
-
-----
-
-Htmltitle: Lisk Elements API Client - DApps Resource | Lisk Documentation

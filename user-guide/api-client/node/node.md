@@ -1,41 +1,3 @@
-Author: diego
-
-----
-
-Created: 2018-04-25
-
-----
-
-Updated: 2018-06-25
-
-----
-
-Metadescription: This Lisk Elements user guide is your resource for interacting with the `node` endpoint provided by the Lisk public API.
-
-----
-
-Metakeywords: lisk elements node api
-
-----
-
-Title: Node Resource
-
-----
-
-Opengraphtitle: Lisk Elements API: Node Resource
-
-----
-
-Opengraphimage: 
-
-----
-
-Opengraphdescription: 
-
-----
-
-Content: 
-
 # Lisk Elements API Client: Node Resource
 
 This is a resource for interacting with the `node` endpoint provided by the Lisk public API. Each of the following methods can be accessed via the `node` property of an `APIClient` instance.
@@ -184,7 +146,3 @@ client.node.getTransactions('unconfirmed')
         console.log(res.data);
     })
 ```
-
-----
-
-Htmltitle: Lisk Elements API Client - Node Resource | Lisk Documentation

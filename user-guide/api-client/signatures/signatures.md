@@ -1,41 +1,3 @@
-Author: diego
-
-----
-
-Created: 2018-04-25
-
-----
-
-Updated: 2018-06-25
-
-----
-
-Metadescription: This Lisk Elements user guide is your resource for interacting with the `signatures` endpoint provided by the Lisk public API.
-
-----
-
-Metakeywords: lisk elements signatures
-
-----
-
-Title: Signatures Resource
-
-----
-
-Opengraphtitle: Lisk Elements API: Signatures Resource
-
-----
-
-Opengraphimage: 
-
-----
-
-Opengraphdescription: 
-
-----
-
-Content: 
-
 # Lisk Elements API Client: Signatures Resource
 
 This is a resource for interacting with the `signatures` endpoint provided by the Lisk public API. Each of the following methods can be accessed via the `signatures` property of an `APIClient` instance.
@@ -70,7 +32,3 @@ client.signatures.broadcast({
         console.log(res.data);
     })
 ```
-
-----
-
-Htmltitle: Lisk Elements API Client - Signatures Resource | Lisk Documentation

@@ -1,45 +1,3 @@
-Author: diego
-
-----
-
-Created: 2018-04-25
-
-----
-
-Updated: 2018-07-19
-
-----
-
-Metadescription: If you already have Lisk Elements installed and wish to upgrade your installation, you can follow the instructions below for your specific distribution.
-
-----
-
-Metakeywords: Lisk Elements Upgrade
-
-----
-
-Title: Upgrade
-
-----
-
-Opengraphtitle: Lisk Elements Upgrade
-
-----
-
-Opengraphimage: 
-
-----
-
-Opengraphdescription: 
-
-----
-
-Htmltitle: Lisk Elements Upgrade | Lisk Documentation
-
-----
-
-Content: 
-
 # Lisk Elements Upgrade
 
 If you already have Lisk Elements installed and wish to upgrade your installation, you can follow the instructions below for your specific distribution.
@@ -76,18 +34,3 @@ to this:
 <script src="https://js.lisk.io/lisk-elements-1.1.0.min.js"></script>
 ```
 
-----
-
-Whatsnext: asusual
-
-----
-
-Whatsnextheadline: 
-
-----
-
-Whatsnextpagelinktext: 
-
-----
-
-Whatsnextpagelink: 

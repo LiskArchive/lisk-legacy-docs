@@ -38,13 +38,13 @@ Content:
 
 # Lisk Commander Setup
 
-- [Pre-Installation](/documentation/lisk-commander/setup#pre-installation)
-  - [Determine if your platform can run Node](/documentation/lisk-commander/setup#determine-if-your-platform-can-run-node)
-  - [Install Node](/documentation/lisk-commander/setup#install-node)
-- [Installation](/documentation/lisk-commander/setup#installation)
-  - [Install Lisk Elements via NPM](/documentation/lisk-commander/setup#install-node)
-  - [Install Lisk Elements from Source (GitHub)](/documentation/lisk-commander/setup#install-node)
-  - [Load Lisk Elements via CDN](/documentation/lisk-commander/setup#install-node)
+- [Pre-Installation](#pre-installation)
+  - [Determine if your platform can run Node](#determine-if-your-platform-can-run-node)
+  - [Install Node](#install-node)
+- [Installation](#installation)
+  - [Install Lisk Elements via NPM](#install-node)
+  - [Install Lisk Elements from Source (GitHub)](#install-node)
+  - [Load Lisk Elements via CDN](#install-node)
 
 ## Pre-Installation
 
@@ -52,17 +52,13 @@ Lisk Commander requires [Node.js](https://nodejs.org/) as the underlying engine 
 
 ### Determine if your platform can run Node
 
-<boxsuccess markdown="1">
 ######Supported Platforms
 - Windows 10
 - macOS
 - Linux
-</boxsuccess>
 
-<boxerror markdown="1">
 ######Not Supported
 - Platforms without NodeJS version between 6.12 and 6.14
-</boxerror>
 
 ### Install Node
 
@@ -79,7 +75,7 @@ npm --version
 
 ## Lisk Commander Installation
 
-This section details how to install Lisk Commander for a given distribution. If you have satisfied the requirements from the [Pre-Installation](/documentation/lisk-commander/setup#pre-installation) section, you can proceed with the type of installation you would like to perform from the table below.
+This section details how to install Lisk Commander for a given distribution. If you have satisfied the requirements from the [Pre-Installation](#pre-installation) section, you can proceed with the type of installation you would like to perform from the table below.
 
 ### Install Lisk Commander via NPM
 
@@ -105,10 +101,9 @@ npm run build
 
 ### Adding the Lisk Commander executable to your PATH
 
-<boxwarning markdown="1">
-######Warning
-If you have installed Lisk Commander globally via NPM (see Install Lisk Commander via NPM), following the instructions in this section is not recommended as they will introduce conflicts.
-</boxwarning>
+Important | Note 
+--- | --- 
+![important note](important-icon.png "Important Note") | If you have installed Lisk Commander globally via NPM (see Install Lisk Commander via NPM), following the instructions in this section is not recommended as they will introduce conflicts.
 
 If you would like to add the `lisk` executable to your PATH you have two options: option 1 will install the current state of the code you are installing globally, while option 2 will only link to the code and therefore automatically reflect changes you make going forward.
 

@@ -16,7 +16,7 @@
 
 ## Workflow
 
-This section describes general processes that need to be followed when contributing to the `lisk-docs` codebase.
+This section describes general processes that need to be followed when contributing to the `lisk-docs` repository.
 
 Each product has its own **development branch**, `dev-{product}`. This development branches are a [subtree](https://git-scm.com/book/en/v1/Git-Tools-Subtree-Merging) of the `lisk-docs` repository, which contain only the relevant documentation files of the respective product. These branches contain the latest changes in the documentation of the product, e.g. documentation for unreleased software versions.
 

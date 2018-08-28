@@ -48,12 +48,12 @@ New issues must be labeled after Product, and should be added to a Milestone.
 
 1. **Create an issue:** If the corresponding issue for the content you want to add does not exist yet, please create the issue first. Remember to specify Labels and Milestone for the issue, as much as you can.
 2. Before working on an issue, **make sure the issue is assigned to you**.
-3. **Clone** the `lisk-docs` repository from github: `git clone git@github.com:LiskHQ/lisk-docs.git` (in case you haven't done that already).
+3. **Clone** the `lisk-docs` repository from GitHub: `git clone git@github.com:LiskHQ/lisk-docs.git` (in case you haven't done that already).
 4. Check out the branch you want to write documentation for: `git checkout dev-{product}-{version}`
 and **pull the latest changes** : `git pull origin dev-{product}-{version}`. Be sure `{version}` matches the version mentioned in the corresponding issue.
 5. Check out a new branch from the version branch which will contain all the changes to solve the issue you are working on. **Name the branch** using this pattern: `123-description-of-the-branch`, where `123` is the issue number of the issue you are trying to solve.
-6. Make your changes as intended, commit them and **push it back to github**: `git push origin 123-description-of-the-branch`.
-7. On github, create a PR as usual: Reference the issue it solves, and add a short summary of the made changes.
+6. Make your changes as intended, commit them and **push it back to GitHub**: `git push origin 123-description-of-the-branch`.
+7. On GitHub, create a PR as usual: Reference the issue it solves, and add a short summary of the made changes.
 
 ### Hotfixes
 
@@ -67,7 +67,7 @@ git pull origin master
 git checkout -b dev-commander-{version}-p1 # create patch branch
 ```
 
-2. Make your changes and push to github:
+2. Make your changes and push to GitHub:
 
 ```bash
 git push origin dev-commander-{version}-p1
@@ -182,7 +182,7 @@ An introduction page should have at least the following sections:
 
 1. **Table of contents:** The introduction should start with a table of contents with relative links to all other existing documentation sites for the respective product.
 2. **Product description:** Try to describe the product precisely in 1-2 sentences. Then, elaborate about the general purpose of the product, e.g. highlight use cases and top features.
-3. **Codebase reference:** Link to the github repository of the product, and reference contribution guidelines.
+3. **Codebase reference:** Link to the GitHub repository of the product, and reference contribution guidelines.
 
 #### Structuring content
 

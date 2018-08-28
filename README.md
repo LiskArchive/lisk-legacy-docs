@@ -49,7 +49,7 @@ New issues must be labeled after Product, and should be added to a milestone.
 1. **Create an issue:** If the corresponding issue for the content you want to add does not exist yet, please create the issue first. Remember to specify labels and milestone for the issue, as much as you can.
 2. Before working on an issue, **make sure the issue is assigned to you**.
 3. **Clone** the `lisk-docs` repository from GitHub: `git clone git@github.com:LiskHQ/lisk-docs.git` (in case you haven't done that already).
-4. Check out the branch you want to write documentation for: `git checkout dev-{product}-{version}`.
+4. Check out the branch you want to write documentation for: `git checkout dev-{product}-{version}`
 and **pull the latest changes** : `git pull origin dev-{product}-{version}`. Be sure `{version}` matches the version mentioned in the corresponding issue.
 5. Check out a new branch from the version branch which will contain all the changes to solve the issue you are working on. **Name the branch** using this pattern: `123-description-of-the-branch`, where `123` is the issue number of the issue you are trying to solve.
 6. Make your changes as intended, commit them and **push it back to GitHub**: `git push origin 123-description-of-the-branch`.
@@ -97,11 +97,11 @@ git checkout master
 git merge -s subtree dev-core
 ```
 
-The master branch gets a new tag each time new content from the `dev-` branches is merged. The tag is simple date format, so e.g. new content got merged into `master` at February the 15th 2018, the tag for master would be `lisk-docs-2018-02-15`.
+The master branch gets a new tag each time new content from the `dev-` branches is merged. The tag is simple date format, e.g. new content got merged into `master` at February the 15th 2018, the tag for master would be `lisk-docs-2018-02-15`.
 
 ## Style guidelines
 
-To keep the documentation experience intuitive and consistent for the user, each products' documentation needs to follow the common style guidelines for Lisk Documentation.
+To keep the documentation experience intuitive and consistent for the user, each product documentation needs to follow the common style guidelines for Lisk Documentation.
 
 Please read it carefully and use it as a checklist before and after every participation.
 
@@ -176,7 +176,7 @@ When to use new pages, sub pages or sections for new content.
 
 #### Introduction page
 
-On root level of each products documentation you find an introduction page for the respective product. This page is always required.
+On root level of each product documentation you find an introduction page for the respective product. This page is always required.
 
 An introduction page should have at least the following sections:
 

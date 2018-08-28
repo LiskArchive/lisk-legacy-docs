@@ -3,7 +3,7 @@
 This section acts as historical documentation and is presented for transaction types that are no longer supported, but still active within the system. These transactions refer to legacy applications support and should not be used. 
 
 ###Applications Registration Transaction
-An [Application Registration Transaction](/documentation/lisk-protocol/transactions)  (type 5) is a transaction used to register an application for a sidechain. The following fields are needed in order to issue an application registration transaction:
+An [Application Registration Transaction](../transactions/transactions.md)  (type 5) is a transaction used to register an application for a sidechain. The following fields are needed in order to issue an application registration transaction:
 
 Category: the category of the application
 Name: the name of the application
@@ -18,7 +18,7 @@ Tags: tags of the application
 
 Once the required fields have been specified, the system will compute the account's public key, and start building the transaction’s data block described in the following figure:
 
-(image: 7-11-6.png)
+![7-11-6](7-11-6.png "7-11-6")
 
 At this point the data block is signed using the account's passphrase and the signature is appended to the data block. The system will then compute the fee of the transaction. In the present implementation, the fee for an application registration is 500 LSK. The following is a representation of the resulting JSON object that will be broadcast to the network:
 
@@ -60,7 +60,7 @@ An In Transfer Transaction is a transaction used to transfer funds from the main
 
 Once these fields have been specified, the system can then compute the account's public key and begin building the transaction’s data block with a maximum of 73 bytes, as described in the following figure:
 
-(image: 5-8.png)
+![5-8](5-8.png "5-8")
 
 This data block is signed using the account's passphrase and the signature is appended to the data block. The system will then compute the fee of the transaction. In the present implementation, the fee for an In Transfer is 0.1 LSK. 
 

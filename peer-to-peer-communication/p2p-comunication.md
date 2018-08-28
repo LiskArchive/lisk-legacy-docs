@@ -4,9 +4,9 @@ Peer-to-Peer communication serves a vital function within the Lisk network. The 
 
 ## Architecture
 
-The peers in the Lisk network use JSON objects with compressed [**blocks**](/documentation/lisk-protocol/blocks) and [**transactions**](/documentation/lisk-protocol/transactions). The Lisk logic running on every node in the Lisk network uses remote procedure calls (RPCs) and events to communicate the transaction and block JSON objects to the other peers. The RPCs and events are also transmitted as JSON objects with additional fields telling the Lisk application which method to use in order to process the transmitted object. In order to effectively transmit these JSON objects to the other peers, websockets are used via the [ SocketCluster Framework]( https://socketcluster.io). An overview of the architecture of the peer-to-peer communication in Lisk is provided below.
+The peers in the Lisk network use JSON objects with compressed [**blocks**](../blocks/blocks.md) and [**transactions**](../transactions/transactions.md). The Lisk logic running on every node in the Lisk network uses remote procedure calls (RPCs) and events to communicate the transaction and block JSON objects to the other peers. The RPCs and events are also transmitted as JSON objects with additional fields telling the Lisk application which method to use in order to process the transmitted object. In order to effectively transmit these JSON objects to the other peers, websockets are used via the [ SocketCluster Framework]( https://socketcluster.io). An overview of the architecture of the peer-to-peer communication in Lisk is provided below.
 
-(image: lisk_protocol-p2parchitecture.png)
+![lisk_protocol-p2parchitecture](lisk_protocol-p2parchitecture.png "lisk_protocol-p2parchitecture")
 
 ## System Headers
 Every time a Lisk node communicates with a peer of the Lisk network, a system header is added to the message. The system headers are used to identify full nodes and provide basic information about the software running on the system.
@@ -32,7 +32,7 @@ Block propagation serves a vital function on the Lisk network. Without block pro
 
 ##Transaction Propagation
 
-Transactions must move from one node to all other nodes in order to be included in blocks. The broadcast queue for transactions works by drawing up to 25 transactions from the transactions pool and performing a validation process on those transactions. These transactions are then broadcast to other nodes in a bundled JSON object. This can be represented as an array of objects, depending on the [**transaction type**](/documentation/lisk-protocol/transactions). The bundle is then broadcast to the network at regular intervals, currently specified as every 5 seconds. The time delay allows the bundle to accumulate additional transactions from the network (up to 25). In addition to broadcasting the object, the bundle is given a relay limit to prevent spamming the network. In the current implementation the relay limit is set as 3, which means that every bundle will be broadcast for **at most 3 hops** by the peers on the network.
+Transactions must move from one node to all other nodes in order to be included in blocks. The broadcast queue for transactions works by drawing up to 25 transactions from the transactions pool and performing a validation process on those transactions. These transactions are then broadcast to other nodes in a bundled JSON object. This can be represented as an array of objects, depending on the [**transaction type**](../transactions/transactions.md). The bundle is then broadcast to the network at regular intervals, currently specified as every 5 seconds. The time delay allows the bundle to accumulate additional transactions from the network (up to 25). In addition to broadcasting the object, the bundle is given a relay limit to prevent spamming the network. In the current implementation the relay limit is set as 3, which means that every bundle will be broadcast for **at most 3 hops** by the peers on the network.
 
 ##Transaction Pool
 

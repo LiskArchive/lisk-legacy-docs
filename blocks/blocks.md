@@ -41,13 +41,13 @@ The figure below is an example representation of a block header  in JSON contain
 
 The process for signing the block header is the same as the process for signing a transaction. When hashing the block header in order to compute the block signature, the values of the fields are considered in the following order:
 
-(image: lisk_protocol-blockheader.png)
+![lisk_protocol-blockheader](lisk_protocol-blockheader.png "lisk_protocol-blockheader")
 
 The block header is hashed using SHA-256 and signed using delegate's secret key. Then the first 8 bytes of the output are reversed and used as the blockId (following the same logic as with transaction signatures). 
 
 A signed block generates its blockId using the following flow:
 
-(image: lisk_protocol-blockid.png)
+![lisk_protocol-blockid](lisk_protocol-blockid.png "lisk_protocol-blockid")
 
 ##Block Payload
 The payload of the block is comprised of up to 25 transactions present on the system signing the block. The maximum number of available transactions up to this limit will be included, provided that the payload for a transaction does not exceed the maximum size for each transaction type. 
@@ -66,4 +66,4 @@ The maximum size of a block payload can then be determined as 58150 bytes if eve
 
 ## Block Generation
 
-Block generation occurs every 10 seconds within the Lisk network using a DPoS (Delegated Proof of Stake) consensus protocol. Delegates further use [broadhash consensus](/documentation/lisk-protocol/consensus#broadhash-consensus) as a guidance strategy to generate the block in order to prevent forks in the network.
+Block generation occurs every 10 seconds within the Lisk network using a DPoS (Delegated Proof of Stake) consensus protocol. Delegates further use [broadhash consensus](../consensus#broadhash-consensus) as a guidance strategy to generate the block in order to prevent forks in the network.

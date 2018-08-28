@@ -9,17 +9,16 @@ As with the vast majority of other blockchains, Lisk rewards the block generator
 
 The timeline for these block rewards are represented in the following figure:
 
-<boxinfo markdown="1">
-######Block Reward Reduction
-milestones: [
-500000000, // Initial Reward begins at block 1,451,520
-400000000, // Milestone 1 begins at block 4,451,520
-300000000, // Milestone 2 begins at block 7,451,520
-200000000, // Milestone 3 begins at block 10,451,520
-100000000 // Milestone 4 begins at block 13,451,520
-],
-
-</boxinfo>
+Info | Note 
+--- | --- 
+![info note](info-icon.png "Info Note") | Block Reward Reduction
+|  | milestones: [
+|  | 500000000, // Initial Reward begins at block 1,451,520
+|  | 400000000, // Milestone 1 begins at block 4,451,520
+|  | 300000000, // Milestone 2 begins at block 7,451,520
+|  | 200000000, // Milestone 3 begins at block 10,451,520
+|  | 100000000 // Milestone 4 begins at block 13,451,520
+|  | ]
 
 The block reward linearly decreases over the lifetime of the network, providing significant incentive to participate as an active delegate. The reward will decrease every 3,000,000 blocks from the initial reward block.
 

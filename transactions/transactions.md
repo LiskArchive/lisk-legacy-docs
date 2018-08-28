@@ -2,16 +2,16 @@
 
 An overview of the transactions available on Lisk's network are shown below.  The different transaction types are explained in detail in the respective sections below. Some transaction types are currently disabled (as of 1.0 Core version) since the corresponding functionality is not implemented yet.
 
-**Type** | **Status**     | **Purpose**                                                                         | **Fee**
----           | ---                   | ---                                                                                           | ---
-0             | active           | Transmit funds to a specified Lisk address  | 0.1 LSK
-1             | active           | Register a second passphrase                              |  5 LSK
-2             | active           | Register a delegate                                                      |  25 LSK
-3             | active           | Submit vote(s) for delegates                                  |  1 LSK
-4             | active           | Multisignature registration                                     | 5 LSK per key in keysgroup
- 5            | active           | Register an application on the blockchain    | 25 LSK
- 6            | disabled     | Transfer Lisk into a sidechain                              | 0.1 LSK
- 7            | disabled     | Transfer Lisk out of a sidechain                         |  0.1 LSK
+**Type** | **Status**     | **Purpose**                                   | **Fee**
+---           | ---         | ---                                         | ---
+0             | active      | Transmit funds to a specified Lisk address  | 0.1 LSK
+1             | active      | Register a second passphrase                |  5 LSK
+2             | active      | Register a delegate                         |  25 LSK
+3             | active      | Submit vote(s) for delegates                |  1 LSK
+4             | active      | Multisignature registration                 | 5 LSK per key in keysgroup
+ 5            | active      | Register an application on the blockchain   | 25 LSK
+ 6            | disabled    | Transfer Lisk into a sidechain              | 0.1 LSK
+ 7            | disabled    | Transfer Lisk out of a sidechain            |  0.1 LSK
 
 ## Transaction Signing
 
@@ -28,11 +28,11 @@ The other fields will be added to this schema depending on the transaction type.
 
 A signed transaction uses the following flow:
 
-(image: lisk_protocol-txid.png)
+![lisk_protocol-txid](lisk_protocol-txid.png "lisk_protocol-txid")
 
 With a second signature the flow looks like this:
 
-(image: lisk_protocol-2ndtxid.png)
+![lisk_protocol-2ndtxid](lisk_protocol-2ndtxid.png "lisk_protocol-2ndtxid")
 
 ## Balance Transfer Transaction
 
@@ -46,7 +46,7 @@ Optionally, the user can include a data field to the balance transfer transactio
 
 The following figure is a representation of a default transaction object (no optional data field included):
 
-(image: lisk_protocol-type0.png)
+![lisk_protocol-type0](lisk_protocol-type0.png "lisk_protocol-type0")
 
 The following figure is a representation of the JSON.
 
@@ -80,7 +80,7 @@ This data block is then signed using the user’s passphrase, and the signature 
 
 The resulting object is represented by the following diagram:
 
-(image: lisk_protocol-type1.png)
+![lisk_protocol-type1](lisk_protocol-type1.png "lisk_protocol-type1")
 
 The JSON object that will be broadcast on the network is shown below:
 
@@ -119,7 +119,7 @@ This data block is then signed using the account's passphrase, and the signature
 
 The resulting object is represented by the following diagram:
 
-(image: lisk_protocol-type2.png)
+![lisk_protocol-type2](lisk_protocol-type2.png "lisk_protocol-type2")
 
 The JSON object that will be broadcast to the network follows the format below:
 
@@ -159,7 +159,7 @@ This data block is then signed using the account's passphrase, and the signature
 
 The resulting object is represented by the following diagram:
 
-(image: lisk_protocol-type3.png)
+![lisk_protocol-type3](lisk_protocol-type3.png "lisk_protocol-type3")
 
 The JSON object that will be broadcast to the network is the follows the format below:
 
@@ -198,7 +198,7 @@ This data block is then signed using the user’s passphrase, and the signature 
 
 The resulting object is represented by the following diagram:
 
-(image: lisk_protocol-type4.png)
+![lisk_protocol-type4](lisk_protocol-type4.png "lisk_protocol-type4")
 
 The JSON object that will be broadcast to the network follows the format below:
 
@@ -242,7 +242,7 @@ Additional fields can be specified:
 
 Once those fields have been specified, the system will compute the sender account's public key, and start building the transaction’s data block described in the following figure (note that if second passphrase or multisignature are registered in the address, the corresponding fields must be specified too):
 
-(image: lisk_protocol-type5a.png)
+![lisk_protocol-type5a](lisk_protocol-type5a.png "lisk_protocol-type5a")
 
 This data block is then signed using the account's passphrase, and the signature is appended to the data block. The system will then compute the fee of the transaction. In the present implementation, the fee for an application registration is 25 LSK. The following is a representation of the resulting JSON object that will be broadcast to the network:
 
@@ -290,7 +290,7 @@ An In Transfer transaction is a transaction used to transfer funds from the main
 
 Once this information is given, the system can compute the sender account's public key and begins building the transaction’s data block with a maximum of 73 bytes as described in the following figure (note that if second passphrase or multisignature are registered in the address, the corresponding fields must be specified too):
 
-(image: lisk_protocol-type6.png)
+![lisk_protocol-type6](lisk_protocol-type6.png "lisk_protocol-type6")
 
 This data block is then signed using the account's passphrase, and the signature is appended to the data block. The system will then compute the fee of the transaction. In the present implementation, the fee for an In Transfer transaction is 0.1 LSK. 
 

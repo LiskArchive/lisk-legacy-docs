@@ -70,7 +70,7 @@ git checkout master
 git merge -s subtree dev-core
 ```
 
-The master branch gets a new tag each time new content from the `dev-` branches is merged. The tag is simple date format, so e.g. new content got merged into `master` at February the 15th 2018, the tag for master would be `lisk-docs-2018-02-15`.
+The master branch gets a new tag each time new content from the `dev-` branches is merged. The tag is simple date format, e.g. new content got merged into `master` at February the 15th 2018, the tag for master would be `lisk-docs-2018-02-15`.
 
 ### Changes between version releases
 
@@ -118,7 +118,7 @@ git merge -s subtree dev-core
 
 ## Style guidelines
 
-To keep the documentation experience intuitive and consistent for the user, each products' documentation needs to follow the common style guidelines for Lisk Documentation.
+To keep the documentation experience intuitive and consistent for the user, each product documentation needs to follow the common style guidelines for Lisk Documentation.
 
 Please read it carefully and use it as a checklist before and after every participation.
 
@@ -193,7 +193,7 @@ When to use new pages, sub pages or sections for new content.
 
 #### Introduction page
 
-On root level of each products documentation you find an introduction page for the respective product. This page is always required.
+On root level of each product documentation you find an introduction page for the respective product. This page is always required.
 
 An introduction page should have at least the following sections:
 

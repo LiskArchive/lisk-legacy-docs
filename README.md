@@ -72,7 +72,7 @@ git merge -s subtree dev-core
 
 The master branch gets a new tag each time new content from the `dev-` branches is merged. The tag is simple date format, e.g. new content got merged into `master` at February the 15th 2018, the tag for master would be `lisk-docs-2018-02-15`.
 
-### Changes between version releases
+### Changes between versions
 
 In case changes to docs need to be done after the official release of the documentation, create a new branch for updating the content like this:
 

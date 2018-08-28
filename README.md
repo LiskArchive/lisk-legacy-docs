@@ -130,7 +130,7 @@ Headings create automatically internal anchors that can be referenced in other p
 #### Cross-reference links
 
 Info | Note
---- | ---
+---- | ----
 ![info note](info-icon.png "Info Note") | The cross-reference links can be easily broken. Remember this section when removing or adding pages, sections or headings.
 
 ##### When to use references
@@ -140,7 +140,7 @@ Info | Note
 ##### How to create references
 
 Info | Note
---- | ---
+---- | ----
 ![info note](info-icon.png "Info Note") | Use internal / relative links instead of external links where possible.
 
 ```
@@ -156,7 +156,7 @@ Info | Note
 #### Images
 
 Info | Note
---- | ---
+---- | ----
 ![info note](info-icon.png "Info Note") | Only include images, if they are informative for the user.
 
 If you want to include a picture on a page, upload the image in the same folder and use a relative link to the image.
@@ -195,17 +195,17 @@ The following list gives some suggestions how to structure the content:
 
 If certain content needs to be highlighted or deserves special attention from the reader, use notes as described below.
 
-Level | Color | Use Case
---- | --- | ---
-Info | blue | For informative notes that need attention.
+Level   | Color  | Use Case
+------- | ------ | --------
+Info    | blue   | For informative notes that need attention.
 Warning | orange | For important notes and warnings.
-Success | green | E.g. for outlining supported platforms.
-Error | red | E.g. for not supported platforms
+Success | green  | E.g. for outlining supported platforms.
+Error   | red    | E.g. for not supported platforms.
 
 Example:
 
 ```
 Info | Note
---- | ---
+---- | ----
 ![info note](info-icon.png "Info Note") | Only include images, if they are informative for the user.
 ```

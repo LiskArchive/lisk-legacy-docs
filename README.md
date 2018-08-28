@@ -18,7 +18,7 @@
 
 This section describes general processes that need to be followed when contributing to the `lisk-docs` repository.
 
-Each product has its own **development branch**, `dev-{product}`. This development branches are a [subtree](https://git-scm.com/book/en/v1/Git-Tools-Subtree-Merging) of the `lisk-docs` repository, which contain only the relevant documentation files of the respective product. These branches contain the latest changes in the documentation of the product, e.g. documentation for unreleased software versions.
+Each product has its own **development branch**, `dev-{product}`. These development branches are a [subtree](https://git-scm.com/book/en/v1/Git-Tools-Subtree-Merging) of the `lisk-docs` repository, which contain only the relevant documentation files of the respective product. These branches contain the latest changes in the documentation of the product, e.g. documentation for unreleased software versions.
 
 The subtrees are created with the following command:
 
@@ -26,13 +26,13 @@ The subtrees are created with the following command:
 git subtree split -P <name-of-folder> -b <name-of-new-branch>
 ```
 
-For each new version of the product, that needs updates / changes in the documentation, a corresponding Milestone and Branch will be created. Each **version branch** is branched from the development branch for the repective product.
+For each new version of the product, that needs updates / changes in the documentation, a corresponding Milestone and Branch will be created. Each **version branch** is branched from the development branch for the respective product.
 
 E.g. For Lisk Core version 1.1.0
 - the Milestone would be: `Core 1.1.0`
 - the version branch would be: `dev-core-1-1-0`
 
-**Example:** How to create a new version branch for lisk-elements 2.0 documentation.
+**Example:** How to create a new version branch for `2.0.0` of the `lisk-elements` documentation.
 
 ```bash
 git checkout dev-elements # change to dev-branch
@@ -50,8 +50,8 @@ New issues must be labeled after Product, and should be added to a Milestone.
 2. Before working on an issue, **make sure the issue is assigned to you**.
 3. **Clone** the `lisk-docs` repository from github: `git clone git@github.com:LiskHQ/lisk-docs.git` (in case you haven't done that already).
 4. Check out the branch you want to write documentation for: `git checkout dev-{product}-{version}`
-and **pull latest changes** : `git pull origin dev-{product}-{version}`. Be sure `{version}` matches the version mentioned in the corresponding issue.
-5. Check out a new branch from the version branch which will contain all the changes to solve the issue you are working on. **Name the branch** in this pattern: `123-description-of-the-branch`, where `123` is the issue number of the issue you are trying to solve.
+and **pull the latest changes** : `git pull origin dev-{product}-{version}`. Be sure `{version}` matches the version mentioned in the corresponding issue.
+5. Check out a new branch from the version branch which will contain all the changes to solve the issue you are working on. **Name the branch** using this pattern: `123-description-of-the-branch`, where `123` is the issue number of the issue you are trying to solve.
 6. Make your changes as intended, commit them and **push it back to github**: `git push origin 123-description-of-the-branch`.
 7. On github, create a PR as usual: Reference the issue it solves, and add a short summary of the made changes.
 

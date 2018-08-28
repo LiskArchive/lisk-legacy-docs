@@ -82,7 +82,7 @@ git checkout dev-commander-{version}
 git merge -s subtree master
 ```
 
-### Releasing new Versions
+### Releasing new versions
 
 When all issues that belong to a Milestone are closed, the current version branch is merged into the `dev-` branch.
 
@@ -99,13 +99,13 @@ git merge -s subtree dev-core
 
 The master branch gets a new tag each time new content from the `dev-` branches is merged. The tag is simple date format, so e.g. new content got merged into `master` at february the 15th 2018, the tag for master would be `lisk-docs-2018-02-15`
 
-## Style Guidelines
+## Style guidelines
 
 To keep the documentation experience intuitive and consistent for the user, each products' documentation needs to follow the common Style Guidelines for Lisk Documentation.
 
 Please read it carefully and use it as a checklist before and after every participation.
 
-### Writing in Markdown
+### Writing in markdown
 
 The whole documentation content is purely written in Markdown.
 
@@ -134,6 +134,7 @@ Info | Note
 ![info note](info-icon.png "Info Note") | The cross-reference links can be easily broken. Remember this section when removing or adding pages, sections or headings.
 
 ##### When to use references
+
 - In Table of content
 - Inside of the content. Scan content for helpful cross-references
 

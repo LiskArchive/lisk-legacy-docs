@@ -21,7 +21,7 @@ This section describes general processes that need to be followed when contribut
 Each product has its own **development branch**, `dev-{product}`. This development branches are a [subtree](https://git-scm.com/book/en/v1/Git-Tools-Subtree-Merging) of the `lisk-docs` repository, which contain only the relevant documentation files of the respective product. These branches contain the latest changes in the documentation of the product, e.g. documentation for unreleased software versions.
 
 The subtrees are created with the following command:
-```
+```bash
 git subtree split -P <name-of-folder> -b <name-of-new-branch>
 ```
 
@@ -32,10 +32,10 @@ E.g. For Lisk Core version 1.1.0
 - the version branch would be: `dev-core-1-1-0`
 
 **Example:** How to create a new version branch for lisk-elements 2.0 documentation.
-```
-git checkout dev-elements // change to dev-branch
-git pull origin dev-elements // pull latest changes
-git checkout -b dev-elements-2-0-0 // create version branch
+```bash
+git checkout dev-elements # change to dev-branch
+git pull origin dev-elements # pull latest changes
+git checkout -b dev-elements-2-0-0 # create version branch
 ```
 
 The master branch always contains the official state of the Lisk documentation, which should be identical with content in [https://docs.lisk.io](https://docs.lisk.io).
@@ -58,20 +58,20 @@ and **pull latest changes** : `git pull origin dev-{product}-{version}`. Be sure
 Hotfixes are changes that affect the current version of the documentation, as it can be found under https://docs.lisk.io.
 
 1. First, create a **patch branch** from master:
-```
+```bash
 git checkout master
 git pull origin master
-git checkout -b dev-commander-{version}-p1 // create patch branch
+git checkout -b dev-commander-{version}-p1 # create patch branch
 ```
 
 2. Make your changes and push to github:
-```
+```bash
 git push origin dev-commander-{version}-p1
 ```
 On Github, create a Pull Request with `master` as base branch.
 
 3. Port the changes back to the `dev-` branches, when necessary:
-```
+```bash
 git checkout dev-commander-{version}
 git merge -s subtree master
 ```
@@ -85,7 +85,7 @@ The `dev-` branch is then tagged with the corresponding version number.
 At release date of the new version, all new content from the development branches is merged into the `master` branch.
 
 **Example:** Merging changes from a development branch into master:
-```
+```bash
 git checkout master
 git merge -s subtree dev-core
 ```

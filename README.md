@@ -135,7 +135,7 @@ Info | Note
 
 ##### When to use references
 
-- In Table of content
+- In table of contents
 - Inside of the content. Scan content for helpful cross-references
 
 ##### How to create references
@@ -180,7 +180,7 @@ On root level of each products documentation you find an introduction page for t
 
 An introduction page should have at least the following sections:
 
-1. **Table of content:** The introduction should start with a table of content whith relative links to all other existing documentation sites for the respective product.
+1. **Table of contents:** The introduction should start with a table of contents with relative links to all other existing documentation sites for the respective product.
 2. **Product description:** Try to describe the product precisely in 1-2 sentences. Then, elaborate about the general purpose of the product, e.g. highlight use cases and top features.
 3. **Codebase reference:** Link to the github repository of the product, and reference contribution guidelines.
 
@@ -188,7 +188,7 @@ An introduction page should have at least the following sections:
 
 The following list gives some suggestions how to structure the content:
 
-1. **Parent pages:** A page that contains one or more child pages. It should always start with a table of content, referencing all existing child pages.
+1. **Parent pages:** A page that contains one or more child pages. It should always start with a table of contents, referencing all existing child pages.
 2. **Child pages:** If content is connected, but can stand independent from each other.
 3. **Section in page:** Content that is closely connected to the content of the other sections/ the main title of the page.
 

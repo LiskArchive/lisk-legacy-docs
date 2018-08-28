@@ -53,7 +53,7 @@ New issues must be labeled after Product, and should be added to a milestone.
 and **pull the latest changes** : `git pull origin dev-{product}-{version}`. Be sure `{version}` matches the version mentioned in the corresponding issue.
 5. Check out a new branch from the version branch which will contain all the changes to solve the issue you are working on. **Name the branch** using this pattern: `123-description-of-the-branch`, where `123` is the issue number of the issue you are trying to solve.
 6. Make your changes as intended, commit them and **push it back to GitHub**: `git push origin 123-description-of-the-branch`.
-7. On GitHub, create a pull request as usual: Reference the issue it solves, and add a short summary of the made changes.
+7. On GitHub, open a pull request as usual, reference the issue it solves, and add a short summary of the made changes.
 
 ### Hotfixes
 
@@ -73,7 +73,7 @@ git checkout -b dev-commander-{version}-p1 # create patch branch
 git push origin dev-commander-{version}-p1
 ```
 
-On Github, create a pull request with `master` as base branch.
+On Github, open a pull request with `master` as the base branch.
 
 3. Port the changes back to the `dev-` branches, when necessary:
 

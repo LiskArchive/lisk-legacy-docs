@@ -97,11 +97,11 @@ git checkout master
 git merge -s subtree dev-core
 ```
 
-The master branch gets a new tag each time new content from the `dev-` branches is merged. The tag is simple date format, so e.g. new content got merged into `master` at february the 15th 2018, the tag for master would be `lisk-docs-2018-02-15`
+The master branch gets a new tag each time new content from the `dev-` branches is merged. The tag is simple date format, so e.g. new content got merged into `master` at February the 15th 2018, the tag for master would be `lisk-docs-2018-02-15`.
 
 ## Style guidelines
 
-To keep the documentation experience intuitive and consistent for the user, each products' documentation needs to follow the common Style Guidelines for Lisk Documentation.
+To keep the documentation experience intuitive and consistent for the user, each products' documentation needs to follow the common style guidelines for Lisk Documentation.
 
 Please read it carefully and use it as a checklist before and after every participation.
 
@@ -113,7 +113,7 @@ For reference: [Markdown Cheatsheet](https://github.com/adam-p/markdown-here/wik
 
 #### Headings
 
-Headings create automatically internal anchors that can be referenced in other parts of the documentation. Use Headings to structure the content of each page.
+Headings create automatically internal anchors that can be referenced in other parts of the documentation. Use headings to structure the content of each page.
 
 ```
 # Main title

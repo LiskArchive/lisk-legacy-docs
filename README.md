@@ -190,7 +190,7 @@ The following list gives some suggestions how to structure the content:
 
 1. **Parent pages:** A page that contains one or more child pages. It should always start with a table of contents, referencing all existing child pages.
 2. **Child pages:** If content is connected, but can stand independent from each other.
-3. **Section in page:** Content that is closely connected to the content of the other sections/ the main title of the page.
+3. **Section in page:** Content that is closely connected to the content of the other sections / the main title of the page.
 
 ### Notes
 

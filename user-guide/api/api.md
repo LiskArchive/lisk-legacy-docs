@@ -39,18 +39,17 @@ Content:
 # Lisk Explorer API
 
 ## List of endpoints
-- [Accounts](/documentation/lisk-explorer/user-guide/api#accounts)
-- [Blocks](/documentation/lisk-explorer/user-guide/api#blocks)
-- [Common](/documentation/lisk-explorer/user-guide/api#common)
-- [Delegates](/documentation/lisk-explorer/user-guide/api#delegates)
-- [Exchanges](/documentation/lisk-explorer/user-guide/api#exchanges)
-- [Statistics](/documentation/lisk-explorer/user-guide/api#statistics)
-- [Transactions](/documentation/lisk-explorer/user-guide/api#transactions)
+- [Accounts](#accounts)
+- [Blocks](#blocks)
+- [Common](#common)
+- [Delegates](#delegates)
+- [Exchanges](#exchanges)
+- [Statistics](#statistics)
+- [Transactions](#transactions)
 
-<boxinfo markdown="1">
-######Information
-All API endpoints are relative to the /api prefix.
-</boxinfo>
+Info | Note 
+--- | --- 
+![info note](info-icon.png "Info Note") | All API endpoints are relative to the /api prefix.
 
 ## Accounts
 

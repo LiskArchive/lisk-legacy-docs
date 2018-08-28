@@ -38,7 +38,7 @@ Content:
 
 # Lisk Explorer Installation
 
-This section details how to install Lisk Explorer. If you have satisfied the requirements from the [Pre-Installation](/documentation/lisk-explorer/setup/pre-install) section, you can proceed with the installation.
+This section details how to install Lisk Explorer. If you have satisfied the requirements from the [Pre-Installation](../pre-install/pre-install.md) section, you can proceed with the installation.
 
 ## Install Lisk Explorer from Source (GitHub)
 

@@ -2,8 +2,8 @@
 
 - [Workflow](#workflow)
   - [Adding new content](#adding-new-content)
-  - [Hotfixes](#hotfixes)
   - [Releasing new versions](#releasing-new-versions)
+  - [Changes between versions](#changes-between-versions)
 - [Style Guidelines](#style-guidelines)
   - [Writing in Markdown](#writing-in-markdown)
     - [Headings](#headings)
@@ -55,38 +55,11 @@ and **pull the latest changes** : `git pull origin dev-{product}-{version}`. Be 
 6. Make your changes as intended, commit them and **push it back to GitHub**: `git push origin 123-description-of-the-branch`.
 7. On GitHub, open a pull request as usual, reference the issue it solves, and add a short summary of the made changes.
 
-### Hotfixes
-
-Hotfixes are changes that affect the current version of the documentation, as it can be found under https://docs.lisk.io.
-
-1. First, create a **patch branch** from master:
-
-```bash
-git checkout master
-git pull origin master
-git checkout -b dev-commander-{version}-p1 # create patch branch
-```
-
-2. Make your changes and push to GitHub:
-
-```bash
-git push origin dev-commander-{version}-p1
-```
-
-On Github, open a pull request with `master` as the base branch.
-
-3. Port the changes back to the `dev-` branches, when necessary:
-
-```bash
-git checkout dev-commander-{version}
-git merge -s subtree master
-```
-
 ### Releasing new versions
 
 When all issues that belong to a milestone are closed, the current version branch is merged into the `dev-` branch.
 
-The `dev-` branch is then tagged with the corresponding version number.
+The `dev-` branch is then tagged with the corresponding version number and the product name: `{product}-{version}`
 
 At release date of the new version, all new content from the development branches is merged into the `master` branch.
 
@@ -98,6 +71,50 @@ git merge -s subtree dev-core
 ```
 
 The master branch gets a new tag each time new content from the `dev-` branches is merged. The tag is simple date format, so e.g. new content got merged into `master` at February the 15th 2018, the tag for master would be `lisk-docs-2018-02-15`.
+
+### Changes between version releases
+
+In case changes to docs need to be done after the official release of the documentation, create a new branch for updating the content like this:
+
+1. Check out the dev branch of the respective product.
+
+2. Create a branch from the tag of the version you would like to update the content.
+The name of the branch follows the general pattern 
+`dev-{product}-{software-version}-{docs-version}`, where `docs-version` depends on the extent of the content change:
+
+- `1.0.1` - small patches like typos.
+- `1.1.0` - medium changes like new paragraphs
+- `2.0.0` - major changes like rewriting the whole documentation from scratch
+
+Example: Creating a branch for adding a new paragraph to the documentation of lisk core 1.0.0.
+```bash
+git checkout dev-core
+git checkout -b dev-core-1.0.0-1.1.0 1.0.0 // create a new branch from the version tag
+```
+
+3. Make your changes, push the branch back to Github, and open your PR directly against the dev branch of the respective product.
+
+4. After review, the PR will be merged into the dev-branch and tagged with the product version as well as the new docs version.
+```bash
+git checkout dev-core
+git merge dev-core-1.0.0-1.1.0
+```
+
+5. Tag the new version of the documentation the same way you named the branch.
+```bash
+git tag core-1.0.0-1.1.0
+```
+
+6. Remember to port the changes to all newer version branches of the documentation when necessary.
+```bash
+git checkout dev-core-{version}
+git merge core-1.0.0-1.1.0
+```
+7. As last step, the changes get merged into master as usual.
+```bash
+git checkout master
+git merge -s subtree dev-core
+```
 
 ## Style guidelines
 

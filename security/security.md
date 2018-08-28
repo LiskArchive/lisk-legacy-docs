@@ -8,7 +8,7 @@ The process used to generate the key pair operates in the following manner:
 
 When a user creates an account, a [BIP39 mnemonics](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) (the passphrase) is generated for the user. This passphrase is hashed using the SHA-256 hash function into a 256-bit string. This hash is subsequently used as a seed in [Ed25519](https://ed25519.cr.yp.to/) to generate the private key ks and derive its public key kp.
 
-(image: lisk_protocol-keypair.png)
+![lisk_protocol-keypair](lisk_protocol-keypair.png "lisk_protocol-keypair")
 
 With this private key, the user is able to sign transactions into a transaction object and broadcast that object to the network. The public key is included as part of the transaction and the nodes that receive the transaction are able to verify the validity of the signature using kp. This provides effective security for both the user and the network since ks is known only to the user and kp can validate that the signature is valid.
 

@@ -49,7 +49,7 @@ A signed block generates its blockId using the following flow:
 
 ![lisk_protocol-blockid](lisk_protocol-blockid.png "lisk_protocol-blockid")
 
-##Block Payload
+## Block Payload
 The payload of the block is comprised of up to 25 transactions present on the system signing the block. The maximum number of available transactions up to this limit will be included, provided that the payload for a transaction does not exceed the maximum size for each transaction type. 
 
 These maximum sizes are listed below:
@@ -66,4 +66,4 @@ The maximum size of a block payload can then be determined as 58150 bytes if eve
 
 ## Block Generation
 
-Block generation occurs every 10 seconds within the Lisk network using a DPoS (Delegated Proof of Stake) consensus protocol. Delegates further use [broadhash consensus](../consensus#broadhash-consensus) as a guidance strategy to generate the block in order to prevent forks in the network.
+Block generation occurs every 10 seconds within the Lisk network using a DPoS (Delegated Proof of Stake) consensus protocol. Delegates further use [broadhash consensus](../consensus/consensus.md#broadhash-consensus) as a guidance strategy to generate the block in order to prevent forks in the network.

@@ -36,7 +36,7 @@ Which can be found as constants in the code as:
 
 Info | Note 
 --- | --- 
-![info note](info-icon.png "Info Note") | Block Reward Reduction
+![info note](../info-icon.png "Info Note") | Block Reward Reduction
 |  | milestones: [
 |  | 500000000, // Initial Reward begins at block 1,451,520
 |  | 400000000, // Milestone 1 begins at block 4,451,520

@@ -21,6 +21,7 @@ This section describes general processes that need to be followed when contribut
 Each product has its own **development branch**, `dev-{product}`. This development branches are a [subtree](https://git-scm.com/book/en/v1/Git-Tools-Subtree-Merging) of the `lisk-docs` repository, which contain only the relevant documentation files of the respective product. These branches contain the latest changes in the documentation of the product, e.g. documentation for unreleased software versions.
 
 The subtrees are created with the following command:
+
 ```bash
 git subtree split -P <name-of-folder> -b <name-of-new-branch>
 ```
@@ -32,6 +33,7 @@ E.g. For Lisk Core version 1.1.0
 - the version branch would be: `dev-core-1-1-0`
 
 **Example:** How to create a new version branch for lisk-elements 2.0 documentation.
+
 ```bash
 git checkout dev-elements # change to dev-branch
 git pull origin dev-elements # pull latest changes
@@ -58,6 +60,7 @@ and **pull latest changes** : `git pull origin dev-{product}-{version}`. Be sure
 Hotfixes are changes that affect the current version of the documentation, as it can be found under https://docs.lisk.io.
 
 1. First, create a **patch branch** from master:
+
 ```bash
 git checkout master
 git pull origin master
@@ -65,12 +68,15 @@ git checkout -b dev-commander-{version}-p1 # create patch branch
 ```
 
 2. Make your changes and push to github:
+
 ```bash
 git push origin dev-commander-{version}-p1
 ```
+
 On Github, create a Pull Request with `master` as base branch.
 
 3. Port the changes back to the `dev-` branches, when necessary:
+
 ```bash
 git checkout dev-commander-{version}
 git merge -s subtree master
@@ -85,6 +91,7 @@ The `dev-` branch is then tagged with the corresponding version number.
 At release date of the new version, all new content from the development branches is merged into the `master` branch.
 
 **Example:** Merging changes from a development branch into master:
+
 ```bash
 git checkout master
 git merge -s subtree dev-core
@@ -157,6 +164,7 @@ If you want to include a picture on a page, upload the image in the same folder 
 Image name should be: `lisk_PRODUCT-DEFINITION`. Optionally and depending on how the documentation grows, another tag can be added as section ending in `lisk_PRODUCT-SECTION-DEFINITION`
 
 Example:
+
 ```
 ![alt text for lisk logo](lisk_protocol-Logo.svg "Logo Title Text")
 ```
@@ -195,6 +203,7 @@ Success | green | E.g. for outlining supported platforms.
 Error | red | E.g. for not supported platforms
 
 Example:
+
 ```
 Info | Note 
 --- | --- 

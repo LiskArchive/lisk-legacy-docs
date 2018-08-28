@@ -52,7 +52,7 @@ get([options])
 
 #### Parameters
 
-`options`: See options in the [Core API documentation](/documentation/lisk-core/user-guide/api/1-0).
+`options`: See options in the [Core API documentation](/lisk-core/user-guide/api/1-0/1-0.json).
 
 #### Return value
 
@@ -79,7 +79,7 @@ broadcast(transaction)
 
 #### Parameters
 
-`transaction`: See details in the [Core API documentation](/documentation/lisk-core/user-guide/api/1-0).
+`transaction`: See details in the [Core API documentation](/lisk-core/user-guide/api/1-0/1-0.json).
 
 #### Return value
 

@@ -121,16 +121,16 @@ lisk.APIClient.constants.MAINNET_NODES; // Array of default mainnet nodes
 Requests to a node are made via the `APIClient` instance’s respective resource, and return a promise. In the case of a response with a status code in the `2xx` range, these promises are fulfilled with a relevant object, otherwise they are rejected with an appropriate error message.
 
 Documentation for each resource can be found on the following pages:
-- [Accounts](/documentation/lisk-elements/user-guide/api-client/accounts)
-- [Blocks](/documentation/lisk-elements/user-guide/api-client/blocks)
-- [Dapps](/documentation/lisk-elements/user-guide/api-client/dapps)
-- [Delegates](/documentation/lisk-elements/user-guide/api-client/delegates)
-- [Node](/documentation/lisk-elements/user-guide/api-client/node)
-- [Peers](/documentation/lisk-elements/user-guide/api-client/peers)
-- [Signatures](/documentation/lisk-elements/user-guide/api-client/signatures)
-- [Transactions](/documentation/lisk-elements/user-guide/api-client/transactions)
-- [Voters](/documentation/lisk-elements/user-guide/api-client/voters)
-- [Votes](/documentation/lisk-elements/user-guide/api-client/votes)
+- [Accounts](accounts/accounts.md)
+- [Blocks](blocks/blocks.md)
+- [Dapps](dapps/dapps.md)
+- [Delegates](delegates/delegates.md)
+- [Node](node/node.md)
+- [Peers](peers/peers.md)
+- [Signatures](signatures/signatures.md)
+- [Transactions](transactions/transactions.md)
+- [Voters](voters/voters.md)
+- [Votes](votes/votes.md)
 
 ## Methods not associated with a resource
 

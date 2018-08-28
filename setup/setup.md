@@ -38,13 +38,13 @@ Content:
 
 # Lisk Elements Setup
 
-- [Pre-Installation](/documentation/lisk-elements/setup#pre-installation)
-  - [Determine if your platform can run Node](/documentation/lisk-elements/setup#determine-if-your-platform-can-run-node)
-  - [Install Node](/documentation/lisk-elements/setup#install-node)
-- [Installation](/documentation/lisk-elements/setup#installation)
-  - [Install Lisk Elements via NPM](/documentation/lisk-elements/setup#verify-installation)
-  - [Install Lisk Elements from Source (GitHub)](/documentation/lisk-elements/setup#verify-installation)
-  - [Load Lisk Elements via CDN](/documentation/lisk-elements/setup#verify-installation)
+- [Pre-Installation](#pre-installation)
+  - [Determine if your platform can run Node](#determine-if-your-platform-can-run-node)
+  - [Install Node](#install-node)
+- [Installation](#installation)
+  - [Install Lisk Elements via NPM](#verify-installation)
+  - [Install Lisk Elements from Source (GitHub)](#verify-installation)
+  - [Load Lisk Elements via CDN](#verify-installation)
 
 ## Pre-Installation
 
@@ -52,17 +52,13 @@ Lisk Elements requires [Node.js](https://nodejs.org/) as the underlying engine f
 
 ### Determine if your platform can run Node
 
-<boxsuccess markdown="1">
 ######Supported Platforms
 - Windows 10
 - macOS
 - Linux
-</boxsuccess>
 
-<boxerror markdown="1">
 ######Not Supported
 - Platforms without NodeJS 6.3.x or higher
-</boxerror>
 
 ### Install Node
 

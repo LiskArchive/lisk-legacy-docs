@@ -74,43 +74,50 @@ The master branch gets a new tag each time new content from the `dev-` branches 
 
 ### Changes between versions
 
-In case changes to docs need to be done after the official release of the documentation, create a new branch for updating the content like this:
+In case changes to the documentation need to be made after an official release of the documentation, create a new branch for updating the content like so:
 
-1. Check out the dev branch of the respective product.
+1. Check out the dev-branch of the respective product, e.g. `dev-core`.
 
-2. Create a branch from the tag of the version you would like to update the content.
-The name of the branch follows the general pattern 
-`dev-{product}-{software-version}-{docs-version}`, where `docs-version` depends on the extent of the content change:
-
-- `1.0.1` - small patches like typos.
-- `1.1.0` - medium changes like new paragraphs
-- `2.0.0` - major changes like rewriting the whole documentation from scratch
-
-Example: Creating a branch for adding a new paragraph to the documentation of lisk core 1.0.0.
 ```bash
 git checkout dev-core
-git checkout -b dev-core-1.0.0-1.1.0 1.0.0 // create a new branch from the version tag
 ```
 
-3. Make your changes, push the branch back to Github, and open your PR directly against the dev branch of the respective product.
+2. Create a branch from the tag of the version to be updated. The name of the branch follows the general pattern: `dev-{product}-{software-version}-{docs-version}`, where `docs-version` depends on the extent of the content change:
 
-4. After review, the PR will be merged into the dev-branch and tagged with the product version as well as the new docs version.
+- `1.0.1` - For patches, e.g. content corrections
+- `1.1.0` - For minor changes, e.g. additional content
+- `2.0.0` - For major changes, e.g. content rewrites
+
+For example, when releasing a minor version for adding a new paragraph to `1.0.0` of the `lisk-core` documentation.
+
+```bash
+git checkout -b dev-core-1.0.0-1.1.0 1.0.0 # create a new branch from the version tag
+```
+
+3. Make the changes, push the branch to GitHub, then open a pull request against the dev-branch of the respective product.
+
+4. After the pull request has been approved, merge the changes into the dev-branch.
+
 ```bash
 git checkout dev-core
 git merge dev-core-1.0.0-1.1.0
 ```
 
-5. Tag the new version of the documentation the same way you named the branch.
+5. Tag a new documentation version using the same name as the branch.
+
 ```bash
 git tag core-1.0.0-1.1.0
 ```
 
-6. Remember to port the changes to all newer version branches of the documentation when necessary.
+6. Port the changes to all newer version branches of the documentation where necessary.
+
 ```bash
 git checkout dev-core-{version}
 git merge core-1.0.0-1.1.0
 ```
-7. As last step, the changes get merged into master as usual.
+
+7. Finally, merge the changes into the master branch.
+
 ```bash
 git checkout master
 git merge -s subtree dev-core

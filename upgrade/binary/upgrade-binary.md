@@ -7,7 +7,7 @@ Please choose the instructions specific to the network (Mainnet or Testnet) your
 
 Important | Note 
 --- | --- 
-![important note](important-icon.png "Info Note") | Before any upgrade process, we strongly recommend you to check always your `config.json` file. For example, the upgrade from 0.9 to 1.0  includes many changes which turns this step into an **important** one that requires your attention. See this [document for further reference](../migration/migration.md#migrate-configuration).
+![important note](../../important-icon.png "Info Note") | Before any upgrade process, we strongly recommend you to check always your `config.json` file. For example, the upgrade from 0.9 to 1.0  includes many changes which turns this step into an **important** one that requires your attention. See this [document for further reference](../migration/migration.md#migrate-configuration).
 
 ## Automated Upgrade Lisk Core
 
@@ -31,7 +31,7 @@ After running the above script manually or through `lisk_bridge.sh`,  you will b
 
 Important | Note 
 --- | --- 
-![important note](important-icon.png "Info Note") | You have to enable forging manually after the upgrade. Please follow this guide to [enable forging on your delegate node](../../user-guide/configuration/configuration.md#forging) for further details.
+![important note](../../important-icon.png "Info Note") | You have to enable forging manually after the upgrade. Please follow this guide to [enable forging on your delegate node](../../user-guide/configuration/configuration.md#forging) for further details.
 
 ## Manual Upgrade Lisk Core
 
@@ -100,4 +100,4 @@ bash installLisk.sh install -r test
 
 Info | Note 
 --- | --- 
-![info note](info-icon.png "Info Note") | You will be prompted for your installation directory, pressing 'enter' will choose the default.
+![info note](../../info-icon.png "Info Note") | You will be prompted for your installation directory, pressing 'enter' will choose the default.

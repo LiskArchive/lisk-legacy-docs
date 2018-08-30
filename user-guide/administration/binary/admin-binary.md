@@ -104,7 +104,7 @@ In case you want to create your own, just run the following script. It will:
 
 Info | Note 
 --- | --- 
-![info note](info-icon.png "Info Note") | Note, that this process may take a long time, depending on the size of your snapshot.
+![info note](../../../info-icon.png "Info Note") | Note, that this process may take a long time, depending on the size of your snapshot.
 
 ```shell
 bash lisk_snapshot.sh

@@ -38,7 +38,7 @@ sudo apt-get install curl wget tar unzip zip ntp
 
 Info | Note 
 --- | --- 
-![info note](info-icon.png "Info Note") | The `lisk` user itself **does not need** any `sudo` rights to run Lisk Core.
+![info note](../../../info-icon.png "Info Note") | The `lisk` user itself **does not need** any `sudo` rights to run Lisk Core.
 
 ```shell
 sudo adduser lisk

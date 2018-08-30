@@ -141,7 +141,7 @@ For best security, disable all access setting `api.enabled` to `false`.
 
 Important | Note 
 --- | --- 
-![important note](important-icon.png "Important Note") | This last configuration may prevent monitoring scripts from functioning.
+![important note](../../important-icon.png "Important Note") | This last configuration may prevent monitoring scripts from functioning.
 
 ## Forging
 
@@ -192,14 +192,16 @@ Forging
 4. Reload your Lisk Core process to make the changes  in the config effective, e.g. for Binary install, run : `bash lisk.sh reload`
 
 ### Enable/Disable Forging
+
 Info | Note 
 --- | --- 
-![info note](info-icon.png "Info Note") | The endpoint to perform this action is **idempotent** what it means, the result has to be the same, no matter how many times you execute the same command. 
+![info note](../../info-icon.png "Info Note") | The endpoint to perform this action is **idempotent** what it means, the result has to be the same, no matter how many times you execute the same command. 
 
 If you are running your Lisk Node from a local machine, you can enable forging through the API client, without further interruption.
+
 Important | Note 
 --- | --- 
-![important note](important-icon.png "Important Note") | Remember that after restarting you Lisk node, you must need to re-enable forging again.
+![important note](../../important-icon.png "Important Note") | Remember that after restarting you Lisk node, you must need to re-enable forging again.
 
 Use the following curl command to **enable the forging** for your delegate:
 ```curl
@@ -256,7 +258,7 @@ The result should be something like this:
 
 Info | Note 
 --- | --- 
-![info note](info-icon.png "Info Note") | To complete this step require a signed certificate (from a CA), or a locally signed certificate using LetsEncrypt. You will need both the private and public keys in a location that is accessible to Lisk.
+![info note](../../info-icon.png "Info Note") | To complete this step require a signed certificate (from a CA), or a locally signed certificate using LetsEncrypt. You will need both the private and public keys in a location that is accessible to Lisk.
 
 Next snippet highlights the essential parameters to enable SSL security on your node's connections:
 
@@ -276,7 +278,7 @@ Next snippet highlights the essential parameters to enable SSL security on your 
 
 Important | Note 
 --- | --- 
-![important note](important-icon.png "Important Note") | If SSL Port configured above `ssl.options.port` is within well known ports range (below 1024), you must alter the port specified with `setcap` or change it to be outside of that range. 
+![important note](../../important-icon.png "Important Note") | If SSL Port configured above `ssl.options.port` is within well known ports range (below 1024), you must alter the port specified with `setcap` or change it to be outside of that range. 
 
 **Setcap:** Only required to grant Lisk access to port 443
 

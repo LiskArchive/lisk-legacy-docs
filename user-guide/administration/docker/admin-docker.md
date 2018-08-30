@@ -46,5 +46,5 @@ Configuration variables always start with `LISK_` and are mapped to their path i
 
 Info | Note 
 --- | --- 
-![info note](info-icon.png "Info Note") | Adding an array component as environment variable in your docker compose is a bit tricky. For example, if you aim to enable forging on your node, you need to add the next variable which will be inserted as the **first** component in the array `forging.delegates`:`- LISK_FORGING_DELEGATES_1=<encrypted_passphrase>:<publickey>`
+![info note](../../../info-icon.png "Info Note") | Adding an array component as environment variable in your docker compose is a bit tricky. For example, if you aim to enable forging on your node, you need to add the next variable which will be inserted as the **first** component in the array `forging.delegates`:`- LISK_FORGING_DELEGATES_1=<encrypted_passphrase>:<publickey>`
 

@@ -99,7 +99,7 @@ node scripts/update_config.js <old_config_path> <new_config_path> [--password]
 
 Important | Note 
 --- | --- 
-![important note](inmportant-icon.png "Important Note") | Using **--password** as the command line option is just for testing purposes. **Do not use it in production environment**. It will expose your password to shell history. 
+![important note](../../important-icon.png "Important Note") | Using **--password** as the command line option is just for testing purposes. **Do not use it in production environment**. It will expose your password to shell history. 
 
 ### Migrate Passphrases
 The same script is able to encrypt old plain passphrases following the new mechanism. This is intended for those users who have a forging delegate or a delegate who can forge in a close future.

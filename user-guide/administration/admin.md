@@ -20,6 +20,6 @@ Lisk provides official snapshots of the blockchain, see [http://snapshots.lisk.i
 
 Info | Note 
 --- | --- 
-![info note](info-icon.png "Info Note") | [Creating own snapshots](binary/admin-binary.md#create-snapshot) is only supported for Lisk Core Binary distributions. Rebuilding from snapshot is explained for each distribution in the Administration section.
+![info note](../../info-icon.png "Info Note") | [Creating own snapshots](binary/admin-binary.md#create-snapshot) is only supported for Lisk Core Binary distributions. Rebuilding from snapshot is explained for each distribution in the Administration section.
 
 

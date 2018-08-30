@@ -45,7 +45,7 @@ In order to run and manage a Lisk Core node in the future, please create a separ
 
 Info | Note 
 --- | --- 
-![info note](info-icon.png "Info Note") | The `lisk` user itself **does not need** any `sudo` rights to run Lisk Core.
+![info note](../../../info-icon.png "Info Note") | The `lisk` user itself **does not need** any `sudo` rights to run Lisk Core.
     
 ```shell
 sudo adduser lisk
@@ -219,7 +219,7 @@ brew services stop redis
 
 Info | Note 
 --- | --- 
-![info note](info-icon.png "Info Note") | Lisk does not run on the redis default port of `6379`. Instead it is configured to run on port: `6380`. Due to this, in order to run Lisk, you have one of two options:
+![info note](../../../info-icon.png "Info Note") | Lisk does not run on the redis default port of `6379`. Instead it is configured to run on port: `6380`. Due to this, in order to run Lisk, you have one of two options:
 
 1. **Change the Lisk configuration**
 

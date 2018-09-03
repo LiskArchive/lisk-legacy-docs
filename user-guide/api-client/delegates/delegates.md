@@ -14,7 +14,7 @@ get([options])
 
 #### Parameters
 
-`options`: See options in the [Core API documentation](/documentation/lisk-core/user-guide/api/1-0).
+`options`: See options in the [Core API documentation](/lisk-core/user-guide/api/1-0/1-0.json).
 
 #### Return value
 
@@ -41,7 +41,7 @@ getStandby([options])
 
 #### Parameters
 
-`options`: See options in the [Core API documentation](/documentation/lisk-core/user-guide/api/1-0).
+`options`: See options in the [Core API documentation](/lisk-core/user-guide/api/1-0/1-0.json).
 
 #### Return value
 
@@ -68,7 +68,7 @@ getForgers([options])
 
 #### Parameters
 
-`options`: See options in the [Core API documentation](/documentation/lisk-core/user-guide/api/1-0).
+`options`: See options in the [Core API documentation](/lisk-core/user-guide/api/1-0/1-0.json).
 
 #### Return value
 
@@ -97,7 +97,7 @@ getForgingStatistics(address, [options])
 
 `address`: Address of the delegate to query.
 
-`options`: See options in the [Core API documentation](/documentation/lisk-core/user-guide/api/1-0).
+`options`: See options in the [Core API documentation](/lisk-core/user-guide/api/1-0/1-0.json).
 
 #### Return value
 

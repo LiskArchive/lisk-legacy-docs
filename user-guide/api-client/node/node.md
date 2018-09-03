@@ -14,7 +14,7 @@ getConstants([options])
 
 #### Parameters
 
-`options`: See options in the [Core API documentation](/documentation/lisk-core/user-guide/api/1-0).
+`options`: See options in the [Core API documentation](/lisk-core/user-guide/api/1-0/1-0.json).
 
 #### Return value
 
@@ -41,7 +41,7 @@ getStatus([options])
 
 #### Parameters
 
-`options`: See options in the [Core API documentation](/documentation/lisk-core/user-guide/api/1-0).
+`options`: See options in the [Core API documentation](/lisk-core/user-guide/api/1-0/1-0.json).
 
 #### Return value
 
@@ -70,7 +70,7 @@ getForgingStatus([options])
 
 #### Parameters
 
-`options`: See options in the [Core API documentation](/documentation/lisk-core/user-guide/api/1-0).
+`options`: See options in the [Core API documentation](/lisk-core/user-guide/api/1-0/1-0.json).
 
 #### Return value
 
@@ -99,7 +99,7 @@ updateForgingStatus([options])
 
 #### Parameters
 
-`options`: See options in the [Core API documentation](/documentation/lisk-core/user-guide/api/1-0).
+`options`: See options in the [Core API documentation](/lisk-core/user-guide/api/1-0/1-0.json).
 
 #### Return value
 
@@ -132,7 +132,7 @@ getTransactions(state, [options])
 
 `state`: One of `unprocessed`, `unconfirmed` or `unsigned`.
 
-`options`: See options in the [Core API documentation](/documentation/lisk-core/user-guide/api/1-0).
+`options`: See options in the [Core API documentation](/lisk-core/user-guide/api/1-0/1-0.json).
 
 #### Return value
 

@@ -14,7 +14,7 @@ get([options])
 
 #### Parameters
 
-`options`: See options in the [Core API documentation](/documentation/lisk-core/user-guide/api/1-0).
+`options`: See options in the [Core API documentation](/lisk-core/user-guide/api/1-0/1-0.json).
 
 #### Return value
 
@@ -43,7 +43,7 @@ getMultisignatureGroups(address, [options])
 
 `address`: A Lisk address string.
 
-`options`: See options in the [Core API documentation](/documentation/lisk-core/user-guide/api/1-0).
+`options`: See options in the [Core API documentation](/lisk-core/user-guide/api/1-0/1-0.json).
 
 #### Return value
 
@@ -72,7 +72,7 @@ getMultisignatureMemberships(address, [options])
 
 `address`: A Lisk address string.
 
-`options`: See options in the [Core API documentation](/documentation/lisk-core/user-guide/api/1-0).
+`options`: See options in the [Core API documentation](/lisk-core/user-guide/api/1-0/1-0.json).
 
 #### Return value
 

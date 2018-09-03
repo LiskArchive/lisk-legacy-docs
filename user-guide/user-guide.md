@@ -46,4 +46,3 @@ Pass arguments and options directly from the command line. E.g.:
 ```shell
  $ lisk get delegate lightcurve  --json
 ```
-

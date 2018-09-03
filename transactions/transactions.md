@@ -38,9 +38,9 @@ With a second signature the flow looks like this:
 
 A balance transfer transaction (type 0) is a transfer of LSK from one account to another account. In order to issue a balance transfer transaction, a transaction object must be created.
 
-First, the public key of the sender is computed using the passphrase, as described in [Lisk Security](/documentation/lisk-protocol/security). Then the data block is created using the process outlined in  [transaction signing](/documentation/lisk-protocol/transactions#transaction-signing)  and the id of the account to whom the LSK is being transferred is added to the object. The resulting data block is 53 bytes.
+First, the public key of the sender is computed using the passphrase, as described in [Lisk Security](../security/security.md). Then the data block is created using the process outlined in  [transaction signing](#transaction-signing)  and the id of the account to whom the LSK is being transferred is added to the object. The resulting data block is 53 bytes.
 
-At this point the block is signed using the method described in  [Lisk Security](/documentation/lisk-protocol/security). The final step of the transaction generation process is to compute the fee of the transaction. In the current system, the fee is fixed at 0.1 Lisk. Once all of these steps have been completed and the transaction has been validated, the transaction can be broadcast to the network. While the transaction may be present on the network, it will remain in "Unconfirmed" status until it has been processed by a delegate. When the transaction is broadcast to the network, it is sent as a JSON object using the API. 
+At this point the block is signed using the method described in  [Lisk Security](../security/security.md). The final step of the transaction generation process is to compute the fee of the transaction. In the current system, the fee is fixed at 0.1 Lisk. Once all of these steps have been completed and the transaction has been validated, the transaction can be broadcast to the network. While the transaction may be present on the network, it will remain in "Unconfirmed" status until it has been processed by a delegate. When the transaction is broadcast to the network, it is sent as a JSON object using the API. 
 
 Optionally, the user can include a data field to the balance transfer transaction. This data field has a maximum length of 64 bytes and can be used to append messages to the transactions. With sidechains fully functional, this data field will be useful to exchange information relative to dApps or sidechain state. This optional field does not require to spend any extra fee.
 
@@ -108,7 +108,7 @@ The final size of the transaction, with the signature, is 149 bytes.
 
 ## Delegate Registration Transaction
 
-A delegate transaction (type 2) is used to register an account as a [delegate](/documentation/lisk-protocol/consensus). In order to issue a delegate registration transaction the following parameters are required:
+A delegate transaction (type 2) is used to register an account as a [delegate](../consensus/consensus.md). In order to issue a delegate registration transaction the following parameters are required:
 
 - passphrase: the passphrase of the account.
 - username: the delegate’s username.
@@ -185,7 +185,7 @@ The final maximum size of the transaction, with the signature is 2262 bytes, and
 
 ## Multisignature Registration Transaction
 
-A multisignature registration transaction (type 4) is a transaction used to add a  [multisignature](/documentation/lisk-protocol/security#multisignature)  to an account. The following parameters are needed in order to issue a multisignature registration transaction:
+A multisignature registration transaction (type 4) is a transaction used to add a  [multisignature](../security/security.md#multisignature)  to an account. The following parameters are needed in order to issue a multisignature registration transaction:
 
 - passphrase: the passphrase of the account the multisignature will be applied to.
 - keysgroup: the array of keys to add to the multisignature account.

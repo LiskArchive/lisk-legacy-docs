@@ -1,7 +1,7 @@
 # Lisk Elements Documentation
 
 ## Table of contents
-  |[Setup](setup) | [Upgrade](upgrade)  | [User Guide](user-guide) |
+|[Setup](setup) | [Upgrade](upgrade)  | [User Guide](user-guide) |
 |--- | --- | --- |
 |[Pre-Installation](setup#pre-installation) | [via NPM](upgrade#upgrade-lisk-elements-via-npm) | [API Client](user-guide/api-client) |
 |[Installation](setup#installation) | [from Source](upgrade#upgrade-lisk-elements-from-source) | [Constants](user-guide/constants) |

@@ -71,16 +71,16 @@ If your Nodes' height is significantly lower than the height shown in the Explor
 To solve it, just wait until your Node is fully synced.
 #### Solution 2: Missing data in config
 Check your `config.json` in section `forging.delegates`.
-If you want to enable forging for a particular delegate on your node, you need to store an object with the delegates' publickey and encrypted passphrase in that section as described [here](/documentation/lisk-core/user-guide/configuration#forging).
+If you want to enable forging for a particular delegate on your node, you need to store an object with the delegates' publickey and encrypted passphrase in that section as described in the [configuration](../user-guide/configuration/configuration.md#forging) section.
 
 ### Enable forging: Invalid password and public key combination
 #### Problem:
-When trying to activate forging on a node like described in section [User Guide/Configuration](/documentation/lisk-core/user-guide/configuration#enable-disable-forging), it responds with: `{"message":"\"Invalid password and public key combination\""}`.
+When trying to activate forging on a node like described in section [User Guide/Configuration](../user-guide/configuration/configuration.md#enable-disable-forging), it responds with: `{"message":"\"Invalid password and public key combination\""}`.
 #### Solution:
 As the message states, the provided combination of your delegates publicKey and the password don't seem to be valid. Please ensure, both properties are set to the correct values, especially that you don't use the original passphrase of your account with that command.
 
 We further explain the chosen naming in order to avoid confusion:
-- **Passphrase** is always referring to your 12 word long mnemonic passphrase that was created at the same time as your Lisk ID. You should always keep this secure and private! For communication with the API, the passphrase is not passed in plaintext. Instead the password is passed so you use it to encrypt your passphrase and the encrypted passphrase is stored in your [config](/documentation/lisk-core/user-guide/configuration).
-- **Password** is always referring to the secret word/s you use to encrypt your passphrase symmetrically, like described in this [section](/documentation/lisk-core/user-guide/configuration#forging)
+- **Passphrase** is always referring to your 12 word long mnemonic passphrase that was created at the same time as your Lisk ID. You should always keep this secure and private! For communication with the API, the passphrase is not passed in plaintext. Instead the password is passed so you use it to encrypt your passphrase and the encrypted passphrase is stored in your [config](../user-guide/configuration/configuration.md).
+- **Password** is always referring to the secret word/s you use to encrypt your passphrase symmetrically, like described in this [section](../user-guide/configuration/configuration.md#forging)
 
 Should you have any further queries please reach out to one of the team or the Lisk community on [Lisk Chat](https://lisk.chat/home)

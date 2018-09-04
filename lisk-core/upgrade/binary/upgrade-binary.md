@@ -1,13 +1,13 @@
 # Lisk Core Binary Upgrade
 
-In order to upgrade Lisk Core from Binary please follow the instructions below.  If you wish to **migrate a 0.9 node to Lisk Core 1.0**, we recommend you to go directly to the [Migration page](/documentation/lisk-core/upgrade/migration) for a full step-by-step guide. 
+In order to upgrade Lisk Core from Binary please follow the instructions below.  If you wish to **migrate a 0.9 node to Lisk Core 1.0**, we recommend you to go directly to the [Migration page](../migration/migration.md) for a full step-by-step guide. 
 
 Please choose the instructions specific to the network (Mainnet or Testnet) your node is connected to.
 
-<boxwarning markdown="1">
-######Important
-Before any upgrade process, we strongly recommend you to check always your `config.json` file. For example, the upgrade from 0.9 to 1.0  includes many changes which turns this step into an **important** one that requires your attention. See this [document for further reference](/documentation/lisk-core/upgrade/migration#migrate-configuration).
-</boxwarning>
+
+Important | Note 
+--- | --- 
+![important note](../../important-icon.png "Info Note") | Before any upgrade process, we strongly recommend you to check always your `config.json` file. For example, the upgrade from 0.9 to 1.0  includes many changes which turns this step into an **important** one that requires your attention. See this [document for further reference](../migration/migration.md#migrate-configuration).
 
 ## Automated Upgrade Lisk Core
 
@@ -29,10 +29,9 @@ bash installLisk.sh upgrade -r test
 
 After running the above script manually or through `lisk_bridge.sh`,  you will be prompted to pick from a few options. Please read these thoroughly and follow the steps. 
 
-<boxwarning markdown="1">
-######Important
-You have to enable forging manually after the upgrade. Please follow this guide to [enable forging on your delegate node](/documentation/lisk-core/user-guide/configuration#forging) for further details. 
-</boxwarning>
+Important | Note 
+--- | --- 
+![important note](../../important-icon.png "Info Note") | You have to enable forging manually after the upgrade. Please follow this guide to [enable forging on your delegate node](../../user-guide/configuration/configuration.md#forging) for further details.
 
 ## Manual Upgrade Lisk Core
 
@@ -99,7 +98,6 @@ bash installLisk.sh install -r main
 bash installLisk.sh install -r test
 ```
 
-<boxwarning markdown="1">
-######Important
-You will be prompted for your installation directory, pressing 'enter' will choose the default.
-</boxwarning>
+Info | Note 
+--- | --- 
+![info note](../../info-icon.png "Info Note") | You will be prompted for your installation directory, pressing 'enter' will choose the default.

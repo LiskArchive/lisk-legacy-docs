@@ -4,15 +4,13 @@ This document will detail how to prepare a system for the installation of Lisk C
 
 ## Determine if your platform can run Lisk Core
 
-<boxsuccess markdown="1">
 ###### Supported Platforms
 - Ubuntu 18.04 x86_64
 - Ubuntu 16.04 (LTS) x86_64
 - MacOS 10.12 (Sierra)
 - MacOS 10.13 (High Sierra)
-</boxsuccess>
 
-To complete the installation there are prerequisites that need to be fulfilled.  If you have already performed these, please proceed to the [Installation](/documentation/lisk-core/setup/install/binary) page. Please follow the instructions below to load the required software to your system.
+To complete the installation there are prerequisites that need to be fulfilled.  If you have already performed these, please proceed to the [Installation](../../install/binary/installation-binary.md) page. Please follow the instructions below to load the required software to your system.
 
 ## Open the necessary ports
 
@@ -38,9 +36,9 @@ sudo apt-get install curl wget tar unzip zip ntp
 
 ### Create a user to run Lisk.
 
-<boxinfo markdown="1">
-The `lisk` user itself **does not need** any `sudo` rights to run Lisk Core.
-</boxinfo>
+Info | Note 
+--- | --- 
+![info note](../../../info-icon.png "Info Note") | The `lisk` user itself **does not need** any `sudo` rights to run Lisk Core.
 
 ```shell
 sudo adduser lisk

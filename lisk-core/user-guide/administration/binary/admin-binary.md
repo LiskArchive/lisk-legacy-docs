@@ -30,43 +30,43 @@ Listed below are the available basic commands which can be used to manage your L
 
 ### Status
 Check the status of the Lisk Core Node.
-```shell
+```
 bash lisk.sh status
 ```
 
 ### Start
 Start Lisk Core and PostgreSQL.
-```shell
+```
 bash lisk.sh start
 ```
 
 ### Stop
 Stop Lisk Core and PostgreSQL.
-```shell
+```
 bash lisk.sh stop
 ```
 
 ### Reload
 Reload Lisk Core and pick up changes to config.json.
-```shell
+```
 bash lisk.sh reload
 ```
 
 ### Reset / Coldstart
 Initializes the PostgreSQL database and starts Lisk Core.
-```shell
+```
 bash lisk.sh coldstart
 ```
 
 ### Logs
 Monitor(tail) the log file of Lisk.
-```shell
+```
 bash lisk.sh logs
 ```
 
 ### Help
 Display all available commands.
-```shell
+```
 bash lisk.sh help
 ```
 
@@ -81,7 +81,7 @@ source env.sh
 ### pm2
 
 PM2 comes bundled with the Lisk Core Binary distribution and will be available after [Updating the PATH environment](#update-path-environment-variable).
-For more information, how to manage your Node with PM2, go to the [Source Administration](https://docs.liskdev.net/documentation/lisk-core/user-guide/administration/source) page. 
+For more information, how to manage your Node with PM2, go to the [Source Administration](../../user-guide/administration/source/admin-source.md) page. 
 
 ### psql 
 
@@ -102,10 +102,10 @@ In case you want to create your own, just run the following script. It will:
 2. validate the correctness of the blockchain, and
 3. compress the result and save it
 
-<boxwarning markdown="1">
-Note, that this process may take a long time, depending on the size of your snapshot.
-</boxwarning>
-  
+Info | Note 
+--- | --- 
+![info note](../../../info-icon.png "Info Note") | Note, that this process may take a long time, depending on the size of your snapshot.
+
 ```shell
 bash lisk_snapshot.sh
 ```

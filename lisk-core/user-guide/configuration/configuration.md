@@ -138,17 +138,17 @@ The recommended setup is to configure a whitelist for only trusted IP addresses,
 To setup a public wallet, simply leave the`api.access.whitelist` array empty.
 
 For best security, disable all access setting `api.enabled` to `false`.
-<boxwarning markdown="1">
-###### Warning
-This last configuration may prevent monitoring scripts from functioning.
-</boxwarning>
+
+Important | Note 
+--- | --- 
+![important note](../../important-icon.png "Important Note") | This last configuration may prevent monitoring scripts from functioning.
 
 ## Forging
 
 In order to enable your node to forge, you need first to insert some encrypted data into the config file under forging.delegates array. To encrypt your passphrase, we offer and recommend one of the following alternatives:
 
-- [Lisk Commander](/documentation/lisk-commander/user-guide/commands) via `encrypt passphrase` command
-- [Cryptography module from Lisk Elements](/documentation/lisk-elements/user-guide/cryptography)
+- [Lisk Commander](/lisk-commander/user-guide/commands/commands.md) via `encrypt passphrase` command
+- [Cryptography module from Lisk Elements](/lisk-elements/user-guide/cryptography/cryptography.md)
 
 We explain further the first alternative. First, make sure you have installed Lisk Commander in a secure environment. Upon completion, please follow the commands below to generate the encryptedPassphrase:
 
@@ -192,14 +192,17 @@ Forging
 4. Reload your Lisk Core process to make the changes  in the config effective, e.g. for Binary install, run : `bash lisk.sh reload`
 
 ### Enable/Disable Forging
-<boxinfo markdown="1">
-The endpoint to perform this action is **idempotent** what it means, the result has to be the same, no matter how many times you execute the same command. 
-</boxinfo>
+
+Info | Note 
+--- | --- 
+![info note](../../info-icon.png "Info Note") | The endpoint to perform this action is **idempotent** what it means, the result has to be the same, no matter how many times you execute the same command. 
+
 If you are running your Lisk Node from a local machine, you can enable forging through the API client, without further interruption.
-<boxwarning markdown="1">
-###### Important
-Remember that after restarting you Lisk node, you must need to re-enable forging again.
-</boxwarning>
+
+Important | Note 
+--- | --- 
+![important note](../../important-icon.png "Important Note") | Remember that after restarting you Lisk node, you must need to re-enable forging again.
+
 Use the following curl command to **enable the forging** for your delegate:
 ```curl
 curl -X PUT \
@@ -252,10 +255,10 @@ The result should be something like this:
 ```
 
 ## SSL
-<boxinfo markdown="1">
-######Note
-To complete this step require a signed certificate (from a CA), or a locally signed certificate using LetsEncrypt. You will need both the private and public keys in a location that is accessible to Lisk.
-</boxinfo>
+
+Info | Note 
+--- | --- 
+![info note](../../info-icon.png "Info Note") | To complete this step require a signed certificate (from a CA), or a locally signed certificate using LetsEncrypt. You will need both the private and public keys in a location that is accessible to Lisk.
 
 Next snippet highlights the essential parameters to enable SSL security on your node's connections:
 
@@ -272,10 +275,10 @@ Next snippet highlights the essential parameters to enable SSL security on your 
   }
 }
 ```
-<boxwarning markdown=1>
-######Important
-If SSL Port configured above `ssl.options.port` is within well known ports range (below 1024), you must alter the port specified with `setcap` or change it to be outside of that range. 
-</boxwarning>
+
+Important | Note 
+--- | --- 
+![important note](../../important-icon.png "Important Note") | If SSL Port configured above `ssl.options.port` is within well known ports range (below 1024), you must alter the port specified with `setcap` or change it to be outside of that range. 
 
 **Setcap:** Only required to grant Lisk access to port 443
 

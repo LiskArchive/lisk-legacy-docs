@@ -1,50 +1,12 @@
-Author: 
-
-----
-
-Created: 2018-05-22
-
-----
-
-Updated: 2018-07-19
-
-----
-
-Metadescription: Learn how to install Lisk Elements quickly and easily. Lisk Elements requires Node.js as the underlying engine for code execution.
-
-----
-
-Metakeywords: Lisk Elements, installation, setup, install
-
-----
-
-Title: Setup
-
-----
-
-Opengraphtitle: Lisk Elements Setup
-
-----
-
-Opengraphimage: 
-
-----
-
-Opengraphdescription: 
-
-----
-
-Content: 
-
 # Lisk Elements Setup
 
-- [Pre-Installation](/documentation/lisk-elements/setup#pre-installation)
-  - [Determine if your platform can run Node](/documentation/lisk-elements/setup#determine-if-your-platform-can-run-node)
-  - [Install Node](/documentation/lisk-elements/setup#install-node)
-- [Installation](/documentation/lisk-elements/setup#installation)
-  - [Install Lisk Elements via NPM](/documentation/lisk-elements/setup#verify-installation)
-  - [Install Lisk Elements from Source (GitHub)](/documentation/lisk-elements/setup#verify-installation)
-  - [Load Lisk Elements via CDN](/documentation/lisk-elements/setup#verify-installation)
+- [Pre-Installation](#pre-installation)
+  - [Determine if your platform can run Node](#determine-if-your-platform-can-run-node)
+  - [Install Node](#install-node)
+- [Installation](#installation)
+  - [Install Lisk Elements via NPM](#verify-installation)
+  - [Install Lisk Elements from Source (GitHub)](#verify-installation)
+  - [Load Lisk Elements via CDN](#verify-installation)
 
 ## Pre-Installation
 
@@ -52,17 +14,13 @@ Lisk Elements requires [Node.js](https://nodejs.org/) as the underlying engine f
 
 ### Determine if your platform can run Node
 
-<boxsuccess markdown="1">
 ######Supported Platforms
 - Windows 10
 - macOS
 - Linux
-</boxsuccess>
 
-<boxerror markdown="1">
 ######Not Supported
 - Platforms without NodeJS 6.3.x or higher
-</boxerror>
 
 ### Install Node
 
@@ -116,23 +74,3 @@ Or minified:
 ```html
 <script src="https://js.lisk.io/lisk-elements-1.0.0.min.js"></script>
 ```
-
-----
-
-Htmltitle: Lisk Elements - Setup | Lisk Documentation
-
-----
-
-Whatsnext: asusual
-
-----
-
-Whatsnextheadline: 
-
-----
-
-Whatsnextpagelinktext: 
-
-----
-
-Whatsnextpagelink: 

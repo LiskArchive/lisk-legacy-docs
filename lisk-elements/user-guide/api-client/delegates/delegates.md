@@ -1,41 +1,3 @@
-Author: diego
-
-----
-
-Created: 2018-04-25
-
-----
-
-Updated: 2018-06-25
-
-----
-
-Metadescription: This Lisk Elements user guide is your resource for interacting with the `delegates` endpoint provided by the Lisk public API.
-
-----
-
-Metakeywords: lisk elements delegates
-
-----
-
-Title: Delegates Resource
-
-----
-
-Opengraphtitle: Lisk Elements API: Delegates Resource
-
-----
-
-Opengraphimage: 
-
-----
-
-Opengraphdescription: 
-
-----
-
-Content: 
-
 # Lisk Elements API Client: Delegates Resource
 
 This is a resource for interacting with the `delegates` endpoint provided by the Lisk public API. Each of the following methods can be accessed via the `delegates` property of an `APIClient` instance.
@@ -52,7 +14,7 @@ get([options])
 
 #### Parameters
 
-`options`: See options in the [Core API documentation](/documentation/lisk-core/user-guide/api/1-0).
+`options`: See options in the [Core API documentation](/lisk-core/user-guide/api/1-0/1-0.json).
 
 #### Return value
 
@@ -79,7 +41,7 @@ getStandby([options])
 
 #### Parameters
 
-`options`: See options in the [Core API documentation](/documentation/lisk-core/user-guide/api/1-0).
+`options`: See options in the [Core API documentation](/lisk-core/user-guide/api/1-0/1-0.json).
 
 #### Return value
 
@@ -106,7 +68,7 @@ getForgers([options])
 
 #### Parameters
 
-`options`: See options in the [Core API documentation](/documentation/lisk-core/user-guide/api/1-0).
+`options`: See options in the [Core API documentation](/lisk-core/user-guide/api/1-0/1-0.json).
 
 #### Return value
 
@@ -135,7 +97,7 @@ getForgingStatistics(address, [options])
 
 `address`: Address of the delegate to query.
 
-`options`: See options in the [Core API documentation](/documentation/lisk-core/user-guide/api/1-0).
+`options`: See options in the [Core API documentation](/lisk-core/user-guide/api/1-0/1-0.json).
 
 #### Return value
 
@@ -149,7 +111,3 @@ client.delegates.getForgingStatistics('15434119221255134066L')
         console.log(res.data);
     })
 ```
-
-----
-
-Htmltitle: Lisk Elements API Client - Delegates Resource | Lisk Documentation

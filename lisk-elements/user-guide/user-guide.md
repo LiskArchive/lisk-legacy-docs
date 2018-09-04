@@ -1,52 +1,10 @@
-Author: diego
-
-----
-
-Created: 2018-04-25
-
-----
-
-Updated: 2018-08-03
-
-----
-
-Metadescription: Welcome to the Lisk Elements User Guide! This section details how to use Lisk Elements, once you have successfully installed it.
-
-----
-
-Metakeywords: Lisk Elements User Guide
-
-----
-
-Title: User Guide
-
-----
-
-Opengraphtitle: Lisk Elements User Guide
-
-----
-
-Opengraphimage:
-
-----
-
-Opengraphdescription:
-
-----
-
-Htmltitle: Lisk Elements User Guide | Lisk Documentation
-
-----
-
-Content:
-
 # Lisk Elements User Guide
 
 This section details how to use Lisk Elements, once you have successfully installed it.
 
-- [Node.js](/documentation/lisk-elements/user-guide#nodejs)
-- [Browser](/documentation/lisk-elements/user-guide#browser)
-- [Subpackages](/documentation/lisk-elements/user-guide#sub-packages)
+- [Node.js](user-guide#nodejs)
+- [Browser](user-guide#browser)
+- [Subpackages](user-guide#sub-packages)
 
 ## Node.js
 
@@ -95,24 +53,8 @@ For usage regarding each sub-package, see the following pages:
 
 Subcategories | Description
 --- | ---
-[API Client](/documentation/lisk-elements/user-guide/api-client) | The Lisk Elements API Client provides a convenient wrapper for interacting with the public API of nodes on the Lisk network
-[Constants](/documentation/lisk-elements/user-guide/constants) | The Constants object provides some handy general-purpose constants for use with the Lisk Ecosystem
-[Cryptography](/documentation/lisk-elements/user-guide/cryptography) | The cryptography module provides all the cryptographic functionality necessary when interacting with the Lisk ecosystem
-[Mnemonic](/documentation/lisk-elements/user-guide/mnemonic) | The passphrase module provides tools for generating and validating mnemonic passphrases
-[Transactions](/documentation/lisk-elements/user-guide/transactions) | The transactions module provides functions for creating transactions of every type, plus a set of utility functions
-
-----
-
-Whatsnext: asusual
-
-----
-
-Whatsnextheadline:
-
-----
-
-Whatsnextpagelinktext:
-
-----
-
-Whatsnextpagelink:
+[API Client](user-guide/api-client/api) | The Lisk Elements API Client provides a convenient wrapper for interacting with the public API of nodes on the Lisk network
+[Constants](user-guide/constants) | The Constants object provides some handy general-purpose constants for use with the Lisk Ecosystem
+[Cryptography](user-guide/cryptography) | The cryptography module provides all the cryptographic functionality necessary when interacting with the Lisk ecosystem
+[Mnemonic](user-guide/mnemonic) | The passphrase module provides tools for generating and validating mnemonic passphrases
+[Transactions](user-guide/transactions) | The transactions module provides functions for creating transactions of every type, plus a set of utility functions

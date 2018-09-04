@@ -1,6 +1,35 @@
 # Lisk Core Configuration
 
-The general config file for Lisk Core is located in the root directory of the Lisk Core repository.  We give you an overview for a greater understanding of the `config.json` file and a description of each parameter.
+## Structure
+
+- The **default** network is `devnet`. If you want to connect to another network specify the `network` when starting Lisk Core, as described in [Source Administration](../administration/source/admin-source.md#command-line-options)
+- The Lisk configuration is managed under different folder structures.
+- Root folder for all configuration is `./config/`.
+- Default configuration file that is used as base is `config/default/config.json`
+- You can find network specific configurations under `config/<network>/config.json`, where `<network>` can be any of these values:
+   - `devnet`
+   - `alpanet`
+   - `betanet`
+   - `testnet`
+   - `mainnet`
+- Configurations will be loaded in following order, lowest in the list have highest priority:
+   1. Default configuration file
+   2. Network specific configuration file
+   3. Custom configuration file (if specified by user)
+   4. Command line configurations, specified as command `flags` or `env` variables
+- For development purposes use `devnet` as network option, others network are specific to public lisk networks.
+
+Info | Note 
+--- | --- 
+![info note](../../info-icon.png "Info Note") | If none is specified, the default config value is `devnet`.
+
+Important | Note 
+--- | --- 
+![important note](../../important-icon.png "Important Note") | Don't override any value in above mentioned files if you need custom configuration.
+
+Info | Note 
+--- | --- 
+![info note](../../info-icon.png "Info Note") | To use a custom configuration: Create your own `json` file and pass it as [command line option](../administration/source/admin-source.md#command-line-options)
 
 For advanced configurations, please go directly to the sections listed below :
 
@@ -9,6 +38,8 @@ For advanced configurations, please go directly to the sections listed below :
   - [Enable/Disable Forging](#enable-disable-forging)
   - [Check Forging](#check-forging)
 - [SSL](#ssl)
+
+The `config.json` file and a description of each parameter.
 
 ```json
  {

@@ -1,29 +1,3 @@
-Author: max
-
-----
-
-Created: 2018-01-25
-
-----
-
-Updated: 2018-06-29
-
-----
-
-Metadescription: Sometimes Lisk Commander requires sensitive inputs such as passphrases or secret messages, which you may not want to pass directly as command line arguments.
-
-----
-
-Metakeywords: lisk commander sensitive inputs
-
-----
-
-Title: Sensitive Inputs
-
-----
-
-Content: 
-
 # Lisk Commander Sensitive Inputs
 
 Sometimes Lisk Commander requires sensitive inputs such as passphrases or secret messages, which you may not want to pass directly as command line arguments because they will made available to e.g. your bash history or process managers. This page describes the various options you have for securely passing sensitive inputs to Lisk Commander commands. The format for providing Lisk Commander with sensitive inputs is loosely based on the format used by OpenSSL.
@@ -82,19 +56,3 @@ For convenience, Lisk Commander also supports providing a plaintext passphrase v
 ```shell
  lisk> encrypt message bba7e2e6a4639c431b68e31115a71ffefcb4e025a4d1656405dfdcd8384719e0 'Hello world' --passphrase 'pass:my secret passphrase'
 ```
-
-----
-
-Opengraphtitle: Lisk Commander Sensitive Inputs
-
-----
-
-Opengraphimage: 
-
-----
-
-Opengraphdescription: 
-
-----
-
-Htmltitle: Lisk Commander - Sensitive Inputs User Guide  | Lisk Documentation

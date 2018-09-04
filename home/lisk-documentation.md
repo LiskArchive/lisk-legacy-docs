@@ -1,49 +1,3 @@
-Title: Home
-
-----
-
-Author: admin
-
-----
-
-Created: 2018-02-13
-
-----
-
-Updated: 2018-07-10
-
-----
-
-Metadescription: Welcome to the Lisk Documentation. Here you'll find comprehensive guides and technical documentation to help you start working with Lisk as quickly as possible.
-
-----
-
-Metakeywords: lisk documentation, docs
-
-----
-
-Htmltitle: Lisk Documentation
-
-----
-
-Opengraphtitle: Lisk Documentation
-
-----
-
-Opengraphimage: lisk_docu_blog_banner.png
-
-----
-
-Opengraphdescription: 
-
-----
-
-Logo: 
-
-----
-
-Content: 
-
 #Lisk Documentation
 
 Here you will find our technical documentation as well as comprehensive guides to help you start using Lisk as quickly and seamlessly as possible. There are plenty of additional resources available in this section, should you require any further support.
@@ -145,19 +99,3 @@ Lisk Explorer is the tool for visualising and presenting the information and act
 (...documentation-tile)
 
 (...columns)
-
-----
-
-Whatsnext: no
-
-----
-
-Whatsnextheadline: 
-
-----
-
-Whatsnextpagelinktext: 
-
-----
-
-Whatsnextpagelink: 

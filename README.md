@@ -67,7 +67,7 @@ At release date of the new version, all new content from the development branche
 
 ```bash
 git checkout master
-git merge -s subtree dev-core
+git merge -s recursive -Xsubtree=lisk-core dev-core
 ```
 
 The master branch gets a new tag each time new content from the `dev-` branches is merged. The tag is simple date format, e.g. new content got merged into `master` at February the 15th 2018, the tag for master would be `lisk-docs-2018-02-15`.
@@ -120,7 +120,7 @@ git merge core-1.0.0-1.1.0
 
 ```bash
 git checkout master
-git merge -s subtree dev-core
+git merge -s recursive -Xsubtree=lisk-core dev-core
 ```
 
 ## Style guidelines

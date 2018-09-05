@@ -8,7 +8,7 @@
 - Default configuration file that is used as base is `config/default/config.json`
 - You can find network specific configurations under `config/<network>/config.json`, where `<network>` can be any of these values:
    - `devnet`
-   - `alpanet`
+   - `alphanet`
    - `betanet`
    - `testnet`
    - `mainnet`

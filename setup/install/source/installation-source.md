@@ -30,7 +30,7 @@ npm install
 ```shell
 git clone https://github.com/LiskHQ/lisk.git
 cd lisk
-git checkout testnet-master
+git checkout testnet-rc
 npm install
 ```
 

@@ -47,7 +47,7 @@ Info | Note
 --- | --- 
 ![info note](../../../info-icon.png "Info Note") | The `lisk` user itself **does not need** any `sudo` rights to run Lisk Core.
     
-```shell
+```bash
 sudo adduser lisk
 ```
 
@@ -57,7 +57,7 @@ Used for compiling dependencies.
 
 ### Ubuntu
 
-```shell
+```bash
 sudo apt-get update
 sudo apt-get install -y python build-essential curl automake autoconf libtool ntp
 ```
@@ -68,7 +68,7 @@ Ensure that both [XCode](https://developer.apple.com/xcode/) and [Homebrew](http
 
 Update homebrew and install dependencies:
 
-```shell
+```bash
 brew update
 brew doctor
 brew install curl automake autoconf libtool
@@ -80,13 +80,13 @@ brew install curl automake autoconf libtool
 
 ### Ubuntu
 
-```shell
+```bash
 sudo apt-get install -y git
 ```
 
 ### MacOS
 
-```shell
+```bash
 brew install git
 ```
 
@@ -98,26 +98,26 @@ Install System wide via package manager, like so:
 
 ### Ubuntu
 
-```shell
+```bash
 curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
 sudo apt-get install -y nodejs
 ```
 
 ### MacOS
 
-```shell
+```bash
 brew install node@6.14.1
 ```
 
 ### 5a. _(Recommended)_ Install a version manager such as nvm (<https://github.com/creationix/nvm>)
 
 1. Login as lisk user, that has been created in the first step:
-```shell
+```bash
 su - lisk
 ```
 2. Install nvm following these [instructions](https://github.com/creationix/nvm#installation)
 3. Install the correct version of Node.js using nvm:
-```shell
+```bash
 nvm install 6.14.1
 ```
 
@@ -127,93 +127,97 @@ For the following steps,  logout from the 'lisk' user again with `CTRL+D`, and c
 
 PM2 manages the node process for Lisk
 
-```shell
+```bash
 sudo npm install -g pm2
 ```
 
-## 6. PostgreSQL (version 9.6)
+## 6. PostgreSQL (version 10)
 
 ### Ubuntu
 
-Firstly, download and run the postgres install script:
-```shell
-curl -sL "https://downloads.lisk.io/scripts/setup_postgresql.Linux" | bash -
+Firstly, install postgreSQL on your machine:
+```bash
+sudo apt-get purge -y postgres* # remove all already installed postgres versions
+sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+sudo apt install wget ca-certificates
+wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+sudo apt update
+sudo apt install postgresql-10 pgadmin4 
+
 ```
 
 After installation, you should see the postgres database cluster, by running
-```shell
+```bash
   pg_lsclusters
 ```
 
 Drop the existing database cluster, and replace it with a cluster with the locale `en_US.UTF-8`:
-```shell
-  sudo pg_dropcluster --stop 9.6 main
-  sudo pg_createcluster --locale en_US.UTF-8 --start 9.6 main
+```bash
+  sudo pg_dropcluster --stop 10 main
+  sudo pg_createcluster --locale en_US.UTF-8 --start 10 main
 ```
 Create a new database user called `lisk` and grant it rights to create databases:
-```shell
+```bash
   sudo -u postgres createuser --createdb lisk
 ```
 
-Switch to the lisk user and create the databases:
-```shell
+Switch to the lisk user and create the databases, where `{network}` is the network you want to connect your Lisk Core node to:
+```bash
   su - lisk
-  createdb lisk_test
-  createdb lisk_main
+  createdb lisk_{network}
   ```
 
 For the following steps,  logout from the lisk user again with `CTRL+D`, and continue with your user with sudo rights.
 Change `'password'` to a secure password of your choice.
-```shell
-  sudo -u postgres psql -d lisk_test -c "alter user lisk with password 'password';"
-  sudo -u postgres psql -d lisk_main -c "alter user lisk with password 'password';"
+```bash
+  sudo -u postgres psql -d lisk_{network} -c "alter user lisk with password 'password';"
   ```
 
 ### MacOS
 
-```shell
-brew install postgresql@9.6
+```bash
+brew install postgresql@10
 initdb /usr/local/var/postgres -E utf8 --locale=en_US.UTF-8
-brew services start postgresql@9.6
-createdb lisk_test
-createdb lisk_main
+brew services start postgresql@10
+createdb lisk_{network}
 ```
+`{network}` is the network you want to connect your Lisk Core node to.
 
 ## 7. Installing Redis
 
 ### Ubuntu
 
-```shell
+```bash
 sudo apt-get install redis-server
 ```
 
 Start redis:
 
-```shell
+```bash
 sudo service redis-server start
 ```
 
 Stop redis:
 
-```shell
+```bash
 sudo service redis-server stop
 ```
 
 ### MacOS
 
-```shell
+```bash
 brew install redis
 ```
 
 Start redis:
 
-```shell
+```bash
 brew services start redis
 ```
 
 Stop redis:
   
-```shell
+```bash
 brew services stop redis
 ```
 
@@ -239,7 +243,7 @@ The following is one example:
 
 Now confirm that redis is running on `port 6380`:
 
-```shell
+```bash
 redis-cli -p 6380
 ping
 ```

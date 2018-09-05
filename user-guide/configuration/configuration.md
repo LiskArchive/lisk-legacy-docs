@@ -12,12 +12,12 @@
    - `betanet`
    - `testnet`
    - `mainnet`
-- Configurations will be loaded in following order, lowest in the list have highest priority:
+- Configurations will be loaded in following order, each one will override the previous one:
    1. Default configuration file
    2. Network specific configuration file
    3. Custom configuration file (if specified by user)
-   4. Command line configurations, specified as command `flags` or `env` variables
-- For development purposes use `devnet` as network option, others network are specific to public lisk networks.
+   4. Command line configurations, specified as command-line flags or `ENV` variables.
+- For development purposes use `devnet` as a network option, other networks are specific to public Lisk networks.
 
 Info | Note 
 --- | --- 

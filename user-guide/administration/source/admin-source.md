@@ -48,7 +48,7 @@ pm2 logs
 
 ## Command Line Options
 
-There are plenty of options available that you can use to override configuration on runtime while starting the lisk.
+There are plenty of options available that you can use to override configuration on runtime while starting Lisk Core.
 
 ```
 node app.js -p [port] -a [address] -c [config-path] -n [network]

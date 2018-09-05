@@ -46,8 +46,6 @@ The `config.json` file and a description of each parameter.
     "wsPort": 8001, // The port Lisk will listen to for WebSocket connections, e.g. P2P broadcasts
     "httpPort": 8000, // The port Lisk will listen to for HTTP connections, e.g. API calls
     "address": "0.0.0.0", // Specify the IPv4 Lisk will listen on (0.0.0.0 will listen to any IP)
-    "version": "1.0.0", // The version of Lisk
-    "minVersion": ">=1.0.0", // The minimum version Lisk will communicate with
     "fileLogLevel": "info", // Logging level for Lisk: info, error, debug, none
     "logFileName": "logs/lisk.log", // The path and name of the logfile
     "consoleLogLevel": "none", // The console logging level for app.js: info, error, debug, none

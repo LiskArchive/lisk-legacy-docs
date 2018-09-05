@@ -32,7 +32,7 @@ services:
       - LISK_DB_HOST=db
 
   db:
-    image: postgres:9.6-alpine
+    image: postgres:10
     volumes:
       - db-data:/var/lib/postgresql/data
     networks:
@@ -44,7 +44,7 @@ services:
       - POSTGRES_USER=lisk
 
   task:
-    image: postgres:9.6-alpine
+    image: postgres:10
     networks:
       - lisk-main
     environment:
@@ -105,7 +105,7 @@ services:
       - LISK_DB_HOST=db
 
   db:
-    image: postgres:9.6-alpine
+    image: postgres:10
     volumes:
       - db-data:/var/lib/postgresql/data
     networks:
@@ -117,7 +117,7 @@ services:
       - POSTGRES_USER=lisk
 
   task:
-    image: postgres:9.6-alpine
+    image: postgres:10
     networks:
       - lisk-test
     environment:

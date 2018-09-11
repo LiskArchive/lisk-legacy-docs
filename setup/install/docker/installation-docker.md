@@ -1,154 +1,59 @@
 # Lisk Core Docker Installation
 
-## Run Lisk in Docker
+## Install Docker Compose
 
-We suggest using `docker-compose` to run Lisk and its dependencies in Docker containers:
+We suggest using [docker-compose](https://docs.docker.com/compose/install/) to run Lisk and its dependencies in Docker containers:
 
-### Create configuration (executed only once per installation)
-Before you proceed, you must  determine whether you wish to connect your node to the Mainnet (Main Network) or  to the Testnet (Test Network).
+## Get configuration & Makefile
 
-#### Mainnet
+Go to [Lisk Docker Repository](https://github.com/LiskHQ/lisk-docker) on github and download following files:
 
-Create a `mainnet` directory and a `docker-compose.yml` file inside of that directory with the following content:
-
-```
-version: "2"
-services:
-
-  lisk:
-    image: lisk/mainnet:1.0.0
-    volumes:
-      - lisk-logs:/home/lisk/lisk/logs/
-    ports:
-      - "8000:8000"
-      - "8001:8001"
-    networks:
-      - lisk-main
-    depends_on:
-      - db
-    restart: on-failure
-    command: ["/home/lisk/wait-for-it.sh", "db:5432", "--", "/home/lisk/run.sh"]
-    environment:
-      - LISK_DB_HOST=db
-
-  db:
-    image: postgres:9.6-alpine
-    volumes:
-      - db-data:/var/lib/postgresql/data
-    networks:
-      - lisk-main
-    restart: on-failure
-    environment:
-      - POSTGRES_DB=lisk_main
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_USER=lisk
-
-  task:
-    image: postgres:9.6-alpine
-    networks:
-      - lisk-main
-    environment:
-      - PGUSER=lisk
-      - PGPASSWORD=password
-      - PGDATABASE=lisk_main
-      - PGHOST=db
-    command: /bin/true
-
-networks:
-  lisk-main:
-
-volumes:
-  db-data:
-  lisk-logs:
+```bash
+mkdir lisk-docker
+cd lisk-docker
+curl -O https://raw.githubusercontent.com/LiskHQ/lisk-docker/2.2.0/examples/development/.env
+curl -O https://raw.githubusercontent.com/LiskHQ/lisk-docker/2.2.0/examples/development/Makefile
+curl -O https://raw.githubusercontent.com/LiskHQ/lisk-docker/2.2.0/examples/development/docker-compose.yml
 ```
 
-As a convenience we provide a [Makefile](https://github.com/LiskHQ/lisk-docker/blob/2.1.0/examples/mainnet/Makefile) to easily restore a snapshot and start Lisk in Docker:
-While still in the `mainnet` directory run:
+## Set environment variables
 
-<!-- TODO: fix branch -->
-```shell
-wget https://github.com/LiskHQ/lisk-docker/raw/2.1.0/examples/mainnet/Makefile
-make coldstart
+In order to connect to the lisk network, the environment variables need to be set accordingly.
+Open `.env` in an editor of your choice, e.g. vim:
+
+```bash
+vim .env
+```
+
+This is how the file looks with default values:
+
+```bash
+# Choose network and version:
+ENV_LISK_NETWORK=devnet
+ENV_LISK_VERSION=1.1.0-alpha.0
+
+# Ports to expose
+ENV_LISK_HTTP_PORT=4000
+ENV_LISK_WS_PORT=5000
+
+# Database configuration
+ENV_LISK_DB_DATABASE=lisk
+ENV_LISK_DB_USER=lisk
+# Change this password before initializing the
+# postgresql container for the first time.
+ENV_LISK_DB_PASSWORD=password
+```
+
+Change the values according to your setup and the network you want your node to connect to.
+
+## Coldstart Application
+
+```bash
+sudo make coldstart
 ```
 
 You can then use `docker-compose` to see the status of your Lisk installation:
 
-```shell
-cd testnet/
-docker-compose ps
+```bash
+sudo docker-compose ps
 ```
-
-To learn more about Docker Compose please refer to the [Official Documentation](https://docs.docker.com/compose/gettingstarted/).
-
-#### Testnet
-
-Create a `testnet` directory and a `docker-compose.yml` file inside of that directory with the following content:
-
-```
-version: "2"
-services:
-
-  lisk:
-    image: lisk/testnet:1.0.0
-    volumes:
-      - lisk-logs:/home/lisk/lisk/logs/
-    ports:
-      - "7000:7000"
-      - "7001:7001"
-    networks:
-      - lisk-test
-    depends_on:
-      - db
-    restart: on-failure
-    command: ["/home/lisk/wait-for-it.sh", "db:5432", "--", "/home/lisk/run.sh"]
-    environment:
-      - LISK_DB_HOST=db
-
-  db:
-    image: postgres:9.6-alpine
-    volumes:
-      - db-data:/var/lib/postgresql/data
-    networks:
-      - lisk-test
-    restart: on-failure
-    environment:
-      - POSTGRES_DB=lisk_test
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_USER=lisk
-
-  task:
-    image: postgres:9.6-alpine
-    networks:
-      - lisk-test
-    environment:
-      - PGUSER=lisk
-      - PGPASSWORD=password
-      - PGDATABASE=lisk_test
-      - PGHOST=db
-    command: /bin/true
-
-networks:
-  lisk-test:
-
-volumes:
-  db-data:
-  lisk-logs:
-```
-
-As a convenience we provide a [Makefile](https://github.com/LiskHQ/lisk-docker/blob/2.1.0/examples/testnet/Makefile) to easily restore a snapshot and start Lisk in Docker:
-While still being inside the `testnet` directory run:
-
-<!-- TODO: fix branch -->
-```shell
-wget https://github.com/LiskHQ/lisk-docker/raw/2.1.0/examples/testnet/Makefile
-make coldstart
-```
-
-You can then use `docker-compose` to see the status of your Lisk installation:
-
-```shell
-cd testnet/
-docker-compose ps
-```
-
-To learn more about Docker Compose please refer to the [Official Focumentation](https://docs.docker.com/compose/gettingstarted/).

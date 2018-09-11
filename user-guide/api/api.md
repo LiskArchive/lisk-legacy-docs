@@ -49,7 +49,7 @@ Content:
 
 Info | Note 
 --- | --- 
-![info note](info-icon.png "Info Note") | All API endpoints are relative to the /api prefix.
+![info note](../../info-icon.png "Info Note") | All API endpoints are relative to the /api prefix.
 
 ## Accounts
 

@@ -2,11 +2,16 @@
 
 ## Install Docker Compose
 
-We suggest using [docker-compose](https://docs.docker.com/compose/install/) to run Lisk and its dependencies in Docker containers:
+We suggest using [docker-compose](https://docs.docker.com/compose/install/) to run Lisk and its dependencies in Docker containers.
 
 ## Get configuration & Makefile
 
 Go to [Lisk Docker Repository](https://github.com/LiskHQ/lisk-docker) on github and download following files:
+- `Makefile`
+- `docker-compose.yml`
+- `.env`
+
+Save them inside of a separate folder, e.g.:
 
 ```bash
 mkdir lisk-docker

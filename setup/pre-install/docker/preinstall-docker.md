@@ -21,9 +21,13 @@ Please note that Docker for Windows includes Docker Compose.
 ## Linux
 
 Please refer to https://docs.docker.com/engine/installation/#server
+
 To install Docker Compose, please refer to: https://docs.docker.com/compose/install/
+
+**Important**: Configure Docker, so it can be run without `sudo` rights: https://docs.docker.com/install/linux/linux-postinstall/
+
 Install `make` using your package manager. For example, use `apt-get` if running Ubuntu:
-```shell
+```bash
 sudo apt-get install make
 ```
 
@@ -33,9 +37,9 @@ In order to connect to the desired network with Lisk Core , please ensure that t
 
 | Network | httpPort(HTTP) | wsPort(TCP) |
 | --------|----------------|-------------|
-| Mainnet | 8000         | 8001        |
+| Mainnet | 8000           | 8001        |
 | Testnet | 7000           | 7001        |
-| Betanet  | 5000           | 5001        |
-| Devnet | 4000          | 5000        |
+| Betanet | 5000           | 5001        |
+| Devnet  | 4000           | 5000        |
 
-These are the default ports for connecting with the network, these can be altered later in `config.json`.
+These are the default ports for connecting with the network, these can be altered later in `.env`.

@@ -1,6 +1,35 @@
 # Lisk Core Configuration
 
-The general config file for Lisk Core is located in the root directory of the Lisk Core repository.  We give you an overview for a greater understanding of the `config.json` file and a description of each parameter.
+## Structure
+
+- The **default** network is `devnet`. If you want to connect to another network specify the `network` when starting Lisk Core, as described in [Source Administration](../administration/source/admin-source.md#command-line-options)
+- The Lisk configuration is managed under different folder structures.
+- Root folder for all configuration is `./config/`.
+- Default configuration file that is used as base is `config/default/config.json`
+- You can find network specific configurations under `config/<network>/config.json`, where `<network>` can be any of these values:
+   - `devnet`
+   - `alphanet`
+   - `betanet`
+   - `testnet`
+   - `mainnet`
+- Configurations will be loaded in following order, each one will override the previous one:
+   1. Default configuration file
+   2. Network specific configuration file
+   3. Custom configuration file (if specified by user)
+   4. Command line configurations, specified as command-line flags or `ENV` variables.
+- For development purposes use `devnet` as a network option, other networks are specific to public Lisk networks.
+
+Info | Note 
+--- | --- 
+![info note](../../info-icon.png "Info Note") | If none is specified, the default config value is `devnet`.
+
+Important | Note 
+--- | --- 
+![important note](../../important-icon.png "Important Note") | Don't override any value in above mentioned files if you need custom configuration.
+
+Info | Note 
+--- | --- 
+![info note](../../info-icon.png "Info Note") | To use a custom configuration: Create your own `json` file and pass it as [command line option](../administration/source/admin-source.md#command-line-options)
 
 For advanced configurations, please go directly to the sections listed below :
 
@@ -10,13 +39,13 @@ For advanced configurations, please go directly to the sections listed below :
   - [Check Forging](#check-forging)
 - [SSL](#ssl)
 
+The `config.json` file and a description of each parameter.
+
 ```json
  {
     "wsPort": 8001, // The port Lisk will listen to for WebSocket connections, e.g. P2P broadcasts
     "httpPort": 8000, // The port Lisk will listen to for HTTP connections, e.g. API calls
     "address": "0.0.0.0", // Specify the IPv4 Lisk will listen on (0.0.0.0 will listen to any IP)
-    "version": "1.0.0", // The version of Lisk
-    "minVersion": ">=1.0.0", // The minimum version Lisk will communicate with
     "fileLogLevel": "info", // Logging level for Lisk: info, error, debug, none
     "logFileName": "logs/lisk.log", // The path and name of the logfile
     "consoleLogLevel": "none", // The console logging level for app.js: info, error, debug, none

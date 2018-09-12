@@ -40,7 +40,7 @@ cd lisk
 git checkout v1.1.0-rc.0 -b v1.1.0-rc.0
 npm install
 ```
-*Please check if there is no latest 1.1.0-rc.\* release on https://github.com/LiskHQ/lisk/releases*
+*Please check if there is no latest 1.1.\*-rc.\* release on https://github.com/LiskHQ/lisk/releases*
 
 To test that Lisk Core is built and configured correctly, issue the following command to connect to Testnet:
 
@@ -57,7 +57,6 @@ This will fork the process into the background and automatically recover the pro
 pm2 start --name lisk app.js -- network [network]
 ```
 Where [network] might be either testnet or mainnet.
-
 
 For details on how to manage or stop your Lisk node, please have a look in [Administration from Source](../../../user-guide/administration/source/admin-source.md).
 

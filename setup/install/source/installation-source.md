@@ -7,7 +7,7 @@ This section details how to install Lisk Core from Source. When completed, you w
 This user was created in the [ Prerequisites](../../setup/pre-install/source/preinstall-source.md). 
 If you are already logged in to this user, please skip this step.
 
-```shell
+```bash
 su - lisk
 ```
 
@@ -18,33 +18,33 @@ Clone the Lisk Core repository using Git and initialize the modules.
 
 ### Mainnet
 
-```shell
+```bash
 git clone https://github.com/LiskHQ/lisk.git
 cd lisk
-git checkout v1.1.0 -b v1.1.0
+git checkout v{version} -b v{version} # check out latest release tag
 npm install
 ```
-*Please check if there is no latest 1.1.\* release on https://github.com/LiskHQ/lisk/releases*
+*Please check for latest release on https://github.com/LiskHQ/lisk/releases*
 
 To test that Lisk Core is built and configured correctly, issue the following command to connect to Mainnet:
 
-```shell
+```bash
 node app.js --network mainnet
 ```
 
 ### Testnet
 
-```shell
+```bash
 git clone https://github.com/LiskHQ/lisk.git
 cd lisk
-git checkout v1.1.0-rc.0 -b v1.1.0-rc.0
+git checkout v{version}-rc.0 -b v{version}-rc.0
 npm install
 ```
-*Please check if there is no latest 1.1.\*-rc.\* release on https://github.com/LiskHQ/lisk/releases*
+*Please check for latest release on https://github.com/LiskHQ/lisk/releases*
 
 To test that Lisk Core is built and configured correctly, issue the following command to connect to Testnet:
 
-```shell
+```bash
 node app.js --network testnet
 ```
 
@@ -53,8 +53,8 @@ By default, errors will be logged in `logs/lisk.log` only. You can change the lo
 Once the process is verified as running correctly, `CTRL+C` and start the process with `pm2`.
 This will fork the process into the background and automatically recover the process if it fails.
 
-```shell
-pm2 start --name lisk app.js -- -n [network]
+```bash
+pm2 start --name lisk app.js -- --network [network]
 ```
 Where [network] might be either testnet or mainnet.
 
@@ -75,13 +75,13 @@ It is recommended to setup a log rotation for the logfile of Lisk Core.
 Ubuntu systems provide a service called `logrotate` for this purpose.
 Please ensure Logrotate is installed on your system:
 
-```shell
+```bash
 logrotate --version
 ```
 
 Next, go to the logrotate config directory and create a new logrotate file for Lisk Core:
 
-```shell
+```bash
 cd /etc/logrotate.d
 vim lisk
 ```
@@ -90,7 +90,7 @@ Inside this file, define the parameters for the log rotation.
 
 Example values:
 
-```shell
+```bash
 /path/to/lisk/logs/*.log { 
         daily                   # daily rotation
         rotate 5                # keep the 5 most recent logs
@@ -104,6 +104,6 @@ Example values:
 
 After customizing the config to fit your needs and saving it, you can test it by doing a dry run:
 
-```shell
+```bash
 sudo logrotate /etc/logrotate.conf --debug
 ```

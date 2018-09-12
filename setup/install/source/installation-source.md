@@ -54,7 +54,7 @@ Once the process is verified as running correctly, `CTRL+C` and start the proces
 This will fork the process into the background and automatically recover the process if it fails.
 
 ```shell
-pm2 start --name lisk app.js -- network [network]
+pm2 start --name lisk app.js -- -n [network]
 ```
 Where [network] might be either testnet or mainnet.
 

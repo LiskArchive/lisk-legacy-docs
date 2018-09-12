@@ -14,22 +14,26 @@ su - lisk
 ## Installing Lisk from Source
 
 Before proceeding, determine whether you wish to connect your node to the Mainnet (Main Network) or Testnet (Test Network).
-Clone the Lisk Core repository using Git and initialize the modules.
+
+*Please check for latest release on https://github.com/LiskHQ/lisk/releases*
 
 ### Mainnet
 
 ```bash
 git clone https://github.com/LiskHQ/lisk.git
 cd lisk
-git checkout v{version} -b v{version} # check out latest release tag
+git checkout v1.0.0 -b v1.0.0 # check out latest release tag
 npm install
 ```
-*Please check for latest release on https://github.com/LiskHQ/lisk/releases*
+
+Info | Note
+---- | ----
+![info note](../../../info-icon.png "Info Note") | Until Lisk Core 1.0, the network flag is not supported. To connect to a different network for Lisk Core versions < 1.1, please edit `config.json` manually.
 
 To test that Lisk Core is built and configured correctly, issue the following command to connect to Mainnet:
 
 ```bash
-node app.js --network mainnet
+node app.js
 ```
 
 ### Testnet
@@ -37,10 +41,9 @@ node app.js --network mainnet
 ```bash
 git clone https://github.com/LiskHQ/lisk.git
 cd lisk
-git checkout v{version}-rc.0 -b v{version}-rc.0
+git checkout v1.1.0-rc.0 -b v1.1.0-rc.0 # check out latest release candidate
 npm install
 ```
-*Please check for latest release on https://github.com/LiskHQ/lisk/releases*
 
 To test that Lisk Core is built and configured correctly, issue the following command to connect to Testnet:
 

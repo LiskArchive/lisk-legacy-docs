@@ -54,13 +54,13 @@ The payload of the block is comprised of up to 25 transactions present on the sy
 
 These maximum sizes are listed below:
 
-**Transaction Type** | **Maximum Size (bytes)**
---- | ---
-Type 0 | 220
-Type 1 | 149
-Type 2 | 201
-Type 3 | 2,326
-Type 4 | 1,223
+**Transaction Type** | **Purpose**   | **Maximum Size (bytes)**
+--- | ---  | ---
+Type 0 | Transmit funds to a specified Lisk address | 220
+Type 1 | Register a second passphrase | 149
+Type 2 | Register a delegate | 201
+Type 3 | Submit vote(s) for delegates | 2,326
+Type 4 | Multisignature registration | 1,223
 
 The maximum size of a block payload can then be determined as 58150 bytes if every transaction is type 3 and contains the maximum number of assets. A data block is composed using the gathered unconfirmed transactions’ data blocks and signatures. The system then hashes the combined transactional data blocks to generate the payload hash for the block header.
 

@@ -1,50 +1,8 @@
-Author: diego
-
-----
-
-Created: 2018-06-20
-
-----
-
-Updated: 2018-07-12
-
-----
-
-Metadescription: In the settings of Lisk Hub, you currently have the option to customize your app in terms of `security`,  `Advanced features`and `local`.
-
-----
-
-Metakeywords: lisk hub configuration, settings
-
-----
-
-Title: Configuration
-
-----
-
-Htmltitle: Lisk Hub Configuration | Lisk Documentation
-
-----
-
-Opengraphtitle: Lisk Hub Configuration
-
-----
-
-Opengraphimage: 
-
-----
-
-Opengraphdescription: 
-
-----
-
-Content: 
-
 # Lisk Hub Configuration
 
 In the settings you currently have the option to customize your app in terms of `security`,  `Advanced features`and `local`. Here you can also start a tour through the Hub with our onboarding. More options will be added in future.
 
-(image: hub-settings.png)
+![hub-settings](hub-settings.png "hub-settings")
 
 ## Security
 

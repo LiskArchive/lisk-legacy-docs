@@ -2,7 +2,7 @@
 
 In the settings you currently have the option to customize your app in terms of `security`,  `Advanced features`and `local`. Here you can also start a tour through the Hub with our onboarding. More options will be added in future.
 
-(image: hub-settings.png)
+![hub-settings](hub-settings.png "hub-settings")
 
 ## Security
 

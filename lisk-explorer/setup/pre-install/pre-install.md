@@ -1,41 +1,3 @@
-Author: 
-
-----
-
-Created: 2018-05-22
-
-----
-
-Updated: 2018-07-12
-
-----
-
-Metadescription: Lisk Explorer requires Node.js as the underlying engine for code execution. This document describes how to install Node and NPM for installation via NPM.
-
-----
-
-Metakeywords: lisk explorer pre-install, pre-installation, prerequisites
-
-----
-
-Title: Pre-Installation
-
-----
-
-Opengraphtitle: Lisk Explorer Pre-Installation
-
-----
-
-Opengraphimage: 
-
-----
-
-Opengraphdescription: 
-
-----
-
-Content: 
-
 # Lisk Explorer Pre-Installation
 
 The following dependencies and resources are required to install and run Lisk Explorer.
@@ -130,7 +92,3 @@ sudo apt-get install -y python build-essential curl automake autoconf libtool
 ```shell
 brew install curl automake autoconf libtool
 ```
-
-----
-
-Htmltitle: Lisk Explorer Pre-Installation Setup | Lisk Documentation

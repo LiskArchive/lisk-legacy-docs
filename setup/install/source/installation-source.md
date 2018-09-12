@@ -21,8 +21,15 @@ Clone the Lisk Core repository using Git and initialize the modules.
 ```shell
 git clone https://github.com/LiskHQ/lisk.git
 cd lisk
-git checkout master
+git checkout v1.1.0 -b v1.1.0
 npm install
+```
+*Please check if there is no latest 1.1.\* release on https://github.com/LiskHQ/lisk/releases*
+
+To test that Lisk Core is built and configured correctly, issue the following command to connect to Mainnet:
+
+```shell
+node app.js --network mainnet
 ```
 
 ### Testnet
@@ -30,14 +37,15 @@ npm install
 ```shell
 git clone https://github.com/LiskHQ/lisk.git
 cd lisk
-git checkout testnet-rc
+git checkout v1.1.0-rc.0 -b v1.1.0-rc.0
 npm install
 ```
+*Please check if there is no latest 1.1.0-rc.\* release on https://github.com/LiskHQ/lisk/releases*
 
-To test that Lisk Core is built and configured correctly, issue the following command:
+To test that Lisk Core is built and configured correctly, issue the following command to connect to Testnet:
 
 ```shell
-node app.js
+node app.js --network testnet
 ```
 
 If the process is running correctly, no errors are thrown in the logs.
@@ -46,8 +54,10 @@ Once the process is verified as running correctly, `CTRL+C` and start the proces
 This will fork the process into the background and automatically recover the process if it fails.
 
 ```shell
-pm2 start --name lisk app.js
+pm2 start --name lisk app.js -- network [network]
 ```
+Where [network] might be either testnet or mainnet.
+
 
 For details on how to manage or stop your Lisk node, please have a look in [Administration from Source](../../../user-guide/administration/source/admin-source.md).
 

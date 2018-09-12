@@ -1,41 +1,3 @@
-Author: mona
-
-----
-
-Created: 2018-05-22
-
-----
-
-Updated: 2018-06-22
-
-----
-
-Metadescription: Learn how to install Lisk Explorer quickly and easily. If you have satisfied the requirements from the pre-installation section, proceed with the installation.
-
-----
-
-Metakeywords: lisk explorer install, installation, lisk
-
-----
-
-Title: Installation
-
-----
-
-Opengraphtitle: Lisk Explorer Installation
-
-----
-
-Opengraphimage: 
-
-----
-
-Opengraphdescription: 
-
-----
-
-Content: 
-
 # Lisk Explorer Installation
 
 This section details how to install Lisk Explorer. If you have satisfied the requirements from the [Pre-Installation](../pre-install/pre-install.md) section, you can proceed with the installation.
@@ -174,6 +136,3 @@ To stop the application run:
 pm2 stop lisk-explorer
 ```
 
-----
-
-Htmltitle: Lisk Explorer Installation Setup | Lisk Documentation

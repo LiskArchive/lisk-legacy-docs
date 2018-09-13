@@ -1,5 +1,9 @@
 # Lisk Core Source Pre-Install
 
+Info | Note
+---- | ----
+![info note](../../../info-icon.png "Info Note") | Lisk Core 1.1 has been released to Testnet. If you wish to connect to Testnet, please refer to [Lisk Core 1.1.0 documentation](https://github.com/LiskHQ/lisk-docs/blob/core-1.1.0/introduction.md).
+
 This document details the prerequisites to install Lisk Core 1.0.0 from a Source installation using tagged releases on Github.
 To complete the installation there are prerequisites that need to be fulfilled.  If you have already performed these, please proceed to the [Installation](/lisk-core/setup/install/source/install-source.md) page.
 
@@ -132,10 +136,6 @@ sudo npm install -g pm2
 ```
 
 ## 6. PostgreSQL (version 9.6)
-
-Info | Note
----- | ----
-![info note](../../../info-icon.png "Info Note") | Lisk Core 1.1 is already released on Testnet. If you wish to connect to Testnet, please refer to [Lisk Core 1.1.0 documentation](https://github.com/LiskHQ/lisk-docs/blob/core-1.1.0/introduction.md).
 
 ### Ubuntu
 

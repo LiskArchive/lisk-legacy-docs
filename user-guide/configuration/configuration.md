@@ -1,5 +1,9 @@
 # Lisk Core Configuration
 
+Info | Note
+---- | ----
+![info note](../../info-icon.png "Info Note") | The configuration process has changed from Lisk Core `1.0` to `1.1`. If you have version `1.0` of Lisk Core installed, please visit the [Lisk Docs Github Repository](https://github.com/LiskHQ/lisk-docs), where you can find a full archived version of [Lisk Core 1.0 documentation](https://github.com/LiskHQ/lisk-docs/blob/core-1.0.0/introduction.md)
+
 ## Structure
 
 - The **default** network is `devnet`. If you want to connect to another network specify the `network` when starting Lisk Core, as described in [Source Administration](../administration/source/admin-source.md#command-line-options)
@@ -41,7 +45,7 @@ For advanced configurations, please go directly to the sections listed below :
 
 The `config.json` file and a description of each parameter.
 
-```json
+```js
  {
     "wsPort": 8001, // The port Lisk will listen to for WebSocket connections, e.g. P2P broadcasts
     "httpPort": 8000, // The port Lisk will listen to for HTTP connections, e.g. API calls
@@ -153,7 +157,7 @@ The `config.json` file and a description of each parameter.
 
 Controlling access to a node plays a vital role in security. The following configurable flags are available in order to control the access to your node:
 
-```json
+```js
      "api": {
         "enabled": true, // Controls the API's availability. If disabled no API access is possible
         "access": {
@@ -181,7 +185,7 @@ In order to enable your node to forge, you need first to insert some encrypted d
 
 We explain further the first alternative. First, make sure you have installed Lisk Commander in a secure environment. Upon completion, please follow the commands below to generate the encryptedPassphrase:
 
-```shell
+```bash
 $ lisk
 lisk> encrypt passphrase --output-public-key
 Please enter your secret passphrase: *****
@@ -198,7 +202,7 @@ Please re-enter your password: ***
  2.  Afterwards you will get an `encryptedPassphrase` key value pair. 
  3. Create the JSON object and add it to your `config.json` under `forging.delegates`:
 
-```json
+```js
 Forging
      "forging": {
         "force": false,
@@ -233,7 +237,7 @@ Important | Note
 ![important note](../../important-icon.png "Important Note") | Remember that after restarting you Lisk node, you must need to re-enable forging again.
 
 Use the following curl command to **enable the forging** for your delegate:
-```curl
+```bash
 curl -X PUT \
   http://127.0.0.1:7000/api/node/status/forging \
   -H 'cache-control: no-cache' \
@@ -245,7 +249,7 @@ curl -X PUT \
       }'
 ```
 Use the following curl command to **disable the forging** for your delegate:
-```curl
+```bash
 curl -X PUT \
   http://127.0.0.1:7000/api/node/status/forging \
   -H 'cache-control: no-cache' \
@@ -263,14 +267,17 @@ curl -X PUT \
 
 ### Check Forging
 Use the following curl command to verify the forging  status of your delegate:
-```curl
+
+```bash
 curl \
   http://127.0.0.1:7000/api/node/status/forging \
   -H 'cache-control: no-cache' \
   -H 'content-type: application/json' 
 ```
+
 The result should be something like this:
-```json
+
+```js
 {
   "meta": {},
   "data": [
@@ -293,7 +300,7 @@ Next snippet highlights the essential parameters to enable SSL security on your 
 
 **SSL Configuration**
 
-```json
+```js
  "ssl": {
   "enabled": false,         // Change FROM false TO true
   "options": {
@@ -311,7 +318,7 @@ Important | Note
 
 **Setcap:** Only required to grant Lisk access to port 443
 
-```shell
+```bash
  sudo setcap cap_net_bind_service=+ep bin/node
 ```
 

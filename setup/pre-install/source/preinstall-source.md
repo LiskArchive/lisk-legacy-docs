@@ -10,9 +10,9 @@ To complete the installation there are prerequisites that need to be fulfilled. 
 3. [Install Tool chain components](#tool-chain-components)
 4. [Git Installation](#git)
 5. [Node.js Installation](#node-js)
-    1. [Recommended: Install NVM ](#recommended-install-a-version-manager-such-as-nvmhttps--githubcom-creationix-nvm)
-    2. [Recommended: Install PM2 ](#recommended-pm2-https--githubcom-unitech-pm2)
-6. [Postgres Installation](#postgresql-version-96)
+    1. [Recommended: Install NVM ](#5a-recommended-install-a-version-manager-such-as-nvm-httpsgithubcomcreationixnvm)
+    2. [Recommended: Install PM2 ](#5b-recommended-pm2-httpsgithubcomunitechpm2)
+6. [Postgres Installation](#postgresql-version-10)
 7. [Redis Installation](#installing-redis)
 
 Firstly, please determine if your platform can install Lisk Core from source.
@@ -132,6 +132,11 @@ sudo npm install -g pm2
 ```
 
 ## 6. PostgreSQL (version 10)
+
+Info | Note
+---- | ----
+![info note](../../../info-icon.png "Info Note") | The PostgreSQL version has been changed from Lisk Core `1.0` (PostgreSQL version 9.6) to `1.1` (PostgreSQL version 10). If you wish to install the `1.0` version of Lisk Core, please visit the [Lisk Docs Github Repository](https://github.com/LiskHQ/lisk-docs), where you can find a full archived version of [Lisk Core 1.0 documentation](https://github.com/LiskHQ/lisk-docs/blob/core-1.0.0/introduction.md)
+
 
 ### Ubuntu
 

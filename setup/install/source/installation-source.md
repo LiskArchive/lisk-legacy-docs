@@ -15,41 +15,28 @@ su - lisk
 
 Before proceeding, determine whether you wish to connect your node to the Mainnet (Main Network) or Testnet (Test Network).
 
-*Please check for latest release on https://github.com/LiskHQ/lisk/releases*
-
-### Mainnet
+Info | Note
+---- | ----
+![info note](../../../info-icon.png "Info Note") | The installation process has changed from Lisk Core `1.0` to `1.1`. If you wish to install the `1.0` version of Lisk Core, please visit the [Lisk Docs Github Repository](https://github.com/LiskHQ/lisk-docs), where you can find a full archived version of [Lisk Core 1.0 documentation](https://github.com/LiskHQ/lisk-docs/blob/core-1.0.0/introduction.md)
 
 ```bash
 git clone https://github.com/LiskHQ/lisk.git
 cd lisk
-git checkout v1.0.0 -b v1.0.0 # check out latest release tag
+git checkout v1.1.0 -b v1.1.0 # check out latest release tag
 npm install
 ```
 
 Info | Note
 ---- | ----
-![info note](../../../info-icon.png "Info Note") | Until Lisk Core 1.0, the network flag is not supported. To connect to a different network for Lisk Core versions < 1.1, please edit `config.json` manually.
+![info note](../../../info-icon.png "Info Note") | Please check for latest release on https://github.com/LiskHQ/lisk/releases
 
-To test that Lisk Core is built and configured correctly, issue the following command to connect to Mainnet:
-
-```bash
-node app.js
-```
-
-### Testnet
+To test that Lisk Core is built and configured correctly, issue the following command to connect to the network:
 
 ```bash
-git clone https://github.com/LiskHQ/lisk.git
-cd lisk
-git checkout v1.1.0-rc.0 -b v1.1.0-rc.0 # check out latest release candidate
-npm install
+node app.js --network [network]
 ```
 
-To test that Lisk Core is built and configured correctly, issue the following command to connect to Testnet:
-
-```bash
-node app.js --network testnet
-```
+Where `[network]` might be either `testnet` or `mainnet`.
 
 If the process is running correctly, no errors are thrown in the logs.
 By default, errors will be logged in `logs/lisk.log` only. You can change the logging level in `config.json`.
@@ -59,7 +46,7 @@ This will fork the process into the background and automatically recover the pro
 ```bash
 pm2 start --name lisk app.js -- --network [network]
 ```
-Where [network] might be either testnet or mainnet.
+Where `[network]` might be either `testnet` or `mainnet`.
 
 For details on how to manage or stop your Lisk node, please have a look in [Administration from Source](../../../user-guide/administration/source/admin-source.md).
 

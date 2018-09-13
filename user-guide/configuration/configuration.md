@@ -1,5 +1,9 @@
 # Lisk Core Configuration
 
+Info | Note
+---- | ----
+![info note](../../../info-icon.png "Info Note") | Lisk Core 1.1 is already released on Testnet. If you wish to connect to Testnet, please refer to [Lisk Core 1.1.0 documentation](https://github.com/LiskHQ/lisk-docs/blob/core-1.1.0/introduction.md).
+
 The general config file for Lisk Core is located in the root directory of the Lisk Core repository.  We give you an overview for a greater understanding of the `config.json` file and a description of each parameter.
 
 For advanced configurations, please go directly to the sections listed below :

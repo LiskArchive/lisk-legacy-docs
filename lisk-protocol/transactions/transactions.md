@@ -40,7 +40,7 @@ A balance transfer transaction (type 0) is a transfer of LSK from one account to
 
 First, the public key of the sender is computed using the passphrase, as described in [Lisk Security](../security/security.md). Then the data block is created using the process outlined in  [transaction signing](#transaction-signing)  and the id of the account to whom the LSK is being transferred is added to the object. The resulting data block is 53 bytes.
 
-At this point the block is signed using the method described in  [Lisk Security](../security/security.md). The final step of the transaction generation process is to compute the fee of the transaction. In the current system, the fee is fixed at 0.1 Lisk. Once all of these steps have been completed and the transaction has been validated, the transaction can be broadcast to the network. While the transaction may be present on the network, it will remain in "Unconfirmed" status until it has been processed by a delegate. When the transaction is broadcast to the network, it is sent as a JSON object using the API. 
+At this point the block is signed using the method described in [transaction signing](#transaction-signing). The final step of the transaction generation process is to compute the fee of the transaction. In the current system, the fee is fixed at 0.1 Lisk. Once all of these steps have been completed and the transaction has been validated, the transaction can be broadcast to the network. While the transaction may be present on the network, it will remain in "Unconfirmed" status until it has been processed by a delegate. When the transaction is broadcast to the network, it is sent as a JSON object using the API. 
 
 Optionally, the user can include a data field to the balance transfer transaction. This data field has a maximum length of 64 bytes and can be used to append messages to the transactions. With sidechains fully functional, this data field will be useful to exchange information relative to dApps or sidechain state. This optional field does not require to spend any extra fee.
 
@@ -132,7 +132,7 @@ The JSON object that will be broadcast to the network follows the format below:
     "recipientId": null,
     "signature": Signature of the data block,
     "id": Id of the transaction,
-    "fee": 10000000000,
+    "fee": 2500000000,
     "senderId": Id of the sender,
     "asset": {
         "delegate": {
@@ -153,7 +153,7 @@ A vote transaction (type 3) is a transaction used to vote for delegates. In orde
 - passphrase: the passphrase of the account.
 - votes: an array of votes.
 
-A vote is a delegate’s public key prepended with a ’+’ to vote for the corresponding delegate and a ’-’  if the account wants to remove the vote for the delegate. The maximum number of vote applications in one transaction is 33. Once the aforementioned information is provided, the system can then compute the sender account's public key, and start building the transaction’s data block with a maximum 2198 bytes. In case of second passphrase or multisignature registered in the address, the corresponding fields must be specified too.
+A vote is a delegate’s public key prepended with a ’+’ to vote for the corresponding delegate and a ’-’  if the account wants to remove the vote for the delegate. The maximum number of vote applications in one transaction is 33. Note that a user can issue several vote transactions, but cannot vote for more than 101 delegates in total. Once the aforementioned information is provided, the system can then compute the sender account's public key, and start building the transaction’s data block with a maximum 2198 bytes. In case of second passphrase or multisignature registered in the address, the corresponding fields must be specified too.
 
 This data block is then signed using the account's passphrase, and the signature is appended to the transaction object. The system will then compute the fee of the transaction. In the current implementation, the fee for a vote transaction is fixed at 1 LSK. 
 
@@ -185,10 +185,10 @@ The final maximum size of the transaction, with the signature is 2262 bytes, and
 
 ## Multisignature Registration Transaction
 
-A multisignature registration transaction (type 4) is a transaction used to add a  [multisignature](../security/security.md#multisignature)  to an account. The following parameters are needed in order to issue a multisignature registration transaction:
+A multisignature registration transaction (type 4) is a transaction used to add a  [multisignature](../security/security.md#multisignature)  to an account. For each account, at most one such transaction can be applied. Therefore, once such a transaction was done, it cannot be reverted or modified. The following parameters are needed in order to issue a multisignature registration transaction:
 
 - passphrase: the passphrase of the account the multisignature will be applied to.
-- keysgroup: the array of keys to add to the multisignature account.
+- keysgroup: the array of public keys to add to the multisignature account.
 - min: the minimum number of signatures required to validate a transaction.
 - lifetime: the time to wait for enough signatures before removing the transaction.
 
@@ -211,13 +211,13 @@ The JSON object that will be broadcast to the network follows the format below:
     "recipientId": null,
     "signature": Signature of the data block,
     "id": Id of the transaction,
-    "fee": Transaction fee,
+    "fee": 500000000,
     "senderId": Id of the sender,
     "asset": {
         "multisignature": {
             "min": The minimum of signature required,
             "lifetime": The lifetime of the transaction,
-            "keysgroup": Array of keys to add in the multisignature
+            "keysgroup": Array of public keys to add to the multisignature account
         }
     }
     ...
@@ -255,7 +255,7 @@ This data block is then signed using the account's passphrase, and the signature
     "recipientId": null,
     "signature": Signature of the data block,
     "id": Id of the transaction,
-    "fee": 50000000000,
+    "fee": 2500000000,
     "senderId": Id of the sender,
     "asset": {
         "dapp": {

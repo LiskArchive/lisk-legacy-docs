@@ -2,7 +2,7 @@
 
 Info | Note
 ---- | ----
-![info note](../../info-icon.png "Info Note") | The configuration process has changed from Lisk Core `1.0` to `1.1`. If you have version `1.0` of Lisk Core installed, please visit the [Lisk Docs Github Repository](https://github.com/LiskHQ/lisk-docs), where you can find a full archived version of [Lisk Core 1.0 documentation](https://github.com/LiskHQ/lisk-docs/blob/core-1.0.0/introduction.md)
+![info note](../../info-icon.png "Info Note") | The described configuration is valid since Lisk Core `1.1` version. If you have version `1.0` of Lisk Core installed, please visit the [Lisk Docs Github Repository](https://github.com/LiskHQ/lisk-docs), where you can find a full archived version of [Lisk Core 1.0 documentation](https://github.com/LiskHQ/lisk-docs/blob/core-1.0.0/introduction.md)
 
 ## Structure
 

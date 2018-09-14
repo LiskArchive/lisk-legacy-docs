@@ -135,8 +135,7 @@ sudo npm install -g pm2
 
 Info | Note
 ---- | ----
-![info note](../../../info-icon.png "Info Note") | The PostgreSQL version has been changed from Lisk Core `1.0` (PostgreSQL version 9.6) to `1.1` (PostgreSQL version 10). If you wish to install the `1.0` version of Lisk Core, please visit the [Lisk Docs Github Repository](https://github.com/LiskHQ/lisk-docs), where you can find a full archived version of [Lisk Core 1.0 documentation](https://github.com/LiskHQ/lisk-docs/blob/core-1.0.0/introduction.md)
-
+![info note](../../../info-icon.png "Info Note") | Lisk Core uses PostgreSQL 10 since version `1.1`. If you wish to install the `1.0` version of Lisk Core, please visit the [Lisk Docs Github Repository](https://github.com/LiskHQ/lisk-docs), where you can find a full archived version of [Lisk Core 1.0 documentation](https://github.com/LiskHQ/lisk-docs/blob/core-1.0.0/introduction.md)
 
 ### Ubuntu
 

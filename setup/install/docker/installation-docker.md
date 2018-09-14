@@ -2,7 +2,7 @@
 
 Info | Note
 ---- | ----
-![info note](../../../info-icon.png "Info Note") | The installation process has changed from Lisk Core `1.0` to `1.1`. If you wish to install the `1.0` version of Lisk Core, please visit the [Lisk Docs Github Repository](https://github.com/LiskHQ/lisk-docs), where you can find a full archived version of [Lisk Core 1.0 documentation](https://github.com/LiskHQ/lisk-docs/blob/core-1.0.0/introduction.md)
+![info note](../../../info-icon.png "Info Note") | The described installation process is valid since Lisk Core `1.1` version. If you wish to install the `1.0` version of Lisk Core, please visit the [Lisk Docs Github Repository](https://github.com/LiskHQ/lisk-docs), where you can find a full archived version of [Lisk Core 1.0 documentation](https://github.com/LiskHQ/lisk-docs/blob/core-1.0.0/introduction.md)
 
 ## Get configuration & Makefile
 

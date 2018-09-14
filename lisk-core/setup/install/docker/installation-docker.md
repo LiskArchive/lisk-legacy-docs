@@ -1,5 +1,9 @@
 # Lisk Core Docker Installation
 
+Info | Note
+---- | ----
+![info note](../../../info-icon.png "Info Note") | Lisk Core 1.1 has been released to Testnet. If you wish to connect to Testnet, please refer to [Lisk Core 1.1.0 documentation](https://github.com/LiskHQ/lisk-docs/blob/core-1.1.0/introduction.md).
+
 ## Run Lisk in Docker
 
 We suggest using `docker-compose` to run Lisk and its dependencies in Docker containers:

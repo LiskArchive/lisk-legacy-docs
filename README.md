@@ -30,7 +30,7 @@ For each new version of the product, that needs updates / changes in the documen
 
 E.g. For Lisk Core version 1.1.0:
 - The milestone would be: `Core 1.1.0`
-- The version branch would be: `dev-core-1-1-0`
+- The version branch would be: `dev-core-1.1.0`
 
 **Example:** How to create a new version branch for `2.0.0` of the `lisk-elements` documentation.
 
@@ -91,7 +91,7 @@ git checkout dev-core
 For example, when releasing a minor version for adding a new paragraph to `1.0.0` of the `lisk-core` documentation.
 
 ```bash
-git checkout -b dev-core-1.0.0-1.1.0 1.0.0 # create a new branch from the version tag
+git checkout -b dev-core-1.0.0-1.1.0 core-1.0.0 # create a new branch from the version tag
 ```
 
 3. Make the changes, push the branch to GitHub, then open a pull request against the dev-branch of the respective product.
@@ -103,7 +103,7 @@ git checkout dev-core
 git merge dev-core-1.0.0-1.1.0
 ```
 
-5. Tag a new documentation version using the same name as the branch.
+5. Tag the branch with the new documentation version.
 
 ```bash
 git tag core-1.0.0-1.1.0

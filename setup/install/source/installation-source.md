@@ -11,47 +11,46 @@ This section details how to install Lisk Core from Source. When completed, you w
 This user was created in the [ Prerequisites](../../setup/pre-install/source/preinstall-source.md). 
 If you are already logged in to this user, please skip this step.
 
-```shell
+```bash
 su - lisk
 ```
 
 ## Installing Lisk from Source
 
 Before proceeding, determine whether you wish to connect your node to the Mainnet (Main Network) or Testnet (Test Network).
-Clone the Lisk Core repository using Git and initialize the modules.
 
-### Mainnet
+Info | Note
+---- | ----
+![info note](../../../info-icon.png "Info Note") | The described installation process is valid since Lisk Core `1.1` version. If you wish to install the `1.0` version of Lisk Core, please visit the [Lisk Docs Github Repository](https://github.com/LiskHQ/lisk-docs), where you can find a full archived version of [Lisk Core 1.0 documentation](https://github.com/LiskHQ/lisk-docs/blob/core-1.0.0/introduction.md)
 
-```shell
+```bash
 git clone https://github.com/LiskHQ/lisk.git
 cd lisk
-git checkout master
+git checkout v1.1.0 -b v1.1.0 # check out latest release tag
 npm install
 ```
 
-### Testnet
+Info | Note
+---- | ----
+![info note](../../../info-icon.png "Info Note") | Please check for latest release on https://github.com/LiskHQ/lisk/releases
 
-```shell
-git clone https://github.com/LiskHQ/lisk.git
-cd lisk
-git checkout testnet-master
-npm install
+To test that Lisk Core is built and configured correctly, issue the following command to connect to the network:
+
+```bash
+node app.js --network [network]
 ```
 
-To test that Lisk Core is built and configured correctly, issue the following command:
-
-```shell
-node app.js
-```
+Where `[network]` might be either `testnet` or `mainnet`.
 
 If the process is running correctly, no errors are thrown in the logs.
 By default, errors will be logged in `logs/lisk.log` only. You can change the logging level in `config.json`.
 Once the process is verified as running correctly, `CTRL+C` and start the process with `pm2`.
 This will fork the process into the background and automatically recover the process if it fails.
 
-```shell
-pm2 start --name lisk app.js
+```bash
+pm2 start --name lisk app.js -- --network [network]
 ```
+Where `[network]` might be either `testnet` or `mainnet`.
 
 For details on how to manage or stop your Lisk node, please have a look in [Administration from Source](../../../user-guide/administration/source/admin-source.md).
 
@@ -70,13 +69,13 @@ It is recommended to setup a log rotation for the logfile of Lisk Core.
 Ubuntu systems provide a service called `logrotate` for this purpose.
 Please ensure Logrotate is installed on your system:
 
-```shell
+```bash
 logrotate --version
 ```
 
 Next, go to the logrotate config directory and create a new logrotate file for Lisk Core:
 
-```shell
+```bash
 cd /etc/logrotate.d
 vim lisk
 ```
@@ -85,7 +84,7 @@ Inside this file, define the parameters for the log rotation.
 
 Example values:
 
-```shell
+```bash
 /path/to/lisk/logs/*.log { 
         daily                   # daily rotation
         rotate 5                # keep the 5 most recent logs
@@ -99,6 +98,6 @@ Example values:
 
 After customizing the config to fit your needs and saving it, you can test it by doing a dry run:
 
-```shell
+```bash
 sudo logrotate /etc/logrotate.conf --debug
 ```

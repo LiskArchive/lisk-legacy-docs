@@ -37,7 +37,7 @@ E.g. For Lisk Core version 1.1.0:
 ```bash
 git checkout dev-elements # change to dev-branch
 git pull origin dev-elements # pull latest changes
-git checkout -b dev-elements-2-0-0 # create version branch
+git checkout -b dev-elements-2.0.0 # create version branch
 ```
 
 The master branch always contains the official state of the Lisk documentation, which should be identical with content in [https://docs.lisk.io](https://docs.lisk.io).

@@ -11,15 +11,15 @@ Transactions-specific constants are available via the `transaction` key, and inc
 ```js
 import lisk from 'lisk-elements';
 
-lisk.transaction.FIXED_POINT; // Number to use when converting between the smallest possible denomination and 1 LSK.
+lisk.transaction.constants.FIXED_POINT; // Number to use when converting between the smallest possible denomination and 1 LSK.
 
-lisk.transaction.TRANSFER_FEE; // Fee required for a transfer (type 0) transaction.
-lisk.transaction.SIGNATURE_FEE; // Fee required for a register second passphrase (type 1) transaction.
-lisk.transaction.DELEGATE_FEE; // Fee required for a register delegate (type 2) transaction.
-lisk.transaction.VOTE_FEE; // Fee required for a cast votes (type 3) transaction.
-lisk.transaction.MULTISIGNATURE_FEE; // Fee required per group member (plus one) for a register multisignature account (type 4) transaction.
+lisk.transaction.constants.TRANSFER_FEE; // Fee required for a transfer (type 0) transaction.
+lisk.transaction.constants.SIGNATURE_FEE; // Fee required for a register second passphrase (type 1) transaction.
+lisk.transaction.constants.DELEGATE_FEE; // Fee required for a register delegate (type 2) transaction.
+lisk.transaction.constants.VOTE_FEE; // Fee required for a cast votes (type 3) transaction.
+lisk.transaction.constants.MULTISIGNATURE_FEE; // Fee required per group member (plus one) for a register multisignature account (type 4) transaction.
 
-lisk.transaction.BYTESIZES; // Object containing the number of bytes to allocate for each component of a transaction.
+lisk.transaction.constants.BYTESIZES; // Object containing the number of bytes to allocate for each component of a transaction.
 ```
 
 ## Methods for creating transactions

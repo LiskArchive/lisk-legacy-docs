@@ -1,5 +1,28 @@
 # Lisk Elements Transactions
 
+- [Constants](#constants)
+- [Methods for creating transactions](#Methods-for-creating-transactions)
+  - [Type 0 - Transfer](#type-0:-transfer)
+  - [Type 1 - register second passphrase](#type-1:-registersecondpassphrase)
+  - [Type 2 - register delegate](#type-2:-registerdelegate)
+  - [Type 3 - vote for dleegates](#type-3:-castvotes)
+  - [Type 4 - register multisignature transaction](#type-4:-registermultisignature)
+- [Methods for creating signature objects](#Methods-for-creating-signature-objects)
+  - [createSignatureObject](#createSignatureObject)
+- [Utility methods](#Utility-methods)
+  - [convertBeddowsToLSK](#convertBeddowsToLSK)
+  - [convertLSKToBeddows](#convertLSKToBeddows)
+  - [getTransactionBytes](#getTransactionBytes)
+  - [getTransactionId](#getTransactionId)
+  - [multiSignTransaction](#multiSignTransaction)
+  - [signTransaction](#signTransaction)
+  - [validateAddress](#validateAddress)
+  - [validateKeysgroup](#validateKeysgroup)
+  - [validatePublicKey](#validatePublicKey)
+  - [validatePublicKeys](#validatePublicKeys)
+  - [verifyTransaction](#verifyTransaction)
+  - [validateTransaction](#validateTransaction)
+
 The Lisk Elements transactions module provides functions for creating transactions of every type, plus a set of utility functions.
 
 ## Constants
@@ -702,6 +725,39 @@ lisk.transaction.utils.validatePublicKeys([
     '0b68c5d745d47998768a14b92b221ded2292e21b62846f8f968fdbcd9b52ae4d',
     '0b68c5d745d47998768a14b92b221ded2292e21b62846f8f968fdbcd9b52ae4d'
 ]); // Throws 'Error: Duplicated public key: 0b68c5d745d47998768a14b92b221ded2292e21b62846f8f968fdbcd9b52ae4d.'
+```
+
+### `validateTransaction`
+
+Checks validity of a transaction object.
+
+#### Syntax
+
+```js
+validateTransaction(transaction)
+```
+
+#### Parameters
+
+`transaction`: The transaction to verify.
+
+#### Return value
+
+`boolean`: `true` if the transaction object (without signature) is valid, `false` if not.
+
+#### Examples
+
+```js
+lisk.transaction.utils.validateTransaction({
+    amount: '100',
+    recipientId: '123L',
+    senderPublicKey: '0b68c5d745d47998768a14b92b221ded2292e21b62846f8f968fdbcd9b52ae4d',
+    timestamp: 65568696,
+    type: 0,
+    fee: '10000000',
+    recipientPublicKey: null,
+    asset: {},
+}); // true
 ```
 
 ### `verifyTransaction`

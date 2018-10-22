@@ -47,14 +47,15 @@ Load the Lisk Elements script via our CDN. For example to load the minified vers
 </script>
 ```
 
-## Sub-packages
+## Monorepo structure
 
-For usage regarding each sub-package, see the following pages:
+Lisk Elements is a Mono repository, and consists of multiple independent packages.
+For usage regarding each package, see the following pages:
 
 Subcategories | Description
 --- | ---
 [API Client](user-guide/api-client/api) | The Lisk Elements API Client provides a convenient wrapper for interacting with the public API of nodes on the Lisk network
 [Constants](user-guide/constants) | The Constants object provides some handy general-purpose constants for use with the Lisk Ecosystem
 [Cryptography](user-guide/cryptography) | The cryptography module provides all the cryptographic functionality necessary when interacting with the Lisk ecosystem
-[Mnemonic](user-guide/mnemonic) | The passphrase module provides tools for generating and validating mnemonic passphrases
+[Passphrase](user-guide/mnemonic) | The passphrase module provides tools for generating and validating mnemonic passphrases
 [Transactions](user-guide/transactions) | The transactions module provides functions for creating transactions of every type, plus a set of utility functions

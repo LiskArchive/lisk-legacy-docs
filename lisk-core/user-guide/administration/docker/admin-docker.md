@@ -37,12 +37,11 @@ docker restart container_id
 
 ### Configuration
 
-<!-- TODO: fix branch -->
-Lisk Core normally gets configured by editing its [config.json](https://github.com/LiskHQ/lisk/blob/1.0.0/config.json) but this isn't convenient in a Docker installation. Instead a [template](https://github.com/LiskHQ/lisk/blob/1.0.0/docker_files/etc/confd/templates/config.json.tmpl) is provided and configurations options can be passed as environment variables.  We did so already by setting `LISK_DB_HOST` in `docker-compose.yml` above.
+Lisk Core normally gets configured by providing a suited [configuration file](../../configuration/configuration.md). But this isn't convenient in a Docker installation. Instead a [template](https://github.com/LiskHQ/lisk/blob/1.1.0/docker_files/etc/confd/templates/config.json.tmpl) is provided and configurations options can be passed as environment variables.  We did so already by setting `LISK_DB_HOST` in `docker-compose.yml` above.
 
 #### Changing the configuration of your Lisk installation
 
-Configuration variables always start with `LISK_` and are mapped to their path in `config.json`. For example, the value of `redis.db.host` can be changed by setting  the `LISK_REDIS_DB_HOST` environment variable. If you are unsure what variable name to use, refer to the [template](https://github.com/LiskHQ/lisk/blob/1.0.0/docker_files/etc/confd/templates/config.json.tmpl) file.
+Configuration variables always start with `LISK_` and are mapped to their path in `config.json`. For example, the value of `redis.db.host` can be changed by setting  the `LISK_REDIS_DB_HOST` environment variable. If you are unsure what variable name to use, refer to the [template](https://github.com/LiskHQ/lisk/blob/1.1.0/docker_files/etc/confd/templates/config.json.tmpl) file.
 
 Info | Note 
 --- | --- 

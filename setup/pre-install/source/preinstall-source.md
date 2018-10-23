@@ -1,9 +1,5 @@
 # Lisk Core Source Pre-Install
 
-Info | Note
----- | ----
-![info note](../../../info-icon.png "Info Note") | Lisk Core 1.1 has been released to Testnet. If you wish to connect to Testnet, please refer to [Lisk Core 1.1.0 documentation](https://github.com/LiskHQ/lisk-docs/blob/core-1.1.0/introduction.md).
-
 This document details the prerequisites to install Lisk Core 1.0.0 from a Source installation using tagged releases on Github.
 To complete the installation there are prerequisites that need to be fulfilled.  If you have already performed these, please proceed to the [Installation](/lisk-core/setup/install/source/install-source.md) page.
 
@@ -103,14 +99,14 @@ Install System wide via package manager, like so:
 ### Ubuntu
 
 ```bash
-curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
+curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
 sudo apt-get install -y nodejs
 ```
 
 ### MacOS
 
 ```bash
-brew install node@6.14.1
+brew install node@8.12.0
 ```
 
 ### 5a. _(Recommended)_ Install a version manager such as nvm (<https://github.com/creationix/nvm>)
@@ -122,7 +118,7 @@ su - lisk
 2. Install nvm following these [instructions](https://github.com/creationix/nvm#installation)
 3. Install the correct version of Node.js using nvm:
 ```bash
-nvm install 6.14.1
+nvm install 8.12.0
 ```
 
 For the following steps,  logout from the 'lisk' user again with `CTRL+D`, and continue with your user with sudo rights.
@@ -136,10 +132,6 @@ sudo npm install -g pm2
 ```
 
 ## 6. PostgreSQL (version 10)
-
-Info | Note
----- | ----
-![info note](../../../info-icon.png "Info Note") | Lisk Core uses PostgreSQL 10 since version `1.1`. If you wish to install the `1.0` version of Lisk Core, please visit the [Lisk Docs Github Repository](https://github.com/LiskHQ/lisk-docs), where you can find a full archived version of [Lisk Core 1.0 documentation](https://github.com/LiskHQ/lisk-docs/blob/core-1.0.0/introduction.md)
 
 ### Ubuntu
 

@@ -30,7 +30,7 @@ Node.js is supported on most operating systems. Follow the instructions for your
 
 Confirm that Node.js and NPM have been successfully installed by running
 
-```shell
+```bash
 node --version
 npm --version
 ```
@@ -43,17 +43,25 @@ This section details how to install Lisk Elements for a given distribution. If y
 
 To install the latest version of Lisk Elements for use as a dependency in a Node.js project, please proceed with the following:
 
-```shell
+```bash
 npm install --save lisk-elements
 ```
-
 Upon successful completion, NPM will add the Lisk Elements package to your `package.json` file.
+
+#### Installing sub packages of Lisk Elements
+
+```bash
+npm install --save <package-name>
+```
+
+where `<package-name>` can be any of the sub packages in lisk elements.
+For a list of available sub packages, check the [user guide](../user-guide/user-guide.md)
 
 ### Install Lisk Elements from Source (GitHub)
 
 Clone the Lisk Elements repository using Git and install the dependencies:
 
-```shell
+```bash
 git clone https://github.com/LiskHQ/lisk-elements.git
 cd lisk-elements
 git checkout master

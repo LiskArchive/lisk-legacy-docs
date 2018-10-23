@@ -34,6 +34,11 @@ sudo apt-get --purge remove postgresql postgresql-doc postgresql-common
 ```
 
 ### npm install fails with error (Source)
+
+Info | Note 
+--- | --- 
+![info note](../../info-icon.png "Info Note") | This issue should not be present anymore since Lisk Core `1.2`
+
 #### Problem:
 `npm install` fails with error `Failed at the sodium@2.0.1 preinstall script.`
 When trying to install the necessary node modules for Lisk Core, the install script fails while trying to build sodium.

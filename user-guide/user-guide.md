@@ -2,9 +2,10 @@
 
 This section details how to use Lisk Elements, once you have successfully installed it.
 
-- [Node.js](user-guide#nodejs)
-- [Browser](user-guide#browser)
-- [Subpackages](user-guide#sub-packages)
+- [Node.js](#nodejs)
+- [Browser](#browser)
+- [Monorepo structure](#monorepo-structure)
+- [Packages](#packages)
 
 ## Node.js
 

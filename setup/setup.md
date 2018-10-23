@@ -5,6 +5,7 @@
   - [Install Node](#install-node)
 - [Installation](#installation)
   - [Install Lisk Elements via NPM](#verify-installation)
+  - [Installing sub packages of Lisk Elements](#installing-sub-packages-of-lisk-elements)
   - [Install Lisk Elements from Source (GitHub)](#verify-installation)
   - [Load Lisk Elements via CDN](#verify-installation)
 
@@ -14,12 +15,12 @@ Lisk Elements requires [Node.js](https://nodejs.org/) as the underlying engine f
 
 ### Determine if your platform can run Node
 
-######Supported Platforms
+###### Supported Platforms
 - Windows 10
 - macOS
 - Linux
 
-######Not Supported
+###### Not Supported
 - Platforms without NodeJS 6.3.x or higher
 
 ### Install Node

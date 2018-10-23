@@ -49,18 +49,39 @@ Load the Lisk Elements script via our CDN. For example to load the minified vers
 
 ## Monorepo structure
 
-Lisk Elements is a multi-package mono repository, and therefore consists of multiple independent npm packages.
-As every package is independent form all other packages , each package can be installed seperately using npm:
+Lisk Elements is a multi-package mono repository, and therefore consists of one main npm package `lisk-elements`, which includes multiple independent npm sub packages.
+As every package is independent form all other packages , each package can be installed seperately using npm.
+
+The general structure of the repository is realized with [lerna](https://github.com/lerna/lerna) and looks like the following:
 
 ```bash
-npm install --save <package-name>
+lisk-elements/
+  package.json
+  packages/
+    lisk-client/
+      package.json
+    lisk-api-client/
+      package.json
+    lisk-constants/
+      package.json
+    lisk-cryptography/
+      package.json
+    lisk-passphrase/
+      package.json
+    lisk-transactions/
+      package.json
 ```
+
 For usage regarding each package, see the following pages:
 
-Package | package name| Description
---- | --- | ---
-[API Client](user-guide/api-client/api) | lisk-api-client | The Lisk Elements API Client provides a convenient wrapper for interacting with the public API of nodes on the Lisk network
-[Constants](user-guide/constants) | lisk-constants | The Constants object provides some handy general-purpose constants for use with the Lisk Ecosystem
-[Cryptography](user-guide/cryptography) | lisk-cryptography | The cryptography module provides all the cryptographic functionality necessary when interacting with the Lisk ecosystem
-[Passphrase](user-guide/mnemonic) | lisk-passphrase | The passphrase module provides tools for generating and validating mnemonic passphrases
-[Transactions](user-guide/transactions) | lisk-transactions | The transactions module provides functions for creating transactions of every type, plus a set of utility functions
+## Packages
+
+| Package                                                 |                                                      Version                                                      | Description                                                        |
+| ------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------: | ------------------------------------------------------------------ |
+| [lisk-elements](packages/lisk-elements)                 | [![](https://img.shields.io/badge/npm-v1.0.0-green.svg)](https://www.npmjs.com/package/lisk-elements)             | Package contains everything                                        |
+| [@liskhq/lisk-client](../user-guide/client/api)         | [![](https://img.shields.io/badge/npm-v1.0.0-green.svg)](https://www.npmjs.com/package/@liskhq/lisk-client)       | A default set of Elements for use by clients of the Lisk network   |
+| [@liskhq/lisk-api-client](../user-guide/api-client/api) | [![](https://img.shields.io/badge/npm-v1.0.0-green.svg)](https://www.npmjs.com/package/@liskhq/lisk-api-client)   | An API client for the Lisk network                                 |
+| [@liskhq/lisk-constants](../user-guide/constants)       | [![](https://img.shields.io/badge/npm-v1.0.0-green.svg)](https://www.npmjs.com/package/@liskhq/lisk-constants)    | General constants for use with Lisk-related software               |
+| [@liskhq/lisk-cryptography](../user-guide/cryptography) | [![](https://img.shields.io/badge/npm-v1.0.0-green.svg)](https://www.npmjs.com/package/@liskhq/lisk-cryptography) | General cryptographic functions for use with Lisk-related software |
+| [@liskhq/lisk-passphrase](../user-guide/mnemonic)       | [![](https://img.shields.io/badge/npm-v1.0.0-green.svg)](https://www.npmjs.com/package/@liskhq/lisk-passphrase)   | Mnemonic passphrase helpers for use with Lisk-related software     |
+| [@liskhq/lisk-transactions](../user-guide/transactions) | [![](https://img.shields.io/badge/npm-v1.0.0-green.svg)](https://www.npmjs.com/package/@liskhq/lisk-transactions) | Everything related to transactions according to the Lisk protocol  |

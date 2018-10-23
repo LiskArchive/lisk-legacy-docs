@@ -49,13 +49,18 @@ Load the Lisk Elements script via our CDN. For example to load the minified vers
 
 ## Monorepo structure
 
-Lisk Elements is a Mono repository, and consists of multiple independent packages.
+Lisk Elements is a multi-package mono repository, and therefore consists of multiple independent npm packages.
+As every package is independent form all other packages , each package can be installed seperately using npm:
+
+```bash
+npm install --save <package-name>
+```
 For usage regarding each package, see the following pages:
 
-Subcategories | Description
---- | ---
-[API Client](user-guide/api-client/api) | The Lisk Elements API Client provides a convenient wrapper for interacting with the public API of nodes on the Lisk network
-[Constants](user-guide/constants) | The Constants object provides some handy general-purpose constants for use with the Lisk Ecosystem
-[Cryptography](user-guide/cryptography) | The cryptography module provides all the cryptographic functionality necessary when interacting with the Lisk ecosystem
-[Passphrase](user-guide/mnemonic) | The passphrase module provides tools for generating and validating mnemonic passphrases
-[Transactions](user-guide/transactions) | The transactions module provides functions for creating transactions of every type, plus a set of utility functions
+Package | package name| Description
+--- | --- | ---
+[API Client](user-guide/api-client/api) | lisk-api-client | The Lisk Elements API Client provides a convenient wrapper for interacting with the public API of nodes on the Lisk network
+[Constants](user-guide/constants) | lisk-constants | The Constants object provides some handy general-purpose constants for use with the Lisk Ecosystem
+[Cryptography](user-guide/cryptography) | lisk-cryptography | The cryptography module provides all the cryptographic functionality necessary when interacting with the Lisk ecosystem
+[Passphrase](user-guide/mnemonic) | lisk-passphrase | The passphrase module provides tools for generating and validating mnemonic passphrases
+[Transactions](user-guide/transactions) | lisk-transactions | The transactions module provides functions for creating transactions of every type, plus a set of utility functions

@@ -20,12 +20,12 @@ Lisk Commander requires [Node.js](https://nodejs.org/) as the underlying engine 
 - Linux
 
 ######Not Supported
-- Platforms with NodeJS version smaller than 8.3
+- Platforms without NodeJS versions 8.3 and above.
 
 ### Install Node
 
 Node.js is supported on most operating systems. Follow the instructions for your operating system on the [Node.js downloads page](https://nodejs.org/en/download/). 
-You will need minimum version `8.3.`.
+Lisk-Commander requires Node.js versions 8.3 or above.
 NPM is automatically installed along with Node.js.
 
 #### Verify Node installation

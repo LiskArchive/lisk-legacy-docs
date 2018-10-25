@@ -2,11 +2,11 @@
 
 - [Constants](#constants)
 - [Methods for creating transactions](#Methods-for-creating-transactions)
-  - [Type 0 - Transfer](#type-0:-transfer)
-  - [Type 1 - register second passphrase](#type-1:-registersecondpassphrase)
-  - [Type 2 - register delegate](#type-2:-registerdelegate)
-  - [Type 3 - vote for dleegates](#type-3:-castvotes)
-  - [Type 4 - register multisignature transaction](#type-4:-registermultisignature)
+  - [Type 0 - Transfer](#type-0-transfer)
+  - [Type 1 - register second passphrase](#type-1-registersecondpassphrase)
+  - [Type 2 - register delegate](#type-2-registerdelegate)
+  - [Type 3 - vote for dleegates](#type-3-castvotes)
+  - [Type 4 - register multisignature transaction](#type-4-registermultisignature)
 - [Methods for creating signature objects](#Methods-for-creating-signature-objects)
   - [createSignatureObject](#createSignatureObject)
 - [Utility methods](#Utility-methods)
@@ -729,7 +729,7 @@ lisk.transaction.utils.validatePublicKeys([
 
 ### `validateTransaction`
 
-Checks validity of a transaction object.
+Checks whether the input transaction object has valid schema or not.
 
 #### Syntax
 
@@ -739,11 +739,22 @@ validateTransaction(transaction)
 
 #### Parameters
 
-`transaction`: The transaction to verify.
+`transaction`: The transaction to validate.
 
 #### Return value
 
-`boolean`: `true` if the transaction object (without signature) is valid, `false` if not.
+```
+{
+  valid: boolean,
+  errors: [{
+    dataPath: string,
+    message: string
+  }]
+}
+```
+
+where `boolean`: `true` if the transaction object (without signature) is valid, `false` if not.
+
 
 #### Examples
 

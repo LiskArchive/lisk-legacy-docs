@@ -45,7 +45,7 @@ We assume that you have already installed Lisk Core and are familiar with the ap
 | Testnet   | 7000         | 7001        |
 
 - Make a backup of `config.json`. While this process does make a backup automatically in a `backup/` directory, it's recommended to make one yourself as you can never be too careful. At the end of this tutorial we include some advanced cases to guide you.
-- The next section introduces a tool we have consciously implemented to make a gapless migration. We expect it to be executed in an Ubuntu 16 environment that follows the recommended specs you can find in the [readme](https://github.com/LiskHQ/lisk#lisk).
+- The next section introduces a tool we have consciously implemented to make a gapless migration.
 
 ### Lisk Bridge : Automated Lisk Core Migration
 We introduced a tool to perform the migration called [Lisk Bridge](https://downloads.lisk.io/lisk/test/lisk_bridge.sh). 

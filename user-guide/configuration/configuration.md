@@ -314,7 +314,7 @@ Next snippet highlights the essential parameters to enable SSL security on your 
 
 Important | Note 
 --- | --- 
-![important note](../../important-icon.png "Important Note") | If SSL Port configured above `ssl.options.port` is within well known ports range (below 1024), you must alter the port specified with `setcap` or change it to be outside of that range. 
+![important note](../../important-icon.png "Important Note") | If SSL Port configured above in `ssl.options.port` is a privileged port (below 1024), you must either allow node to use the specified port with `setcap` or change the configuration to use a port outside of that range.
 
 **Setcap:** Only required to grant Lisk access to port 443
 

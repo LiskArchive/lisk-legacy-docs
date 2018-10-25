@@ -20,6 +20,7 @@ Firstly, please determine if your platform can install Lisk Core from source.
 ###### Supported Platforms
 - Ubuntu 14.04 (LTS) x86_64
 - Ubuntu 16.04 (LTS) x86_64
+- Ubuntu 18.04 (LTS) x86_64
 - MacOS 10.12 (Sierra)
 - MacOS 10.13 (High Sierra)
 

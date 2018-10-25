@@ -5,7 +5,7 @@
 --- | --- | ---
 [Pre-Installation](setup/pre-install/preinstallation.md) | [Binary](upgrade/binary/upgrade-binary.md) | [Administration](user-guide/administration/admin.md)
 [Installation](setup/install/installation.md) | [Docker](upgrade/docker/upgrade-docker.md) | [Configuration](user-guide/configuration/configuration.md)
-[Troubleshooting](troubleshooting/troubleshooting.md) | [Source](upgrade/source/upgrade-source.md) |  [API](user-guide/api/api.md)
+[Troubleshooting](troubleshooting/troubleshooting.md) | [Source](upgrade/source/upgrade-source.md) |  [API](user-guide/api/api.json)
 | | [Migration](upgrade/migration/migration.md)| |
 
 Lisk Core is the program that implements the [Lisk Protocol](/lisk-protocol/introduction.md). Every machine must set it up in order to run a node that allows for participation in the network. Setting up Lisk Core enables a user to:

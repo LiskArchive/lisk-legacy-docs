@@ -14,3 +14,16 @@ Lisk Commander allows you to communicate with a remote or local node and carry o
 Info | Note 
 --- | --- 
 ![info note](info-icon.png "Info Note") | With our relaunch we have introduced a new name for Lisk Commander, which was previously known as Lisky. Please be aware that at some places of this documentation the name still needs to be remain unchanged.
+
+## Contribute to the Codebase
+
+Everyone is invited to contribute to the Lisk Commander project. We welcome and appreciate all contributions. 
+
+### Github
+All necessary information can be found on our [Lisk Commander Github](https://github.com/LiskHQ/lisk-commander).
+
+### Contribution Guidelines
+Please be sure to read and follow our [Contribution Guidelines](https://github.com/LiskHQ/lisk-commander/blob/development/docs/CONTRIBUTING.md).
+
+### Gitter
+If you have any further questions please join our [Gitter](https://gitter.im/LiskHQ/lisk).

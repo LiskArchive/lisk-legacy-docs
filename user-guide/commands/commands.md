@@ -2,67 +2,71 @@
 
 ## List of commands
 
-- show warranty
-- show copyright
-- [config](#configuration)
-- [create account](#create-account)
-- [show account](#show-account)
-- [create transaction transfer](#create-transaction-transfer)
-- [create transaction register second passphrase](#create-transaction-register-second-passphrase)
-- [create transaction cast votes](#create-transaction-cast-votes)
-- [create transaction create multisignature account](#create-transaction-create-multisignature-account)
-- [create transaction register delegate](#create-transaction-register-delegate)
-- [broadcast transaction](#broadcast-transaction)
-- [broadcast signature](#broadcast-signature)
-- [decrypt message](#decrypt-message)
-- [decrypt passphrase](#decrypt-passphrase)
-- [encrypt message](#encrypt-message)
-- [encrypt passphrase](#encrypt-passphrase)
-- [verify transaction](#verify-transaction)
-- [sign transaction](#sign-transaction)
-- [verify message](#verify-message)
-- [sign message](#sign-message)
-- exit
-- [get](#get)
-- [help](#help)
-- [list](#list)
-- [set](#set)
+- [Account](#account)
+  - [Create Account](#create-account)
+  - [Get Account](#get-account)
+  - [Show Account](#show-account)
+- [Block](#block)
+  - [Get Block](#get-block)
+- [Config](#config)
+  - [Set Config](#set-config)
+  - [Show Config](#show-config)
+- [Copyright](#copyright)
+- [Delegate](#delegate)
+  - [Get Delegate](#get-delegate)
+- [Help](#help)
+- [Message](#message)
+  - [Decrypt Message](#decrypt-message)
+  - [Encrypt Message](#encrypt-message)
+  - [Sign Message](#sign-message)
+  - [Verify Message](#verify-message)
+- [Node](#node)
+  - [Forging](#forging)
+  - [Get Node](#get-node)
+- [Passphrase](#passphrase)
+  - [Decrypt Passphrase](#decrypt-passphrase)
+  - [Encrypt Passphrase](#encrypt-passphrase)
+- [Signature](#signature)
+  - [Broadcast](#broadcast-signature)
+  - [Create](#create-signature)
+- [Transaction](#transaction)
+  - [Create](#create-transaction)
+    - [Transfer](#transfer-transaction)
+    - [Second Passphrase Delegate](#second-passphrase-transaction)
+    - [Register Delegate](#register-delegate-transaction)
+    - [Cast Votes](#cast-votes-transaction)
+    - [Multisignature Account Registration](#multisignature-account-registration)
+  - [Get](#get-transaction)
+  - [Sign](#sign-transaction)
+  - [Verify](#verify-transaction)
+- [Warranty](#warranty)
 
+## Account
 
-## Configuration
+Commands relating to Lisk accounts.
 
-This command displays the current configuration.
+### Create Account
 
-**Input**
-```shell
-lisk> config
+Returns a randomly-generated mnemonic passphrase with its corresponding public/private key pair and Lisk address.
+
+```bash
+USAGE
+  $ lisk account:create
+
+OPTIONS
+  -j, --[no-]json      Prints output in JSON format. You can change the default behaviour in your config.json file.
+
+  -n, --number=number  [default: 1] Number of accounts to create.
+
+  --[no-]pretty        Prints JSON in pretty format rather than condensed. Has no effect if the output is set to table.
+                       You can change the default behaviour in your config.json file.
+
+EXAMPLES
+  account:create
+  account:create --number=3
 ```
 
 **Example JSON Output**
-```json
- {
-	"name": "Lisk Commander",
-	"version": "1.0.0",
-	"delimiter": "lisk",
-	"json": false,
-	"api": {
-		"nodes": [],
-		"network": "main"
-	},
-	"pretty": false
-}
-```
-
-## Create Account
-
-This command generates a random seed, along with the corresponding public key and address. It is the recommended way to create new accounts.
-
-**Input**
-```shell
-lisk> create account
-```
-
-**JSON**
 ```json
 {
 	"passphrase": "account reform outdoor curtain animal zoo best gain super glue bacon endless",
@@ -72,16 +76,84 @@ lisk> create account
 }
 ```
 
-## Show Account
+### Get Account
 
-This command display the public key, private key and address which corresponds to the entered passphrase.
+Gets information about one or several accounts from the blockchain.
 
-**Input**
-```shell
-lisk> show account
+```bash
+USAGE
+  $ lisk account:get ADDRESSES
+
+ARGUMENTS
+  ADDRESSES  Comma-separated address(es) to get information about.
+
+OPTIONS
+  -j, --[no-]json  Prints output in JSON format. You can change the default behaviour in your config.json file.
+
+  --[no-]pretty    Prints JSON in pretty format rather than condensed. Has no effect if the output is set to table. You
+                   can change the default behaviour in your config.json file.
+
+EXAMPLES
+  account:get 3520445367460290306L
+  account:get 3520445367460290306L,2802325248134221536L
 ```
 
-**JSON**
+**Example JSON Output**
+```json
+[
+	{
+		"address": "8004805717140184627L",
+		"unconfirmedBalance": "3254116037008",
+		"balance": "3254116037008",
+		"publicKey": "30c07dbb72b41e3fda9f29e1a4fc0fce893bb00788515a5e6f50b80312e2f483",
+		"secondPublicKey": "f7a16edaf7995d522d5e6ac69d7325df76f5883dd084409eb13df8d61c33abfb",
+		"delegate": {
+			"username": "tschakki",
+			"vote": "1372073738324255",
+			"rewards": "3190700000000",
+			"producedBlocks": 9377,
+			"missedBlocks": 905,
+			"rank": 94,
+			"approval": 10.66,
+			"productivity": 91.2
+		}
+	}
+]
+```
+
+### Show Account
+
+Shows private account information for a given passphrase.
+Displays lisk address, publickey and privatekey that belong to the entered passphrase.
+
+```bash
+USAGE
+  $ lisk account:show
+
+OPTIONS
+  -j, --[no-]json
+      Prints output in JSON format. You can change the default behaviour in your config.json file.
+
+  -p, --passphrase=passphrase
+      Specifies a source for your secret passphrase. Lisk Commander will prompt you for input if this option is not set.
+      	Source must be one of `prompt`, `pass`, `env`, `file` or `stdin`. For `pass`, `env` and `file` a corresponding
+      identifier must also be provided.
+      	Examples:
+      	- --passphrase=prompt (default behaviour)
+      	- --passphrase='pass:my secret passphrase' (should only be used where security is not important)
+      	- --passphrase=env:SECRET_PASSPHRASE
+      	- --passphrase=file:/path/to/my/passphrase.txt (takes the first line only)
+      	- --passphrase=stdin (takes one line only)
+
+  --[no-]pretty
+      Prints JSON in pretty format rather than condensed. Has no effect if the output is set to table. You can change the
+      default behaviour in your config.json file.
+
+EXAMPLE
+  account:show
+```
+
+**Example JSON Output**
 ```json
 {
         "privateKey": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3a4465fd76c16fcc458448076372abf1912cc5b150663a64dffefe550f96feadd",
@@ -90,18 +162,922 @@ lisk> show account
 }
 ```
 
-## Create transaction transfer
+## Block
 
-This command creates and signs a type 0 transaction, which will transfer a Lisk balance to a provided address if broadcast to the network. The command takes two required parameters:
+Commands relating to Lisk blocks.
 
-- An amount to transfer (in LSK).
-- The address of the recipient.
+### Get Block
 
-**Example Input**
-```shell
-lisk> create transaction transfer 100 13356260975429434553L
-Please enter your secret passphrase: *******
-Please re-enter your secret passphrase: *******
+Gets block information from the blockchain.
+
+```bash
+USAGE
+  $ lisk block:get BLOCKIDS
+
+ARGUMENTS
+  BLOCKIDS  Comma-separated block ID(s) to get information about.
+
+OPTIONS
+  -j, --[no-]json  Prints output in JSON format. You can change the default behaviour in your config.json file.
+
+  --[no-]pretty    Prints JSON in pretty format rather than condensed. Has no effect if the output is set to table. You
+                   can change the default behaviour in your config.json file.
+
+EXAMPLES
+  block:get 369374894959871969
+  block:get 17108498772892203620,8541428004955961162
+```
+
+**Example JSON Output**
+```json
+[
+	{
+		"id": "369374894959871969",
+		"version": 1,
+		"timestamp": 76721330,
+		"height": 6587884,
+		"numberOfTransactions": 1,
+		"totalAmount": "11100000",
+		"totalFee": "10000000",
+		"reward": "300000000",
+		"payloadLength": 117,
+		"payloadHash": "76eba40d186274ac79a8a5c2b5d73a5d214acfa1829763f59035d61c43a2ff2d",
+		"generatorPublicKey": "279320364fc3edd39b77f1fa29594d442e39220b165956fa729f741150b0dc4d",
+		"blockSignature": "6f1448a8b25b427bdc05e46d0383f6f1e0af45319591ad5507deaf298428d7fb16c82b4156dd0a444b0b70ef586bb95eb0853cb90937c980c3b939d1a65d1900",
+		"confirmations": 4,
+		"totalForged": "310000000",
+		"generatorAddress": "8191405714437232748L",
+		"previousBlockId": "6777587147545065709"
+	}
+]
+```
+
+## Config
+
+Commands to get and manage configurations for Lisk Commander.
+
+### Show Config
+
+Prints the current configuration.
+
+```bash
+USAGE
+  $ lisk config:show
+
+OPTIONS
+  -j, --[no-]json  Prints output in JSON format. You can change the default behaviour in your config.json file.
+
+  --[no-]pretty    Prints JSON in pretty format rather than condensed. Has no effect if the output is set to table. You
+                   can change the default behaviour in your config.json file.
+
+DESCRIPTION
+  Prints the current configuration.
+
+EXAMPLE
+  config:show
+```
+
+**Example JSON Output (default values):**
+
+```
+{
+	"json": true, // if false, displays output in table format
+	"api": {
+		"nodes": [], // custom nodes, lisk-commander should connect to
+		"network": "main" // main for Mainnet, test for Testnet
+	},
+	"pretty": false // if true, displays output nicely formatted. Has no effect if json:false
+}
+```
+
+### Set Config
+
+Sets configuration.
+
+When `api.nodes` is empty, lisk-commander will connect to official Lisk Seed Nodes depending on the network specified in `api.network`.
+
+If `api.nodes` is set to one or multiple nodes, lisk commander will ignore `api.network` and will make all requests to the specified Lisk node.
+
+When multiple nodes are specified, queries will always go to the first listed node. The later nodes serve as a fallback, if query to the first node was not successful.
+
+```bash
+USAGE
+  $ lisk config:set VARIABLE [VALUES]
+
+OPTIONS
+  -j, --[no-]json  Prints output in JSON format. You can change the default behaviour in your config.json file.
+
+  --[no-]pretty    Prints JSON in pretty format rather than condensed. Has no effect if the output is set to table. You
+                   can change the default behaviour in your config.json file.
+
+EXAMPLES
+  config:set pretty true
+  config:set api.network test 
+  config:set api.nodes https://127.0.0.1:4000,http://mynode.com:7000
+```
+
+**Example JSON Output**
+```json
+{
+	"message": "Successfully set pretty to true."
+}
+```
+
+## Copyright
+
+Displays copyright notice.
+
+```
+USAGE
+  $ lisk copyright
+
+OPTIONS
+  -j, --[no-]json  Prints output in JSON format. You can change the default behaviour in your config.json file.
+
+  --[no-]pretty    Prints JSON in pretty format rather than condensed. Has no effect if the output is set to table. You
+                   can change the default behaviour in your config.json file.
+
+EXAMPLE
+  copyright
+```
+
+## Delegate
+
+Commands relating to Lisk delegates.
+
+### Get Delegate
+
+Gets delegate information from the blockchain.
+
+```
+USAGE
+  $ lisk delegate:get USERNAMES
+
+ARGUMENTS
+  USERNAMES  Comma-separated username(s) to get information about.
+
+OPTIONS
+  -j, --[no-]json  Prints output in JSON format. You can change the default behaviour in your config.json file.
+
+  --[no-]pretty    Prints JSON in pretty format rather than condensed. Has no effect if the output is set to table. You
+                   can change the default behaviour in your config.json file.
+
+DESCRIPTION
+  Gets delegate information from the blockchain.
+
+EXAMPLES
+  delegate:get lightcurve
+  delegate:get lightcurve,4miners.net
+```
+
+**Example JSON Output**
+```json
+[
+	{
+		"rewards": "3209000000000",
+		"vote": "1372446779413292",
+		"producedBlocks": 9437,
+		"missedBlocks": 905,
+		"username": "tschakki",
+		"rank": 94,
+		"approval": 10.66,
+		"productivity": 91.25,
+		"account": {
+			"address": "8004805717140184627L",
+			"publicKey": "30c07dbb72b41e3fda9f29e1a4fc0fce893bb00788515a5e6f50b80312e2f483",
+			"secondPublicKey": "f7a16edaf7995d522d5e6ac69d7325df76f5883dd084409eb13df8d61c33abfb"
+		}
+	}
+]
+```
+
+## Help
+
+Displays command reference.
+
+```bash
+USAGE
+  $ lisk help [COMMAND]
+
+ARGUMENTS
+  COMMAND  command to show help for
+
+OPTIONS
+  --all  see all commands in CLI
+```
+
+## Message
+
+Commands relating to user messages.
+
+### Decrypt Message
+
+Decrypts a previously encrypted message from a given sender public key for a known nonce using your secret passphrase.
+
+Important | Sensitive Input 
+--- | --- 
+![important note](../../important-icon.png "Important Note") | Since the secret passphrase is a sensitive input, it can be provided using one of the available methods described in the [Sensitive Inputs section](../sensitive-inputs/sensitive-inputs.md). 
+|                |                                             The encrypted message can be provided either directly as an argument, or by specifying a source with the --message option. 
+|                |                                             If both the secret passphrase and the encrypted message are provided via stdin, the secret passphrase must be given in the first line and the encrypted message must be given in the subsequent lines.
+
+```bash
+USAGE
+  $ lisk message:decrypt SENDERPUBLICKEY NONCE [MESSAGE]
+
+ARGUMENTS
+  SENDERPUBLICKEY  Public key of the sender of the message.
+  NONCE            Nonce used during encryption.
+  MESSAGE          Encrypted message.
+
+OPTIONS
+  -j, --[no-]json
+      Prints output in JSON format. You can change the default behaviour in your config.json file.
+
+  -m, --message=message
+      Specifies a source for providing a message to the command. If a string is provided directly as an argument, this
+      option will be ignored. The message must be provided via an argument or via this option. Sources must be one of
+      `file` or `stdin`. In the case of `file`, a corresponding identifier must also be provided.
+      	Note: if both secret passphrase and message are passed via stdin, the passphrase must be the first line.
+      	Examples:
+      	- --message=file:/path/to/my/message.txt
+      	- --message=stdin
+
+  -p, --passphrase=passphrase
+      Specifies a source for your secret passphrase. Lisk Commander will prompt you for input if this option is not set.
+      	Source must be one of `prompt`, `pass`, `env`, `file` or `stdin`. For `pass`, `env` and `file` a corresponding
+      identifier must also be provided.
+      	Examples:
+      	- --passphrase=prompt (default behaviour)
+      	- --passphrase='pass:my secret passphrase' (should only be used where security is not important)
+      	- --passphrase=env:SECRET_PASSPHRASE
+      	- --passphrase=file:/path/to/my/passphrase.txt (takes the first line only)
+      	- --passphrase=stdin (takes one line only)
+
+  --[no-]pretty
+      Prints JSON in pretty format rather than condensed. Has no effect if the output is set to table. You can change the
+      default behaviour in your config.json file.
+
+EXAMPLES
+  message:decrypt bba7e2e6a4639c431b68e31115a71ffefcb4e025a4d1656405dfdcd8384719e0 4b800d90d54eda4d093b5e4e6bf9ed203bc90e1560bd628d dcaa605af45a4107a699755237b4c08e1ef75036743d7e4814dea7
+  message:decrypt bba7e2e6a4639c431b68e31115a71ffefcb4e025a4d1656405dfdcd8384719e0 1f9008c2813901366f3452431c27218be2c08ac85d6b28a3 --message file:/path/to/encrypted_message.txt
+  $ echo f359abaf52a8fb68086cee580ce2b4656840c7c2af1308424eb9ff2b17eae87943502b8f14b6 | lisk message:decrypt bba7e2e6a4639c431b68e31115a71ffefcb4e025a4d1656405dfdcd8384719e0 1f9008c2813901366f3452431c27218be2c08ac85d6b28a3 --message stdin
+```
+
+**Example JSON Output**
+```json
+{
+	"message": "My very secret message"
+}
+```
+
+### Encrypt Message
+
+Encrypts a message for a given recipient public key using your secret passphrase.
+
+This command uses lisk-elements passphrase module to encrypt a message you provide for a given public key using a randomly generated nonce. In order to decrypt the encrypted message later your recipient will need your public key (to verify the message came from you), the nonce and the secret passphrase which matches the specified public key.
+
+Important | Sensitive Input 
+--- | --- 
+![important note](../../important-icon.png "Important Note") | Since the secret passphrase is a sensitive input, it can be provided using one of the available methods described in the [Sensitive Inputs section](../sensitive-inputs/sensitive-inputs.md). 
+|                |                                             The encrypted message can be provided either directly as an argument, or by specifying a source with the --message option. 
+|                |                                             If both the secret passphrase and the encrypted message are provided via stdin, the secret passphrase must be given in the first line and the encrypted message must be given in the subsequent lines.
+
+```bash
+USAGE
+  $ lisk message:encrypt RECIPIENTPUBLICKEY [MESSAGE]
+
+ARGUMENTS
+  RECIPIENTPUBLICKEY  Public key of the recipient of the message.
+  MESSAGE             Message to encrypt.
+
+OPTIONS
+  -j, --[no-]json
+      Prints output in JSON format. You can change the default behaviour in your config.json file.
+
+  -m, --message=message
+      Specifies a source for providing a message to the command. If a string is provided directly as an argument, this
+      option will be ignored. The message must be provided via an argument or via this option. Sources must be one of
+      `file` or `stdin`. In the case of `file`, a corresponding identifier must also be provided.
+      	Note: if both secret passphrase and message are passed via stdin, the passphrase must be the first line.
+      	Examples:
+      	- --message=file:/path/to/my/message.txt
+      	- --message=stdin
+
+  -p, --passphrase=passphrase
+      Specifies a source for your secret passphrase. Lisk Commander will prompt you for input if this option is not set.
+      	Source must be one of `prompt`, `pass`, `env`, `file` or `stdin`. For `pass`, `env` and `file` a corresponding
+      identifier must also be provided.
+      	Examples:
+      	- --passphrase=prompt (default behaviour)
+      	- --passphrase='pass:my secret passphrase' (should only be used where security is not important)
+      	- --passphrase=env:SECRET_PASSPHRASE
+      	- --passphrase=file:/path/to/my/passphrase.txt (takes the first line only)
+      	- --passphrase=stdin (takes one line only)
+
+  --[no-]pretty
+      Prints JSON in pretty format rather than condensed. Has no effect if the output is set to table. You can change the
+      default behaviour in your config.json file.
+
+EXAMPLES
+  message:encrypt bba7e2e6a4639c431b68e31115a71ffefcb4e025a4d1656405dfdcd8384719e0 "My very secret message"
+  message:encrypt 5d036a858ce89f844491762eb89e2bfbd50a4a0a0da658e4b2628b25b117ae09 --message file:/path/to/message.txt
+  $ echo "My very secret message" | lisk message:encrypt 5d036a858ce89f844491762eb89e2bfbd50a4a0a0da658e4b2628b25b117ae09 --message stdin
+```
+
+**Example JSON Output**
+```json
+ {
+	"nonce": "cb4d497e6834e0e888e285f32ddb02bdfd4b471f6ad04e6d",
+	"encryptedMessage": "82af57f715c69958bda8b9e95b7f7a09bfaa5afeb94960bf243d7c77a656a3e1ff061c68e20e"
+}
+```
+
+### Sign Message
+
+Signs a message using your secret passphrase.
+
+This command signs message. You will need the passphrase you sign with.
+
+Important | Sensitive Input 
+--- | --- 
+![important note](../../important-icon.png "Important Note") | Since the secret passphrase is a sensitive input, it can be provided using one of the available methods described in the [Sensitive Inputs section](../sensitive-inputs/sensitive-inputs.md). 
+|                |                                             The encrypted message can be provided either directly as an argument, or by specifying a source with the --message option. 
+|                |                                             If both the secret passphrase and the encrypted message are provided via stdin, the secret passphrase must be given in the first line and the encrypted message must be given in the subsequent lines.
+
+```bash
+USAGE
+  $ lisk message:sign [MESSAGE]
+
+ARGUMENTS
+  MESSAGE  Message to sign.
+
+OPTIONS
+  -j, --[no-]json
+      Prints output in JSON format. You can change the default behaviour in your config.json file.
+
+  -m, --message=message
+      Specifies a source for providing a message to the command. If a string is provided directly as an argument, this
+      option will be ignored. The message must be provided via an argument or via this option. Sources must be one of
+      `file` or `stdin`. In the case of `file`, a corresponding identifier must also be provided.
+      	Note: if both secret passphrase and message are passed via stdin, the passphrase must be the first line.
+      	Examples:
+      	- --message=file:/path/to/my/message.txt
+      	- --message=stdin
+
+  -p, --passphrase=passphrase
+      Specifies a source for your secret passphrase. Lisk Commander will prompt you for input if this option is not set.
+      	Source must be one of `prompt`, `pass`, `env`, `file` or `stdin`. For `pass`, `env` and `file` a corresponding
+      identifier must also be provided.
+      	Examples:
+      	- --passphrase=prompt (default behaviour)
+      	- --passphrase='pass:my secret passphrase' (should only be used where security is not important)
+      	- --passphrase=env:SECRET_PASSPHRASE
+      	- --passphrase=file:/path/to/my/passphrase.txt (takes the first line only)
+      	- --passphrase=stdin (takes one line only)
+
+  --[no-]pretty
+      Prints JSON in pretty format rather than condensed. Has no effect if the output is set to table. You can change the
+      default behaviour in your config.json file.
+
+DESCRIPTION
+  Signs a message using your secret passphrase.
+
+EXAMPLES
+  message:sign "Hello world"
+  message:sign --message file:/path/to/message.txt
+  $ echo 'Hello World' | lisk message:sign --message stdin
+```
+
+**Example JSON Output**
+```json
+{
+	"message": "Hello World",
+	"publicKey": "a4465fd76c16fcc458448076372abf1912cc5b150663a64dffefe550f96feadd",
+	"signature": "0c70c0ed6ca16312c6acab46dd8b801fd3f3a2bd68018651c2792b40a7d1d3ee276a6bafb6b4185637edfa4d282e18362e135c5e2cf0c68002bfd58307ddb30b"
+}
+```
+
+### Verify Message
+
+Verifies a signature for a message using the signer’s public key.
+
+This command verify a message after being signed with the sign message command. You will need the public key, signature and message.
+
+```bash
+USAGE
+  $ lisk message:verify PUBLICKEY SIGNATURE [MESSAGE]
+
+ARGUMENTS
+  PUBLICKEY  Public key of the signer of the message.
+  SIGNATURE  Signature to verify.
+  MESSAGE    Message to verify.
+
+OPTIONS
+  -j, --[no-]json
+      Prints output in JSON format. You can change the default behaviour in your config.json file.
+
+  -m, --message=message
+      Specifies a source for providing a message to the command. If a string is provided directly as an argument, this
+      option will be ignored. The message must be provided via an argument or via this option. Sources must be one of
+      `file` or `stdin`. In the case of `file`, a corresponding identifier must also be provided.
+      	Note: if both secret passphrase and message are passed via stdin, the passphrase must be the first line.
+      	Examples:
+      	- --message=file:/path/to/my/message.txt
+      	- --message=stdin
+
+  --[no-]pretty
+      Prints JSON in pretty format rather than condensed. Has no effect if the output is set to table. You can change the
+      default behaviour in your config.json file.
+
+DESCRIPTION
+  Verifies a signature for a message using the signer’s public key.
+
+EXAMPLES
+  message:verify 647aac1e2df8a5c870499d7ddc82236b1e10936977537a3844a6b05ea33f9ef6 2a3ca127efcf7b2bf62ac8c3b1f5acf6997cab62ba9fde3567d188edcbacbc5dc8177fb88d03a8691ce03348f569b121bca9e7a3c43bf5c056382f35ff843c09 "Hello world"
+  message:verify 647aac1e2df8a5c870499d7ddc82236b1e10936977537a3844a6b05ea33f9ef6 2a3ca127efcf7b2bf62ac8c3b1f5acf6997cab62ba9fde3567d188edcbacbc5dc8177fb88d03a8691ce03348f569b121bca9e7a3c43bf5c056382f35ff843c09 --message file:/path/to/signed_message.txt
+  $ echo 'Hello World' | lisk message:verify 647aac1e2df8a5c870499d7ddc82236b1e10936977537a3844a6b05ea33f9ef6 2a3ca127efcf7b2bf62ac8c3b1f5acf6997cab62ba9fde3567d188edcbacbc5dc8177fb88d03a8691ce03348f569b121bca9e7a3c43bf5c056382f35ff843c09 --message stdin
+```
+
+**Example JSON Output**
+```json
+ {
+	"verified": true
+}
+```
+
+## Node
+
+Commands relating to Lisk nodes.
+
+Uses official Lisk Seed Nodes, if no other nodes are provided in [config](#config).
+
+### Forging
+
+Updates the forging status of a node.
+
+```bash
+USAGE
+  $ lisk node:forging STATUS PUBLICKEY
+
+ARGUMENTS
+  STATUS     (enable|disable) Desired forging status.
+  PUBLICKEY  Public key of the delegate whose status should be updated.
+
+OPTIONS
+  -j, --[no-]json
+      Prints output in JSON format. You can change the default behaviour in your config.json file.
+
+  -w, --password=password
+      Specifies a source for your secret password. Lisk Commander will prompt you for input if this option is not set.
+      	Source must be one of `prompt`, `pass`, `env`, `file` or `stdin`. For `pass`, `env` and `file` a corresponding
+      identifier must also be provided.
+      	Examples:
+      	- --password=prompt (default behaviour)
+      	- --password=pass:password123 (should only be used where security is not important)
+      	- --password=env:PASSWORD
+      	- --password=file:/path/to/my/password.txt (takes the first line only)
+      	- --password=stdin (takes the first line only)
+
+  --[no-]pretty
+      Prints JSON in pretty format rather than condensed. Has no effect if the output is set to table. You can change the
+      default behaviour in your config.json file.
+
+EXAMPLES
+  node:forging enable 647aac1e2df8a5c870499d7ddc82236b1e10936977537a3844a6b05ea33f9ef6
+  node:forging disable 647aac1e2df8a5c870499d7ddc82236b1e10936977537a3844a6b05ea33f9ef6
+```
+
+### Get Node
+
+Gets information about a node.
+
+```bash
+USAGE
+  $ lisk node:get
+
+OPTIONS
+  -j, --[no-]json   Prints output in JSON format. You can change the default behaviour in your config.json file.
+
+  --forging-status  Additionally provides information about forging status.
+
+  --[no-]pretty     Prints JSON in pretty format rather than condensed. Has no effect if the output is set to table. You
+                    can change the default behaviour in your config.json file.
+
+EXAMPLES
+  node:get
+  node:get --forging-status
+```
+
+**Example JSON Output**
+```json
+{
+	"build": "v13:05:01 23/10/2018\n",
+	"commit": "1785110b343fc42955e46fb5321092b470c686bc",
+	"epoch": "2016-05-24T17:00:00.000Z",
+	"fees": {
+		"send": "10000000",
+		"vote": "100000000",
+		"secondSignature": "500000000",
+		"delegate": "2500000000",
+		"multisignature": "500000000",
+		"dappRegistration": "2500000000",
+		"dappWithdrawal": "10000000",
+		"dappDeposit": "10000000"
+	},
+	"nethash": "da3ed6a45429278bac2666961289ca17ad86595d33b31037615d4b8e8f158bba",
+	"nonce": "HrWgya299whkyh8b",
+	"milestone": "2",
+	"reward": "300000000",
+	"supply": "12877201600000000",
+	"version": "1.1.1-rc.1",
+	"broadhash": "5d72de80e8bee2d447ff1683c34e1298dde70a1e5a43e045aaea29aefb82af89",
+	"consensus": 91,
+	"height": 6592831,
+	"loaded": true,
+	"networkHeight": 6592831,
+	"syncing": false,
+	"transactions": {
+		"confirmed": 862234,
+		"unconfirmed": 0,
+		"unprocessed": 0,
+		"unsigned": 0,
+		"total": 862234
+	}
+}
+```
+
+## Passphrase
+
+Commands relating to Lisk passphrases.
+
+### Decrypt Passphrase
+
+Decrypts your secret passphrase using the password which was provided at the time of encryption.
+
+This command decrypts your secret passphrase after being encrypted with the encrypt passphrase command. You will need the password you used to encrypt the secret passphrase as well as the initialisation vector (IV) which was randomly generated at the time of encryption.
+
+Important | Sensitive Input 
+--- | --- 
+![important note](../../important-icon.png "Important Note") | Since the secret passphrase is a sensitive input, it can be provided using one of the available methods described in the [Sensitive Inputs section](../sensitive-inputs/sensitive-inputs.md). 
+|                |                                             The encrypted message can be provided either directly as an argument, or by specifying a source with the --message option. 
+|                |                                             If both the secret passphrase and the encrypted message are provided via stdin, the secret passphrase must be given in the first line and the encrypted message must be given in the subsequent lines.
+
+```bash
+USAGE
+  $ lisk passphrase:decrypt [ENCRYPTEDPASSPHRASE]
+
+ARGUMENTS
+  ENCRYPTEDPASSPHRASE  Encrypted passphrase to decrypt.
+
+OPTIONS
+  -j, --[no-]json
+      Prints output in JSON format. You can change the default behaviour in your config.json file.
+
+  -w, --password=password
+      Specifies a source for your secret password. Lisk Commander will prompt you for input if this option is not set.
+      	Source must be one of `prompt`, `pass`, `env`, `file` or `stdin`. For `pass`, `env` and `file` a corresponding
+      identifier must also be provided.
+      	Examples:
+      	- --password=prompt (default behaviour)
+      	- --password=pass:password123 (should only be used where security is not important)
+      	- --password=env:PASSWORD
+      	- --password=file:/path/to/my/password.txt (takes the first line only)
+      	- --password=stdin (takes the first line only)
+
+  --passphrase=passphrase
+      Specifies a source for providing an encrypted passphrase to the command. If a string is provided directly as an
+      argument, this option will be ignored. The encrypted passphrase must be provided via an argument or via this option.
+      Sources must be one of `file` or `stdin`. In the case of `file`, a corresponding identifier must also be provided.
+
+      	Note: if both an encrypted passphrase and the password are passed via stdin, the password must be the first line.
+
+      	Examples:
+      		- --passphrase file:/path/to/my/encrypted_passphrase.txt (takes the first line only)
+      		- --passphrase stdin (takes the first line only)
+
+  --[no-]pretty
+      Prints JSON in pretty format rather than condensed. Has no effect if the output is set to table. You can change the
+      default behaviour in your config.json file.
+
+EXAMPLES
+  passphrase:decrypt "iterations=1000000&cipherText=9b1c60&iv=5c8843f52ed3c0f2aa0086b0&salt=2240b7f1aa9c899894e528cf5b600e9c&tag=23c01112134317a63bcf3d41ea74e83b&version=1"
+  passphrase:decrypt "iterations=1000000&cipherText=9b1c60&iv=5c8843f52ed3c0f2aa0086b0&salt=2240b7f1aa9c899894e528cf5b600e9c&tag=23c01112134317a63bcf3d41ea74e83b&version=1" --passphrase file:./path/to/encrypted_passphrase.txt
+  $ echo testing123 | passphrase:decrypt "iterations=1000000&cipherText=9b1c60&iv=5c8843f52ed3c0f2aa0086b0&salt=2240b7f1aa9c899894e528cf5b600e9c&tag=23c01112134317a63bcf3d41ea74e83b&version=1" --passphrase stdin
+```
+
+**Example JSON Output**
+```json
+{
+	"passphrase": "minute omit local rare sword knee banner pair rib museum shadow juice"
+}
+```
+
+### Encrypt Passphrase
+
+Encrypts your secret passphrase under a password.
+
+This command uses AES-256-CBC to encrypt your secret passphrase under a password you provide using a randomly generated initialisation vector (IV). In order to decrypt the secret passphrase later you will need both the IV and the password.
+
+Important | Sensitive Input 
+--- | --- 
+![important note](../../important-icon.png "Important Note") | Since the secret passphrase is a sensitive input, it can be provided using one of the available methods described in the [Sensitive Inputs section](../sensitive-inputs/sensitive-inputs.md). 
+|                |                                             The encrypted message can be provided either directly as an argument, or by specifying a source with the --message option. 
+|                |                                             If both the secret passphrase and the encrypted message are provided via stdin, the secret passphrase must be given in the first line and the encrypted message must be given in the subsequent lines.
+
+```bash
+USAGE
+  $ lisk passphrase:encrypt
+
+OPTIONS
+  -j, --[no-]json
+      Prints output in JSON format. You can change the default behaviour in your config.json file.
+
+  -p, --passphrase=passphrase
+      Specifies a source for your secret passphrase. Lisk Commander will prompt you for input if this option is not set.
+      	Source must be one of `prompt`, `pass`, `env`, `file` or `stdin`. For `pass`, `env` and `file` a corresponding
+      identifier must also be provided.
+      	Examples:
+      	- --passphrase=prompt (default behaviour)
+      	- --passphrase='pass:my secret passphrase' (should only be used where security is not important)
+      	- --passphrase=env:SECRET_PASSPHRASE
+      	- --passphrase=file:/path/to/my/passphrase.txt (takes the first line only)
+      	- --passphrase=stdin (takes one line only)
+
+  -w, --password=password
+      Specifies a source for your secret password. Lisk Commander will prompt you for input if this option is not set.
+      	Source must be one of `prompt`, `pass`, `env`, `file` or `stdin`. For `pass`, `env` and `file` a corresponding
+      identifier must also be provided.
+      	Examples:
+      	- --password=prompt (default behaviour)
+      	- --password=pass:password123 (should only be used where security is not important)
+      	- --password=env:PASSWORD
+      	- --password=file:/path/to/my/password.txt (takes the first line only)
+      	- --password=stdin (takes the first line only)
+
+  --outputPublicKey
+      Includes the public key in the output. This option is provided for the convenience of node operators.
+
+  --[no-]pretty
+      Prints JSON in pretty format rather than condensed. Has no effect if the output is set to table. You can change the
+      default behaviour in your config.json file.
+
+EXAMPLE
+  passphrase:encrypt
+```
+
+**Example JSON Output**
+```json
+{
+	"encryptedPassphrase": "iterations=1000000&cipherText=9b1c60&iv=5c8843f52ed3c0f2aa0086b0&salt=2240b7f1aa9c899894e528cf5b600e9c&tag=23c01112134317a63bcf3d41ea74e83b&version=1"
+}
+```
+
+## Signature
+
+Commands relating to signatures for Lisk transactions from multisignature accounts.
+
+### Broadcast Signature
+
+Broadcasts a signature for a transaction from a multisignature account.
+
+This command broadcast signature to the network. The command takes one required parameters:
+
+- transaction as string in JSON format
+
+```bash
+USAGE
+  $ lisk signature:broadcast [SIGNATURE]
+
+ARGUMENTS
+  SIGNATURE  Signature to broadcast.
+
+OPTIONS
+  -j, --[no-]json  Prints output in JSON format. You can change the default behaviour in your config.json file.
+
+  --[no-]pretty    Prints JSON in pretty format rather than condensed. Has no effect if the output is set to table. You
+                   can change the default behaviour in your config.json file.
+
+DESCRIPTION
+  Broadcasts a signature for a transaction from a multisignature account.
+  Accepts a stringified JSON signature as an argument, or a signature can be piped from a previous command.
+  If piping make sure to quote out the entire command chain to avoid piping-related conflicts in your shell.
+
+EXAMPLES
+  signature:broadcast '{"transactionId":"abcd1234","publicKey":"abcd1234","signature":"abcd1234"}'
+  $ echo '{"transactionId":"abcd1234","publicKey":"abcd1234","signature":"abcd1234"}' | lisk signature:broadcast
+```
+
+**Example JSON Output**
+```json
+{
+	"meta": {
+		"status": true
+	},
+	"data": {
+		"message": "Signature(s) accepted"
+	},
+	"links": {}
+}
+```
+
+### Create Signature
+
+Create a signature object for a transaction from a multisignature account.
+
+Accepts a stringified JSON transaction as an argument.
+
+```bash
+USAGE
+  $ lisk signature:create [TRANSACTION]
+
+ARGUMENTS
+  TRANSACTION  Transaction in JSON format.
+
+OPTIONS
+  -j, --[no-]json
+      Prints output in JSON format. You can change the default behaviour in your config.json file.
+
+  -p, --passphrase=passphrase
+      Specifies a source for your secret passphrase. Lisk Commander will prompt you for input if this option is not set.
+      	Source must be one of `prompt`, `pass`, `env`, `file` or `stdin`. For `pass`, `env` and `file` a corresponding
+      identifier must also be provided.
+      	Examples:
+      	- --passphrase=prompt (default behaviour)
+      	- --passphrase='pass:my secret passphrase' (should only be used where security is not important)
+      	- --passphrase=env:SECRET_PASSPHRASE
+      	- --passphrase=file:/path/to/my/passphrase.txt (takes the first line only)
+      	- --passphrase=stdin (takes one line only)
+
+  --[no-]pretty
+      Prints JSON in pretty format rather than condensed. Has no effect if the output is set to table. You can change the
+      default behaviour in your config.json file.
+
+EXAMPLE
+  signature:create
+  '{"amount":"10","recipientId":"8050281191221330746L","senderPublicKey":"3358a1562f9babd523a768e700bb12ad58f230f8403105
+  5802dc0ea58cef1e1b","timestamp":59353522,"type":0,"asset":{},"signature":"b84b95087c381ad25b5701096e2d9366ffd04037dcc9
+  41cd0747bfb0cf93111834a6c662f149018be4587e6fc4c9f5ba47aa5bbbd3dd836988f153aa8258e604"}'
+```
+
+## Transaction
+
+Commands relating to Lisk transactions.
+
+### Broadcast Transaction
+
+Broadcasts a transaction to the network via the node specified in the current config.
+
+Accepts a stringified JSON transaction as an argument, or a transaction can be piped from a previous command.
+
+If piping make sure to quote out the entire command chain to avoid piping-related conflicts in your shell.
+
+```bash
+USAGE
+  $ lisk transaction:broadcast [TRANSACTION]
+
+ARGUMENTS
+  TRANSACTION  Transaction to broadcast in JSON format.
+
+OPTIONS
+  -j, --[no-]json  Prints output in JSON format. You can change the default behaviour in your config.json file.
+
+  --[no-]pretty    Prints JSON in pretty format rather than condensed. Has no effect if the output is set to table. You
+                   can change the default behaviour in your config.json file.
+
+EXAMPLES
+  transaction:broadcast '{"type":0,"amount":"100",...}'
+  echo '{"type":0,"amount":"100",...}' | lisk transaction:broadcast
+```
+
+**Example JSON Output**
+```json
+{
+	"meta": {
+		"status": true
+	},
+	"data": {
+		"message": "Transaction(s) accepted"
+	},
+	"links": {}
+}
+```
+
+### Create Transaction
+
+Creates a transaction object.
+
+```bash
+USAGE
+  $ lisk transaction:create
+
+OPTIONS
+  -j, --[no-]json
+      Prints output in JSON format. You can change the default behaviour in your config.json file.
+
+  -p, --passphrase=passphrase
+      Specifies a source for your secret passphrase. Lisk Commander will prompt you for input if this option is not set.
+      	Source must be one of `prompt`, `pass`, `env`, `file` or `stdin`. For `pass`, `env` and `file` a corresponding
+      identifier must also be provided.
+      	Examples:
+      	- --passphrase=prompt (default behaviour)
+      	- --passphrase='pass:my secret passphrase' (should only be used where security is not important)
+      	- --passphrase=env:SECRET_PASSPHRASE
+      	- --passphrase=file:/path/to/my/passphrase.txt (takes the first line only)
+      	- --passphrase=stdin (takes one line only)
+
+  -s, --second-passphrase=second-passphrase
+      Specifies a source for your second secret passphrase. For certain commands a second passphrase is necessary, in
+      which case Lisk Commander will prompt you for it if this option is not set. Otherwise, Lisk Commander will assume
+      you want to use one passphrase only.
+      	Source must be one of `prompt`, `pass`, `env`, `file` or `stdin`. For `pass`, `env` and `file` a corresponding
+      identifier must also be provided.
+      	Examples:
+      	- --second-passphrase=prompt (to force a prompt even when a second passphrase is not always necessary)
+      	- --second-passphrase='pass:my second secret passphrase' (should only be used where security is not important)
+      	- --second-passphrase=env:SECOND_SECRET_PASSPHRASE
+      	- --second-passphrase=file:/path/to/my/secondPassphrase.txt (takes the first line only)
+      	- --second-passphrase=stdin (takes one line only)
+
+  -t, --type=0|transfer|1|second-passphrase|2|delegate|3|vote|4|multisignature
+      (required) type of transaction to create
+
+  --no-signature
+      Creates the transaction without a signature. Your passphrase will therefore not be required.
+
+  --[no-]pretty
+      Prints JSON in pretty format rather than condensed. Has no effect if the output is set to table. You can change the
+      default behaviour in your config.json file.
+
+  --unvotes=unvotes
+      Specifies the public keys for the delegate candidates you want to remove your vote from. Takes either a string of
+      public keys separated by commas, or a path to a file which contains the public keys.
+      	Examples:
+      	- --unvotes=publickey1,publickey2
+      	- --unvotes=file:/path/to/my/unvotes.txt (every public key should be on a new line)
+
+  --votes=votes
+      Specifies the public keys for the delegate candidates you want to vote for. Takes either a string of public keys
+      separated by commas, or a path to a file which contains the public keys.
+      	Examples:
+      	- --votes=publickey1,publickey2
+      	- --votes=file:/path/to/my/votes.txt (every public key should be on a new line)
+
+EXAMPLES
+  transaction:create --type=0 100 13356260975429434553L
+  transaction:create --type=delegate lightcurve
+```
+
+#### Transfer Transaction
+
+Creates a transaction which will transfer the specified amount to an address if broadcast to the network.
+
+This command creates and signs a type 0 transaction, which will transfer a Lisk balance to a provided address if broadcast to the network. 
+
+```bash
+USAGE
+  $ lisk transaction:create:transfer AMOUNT ADDRESS
+
+ARGUMENTS
+  AMOUNT   Amount of LSK to send.
+  ADDRESS  Address of the recipient.
+
+OPTIONS
+  -j, --[no-]json
+      Prints output in JSON format. You can change the default behaviour in your config.json file.
+
+  -p, --passphrase=passphrase
+      Specifies a source for your secret passphrase. Lisk Commander will prompt you for input if this option is not set.
+      	Source must be one of `prompt`, `pass`, `env`, `file` or `stdin`. For `pass`, `env` and `file` a corresponding
+      identifier must also be provided.
+      	Examples:
+      	- --passphrase=prompt (default behaviour)
+      	- --passphrase='pass:my secret passphrase' (should only be used where security is not important)
+      	- --passphrase=env:SECRET_PASSPHRASE
+      	- --passphrase=file:/path/to/my/passphrase.txt (takes the first line only)
+      	- --passphrase=stdin (takes one line only)
+
+  -s, --second-passphrase=second-passphrase
+      Specifies a source for your second secret passphrase. For certain commands a second passphrase is necessary, in
+      which case Lisk Commander will prompt you for it if this option is not set. Otherwise, Lisk Commander will assume
+      you want to use one passphrase only.
+      	Source must be one of `prompt`, `pass`, `env`, `file` or `stdin`. For `pass`, `env` and `file` a corresponding
+      identifier must also be provided.
+      	Examples:
+      	- --second-passphrase=prompt (to force a prompt even when a second passphrase is not always necessary)
+      	- --second-passphrase='pass:my second secret passphrase' (should only be used where security is not important)
+      	- --second-passphrase=env:SECOND_SECRET_PASSPHRASE
+      	- --second-passphrase=file:/path/to/my/secondPassphrase.txt (takes the first line only)
+      	- --second-passphrase=stdin (takes one line only)
+
+  --no-signature
+      Creates the transaction without a signature. Your passphrase will therefore not be required.
+
+  --[no-]pretty
+      Prints JSON in pretty format rather than condensed. Has no effect if the output is set to table. You can change the
+      default behaviour in your config.json file.
+
+EXAMPLE
+  transaction:create:transfer 100 13356260975429434553L
 ```
 
 **Example JSON Output**
@@ -120,17 +1096,53 @@ Please re-enter your secret passphrase: *******
 }
 ```
 
-## Create transaction register second passphrase
+#### Second Passphrase Transaction
+
+Creates a transaction which will register a second passphrase for the account if broadcast to the network.
 
 This command creates and signs a type 1 transaction, which will register a second passphrase for the account if broadcast to the network.
 
-**Example Input**
-```shell
-lisk> create transaction register second passphrase
-Please enter your secret passphrase: *******
-Please re-enter your secret passphrase: *******
-Please enter your second secret passphrase: *******
-Please re-enter your second secret passphrase: *******
+```bash
+USAGE
+  $ lisk transaction:create:second-passphrase
+
+OPTIONS
+  -j, --[no-]json
+      Prints output in JSON format. You can change the default behaviour in your config.json file.
+
+  -p, --passphrase=passphrase
+      Specifies a source for your secret passphrase. Lisk Commander will prompt you for input if this option is not set.
+      	Source must be one of `prompt`, `pass`, `env`, `file` or `stdin`. For `pass`, `env` and `file` a corresponding
+      identifier must also be provided.
+      	Examples:
+      	- --passphrase=prompt (default behaviour)
+      	- --passphrase='pass:my secret passphrase' (should only be used where security is not important)
+      	- --passphrase=env:SECRET_PASSPHRASE
+      	- --passphrase=file:/path/to/my/passphrase.txt (takes the first line only)
+      	- --passphrase=stdin (takes one line only)
+
+  -s, --second-passphrase=second-passphrase
+      Specifies a source for your second secret passphrase. For certain commands a second passphrase is necessary, in
+      which case Lisk Commander will prompt you for it if this option is not set. Otherwise, Lisk Commander will assume
+      you want to use one passphrase only.
+      	Source must be one of `prompt`, `pass`, `env`, `file` or `stdin`. For `pass`, `env` and `file` a corresponding
+      identifier must also be provided.
+      	Examples:
+      	- --second-passphrase=prompt (to force a prompt even when a second passphrase is not always necessary)
+      	- --second-passphrase='pass:my second secret passphrase' (should only be used where security is not important)
+      	- --second-passphrase=env:SECOND_SECRET_PASSPHRASE
+      	- --second-passphrase=file:/path/to/my/secondPassphrase.txt (takes the first line only)
+      	- --second-passphrase=stdin (takes one line only)
+
+  --no-signature
+      Creates the transaction without a signature. Your passphrase will therefore not be required.
+
+  --[no-]pretty
+      Prints JSON in pretty format rather than condensed. Has no effect if the output is set to table. You can change the
+      default behaviour in your config.json file.
+
+EXAMPLE
+  transaction:create:second-passphrase
 ```
 
 **Example JSON Output**
@@ -152,15 +1164,56 @@ Please re-enter your second secret passphrase: *******
 }
 ```
 
-## Create transaction register delegate
+#### Delegate Registration Transaction
+
+Creates a transaction which will register the account as a delegate candidate if broadcast to the network.
 
 This command creates and signs a type 2 transaction, which will register the account as a delegate candidate if broadcast to the network. It has one required parameter which is the delegate username to be registered.
 
-**Example Input**
-```shell
-lisk> create transaction register delegate username
-Please enter your secret passphrase: *******
-Please re-enter your secret passphrase: *******
+```bash
+USAGE
+  $ lisk transaction:create:delegate USERNAME
+
+ARGUMENTS
+  USERNAME  Username to register as a delegate.
+
+OPTIONS
+  -j, --[no-]json
+      Prints output in JSON format. You can change the default behaviour in your config.json file.
+
+  -p, --passphrase=passphrase
+      Specifies a source for your secret passphrase. Lisk Commander will prompt you for input if this option is not set.
+      	Source must be one of `prompt`, `pass`, `env`, `file` or `stdin`. For `pass`, `env` and `file` a corresponding
+      identifier must also be provided.
+      	Examples:
+      	- --passphrase=prompt (default behaviour)
+      	- --passphrase='pass:my secret passphrase' (should only be used where security is not important)
+      	- --passphrase=env:SECRET_PASSPHRASE
+      	- --passphrase=file:/path/to/my/passphrase.txt (takes the first line only)
+      	- --passphrase=stdin (takes one line only)
+
+  -s, --second-passphrase=second-passphrase
+      Specifies a source for your second secret passphrase. For certain commands a second passphrase is necessary, in
+      which case Lisk Commander will prompt you for it if this option is not set. Otherwise, Lisk Commander will assume
+      you want to use one passphrase only.
+      	Source must be one of `prompt`, `pass`, `env`, `file` or `stdin`. For `pass`, `env` and `file` a corresponding
+      identifier must also be provided.
+      	Examples:
+      	- --second-passphrase=prompt (to force a prompt even when a second passphrase is not always necessary)
+      	- --second-passphrase='pass:my second secret passphrase' (should only be used where security is not important)
+      	- --second-passphrase=env:SECOND_SECRET_PASSPHRASE
+      	- --second-passphrase=file:/path/to/my/secondPassphrase.txt (takes the first line only)
+      	- --second-passphrase=stdin (takes one line only)
+
+  --no-signature
+      Creates the transaction without a signature. Your passphrase will therefore not be required.
+
+  --[no-]pretty
+      Prints JSON in pretty format rather than condensed. Has no effect if the output is set to table. You can change the
+      default behaviour in your config.json file.
+
+EXAMPLE
+  transaction:create:delegate lightcurve
 ```
 
 **Example JSON Output**
@@ -182,22 +1235,73 @@ Please re-enter your secret passphrase: *******
 }
 ```
 
-## Create transaction cast votes
+#### Cast Votes Transaction
 
-This command creates and signs a type 3 transaction, which will cast votes or unvotes for delegates if broadcast to the network. The command requires at least one of the --votes and/or --unvotes options. These options can be specified either by a list of public key strings (corresponding to the delegates to be voted for/unvoted) separated by commas, or via a path to a file containing the public keys (where the public keys can be separated by commas or new lines).
+Creates a transaction which will cast votes (and/or unvotes) for delegate candidates using their public keys if broadcast to the network.
 
-**Example Input with Votes Specified Directly**
-```shell
-lisk> create transaction cast vote --votes 669efbe70b10c6c5d2b45465b0cb1e96edc66130a01de199185e5dba5da5aac0,215b667a32a5cd51a94c9c2046c11fffb08c65748febec099451e3b164452bca
-Please enter your secret passphrase: *******
-Please re-enter your secret passphrase: *******
-```
+This command creates and signs a type 3 transaction, which will cast votes or unvotes for delegates if broadcast to the network. The command requires at least one of the --votes and/or --unvotes options. 
 
-**Example Input with Votes and Unvotes Specified Via a File**
-```shell
-lisk> create transaction cast vote --votes file:/path/to/votes.txt --unvotes file:/path/to/unvotes.txt
-Please enter your secret passphrase: *******
-Please re-enter your secret passphrase: *******
+These options can be specified either by a list of public key strings (corresponding to the delegates to be voted for/unvoted) separated by commas, or via a path to a file containing the public keys (where the public keys can be separated by commas or new lines).
+
+```bash
+USAGE
+  $ lisk transaction:create:vote
+
+OPTIONS
+  -j, --[no-]json
+      Prints output in JSON format. You can change the default behaviour in your config.json file.
+
+  -p, --passphrase=passphrase
+      Specifies a source for your secret passphrase. Lisk Commander will prompt you for input if this option is not set.
+      	Source must be one of `prompt`, `pass`, `env`, `file` or `stdin`. For `pass`, `env` and `file` a corresponding
+      identifier must also be provided.
+      	Examples:
+      	- --passphrase=prompt (default behaviour)
+      	- --passphrase='pass:my secret passphrase' (should only be used where security is not important)
+      	- --passphrase=env:SECRET_PASSPHRASE
+      	- --passphrase=file:/path/to/my/passphrase.txt (takes the first line only)
+      	- --passphrase=stdin (takes one line only)
+
+  -s, --second-passphrase=second-passphrase
+      Specifies a source for your second secret passphrase. For certain commands a second passphrase is necessary, in
+      which case Lisk Commander will prompt you for it if this option is not set. Otherwise, Lisk Commander will assume
+      you want to use one passphrase only.
+      	Source must be one of `prompt`, `pass`, `env`, `file` or `stdin`. For `pass`, `env` and `file` a corresponding
+      identifier must also be provided.
+      	Examples:
+      	- --second-passphrase=prompt (to force a prompt even when a second passphrase is not always necessary)
+      	- --second-passphrase='pass:my second secret passphrase' (should only be used where security is not important)
+      	- --second-passphrase=env:SECOND_SECRET_PASSPHRASE
+      	- --second-passphrase=file:/path/to/my/secondPassphrase.txt (takes the first line only)
+      	- --second-passphrase=stdin (takes one line only)
+
+  --no-signature
+      Creates the transaction without a signature. Your passphrase will therefore not be required.
+
+  --[no-]pretty
+      Prints JSON in pretty format rather than condensed. Has no effect if the output is set to table. You can change the
+      default behaviour in your config.json file.
+
+  --unvotes=unvotes
+      Specifies the public keys for the delegate candidates you want to remove your vote from. Takes either a string of
+      public keys separated by commas, or a path to a file which contains the public keys.
+      	Examples:
+      	- --unvotes=publickey1,publickey2
+      	- --unvotes=file:/path/to/my/unvotes.txt (every public key should be on a new line)
+
+  --votes=votes
+      Specifies the public keys for the delegate candidates you want to vote for. Takes either a string of public keys
+      separated by commas, or a path to a file which contains the public keys.
+      	Examples:
+      	- --votes=publickey1,publickey2
+      	- --votes=file:/path/to/my/votes.txt (every public key should be on a new line)
+
+DESCRIPTION
+  Creates a transaction which will cast votes (or unvotes) for delegate candidates using their public keys if broadcast
+  to the network.
+
+EXAMPLE
+  transaction:create:vote --votes 215b667a32a5cd51a94c9c2046c11fffb08c65748febec099451e3b164452bca,922fbfdd596fa78269bbcadc67ec2a1cc15fc929a19c462169568d7a3df1a1aa --unvotes e01b6b8a9b808ec3f67a638a2d3fa0fe1a9439b91dbdde92e2839c3327bd4589,ac09bc40c889f688f9158cca1fcfcdf6320f501242e0f7088d52a5077084ccba
 ```
 
 **Example JSON Output**
@@ -220,19 +1324,58 @@ Please re-enter your secret passphrase: *******
 }
 ```
 
-## Create transaction create multisignature account
+#### Multisignature Account Registration
 
-This command creates and signs a type 4 transaction, which will register the account as a multisignature account if broadcast to the network. The command takes three required parameters:
+Creates a transaction which will register the account as a multisignature account if broadcast to the network, using the following arguments:
 
-- A lifetime integer (the maximum number of hours within which a transaction from the multisignature account can be signed).
-- A minimum number of signatures required for the transaction to be processed.
-- One or more public keys to be included as part of the multisignature group.
+```bash
+USAGE
+  $ lisk transaction:create:multisignature LIFETIME MINIMUM KEYSGROUP
 
-**Example Input**
-```shell
-lisk> create transaction register multisignature account 24 2 215b667a32a5cd51a94c9c2046c11fffb08c65748febec099451e3b164452bca 922fbfdd596fa78269bbcadc67ec2a1cc15fc929a19c462169568d7a3df1a1aa
-Please enter your secret passphrase: *******
-Please re-enter your secret passphrase: *******
+ARGUMENTS
+  LIFETIME   Number of hours the transaction should remain in the transaction pool before becoming invalid.
+  MINIMUM    Minimum number of signatures required for a transaction from the account to be valid.
+  KEYSGROUP  Public keys to verify signatures against for the multisignature group.
+
+OPTIONS
+  -j, --[no-]json
+      Prints output in JSON format. You can change the default behaviour in your config.json file.
+
+  -p, --passphrase=passphrase
+      Specifies a source for your secret passphrase. Lisk Commander will prompt you for input if this option is not set.
+      	Source must be one of `prompt`, `pass`, `env`, `file` or `stdin`. For `pass`, `env` and `file` a corresponding
+      identifier must also be provided.
+      	Examples:
+      	- --passphrase=prompt (default behaviour)
+      	- --passphrase='pass:my secret passphrase' (should only be used where security is not important)
+      	- --passphrase=env:SECRET_PASSPHRASE
+      	- --passphrase=file:/path/to/my/passphrase.txt (takes the first line only)
+      	- --passphrase=stdin (takes one line only)
+
+  -s, --second-passphrase=second-passphrase
+      Specifies a source for your second secret passphrase. For certain commands a second passphrase is necessary, in
+      which case Lisk Commander will prompt you for it if this option is not set. Otherwise, Lisk Commander will assume
+      you want to use one passphrase only.
+      	Source must be one of `prompt`, `pass`, `env`, `file` or `stdin`. For `pass`, `env` and `file` a corresponding
+      identifier must also be provided.
+      	Examples:
+      	- --second-passphrase=prompt (to force a prompt even when a second passphrase is not always necessary)
+      	- --second-passphrase='pass:my second secret passphrase' (should only be used where security is not important)
+      	- --second-passphrase=env:SECOND_SECRET_PASSPHRASE
+      	- --second-passphrase=file:/path/to/my/secondPassphrase.txt (takes the first line only)
+      	- --second-passphrase=stdin (takes one line only)
+
+  --no-signature
+      Creates the transaction without a signature. Your passphrase will therefore not be required.
+
+  --[no-]pretty
+      Prints JSON in pretty format rather than condensed. Has no effect if the output is set to table. You can change the
+      default behaviour in your config.json file.
+
+EXAMPLE
+  transaction:create:multisignature 24 2
+  215b667a32a5cd51a94c9c2046c11fffb08c65748febec099451e3b164452bca,922fbfdd596fa78269bbcadc67ec2a1cc15fc929a19c462169568
+  d7a3df1a1aa
 ```
 
 **Example JSON Output**
@@ -259,18 +1402,104 @@ Please re-enter your secret passphrase: *******
 }
 ```
 
-## Sign transaction
+### Get Transaction
 
-This command signs transaction. You will need the passphrase you sign with.
+Gets transaction information from the blockchain.
 
-Since the secret passphrase is a sensitive input, it can be provided using one of the available methods described in the Sensitive Inputs section. The encrypted message can be provided either directly as an argument, or by specifying a source with the --message option. If both the secret passphrase and the encrypted message are provided via stdin, the secret passphrase must be given in the first line and the encrypted message must be given in the subsequent lines.
+```bash
+USAGE
+  $ lisk transaction:get IDS
 
+ARGUMENTS
+  IDS  Comma-separated transaction ID(s) to get information about.
 
-**Example Input with Argument**
-```shell
-lisk> sign transaction '{"amount":"100","recipientId":"13356260975429434553L","senderPublicKey":null,"timestamp":52871598,"type":0,"fee":"10000000","recipientPublicKey":null,"asset":{}}'
-Please enter your secret passphrase: *******
-Please re-enter your secret passphrase: *******
+OPTIONS
+  -j, --[no-]json  Prints output in JSON format. You can change the default behaviour in your config.json file.
+
+  --[no-]pretty    Prints JSON in pretty format rather than condensed. Has no effect if the output is set to table. You
+                   can change the default behaviour in your config.json file.
+
+EXAMPLES
+  transaction:get 10041151099734832021
+  transaction:get 10041151099734832021,1260076503909567890
+```
+
+**Example JSON Output**
+```json
+[
+	{
+		"id": "6504066991503372206",
+		"height": 6588235,
+		"blockId": "15628722186106902609",
+		"type": 0,
+		"timestamp": 76726802,
+		"senderPublicKey": "f4852b270f76dc8b49bfa88de5906e81d3b001d23852f0e74ba60cac7180a184",
+		"senderId": "6076671634347365051L",
+		"recipientId": "6711723025288195737L",
+		"recipientPublicKey": "",
+		"amount": "10000000000",
+		"fee": "10000000",
+		"signature": "61bda4cdd6b91110184feb9ff99b02e5085a69c8d810fc0a4c71fb5e3731a25ade828f7fe5dbfcc4b6ffc6a658e2fadaa130193725fc9428bf7a59671af32409",
+		"signatures": [],
+		"confirmations": 4929,
+		"asset": {}
+	}
+]
+```
+
+### Sign Transaction
+
+Sign a transaction using your secret passphrase.
+
+Important | Sensitive Input 
+--- | --- 
+![important note](../../important-icon.png "Important Note") | Since the secret passphrase is a sensitive input, it can be provided using one of the available methods described in the [Sensitive Inputs section](../sensitive-inputs/sensitive-inputs.md). 
+|                |                                             The encrypted message can be provided either directly as an argument, or by specifying a source with the --message option. 
+|                |                                             If both the secret passphrase and the encrypted message are provided via stdin, the secret passphrase must be given in the first line and the encrypted message must be given in the subsequent lines.
+
+```bash
+USAGE
+  $ lisk transaction:sign [TRANSACTION]
+
+ARGUMENTS
+  TRANSACTION  Transaction to sign in JSON format.
+
+OPTIONS
+  -j, --[no-]json
+      Prints output in JSON format. You can change the default behaviour in your config.json file.
+
+  -p, --passphrase=passphrase
+      Specifies a source for your secret passphrase. Lisk Commander will prompt you for input if this option is not set.
+      	Source must be one of `prompt`, `pass`, `env`, `file` or `stdin`. For `pass`, `env` and `file` a corresponding
+      identifier must also be provided.
+      	Examples:
+      	- --passphrase=prompt (default behaviour)
+      	- --passphrase='pass:my secret passphrase' (should only be used where security is not important)
+      	- --passphrase=env:SECRET_PASSPHRASE
+      	- --passphrase=file:/path/to/my/passphrase.txt (takes the first line only)
+      	- --passphrase=stdin (takes one line only)
+
+  -s, --second-passphrase=second-passphrase
+      Specifies a source for your second secret passphrase. For certain commands a second passphrase is necessary, in
+      which case Lisk Commander will prompt you for it if this option is not set. Otherwise, Lisk Commander will assume
+      you want to use one passphrase only.
+      	Source must be one of `prompt`, `pass`, `env`, `file` or `stdin`. For `pass`, `env` and `file` a corresponding
+      identifier must also be provided.
+      	Examples:
+      	- --second-passphrase=prompt (to force a prompt even when a second passphrase is not always necessary)
+      	- --second-passphrase='pass:my second secret passphrase' (should only be used where security is not important)
+      	- --second-passphrase=env:SECOND_SECRET_PASSPHRASE
+      	- --second-passphrase=file:/path/to/my/secondPassphrase.txt (takes the first line only)
+      	- --second-passphrase=stdin (takes one line only)
+
+  --[no-]pretty
+      Prints JSON in pretty format rather than condensed. Has no effect if the output is set to table. You can change the
+      default behaviour in your config.json file.
+
+EXAMPLE
+  transaction:sign
+  '{"amount":"100","recipientId":"13356260975429434553L","senderPublicKey":null,"timestamp":52871598,"type":0,"fee":"100
+  00000","recipientPublicKey":null,"asset":{}}'
 ```
 
 **Example JSON Output**
@@ -289,19 +1518,44 @@ Please re-enter your secret passphrase: *******
 }
 ```
 
-## Verify transaction
+### Verify Transaction
 
-This command verify a transaction after being signed with the sign transaction command or create transaction command. You may specify second public key if the transaction has second signature.
+Verifies a transaction has a valid signature.
 
+This command verify a transaction after being signed with the sign transaction command or create transaction command. 
 
-**Example Input with Argument**
-```shell
-lisk> verify transaction '{"type":0,"amount":"100",...}' --second-public-key 647aac1e2df8a5c870499d7ddc82236b1e10936977537a3844a6b05ea33f9ef6
-```
+You may specify second public key if the transaction has second signature.
 
-**Example Input with File Source Option**
-```shell
-lisk> verify transaction '{"type":0,"amount":"100",...}' --second-public-key file:/path/to/my/message.txt
+```bash
+USAGE
+  $ lisk transaction:verify [TRANSACTION]
+
+ARGUMENTS
+  TRANSACTION  Transaction to verify in JSON format.
+
+OPTIONS
+  -j, --[no-]json
+      Prints output in JSON format. You can change the default behaviour in your config.json file.
+
+  --[no-]pretty
+      Prints JSON in pretty format rather than condensed. Has no effect if the output is set to table. You can change the
+      default behaviour in your config.json file.
+
+  --second-public-key=second-public-key
+      Specifies a source for providing a second public key to the command. The second public key must be provided via this
+      option. Sources must be one of `file` or `stdin`. In the case of `file`, a corresponding identifier must also be
+      provided.
+
+      	Note: if both transaction and second public key are passed via stdin, the transaction must be the first line.
+
+      	Examples:
+      	- --second-public-key file:/path/to/my/message.txt
+      	- --second-public-key 790049f919979d5ea42cca7b7aa0812cbae8f0db3ee39c1fe3cef18e25b67951
+
+EXAMPLES
+  transaction:verify '{"type":0,"amount":"100",...}'
+  transaction:verify '{"type":0,"amount":"100",...}' --second-public-key=647aac1e2df8a5c870499d7ddc82236b1e10936977537a3844a6b05ea33f9ef6
+  transaction:verify '{"type":0,"amount":"100",...}' --second-public-key file:/path/to/my/message.txt
 ```
 
 **Example JSON Output**
@@ -311,532 +1565,23 @@ lisk> verify transaction '{"type":0,"amount":"100",...}' --second-public-key fil
 }
 ```
 
-## Broadcast transaction
+## Warranty
 
-This command broadcast transaction to the network. The command takes one required parameters:
+Displays warranty notice.
 
-- transaction as string in JSON format
+```bash
+USAGE
+  $ lisk warranty
 
-**Example Input**
-```shell
-lisk> broadcast transaction '{"type":0,"amount":"100",...}'
-Please enter your secret passphrase: *******
-Please re-enter your secret passphrase: *******
-```
+OPTIONS
+  -j, --[no-]json  Prints output in JSON format. You can change the default behaviour in your config.json file.
 
-**Example JSON Output**
-```json
-{
-	"meta": {
-		"status": true
-	},
-	"data": {
-		"message": "Transaction(s) accepted"
-	},
-	"links": {}
-}
-```
+  --[no-]pretty    Prints JSON in pretty format rather than condensed. Has no effect if the output is set to table. You
+                   can change the default behaviour in your config.json file.
 
-## Broadcast signature
+DESCRIPTION
+  Displays warranty notice.
 
-This command broadcast signature to the network. The command takes one required parameters:
-
-- transaction as string in JSON format
-
-**Example Input**
-```shell
-lisk> broadcast signature '{"transactionId":"abcd1234","publicKey":"abcd1234","signature":"abcd1234"}'
-```
-
-**Example JSON Output**
-```json
-{
-	"meta": {
-		"status": true
-	},
-	"data": {
-		"message": "Signature(s) accepted"
-	},
-	"links": {}
-}
-```
-
-## Sign message
-
-This command signs message. You will need the passphrase you sign with.
-
-Since the secret passphrase is a sensitive input, it can be provided using one of the available methods described in the Sensitive Inputs section. The encrypted message can be provided either directly as an argument, or by specifying a source with the --message option. If both the secret passphrase and the encrypted message are provided via stdin, the secret passphrase must be given in the first line and the encrypted message must be given in the subsequent lines.
-
-
-**Example Input with Argument**
-```shell
-lisk> sign message 'Hello world'
-Please enter your secret passphrase: *******
-Please re-enter your secret passphrase: *******
-```
-
-**Example Input with File Source Option**
-```shell
-lisk> sign message --message file:/path/to/message.txt
-Please enter your secret passphrase: *******
-Please re-enter your secret passphrase: *******
-```
-
-**Example Input with Stdin Option (Non-Interactive Mode)**
-```shell
- $ echo 'Hello World' | lisk sign message --message stdin
-Please enter your secret passphrase: *******
-Please re-enter your secret passphrase: *******
-```
-
-**Example JSON Output**
-```json
-{
-	"message": "Hello World",
-	"publicKey": "a4465fd76c16fcc458448076372abf1912cc5b150663a64dffefe550f96feadd",
-	"signature": "0c70c0ed6ca16312c6acab46dd8b801fd3f3a2bd68018651c2792b40a7d1d3ee276a6bafb6b4185637edfa4d282e18362e135c5e2cf0c68002bfd58307ddb30b"
-}
-```
-
-## Verify message
-
-This command verify a message after being signed with the sign message command. You will need the public key, signature and message.
-
-
-**Example Input with Argument**
-```shell
-lisk> verify message 647aac1e2df8a5c870499d7ddc82236b1e10936977537a3844a6b05ea33f9ef6 2a3ca127efcf7b2bf62ac8c3b1f5acf6997cab62ba9fde3567d188edcbacbc5dc8177fb88d03a8691ce03348f569b121bca9e7a3c43bf5c056382f35ff843c09 'Hello world'
-```
-
-**Example Input with File Source Option**
-```shell
-lisk> verify message 647aac1e2df8a5c870499d7ddc82236b1e10936977537a3844a6b05ea33f9ef6 2a3ca127efcf7b2bf62ac8c3b1f5acf6997cab62ba9fde3567d188edcbacbc5dc8177fb88d03a8691ce03348f569b121bca9e7a3c43bf5c056382f35ff843c09 --message file:/path/to/signed_message.txt
-```
-
-**Example Input with Stdin Option (Non-Interactive Mode)**
-```shell
- $ echo 'Hello World' | lisk sign message 647aac1e2df8a5c870499d7ddc82236b1e10936977537a3844a6b05ea33f9ef6 2a3ca127efcf7b2bf62ac8c3b1f5acf6997cab62ba9fde3567d188edcbacbc5dc8177fb88d03a8691ce03348f569b121bca9e7a3c43bf5c056382f35ff843c09 --message stdin
-```
-
-**Example JSON Output**
-```json
- {
-	"verified": true
-}
-```
-
-## Encrypt message
-
-This command uses lisk-elements function to encrypt a message you provide for a given public key using a randomly generated nonce. In order to decrypt the encrypted message later your recipient will need your public key (to verify the message came from you), the nonce and the secret passphrase which matches the specified public key.
-
-Since the password is a sensitive input, it can be provided using one of the available methods described in the Sensitive Inputs section. The message (which may also be a sensitive input) can be provided either directly as an argument (if security is not a concern), or by specifying a source with the --passphrase option. If both the password and the message are provided via stdin, the password must be given in the first line and the message must be given in the subsequent lines.
-
-**Example Input with Argument**
-```shell
-lisk> encrypt message 5d036a858ce89f844491762eb89e2bfbd50a4a0a0da658e4b2628b25b117ae09 "My very secret message"
-Please enter your secret passphrase: *******
-Please re-enter your secret passphrase: *******
-```
-
-**Example Input with File Source Option**
-```shell
-lisk> encrypt message 5d036a858ce89f844491762eb89e2bfbd50a4a0a0da658e4b2628b25b117ae09 --message file:/path/to/message.txt
-Please enter your secret passphrase: *******
-Please re-enter your secret passphrase: *******
-```
-
-**Example Input with Stdin Option (Non-Interactive Mode)**
-```shell
- $ echo "My very secret message" | lisk encrypt message 5d036a858ce89f844491762eb89e2bfbd50a4a0a0da658e4b2628b25b117ae09 --message stdin
-Please enter your secret passphrase: *******
-Please re-enter your secret passphrase: *******
-```
-
-**Example JSON Output**
-```json
- {
-	"nonce": "cb4d497e6834e0e888e285f32ddb02bdfd4b471f6ad04e6d",
-	"encryptedMessage": "82af57f715c69958bda8b9e95b7f7a09bfaa5afeb94960bf243d7c77a656a3e1ff061c68e20e"
-}
-```
-
-## Decrypt message
-
-This command decrypts a message after being encrypted with the encrypt message command. You will need the sender's public key (to verify the message came from the sender), the secret passphrase which matches the public key used to encrypt the message, as well as the nonce which was randomly generated at the time of encryption.
-
-Since the secret passphrase is a sensitive input, it can be provided using one of the available methods described in the Sensitive Inputs section. The encrypted message can be provided either directly as an argument, or by specifying a source with the --message option. If both the secret passphrase and the encrypted message are provided via stdin, the secret passphrase must be given in the first line and the encrypted message must be given in the subsequent lines.
-
-**Example Input with Argument**
-```shell
-lisk> decrypt message bba7e2e6a4639c431b68e31115a71ffefcb4e025a4d1656405dfdcd8384719e0 1f9008c2813901366f3452431c27218be2c08ac85d6b28a3 f359abaf52a8fb68086cee580ce2b4656840c7c2af1308424eb9ff2b17eae87943502b8f14b6
-Please enter your secret passphrase: *******
-```
-
-**Example Input with File Source Option**
-```shell
-lisk> decrypt message bba7e2e6a4639c431b68e31115a71ffefcb4e025a4d1656405dfdcd8384719e0 1f9008c2813901366f3452431c27218be2c08ac85d6b28a3 --message file:/path/to/encrypted_message.txt
-Please enter your secret passphrase: ******
-```
-
-**Example Input with Stdin Option (Non-Interactive Mode)**
-```shell
- $ echo f359abaf52a8fb68086cee580ce2b4656840c7c2af1308424eb9ff2b17eae87943502b8f14b6 | lisk decrypt message bba7e2e6a4639c431b68e31115a71ffefcb4e025a4d1656405dfdcd8384719e0 1f9008c2813901366f3452431c27218be2c08ac85d6b28a3 --message stdin
-Please enter your secret passphrase: ******
-```
-
-**Example JSON Output**
-```json
-{
-	"message": "My very secret message"
-}
-```
-
-## Encrypt passphrase
-
-This command uses AES-256-CBC to encrypt your secret passphrase under a password you provide using a randomly generated initialisation vector (IV). In order to decrypt the secret passphrase later you will need both the IV and the password.
-
-Since the secret passphrase and password are both sensitive inputs, they can be provided using one of the available methods described in the Sensitive Inputs section. If both the secret passphrase and the password are provided via stdin, the secret passphrase must be given in the first line and the password must be given in the second line.
-
-**Example Input**
-```shell
-lisk> encrypt passphrase
-Please enter your secret passphrase: *******
-Please re-enter your secret passphrase: *******
-Please enter your password: *******
-Please re-enter your password: *******
-```
-
-**Example JSON Output**
-```json
-{
-	"encryptedPassphrase": "salt=11d8eccdc867a7a32f026f2f2dc624c8&cipherText=bc71fc&iv=997220e9861cd19bb9fc2441&tag=15e948552e9ada52186c2e9366754a34&version=1"
-}
-```
-
-## Decrypt passphrase
-
-This command decrypts your secret passphrase after being encrypted with the encrypt passphrase command. You will need the password you used to encrypt the secret passphrase as well as the initialisation vector (IV) which was randomly generated at the time of encryption.
-
-Since the password is a sensitive input, it can be provided using one of the available methods described in the Sensitive Inputs section. The encrypted passphrase can be provided either directly as an argument, or by specifying a source with the --passphrase option. If both the password and the encrypted passphrase are provided via stdin, the password must be given in the first line and the encrypted passphrase must be given in the second line.
-
-**Example Input with Argument**
-```shell
-lisk> decrypt passphrase salt=25606e160df4ababae0a0bd656310d7f&cipherText=4f513208f47dc539f7&iv=a048b9c1176b561a2f884f19&tag=2ef4db8d5e03c326fc26c0a8aa7adb69&version=1
-Please enter your password: *******
-```
-
-**Example Input with File Source Option**
-```shell
-lisk> decrypt passphrase salt=25606e160df4ababae0a0bd656310d7f&cipherText=4f513208f47dc539f7&iv=a048b9c1176b561a2f884f19&tag=2ef4db8d5e03c326fc26c0a8aa7adb69&version=1 --passphrase file:./path/to/encrypted_passphrase.txt
-Please enter your password: *******
-```
-
-**Example Input with Stdin Option (Non-Interactive Mode)**
-```shell
- $ echo testing123 | lisk decrypt passphrase salt=25606e160df4ababae0a0bd656310d7f&cipherText=4f513208f47dc539f7&iv=a048b9c1176b561a2f884f19&tag=2ef4db8d5e03c326fc26c0a8aa7adb69&version=1 --passphrase stdin
-Please enter your password: *******
-```
-
-**Example JSON Output**
-```json
-{
-	"passphrase": "minute omit local rare sword knee banner pair rib museum shadow juice"
-}
-```
-
-## Exit
-
-This command exits the Lisk Commander terminal when in interactive mode.
-
-**Input**
-```shell
-lisk> exit
-```
-
-## Get
-
-This command gets information from the Lisk Blockchain.
-
-**Available types:**
-
-- account: gets information for a Lisk account by address
-- address: alias for account
-- block: gets information for a block by id
-- delegate: gets information for a Lisk delegate by username
-- transaction: gets information for a transaction by id
-
-**Example Input**
-```shell
-lisk> get transaction 16388447461355055139
-```
-
-**Example JSON Output**
-```json
-{
-	"id": "1963886604239976995",
-	"height": 1,
-	"blockId": "12584524832111619342",
-	"type": 2,
-	"timestamp": 0,
-	"senderPublicKey": "1644013e59e410c547fda5dc49d9e0c0bc470f83cdbf845d18b320030c08df23",
-	"senderId": "2676090374023786863L",
-	"recipientId": "",
-	"recipientPublicKey": "",
-	"amount": "0",
-	"fee": "0",
-	"signature": "aba7721a9c77f06fb7018324196a93374779bbbb06ca223896122db234fcc8673a9bc802cca267eb3a4198ea885038ee0e063957f8a028463f9cbf4b17f15005",
-	"signatures": [],
-	"confirmations": 476185,
-	"asset": {
-		"delegate": {
-			"username": "genesis_49",
-			"publicKey": "1644013e59e410c547fda5dc49d9e0c0bc470f83cdbf845d18b320030c08df23",
-			"address": "2676090374023786863L"
-		}
-	}
-}
-```
-
-## Help
-
-This command displays information for all the available commands.
-
-**Input**
-```shell
-lisk> help
-```
-
-**Output**
-```
-  Commands:
-
-    help [command...]                                                                                 Provides help for a given command.
-    exit                                                                                              Exits Lisk Commander.
-    broadcast signature [options] [signature]                                                         Broadcasts a signature to the network via the node
-                                                                                                      specified in the current config. Accepts a stringified JSON signature as an
-                                                                                                      argument, or a signature can be piped from a previous command. If piping in
-                                                                                                      non-interactive mode make sure to quote out the entire command chain to avoid
-                                                                                                      piping-related conflicts in your shell.
-
-                                                                                                      Examples:
-                                                                                                      - Interactive mode:
-                                                                                                      - broadcast signature '{"transactionId":"abcd1234","publicKey":"abcd1234","signature":"abcd1234"}'
-                                                                                                      - sign transaction '{"type":0,"amount":"100",...}' --json | broadcast signature
-                                                                                                      - Non-interactive mode:
-                                                                                                      - lisk "sign transaction '{"type":0,"amount":"100",...}' --json | broadcast signature"
-
-    broadcast transaction [options] [transaction]                                                     Broadcasts a transaction to the network via the node
-                                                                                                      specified in the current config. Accepts a stringified JSON transaction as an
-                                                                                                      argument, or a transaction can be piped from a previous command. If piping in
-                                                                                                      non-interactive mode make sure to quote out the entire command chain to avoid
-                                                                                                      piping-related conflicts in your shell.
-
-                                                                                                      Examples:
-                                                                                                      - Interactive mode:
-                                                                                                      - broadcast transaction '{"type":0,"amount":"100",...}'
-                                                                                                      - create transaction transfer 100 13356260975429434553L --json | broadcast transaction
-                                                                                                      - Non-interactive mode:
-                                                                                                      - lisk "create transaction transfer 100 13356260975429434553L --json | broadcast transaction"
-
-    config [options]                                                                                  Prints the current configuration.
-
-                                                                                                      Example: config
-
-    create account [options]                                                                          Returns a randomly-generated mnemonic passphrase with its corresponding public key and address.
-
-                                                                                                      Example: create account
-
-    create transaction cast votes [options]                                                           Creates a transaction which will cast votes (or unvotes) for delegate candidates using their public keys if broadcast to the network.
-
-                                                                                                      Examples:
-                                                                                                      - create transaction cast votes --votes 215b667a32a5cd51a94c9c2046c11fffb08c65748febec099451e3b164452bca,922fbfdd596fa78269bbcadc67ec2a1cc15fc929a19c462169568d7a3df1a1aa --unvotes e01b6b8a9b808ec3f67a638a2d3fa0fe1a9439b91dbdde92e2839c3327bd4589,ac09bc40c889f688f9158cca1fcfcdf6320f501242e0f7088d52a5077084ccba
-                                                                                                      - create transaction 3 --votes 215b667a32a5cd51a94c9c2046c11fffb08c65748febec099451e3b164452bca,922fbfdd596fa78269bbcadc67ec2a1cc15fc929a19c462169568d7a3df1a1aa --unvotes e01b6b8a9b808ec3f67a638a2d3fa0fe1a9439b91dbdde92e2839c3327bd4589,ac09bc40c889f688f9158cca1fcfcdf6320f501242e0f7088d52a5077084ccba
-
-    create transaction register delegate [options] <username>                                         Creates a transaction which will register the account as a delegate candidate if broadcast to the network.
-
-                                                                                                      Examples:
-                                                                                                      - create transaction register delegate username
-                                                                                                      - create transaction 2 username
-
-    create transaction register multisignature account [options] <lifetime> <minimum> <keysgroup...>  Creates a transaction which will register the account as a multisignature account if broadcast to the network, using the following parameters:
-                                                                                                      - The lifetime (the number of hours in which the transaction can be signed after being created).
-                                                                                                      - The minimum number of distinct signatures required for a transaction to be successfully approved from the multisignature account.
-                                                                                                      - A list of one or more public keys that will identify the multisignature group.
-
-                                                                                                      Examples:
-                                                                                                      - create transaction register multisignature account 24 2 215b667a32a5cd51a94c9c2046c11fffb08c65748febec099451e3b164452bca 922fbfdd596fa78269bbcadc67ec2a1cc15fc929a19c462169568d7a3df1a1aa
-                                                                                                      - create transaction 4 24 2 215b667a32a5cd51a94c9c2046c11fffb08c65748febec099451e3b164452bca 922fbfdd596fa78269bbcadc67ec2a1cc15fc929a19c462169568d7a3df1a1aa
-
-    create transaction register second passphrase [options]                                           Creates a transaction which will register a second passphrase for the account if broadcast to the network.
-
-                                                                                                      Examples:
-                                                                                                      - create transaction register second passphrase
-                                                                                                      - create transaction 1
-
-    create transaction transfer [options] <amount> <address>                                          Creates a transaction which will transfer the specified amount to an address if broadcast to the network.
-
-                                                                                                      Examples:
-                                                                                                      - create transaction transfer 100 13356260975429434553L
-                                                                                                      - create transaction 0 100 13356260975429434553L
-
-    decrypt message [options] <senderPublicKey> <nonce> [message]                                     Decrypts a previously encrypted message from a given sender public key for a known nonce using your secret passphrase.
-
-                                                                                                      Example: decrypt message bba7e2e6a4639c431b68e31115a71ffefcb4e025a4d1656405dfdcd8384719e0 349d300c906a113340ff0563ef14a96c092236f331ca4639 e501c538311d38d3857afefa26207408f4bf7f1228
-
-    decrypt passphrase [options] [encryptedPassphrase]                                                Decrypts your secret passphrase using a password using the initialisation vector (IV) which was provided at the time of encryption.
-
-                                                                                                      Example: decrypt passphrase salt=25606e160df4ababae0a0bd656310d7f&cipherText=4f513208f47dc539f7&iv=a048b9c1176b561a2f884f19&tag=2ef4db8d5e03c326fc26c0a8aa7adb69&version=1
-
-    encrypt message [options] <recipient> [message]                                                   Encrypts a message for a given recipient public key using your secret passphrase.
-
-                                                                                                      Example: encrypt message bba7e2e6a4639c431b68e31115a71ffefcb4e025a4d1656405dfdcd8384719e0 'Hello world'
-
-    encrypt passphrase [options]                                                                      Encrypts your secret passphrase under a password.
-
-                                                                                                      Example: encrypt passphrase
-
-    get [options] <type> <input>                                                                      Gets information from the blockchain. Types available: account, address, block, delegate, transaction.
-
-                                                                                                      Examples:
-                                                                                                      - get delegate lightcurve
-                                                                                                      - get block 5510510593472232540
-
-    list [options] <type> <inputs...>                                                                 Gets an array of information from the blockchain. Types available: accounts, addresses, blocks, delegates, transactions.
-
-                                                                                                      Examples:
-                                                                                                      - list delegates lightcurve tosch
-                                                                                                      - list blocks 5510510593472232540 16450842638530591789
-
-    set [options] <variable> [values...]                                                              Sets configuration <variable> to [value(s)...]. Variables available: api.nodes, api.network, json, name, pretty. Configuration is persisted in `/Users/shuse2/.lisk-commander/config.json`.
-
-                                                                                                      Examples:
-                                                                                                      - set json true
-                                                                                                      - set name my_custom_lisk_cli
-                                                                                                      - set api.network main
-                                                                                                      - set api.nodes https://127.0.0.1:4000,http://mynode.com:7000
-
-    show account [options]                                                                            Shows account information for a given passphrase.
-
-                                                                                                      Example: show account
-
-    show copyright [options]                                                                          Displays copyright notice.
-
-                                                                                                      Example: show copyright
-
-    show warranty [options]                                                                           Displays warranty notice.
-
-                                                                                                      Example: show warranty
-
-    sign message [options] [message]                                                                  Sign a message using your secret passphrase.
-
-                                                                                                      Example: sign message 'Hello world'
-
-    sign transaction [options] [transaction]                                                          Sign a transaction using your secret passphrase.
-
-                                                                                                      Example: sign transaction '{"amount":"100","recipientId":"13356260975429434553L","senderPublicKey":null,"timestamp":52871598,"type":0,"fee":"10000000","recipientPublicKey":null,"asset":{}}'
-
-    verify message [options] <publicKey> <signature> [message]                                        Verify a message using the public key, the signature and the message.
-
-                                                                                                      Example: verify message 647aac1e2df8a5c870499d7ddc82236b1e10936977537a3844a6b05ea33f9ef6 2a3ca127efcf7b2bf62ac8c3b1f5acf6997cab62ba9fde3567d188edcbacbc5dc8177fb88d03a8691ce03348f569b121bca9e7a3c43bf5c056382f35ff843c09 'Hello world'
-
-    verify transaction [options] [transaction]                                                        Verifies a transaction has a valid signature.
-
-                                                                                                      Examples:
-                                                                                                      - verify transaction '{"type":0,"amount":"100",...}'
-                                                                                                      - verify transaction '{"type":0,"amount":"100",...}' --second-public-key 647aac1e2df8a5c870499d7ddc82236b1e10936977537a3844a6b05ea33f9ef6
-                                                                                                      - create transaction transfer 100 123L --json | verify transaction
-```
-
-The help command can also be used to get specific information for a single command.
-
-**Example Input**
-```shell
-lisk> help config
-```
-
-**Example Output**
-```
- Usage: config [options]
-
-  Alias: env
-
-  Prints the current configuration.
-
-	Example: config
-
-  Options:
-
-    --help         output usage information
-    -j, --json     Sets output to json. You can change the default behaviour in your config.json file.
-    -t, --no-json  Sets output to text (default). You can change the default behaviour in your config.json file.
-    --pretty       Prints json in pretty format rather than condensed. Has no effect if json option is false. You can change the default behaviour in your config.json file.
-```
-
-## List
-
-This command is the variadic form of the get command. You can retrieve information for multiple transactions, delegates etc. at once. Inputs should be separated by a space.
-
-**Available types:**
-
-- accounts: gets information for Lisk accounts by address
-- addresses: alias for accounts
-- blocks: gets information for blocks by id
-- delegates: gets information for Lisk delegates by username
-- transactions: gets information for transactions by id
-
-**Example Input**
-```shell
-lisk> list delegates genesis_1 genesis_5
-```
-
-**Example JSON Output**
-```json
-[
-	{
-		"rewards": "2364000000000",
-		"vote": "9659948140000000",
-		"producedBlocks": 4730,
-		"missedBlocks": 163,
-		"username": "genesis_1",
-		"rank": 83,
-		"approval": 94.36,
-		"productivity": 96.67,
-		"account": {
-			"address": "17956766617869547133L",
-			"publicKey": "b8f2cce407a6c88142bce6d79a4fe9d73f0e6218a8f44dd939144c64d1c1e1ee",
-			"secondPublicKey": ""
-		}
-	},
-	{
-		"rewards": "2381500000000",
-		"vote": "9659948140000000",
-		"producedBlocks": 4765,
-		"missedBlocks": 151,
-		"username": "genesis_5",
-		"rank": 55,
-		"approval": 94.36,
-		"productivity": 96.93,
-		"account": {
-			"address": "12108854850941227449L",
-			"publicKey": "3c9acbe6789f806d097893e769a058aa9b8ebd6ca9d8bf07989f4d27a9a2b4d5",
-			"secondPublicKey": ""
-		}
-	}
-]
-```
-
-## Set
-
-This command lets you manipulate the config.json file via the command line. These settings will then be used as defaults, but you can still override these defaults with command line options. Changes are reflected immediately in the Lisk Commander terminal if run in interactive mode.
-
-**Example Input**
-```shell
-lisk> set api.network main
-```
-
-**Example JSON Output**
-```json
-{
-	"message": "Successfully set api.network to main."
-}
+EXAMPLE
+  warranty
 ```

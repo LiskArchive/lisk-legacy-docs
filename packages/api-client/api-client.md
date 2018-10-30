@@ -1,8 +1,21 @@
 # Lisk Elements API Client
 
+- [Installation](#installation)
+- [API Client](#apiclient)
+- [Constants](#constants)
+- [Methods associated with a resource](#methods-associated-with-a-resource)
+- [Methods not associated with a resource](#methods-not-associated-with-a-resource)
+
+
 The Lisk Elements API Client provides a convenient wrapper for interacting with the public API of nodes on the Lisk network.
 
-## `APIClient`
+## Installation
+
+```bash
+$ npm install --save @liskhq/lisk-api-client
+```
+
+## APIClient
 
 We expose a constructor, which takes an array of nodes, and optionally an options object. For convenience, we provide helper functions for creating API clients on specific networks with a default set of nodes. We recommend using these functions unless you operate your own nodes, or have good reasons to prefer nodes provided by a third party. *If you use the generic constructor, it is your responsibility to ensure that the nodes you specify are on the correct network.*
 

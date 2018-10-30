@@ -1,11 +1,23 @@
 # Lisk Elements Passphrase
 
+- [Installation](#installation)
+- [Mnemonic](#mnemonic)
+- [Additional validation methods](#additional-validation-methods)
+
 The Lisk Elements passphrase module provides tools for generating and validating mnemonic passphrases.
+
+## Installation
+
+```bash
+$ npm install --save @liskhq/lisk-passphrase
+```
+
 ## Mnemonic
 
-We expose the [bip39](https://www.npmjs.com/package/bip39) npm package for easily generating and managing BIP39-compliant mnemonic passphrases. Please refer to their documentation for full usage.
+We expose the [bip39](https://www.npmjs.com/package/bip39) npm package for easily generating and managing BIP39-compliant mnemonic passphrases. 
+Please refer to their documentation for full usage.
 
-#### Examples
+### Example
 
 ```js
 import lisk from 'lisk-elements';

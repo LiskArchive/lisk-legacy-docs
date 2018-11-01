@@ -27,14 +27,13 @@ cp .env.{network} .env
 ## Coldstart Application
 
 ```bash
-make
 make coldstart
 ```
 
 You can then use `docker-compose` to see the status of your Lisk installation:
 
 ```bash
-docker-compose logs
+docker-compose ps
 ```
 
 As next step, check out [Docker Administration](../../../user-guide/administration/docker/admin-docker.md) to learn how to manage your Node.

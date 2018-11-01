@@ -1,11 +1,16 @@
 # Lisk Commander Documentation
 
 ## Table of contents
-|[Setup](setup/setup.md) | [Upgrade](upgrade/upgrade.md)  | [User Guide](user-guide/user-guide.md) |
-|--- | --- | --- |
-|[Pre-Installation](setup/setup.md#pre-installation) | [via NPM](upgrade/upgrade.md#upgrade-lisk-commander-via-npm) | [Configuration](user-guide/user-guide.md) |
-|[Installation](setup/setup.md#installation) | [from Source](upgrade/upgrade.md#upgrade-lisk-commander-from-source) | [Sensitive Inputs](user-guide/sensitive-inputs/sensitive-inputs.md) |
-| | | [Commands](user-guide/commands/commands.md) |
+
+- [Setup](setup/setup.md)
+  - [Pre-Installation](setup/setup.md#pre-installation)
+  - [Installation](setup/setup.md#installation)
+- [Upgrade](upgrade/upgrade.md)
+  - [via NPM](upgrade/upgrade.md#upgrade-lisk-commander-via-npm)
+  - [from Source](upgrade/upgrade.md#upgrade-lisk-commander-from-source)
+- [User Guide](user-guide/user-guide.md)
+  - [Commands](user-guide/commands/commands.md)
+  - [Sensitive Inputs](user-guide/sensitive-inputs/sensitive-inputs.md)
 
 Lisk Commander aims to be a low entry point and the most convenient tool for developers who are looking for an efficient way of coding with a command line interface (CLI). With Lisk Commander, it is easier and quicker to plug new commands into the CLI than building a Graphical User Interface (GUI) around every command. This will facilitate delegates, node operators, contributors to the Lisk codebase, developers using Lisk’s infrastructure (and anyone else who’s interested) to make use of Lisk’s functionality from the command line with ease.
 

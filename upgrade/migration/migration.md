@@ -25,6 +25,7 @@ The **recommended** migration path is as follows:
   - [Lisk Bridge : Automate the upgrade](#lisk-bridge--automated-lisk-core-migration)
   - [What if I miss the block height or if Lisk Bridge script fails](#what-if-i-miss-the-block-height-or-if-lisk-bridge-script-fails)
   - [Lisk Bridge Command Reference](#lisk-bridge-command-reference)
+  - [Migration Notes Lisk Core 0.9 -> 1.0](#migration-notes-lisk-core-0.9-1.0)
 
 The above should be enough to complete the migration. For more curious users, we've included a few more advanced sections:
 - [Migrate manually](#migrate-manually)
@@ -62,28 +63,20 @@ For example, if you're currently running `Lisk Core 0.9.16` as a user called `li
 As the lisk user then, you could run the following:
 
 ```bash
-cd ~
-rm -f lisk_bridge.sh
-wget https://downloads.lisk.io/lisk/main/lisk_bridge.sh
+su - lisk # change to lisk user
+rm -f lisk_bridge.sh # remove old versions of lisk_bridge.sh
+wget https://downloads.lisk.io/lisk/{network}/lisk_bridge.sh
 ```
+Where `<network>` can either be `main` for Mainnet or `test` for Testnet.
 
 Then run the script with the desired parameters:
 ```bash
 bash lisk_bridge.sh -n <network> -h <blockheight>
 ```
-
 Where `<network>` can either be `main` for Mainnet or `test` for Testnet.
 `<blockheight>` is the before announced blockheight, when the hard fork is going to happen.
 
 The bridge script will run and wait for the specified height of the network and upon reaching this height, will invoke `installLisk.sh` in order to update the code, migrate the database to the new model and update the config files.
-
-When the script arrives to your config file, it will prompt you asking for a password in the case where it finds a passphrase.
-It will encrypt and migrate that passphrase to the new format.
-If you want to avoid this prompt and make a full-automated migration, add the next environment variable to your system:
-
-```bash
-export LISK_MASTER_PASSWORD=XXXXXXXX
-``` 
 
 If you're doing a fully automated migration, you could run `lisk_bridge.sh` inside of tmux, screen, byobu or another terminal multiplexer and detach your session even days ahead of time, though you'd want to minimize this lead time if you're exporting `LISK_MASTER_PASSWORD`.
 
@@ -91,7 +84,8 @@ Important | Note
 --- | --- 
 ![important note](../../important-icon.png "Important Note") | **Important note for delegates:** After automated upgrade, you still need to enable forging again manually, like described in [configuration section](../../user-guide/configuration/configuration.md#enable-disable-forging)
 
-We have prepared a small clip showing the expected output from the script execution. You can watch it to verify your migration was completed as expected: https://www.youtube.com/watch?v=Zy9gyH-toBM
+We have prepared a small clip showing the expected output from the script execution.
+You can watch it to verify your migration was completed as expected: https://www.youtube.com/watch?v=Zy9gyH-toBM
 
 ### Lisk Bridge Command Reference
 For reference, here is the lisk_bridge.sh usage help:
@@ -109,8 +103,25 @@ Set the LISK_MASTER_PASSWORD environment variable if you want to do secrets migr
 ### What if I miss the block height or if Lisk Bridge script fails?
 
 Dont't panic!
-You can still migrate your node afterwards by following the normal upgrade process.
-Keep in mind you might need to run some [additional migration scripts](#additional-migration-scripts) beforehand, so that your node is fully prepared for the upgrade.
+Counting from the migration height, you have 2 full forging rounds time to upgrade your node manually by following the steps described in [Migrate manually](#migrate-manually).
+If 2 full forging rounds have already passed since migration, your Node will be probably on a fork after upgrade.
+To resolve this, rebuild your version of the blockchain [from snaphot](../../user-guide/administration/binary#rebuild-from-snapshot) or [from genesis block](../../user-guide/administration/binary#rebuild-from-the-genesis-block).
+
+### Migration Notes Lisk Core 0.9 -> 1.0
+
+#### Neccessary utility scripts
+
+The following utility scripts are run by `lisk_bridge.sh` :
+
+- [update-config.sh](#update-config): migrates config to new structure
+
+During execution of `lisk_bridge.sh`, it will prompt you asking for a password in the case where it finds a passphrase.
+It will encrypt and migrate that passphrase to the new format.
+If you want to avoid this prompt and make a full-automated migration, add the next environment variable to your system:
+
+```bash
+export LISK_MASTER_PASSWORD=XXXXXXXX
+``` 
 
 ## Migrate manually
 
@@ -166,7 +177,7 @@ Options:
 As you can see from the usage guide, `input_file` and` from_version` are required.
 If you skip `to_version` argument changes in config.json will be applied up to the latest version of Lisk Core.
 If you do not specify `--output` path the final config.json will be printed to stdout.
-If you do not specify `--network` argument you will have to load it from` LISK_NETWORK` env variable.
+If you do not specify `--network` argument you will have to load it from `LISK_NETWORK` env variable.
 
 ### Console
 

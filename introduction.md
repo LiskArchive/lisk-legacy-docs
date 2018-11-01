@@ -16,5 +16,5 @@ Lisk Commander aims to be a low entry point and the most convenient tool for dev
 With Lisk Commander, it is easier and quicker to plug new commands into the CLI than building a Graphical User Interface (GUI) around every command.
 This will facilitate delegates, node operators, contributors to the Lisk codebase, developers using Lisk’s infrastructure (and anyone else who’s interested) to make use of Lisk’s functionality from the command line with ease.
 
-Lisk Commander allows you to communicate with a remote or local node and carry out Lisk-related functionality using an interactive or non-interactive command line tool.
+Lisk Commander allows you to communicate with a remote or local node and carry out Lisk-related functionality.
 Going forward we’ll be adding more commands to provide a comprehensive suite for all your Lisk-related needs.

@@ -1,25 +1,48 @@
 # Lisk Elements API Client
 
+The Lisk Elements API Client provides a convenient wrapper for interacting with the public API of nodes on the Lisk network.
+
 - [Installation](#installation)
+- [Upgrade](#upgrade)
 - [API Client](#apiclient)
 - [Constants](#constants)
 - [Methods associated with a resource](#methods-associated-with-a-resource)
+  - [Accounts](accounts/accounts.md)
+  - [Blocks](blocks/blocks.md)
+  - [Dapps](dapps/dapps.md)
+  - [Delegates](delegates/delegates.md)
+  - [Node](node/node.md)
+  - [Peers](peers/peers.md)
+  - [Signatures](signatures/signatures.md)
+  - [Transactions](transactions/transactions.md)
+  - [Voters](voters/voters.md)
+  - [Votes](votes/votes.md)
 - [Methods not associated with a resource](#methods-not-associated-with-a-resource)
-
-
-The Lisk Elements API Client provides a convenient wrapper for interacting with the public API of nodes on the Lisk network.
+  - [initialize](#initialize)
+  - [getNewNode](#getNewNode)
+  - [banActiveNodeAndSelect](#banActiveNodeAndSelect)
+  - [hasAvailableNodes](#hasAvailableNodes)
+  - [isBanned](#isBanned)
 
 ## Installation
 
+Add Lisk Client as a dependency of your project:
+
 ```bash
 $ npm install --save @liskhq/lisk-api-client
+```
+
+## Upgrade
+
+```bash
+npm update --save @liskhq/lisk-api-client
 ```
 
 ## APIClient
 
 We expose a constructor, which takes an array of nodes, and optionally an options object. For convenience, we provide helper functions for creating API clients on specific networks with a default set of nodes. We recommend using these functions unless you operate your own nodes, or have good reasons to prefer nodes provided by a third party. *If you use the generic constructor, it is your responsibility to ensure that the nodes you specify are on the correct network.*
 
-#### Syntax
+### Syntax
 
 ```js
 new APIClient(nodes, [options])
@@ -28,7 +51,7 @@ APIClient.createBetanetAPIClient([options])
 APIClient.createTestnetAPIClient([options])
 ```
 
-#### Parameters
+### Parameters
 
 `nodes`: When calling the constructor directly, a list of nodes must be provided for the API client to connect to as an array of strings.
 
@@ -39,11 +62,11 @@ APIClient.createTestnetAPIClient([options])
 - `node`: The node to use first (overrides the order of the array of nodes used to initialise the client).
 - `randomizeNodes`: Whether a random node should be selected after one becomes unreachable. (Default: `true`.)
 
-#### Return value
+### Return value
 
 Instance of `APIClient`.
 
-#### Examples
+### Examples
 
 ```js
 import lisk from 'lisk-elements';
@@ -73,7 +96,7 @@ const betanetClient = lisk.APIClient.createBetanetAPIClient({ randomizeNodes: fa
 
 API-specific constants are available via the `APIClient` constructor, and include relevant HTTP methods and lists of default nodes.
 
-#### Examples
+### Examples
 
 ```js
 import lisk from 'lisk-elements';
@@ -89,7 +112,8 @@ lisk.APIClient.constants.MAINNET_NODES; // Array of default mainnet nodes
 
 ## Methods associated with a resource
 
-Requests to a node are made via the `APIClient` instance’s respective resource, and return a promise. In the case of a response with a status code in the `2xx` range, these promises are fulfilled with a relevant object, otherwise they are rejected with an appropriate error message.
+Requests to a node are made via the `APIClient` instance’s respective resource, and return a promise.
+In the case of a response with a status code in the `2xx` range, these promises are fulfilled with a relevant object, otherwise they are rejected with an appropriate error message.
 
 Documentation for each resource can be found on the following pages:
 - [Accounts](accounts/accounts.md)
@@ -105,7 +129,7 @@ Documentation for each resource can be found on the following pages:
 
 ## Methods not associated with a resource
 
-### `initialize`
+### initialize
 
 Initialises the client instance with an array of nodes and an optional configuration object. This is called in the constructor, but can be called again later if necessary. (Note that in practice it is usually easier just to create a new instance.)
 
@@ -143,7 +167,7 @@ client.initialize(
 );
 ```
 
-### `getNewNode`
+### getNewNode
 
 Selects a random node that has not been banned.
 
@@ -191,7 +215,7 @@ banNode(node)
 client.banNode('https://my.faultynode.io:443');
 ```
 
-### `banActiveNodeAndSelect`
+### banActiveNodeAndSelect
 
 Bans the current node and selects a new random (non-banned) node.
 
@@ -215,7 +239,7 @@ n/a
 client.banActiveNodeAndSelect();
 ```
 
-### `hasAvailableNodes`
+### hasAvailableNodes
 
 Tells you whether all the nodes have been banned or not.
 
@@ -239,7 +263,7 @@ n/a
 const moreNodesNeeded = !client.hasAvailableNodes();
 ```
 
-### `isBanned`
+### isBanned
 
 Tells you whether a specific node has been banned or not.
 

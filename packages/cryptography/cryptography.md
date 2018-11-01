@@ -2,9 +2,54 @@
 
 The Lisk Elements cryptography module provides all the cryptographic functionality necessary when interacting with the Lisk ecosystem.
 
-## Methods for converting between different formats
+- [Installation](#installation)
+- [Upgrade](#upgrade)
+- [Methods for converting between formats](#methods-for-converting-between-formats)
+  - [bufferToHex](#buffertohex)
+  - [getAddressFromPublicKey](#getAddressFromPublicKey)
+  - [HexToBuffer](#hextobuffer)
+  - [parseEncryptedPassphrase](#parseEncryptedPassphrase)
+  - [stringifyEncryptedPassphrase](#stringifyEncryptedPassphrase)
+- [Methods for encrypting and decrypting](#methods-for-encrypting-and-decrypting)
+  - [decryptMessageWithPassphrase](#decryptMessageWithPassphrase)
+  - [decryptPassphraseWithPassword](#decryptPassphraseWithPassword)
+  - [encryptMessageWithPassphrase](#encryptMessageWithPassphrase)
+  - [encryptPassphraseWithPassword](#encryptPassphraseWithPassword)
+- [Methods for hashing](#methods-for-hashing)
+  - [hash](#hash)
+- [Methods for managing keys](#methods-for-managing-keys)
+  - [getAddressAndPublicKeyFromPassphrase](#getAddressAndPublicKeyFromPassphrase)
+  - [getAddressFromPassphrase](#getAddressFromPassphrase)
+  - [getKeys](#getKeys)
+  - [getPrivateAndPublicKeyFromPassphrase](#getPrivateAndPublicKeyFromPassphrase)
+  - [printSignedMessage](#printSignedMessage)
+- [Methods for signing and verifying](#methods-for-signing-and-verifying)
+  - [printSignedMessage](#printSignedMessage)
+  - [signAndPrintMessage](#signAndPrintMessage)
+  - [signMessageWithPassphrase](#signMessageWithPassphrase)
+  - [signMessageWithTwoPassphrases](#signMessageWithTwoPassphrases)
+  - [verifyMessageWithPublicKey](#verifyMessageWithPublicKey)
+  - [verifyMessageWithTwoPublicKeys](#verifyMessageWithTwoPublicKeys)
 
-### `bufferToHex`
+## Installation
+
+Add Lisk Client as a dependency of your project:
+
+```bash
+$ npm install --save @liskhq/lisk-cryptography
+```
+
+## Upgrade
+
+```bash
+npm update --save @liskhq/lisk-cryptography
+```
+
+## Methods for converting between formats
+
+Methods for converting between different formats.
+
+### bufferToHex
 
 Converts a buffer or byte array to a hex string.
 
@@ -29,7 +74,7 @@ const buffer = Buffer.from([0xab, 0xcd, 0x12, 0x34]);
 lisk.cryptography.bufferToHex(buffer); // 'abcd1234'
 ```
 
-### `getAddressFromPublicKey`
+### getAddressFromPublicKey
 
 Converts a public key into a Lisk address.
 
@@ -54,7 +99,7 @@ const publicKey = '968ba2fa993ea9dc27ed740da0daf49eddd740dbd7cb1cb4fc5db3a20baf3
 lisk.cryptography.getAddressFromPublicKey(publicKey); // '12668885769632475474L'
 ```
 
-### `hexToBuffer`
+### hexToBuffer
 
 Converts a hex string to a buffer.
 
@@ -79,7 +124,7 @@ const hex = 'abcd1234';
 lisk.cryptography.hexToBuffer(hex); // <Buffer ab cd 12 34>
 ```
 
-### `parseEncryptedPassphrase`
+### parseEncryptedPassphrase
 
 Parses an encrypted passphrase string as an object.
 
@@ -112,7 +157,7 @@ lisk.cryptography.parseEncryptedPassphrase(encryptedPassphrase);
 } */
 ```
 
-### `stringifyEncryptedPassphrase`
+### stringifyEncryptedPassphrase
 
 Converts an encrypted passphrase object to a string for convenient storage.
 
@@ -142,7 +187,7 @@ lisk.cryptography.stringifyEncryptedPassphrase(encryptedPassphrase); // 'iterati
 
 ## Methods for encrypting and decrypting
 
-### `decryptMessageWithPassphrase`
+### decryptMessageWithPassphrase
 
 Decrypts a message that has been encrypted for a given public key using the
 corresponding passphrase.
@@ -178,7 +223,7 @@ const decryptedMessage = lisk.cryptography.decryptMessageWithPassphrase(
 ); // 'Hello Lisk!'
 ```
 
-### `decryptPassphraseWithPassword`
+### decryptPassphraseWithPassword
 
 Decrypts a passphrase that has been encrypted using a password.
 
@@ -215,7 +260,7 @@ const decryptedPassphrase = lisk.cryptography.decryptPassphraseWithPassword(
 ); // 'robust swift grocery peasant forget share enable convince deputy road keep cheap'
 ```
 
-### `encryptMessageWithPassphrase`
+### encryptMessageWithPassphrase
 
 Encrypts a message under a recipient’s public key, using a passphrase to create a signature.
 
@@ -251,7 +296,7 @@ const encryptedMessage = lisk.cryptography.encryptMessageWithPassphrase(
 } */
 ```
 
-### `encryptPassphraseWithPassword`
+### encryptPassphraseWithPassword
 
 Encrypts a passphrase under a password for secure storage.
 
@@ -292,7 +337,7 @@ const encryptedPassphrase = lisk.cryptography.encryptPassphraseWithPassword(
 
 ## Methods for hashing
 
-### `hash`
+### hash
 
 Hashes an input using the SHA256 algorithm.
 
@@ -322,7 +367,7 @@ lisk.cryptography.hash('abcd1234', 'utf8'); // <Buffer e9 ce e7 1a b9 32 fd e8 6
 
 ## Methods for managing keys
 
-### `getAddressAndPublicKeyFromPassphrase`
+### getAddressAndPublicKeyFromPassphrase
 
 Returns an object containing the address and public key for a provided passphrase.
 
@@ -352,7 +397,7 @@ lisk.cryptography.getAddressAndPublicKeyFromPassphrase(
 } */
 ```
 
-### `getAddressFromPassphrase`
+### getAddressFromPassphrase
 
 Returns the Lisk address for a provided passphrase.
 
@@ -378,7 +423,7 @@ lisk.cryptography.getAddressFromPassphrase(
 ); //'8273455169423958419L'
 ```
 
-### `getKeys`
+### getKeys
 
 An alias for `getPrivateAndPublicKeyFromPassphrase`.
 
@@ -412,7 +457,7 @@ lisk.cryptography.getPrivateAndPublicKeyBytesFromPassphrase(
 } */
 ```
 
-### `getPrivateAndPublicKeyFromPassphrase`
+### getPrivateAndPublicKeyFromPassphrase
 
 Returns an object containing the private and public keys as hex `string`s for a provided passphrase.
 
@@ -444,7 +489,7 @@ lisk.cryptography.getPrivateAndPublicKeyFromPassphrase(
 
 ## Methods for signing and verifying
 
-### `printSignedMessage`
+### printSignedMessage
 
 Outputs a string representation of a signed message object which is suitable for printing.
 
@@ -481,7 +526,7 @@ Hello Lisk!
 \-----END LISK SIGNED MESSAGE-----
 ```
 
-### `signAndPrintMessage`
+### signAndPrintMessage
 
 Signs a message with one or two passphrases and outputs a string representation which is suitable for printing.
 
@@ -518,7 +563,7 @@ Hello Lisk!
 \-----END LISK SIGNED MESSAGE-----
 ```
 
-### `signMessageWithPassphrase`
+### signMessageWithPassphrase
 
 Signs a message with a passphrase.
 
@@ -549,153 +594,7 @@ lisk.cryptography.signMessageWithPassphrase('Hello Lisk!',  'robust swift grocer
 } */
 ```
 
-### `signMessageWithTwoPassphrases`
-
-Signs a message with two passphrases.
-
-#### Syntax
-
-```js
-signMessageWithTwoPassphrases(message, passphrase, secondPassphrase)
-```
-
-#### Parameters
-
-`message`:  The string message to sign.
-
-`passphrase`: The secret passphrase to use to sign the message.
-
-`secondPassphrase`: The second secret passphrase to use to sign the message.
-
-#### Return value
-
-`object`: Contains `message`, `publicKey` and `secondPublicKey` corresponding to the passphrases,  and `signature` and `secondSignature` as hex `string`s.
-
-#### Examples
-
-```js
-lisk.cryptography.signMessageWithTwoPassphrases('Hello Lisk!',  'robust swift grocery peasant forget share enable convince deputy road keep cheap', 'drastic spot aerobic web wave tourist library first scout fatal inherit arrange');
-/* {
-    message: 'Hello Lisk!',
-    publicKey: '9d3058175acab969f41ad9b86f7a2926c74258670fe56b37c429c01fca9f2f0f',
-    secondPublicKey: '44fc724f611d822fbb946e4084d27cc07197bb3ab4d0406a17ade813cd7aee15',
-    signature: '125febe625b2d62381ff836c020de0b00297f7d2493fe6404bc6109fd70a55348555b7a66a35ac657d338d7fe329efd203da1602f4c88cc21934605676558401',
-    secondSignature: 'a5eb984dfe991af149d748762c9e012d69838690560167003e8851d68493ffc60514fbc522b3b9dc84e9293d88a054dbeeb2f7c7dde39f591ebc19c81970e50f',
-} */
-```
-
-### `verifyMessageWithPublicKey`
-
-Verifies a message has a valid signature for a given public key.
-
-#### Syntax
-
-```js
-verifyMessageWithPublicKey(signedMessageObject)
-```
-
-#### Parameters
-
-`signedMessageObject`: The result of calling `signMessageWithPassphrase`.
-
-#### Return value
-
-`boolean`: `true` if the signature is valid, otherwise an error will be thrown.
-
-#### Examples
-
-```js
-lisk.cryptography.verifyMessageWithPublicKey({
-    message: 'Hello Lisk!',
-    publicKey: '9d3058175acab969f41ad9b86f7a2926c74258670fe56b37c429c01fca9f2f0f',
-    signature: '125febe625b2d62381ff836c020de0b00297f7d2493fe6404bc6109fd70a55348555b7a66a35ac657d338d7fe329efd203da1602f4c88cc21934605676558401',
-});
-/* true */
-```
-
-### `verifyMessageWithTwoPublicKeys`
-
-Verifies a message has valid signatures for two given public keys.
-
-#### Syntax
-
-```js
-verifyMessageWithTwoPublicKeys(signedMessageObject)
-```
-
-#### Parameters
-
-`signedMessageObject`: The result of calling `signMessageWithTwoPassphrases`.
-
-#### Return value
-
-`boolean`: `true` if the signatures are both valid, otherwise an error will be thrown.
-
-#### Examples
-
-```js
-lisk.cryptography.verifyMessageWithTwoPublicKeys({
-    message: 'Hello Lisk!',
-    publicKey: '9d3058175acab969f41ad9b86f7a2926c74258670fe56b37c429c01fca9f2f0f',
-    secondPublicKey: '44fc724f611d822fbb946e4084d27cc07197bb3ab4d0406a17ade813cd7aee15',
-    signature: '125febe625b2d62381ff836c020de0b00297f7d2493fe6404bc6109fd70a55348555b7a66a35ac657d338d7fe329efd203da1602f4c88cc21934605676558401',
-    secondSignature: 'a5eb984dfe991af149d748762c9e012d69838690560167003e8851d68493ffc60514fbc522b3b9dc84e9293d88a054dbeeb2f7c7dde39f591ebc19c81970e50f',
-});
-/* true */
-```
-
-----
-
-End-lisk-signed-message-signandprintmessage-signs-a-message-using-one-or-two-passphrases-and-outputs-a-string-representation-which-is-suitable-for-printing-syntax-js-signandprintmessage-message-passphrase-secondpassphrase-parameters-message: 
-
-The message to sign as a UTF8-encoded string or a buffer.
-
-`passphrase`: The secret passphrase to be used in signing.
-
-`secondPassphrase`: The second secret passphrase to be used in signing.
-
-#### Return value
-
-`string`: The string representation of the signed message object.
-
-#### Examples
-
-```js
-const stringToPrint = cryptography.signAndPrintMessage(
-    'Hello Lisk!',
-    'robust swift grocery peasant forget share enable convince deputy road keep cheap'
-);
-console.log(stringToPrint);
-/*
-
-----
-
-End-lisk-signed-message-signmessagewithpassphrase-signs-a-message-using-a-secret-passphrase-syntax-js-signmessagewithpassphrase-message-passphrase-parameters-message: 
-
-The message to sign as a UTF8-encoded string or a buffer.
-
-`passphrase`: The secret passphrase to be used in signing.
-
-#### Return value
-
-`object`: Contains `message` (the original input), `publicKey` (for the
-passphrase as a hex `string`) and `signature` (as a hex `string`).
-
-#### Examples
-
-```js
-cryptography.signMessageWithPassphrase(
-    'Hello Lisk!',
-    'robust swift grocery peasant forget share enable convince deputy road keep cheap'
-);
-/* {
-    message: 'Hello Lisk!',
-    publicKey: '9d3058175acab969f41ad9b86f7a2926c74258670fe56b37c429c01fca9f2f0f',
-    signature: '125febe625b2d62381ff836c020de0b00297f7d2493fe6404bc6109fd70a55348555b7a66a35ac657d338d7fe329efd203da1602f4c88cc21934605676558401',
- } */
-```
-
-### `signMessageWithTwoPassphrases`
+### signMessageWithTwoPassphrases
 
 Signs a message using a secret passphrase and a second secret passphrase.
 
@@ -737,7 +636,7 @@ cryptography.signMessageWithTwoPassphrases(
  } */
 ```
 
-### `verifyMessageWithPublicKey`
+### verifyMessageWithPublicKey
 
 Verifies that a signature for a given message matches the provided public key.
 
@@ -765,7 +664,7 @@ cryptography.verifyMessageWithPublicKey({
 }); // true
 ```
 
-### `verifyMessageWithTwoPublicKeys`
+### verifyMessageWithTwoPublicKeys
 
 Verifies that a signature and second signature for a given message match the provided public keys.
 

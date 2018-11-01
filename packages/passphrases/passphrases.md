@@ -1,15 +1,23 @@
 # Lisk Elements Passphrase
 
+The Lisk Elements passphrase module provides tools for generating and validating mnemonic passphrases.
+
 - [Installation](#installation)
+- [Upgrade](#upgrade)
 - [Mnemonic](#mnemonic)
 - [Additional validation methods](#additional-validation-methods)
-
-The Lisk Elements passphrase module provides tools for generating and validating mnemonic passphrases.
+  - [getPassphraseValidationErrors](#getPassphraseValidationErrors)
 
 ## Installation
 
 ```bash
 $ npm install --save @liskhq/lisk-passphrase
+```
+
+## Upgrade
+
+```bash
+npm update --save @liskhq/lisk-passphrase
 ```
 
 ## Mnemonic
@@ -33,7 +41,7 @@ Mnemonic.validateMnemonic(japanesePassphrase, Mnemonic.wordlists.japanese); // t
 
 In addition to the validation provided by the BIP39 library, we provide a helper function to help you understand what has gone wrong with an invalid passphrase.
 
-### `getPassphraseValidationErrors`
+### getPassphraseValidationErrors
 
 Returns an array of validation errors to help with usability.
 

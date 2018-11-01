@@ -2,7 +2,26 @@
 
 The Lisk Elements Constants object provides some handy general-purpose constants for use with the Lisk Ecosystem.
 
-#### Examples
+- [Installation](#installation)
+- [Upgrade](#upgrade)
+- [Usage](#usage)
+
+## Installation
+
+Add Lisk Client as a dependency of your project:
+
+```bash
+$ npm install --save @liskhq/lisk-constants
+```
+
+## Upgrade
+
+```bash
+npm update --save @liskhq/lisk-constants
+```
+
+
+## Usage
 
 ```js
 import lisk from 'lisk-elements';

@@ -12,15 +12,25 @@ Lisk Elements will include a lot of different packages in the future, which can 
 
 For better usability Lisk Elements provides special wrapper packages like `lisk-client`, which group packages that are often used in the same context.
 
-## Installation
+- [Installation](#installation)
+- [Upgrade](#upgrade)
+- [Usage](#usage)
 
-### Installation via npm
+## Installation
 
 Add Lisk Client as a dependency of your project:
 
 ```bash
 $ npm install --save @liskhq/lisk-client
 ```
+
+## Upgrade
+
+```bash
+npm update --save @liskhq/lisk-api-client
+```
+
+## Usage
 
 Import using ES6 modules syntax:
 
@@ -40,18 +50,4 @@ Or import specific namespaced functionality:
 import { APIClient, transactions } from '@liskhq/lisk-client';
 // or
 const { APIClient, transactions } = require('@liskhq/lisk-client');
-```
-
-### Installation via CDN
-
-Include the following script using the following HTML. The `lisk` variable will be exposed.
-
-```html
-<script src="https://js.lisk.io/lisk-client-1.0.0.js"></script>
-```
-
-Or minified:
-
-```html
-<script src="https://js.lisk.io/lisk-client-1.0.0.min.js"></script>
 ```

@@ -2,6 +2,42 @@
 
 The Lisk Elements transactions module provides functions for creating transactions of every type, plus a set of utility functions.
 
+- [Installation](#installation)
+- [Upgrade](#upgrade)
+- [Constants](#constants)
+- [Methods for creating transactions](#methods-for-creating-transactions)
+  - [Type 0: transfer](#type-0-transfer)
+  - [Type 1: register second passphrase](#type-1-registersecondpassphrase)
+  - [Type 2: register delegate](#type-2-registerdelegate)
+  - [Type 3: cast votes](#type-3-castvotes)
+  - [Type 4: registerMultisignature](#type-4-registermultisignature)
+- [Methods for creating signature objects](#methods-for-creating-signature-objects)
+  - [createSignatureObject](#createSignatureObject)
+- [Utility Methods](#utility-methods)
+  - [convertBeddowsToLSK](#convertBeddowsToLSK)
+  - [convertLSKToBeddows](#convertLSKToBeddows)
+  - [getTransactionBytes](#getTransactionBytes)
+  - [getTransactionId](#getTransactionId)
+  - [multiSignTransaction](#multiSignTransaction)
+  - [signTransaction](#signTransaction)
+  - [validateAddress](#validateAddress)
+  - [validateKeysgroup](#validateKeysgroup)
+  - [validatePublicKey](#validatePublicKey)
+  - [validatePublicKeys](#validatePublicKeys)
+  - [verifyTransaction](#verifyTransaction)
+
+## Installation
+
+```bash
+$ npm install --save @liskhq/lisk-passphrase
+```
+
+## Upgrade
+
+```bash
+npm update --save @liskhq/lisk-passphrase
+```
+
 ## Constants
 
 Transactions-specific constants are available via the `transaction` key, and include relevant fees and byte allocations for transaction components.
@@ -367,7 +403,7 @@ lisk.transaction.registerMultisignature({
 
 ## Methods for creating signature objects
 
-### `createSignatureObject`
+### createSignatureObject
 
 Creates a signature object for a transaction from a multisignature account.
 
@@ -411,7 +447,7 @@ lisk.transaction.createSignatureObject({
 
 ## Utility methods
 
-### `convertBeddowsToLSK`
+### convertBeddowsToLSK
 
 Converts amounts in Beddows (the smallest denomination) to amounts in whole LSK.
 
@@ -435,7 +471,7 @@ convertBeddowsToLSK(amount)
 lisk.transaction.utils.convertBeddowsToLSK('100000'); // '0.001'
 ```
 
-### `convertLSKToBeddows`
+### convertLSKToBeddows
 
 Converts amounts in whole LSK to amounts in Beddows (the smallest denomination).
 
@@ -459,7 +495,7 @@ convertLSKToBeddows(amount)
 lisk.transaction.utils.convertLSKToBeddows('0.001'); // '100000'
 ```
 
-### `getTransactionBytes`
+### getTransactionBytes
 
 Returns a byte array representation of a transaction object.
 
@@ -494,7 +530,7 @@ lisk.transaction.utils.getTransactionBytes({
 }); // <Buffer 00 b8 7f e8 03 0b 68 c5 d7 45 d4 79 98 76 8a 14 b9 2b 22 1d ed 22 92 e2 1b 62 84 6f 8f 96 8f db cd 9b 52 ae 4d 00 00 00 00 00 00 00 7b 64 00 00 00 00 ... >
 ```
 
-### `getTransactionId`
+### getTransactionId
 
 Returns a transaction ID for a transaction.
 
@@ -528,7 +564,7 @@ lisk.transaction.utils.getTransactionId({
 }); // '7601088739759476607'
 ```
 
-### `multiSignTransaction`
+### multiSignTransaction
 
 Signs a transaction from a multisignature account using a passphrase.
 
@@ -567,7 +603,7 @@ lisk.transaction.utils.multiSignTransaction(
 ); // '27072c5eb4861792280bf3fc09f3bc7b0f81694cfd728cb810bf9fc4b18127d2885cf5235aa8e01d632092030e62f94b9b53394297cdd6a79b180f5e169dc80b'
 ```
 
-### `signTransaction`
+### signTransaction
 
 Signs a transaction using a passphrase.
 
@@ -605,7 +641,7 @@ lisk.transaction.utils.signTransaction(
 ); // '27072c5eb4861792280bf3fc09f3bc7b0f81694cfd728cb810bf9fc4b18127d2885cf5235aa8e01d632092030e62f94b9b53394297cdd6a79b180f5e169dc80b'
 ```
 
-### `validateAddress`
+### validateAddress
 
 Validates a Lisk address.
 
@@ -629,7 +665,7 @@ validateAddress(address)
 lisk.transaction.utils.validateAddress('12981844261447786907L'); // true
 ```
 
-### `validateKeysgroup`
+### validateKeysgroup
 
 Validates a keysgroup for a multisignature account.
 
@@ -653,7 +689,7 @@ validateKeysgroup(keysgroup)
 lisk.transaction.utils.validateKeysgroup([]); // Throws 'Expected between 1 and 16 public keys in the keysgroup.'
 ```
 
-### `validatePublicKey`
+### validatePublicKey
 
 Validates a public key.
 
@@ -677,7 +713,7 @@ validatePublicKey(publicKey)
 lisk.transaction.utils.validatePublicKey('0b68c5d745d47998768a14b92b221ded2292e21b62846f8f968fdbcd9b52ae4d'); // true
 ```
 
-### `validatePublicKeys`
+### validatePublicKeys
 
 Validates an array of public keys.
 
@@ -704,7 +740,7 @@ lisk.transaction.utils.validatePublicKeys([
 ]); // Throws 'Error: Duplicated public key: 0b68c5d745d47998768a14b92b221ded2292e21b62846f8f968fdbcd9b52ae4d.'
 ```
 
-### `verifyTransaction`
+### verifyTransaction
 
 Verifies the signature (and optionally the second signature) for a passphrase.
 

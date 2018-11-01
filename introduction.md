@@ -1,6 +1,7 @@
 # Lisk Elements Documentation
 
-## Table of contents
+Lisk Elements is a JavaScript library containing several separately-installable npm packages, each covering a distinct region of Lisk-related functionality.
+
 - [Setup](setup/setup.md)
   - [Pre-Installation](setup/setup.md#pre-installation)
   - [Installation](setup/setup.md#installation)
@@ -15,8 +16,6 @@
   - [Cryptography](packages/cryptography/cryptography.md): Relevant cryptographic functions.
   - [Passphrase](packages/passphrase/passphrase.md): Mnemonic passphrase helpers.
   - [Transactions](packages/transactions/transactions.md): Functions for creating, signing and verifying transactions.
-
-Lisk Elements is a JavaScript library containing several separately-installable npm packages, each covering a distinct region of Lisk-related functionality. 
 
 ## Contribute to the Codebase
 

@@ -2,7 +2,7 @@
 
 ## Get configuration & Makefile
 
-Clone [Lisk Docker Repository](https://github.com/LiskHQ/lisk-docker). It contains the following files:
+Clone the [Lisk Repository](https://github.com/LiskHQ/lisk). It contains a directory `docker` with the following files:
 - `Makefile`
 - `docker-compose.yml`
 - `.env.{network}`
@@ -11,7 +11,8 @@ The `.env`-files are examples, where `{network}` stands for the lisk network you
 
 ```bash
 su - lisk # switch to lisk user
-git clone https://github.com/LiskHQ/lisk-docker.git # clone the repository
+git clone https://github.com/LiskHQ/lisk.git # clone the repository
+cd lisk/docker # navigate into docker directory
 ```
 
 ## Set environment variables
@@ -26,13 +27,14 @@ cp .env.{network} .env
 ## Coldstart Application
 
 ```bash
+make
 make coldstart
 ```
 
 You can then use `docker-compose` to see the status of your Lisk installation:
 
 ```bash
-docker-compose ps
+docker-compose logs
 ```
 
 As next step, check out [Docker Administration](../../../user-guide/administration/docker/admin-docker.md) to learn how to manage your Node.

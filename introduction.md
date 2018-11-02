@@ -18,3 +18,16 @@ This will facilitate delegates, node operators, contributors to the Lisk codebas
 
 Lisk Commander allows you to communicate with a remote or local node and carry out Lisk-related functionality.
 Going forward we’ll be adding more commands to provide a comprehensive suite for all your Lisk-related needs.
+
+## Contribute to the Codebase
+
+Everyone is invited to contribute to the Lisk Commander project. We welcome and appreciate all contributions. 
+
+### Github
+All necessary information can be found on our [Lisk Commander Github](https://github.com/LiskHQ/lisk-commander).
+
+### Contribution Guidelines
+Please be sure to read and follow our [Contribution Guidelines](https://github.com/LiskHQ/lisk-commander/blob/development/docs/CONTRIBUTING.md).
+
+### Gitter
+If you have any further questions please join our [Gitter](https://gitter.im/LiskHQ/lisk).

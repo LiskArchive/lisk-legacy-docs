@@ -52,13 +52,13 @@ The Lisk Elements transactions module provides functions for creating transactio
 ## Installation
 
 ```bash
-$ npm install --save @liskhq/lisk-passphrase
+$ npm install --save @liskhq/lisk-transactions
 ```
 
 ## Upgrade
 
 ```bash
-npm update --save @liskhq/lisk-passphrase
+npm update --save @liskhq/lisk-transactions
 ```
 
 ## Constants

@@ -62,7 +62,7 @@ npm install --save lisk-elements
 ```
 **Specific package**
 ```bash
-npm install --save <package-name>
+npm install --save @liskhq/<package-name>
 ```
 
 where `<package-name>` can be any of the sub packages in Lisk Elements.
@@ -77,13 +77,13 @@ Include the following script using the following HTML. The `lisk` variable will 
 
 **Complete library**
 ```html
-<script src="https://js.lisk.io/lisk-elements-1.1.0.js"></script>
+<script src="https://js.lisk.io/lisk-client-1.1.0.js"></script>
 ```
 
 Or minified:
 
 ```html
-<script src="https://js.lisk.io/lisk-elements-1.1.0.min.js"></script>
+<script src="https://js.lisk.io/lisk-client-1.1.0.min.js"></script>
 ```
 
 **Specific package**

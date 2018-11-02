@@ -90,7 +90,7 @@ You can watch it to verify your migration was completed as expected: https://www
 ### Lisk Bridge Command Reference
 For reference, here is the lisk_bridge.sh usage help:
 ```bash
-Usage: lisk_bridge.sh <-h <BLOCKHEIGHT>> [-s <DIRECTORY>] [-n <NETWORK>]
+Usage: bash lisk_bridge.sh <-h <BLOCKHEIGHT>> [-s <DIRECTORY>] [-n <NETWORK>]
 -h <BLOCKHEIGHT> -- specify blockheight at which bridging will be initiated
 -f <TARBALL>     -- specify path to local tarball containing the target release
 -s <DIRECTORY>   -- Lisk home directory
@@ -146,7 +146,7 @@ All scripts are are located under `./scripts/` directory and can be executed dir
 This script will help you to generate unified version of configuration file for any network. Here is the usage of the script:
 
 ```bash
-Usage: generate_config [options]
+Usage: node scripts/generate_config [options]
 
 Options:
 
@@ -164,7 +164,7 @@ This script keep track of all changes introduced in Lisk over time in different 
 If you have one config file in any of specific version and you want to make it compatible with other version of the Lisk, this scripts will do it for you.
 
 ```bash
-Usage: update_config [options] <input_file> <from_version> [to_version]
+Usage: node scripts/update_config [options] <input_file> <from_version> [to_version]
 
 Options:
 
@@ -184,7 +184,7 @@ If you do not specify `--network` argument you will have to load it from `LISK_N
 This script is really useful in development. It will initialize the components of Lisk and load these into nodejs REPL.
 
 ```bash
-node scripts/console.js
+Usage: node scripts/console.js
 
 initApplication: Application initialization inside test environment started...
 initApplication: Target database - lisk_dev

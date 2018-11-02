@@ -4,7 +4,7 @@ Sometimes Lisk Commander requires sensitive inputs such as passphrases or secret
 This page describes the various options you have for securely passing sensitive inputs to Lisk Commander commands. 
 The format for providing Lisk Commander with sensitive inputs is loosely based on the format used by OpenSSL.
 
-We shall use the `encrypt message` command for the examples with a secret passphrase as a sensitive input, but the same pattern applies to other commands which accept sensitive inputs as well.
+We shall use the `message:encrypt` command for the examples with a secret passphrase as a sensitive input, but the same pattern applies to other commands which accept sensitive inputs as well.
 
 ## Via a password prompt
 

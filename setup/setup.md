@@ -75,13 +75,12 @@ Upon successful completion, NPM will add the Lisk Elements package to your `pack
 
 Include the following script using the following HTML. The `lisk` variable will be exposed.
 
-**Complete library**
+**Client library**
 ```html
 <script src="https://js.lisk.io/lisk-client-1.1.0.js"></script>
 ```
 
 Or minified:
-
 ```html
 <script src="https://js.lisk.io/lisk-client-1.1.0.min.js"></script>
 ```
@@ -90,8 +89,8 @@ Or minified:
 ```html
 <script src="https://js.lisk.io/lisk-<package-name>-1.1.0.js"></script>
 ```
-Or minified:
 
+Or minified:
 ```html
 <script src="https://js.lisk.io/lisk-<package-name>-1.1.0.min.js"></script>
 ```

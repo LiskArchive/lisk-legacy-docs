@@ -69,27 +69,27 @@ Instance of `APIClient`.
 ### Examples
 
 ```js
-import lisk from 'lisk-elements';
+import ApiClient from '@liskhq/lisk-api-client';
 
-const client = new lisk.APIClient(['https://node01.lisk.io:443', 'https://node02.lisk.io:443']);
-const clientWithOptions = new lisk.APIClient(
-    ['https://node01.lisk.io:443', 'https://node02.lisk.io:443'],
-    {
-        bannedNodes: ['https://my.faultynode.io:443'],
-        client: {
-            name: 'My Lisk Client',
-            version: '1.2.3',
-            engine: 'Some custom engine',
-        },
-        nethash: '9a9813156bf1d2355da31a171e37f97dfa7568187c3fd7f9c728de8f180c19c7',
-        node: 'https://my.preferrednode.io:443',
-        randomizeNodes: false,
-    }
+const client = new ApiClient(['https://node01.lisk.io:443', 'https://node02.lisk.io:443']);
+const clientWithOptions = new ApiClient(
+ ['https://node01.lisk.io:443', 'https://node02.lisk.io:443'],
+ {
+     bannedNodes: ['https://my.faultynode.io:443'],
+     client: {
+         name: 'My Lisk Client',
+         version: '1.2.3',
+         engine: 'Some custom engine',
+     },
+     nethash: '9a9813156bf1d2355da31a171e37f97dfa7568187c3fd7f9c728de8f180c19c7',
+     node: 'https://my.preferrednode.io:443',
+     randomizeNodes: false,
+ }
 );
 
-const mainnetClient = lisk.APIClient.createMainnetAPIClient();
-const testnetClient = lisk.APIClient.createTestnetAPIClient();
-const betanetClient = lisk.APIClient.createBetanetAPIClient({ randomizeNodes: false });
+const mainnetClient = ApiClient.createMainnetAPIClient();
+const testnetClient = ApiClient.createTestnetAPIClient();
+const betanetClient = ApiClient.createBetanetAPIClient({ randomizeNodes: false });
 ```
 
 ## Constants
@@ -99,15 +99,15 @@ API-specific constants are available via the `APIClient` constructor, and includ
 ### Examples
 
 ```js
-import lisk from 'lisk-elements';
+import ApiClient from '@liskhq/lisk-api-client';
 
-lisk.APIClient.constants.GET; // 'GET'
-lisk.APIClient.constants.POST; // 'POST'
-lisk.APIClient.constants.PUT; // 'PUT'
+ApiClient.constants.GET; // 'GET'
+ApiClient.constants.POST; // 'POST'
+ApiClient.constants.PUT; // 'PUT'
 
-lisk.APIClient.constants.BETANET_NODES; // Array of default betanet nodes
-lisk.APIClient.constants.TESTNET_NODES; // Array of default testnet nodes
-lisk.APIClient.constants.MAINNET_NODES; // Array of default mainnet nodes
+ApiClient.constants.BETANET_NODES; // Array of default betanet nodes
+ApiClient.constants.TESTNET_NODES; // Array of default testnet nodes
+ApiClient.constants.MAINNET_NODES; // Array of default mainnet nodes
 ```
 
 ## Methods associated with a resource
@@ -150,8 +150,8 @@ The parameters are the same as for the constructor.
 #### Examples
 
 ```js
-client.initialize(['https://node01.lisk.io:443', 'https://node02.lisk.io:443']);
-client.initialize(
+ApiClient.initialize(['https://node01.lisk.io:443', 'https://node02.lisk.io:443']);
+ApiClient.initialize(
     ['https://node01.lisk.io:443', 'https://node02.lisk.io:443'],
     {
         bannedNodes: ['https://my.faultynode.io:443'],
@@ -188,7 +188,7 @@ n/a
 #### Examples
 
 ```js
-const randomNode = client.getNewNode();
+const randomNode = ApiClient.getNewNode();
 ```
 
 ### `banNode`
@@ -212,7 +212,7 @@ banNode(node)
 #### Examples
 
 ```js
-client.banNode('https://my.faultynode.io:443');
+ApiClient.banNode('https://my.faultynode.io:443');
 ```
 
 ### banActiveNodeAndSelect
@@ -236,7 +236,7 @@ n/a
 #### Examples
 
 ```js
-client.banActiveNodeAndSelect();
+ApiClient.banActiveNodeAndSelect();
 ```
 
 ### hasAvailableNodes
@@ -260,7 +260,7 @@ n/a
 #### Examples
 
 ```js
-const moreNodesNeeded = !client.hasAvailableNodes();
+const moreNodesNeeded = !ApiClient.hasAvailableNodes();
 ```
 
 ### isBanned
@@ -284,5 +284,5 @@ isBanned(node)
 #### Examples
 
 ```js
-const banned = client.isBanned('https://node01.lisk.io:443');
+const banned = ApiClient.isBanned('https://node01.lisk.io:443');
 ```

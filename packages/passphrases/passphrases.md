@@ -28,9 +28,9 @@ Please refer to their documentation for full usage.
 ### Example
 
 ```js
-import lisk from 'lisk-elements';
+import LiskPassphrase from '@liskhq/lisk-passphrase';
 
-const { Mnemonic } = lisk.passphrase;
+const { Mnemonic } = LiskPassphrase;
 
 const passphrase = Mnemonic.generateMnemonic(); // 'drastic spot aerobic web wave tourist library first scout fatal inherit arrange'
 const japanesePassphrase = Mnemonic.generateMnemonic(null, null, Mnemonic.wordlists.japanese); // 'こやく　そうだん　ねだん　せめる　たらす　むげん　へんたい　さめる　おんだん　こうてい　ていこく　におい'
@@ -64,9 +64,9 @@ getPassphraseValidationErrors(passphrase, [wordlist])
 #### Examples
 
 ```js
-import lisk from 'lisk-elements';
+import LiskPassphrase from '@liskhq/lisk-passphrase';
 
-const errors = lisk.passphrase.validation.getPassphraseValidationErrors('   this passphrase is not  valid');
+const errors = LiskPassphrase.validation.getPassphraseValidationErrors('   this passphrase is not  valid');
 /* [
     {
         code: 'INVALID_AMOUNT_OF_WORDS',

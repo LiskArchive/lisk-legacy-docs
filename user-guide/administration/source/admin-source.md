@@ -2,13 +2,23 @@
 
 This section details how to manage a Source installation of Lisk Core. Source installations for use in production are recommended to use a process manager. PM2 is included in the installation document and will be used in this reference.
 
+- [Basic Commands](#basic-commands)
+- [Command Line Options](#command-line-options)
+- [Utility scripts](#utility-scripts)
+  - [Generate Config](#generate-config)
+  - [Update Config](#update-config)
+  - [Console](#console)
+- [Rebuild from Snapshot](#rebuild-from-a-snapshot)
+
+## Basic Commands
+
 Command | Description
 --- | ---
-pm2 start --name lisk app.js | Starts Lisk using app.js
-pm2 stop lisk | Stop Lisk using app.js
-pm2 restart lisk | Restarts Lisk using app.js
-pm2 delete lisk | Stops Lisk processes and cleans up pm2 entries for Lisk
-pm2 logs | Displays the logs of the Lisk process
+`pm2 start --name lisk app.js` | Starts Lisk using app.js
+`pm2 stop lisk` | Stop Lisk using app.js
+`pm2 restart lisk` | Restarts Lisk using app.js
+`pm2 delete lisk` | Stops Lisk processes and cleans up pm2 entries for Lisk
+`pm2 logs` | Displays the logs of the Lisk process
 
 Start Source Install with PM2
 
@@ -89,8 +99,72 @@ Each of these options can be appended on command line. There are also few `ENV` 
 * All `ENV` variables restricted with operating system constraint of `ENV` variable maximum length.
 * Comma separated lists will replace the original config values. e.g. If you specify `LISK_PEERS`, original `peers.list` specific to network will be replaced completely.
 
+## Utility scripts
 
-## Rebuild source installation from a snapshot
+There are couple of command line scripts that facilitate users of lisk to perform handy operations.
+
+All scripts are are located under `./scripts/` directory and can be executed directly by `node scripts/<file_name>`.
+
+### Generate Config
+
+This script will help you to generate unified version of configuration file for any network. Here is the usage of the script:
+
+```bash
+Usage: node scripts/generate_config.js [options]
+
+Options:
+
+-h, --help               output usage information
+-V, --version            output the version number
+-c, --config [config]    custom config file
+-n, --network [network]  specify the network or use LISK_NETWORK
+```
+
+Argument `network` is required and can by `devnet`, `testnet`, `mainnet` or any other network folder available under `./config` directory.
+
+### Update Config
+
+This script keep track of all changes introduced in Lisk over time in different versions. 
+If you have one config file in any of specific version and you want to make it compatible with other version of the Lisk, this scripts will do it for you.
+
+```bash
+Usage: node scripts/update_config.js [options] <input_file> <from_version> [to_version]
+
+Options:
+
+-h, --help               output usage information
+-V, --version            output the version number
+-n, --network [network]  specify the network or use LISK_NETWORK
+-o, --output [output]    output file path
+```
+
+As you can see from the usage guide, `input_file` and` from_version` are required.
+If you skip `to_version` argument changes in config.json will be applied up to the latest version of Lisk Core.
+If you do not specify `--output` path the final config.json will be printed to stdout.
+If you do not specify `--network` argument you will have to load it from `LISK_NETWORK` env variable.
+
+
+### Console
+
+This script is really useful in development. It will initialize the components of Lisk and load these into nodejs REPL.
+
+```bash
+Usage: node scripts/console.js
+
+initApplication: Application initialization inside test environment started...
+initApplication: Target database - lisk_dev
+initApplication: Rewired modules available
+initApplication: Fake onBlockchainReady event called
+initApplication: Loading delegates...
+initApplication: Delegates loaded from config file - 101
+initApplication: Done
+lisk-core [lisk_dev] >
+```
+
+Once you get the prompt, you can use `modules`, `helpers`, `logic`, `db` and `config` objects and play with these in REPL.
+
+
+## Rebuild from a snapshot
 
 In some scenarios it is recommended to restore the blockchain from a snapshot. The command blocks below will perform this process. The URL can be substituted for another `blockchain.db.gz` snapshot file if desired.
 

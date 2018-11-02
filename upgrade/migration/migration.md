@@ -113,7 +113,7 @@ To resolve this, rebuild your version of the blockchain [from snaphot](../../use
 
 The following utility scripts are run by `lisk_bridge.sh` :
 
-- [update-config.sh](#update-config): migrates config to new structure
+- [update_config.sh](#update-config): migrates config to new structure
 
 During execution of `lisk_bridge.sh`, it will prompt you asking for a password in the case where it finds a passphrase.
 It will encrypt and migrate that passphrase to the new format.
@@ -146,7 +146,7 @@ All scripts are are located under `./scripts/` directory and can be executed dir
 This script will help you to generate unified version of configuration file for any network. Here is the usage of the script:
 
 ```bash
-Usage: node scripts/generate_config [options]
+Usage: node scripts/generate_config.js [options]
 
 Options:
 
@@ -164,7 +164,7 @@ This script keep track of all changes introduced in Lisk over time in different 
 If you have one config file in any of specific version and you want to make it compatible with other version of the Lisk, this scripts will do it for you.
 
 ```bash
-Usage: node scripts/update_config [options] <input_file> <from_version> [to_version]
+Usage: node scripts/update_config.js [options] <input_file> <from_version> [to_version]
 
 Options:
 
@@ -178,22 +178,3 @@ As you can see from the usage guide, `input_file` and` from_version` are require
 If you skip `to_version` argument changes in config.json will be applied up to the latest version of Lisk Core.
 If you do not specify `--output` path the final config.json will be printed to stdout.
 If you do not specify `--network` argument you will have to load it from `LISK_NETWORK` env variable.
-
-### Console
-
-This script is really useful in development. It will initialize the components of Lisk and load these into nodejs REPL.
-
-```bash
-Usage: node scripts/console.js
-
-initApplication: Application initialization inside test environment started...
-initApplication: Target database - lisk_dev
-initApplication: Rewired modules available
-initApplication: Fake onBlockchainReady event called
-initApplication: Loading delegates...
-initApplication: Delegates loaded from config file - 101
-initApplication: Done
-lisk-core [lisk_dev] >
-```
-
-Once you get the prompt, you can use `modules`, `helpers`, `logic`, `db` and `config` objects and play with these in REPL.

@@ -4,7 +4,7 @@ Sometimes Lisk Commander requires sensitive inputs such as passphrases or secret
 This page describes the various options you have for securely passing sensitive inputs to Lisk Commander commands. 
 The format for providing Lisk Commander with sensitive inputs is loosely based on the format used by OpenSSL.
 
-We shall use the `encrypt message` command for the examples with a secret passphrase as a sensitive input, but the same pattern applies to other commands which accept sensitive inputs as well.
+We shall use the `message:encrypt` command for the examples with a secret passphrase as a sensitive input, but the same pattern applies to other commands which accept sensitive inputs as well.
 
 ## Via a password prompt
 
@@ -20,7 +20,7 @@ Please re-enter your secret passphrase: ****************************************
 In the case of commands which may or may not involve a second passphrase, a prompt can be triggered using `--second-passphrase` prompt:
 
 ```bash
-$ lisk transaction:create:transfer 100 bba7e2e6a4639c431b68e31115a71ffefcb4e025a4d1656405dfdcd8384719e0 --second-passphrase prompt
+$ lisk transaction:create --type=0 100 9397838105554816361L --second-passphrase prompt
 Please enter your secret passphrase: ****************************************************************
 Please re-enter your secret passphrase: ****************************************************************
 Please enter your second secret passphrase: ****************************************************************

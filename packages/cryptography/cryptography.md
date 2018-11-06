@@ -70,10 +70,10 @@ bufferToHex(buffer)
 #### Examples
 
 ```js
-import LiskCryptography from '@liskhq/lisk-cryptography';
+import cryptography from '@liskhq/lisk-cryptography';
 
 const buffer = Buffer.from([0xab, 0xcd, 0x12, 0x34]);
-LiskCryptography.bufferToHex(buffer); // 'abcd1234'
+cryptography.bufferToHex(buffer); // 'abcd1234'
 ```
 
 ### getAddressFromPublicKey
@@ -98,7 +98,7 @@ getAddressFromPublicKey(publicKey)
 
 ```js
 const publicKey = '968ba2fa993ea9dc27ed740da0daf49eddd740dbd7cb1cb4fc5db3a20baf341b';
-LiskCryptography.getAddressFromPublicKey(publicKey); // '12668885769632475474L'
+cryptography.getAddressFromPublicKey(publicKey); // '12668885769632475474L'
 ```
 
 ### hexToBuffer
@@ -123,7 +123,7 @@ hexToBuffer(hexString)
 
 ```js
 const hex = 'abcd1234';
-LiskCryptography.hexToBuffer(hex); // <Buffer ab cd 12 34>
+cryptography.hexToBuffer(hex); // <Buffer ab cd 12 34>
 ```
 
 ### parseEncryptedPassphrase
@@ -148,7 +148,7 @@ parseEncryptedPassphrase(encryptedPassphrase)
 
 ```js
 const encryptedPassphrase = 'iterations=1000000&salt=bce40d3176e31998ec435ffc2993b280&cipherText=99bb7eff6755ecfe1dfa0368328c2d10589d7b85a23f75043497d7bdf7f14fb84e8caee1f9bc4b9543ba320e7f10801b0ff2065427d55c3139cf15e3b626b54f73b72a5b993323a6d60ec4aa407472ae&iv=51bcc76bbd0ab97b2292e305&tag=12e8fcfe7ad735fa9957baa48442e205&version=1';
-LiskCryptography.parseEncryptedPassphrase(encryptedPassphrase);
+cryptography.parseEncryptedPassphrase(encryptedPassphrase);
 /* {
     iterations: 1000000,
     salt: 'bce40d3176e31998ec435ffc2993b280',
@@ -184,7 +184,7 @@ const encryptedPassphrase = cryptography.encryptPassphraseWithPassword(
     'robust swift grocery peasant forget share enable convince deputy road keep cheap',
     'some secure password'
 );
-LiskCryptography.stringifyEncryptedPassphrase(encryptedPassphrase); // 'iterations=1000000&salt=bce40d3176e31998ec435ffc2993b280&cipherText=99bb7eff6755ecfe1dfa0368328c2d10589d7b85a23f75043497d7bdf7f14fb84e8caee1f9bc4b9543ba320e7f10801b0ff2065427d55c3139cf15e3b626b54f73b72a5b993323a6d60ec4aa407472ae&iv=51bcc76bbd0ab97b2292e305&tag=12e8fcfe7ad735fa9957baa48442e205&version=1'
+cryptography.stringifyEncryptedPassphrase(encryptedPassphrase); // 'iterations=1000000&salt=bce40d3176e31998ec435ffc2993b280&cipherText=99bb7eff6755ecfe1dfa0368328c2d10589d7b85a23f75043497d7bdf7f14fb84e8caee1f9bc4b9543ba320e7f10801b0ff2065427d55c3139cf15e3b626b54f73b72a5b993323a6d60ec4aa407472ae&iv=51bcc76bbd0ab97b2292e305&tag=12e8fcfe7ad735fa9957baa48442e205&version=1'
 ```
 
 ## Methods for encrypting and decrypting
@@ -217,7 +217,7 @@ decryptMessageWithPassphrase(encryptedMessage, nonce, passphrase, senderPublicKe
 #### Examples
 
 ```js
-const decryptedMessage = LiskCryptography.decryptMessageWithPassphrase(
+const decryptedMessage = cryptography.decryptMessageWithPassphrase(
     '7bef28e1ddb34902d2e006a36062805e597924c9885c142444bafb',
     '5c29c9df3f041529a5f9ba07c444a86cbafbfd21413ec3a7',
     'robust swift grocery peasant forget share enable convince deputy road keep cheap',
@@ -256,7 +256,7 @@ const encryptedPassphrase = {
     tag: '12e8fcfe7ad735fa9957baa48442e205',
     version: '1',
 };
-const decryptedPassphrase = LiskCryptography.decryptPassphraseWithPassword(
+const decryptedPassphrase = cryptography.decryptPassphraseWithPassword(
     encryptedPassphrase,
     'some secure password'
 ); // 'robust swift grocery peasant forget share enable convince deputy road keep cheap'
@@ -287,7 +287,7 @@ encryptMessageWithPassphrase(message, passphrase, recipientPublicKey)
 #### Examples
 
 ```js
-const encryptedMessage = LiskCryptography.encryptMessageWithPassphrase(
+const encryptedMessage = cryptography.encryptMessageWithPassphrase(
     'Hello Lisk!',
     'robust swift grocery peasant forget share enable convince deputy road keep cheap',
     '9d3058175acab969f41ad9b86f7a2926c74258670fe56b37c429c01fca9f2f0f'
@@ -323,7 +323,7 @@ encryptPassphraseWithPassword(passphrase, password, [iterations])
 #### Examples
 
 ```js
-const encryptedPassphrase = LiskCryptography.encryptPassphraseWithPassword(
+const encryptedPassphrase = cryptography.encryptPassphraseWithPassword(
     'robust swift grocery peasant forget share enable convince deputy road keep cheap',
     'some secure password',
 );
@@ -362,9 +362,9 @@ hash(data, [format])
 #### Examples
 
 ```js
-LiskCryptography.hash(Buffer.from([0xab, 0xcd, 0x12, 0x34])); // <Buffer 77 79 07 d5 4b 6a 45 02 bd 65 4c b4 ae 81 c5 f7 27 01 3b 5e 3b 93 cd 8b 53 d7 21 34 42 69 d3 b0>
-LiskCryptography.hash('abcd1234', 'hex'); // <Buffer 77 79 07 d5 4b 6a 45 02 bd 65 4c b4 ae 81 c5 f7 27 01 3b 5e 3b 93 cd 8b 53 d7 21 34 42 69 d3 b0>
-LiskCryptography.hash('abcd1234', 'utf8'); // <Buffer e9 ce e7 1a b9 32 fd e8 63 33 8d 08 be 4d e9 df e3 9e a0 49 bd af b3 42 ce 65 9e c5 45 0b 69 ae>
+cryptography.hash(Buffer.from([0xab, 0xcd, 0x12, 0x34])); // <Buffer 77 79 07 d5 4b 6a 45 02 bd 65 4c b4 ae 81 c5 f7 27 01 3b 5e 3b 93 cd 8b 53 d7 21 34 42 69 d3 b0>
+cryptography.hash('abcd1234', 'hex'); // <Buffer 77 79 07 d5 4b 6a 45 02 bd 65 4c b4 ae 81 c5 f7 27 01 3b 5e 3b 93 cd 8b 53 d7 21 34 42 69 d3 b0>
+cryptography.hash('abcd1234', 'utf8'); // <Buffer e9 ce e7 1a b9 32 fd e8 63 33 8d 08 be 4d e9 df e3 9e a0 49 bd af b3 42 ce 65 9e c5 45 0b 69 ae>
 ```
 
 ## Methods for managing keys
@@ -390,7 +390,7 @@ getAddressAndPublicKeyFromPassphrase(passphrase)
 #### Examples
 
 ```js
-LiskCryptography.getAddressAndPublicKeyFromPassphrase(
+cryptography.getAddressAndPublicKeyFromPassphrase(
     'robust swift grocery peasant forget share enable convince deputy road keep cheap'
 );
 /* {
@@ -420,7 +420,7 @@ getAddressFromPassphrase(passphrase)
 #### Examples
 
 ```js
-LiskCryptography.getAddressFromPassphrase(
+cryptography.getAddressFromPassphrase(
     'robust swift grocery peasant forget share enable convince deputy road keep cheap'
 ); //'8273455169423958419L'
 ```
@@ -450,7 +450,7 @@ getPrivateAndPublicKeyBytesFromPassphrase(passphrase)
 #### Examples
 
 ```js
-LiskCryptography.getPrivateAndPublicKeyBytesFromPassphrase(
+cryptography.getPrivateAndPublicKeyBytesFromPassphrase(
     'robust swift grocery peasant forget share enable convince deputy road keep cheap'
 );
 /* {
@@ -480,7 +480,7 @@ getPrivateAndPublicKeyFromPassphrase(passphrase)
 #### Examples
 
 ```js
-LiskCryptography.getPrivateAndPublicKeyFromPassphrase(
+cryptography.getPrivateAndPublicKeyFromPassphrase(
     'robust swift grocery peasant forget share enable convince deputy road keep cheap'
 );
 /* {
@@ -512,7 +512,7 @@ printSignedMessage(signedMessageObject)
 #### Examples
 
 ```js
-const stringToPrint = LiskCryptography.printSignedMessage({
+const stringToPrint = cryptography.printSignedMessage({
     message: 'Hello Lisk!',
     publicKey: '9d3058175acab969f41ad9b86f7a2926c74258670fe56b37c429c01fca9f2f0f',
     signature: '125febe625b2d62381ff836c020de0b00297f7d2493fe6404bc6109fd70a55348555b7a66a35ac657d338d7fe329efd203da1602f4c88cc21934605676558401',
@@ -553,7 +553,7 @@ signAndPrintMessage(message, passphrase, [secondPassphrase])
 #### Examples
 
 ```js
-const stringToPrint = LiskCryptography.signAndPrintMessage('Hello Lisk!',  'robust swift grocery peasant forget share enable convince deputy road keep cheap');
+const stringToPrint = cryptography.signAndPrintMessage('Hello Lisk!',  'robust swift grocery peasant forget share enable convince deputy road keep cheap');
 console.log(stringToPrint);
 \-----BEGIN LISK SIGNED MESSAGE-----
 \-----MESSAGE-----
@@ -588,7 +588,7 @@ signMessageWithPassphrase(message, passphrase)
 #### Examples
 
 ```js
-LiskCryptography.signMessageWithPassphrase('Hello Lisk!',  'robust swift grocery peasant forget share enable convince deputy road keep cheap');
+cryptography.signMessageWithPassphrase('Hello Lisk!',  'robust swift grocery peasant forget share enable convince deputy road keep cheap');
 /* {
     message: 'Hello Lisk!',
     publicKey: '9d3058175acab969f41ad9b86f7a2926c74258670fe56b37c429c01fca9f2f0f',

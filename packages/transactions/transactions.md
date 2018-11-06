@@ -68,17 +68,17 @@ Transactions-specific constants are available via the `transaction` key, and inc
 #### Examples
 
 ```js
-import LiskTransactions from '@liskhq/lisk-transactions';
+import transactions from '@liskhq/lisk-transactions';
 
-LiskTransactions.constants.FIXED_POINT; // Number to use when converting between the smallest possible denomination and 1 LSK.
+transactions.constants.FIXED_POINT; // Number to use when converting between the smallest possible denomination and 1 LSK.
 
-LiskTransactions.constants.TRANSFER_FEE; // Fee required for a transfer (type 0) transaction.
-LiskTransactions.constants.SIGNATURE_FEE; // Fee required for a register second passphrase (type 1) transaction.
-LiskTransactions.constants.DELEGATE_FEE; // Fee required for a register delegate (type 2) transaction.
-LiskTransactions.constants.VOTE_FEE; // Fee required for a cast votes (type 3) transaction.
-LiskTransactions.constants.MULTISIGNATURE_FEE; // Fee required per group member (plus one) for a register multisignature account (type 4) transaction.
+transactions.constants.TRANSFER_FEE; // Fee required for a transfer (type 0) transaction.
+transactions.constants.SIGNATURE_FEE; // Fee required for a register second passphrase (type 1) transaction.
+transactions.constants.DELEGATE_FEE; // Fee required for a register delegate (type 2) transaction.
+transactions.constants.VOTE_FEE; // Fee required for a cast votes (type 3) transaction.
+transactions.constants.MULTISIGNATURE_FEE; // Fee required per group member (plus one) for a register multisignature account (type 4) transaction.
 
-LiskTransactions.constants.BYTESIZES; // Object containing the number of bytes to allocate for each component of a transaction.
+transactions.constants.BYTESIZES; // Object containing the number of bytes to allocate for each component of a transaction.
 ```
 
 ## Methods for creating transactions
@@ -110,9 +110,9 @@ transfer(options)
 #### Examples
 
 ```js
-import LiskTransactions from '@liskhq/lisk-transactions';
+import transactions from '@liskhq/lisk-transactions';
 
-LiskTransactions.transfer({
+transactions.transfer({
     amount: '123000000',
     recipientId: '12668885769632475474L',
 }); // Unsigned transaction
@@ -127,7 +127,7 @@ LiskTransactions.transfer({
     asset: {}
 } */
 
-LiskTransactions.transfer({
+transactions.transfer({
     amount: '123000000',
     recipientId: '12668885769632475474L',
     data: 'Hello Lisk!',
@@ -170,7 +170,7 @@ registerSecondPassphrase(options)
 #### Examples
 
 ```js
-LiskTransactions.registerSecondPassphrase({
+transactions.registerSecondPassphrase({
     secondPassphrase: 'drastic spot aerobic web wave tourist library first scout fatal inherit arrange',
 }); // Unsigned transaction
 /* {
@@ -187,7 +187,7 @@ LiskTransactions.registerSecondPassphrase({
     },
 } */
 
-LiskTransactions.registerSecondPassphrase({
+transactions.registerSecondPassphrase({
     secondPassphrase: 'drastic spot aerobic web wave tourist library first scout fatal inherit arrange',
     passphrase: 'robust swift grocery peasant forget share enable convince deputy road keep cheap',
 }); // Signed transaction
@@ -232,7 +232,7 @@ registerDelegate(options)
 #### Examples
 
 ```js
-LiskTransactions.registerDelegate({
+transactions.registerDelegate({
     username: 'my first delegate',
 }); // Unsigned transaction
 /* {
@@ -249,7 +249,7 @@ LiskTransactions.registerDelegate({
     },
 } */
 
-LiskTransactions.registerDelegate({
+transactions.registerDelegate({
     username: 'my first delegate',
     passphrase: 'robust swift grocery peasant forget share enable convince deputy road keep cheap',
 }); // Signed transaction
@@ -295,7 +295,7 @@ castVotes(options)
 #### Examples
 
 ```js
-LiskTransactions.castVotes({
+transactions.castVotes({
     votes: ['9d3058175acab969f41ad9b86f7a2926c74258670fe56b37c429c01fca9f2f0f'],
 }); // Unsigned transaction
 /* {
@@ -310,7 +310,7 @@ LiskTransactions.castVotes({
     },
 } */
 
-LiskTransactions.castVotes({
+transactions.castVotes({
     votes: ['9d3058175acab969f41ad9b86f7a2926c74258670fe56b37c429c01fca9f2f0f'],
     unvotes: [
         '141b16ac8d5bd150f16b1caa08f689057ca4c4434445e56661831f4e671b7c0a',
@@ -364,7 +364,7 @@ registerMultisignature(options)
 #### Examples
 
 ```js
-LiskTransactions.registerMultisignature({
+transactions.registerMultisignature({
     keysgroup: [
         '9d3058175acab969f41ad9b86f7a2926c74258670fe56b37c429c01fca9f2f0f',
         '141b16ac8d5bd150f16b1caa08f689057ca4c4434445e56661831f4e671b7c0a',
@@ -393,7 +393,7 @@ LiskTransactions.registerMultisignature({
     },
 } */
 
-LiskTransactions.registerMultisignature({
+transactions.registerMultisignature({
     keysgroup: [
         '9d3058175acab969f41ad9b86f7a2926c74258670fe56b37c429c01fca9f2f0f',
         '141b16ac8d5bd150f16b1caa08f689057ca4c4434445e56661831f4e671b7c0a',
@@ -451,7 +451,7 @@ createSignatureObject(transaction, passphrase)
 #### Examples
 
 ```js
-LiskTransactions.createSignatureObject({
+transactions.createSignatureObject({
     amount: '100',
     recipientId: '123L',
     senderPublicKey: '0b68c5d745d47998768a14b92b221ded2292e21b62846f8f968fdbcd9b52ae4d',
@@ -493,7 +493,7 @@ convertBeddowsToLSK(amount)
 #### Examples
 
 ```js
-LiskTransactions.utils.convertBeddowsToLSK('100000'); // '0.001'
+transactions.utils.convertBeddowsToLSK('100000'); // '0.001'
 ```
 
 ### convertLSKToBeddows
@@ -517,7 +517,7 @@ convertLSKToBeddows(amount)
 #### Examples
 
 ```js
-LiskTransactions.utils.convertLSKToBeddows('0.001'); // '100000'
+transactions.utils.convertLSKToBeddows('0.001'); // '100000'
 ```
 
 ### getTransactionBytes
@@ -541,7 +541,7 @@ getTransactionBytes(transaction)
 #### Examples
 
 ```js
-LiskTransactions.utils.getTransactionBytes({
+transactions.utils.getTransactionBytes({
     amount: '100',
     recipientId: '123L',
     senderPublicKey: '0b68c5d745d47998768a14b92b221ded2292e21b62846f8f968fdbcd9b52ae4d',
@@ -576,7 +576,7 @@ getTransactionId(transaction)
 #### Examples
 
 ```js
-LiskTransactions.utils.getTransactionId({
+transactions.utils.getTransactionId({
     amount: '100',
     recipientId: '123L',
     senderPublicKey: '0b68c5d745d47998768a14b92b221ded2292e21b62846f8f968fdbcd9b52ae4d',
@@ -612,7 +612,7 @@ multiSignTransaction(transaction, passphrase)
 #### Examples
 
 ```js
-LiskTransactions.utils.multiSignTransaction(
+transactions.utils.multiSignTransaction(
     {
         amount: '100',
         recipientId: '123L',
@@ -651,7 +651,7 @@ signTransaction(transaction, passphrase)
 #### Examples
 
 ```js
-LiskTransactions.utils.signTransaction(
+transactions.utils.signTransaction(
     {
         amount: '100',
         recipientId: '123L',
@@ -687,7 +687,7 @@ validateAddress(address)
 #### Examples
 
 ```js
-LiskTransactions.utils.validateAddress('12981844261447786907L'); // true
+transactions.utils.validateAddress('12981844261447786907L'); // true
 ```
 
 ### validateKeysgroup
@@ -711,7 +711,7 @@ validateKeysgroup(keysgroup)
 #### Examples
 
 ```js
-LiskTransactions.utils.validateKeysgroup([]); // Throws 'Expected between 1 and 16 public keys in the keysgroup.'
+transactions.utils.validateKeysgroup([]); // Throws 'Expected between 1 and 16 public keys in the keysgroup.'
 ```
 
 ### validatePublicKey
@@ -735,7 +735,7 @@ validatePublicKey(publicKey)
 #### Examples
 
 ```js
-LiskTransactions.utils.validatePublicKey('0b68c5d745d47998768a14b92b221ded2292e21b62846f8f968fdbcd9b52ae4d'); // true
+transactions.utils.validatePublicKey('0b68c5d745d47998768a14b92b221ded2292e21b62846f8f968fdbcd9b52ae4d'); // true
 ```
 
 ### validatePublicKeys
@@ -759,7 +759,7 @@ validatePublicKeys(publicKeys)
 #### Examples
 
 ```js
-LiskTransactions.utils.validatePublicKeys([
+transactions.utils.validatePublicKeys([
     '0b68c5d745d47998768a14b92b221ded2292e21b62846f8f968fdbcd9b52ae4d',
     '0b68c5d745d47998768a14b92b221ded2292e21b62846f8f968fdbcd9b52ae4d'
 ]); // Throws 'Error: Duplicated public key: 0b68c5d745d47998768a14b92b221ded2292e21b62846f8f968fdbcd9b52ae4d.'
@@ -797,7 +797,7 @@ where `boolean`: `true` if the transaction object (without signature) is valid, 
 #### Examples
 
 ```js
-LiskTransactions.utils.validateTransaction({
+transactions.utils.validateTransaction({
     amount: '100',
     recipientId: '123L',
     senderPublicKey: '0b68c5d745d47998768a14b92b221ded2292e21b62846f8f968fdbcd9b52ae4d',
@@ -832,7 +832,7 @@ verifyTransaction(transaction, [secondPublicKey])
 #### Examples
 
 ```js
-LiskTransactions.utils.verifyTransaction({
+transactions.utils.verifyTransaction({
     amount: '100',
     recipientId: '123L',
     senderPublicKey: '0b68c5d745d47998768a14b92b221ded2292e21b62846f8f968fdbcd9b52ae4d',

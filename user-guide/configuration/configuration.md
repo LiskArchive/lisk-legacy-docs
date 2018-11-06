@@ -290,7 +290,7 @@ The result should be something like this:
 
 Info | Note 
 --- | --- 
-![info note](../../info-icon.png "Info Note") | To complete this step require a signed certificate (from a CA), or a locally signed certificate using LetsEncrypt. You will need both the private and public keys in a location that is accessible to Lisk.
+![info note](../../info-icon.png "Info Note") | To complete this step require a signed certificate (from a CA, such as Let's Encrypt) or a self-signed certificate. You will need both the private and public keys in a location that is accessible to Lisk.
 
 Next snippet highlights the essential parameters to enable SSL security on your node's connections:
 
@@ -310,7 +310,7 @@ Next snippet highlights the essential parameters to enable SSL security on your 
 
 Important | Note 
 --- | --- 
-![important note](../../important-icon.png "Important Note") | If SSL Port configured above `ssl.options.port` is within well known ports range (below 1024), you must alter the port specified with `setcap` or change it to be outside of that range. 
+![important note](../../important-icon.png "Important Note") | If SSL Port configured above in `ssl.options.port` is a privileged port (below 1024), you must either allow node to use the specified port with `setcap` or change the configuration to use a port outside of that range.
 
 **Setcap:** Only required to grant Lisk access to port 443
 

@@ -5,6 +5,11 @@ Listed below are the available basic commands which can be used to manage your D
 For more details, see each commands reference below.
 A brief summary of all commands and associated flags has been provided for advanced users.
 
+- [Basic commands](#basic-commands)
+- [Configuration](#configuration)
+
+## Basic Commands
+
 Command | Description
 --- | ---
 `docker ps -a` | Retrieves deployed Docker containers.
@@ -38,7 +43,7 @@ Restart Docker `container_id` (replace `container_id` with your own id)
 docker restart container_id
 ```
 
-### Configuration
+## Configuration
 
 Lisk Core normally gets configured by providing a suited [configuration file](../../configuration/configuration.md).
 But this isn't convenient in a Docker installation.
@@ -57,4 +62,3 @@ If you are unsure what variable name to use, refer to the [list of command line 
 Info | Note 
 --- | --- 
 ![info note](../../../info-icon.png "Info Note") | Adding an array component as environment variable in your docker compose is a bit tricky. For example, if you aim to enable forging on your node, you need to add the next variable which will be inserted as the **first** component in the array `forging.delegates`: ```LISK_FORGING_DELEGATES=publicKey1&#124;encryptedPassphrase1,publicKey2&#124;encryptedPassphrase2```
-

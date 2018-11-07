@@ -1,9 +1,5 @@
 # Lisk Core Configuration
 
-Info | Note
----- | ----
-![info note](../../info-icon.png "Info Note") | The described configuration is valid since Lisk Core `1.1` version. If you have version `1.0` of Lisk Core installed, please visit the [Lisk Docs Github Repository](https://github.com/LiskHQ/lisk-docs), where you can find a full archived version of [Lisk Core 1.0 documentation](https://github.com/LiskHQ/lisk-docs/blob/core-1.0.0/introduction.md)
-
 ## Structure
 
 - The **default** network is `devnet`. If you want to connect to another network specify the `network` when starting Lisk Core, as described in [Source Administration](../administration/source/admin-source.md#command-line-options)
@@ -187,7 +183,7 @@ We explain further the first alternative. First, make sure you have installed Li
 
 ```bash
 $ lisk
-lisk> encrypt passphrase --output-public-key
+lisk passphrase:encrypt --output-public-key
 Please enter your secret passphrase: *****
 Please re-enter your secret passphrase: *****
 Please enter your password: ***
@@ -294,7 +290,7 @@ The result should be something like this:
 
 Info | Note 
 --- | --- 
-![info note](../../info-icon.png "Info Note") | To complete this step require a signed certificate (from a CA), or a locally signed certificate using LetsEncrypt. You will need both the private and public keys in a location that is accessible to Lisk.
+![info note](../../info-icon.png "Info Note") | To complete this step require a signed certificate (from a CA, such as Let's Encrypt) or a self-signed certificate. You will need both the private and public keys in a location that is accessible to Lisk.
 
 Next snippet highlights the essential parameters to enable SSL security on your node's connections:
 
@@ -314,7 +310,7 @@ Next snippet highlights the essential parameters to enable SSL security on your 
 
 Important | Note 
 --- | --- 
-![important note](../../important-icon.png "Important Note") | If SSL Port configured above `ssl.options.port` is within well known ports range (below 1024), you must alter the port specified with `setcap` or change it to be outside of that range. 
+![important note](../../important-icon.png "Important Note") | If SSL Port configured above in `ssl.options.port` is a privileged port (below 1024), you must either allow node to use the specified port with `setcap` or change the configuration to use a port outside of that range.
 
 **Setcap:** Only required to grant Lisk access to port 443
 

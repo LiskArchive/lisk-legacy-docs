@@ -1,9 +1,5 @@
 # Lisk Core Source Installation
 
-Info | Note
----- | ----
-![info note](../../../info-icon.png "Info Note") | Lisk Core 1.1 has been released to Testnet. If you wish to connect to Testnet, please refer to [Lisk Core 1.1.0 documentation](https://github.com/LiskHQ/lisk-docs/blob/core-1.1.0/introduction.md).
-
 This section details how to install Lisk Core from Source. When completed, you will have a functioning node on the Lisk Network. If you are looking to upgrade your current Lisk Core installation, please see [Upgrade from Source](/lisk-core/upgrade/source/upgrade-source.md).
 
 ## Login as the Lisk user
@@ -18,10 +14,6 @@ su - lisk
 ## Installing Lisk from Source
 
 Before proceeding, determine whether you wish to connect your node to the Mainnet (Main Network) or Testnet (Test Network).
-
-Info | Note
----- | ----
-![info note](../../../info-icon.png "Info Note") | The described installation process is valid since Lisk Core `1.1` version. If you wish to install the `1.0` version of Lisk Core, please visit the [Lisk Docs Github Repository](https://github.com/LiskHQ/lisk-docs), where you can find a full archived version of [Lisk Core 1.0 documentation](https://github.com/LiskHQ/lisk-docs/blob/core-1.0.0/introduction.md)
 
 ```bash
 git clone https://github.com/LiskHQ/lisk.git

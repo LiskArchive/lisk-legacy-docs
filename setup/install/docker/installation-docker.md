@@ -1,12 +1,8 @@
 # Lisk Core Docker Installation
 
-Info | Note
----- | ----
-![info note](../../../info-icon.png "Info Note") | The described installation process is valid since Lisk Core `1.1` version. If you wish to install the `1.0` version of Lisk Core, please visit the [Lisk Docs Github Repository](https://github.com/LiskHQ/lisk-docs), where you can find a full archived version of [Lisk Core 1.0 documentation](https://github.com/LiskHQ/lisk-docs/blob/core-1.0.0/introduction.md)
-
 ## Get configuration & Makefile
 
-Clone [Lisk Docker Repository](https://github.com/LiskHQ/lisk-docker). It contains the following files:
+Clone the [Lisk Repository](https://github.com/LiskHQ/lisk). It contains a directory `docker` with the following files:
 - `Makefile`
 - `docker-compose.yml`
 - `.env.{network}`
@@ -15,7 +11,8 @@ The `.env`-files are examples, where `{network}` stands for the lisk network you
 
 ```bash
 su - lisk # switch to lisk user
-git clone https://github.com/LiskHQ/lisk-docker.git # clone the repository
+git clone https://github.com/LiskHQ/lisk.git # clone the repository
+cd lisk/docker # navigate into docker directory
 ```
 
 ## Set environment variables

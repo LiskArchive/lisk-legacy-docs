@@ -1,7 +1,7 @@
 # Lisk Core Docker Administration
 
 This section details how to work with a Docker based Lisk Core installation.
-Listed below are the available basic commands which can be used to manage your Docker based Lisk node.
+Listed below are available basic commands which can be used to manage your Docker based Lisk node.
 For more details, see each commands reference below.
 A brief summary of all commands and associated flags has been provided for advanced users.
 
@@ -47,9 +47,9 @@ docker restart container_id
 
 Lisk Core normally gets configured by providing a suited [configuration file](../../configuration/configuration.md).
 But this isn't convenient in a Docker installation.
-Instead, one can make use of the environmental variables to change values of configuration options.
-To do so, open the `.env` file, that you created during [docker installation](../../setup/install/docker/installation-docker.md), and adjust the values to your needs.
-All names of the environmental variables start with `ENV_` prefix.
+Instead, one can use environment variables to change values in the configuration.
+To do so, open the `.env` file, that you created during [docker installation](../../../setup/install/docker/installation-docker.md), and adjust the values to your needs.
+All names of the environment variables start with `ENV_` prefix.
 
 #### Advanced configuration
 
@@ -61,4 +61,4 @@ If you are unsure what variable name to use, refer to the [list of command line 
 
 Info | Note 
 --- | --- 
-![info note](../../../info-icon.png "Info Note") | Adding an array component as environment variable in your docker compose is a bit tricky. For example, if you aim to enable forging on your node, you need to add the next variable which will be inserted as the **first** component in the array `forging.delegates`: ```LISK_FORGING_DELEGATES=publicKey1&#124;encryptedPassphrase1,publicKey2&#124;encryptedPassphrase2```
+![info note](../../../info-icon.png "Info Note") | Adding an array component as environment variable in your docker compose is a bit tricky. For example, if you aim to enable forging on your node, you need to add the next variable which will be inserted in the array `forging.delegates`: _LISK_FORGING_DELEGATES=publicKey1&#x7c;encryptedPassphrase1,publicKey2&#x7c;encryptedPassphrase2_

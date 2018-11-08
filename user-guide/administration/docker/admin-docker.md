@@ -61,4 +61,4 @@ If you are unsure what variable name to use, refer to the [list of command line 
 
 Info | Note 
 --- | --- 
-![info note](../../../info-icon.png "Info Note") | Adding an array component as environment variable in your docker compose is a bit tricky. For example, if you aim to enable forging on your node, you need to add the next variable which will be inserted in the array `forging.delegates`: _LISK_FORGING_DELEGATES=publicKey1&#x7c;encryptedPassphrase1,publicKey2&#x7c;encryptedPassphrase2_
+![info note](../../../info-icon.png "Info Note") | Adding an array component as environment variable in your docker compose is not straightforward. For example, if you aim to enable forging on your node for several delegates, you need to add the next variable which will be inserted in the array `forging.delegates`: _LISK_FORGING_DELEGATES=publicKey1&#x7c;encryptedPassphrase1,publicKey2&#x7c;encryptedPassphrase2_

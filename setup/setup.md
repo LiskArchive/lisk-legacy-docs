@@ -85,16 +85,6 @@ Or minified:
 <script src="https://js.lisk.io/lisk-client-1.1.0.min.js"></script>
 ```
 
-**Specific package**
-```html
-<script src="https://js.lisk.io/lisk-<package-name>-1.1.0.js"></script>
-```
-
-Or minified:
-```html
-<script src="https://js.lisk.io/lisk-<package-name>-1.1.0.min.js"></script>
-```
-
 where `<package-name>` can be any of the sub packages in Lisk Elements.
 
 For concrete code examples for each package, check the [Packages section](../packages/packages.md).

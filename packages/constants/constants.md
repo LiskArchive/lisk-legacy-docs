@@ -25,16 +25,16 @@ npm update --save @liskhq/lisk-constants
 ```js
 import constants from '@liskhq/lisk-constants';
 
-LiskConstants.EPOCH_TIME; // Date from which timestamps are calculated.
-LiskConstants.EPOCH_TIME_MILLISECONDS; // EPOCH_TIME as milliseconds since Unix Epoch.
-LiskConstants.EPOCH_TIME_SECONDS; // EPOCH_TIME as seconds since Unix Epoch.
+constants.EPOCH_TIME; // Date from which timestamps are calculated.
+constants.EPOCH_TIME_MILLISECONDS; // EPOCH_TIME as milliseconds since Unix Epoch.
+constants.EPOCH_TIME_SECONDS; // EPOCH_TIME as seconds since Unix Epoch.
 
-LiskConstants.MAX_ADDRESS_NUMBER; // Maximum valid number which can form an address when suffixed with an 'L'.
-LiskConstants.MAX_TRANSACTION_AMOUNT; // Maximum valid amount for a transaction.
+constants.MAX_ADDRESS_NUMBER; // Maximum valid number which can form an address when suffixed with an 'L'.
+constants.MAX_TRANSACTION_AMOUNT; // Maximum valid amount for a transaction.
 
-LiskConstants.SIGNED_MESSAGE_PREFIX; // The prefix attached to all messages signed according to the Lisk message signature protocol.
+constants.SIGNED_MESSAGE_PREFIX; // The prefix attached to all messages signed according to the Lisk message signature protocol.
 
-LiskConstants.BETANET_NETHASH; // Nethash for Betanet.
-LiskConstants.TESTNET_NETHASH; // Nethash for Testnet.
-LiskConstants.MAINNET_NETHASH; // Nethash for Mainnet.
+constants.BETANET_NETHASH; // Nethash for Betanet.
+constants.TESTNET_NETHASH; // Nethash for Testnet.
+constants.MAINNET_NETHASH; // Nethash for Mainnet.
 ```

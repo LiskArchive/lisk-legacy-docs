@@ -14,7 +14,7 @@ Lisk Elements is a JavaScript library containing several separately-installable 
   - [Client](packages/client/client.md):  A default set of Elements for use by clients of the Lisk network
   - [Constants](packages/constants/constants.md): A set of Lisk-related constants.
   - [Cryptography](packages/cryptography/cryptography.md): Relevant cryptographic functions.
-  - [Passphrase](packages/passphrase/passphrase.md): Mnemonic passphrase helpers.
+  - [Passphrases](packages/passphrases/passphrases.md): Mnemonic passphrase helpers.
   - [Transactions](packages/transactions/transactions.md): Functions for creating, signing and verifying transactions.
 
 ## Contribute to the Codebase

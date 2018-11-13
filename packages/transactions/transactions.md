@@ -1,28 +1,5 @@
 # Lisk Elements Transactions
 
-- [Constants](#constants)
-- [Methods for creating transactions](#Methods-for-creating-transactions)
-  - [Type 0 - Transfer](#type-0-transfer)
-  - [Type 1 - register second passphrase](#type-1-registersecondpassphrase)
-  - [Type 2 - register delegate](#type-2-registerdelegate)
-  - [Type 3 - vote for dleegates](#type-3-castvotes)
-  - [Type 4 - register multisignature transaction](#type-4-registermultisignature)
-- [Methods for creating signature objects](#Methods-for-creating-signature-objects)
-  - [createSignatureObject](#createSignatureObject)
-- [Utility methods](#Utility-methods)
-  - [convertBeddowsToLSK](#convertBeddowsToLSK)
-  - [convertLSKToBeddows](#convertLSKToBeddows)
-  - [getTransactionBytes](#getTransactionBytes)
-  - [getTransactionId](#getTransactionId)
-  - [multiSignTransaction](#multiSignTransaction)
-  - [signTransaction](#signTransaction)
-  - [validateAddress](#validateAddress)
-  - [validateKeysgroup](#validateKeysgroup)
-  - [validatePublicKey](#validatePublicKey)
-  - [validatePublicKeys](#validatePublicKeys)
-  - [verifyTransaction](#verifyTransaction)
-  - [validateTransaction](#validateTransaction)
-
 The Lisk Elements transactions module provides functions for creating transactions of every type, plus a set of utility functions.
 
 - [Installation](#installation)

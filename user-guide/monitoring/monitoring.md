@@ -3,10 +3,12 @@
 We use [New Relic](http://newrelic.com/) to monitor the activities inside of the application. It enables to have detailed insight
 of the system and keep track of performance of each activity. E.g. an HTTP API call or a background job from queue.
 
+Below are the steps you need to follow to get the statistics for New Relic:
+
 1. [Enable New Relic](#enable-new-relic)
-   * [Register on Website](#register-on-website)
-   * [Add license key as evironment variable](#add-license-key-as-environment-variable)
-   * [Start Lisk Core node](#start-lisk-core-node)
+   1. [Get New Relic license key](#get-new-relic-license-key)
+   2. [Add license key as evironment variable](#add-license-key-as-environment-variable)
+   3. [Start Lisk Core node](#restart-lisk-core-node)
 2. [Keep your node busy](#keep-your-node-busy)
    * [Option 1: Lisk Core Test Suite](#option-1-lisk-core-test-suite)
    * [Option 2: Use Apache Benchmark Tool](#option-2-use-apache-benchmark-tool)
@@ -16,7 +18,7 @@ of the system and keep track of performance of each activity. E.g. an HTTP API c
 
 ## Enable New Relic
 
-### Register on Website
+### Get New Relic license key
 
 First thing you need to do is registering an account at https://rpm.newrelic.com, if you have not already done that.
 After successful login, select "Account settings" in the account dropdown in the New Relic UI.
@@ -31,14 +33,14 @@ available and set:
 export NEW_RELIC_LICENSE_KEY={your-personal-license-key}
 ```
 
-### Start Lisk Core node
+### (Re)start Lisk Core node
 
-Then start the node normally, depending on the distribution:
+Then start the node normally, or restart if it is already running.
 
 ```bash
-bash lisk.sh start # binary
-pm2 start lisk # source
-docker start container_id # docker
+bash lisk.sh start # start lisk core binary
+pm2 start lisk # start lisk core source
+docker start container_id # start lisk core docker
 ```
 
 ## Keep your node busy
@@ -51,6 +53,10 @@ There are several ways to create workload on your node:
 Info | Note 
 --- | --- 
 ![info note](../../info-icon.png "Info Note") | The Lisk Core Test Suite is only available for Lisk Core from Source.
+
+Info | Note 
+--- | --- 
+![info note](../../info-icon.png "Info Note") | The `unit` Testsuite is not suited for this purpose, as unit tests are not executed in the context of the running application.
 
 Tests are run using the following command:
 
@@ -66,7 +72,6 @@ npm test -- mocha:<tag>:<suite>:[section]
 Examples:
 
 ```bash
-npm test -- mocha:slow:unit
 npm test -- mocha:extensive:integration
 npm test -- mocha:default:functional
 npm test -- mocha:unstable:functional:get
@@ -94,6 +99,8 @@ now && ab -n 200000 -c 1 -k "http://127.0.0.1:7000/api/accounts?publicKey=4e8896
 `-n`: The number of requests that are executed
 
 `-c`: Number of requests to perform in parallel.
+
+`-k`: Enable the HTTP KeepAlive feature, i.e., perform multiple requests within one HTTP session.
 
 ### Option 3: Use Siege Tool
 

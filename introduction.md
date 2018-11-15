@@ -1,12 +1,23 @@
 # Lisk Core Documentation
 
 ## Table of contents
-[Setup](setup/setup.md) | [Upgrade](upgrade/upgrade.md) | [User Guide](user-guide/user-guide.md) | 
---- | --- | ---
-[Pre-Installation](setup/pre-install/preinstallation.md) | [Binary](upgrade/binary/upgrade-binary.md) | [Administration](user-guide/administration/admin.md)
-[Installation](setup/install/installation.md) | [Docker](upgrade/docker/upgrade-docker.md) | [Configuration](user-guide/configuration/configuration.md)
-[Troubleshooting](troubleshooting/troubleshooting.md) | [Source](upgrade/source/upgrade-source.md) |  [API](user-guide/api/api.md)
-| | [Migration](upgrade/migration/migration.md)| |
+- [Setup](setup/setup.md)
+  - [Binary](setup/binary/binary.md)
+  - [Docker](setup/docker/docker.md)
+  - [Source](setup/source/source.md)
+- [Upgrade](upgrade/upgrade.md)
+  - [Binary](upgrade/binary/upgrade-binary.md)
+  - [Docker](upgrade/docker/upgrade-docker.md)
+  - [Source](upgrade/source/upgrade-source.md)  
+  - [Migration](upgrade/migration/migration.md)
+- [User Guide](user-guide/user-guide.md)
+  - [Administration](user-guide/administration/admin.md)
+    - [Binary](user-guide/administration/binary/admin-binary.md)
+    - [Docker](user-guide/administration/docker/admin-docker.md)
+    - [Source](user-guide/administration/source/admin-source.md)
+  - [Configuration](user-guide/configuration/configuration.md)
+  - [API](user-guide/api/api.md)
+[Troubleshooting](troubleshooting/troubleshooting.md)
 
 Lisk Core is the program that implements the [Lisk Protocol](/lisk-protocol/introduction.md). Every machine must set it up in order to run a node that allows for participation in the network. Setting up Lisk Core enables a user to:
 - Contribute to the decentralisation of the Lisk network

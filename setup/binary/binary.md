@@ -1,16 +1,16 @@
 # Lisk Core Binary Setup
 
 - [Pre-Install](#pre-install)
-  - [Determine if your platform can run Lisk Core](#determine-if-your-platform-can-run-lisk-core)
-  - [Open necessary ports](#open-the-necessary-ports)
-  - [Install dependencies](#install-dependencies)
-  - [Create `lisk` user](#create-a-user-to-run-lisk)
+  1. [Determine if your platform can run Lisk Core](#determine-if-your-platform-can-run-lisk-core)
+  2. [Open necessary ports](#open-the-necessary-ports)
+  3. [Install dependencies](#install-dependencies)
+  4. [Create `lisk` user](#create-a-user-to-run-lisk)
 - [Installation](#installation)
-  - [Login as lisk user](#login-to-the-lisk-user)
-  - [Execute the installation script](#execute-the-installation-script)
-  - [Verify successful installation](#verify-successful-installation)
+  1. [Login as lisk user](#login-to-the-lisk-user)
+  2. [Execute the installation script](#execute-the-installation-script)
+  3. [Verify successful installation](#verify-successful-installation)
 - [Post-Installation (optional)](#post-installation-optional)
-  -[Logrotate Setup](#logrotate-setup)
+  - [Logrotate Setup](#logrotate-setup)
   
 
 ## Pre-Install

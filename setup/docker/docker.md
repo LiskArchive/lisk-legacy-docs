@@ -1,14 +1,14 @@
 # Lisk Core Docker Setup
 
 - [Pre-Install](#pre-install)
-  - [Mac OS X](#mac-os-x)
-  - [Windows](#windows)
-  - [Linux](#linux)
-  - [Open necessary ports](#open-necessary-ports)
+  1. [Mac OS X](#mac-os-x)
+  2. [Windows](#windows)
+  3. [Linux](#linux)
+  4. [Open necessary ports](#open-necessary-ports)
 - [Installation](#installation)
-  - [Get configuration and Makefile](#get-configuration-and-makefile)
-  - [Set environment variables](#set-environment-variables)
-  - [Coldstart application](#coldstart-application)
+  1. [Get configuration and Makefile](#get-configuration-and-makefile)
+  2. [Set environment variables](#set-environment-variables)
+  3. [Coldstart application](#coldstart-application)
   
 
 ## Pre-install

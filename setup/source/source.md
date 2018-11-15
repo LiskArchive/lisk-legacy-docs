@@ -1,10 +1,5 @@
 # Lisk Core from Source Setup
 
-## Pre-Install
-
-This document details the prerequisites to install Lisk Core 1.0.0 from a Source installation using tagged releases on Github.
-To complete the installation there are prerequisites that need to be fulfilled.  If you have already performed these, please proceed to the [Installation](#installation) chapter.
-
 - [Pre-Installation](#pre-install)
   1. [Open necessary ports](#open-necessary-ports)
   2. [Create a new user](#create-a-new-user)
@@ -19,7 +14,12 @@ To complete the installation there are prerequisites that need to be fulfilled. 
   1. [Login as the Lisk user](#login-as-the-lisk-user)
   2. [Installing Lisk from Source](#installing-lisk-from-source)
 - [Post-installation (optional)](#post-installation-optional)
-  
+  - [Logrotate Setup](#logrotate-setup)
+
+## Pre-Install
+
+This document details the prerequisites to install Lisk Core 1.0.0 from a Source installation using tagged releases on Github.
+To complete the installation there are prerequisites that need to be fulfilled.  If you have already performed these, please proceed to the [Installation](#installation) chapter.
 
 Firstly, please determine if your platform can install Lisk Core from source.
 

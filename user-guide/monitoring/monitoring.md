@@ -59,7 +59,7 @@ services:
       - NEW_RELIC_LICENSE_KEY=XXXXXXXXX
 ```
 
-Then, save your changes and update docker, so that it can use the new environment variable.
+Then, save your changes and update Dockerfile, so that it can use the new environment variable.
 
 ```bash
 <esc> # press esc to quit insert mode of vim
@@ -70,7 +70,7 @@ docker-compose up -d
 
 #### Option 2: In newrelic.js
 
-The second way of adding the license key is by editing `newrelic.js` which can be found in the root directory of the Lisk Core installation.
+The second way of adding the license key is to edit `newrelic.js` file which can be found in the root directory of the Lisk Core installation.
 
 ```bash
 cd lisk_repo # navigate inside the root folder of lisk core
@@ -204,66 +204,66 @@ Here are the steps we follow:
 ```
 $ cd ~/lisk_repo 
 ~/lisk_repo $ export NEW_RELIC_LICENSE_KEY=xxxxxxxxxxx
-~/lisk_repo $ npm start  
+~/lisk_repo $ pm2 start lisk
 ```
-Now start making some requests with siege. 
+Now start making some requests using Siege:
 
 ```
 siege -c 10 -t 5m http://127.0.0.1:4000/api/transactions
 ```
 
-The script will automatically be finished in 5 minutes and then we proceed to results. But during that time please keep in mind: 
+The script will automatically keep on sending the HTTP requests against your node for 5 minutes (`-t 5m`). During that time please keep in mind: 
 
-1. You may disable the cache on the node to get real performance analysis. 
-2. You should use some real data e.g. testnet to run your tests to have viable results.
-3. It take couple of minutes to show analyzed results in newrelic interface so be patience. 
+1. You may want to disable the cache on the node to get real performance analysis. To do this, set `cacheEnabled` in configuration to `false`.
+2. You might not see the viable results if your development Blockchain dataset is empty. This could be changed by running your tests against the Testnet data.
+3. It may take a couple of minutes to show the analyzed results in the New Relic interface so be patient. 
   
-Now our results will be compiled lets look towards it. First login to https://rpm.newrelic.com, and select `APM` from top menu. 
+To see the NewRelic instrumentation results, please log in to https://rpm.newrelic.com, and select `APM` from the top menu. 
 
-The first screen you see will be list of applications. Depending on which network you run your node in, you will see the applications. As shown in the image below.  
+The first screen is the list of applications. Depending on which network you run your node in, you will see the application title as shown in the image below. 
   
 ![Apps List UI](./assets/app_dashboard.png) 
 
-Please select the specific application by clicking its name. And you will see following dashboard.  
+Please select the specific application by clicking its name. You will see the following dashboard:  
 
 ![Dashboard UI](./assets/dashboard.png) 
 
-To know fine grained details of this dashboard, would be recommended to read https://learn.newrelic.com/courses/intro_apm. But for now since we are interested only in the our use case of `GET /api/transactions` we will move to transactions page. Please select the transactions from the left menu in above screen. See detail instructions in the below image. 
+To know fine grained details of this dashboard, please read https://learn.newrelic.com/courses/intro_apm. For now since we are interested only in our use case of `GET /api/transactions` we will move to transactions page. Please select "Transactions" from the left menu in above screen. See detailed instructions in the below image. 
 
 ![Transactions UI](./assets/transactions.png)
 
-In the above image the most valuable information we had is highlighted in the rectangle, with key information: 
+In the above image the most valuable information for us is highlighted in the rectangle, which provides us with the following information: 
 
-1. Most of the time (56%) was spent in ExpressJS which is a nodejs module. 
+1. Most of the time (56%) was spent in ExpressJS which is a Node.js module. 
 2. It involved one database view and one table during the transactions. 
-3. Querying to database table `delegates` was quick 
+3. Querying to database table `delegates` was quick.
 4. While query to database view `trs_list` was a bit expensive.
 5. On average API calls for `GET /api/transactions` took 122ms.
 
-If you want this information in a tabular form to present somewhere. Please click on "Show all transactions table" link. Then you will see a view like this. 
+If you want this information in a tabular form to present somewhere, please click on "Show all transactions table" link. Then you will see a view like this. 
 
 ![Transactions Data](./assets/transactions_data.png)
 
 From this screen you can see: 
 
-1. In selected time range we made 14252 total requests to `GET /api/transactions`
-2. The worst request took 2.17 seconds time 
-3. The fastest request took 10ms
+1. In selected time range we made 14252 total requests to `GET /api/transactions`.
+2. The worst request took 2.17 seconds time.
+3. The fastest request took 10ms.
 4. Average time for requests is 122ms while standard deviation is 213ms. 
 5. Difference between average and standard deviation shows there were small spikes between requests.
 6. You can export data to CSV format from this screen to keep record or share with others. 
 
-Now if we want to debug deeper which transactions actually took 2.17 seconds, please go back to old screen, scroll down a bit and you wills see transaction traces. 
+Now if we want to debug deeper which transactions actually took 2.17 seconds, please go back to previous screen, scroll down a bit and you will see transaction traces. 
 
 ![Trace list](./assets/trace_list.png)
 
-Here you can see individual transaction which took longer time and considered slow. The threshold which defines the slow transactions are configured in file `newrelic.js` under `transaction_tracer.explain_threshold`. Which is currently 100ms, so every request took more than 100ms will be considered slow and will be logged as trace in newrelic. Let's debug further and see what makes this request slow, by clicking on any of the trace link in the list. 
+Here you can see individual transaction which took longer time and considered slow. The threshold which defines the slow transactions is configured in file `newrelic.js` under `transaction_tracer.explain_threshold`. Which is currently 100ms, so every request took more than 100ms will be considered slow and will be logged as trace in New Relic. Let's debug further and see what makes this request slow, by clicking on any of the trace links in the list. 
 
 ![Trace summary](./assets/trace_summary.png)
 
 So you can see here most of time was spent in two functions `modules.transactions.shared.getTransactions` and `Middleware: bound logClientConnections`. You can go to trace detail to see more information and call stack. You can also click on "Database queries" to see which queries were executed during this request.
 
-Now coming back to original information we want to achieve, we need find the database query which is taking most of the time. For it click on the left side menu for "Database". There sort by "Most time consuming" and then select top of the list.  
+Now coming back to the original information we want to achieve, we need to find the database query which is taking most of the time. To do this, click on the left side menu for "Database". There sort by "Most time consuming" and then select top of the list.  
 
 ![Database Queries](./assets/database_query.png)
 
@@ -281,7 +281,7 @@ So here we can find information as seen:
 ![Query Detail](./assets/query_detail.png)
 
 
-Hope above use case helps you to understand the usage and benefits of NewRelic. Please let us know if you want to know more. 
+We hope the above use case helps you to understand the usage and benefits of New Relic. Please let us know if you want to know more. 
 
 ## FAQs
 
@@ -289,13 +289,13 @@ Hope above use case helps you to understand the usage and benefits of NewRelic. 
 
 Please make sure to check following. 
 
-1. Are you using a valid license key to your account
-2. Had you exported the license key on the node where you are running Lisk 
-3. Had you selected proper time range in New Relic APM 
-4. Are you looking on right page e.g. You may be searching web transactions but you had selected Non-Web transactions in UI. 
+1. Are you using a valid license key to your account?
+2. Have you exported the license key on the node where you are running Lisk?
+3. Have you selected proper time range in New Relic APM?
+4. Are you looking on right page? E.g. you may be searching web transactions but you had selected Non-Web transactions in UI.
 5. If you just run the node, give it few minutes let New Relic to crunch the data and show in UI. 
 
-**Is the performance measures are consistent?**
+**Are the performance measures consistent?**
 
 1. As far as you are using same machine specification to run different scenarios, the stats will consistent.
 2. We recommend to not benchmark on your development machine, as it can have other work load during different test runs.
@@ -303,7 +303,7 @@ Please make sure to check following.
 
 **How is it useful for me as a Delegate or Exchange?**
 
-1. Performance of the machine may effect the behavior of interacting with the node 
-2. You can create alert policies on New Relic to inform you when your app taking more memory
-3. You can set alerts to see if database is getting slow
+1. Performance of the machine may effect the behavior of interacting with the node.
+2. You can create alert policies on New Relic to inform you when your app taking more memory.
+3. You can set alerts to see if database is getting slow.
 4. You can track if some errors occurred in the system which were not handled properly.   

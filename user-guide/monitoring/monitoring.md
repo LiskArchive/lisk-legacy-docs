@@ -235,7 +235,7 @@ To know fine grained details of this dashboard, please read https://learn.newrel
 In the above image the most valuable information for us is highlighted in the rectangle, which provides us with the following information: 
 
 1. Most of the time (56%) was spent in ExpressJS which is a Node.js module. 
-2. It involved one database view and one table during the transactions. 
+2. During the experiment, one database view (`trs_list`) and one database table (`delegates`) were involved in the persistence layer.
 3. Querying to database table `delegates` was quick.
 4. While query to database view `trs_list` was a bit expensive.
 5. On average API calls for `GET /api/transactions` took 122ms.
@@ -261,7 +261,7 @@ Here you can see individual transaction which took longer time and considered sl
 
 ![Trace summary](./assets/trace_summary.png)
 
-So you can see here most of time was spent in two functions `modules.transactions.shared.getTransactions` and `Middleware: bound logClientConnections`. You can go to trace detail to see more information and call stack. You can also click on "Database queries" to see which queries were executed during this request.
+As shown on the above trace summary, the most of the transaction's time was spent in two functions `modules.transactions.shared.getTransactions` and `Middleware: bound logClientConnections`. You can go to trace detail to see more information and call stack. You can also click on "Database queries" to see which queries were executed during this request.
 
 Now coming back to the original information we want to achieve, we need to find the database query which is taking most of the time. To do this, click on the left side menu for "Database". There sort by "Most time consuming" and then select top of the list.  
 
@@ -271,7 +271,7 @@ Scroll down on this page.
 
 ![Slow Queries](./assets/slow_queries.png)
 
-So here we can find information as seen: 
+By analyzing the above diagrams, we can conclude the following:
 
 1. The slowest queries in the system are queries for `trs_list` view.
 2. For that view the slowest query is the `SELECT count(*) FROM trs_list` which took 2.13 seconds.

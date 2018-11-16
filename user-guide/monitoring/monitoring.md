@@ -6,14 +6,16 @@ Following steps should provide you with the insights of why and how to monitor y
 
 1. [Enable New Relic](#enable-new-relic)
    1. [Get New Relic license key](#get-new-relic-license-key)
-   2. [Add license key as evironment variable](#add-license-key-as-environment-variable)
+   2. [Add license key](#add-license-key)
+      * [Option 1: As environment variable](#option-1-as-environment-variable)
+      * [Option 2: In newrelic.js](#option-2-in-newrelicjs)
    3. [(Re)start Lisk Core node](#restart-lisk-core-node)
 2. [Keep your node busy](#keep-your-node-busy)
    * [Option 1: Lisk Core Test Suite](#option-1-lisk-core-test-suite)
    * [Option 2: Use Apache Benchmark Tool](#option-2-use-apache-benchmark-tool)
    * [Option 3: Use Siege Tool](#option-3-use-siege-tool)
    * [Option 4: Write custom script](#option-4-write-custom-script)
-3. [Analyse results](#analyse-results)
+3. [Analysis with New Relic](#analysis-with-new-relic)
 
 ## Enable New Relic
 
@@ -190,7 +192,7 @@ siege -c 10 -t 30m http://127.0.0.1:7000/api/blocks
 
 Feel free to write your own custom scripts and specify the order and amount of API requests yourself, depending on a special use case or a scenario you want to benchmark.
 
-## Case Study 
+## Analysis with New Relic 
 
 Let's take a case study, we want to analyze the performance of API `GET /api/transactions` endpoint, to figure out: 
 

@@ -3,7 +3,7 @@
 We use [New Relic](http://newrelic.com/) to monitor the activities inside of the application. It enables to have detailed insight
 of the system and keep track of performance of each activity. E.g. an HTTP API call or a background job from queue.
 
-Below are the steps you need to follow to get the statistics for New Relic:
+Following steps should provide you with the insights of why and how to monitor your Lisk Core node using NewRelic instrumentation: 
 
 1. [Enable New Relic](#enable-new-relic)
    1. [Get New Relic license key](#get-new-relic-license-key)

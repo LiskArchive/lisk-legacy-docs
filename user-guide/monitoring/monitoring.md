@@ -8,7 +8,7 @@ Below are the steps you need to follow to get the statistics for New Relic:
 1. [Enable New Relic](#enable-new-relic)
    1. [Get New Relic license key](#get-new-relic-license-key)
    2. [Add license key as evironment variable](#add-license-key-as-environment-variable)
-   3. [Start Lisk Core node](#restart-lisk-core-node)
+   3. [(Re)start Lisk Core node](#restart-lisk-core-node)
 2. [Keep your node busy](#keep-your-node-busy)
    * [Option 1: Lisk Core Test Suite](#option-1-lisk-core-test-suite)
    * [Option 2: Use Apache Benchmark Tool](#option-2-use-apache-benchmark-tool)
@@ -24,23 +24,94 @@ First thing you need to do is registering an account at https://rpm.newrelic.com
 After successful login, select "Account settings" in the account dropdown in the New Relic UI.
 From the Account information section on the right side of the Summary page, copy your license key.
 
-### Add license key as environment variable
+### Add license key
+
+#### Option 1: As environment variable
 
 To enable the performance monitoring on your node make sure you have an environment variable `NEW_RELIC_LICENSE_KEY`
 available and set:
 
+##### Binary & Source
+
+The following command works for Lisk Core Binary and from Source distributions:
 ```bash
 export NEW_RELIC_LICENSE_KEY={your-personal-license-key}
 ```
 
+##### Docker
+
+For Docker distributions of Lisk Core, do the following to add the evironment variable:
+
+```bash
+cd lisk_repo
+vim docker/docker-compose.override.yml
+```
+
+Add your license key to `docker-compose.override.yml` like so:
+
+```bash
+version: "3"
+services:
+
+  lisk:
+    environment:
+      - NEW_RELIC_LICENSE_KEY=XXXXXXXXX
+```
+
+Then, save your changes and update docker, so that it can use the new environment variable.
+
+```bash
+<esc> # press esc to quit insert mode of vim
+:wq # save changes and quit vim afterwards
+docker-compose up -d
+```
+
+
+#### Option 2: In newrelic.js
+
+The second way of adding the license key is by editing `newrelic.js` which can be found in the root directory of the Lisk Core installation.
+
+```bash
+cd lisk_repo # navigate inside the root folder of lisk core
+vim newrelic.js
+```
+
+Inside the file search for the option `license_key` option and add your license key as string value.
+If you use "vim", press `i` to get into the insert mode.
+
+```bash
+/**
+ * Your New Relic license key.
+ *
+ * MUST set the license key using `NEW_RELIC_LICENSE_KEY` env variable
+ * if you want to enable the monitoring of the lisk node
+ */
+license_key: '{your-personal-license-key}',
+```
+
+After adding the license key, save changes and quit the editor:
+
+```bash
+<esc> # press esc to quit insert mode of vim
+:wq # save changes and quit vim afterwards
+```
+
 ### (Re)start Lisk Core node
 
-Then start the node normally, or restart if it is already running.
+Then start the node normally,
 
 ```bash
 bash lisk.sh start # start lisk core binary
 pm2 start lisk # start lisk core source
 docker start container_id # start lisk core docker
+```
+
+... or restart if it is already running.
+
+```bash
+bash lisk.sh reload # restart lisk core binary
+pm2 restart lisk # restart lisk core source
+docker restart container_id # restart lisk core docker
 ```
 
 ## Keep your node busy

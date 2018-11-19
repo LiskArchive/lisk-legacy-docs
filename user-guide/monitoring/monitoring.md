@@ -36,7 +36,7 @@ available and set:
 
 The following command works for Lisk Core Binary and from Source distributions:
 ```bash
-export NEW_RELIC_LICENSE_KEY={your-personal-license-key}
+export NEW_RELIC_LICENSE_KEY=your-personal-license-key
 ```
 
 ##### Docker

@@ -229,7 +229,7 @@ Please select the specific application by clicking its name. You will see the fo
 
 ![Dashboard UI](./assets/dashboard.png) 
 
-To know fine grained details of this dashboard, please read https://learn.newrelic.com/courses/intro_apm. For now since we are interested only in our use case of `GET /api/transactions` we will move to transactions page. Please select "Transactions" from the left menu in above screen. See detailed instructions in the below image. 
+To know fine-grained details of this dashboard, please read https://learn.newrelic.com/courses/intro_apm. For now, since during the experiment we only executed the HTTP requests against our node (`GET /api/transactions`) there is only one section having interesting results. Please select "Transactions" from the left menu in above screen. See detailed instructions in the below image. 
 
 Info | Note 
 --- | --- 
@@ -263,13 +263,13 @@ Now if we want to debug deeper which transactions actually took 2.17 seconds, pl
 
 ![Trace list](./assets/trace_list.png)
 
-Here you can see individual transaction which took longer time and considered slow. The threshold which defines the slow transactions is configured in file `newrelic.js` under `transaction_tracer.explain_threshold`. Which is currently 100ms, so every request which takes more than 100ms will be considered slow and will be logged as trace in New Relic. Let's debug further and see what makes this request slow, by clicking on any of the trace links in the list. 
+Here you can see an overview of an individual transaction which took longer time and is considered as "slow". The threshold which defines the "slow" transactions is configured in file `newrelic.js` under `transaction_tracer.explain_threshold`, which is currently 100ms- every request which took more than 100ms will be considered as "slow" and logged as the trace by NewRelic. Let's debug further and verify what made this request "slow", by clicking on any of the trace links in the list. 
 
 ![Trace summary](./assets/trace_summary.png)
 
 As shown on the above trace summary, the most of the transaction's time was spent in two functions `modules.transactions.shared.getTransactions` and `Middleware: bound logClientConnections`. You can go to trace detail to see more information and call stack. You can also click on "Database queries" to see which queries were executed during this request.
 
-Now coming back to the original information we want to achieve, we need to find the database query which is taking most of the time. To do this, click on the left side menu for "Database". There sort by "Most time consuming" and then select top of the list.  
+It's also possible to find the database query which is taking most of the time. To do it, please click on the left side menu for "Database" and then sort by "Most time consuming" and then select the top of the list.   
 
 ![Database Queries](./assets/database_query.png)
 

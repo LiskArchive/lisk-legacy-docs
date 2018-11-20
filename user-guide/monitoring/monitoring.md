@@ -87,7 +87,7 @@ If you use "vim", press `i` to get into the insert mode.
  * MUST set the license key using `NEW_RELIC_LICENSE_KEY` env variable
  * if you want to enable the monitoring of the lisk node
  */
-license_key: '{your-personal-license-key}',
+license_key: 'your-personal-license-key',
 ```
 
 After adding the license key, save changes and quit the editor:

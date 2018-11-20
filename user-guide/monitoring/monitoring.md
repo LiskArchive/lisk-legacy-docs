@@ -233,7 +233,7 @@ To know fine-grained details of this dashboard, please read https://learn.newrel
 
 Info | Note 
 --- | --- 
-![info note](../../info-icon.png "Info Note") | To clarify New Relic transactions have no relation with Lisk Transactions. Its just the grouping term, newrelic use to show analytics. 
+![info note](../../info-icon.png "Info Note") | To clarify, New Relic transactions have no relation with Lisk Transactions. It's just the grouping term New Relic use to show analytics. 
 
 
 ![Transactions UI](./assets/transactions.png)

@@ -41,7 +41,7 @@ export NEW_RELIC_LICENSE_KEY=your-personal-license-key
 
 ##### Docker
 
-For Docker distributions of Lisk Core, do the following to add the evironment variable:
+For Docker distributions of Lisk Core, do the following to add the environment variable:
 
 ```bash
 cd lisk_repo
@@ -117,7 +117,8 @@ docker restart container_id # restart lisk core docker
 
 ## Keep your node busy
 
-As second step, keep your node busy by running various API request against it.
+To monitor activities in the system, you need to perform some. So keep your node busy by running various API request against it. Even if you don't perform, newrelic can monitor internal activities of the system e.g. different queue jobs.
+
 There are several ways to create workload on your node:
 
 ### Option 1: Lisk Core Test Suite
@@ -230,6 +231,11 @@ Please select the specific application by clicking its name. You will see the fo
 
 To know fine grained details of this dashboard, please read https://learn.newrelic.com/courses/intro_apm. For now since we are interested only in our use case of `GET /api/transactions` we will move to transactions page. Please select "Transactions" from the left menu in above screen. See detailed instructions in the below image. 
 
+Info | Note 
+--- | --- 
+![info note](../../info-icon.png "Info Note") | To clarify New Relic transactions have no relation with Lisk Transactions. Its just the grouping term, newrelic use to show analytics. 
+
+
 ![Transactions UI](./assets/transactions.png)
 
 In the above image the most valuable information for us is highlighted in the rectangle, which provides us with the following information: 
@@ -267,16 +273,16 @@ Now coming back to the original information we want to achieve, we need to find 
 
 ![Database Queries](./assets/database_query.png)
 
-Scroll down on this page. 
+Scroll down on the page shown above, you will see the slow queries shown below:  
 
 ![Slow Queries](./assets/slow_queries.png)
 
-By analyzing the above diagrams, we can conclude the following:
+By analyzing the above diagrams, we can conclude the following assuming that all stats are strictly within experiment time range:
 
 1. The slowest queries in the system are queries for `trs_list` view.
-2. For that view the slowest query is the `SELECT count(*) FROM trs_list` which took 2.13 seconds.
+2. For that database view `trs_list` the slowest query is the `SELECT count(*) FROM trs_list` which took 2.13 seconds.
 3. There are few other queries in the on `trs_list` view which took more than 1 second time. 
-4. If you click on the top slow query, you will notice the query was executed during `GET /api/transactions`
+4. If you click on the top slow query, you will notice the query was executed during `GET /api/transactions`.
 
 ![Query Detail](./assets/query_detail.png)
 

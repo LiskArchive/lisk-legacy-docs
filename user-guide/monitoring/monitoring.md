@@ -247,7 +247,7 @@ If you want this information in a tabular form to present somewhere, please clic
 From this screen you can see: 
 
 1. In selected time range we made 14252 total requests to `GET /api/transactions`.
-2. The worst request took 2.17 seconds time.
+2. The slowest request took 2.17 seconds time.
 3. The fastest request took 10ms.
 4. Average time for requests is 122ms while standard deviation is 213ms. 
 5. Difference between average and standard deviation shows there were small spikes between requests.
@@ -257,7 +257,7 @@ Now if we want to debug deeper which transactions actually took 2.17 seconds, pl
 
 ![Trace list](./assets/trace_list.png)
 
-Here you can see individual transaction which took longer time and considered slow. The threshold which defines the slow transactions is configured in file `newrelic.js` under `transaction_tracer.explain_threshold`. Which is currently 100ms, so every request took more than 100ms will be considered slow and will be logged as trace in New Relic. Let's debug further and see what makes this request slow, by clicking on any of the trace links in the list. 
+Here you can see individual transaction which took longer time and considered slow. The threshold which defines the slow transactions is configured in file `newrelic.js` under `transaction_tracer.explain_threshold`. Which is currently 100ms, so every request which takes more than 100ms will be considered slow and will be logged as trace in New Relic. Let's debug further and see what makes this request slow, by clicking on any of the trace links in the list. 
 
 ![Trace summary](./assets/trace_summary.png)
 
@@ -297,7 +297,7 @@ Please make sure to check following.
 
 **Are the performance measures consistent?**
 
-1. As far as you are using same machine specification to run different scenarios, the stats will consistent.
+1. As far as you are using same machine specification to run different scenarios, the stats will be consistent.
 2. We recommend to not benchmark on your development machine, as it can have other work load during different test runs.
 3. If you are using AB or Siege, always use same number of connections to simulate same request load on node. 
 

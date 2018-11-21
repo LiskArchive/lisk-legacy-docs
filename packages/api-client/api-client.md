@@ -105,9 +105,11 @@ APIClient.constants.GET; // 'GET'
 APIClient.constants.POST; // 'POST'
 APIClient.constants.PUT; // 'PUT'
 
-APIClient.constants.BETANET_NODES; // Array of default betanet nodes
-APIClient.constants.TESTNET_NODES; // Array of default testnet nodes
-APIClient.constants.MAINNET_NODES; // Array of default mainnet nodes
+APIClient.constants.TESTNET_NETHASH; // Nethash for Testnet.
+APIClient.constants.MAINNET_NETHASH; // Nethash for Mainnet.
+
+APIClient.constants.TESTNET_NODES; // Array of default Testnet nodes.
+APIClient.constants.MAINNET_NODES; // Array of default Mainnet nodes.
 ```
 
 ## Methods associated with a resource

@@ -15,19 +15,20 @@ This document describes how to install Node and NPM for installation via NPM.
 
 ### Determine if your platform can run Node
 
-###### Supported Platforms
+#### Supported Platforms
 - Windows 10
 - macOS
 - Linux
 
-###### Not Supported
-- Platforms without NodeJS 6.3.x or higher
+#### Supported Node versions
+- Node version 8.10 and above
 
 ### Install Node
 
 Node.js is supported on most operating systems. 
 Follow the instructions for your operating system on the [Node.js downloads page](https://nodejs.org/en/download/).
-**You will need version 6.3.x or higher**. 
+
+**You will need version 8.10.x or higher**. 
 
 NPM is automatically installed along with Node.js.
 

@@ -16,6 +16,7 @@ Following steps should provide you with the insights of why and how to monitor y
    * [Option 3: Use Siege Tool](#option-3-use-siege-tool)
    * [Option 4: Write custom script](#option-4-write-custom-script)
 3. [Analysis with New Relic](#analysis-with-new-relic)
+4. [FAQ](#faq)
 
 ## Enable New Relic
 
@@ -117,7 +118,8 @@ docker restart container_id # restart lisk core docker
 
 ## Keep your node busy
 
-To monitor activities in the system, you need to perform some. So keep your node busy by running various API request against it. Even if you don't perform, newrelic can monitor internal activities of the system e.g. different queue jobs.
+To monitor activities in the system, you need to perform some. So keep your node busy by performing actions like taking a snapshot, synching your node, or running various API request against it.
+Even if you don't perform them, New Relic can monitor internal activities of the system e.g. different queue jobs.
 
 There are several ways to create workload on your node:
 
@@ -191,7 +193,7 @@ siege -c 10 -t 30m http://127.0.0.1:7000/api/blocks
 
 ### Option 4: Write custom script
 
-Feel free to write your own custom scripts and specify the order and amount of API requests yourself, depending on a special use case or a scenario you want to benchmark.
+Feel free to write your own custom scripts and specify the order and amount of actions you want the node to perform during the analysis, depending on a special use case or a scenario you want to benchmark.
 
 ## Analysis with New Relic 
 
@@ -202,14 +204,14 @@ Let's take a case study, we want to analyze the performance of API `GET /api/tra
 
 Here are the steps we follow: 
 
-```
+```bash
 $ cd ~/lisk_repo 
 ~/lisk_repo $ export NEW_RELIC_LICENSE_KEY=xxxxxxxxxxx
 ~/lisk_repo $ pm2 start lisk
 ```
 Now start making some requests using Siege:
 
-```
+```bash
 siege -c 10 -t 5m http://127.0.0.1:4000/api/transactions
 ```
 
@@ -219,7 +221,7 @@ The script will automatically keep on sending the HTTP requests against your nod
 2. You might not see the viable results if your development Blockchain dataset is empty. This could be changed by running your tests against the Testnet data.
 3. It may take a couple of minutes to show the analyzed results in the New Relic interface so be patient. 
   
-To see the NewRelic instrumentation results, please log in to https://rpm.newrelic.com, and select `APM` from the top menu. 
+To see the New Relic instrumentation results, please log in to https://rpm.newrelic.com, and select `APM` from the top menu. 
 
 The first screen is the list of applications. Depending on which network you run your node in, you will see the application title as shown in the image below. 
   
@@ -263,7 +265,8 @@ Now if we want to debug deeper which transactions actually took 2.17 seconds, pl
 
 ![Trace list](./assets/trace_list.png)
 
-Here you can see an overview of an individual transaction which took longer time and is considered as "slow". The threshold which defines the "slow" transactions is configured in file `newrelic.js` under `transaction_tracer.explain_threshold`, which is currently 100ms- every request which took more than 100ms will be considered as "slow" and logged as the trace by NewRelic. Let's debug further and verify what made this request "slow", by clicking on any of the trace links in the list. 
+Here you can see an overview of an individual transaction which took longer time and is considered as "slow". The threshold which defines the "slow" transactions is configured in file `newrelic.js` under `transaction_tracer.explain_threshold`, which is currently 100ms- every request which took more than 100ms will be considered as "slow" and logged as the trace by New Relic.
+Let's debug further and verify what made this request "slow", by clicking on any of the trace links in the list. 
 
 ![Trace summary](./assets/trace_summary.png)
 
@@ -289,7 +292,7 @@ By analyzing the above diagrams, we can conclude the following assuming that all
 
 We hope the above use case helps you to understand the usage and benefits of New Relic. Please let us know if you want to know more. 
 
-## FAQs
+## FAQ
 
 **I am not seeing Lisk Data in the New Relic APM dashboard?**
 

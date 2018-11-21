@@ -30,7 +30,7 @@ constants.EPOCH_TIME_MILLISECONDS; // EPOCH_TIME as milliseconds since Unix Epoc
 constants.EPOCH_TIME_SECONDS; // EPOCH_TIME as seconds since Unix Epoch.
 
 constants.MAX_ADDRESS_NUMBER; // Maximum valid number which can form an address when suffixed with an 'L'.
-constants.MAX_TRANSACTION_AMOUNT; // Maximum valid amount for a transaction.
+constants.MAX_TRANSACTION_AMOUNT; // Maximum valid amount for a transaction. Maximum value for PostgreSQL bigint.
 
 constants.SIGNED_MESSAGE_PREFIX; // The prefix attached to all messages signed according to the Lisk message signature protocol.
 

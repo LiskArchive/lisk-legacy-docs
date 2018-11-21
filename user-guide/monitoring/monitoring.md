@@ -1,6 +1,6 @@
 # Performance Monitoring
 
-We use [New Relic](http://newrelic.com/) to monitor the activities inside of the application. It enables to have detailed insight into the system and keep track of the performance of any activity, e.g. an HTTP API call or a background process from Lisk Core jobs queue.
+We use [New Relic](http://newrelic.com/) to monitor the activities inside of the application. It provides the user with a detailed insight into the system and keep track of the performance of any activity, e.g. an HTTP API call or a background process from Lisk Core jobs queue.
 
 Following steps should provide you with the insights of why and how to monitor your Lisk Core node using New Relic instrumentation: 
 
@@ -37,7 +37,7 @@ available and set:
 
 The following command works for Lisk Core Binary and from Source distributions:
 ```bash
-export NEW_RELIC_LICENSE_KEY=your-personal-license-key
+export NEW_RELIC_LICENSE_KEY=XXXXXXXXX
 ```
 
 ##### Docker
@@ -51,7 +51,7 @@ vim docker/docker-compose.override.yml
 
 Add your license key to `docker-compose.override.yml` like so:
 
-```bash
+```
 version: "3"
 services:
 
@@ -65,7 +65,7 @@ Then, save your changes and update Dockerfile, so that it can use the new enviro
 ```bash
 <esc> # press esc to quit insert mode of vim
 :wq # save changes and quit vim afterwards
-docker-compose up -d
+docker-compose up -d # (re)start docker containers
 ```
 
 
@@ -81,14 +81,14 @@ vim newrelic.js
 Inside the file search for the option `license_key` and add your license key as string value.
 If you use "vim", press `i` to get into the insert mode.
 
-```bash
+```
 /**
  * Your New Relic license key.
  *
  * MUST set the license key using `NEW_RELIC_LICENSE_KEY` env variable
  * if you want to enable the monitoring of the lisk node
  */
-license_key: 'your-personal-license-key',
+license_key: 'XXXXXXXXX',
 ```
 
 After adding the license key, save changes and quit the editor:

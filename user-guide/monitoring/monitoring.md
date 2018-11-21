@@ -1,6 +1,6 @@
 # Performance Monitoring
 
-We use [New Relic](http://newrelic.com/) to monitor the activities inside of the application. It provides the user with a detailed insight into the system and keep track of the performance of any activity, e.g. an HTTP API call or a background process from Lisk Core jobs queue.
+We use [New Relic](http://newrelic.com/) to monitor the activities inside of the application. It enables detailed insight into the system and keeps track of the performance of any activity, e.g. an HTTP API call or a background process from Lisk Core jobs queue.
 
 Following steps should provide you with the insights of why and how to monitor your Lisk Core node using New Relic instrumentation: 
 

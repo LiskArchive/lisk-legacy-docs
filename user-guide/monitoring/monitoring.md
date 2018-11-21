@@ -12,9 +12,9 @@ Following steps should provide you with the insights of why and how to monitor y
    3. [(Re)start Lisk Core node](#restart-lisk-core-node)
 2. [Keep your node busy](#keep-your-node-busy)
    * [Option 1: Lisk Core Test Suite](#option-1-lisk-core-test-suite)
-   * [Option 2: Use Apache Benchmark Tool](#option-2-use-apache-benchmark-tool)
-   * [Option 3: Use Siege Tool](#option-3-use-siege-tool)
-   * [Option 4: Write custom script](#option-4-write-custom-script)
+   * [Option 2: Apache Bench](#option-2-apache-bench)
+   * [Option 3: Siege](#option-3-siege)
+   * [Option 4: Custom script](#option-4-custom-script)
 3. [Analysis with New Relic](#analysis-with-new-relic)
 4. [FAQ](#faq)
 
@@ -78,7 +78,7 @@ cd lisk_repo # navigate inside the root folder of lisk core
 vim newrelic.js
 ```
 
-Inside the file search for the option `license_key` option and add your license key as string value.
+Inside the file search for the option `license_key` and add your license key as string value.
 If you use "vim", press `i` to get into the insert mode.
 
 ```bash
@@ -159,7 +159,7 @@ Individual test files can be run using the following command:
 npm run mocha -- path/to/test.js
 ```
 
-### Option 2: Use Apache Benchmark Tool
+### Option 2: Apache Bench
 
 [Apache Bench](https://httpd.apache.org/docs/2.4/programs/ab.html) is a generic benchmarking tool to measure the performance of HTTP servers.
 
@@ -177,9 +177,9 @@ now && ab -n 200000 -c 1 -k "http://127.0.0.1:7000/api/accounts?publicKey=4e8896
 
 `-k`: Enable the HTTP KeepAlive feature, i.e., perform multiple requests within one HTTP session.
 
-### Option 3: Use Siege Tool
+### Option 3: Siege
 
-The [Siege tool](https://www.joedog.org/siege-manual) is another tool for benchmarking the performance of HTTP servers.
+[Siege](https://www.joedog.org/siege-manual) is another tool for benchmarking the performance of HTTP servers.
 
 Do e.g. the following request:
 
@@ -191,7 +191,7 @@ siege -c 10 -t 30m http://127.0.0.1:7000/api/blocks
 
 `-t`: Allows you to run the test for a selected period of time.
 
-### Option 4: Write custom script
+### Option 4: Custom script
 
 Feel free to write your own custom scripts and specify the order and amount of actions you want the node to perform during the analysis, depending on a special use case or a scenario you want to benchmark.
 
@@ -235,7 +235,7 @@ To know fine-grained details of this dashboard, please read https://learn.newrel
 
 Info | Note 
 --- | --- 
-![info note](../../info-icon.png "Info Note") | To clarify, New Relic transactions have no relation with Lisk Transactions. It's just the grouping term New Relic use to show analytics. 
+![info note](../../info-icon.png "Info Note") | To clarify, New Relic transactions have no relation with Lisk transactions. It's just the grouping term New Relic use to show analytics. 
 
 
 ![Transactions UI](./assets/transactions.png)

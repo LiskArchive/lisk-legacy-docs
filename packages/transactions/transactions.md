@@ -42,7 +42,7 @@ npm update --save @liskhq/lisk-transactions
 
 Transactions-specific constants are available via the `transaction` key, and include relevant fees and byte allocations for transaction components.
 
-#### Examples
+### Usage
 
 ```js
 import transactions from '@liskhq/lisk-transactions';
@@ -55,7 +55,21 @@ transactions.constants.DELEGATE_FEE; // Fee required for a register delegate (ty
 transactions.constants.VOTE_FEE; // Fee required for a cast votes (type 3) transaction.
 transactions.constants.MULTISIGNATURE_FEE; // Fee required per group member (plus one) for a register multisignature account (type 4) transaction.
 
+transactions.constants.MULTISIGNATURE_MAX_LIFETIME; // Maximum lifetime in transaction pool of a multi-signature transaction in hours.
+transactions.constants.MULTISIGNATURE_MIN_LIFETIME; // Minimum lifetime in transaction pool of a multi-signature transaction in hours.
+transactions.constants.MULTISIGNATURE_MAX_KEYSGROUP; // Maximum number of public keys that can be part of a multi-signature group.
+transactions.constants.MULTISIGNATURE_MIN_KEYSGROUP; // Minimum number of public keys that can be part of a multi-signature group.
+
+transactions.constants.USERNAME_MAX_LENGTH; // Maximum number of characters a username can consist of.
 transactions.constants.BYTESIZES; // Object containing the number of bytes to allocate for each component of a transaction.
+
+transactions.constants.EPOCH_TIME; // Date from which timestamps are calculated.
+transactions.constants.EPOCH_TIME_MILLISECONDS; // EPOCH_TIME as milliseconds since Unix Epoch.
+transactions.constants.EPOCH_TIME_SECONDS; // EPOCH_TIME as seconds since Unix Epoch.
+
+transactions.constants.MAX_ADDRESS_NUMBER; // Maximum valid number which can form an address when suffixed with an 'L'.
+transactions.constants.MAX_TRANSACTION_AMOUNT; // Maximum valid amount for a transaction. Maximum value for PostgreSQL bigint.
+transactions.constants.MAX_TRANSACTION_ID; // Maximum valid number for transaction IDs.
 ```
 
 ## Methods for creating transactions

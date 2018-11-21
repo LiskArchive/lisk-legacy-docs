@@ -31,7 +31,7 @@ From the Account information section on the right side of the Summary page, copy
 #### Option 1: As environment variable
 
 To enable the performance monitoring on your node make sure you have an environment variable `NEW_RELIC_LICENSE_KEY`
-available and set:
+set:
 
 ##### Binary & Source
 

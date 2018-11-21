@@ -22,7 +22,7 @@ Following steps should provide you with the insights of why and how to monitor y
 
 ### Get New Relic license key
 
-First thing you need to do is registering an account at https://rpm.newrelic.com, if you have not already done that.
+First thing you need to do is register an account at https://rpm.newrelic.com, if you have not already done that.
 After successful login, select "Account settings" in the account dropdown in the New Relic UI.
 From the Account information section on the right side of the Summary page, copy your license key.
 
@@ -30,7 +30,7 @@ From the Account information section on the right side of the Summary page, copy
 
 #### Option 1: As environment variable
 
-To enable the performance monitoring on your node make sure you have an environment variable `NEW_RELIC_LICENSE_KEY`
+To enable the performance monitoring on your node, make sure you have an environment variable `NEW_RELIC_LICENSE_KEY`
 set:
 
 ##### Binary & Source
@@ -60,7 +60,7 @@ services:
       - NEW_RELIC_LICENSE_KEY=XXXXXXXXX
 ```
 
-Then, save your changes and update Dockerfile, so that it can use the new environment variable.
+Then, save your changes and update Dockerfile so that it can use the new environment variable.
 
 ```bash
 <esc> # press esc to quit insert mode of vim
@@ -78,7 +78,7 @@ cd lisk_repo # navigate inside the root folder of lisk core
 vim newrelic.js
 ```
 
-Inside the file search for the option `license_key` and add your license key as string value.
+Inside of the file, search for the option `license_key` and add your license key as string value.
 If you use "vim", press `i` to get into the insert mode.
 
 ```
@@ -100,7 +100,7 @@ After adding the license key, save changes and quit the editor:
 
 ### (Re)start Lisk Core node
 
-Then start the node normally,
+Then start the node normally.
 
 ```bash
 bash lisk.sh start # start lisk core binary
@@ -118,7 +118,7 @@ docker restart container_id # restart lisk core docker
 
 ## Keep your node busy
 
-To monitor activities in the system, you need to perform some. So keep your node busy by performing actions like taking a snapshot, synching your node, or running various API request against it.
+To monitor activities in the system, you need to perform some. So keep your node busy by performing actions like taking a snapshot, syncing your node, or running various API request against it.
 Even if you don't perform them, New Relic can monitor internal activities of the system e.g. different queue jobs.
 
 There are several ways to create workload on your node:
@@ -173,7 +173,7 @@ now && ab -n 200000 -c 1 -k "http://127.0.0.1:7000/api/accounts?publicKey=4e8896
 
 `-n`: The number of requests that are executed
 
-`-c`: Number of requests to perform in parallel.
+`-c`: The number of requests to perform in parallel.
 
 `-k`: Enable the HTTP KeepAlive feature, i.e., perform multiple requests within one HTTP session.
 
@@ -218,7 +218,7 @@ siege -c 10 -t 5m http://127.0.0.1:4000/api/transactions
 The script will automatically keep on sending the HTTP requests against your node for 5 minutes (`-t 5m`). During that time please keep in mind: 
 
 1. You may want to disable the cache on the node to get real performance analysis. To do this, set `cacheEnabled` in configuration to `false`.
-2. You might not see the viable results if your development Blockchain dataset is empty. This could be changed by running your tests against the Testnet data.
+2. You might not see the viable results if your development blockchain dataset is empty. This could be changed by running your tests against the Testnet data.
 3. It may take a couple of minutes to show the analyzed results in the New Relic interface so be patient. 
   
 To see the New Relic instrumentation results, please log in to https://rpm.newrelic.com, and select `APM` from the top menu. 
@@ -231,7 +231,7 @@ Please select the specific application by clicking its name. You will see the fo
 
 ![Dashboard UI](./assets/dashboard.png) 
 
-To know fine-grained details of this dashboard, please read https://learn.newrelic.com/courses/intro_apm. For now, since during the experiment we only executed the HTTP requests against our node (`GET /api/transactions`) there is only one section having interesting results. Please select "Transactions" from the left menu in above screen. See detailed instructions in the below image. 
+To know fine-grained details of this dashboard, please read https://learn.newrelic.com/courses/intro_apm. For now, since during the experiment we only executed the HTTP requests against our node (`GET /api/transactions`), there is only one section having interesting results. Please select "Transactions" from the left menu in above screen. See detailed instructions in the below image. 
 
 Info | Note 
 --- | --- 
@@ -272,7 +272,7 @@ Let's debug further and verify what made this request "slow", by clicking on any
 
 As shown on the above trace summary, the most of the transaction's time was spent in two functions `modules.transactions.shared.getTransactions` and `Middleware: bound logClientConnections`. You can go to trace detail to see more information and call stack. You can also click on "Database queries" to see which queries were executed during this request.
 
-It's also possible to find the database query which is taking most of the time. To do it, please click on the left side menu for "Database" and then sort by "Most time consuming" and then select the top of the list.   
+It's also possible to find the database query which is taking most of the time. To do this, please click on the left side menu for "Database" and then sort by "Most time consuming" and then select the top of the list.   
 
 ![Database Queries](./assets/database_query.png)
 

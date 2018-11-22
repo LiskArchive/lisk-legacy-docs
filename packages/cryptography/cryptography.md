@@ -4,6 +4,7 @@ The Lisk Elements cryptography module provides all the cryptographic functionali
 
 - [Installation](#installation)
 - [Upgrade](#upgrade)
+- [Constants](#constants)
 - [Methods for converting between formats](#methods-for-converting-between-formats)
   - [bufferToHex](#buffertohex)
   - [getAddressFromPublicKey](#getAddressFromPublicKey)
@@ -43,6 +44,18 @@ $ npm install --save @liskhq/lisk-cryptography
 
 ```bash
 npm update --save @liskhq/lisk-cryptography
+```
+
+## Constants
+
+Cryptography-specific constants are available via the `cryptography` key:
+
+### Usage
+
+```js
+import transactions from '@liskhq/lisk-transactions';
+
+cryptography.constants.SIGNED_MESSAGE_PREFIX; // Prefix for signed messages
 ```
 
 ## Methods for converting between formats

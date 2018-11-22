@@ -1,6 +1,7 @@
 # Lisk Core Documentation
 
 ## Table of contents
+
 - [Setup](setup/setup.md)
   - [Binary](setup/binary/binary.md)
   - [Docker](setup/docker/docker.md)
@@ -16,7 +17,7 @@
     - [Docker](user-guide/administration/docker/admin-docker.md)
     - [Source](user-guide/administration/source/admin-source.md)
   - [Configuration](user-guide/configuration/configuration.md)
-  - [API](user-guide/api/api.md)
+  - [API](user-guide/api/api.json)
 [Troubleshooting](troubleshooting/troubleshooting.md)
 
 Lisk Core is the program that implements the [Lisk Protocol](/lisk-protocol/introduction.md). Every machine must set it up in order to run a node that allows for participation in the network. Setting up Lisk Core enables a user to:

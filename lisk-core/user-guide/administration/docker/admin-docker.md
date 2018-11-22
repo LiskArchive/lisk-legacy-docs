@@ -48,7 +48,7 @@ docker restart container_id
 Lisk Core normally gets configured by providing a suited [configuration file](../../configuration/configuration.md).
 But this isn't convenient in a Docker installation.
 Instead, one can use environment variables to change values in the configuration.
-To do so, open the `.env` file, that you created during [docker installation](../../../setup/install/docker/installation-docker.md), and adjust the values to your needs.
+To do so, open the `.env` file, that you created during [docker installation](../../../setup/docker/docker.md#installation), and adjust the values to your needs.
 All names of the environment variables start with `ENV_` prefix.
 
 #### Advanced configuration

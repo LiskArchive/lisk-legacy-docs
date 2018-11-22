@@ -1,12 +1,24 @@
 # Lisk Core Documentation
 
 ## Table of contents
-[Setup](setup/setup.md) | [Upgrade](upgrade/upgrade.md) | [User Guide](user-guide/user-guide.md) | 
---- | --- | ---
-[Pre-Installation](setup/pre-install/preinstallation.md) | [Binary](upgrade/binary/upgrade-binary.md) | [Administration](user-guide/administration/admin.md)
-[Installation](setup/install/installation.md) | [Docker](upgrade/docker/upgrade-docker.md) | [Configuration](user-guide/configuration/configuration.md)
-[Troubleshooting](troubleshooting/troubleshooting.md) | [Source](upgrade/source/upgrade-source.md) |  [API](user-guide/api/api.md)
-| | [Migration](upgrade/migration/migration.md)| |
+
+- [Setup](setup/setup.md)
+  - [Binary](setup/binary/binary.md)
+  - [Docker](setup/docker/docker.md)
+  - [Source](setup/source/source.md)
+- [Upgrade](upgrade/upgrade.md)
+  - [Binary](upgrade/binary/upgrade-binary.md)
+  - [Docker](upgrade/docker/upgrade-docker.md)
+  - [Source](upgrade/source/upgrade-source.md)  
+  - [Migration](upgrade/migration/migration.md)
+- [User Guide](user-guide/user-guide.md)
+  - [Administration](user-guide/administration/admin.md)
+    - [Binary](user-guide/administration/binary/admin-binary.md)
+    - [Docker](user-guide/administration/docker/admin-docker.md)
+    - [Source](user-guide/administration/source/admin-source.md)
+  - [Configuration](user-guide/configuration/configuration.md)
+  - [API](user-guide/api/api.json)
+[Troubleshooting](troubleshooting/troubleshooting.md)
 
 Lisk Core is the program that implements the [Lisk Protocol](/lisk-protocol/introduction.md). Every machine must set it up in order to run a node that allows for participation in the network. Setting up Lisk Core enables a user to:
 - Contribute to the decentralisation of the Lisk network
@@ -26,6 +38,18 @@ Info | Note
 ![info note](info-icon.png "Info Note") | A Lisk Node connected to other Lisk Nodes is referred to as a Lisk **Peer**.
 
 Both meanings refer to a machine which, after installing and executing Lisk Core, become a server. The server participates in the network and provides blockchain data to its clients.
+
+## Versions
+
+Lisk Core is releasing new versions regularly. 
+As documentation on lisk.io will keep up to date with version updates, the table below provides an overview about documentation for older versions of Lisk Core.
+
+Version | Release date <br> (yy/mm/dd)| Documentation reference
+---     | ---         | ---
+1.3.0   | 18/11/19    | *Current version, live on docs.lisk.io*
+1.2.0   | 18/11/08    | [Lisk Core 1.2 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.2.0/introduction.md)
+1.1.0   | 18/10/22    | [Lisk Core 1.1 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.1.0/introduction.md)
+1.0.0   | 18/08/16    | [Lisk Core 1.0 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.0.0/introduction.md)
 
 ## Networks
 

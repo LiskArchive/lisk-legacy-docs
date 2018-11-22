@@ -58,7 +58,7 @@ To do this, expose `NACL_FAST=enable` as environment variable:
 export NACL_FAST=enable
 ```
 
-To switch back to [TweetNaCl.js](https://github.com/dchest/tweetnacl-js) library, which is slower but can also be executed on client-side, set it to `disable`:
+To switch back to the default library [TweetNaCl.js](https://github.com/dchest/tweetnacl-js), which is slower but can also be executed on client-side, set it to `disable`:
 
 ```bash
 export NACL_FAST=disable

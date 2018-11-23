@@ -29,7 +29,7 @@ Info | Note
 ### Status
 
 ```bash
-docker-compose ps # see status of Lisk Core
+docker-compose ps
 ```
 
 ### Start
@@ -82,10 +82,10 @@ Info | Note
 --- | --- 
 ![info note](../../../info-icon.png "Info Note") | Adding an array component as environment variable in your docker compose is not straightforward. For example, if you aim to enable forging on your node for several delegates, you need to add the next variable which will be inserted in the array `forging.delegates`: _LISK_FORGING_DELEGATES=publicKey1&#x7c;encryptedPassphrase1,publicKey2&#x7c;encryptedPassphrase2_
 
-After editing the variables, initialize Lisk Core by chaining `docker-compose.yml` and your customized `docker-compose.override.yml` file:
+After editing the variables, reinitialize Lisk Core. It will read `docker-compose.yml` and your customized `docker-compose.override.yml` file:
 
 ```bash
-docker-compose -f docker-compose.yml -f docker-compose.override.yml up -d
+docker-compose up -d
 ```
 
 ### Examples
@@ -93,6 +93,10 @@ docker-compose -f docker-compose.yml -f docker-compose.override.yml up -d
 #### Use redis for caching
 
 Caching using redis can be enabled with the `docker-compose.redis.yml` file, e.g.:
+
+Info | Note 
+--- | --- 
+![info note](../../../info-icon.png "Info Note") | When specifying additional `docker-compose` files liek `docker-compose.redis.yml`, they need to be chained in the correct order by using the `-f` flag like so:
 
 `docker-compose -f docker-compose.yml -f docker-compose.override.yml -f docker-compose.redis.yml up -d`
 
@@ -154,7 +158,7 @@ Info | Note
 ### Automated
 
 ```bash
-cd lisk/docker # navigate into docker directory
+cd lisk/docker  # navigate into docker directory
 make coldstart  # will download and restore a blockchain snapshot for you
 ```
 
@@ -170,13 +174,13 @@ For this example we expect the environment variables equal the following values:
 - `ENV_LISK_DB_DATABASE=lisk`
 
 ```bash
-cd lisk/docker # navigate into docker directory
-curl --output main_blockchain.db.gz https://downloads.lisk.io/lisk/main/blockchain.db.gz # download and save the blockchain snapshot
-docker-compose up -d # initialize Lisk and postgreSQL
-docker-compose stop lisk # stop Lisk Core
-docker-compose start db # start postgreSQL
+cd lisk/docker            # navigate into docker directory
+curl --output main_blockchain.db.gz https://downloads.lisk.io/lisk/main/blockchain.db.gz  # download and save the blockchain snapshot
+docker-compose up -d      # initialize Lisk and postgreSQL
+docker-compose stop lisk  # stop Lisk Core
+docker-compose start db   # start postgreSQL
 docker-compose -f docker-compose.yml -f docker-compose.make.yml run --rm db-task dropdb --if-exists lisk # drop old database
-docker-compose -f docker-compose.yml -f docker-compose.make.yml run --rm db-task createdb lisk # create fresh database
+docker-compose -f docker-compose.yml -f docker-compose.make.yml run --rm db-task createdb lisk           # create fresh database
 gzip --decompress --to-stdout main_blockchain.db.gz | docker-compose -f docker-compose.yml -f docker-compose.make.yml run --rm db-task psql >/dev/null # import snapshot into database
 docker-compose start lisk # start Lisk container
 ```

@@ -60,17 +60,16 @@ These are the default ports for connecting with the network, these can be altere
 
 ### Create a new user
 
-In order to install the required prerequisites, it is necessary to have a user with sudo rights on the server.
-In order to run and manage a Lisk Core node in the future, please create a separate 'Lisk' user like so:
+In order to run and manage a Lisk Core node in the future, please create a separate 'lisk' user like so:
 
 #### Ubuntu
 
-Info | Note 
---- | --- 
-![info note](../../info-icon.png "Info Note") | The `lisk` user itself **does not need** any `sudo` rights to run Lisk Core.
+The `lisk` user itself **does not need** any `sudo` rights to run Lisk Core. It is sufficient to create a group `docker` and add the newly created user to that group, in order to enable the user to use Docker (see: https://docs.docker.com/install/linux/linux-postinstall/).
     
 ```bash
-sudo adduser lisk
+sudo adduser lisk              # create a new user
+sudo groupadd docker           # create docker group
+sudo usermod -aG docker lisk   # add user to docker group
 ```
 
 ## Installation
@@ -90,7 +89,7 @@ It contains a directory `docker` with the following files:
 - `.env.mainnet`
 - `.env.testnet`
 - `docker-compose.make.yml`: used by `make coldstart`.
-- `docker-compose.override.yml`: use this file to overwrite LISK_ variables (empty by default).
+- `docker-compose.override.yml`: use this file to overwrite `LISK_` variables (empty by default).
 - `docker-compose.redis.yml`: enable cache (optional).
 - `docker-compose.yml`
 - `Makefile`
@@ -131,7 +130,7 @@ Makefile provides a convenient way to [sync your node from snapshot](../../user-
 make coldstart  # will download and restore a blockchain snapshot for you
 ```
 
-#### Option 1: docker-compose
+#### Option 2: docker-compose
 
 ```bash
 docker-compose up -d # initialize Lisk Core

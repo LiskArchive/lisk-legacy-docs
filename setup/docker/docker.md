@@ -122,8 +122,7 @@ Where `{network}` stands for the Lisk network you want to connect to.
 We recommend to use the Makefile:
 
 ```bash
-sudo apt-get install build-essential # install make
-make                                 # will run `docker-compose up` for you
+make  # will run `docker-compose up` for you
 ```
 
 Makefile provides a convenient way to [sync your node from snapshot](../../user-guide/administration/docker/admin-docker.md#sync-from-snapshot):

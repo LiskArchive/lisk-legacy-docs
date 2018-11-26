@@ -53,10 +53,7 @@ An instance of Lisk Core is generally detailed in two different ways:
 Info | Note 
 --- | --- 
 ![info note](info-icon.png "Info Note") | A Lisk Core instance connected to a network is referred to as a Lisk **Node**. 
-
-Info | Note 
---- | --- 
-![info note](info-icon.png "Info Note") | A Lisk Node connected to other Lisk Nodes is referred to as a Lisk **Peer**.
+| | A Lisk Node connected to other Lisk Nodes is referred to as a Lisk **Peer**.
 
 Both meanings refer to a machine which, after installing and executing Lisk Core, become a server. The server participates in the network and provides blockchain data to its clients.
 

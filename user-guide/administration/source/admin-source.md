@@ -1,8 +1,19 @@
 # Lisk Core Source Administration
 
-This section details how to manage a Source installation of Lisk Core. Source installations for use in production are recommended to use a process manager. PM2 is included in the installation document and will be used in this reference.
+This section details how to manage a Source installation of Lisk Core.
+
+Info | Note 
+--- | --- 
+![info note](../../../info-icon.png "Info Note") | Source installations are recommended to use a process manager. We use PM2 for this purpose. If you have not set it up yet, please refer to the [Setup from Source](../../../setup/source/source.md) page.
 
 - [Basic Commands](#basic-commands)
+  * [Status of Lisk Core](#status)
+  * [Start Lisk Core](#start)
+  * [Stop Lisk Core](#stop)
+  * [Restart Lisk Core](#restart)
+  * [Delete Lisk Core](#delete)
+  * [Add Lisk Core](#add)
+  * [Logs](#logs)
 - [Command Line Options](#command-line-options)
 - [Utility scripts](#utility-scripts)
   - [Generate Config](#generate-config)
@@ -12,47 +23,46 @@ This section details how to manage a Source installation of Lisk Core. Source in
 
 ## Basic Commands
 
-Command | Description
---- | ---
-`pm2 start --name lisk app.js` | Starts Lisk using app.js
-`pm2 stop lisk` | Stop Lisk using app.js
-`pm2 restart lisk` | Restarts Lisk using app.js
-`pm2 delete lisk` | Stops Lisk processes and cleans up pm2 entries for Lisk
-`pm2 logs` | Displays the logs of the Lisk process
-
-Start Source Install with PM2
-
-```shell
-pm2 start --name lisk app.js
-```
-
-After the process is started, its runtime status and log location can be retrieved by issuing the following command:
-
-```shell
+### Status
+Check the status of the Lisk Core Node.
+```bash
 pm2 show lisk
 ```
 
-To stop Lisk after it has been started with pm2, issue the following command:
+### Start
+Start Lisk Core.
+```bash
+pm2 start lisk
+```
 
-```shell
+### Stop
+Stop Lisk Core.
+```bash
 pm2 stop lisk
 ```
 
-Restart Source Install with PM2 (useful for reloading changes to `config.json`)
-
-```shell
+### Restart
+Restart Lisk Core.
+```bash
 pm2 restart lisk
 ```
 
-Delete Source Installation with PM2 (useful if removing Lisk Core or rebuilding the source installation entirely)
-
-```shell
+### Delete
+Will remove Lisk Core process from pm2 list.
+```bash
 pm2 delete lisk
 ```
 
-View Realtime Logs (useful for troubleshooting issues)
+### Add
+In case you haven't done this during the Installation process, add your Lisk Core process to pm2 under the name `lisk`.
+```bash
+pm2 start --name lisk app.js -- --network [network]
+```
+Where `[network]` might be either `testnet` or `mainnet`.
 
-```shell
+### Logs
+Display Lisk Core logs in streaming.
+```bash
 pm2 logs
 ```
 
@@ -60,11 +70,11 @@ pm2 logs
 
 There are plenty of options available that you can use to override configuration on runtime while starting Lisk Core.
 
-```
+```bash
 node app.js -p [port] -a [address] -c [config-path] -n [network]
 ```
 or with pm2, e.g.:
-```
+```bash
 pm2 start lisk -p [port] -a [address] -c [config-path] -n [network]
 ```
 You can pass any of `devnet` (default), `alphanet`, `betanet`, `testnet` or `mainnet` for the network option.
@@ -174,7 +184,7 @@ In some scenarios it is recommended to restore the blockchain from a snapshot. T
 
 ### Mainnet
 
-```shell
+```bash
 pm2 stop lisk
 dropdb lisk_main
 wget https://downloads.lisk.io/lisk/main/blockchain.db.gz
@@ -185,7 +195,7 @@ pm2 start lisk
 
 ### Testnet
 
-```shell
+```bash
 pm2 stop lisk
 dropdb lisk_test
 wget https://downloads.lisk.io/lisk/test/blockchain.db.gz

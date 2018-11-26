@@ -7,7 +7,7 @@
   4. [Git](#git)
   5. [Node.js](#node-js)
      * [Node version manager](#node-version-manager)
-  7. [PM2](#recommended-pm2)
+  7. [PM2](#pm2)
   6. [Postgres](#postgresql-version-10)
   7. [Redis](#installing-redis)
 - [Installation](#installation)
@@ -133,7 +133,7 @@ nvm install 8.12.0
 
 For the following steps,  logout from the 'lisk' user again with `CTRL+D`, and continue with your user with sudo rights.
 
-### PM2 (<https://github.com/Unitech/pm2>) 
+### PM2
 
 [PM2](https://github.com/Unitech/pm2) manages the node process for Lisk.
 
@@ -157,7 +157,6 @@ sudo apt install wget ca-certificates
 wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
 sudo apt update
 sudo apt install postgresql-10
-
 ```
 
 After installation, you should see the postgres database cluster, by running

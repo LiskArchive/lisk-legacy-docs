@@ -76,11 +76,7 @@ For advanced configuration, open `docker/docker-compose.override.yml`.
 Configuration variables always start with `LISK_` and are mapped to their path in `config.json`.
 These can be changed directly in the file, if needed.
 For example, the value of `redis.db.host` can be changed by setting the `LISK_REDIS_DB_HOST` environment variable.
-If you are unsure what variable name to use, refer to the [list of command line options](../source/admin-source.md#command-line-options).
-
-Info | Note 
---- | --- 
-![info note](../../../info-icon.png "Info Note") | Adding an array component as environment variable in your docker compose is not straightforward. For example, if you aim to enable forging on your node for several delegates, you need to add the next variable which will be inserted in the array `forging.delegates`: _LISK_FORGING_DELEGATES=publicKey1&#x7c;encryptedPassphrase1,publicKey2&#x7c;encryptedPassphrase2_
+If you are unsure what variable name to use, refer to the [list of command line options](../source/admin-source.md#command-line-options). 
 
 After editing the variables, reinitialize Lisk Core. It will read `docker-compose.yml` and your customized `docker-compose.override.yml` file:
 
@@ -96,11 +92,13 @@ Caching using redis can be enabled with the `docker-compose.redis.yml` file, e.g
 
 Info | Note 
 --- | --- 
-![info note](../../../info-icon.png "Info Note") | When specifying additional `docker-compose` files liek `docker-compose.redis.yml`, they need to be chained in the correct order by using the `-f` flag like so:
+![info note](../../../info-icon.png "Info Note") | When specifying additional `docker-compose` files like `docker-compose.redis.yml`, they need to be chained in the correct order by using the `-f` flag like below:
 
-`docker-compose -f docker-compose.yml -f docker-compose.override.yml -f docker-compose.redis.yml up -d`
+```bash
+docker-compose -f docker-compose.yml -f docker-compose.override.yml -f docker-compose.redis.yml up -d
+```
 
-Note that this could be done in the `docker-compose.override.yml` as well.
+Note that the variables inside `docker-compose.redis.yml` can be defined in `docker-compose.override.yml` as well.
 
 #### Do not expose ports:
 
@@ -164,7 +162,7 @@ make coldstart  # will download and restore a blockchain snapshot for you
 
 ### Manually
 
-The command blocks in the example below will perform this process. The URL can be substituted for another `blockchain.db.gz` snapshot file if desired.
+The command block in the example below will perform the process. The URL can be substituted for another `blockchain.db.gz` snapshot file if desired.
 
 #### Example
 

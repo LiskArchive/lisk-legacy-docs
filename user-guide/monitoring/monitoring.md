@@ -42,14 +42,13 @@ export NEW_RELIC_LICENSE_KEY=XXXXXXXXX
 
 ##### Docker
 
-For Docker distributions of Lisk Core, do the following to add the environment variable:
+For Docker distributions of Lisk Core navigate into the `docker` folder inside your Lisk Core installation:
 
 ```bash
-cd lisk_repo
-vim docker/docker-compose.override.yml
+cd lisk_repo/docker # navigate into docker directory
 ```
 
-Add your license key to `docker-compose.override.yml` like so:
+Inside, edit `docker-compose.override.yml` and add your license key like so:
 
 ```
 version: "3"
@@ -60,14 +59,11 @@ services:
       - NEW_RELIC_LICENSE_KEY=XXXXXXXXX
 ```
 
-Then, save your changes and update Dockerfile so that it can use the new environment variable.
+Then, save your changes to the file and reinitialize Docker, so it can use the new environment variable.
 
 ```bash
-<esc> # press esc to quit insert mode of vim
-:wq # save changes and quit vim afterwards
 docker-compose up -d # (re)start docker containers
 ```
-
 
 #### Option 2: In newrelic.js
 
@@ -75,11 +71,9 @@ The second way of adding the license key is to edit `newrelic.js` file which can
 
 ```bash
 cd lisk_repo # navigate inside the root folder of lisk core
-vim newrelic.js
 ```
 
-Inside of the file, search for the option `license_key` and add your license key as string value.
-If you use "vim", press `i` to get into the insert mode.
+Inside, open the file `newrelic.js`  and search for the option `license_key` and add your license key as string value.
 
 ```
 /**
@@ -91,12 +85,7 @@ If you use "vim", press `i` to get into the insert mode.
 license_key: 'XXXXXXXXX',
 ```
 
-After adding the license key, save changes and quit the editor:
-
-```bash
-<esc> # press esc to quit insert mode of vim
-:wq # save changes and quit vim afterwards
-```
+After adding the license key, save your changes and exit the file.
 
 ### (Re)start Lisk Core node
 

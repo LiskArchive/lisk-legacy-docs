@@ -132,7 +132,7 @@ Next, go to the logrotate config directory and create a new logrotate file for L
 
 ```bash
 cd /etc/logrotate.d
-vim lisk
+touch lisk
 ```
 
 Inside of this file, define the parameters for the log rotation.

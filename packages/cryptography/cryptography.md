@@ -78,7 +78,7 @@ Cryptography-specific constants are available via the `cryptography` key:
 ### Usage
 
 ```js
-import transactions from '@liskhq/lisk-transactions';
+import cryptography from '@liskhq/lisk-cryptography';
 
 cryptography.constants.SIGNED_MESSAGE_PREFIX; // Prefix for signed messages
 ```

@@ -27,7 +27,7 @@ $ npm install --save @liskhq/lisk-client
 ## Upgrade
 
 ```bash
-npm update --save @liskhq/lisk-api-client
+npm update --save @liskhq/lisk-client
 ```
 
 ## Usage

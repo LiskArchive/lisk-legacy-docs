@@ -32,7 +32,7 @@ As documentation on lisk.io will keep up to date with version updates, the table
 
 Version | Release date <br> (yy/mm/dd)| Documentation reference
 ---     | ---         | ---
-[v1.3.0](https://github.com/LiskHQ/lisk/releases/tag/v1.3.0) | 18/11/19 | *Current version, live on docs.lisk.io*
+[v1.3.0](https://github.com/LiskHQ/lisk/releases/tag/v1.3.0) | 18/11/19 | *Current version, live on lisk.io/documentation*
 [v1.2.1](https://github.com/LiskHQ/lisk/releases/tag/v1.2.1) | 18/11/10 | [Lisk Core 1.2 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.2.0/introduction.md)
 [v1.1.1](https://github.com/LiskHQ/lisk/releases/tag/v1.1.1) | 18/10/23 | [Lisk Core 1.1 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.1.0/introduction.md)
 [v1.0.3](https://github.com/LiskHQ/lisk/releases/tag/v1.0.3) | 18/08/17 | [Lisk Core 1.0 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.0.0/introduction.md)
@@ -40,7 +40,6 @@ Version | Release date <br> (yy/mm/dd)| Documentation reference
 ## What is Lisk Core?
 
 [![What is Lisk Core?](https://img.youtube.com/vi/RfF9EPwQDOY/0.jpg)](https://www.youtube.com/watch?v=RfF9EPwQDOY)
-
 
 Lisk Core is the program that implements the [Lisk Protocol](/lisk-protocol/introduction.md). Every machine must set it up in order to run a node that allows for participation in the network. Setting up Lisk Core enables a user to:
 - Contribute to the decentralisation of the Lisk network
@@ -61,13 +60,7 @@ Info | Note
 
 Both meanings refer to a machine which, after installing and executing Lisk Core, become a server. The server participates in the network and provides blockchain data to its clients.
 
-<<<<<<< HEAD
 ### Networks
-=======
-
-
-## Networks
->>>>>>> d76a28ac7bf2f113516a5968f0a3f79b49628a4a
 
 Lisk Core can be connected to different networks. There are two key public networks, entirely independent of each other, that are always accessible: **Mainnet** and **Testnet**. 
 

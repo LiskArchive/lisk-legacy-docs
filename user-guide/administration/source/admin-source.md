@@ -26,7 +26,7 @@ Info | Note
 ### Status
 Check the status of the Lisk Core Node.
 ```bash
-pm2 show lisk
+pm2 status lisk
 ```
 
 ### Start
@@ -48,7 +48,7 @@ pm2 restart lisk
 ```
 
 ### Delete
-Will remove Lisk Core process from pm2 list.
+Remove Lisk Core process from pm2 list.
 ```bash
 pm2 delete lisk
 ```

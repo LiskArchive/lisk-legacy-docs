@@ -85,7 +85,7 @@ Inside, open the file `newrelic.js`  and search for the option `license_key` and
 license_key: 'XXXXXXXXX',
 ```
 
-After adding the license key, save your changes and exit the file.
+After adding the license key, save your changes and reload your node.
 
 ### (Re)start Lisk Core node
 

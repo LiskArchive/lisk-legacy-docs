@@ -128,7 +128,7 @@ First make sure Logrotate is installed on your system:
 logrotate --version
 ```
 
-Next, go to the logrotate config directory and create a new logrotate file for Lisk Core:
+Next, create a new file called `lisk` in the logrotate directory `/etc/logrotate.d`:
 
 ```bash
 cd /etc/logrotate.d

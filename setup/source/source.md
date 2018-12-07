@@ -5,7 +5,7 @@
   2. [Create a new user](#create-a-new-user)
   3. [Install Tool chain components](#tool-chain-components)
   4. [Git](#git)
-  5. [Node.js](#node-js)
+  5. [Node.js](#nodejs)
      * [Node version manager](#node-version-manager)
   7. [PM2](#pm2)
   6. [Postgres](#postgresql-version-10)

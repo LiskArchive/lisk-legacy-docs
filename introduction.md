@@ -2,11 +2,12 @@
 
 ## Table of contents
 
-- [Lisk Core Version Reference](#versions)
-- [What is Lisk Core?](#what-is-lisk-core)
-  - [Networks](#networks)
-  - [Components](#components)
-- [Contribute to Codebase](#contribute-to-the-codebase)
+- [Introduction](#lisk-core-documentation)
+  - [Lisk Core Version Reference](#versions)
+  - [What is Lisk Core?](#what-is-lisk-core)
+    - [Networks](#networks)
+    - [Components](#components)
+  - [Contribute to Codebase](#contribute-to-the-codebase)
 - [Setup](setup/setup.md)
   - [Binary](setup/binary/binary.md)
   - [Docker](setup/docker/docker.md)

@@ -1416,12 +1416,20 @@ ARGUMENTS
 OPTIONS
   -j, --[no-]json  Prints output in JSON format. You can change the default behaviour in your config.json file.
 
+  -s, --state=unsigned|unprocessed  Get transactions based on a given state. Possible values for the state are
+                                    'unsigned' and 'unprocessed'.
+                                    Examples:
+                                    - --state=unsigned
+                                    - --state=unprocessed
+
   --[no-]pretty    Prints JSON in pretty format rather than condensed. Has no effect if the output is set to table. You
                    can change the default behaviour in your config.json file.
 
 EXAMPLES
   transaction:get 10041151099734832021
   transaction:get 10041151099734832021,1260076503909567890
+  transaction:get 10041151099734832021,1260076503909567890 --state=unprocessed
+
 ```
 
 **Example JSON Output**

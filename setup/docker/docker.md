@@ -5,11 +5,11 @@
   2. [Windows](#windows)
   3. [Linux](#linux)
   4. [Open necessary ports](#open-necessary-ports)
+  5. [Create a new user](#create-a-new-user)
 - [Installation](#installation)
   1. [Get configuration and Makefile](#get-configuration-and-makefile)
   2. [Set environment variables](#set-environment-variables)
-  3. [Coldstart application](#coldstart-application)
-  
+  3. [Coldstart application](#coldstart-application)  
 
 ## Pre-install
 
@@ -58,42 +58,84 @@ In order to connect to the desired network with Lisk Core , please ensure that t
 
 These are the default ports for connecting with the network, these can be altered later in `.env`.
 
+### Create a new user
+
+In order to run and manage a Lisk Core node in the future, please create a separate 'lisk' user like so:
+
+#### Ubuntu
+
+The `lisk` user itself **does not need** any `sudo` rights to run Lisk Core. It is sufficient to create a group `docker` and add the newly created user to that group, in order to enable the user to use Docker (see: https://docs.docker.com/install/linux/linux-postinstall/).
+    
+```bash
+sudo adduser lisk              # create a new user
+sudo groupadd docker           # create docker group
+sudo usermod -aG docker lisk   # add user to docker group
+```
+
 ## Installation
 
 ### Get configuration and Makefile
 
-Clone the [Lisk Repository](https://github.com/LiskHQ/lisk). It contains a directory `docker` with the following files:
-- `Makefile`
-- `docker-compose.yml`
-- `.env.{network}`
-
-The `.env`-files are examples, where `{network}` stands for the lisk network you want to connect.
+Clone the [Lisk Repository](https://github.com/LiskHQ/lisk). 
 
 ```bash
-su - lisk # switch to lisk user
+su - lisk                                    # switch to lisk user
 git clone https://github.com/LiskHQ/lisk.git # clone the repository
-cd lisk/docker # navigate into docker directory
+cd lisk/docker                               # navigate into docker directory
 ```
+
+It contains a directory `docker` with the following files:
+- `.env.development`
+- `.env.mainnet`
+- `.env.testnet`
+- `docker-compose.make.yml`: used by `make coldstart`.
+- `docker-compose.override.yml`: use this file to overwrite `LISK_` variables (empty by default).
+- `docker-compose.redis.yml`: enable cache (optional).
+- `docker-compose.yml`
+- `Makefile`
+
+The `.env`-files are templates with network specific environment variables.
 
 ### Set environment variables
 
-In order to connect to the lisk network, the environment variables need to be set accordingly.
-Copy the environment variables of the network you want to connect to:
+In order to connect to the Lisk network, the environment variables need to be set accordingly.
+
+Before setting the variables, you may want to edit them in the respective `.env.{network}` file.
+
+It is recommended to change the password for the database, which is stored in `ENV_LISK_DB_PASSWORD`.
+
+To install a specific version of Lisk Core, set the `ENV_LISK_VERSION` to the respective version.
+
+After adjusting them, copy the environment variables to a file called `.env`:
 
 ```bash
 cp .env.{network} .env
 ```
 
+Where `{network}` stands for the Lisk network you want to connect to.
+
 ### Coldstart application
 
+#### Option 1: Makefile
+
+We recommend to use the Makefile:
+
 ```bash
-make coldstart
+make  # will run `docker-compose up` for you
 ```
 
-You can then use `docker-compose` to see the status of your Lisk installation:
+Makefile provides a convenient way to [sync your node from snapshot](../../user-guide/administration/docker/admin-docker.md#sync-from-snapshot):
 
 ```bash
-docker-compose ps
+make coldstart  # will download and restore a blockchain snapshot for you
+```
+
+#### Option 2: docker-compose
+
+```bash
+docker-compose up -d # initialize Lisk Core
+docker-compose ps    # see status of Lisk Core
+docker-compose logs  # see logs
 ```
 
 As next step, check out [Docker Administration](../../user-guide/administration/docker/admin-docker.md) to learn how to manage your Node.

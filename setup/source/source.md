@@ -4,12 +4,12 @@
   1. [Open necessary ports](#open-necessary-ports)
   2. [Create a new user](#create-a-new-user)
   3. [Install Tool chain components](#tool-chain-components)
-  4. [Git Installation](#git)
-  5. [Node.js Installation](#node-js)
-      1. [Recommended: Install NVM ](#5a-recommended-install-a-version-manager-such-as-nvm-httpsgithubcomcreationixnvm)
-      2. [Recommended: Install PM2 ](#5b-recommended-pm2-httpsgithubcomunitechpm2)
-  6. [Postgres Installation](#postgresql-version-10)
-  7. [Redis Installation](#installing-redis)
+  4. [Git](#git)
+  5. [Node.js](#nodejs)
+     * [Node version manager](#node-version-manager)
+  7. [PM2](#pm2)
+  6. [Postgres](#postgresql-version-10)
+  7. [Redis](#installing-redis)
 - [Installation](#installation)
   1. [Login as the Lisk user](#login-as-the-lisk-user)
   2. [Installing Lisk from Source](#installing-lisk-from-source)
@@ -116,7 +116,10 @@ sudo apt-get install -y nodejs
 brew install node@8.14.0
 ```
 
-#### _(Recommended)_ Install a version manager such as nvm (<https://github.com/creationix/nvm>)
+### Node version manager
+
+We recommend to use a Node version manager such as [NVM](https://github.com/creationix/nvm).
+NVM is a bash script that enables you to manage multiple active Node.js versions.
 
 1. Login as lisk user, that has been created in the first step:
 ```bash
@@ -130,9 +133,13 @@ nvm install 8.14.0
 
 For the following steps,  logout from the 'lisk' user again with `CTRL+D`, and continue with your user with sudo rights.
 
-##### _(Recommended)_ PM2 (<https://github.com/Unitech/pm2>) 
+### PM2
 
-PM2 manages the node process for Lisk
+[PM2](https://github.com/Unitech/pm2) manages the node process for Lisk.
+
+Info | Note
+---- | ----
+![info note](../../info-icon.png "Info Note") | Though it is not required to install a process manager such as PM2 to run Lisk Core, we recommend it as it simplifies administration of Lisk Core from Source.
 
 ```bash
 sudo npm install -g pm2
@@ -150,7 +157,6 @@ sudo apt install wget ca-certificates
 wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
 sudo apt update
 sudo apt install postgresql-10
-
 ```
 
 After installation, you should see the postgres database cluster, by running
@@ -330,7 +336,7 @@ Next, go to the logrotate config directory and create a new logrotate file for L
 
 ```bash
 cd /etc/logrotate.d
-vim lisk
+touch lisk
 ```
 
 Inside this file, define the parameters for the log rotation.

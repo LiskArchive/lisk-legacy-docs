@@ -24,4 +24,4 @@ This section details how to upgrade Lisk Core from source.
 
 Info | Note 
 --- | --- 
-![info note](../../info-icon.png "Info Note") | You have to enable forging manually after upgrade. Please follow this guide to [enable forging on your delegate node](../../user-guide/configuration/configuration.md#forging) for further details. 
+![info note](../../info-icon.png "Info Note") | **For delegates:** You need to [enable forging](../../user-guide/configuration/configuration.md#forging) again after upgrade.

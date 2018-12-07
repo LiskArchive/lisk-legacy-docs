@@ -10,26 +10,26 @@ Please follow the instructions specific to the network (Mainnet or Testnet) that
 
 Stop the node:
 
-```shell
+```bash
 pm2 stop lisk
 ```
 
 Pull the latest tagged release using Git from your Lisk Directory and install node modules.
 #### Mainnet
-```shell
+```bash
 git pull master
 npm install
 ```
 
 #### Testnet
-```shell
+```bash
 git pull testnet-master
 npm install
 ```
 
 Start the node:
 
-```shell
+```bash
 pm2 start lisk
 ```
 

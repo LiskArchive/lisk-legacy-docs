@@ -113,7 +113,7 @@ sudo apt-get install -y nodejs
 #### MacOS
 
 ```bash
-brew install node@8.12.0
+brew install node@8.14.0
 ```
 
 ### Node version manager
@@ -128,7 +128,7 @@ su - lisk
 2. Install nvm following these [instructions](https://github.com/creationix/nvm#installation)
 3. Install the correct version of Node.js using nvm:
 ```bash
-nvm install 8.12.0
+nvm install 8.14.0
 ```
 
 For the following steps,  logout from the 'lisk' user again with `CTRL+D`, and continue with your user with sudo rights.

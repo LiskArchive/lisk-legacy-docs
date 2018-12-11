@@ -2,6 +2,12 @@
 
 ## Table of contents
 
+- [Introduction](#lisk-core-documentation)
+  - [Lisk Core Version Reference](#versions)
+  - [What is Lisk Core?](#what-is-lisk-core)
+    - [Networks](#networks)
+    - [Components](#components)
+  - [Contribute to Codebase](#contribute-to-the-codebase)
 - [Setup](setup/setup.md)
   - [Binary](setup/binary/binary.md)
   - [Docker](setup/docker/docker.md)
@@ -20,6 +26,21 @@
   - [API](user-guide/api/api.json)
 [Troubleshooting](troubleshooting/troubleshooting.md)
 
+## Versions
+
+We release new versions of Lisk Core regularly. Documentation on [lisk.io](https://lisk.io/documentation) will keep up to date with version updates. The table below provides an overview about the former releases and documentation versions of Lisk Core.
+
+Version | Release date <br> (yy/mm/dd)| Documentation reference
+---     | ---         | ---
+[v1.3.0](https://github.com/LiskHQ/lisk/releases/tag/v1.3.0) | 18/11/19 | *Current version, live on lisk.io/documentation*
+[v1.2.1](https://github.com/LiskHQ/lisk/releases/tag/v1.2.1) | 18/11/10 | [Lisk Core 1.2 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.2.0/introduction.md)
+[v1.1.1](https://github.com/LiskHQ/lisk/releases/tag/v1.1.1) | 18/10/23 | [Lisk Core 1.1 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.1.0/introduction.md)
+[v1.0.3](https://github.com/LiskHQ/lisk/releases/tag/v1.0.3) | 18/08/17 | [Lisk Core 1.0 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.0.0/introduction.md)
+
+## What is Lisk Core?
+
+[![What is Lisk Core?](https://img.youtube.com/vi/RfF9EPwQDOY/0.jpg)](https://www.youtube.com/watch?v=RfF9EPwQDOY)
+
 Lisk Core is the program that implements the [Lisk Protocol](/lisk-protocol/introduction.md). Every machine must set it up in order to run a node that allows for participation in the network. Setting up Lisk Core enables a user to:
 - Contribute to the decentralisation of the Lisk network
 - Explore data recorded on the Lisk blockchain
@@ -32,39 +53,24 @@ An instance of Lisk Core is generally detailed in two different ways:
 Info | Note 
 --- | --- 
 ![info note](info-icon.png "Info Note") | A Lisk Core instance connected to a network is referred to as a Lisk **Node**. 
-
-Info | Note 
---- | --- 
-![info note](info-icon.png "Info Note") | A Lisk Node connected to other Lisk Nodes is referred to as a Lisk **Peer**.
+| | A Lisk Node connected to other Lisk Nodes is referred to as a Lisk **Peer**.
 
 Both meanings refer to a machine which, after installing and executing Lisk Core, become a server. The server participates in the network and provides blockchain data to its clients.
 
-## Versions
-
-Lisk Core is releasing new versions regularly. 
-As documentation on lisk.io will keep up to date with version updates, the table below provides an overview about documentation for older versions of Lisk Core.
-
-Version | Release date <br> (yy/mm/dd)| Documentation reference
----     | ---         | ---
-[1.3.0](https://github.com/LiskHQ/lisk/releases/tag/v1.3.0) | 18/11/19 | *Current version, live on docs.lisk.io*
-[1.2.1](https://github.com/LiskHQ/lisk/releases/tag/v1.2.1) | 18/11/08 | [Lisk Core 1.2 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.2.0/introduction.md)
-[1.1.1](https://github.com/LiskHQ/lisk/releases/tag/v1.1.1) | 18/10/22 | [Lisk Core 1.1 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.1.0/introduction.md)
-[1.0.3](https://github.com/LiskHQ/lisk/releases/tag/v1.0.3) | 18/08/16 | [Lisk Core 1.0 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.0.0/introduction.md)
-
-## Networks
+### Networks
 
 Lisk Core can be connected to different networks. There are two key public networks, entirely independent of each other, that are always accessible: **Mainnet** and **Testnet**. 
 
-### Mainnet
+#### Mainnet
 Mainnet is where the true Lisk economy exists. On this network, Lisk users are able to transfer LSK tokens from one account to another, register accounts as delegates, vote for another delegates or register dApps. It can be explored via the [Lisk Explorer](https://explorer.lisk.io).
 
-### Testnet
+#### Testnet
 Testnet is an independent replica of the Lisk Mainnet intended as an area to rehearse upgrades before they take place on the Lisk Mainet. This is where new versions and fixes of Lisk Core are tested. It can be explored via [Lisk Testnet Explorer](https://testnet-explorer.lisk.io).
 
 Each connects to a network specified in the config file [`config.json`](https://github.com/LiskHQ/lisk/blob/development/config.json#L2). 
 When a user decides which network they wish to connect to, they must follow the correspondent tutorial in the [Setup](setup/setup.md) section.
 
-## Components
+### Components
 The Lisk Core consists of 4 main components:
 
 [![Node.js](nodejs.png "Node.js")](https://nodejs.org)

@@ -46,10 +46,10 @@ As documentation on lisk.io will keep up to date with version updates, the table
 
 Version | Release date <br> (yy/mm/dd)| Documentation reference
 ---     | ---         | ---
-1.3.0   | 18/11/19    | *Current version, live on docs.lisk.io*
-1.2.0   | 18/11/08    | [Lisk Core 1.2 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.2.0/introduction.md)
-1.1.0   | 18/10/22    | [Lisk Core 1.1 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.1.0/introduction.md)
-1.0.0   | 18/08/16    | [Lisk Core 1.0 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.0.0/introduction.md)
+[1.3.0](https://github.com/LiskHQ/lisk/releases/tag/v1.3.0) | 18/11/19 | *Current version, live on docs.lisk.io*
+[1.2.1](https://github.com/LiskHQ/lisk/releases/tag/v1.2.1) | 18/11/08 | [Lisk Core 1.2 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.2.0/introduction.md)
+[1.1.1](https://github.com/LiskHQ/lisk/releases/tag/v1.1.1) | 18/10/22 | [Lisk Core 1.1 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.1.0/introduction.md)
+[1.0.3](https://github.com/LiskHQ/lisk/releases/tag/v1.0.3) | 18/08/16 | [Lisk Core 1.0 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.0.0/introduction.md)
 
 ## Networks
 

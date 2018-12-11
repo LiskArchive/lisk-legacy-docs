@@ -69,7 +69,7 @@ Instance of `APIClient`.
 ### Examples
 
 ```js
-import APIClient from '@liskhq/lisk-api-client';
+import * as APIClient from '@liskhq/lisk-api-client';
 
 const client = new APIClient(['https://node01.lisk.io:443', 'https://node02.lisk.io:443']);
 const clientWithOptions = new APIClient(

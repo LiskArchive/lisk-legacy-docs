@@ -28,7 +28,7 @@ Please refer to their documentation for full usage.
 ### Example
 
 ```js
-import passphrase from '@liskhq/lisk-passphrase';
+import * as passphrase from '@liskhq/lisk-passphrase';
 
 const { Mnemonic } = passphrase;
 
@@ -66,7 +66,7 @@ getPassphraseValidationErrors(passphrase, [wordlist], expectedWords)
 #### Examples
 
 ```js
-import passphrase from '@liskhq/lisk-passphrase';
+import * as passphrase from '@liskhq/lisk-passphrase';
 
 const errors = passphrase.validation.getPassphraseValidationErrors('this passphrase is not    valid', Mnemonic.wordlist.english, 24);
 /* [

@@ -23,7 +23,7 @@ npm update --save @liskhq/lisk-constants
 ## Usage
 
 ```js
-import constants from '@liskhq/lisk-constants';
+import * as constants from '@liskhq/lisk-constants';
 
 constants.EPOCH_TIME; // Date from which timestamps are calculated.
 constants.EPOCH_TIME_MILLISECONDS; // EPOCH_TIME as milliseconds since Unix Epoch.

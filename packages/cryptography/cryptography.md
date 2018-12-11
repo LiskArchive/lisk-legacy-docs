@@ -78,7 +78,7 @@ Cryptography-specific constants are available via the `cryptography` key:
 ### Usage
 
 ```js
-import cryptography from '@liskhq/lisk-cryptography';
+import * as cryptography from '@liskhq/lisk-cryptography';
 
 cryptography.constants.SIGNED_MESSAGE_PREFIX; // Prefix for signed messages
 ```
@@ -108,7 +108,7 @@ bufferToHex(buffer)
 #### Examples
 
 ```js
-import cryptography from '@liskhq/lisk-cryptography';
+import * as cryptography from '@liskhq/lisk-cryptography';
 
 const buffer = Buffer.from([0xab, 0xcd, 0x12, 0x34]);
 cryptography.bufferToHex(buffer); // 'abcd1234'

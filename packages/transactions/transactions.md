@@ -45,7 +45,7 @@ Transactions-specific constants are available via the `transaction` key, and inc
 ### Usage
 
 ```js
-import transactions from '@liskhq/lisk-transactions';
+import * as transactions from '@liskhq/lisk-transactions';
 
 transactions.constants.FIXED_POINT; // Number to use when converting between the smallest possible denomination and 1 LSK.
 
@@ -101,7 +101,7 @@ transfer(options)
 #### Examples
 
 ```js
-import transactions from '@liskhq/lisk-transactions';
+import * as transactions from '@liskhq/lisk-transactions';
 
 transactions.transfer({
     amount: '123000000',

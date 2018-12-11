@@ -28,7 +28,7 @@
 
 ## Versions
 
-We release new versions of Lisk Core regularly. As documentation on [lisk.io](https://lisk.io/documentation) will keep up to date with version updates, the table below provides an overview about documentation for older versions of Lisk Core.
+We release new versions of Lisk Core regularly. Documentation on [lisk.io](https://lisk.io/documentation) will keep up to date with version updates. The table below provides an overview about the former releases and documentation versions of Lisk Core.
 
 Version | Release date <br> (yy/mm/dd)| Documentation reference
 ---     | ---         | ---

@@ -12,7 +12,7 @@ This section details how to upgrade Lisk Core from source.
     ```bash
     cd lisk # navigate into the root directory of Lisk Core
     git fetch # fetch newest releases
-    git checkout vX.Y.Z -b vX.Y.Z # check out latest release tag
+    git checkout vX.Y.Z -b vX.Y.Z # check out latest release tag, see https://github.com/LiskHQ/lisk/releases
     rm -rF node_modules # remove old node modules
     npm install # install node modules
     ```

@@ -359,10 +359,10 @@ Gets voters information for given delegate(s) from the blockchain.
 
 ```
 USAGE
-  $ lisk delegate:voters ADDRESSES
+  $ lisk delegate:voters USERNAMES
 
 ARGUMENTS
-  ADDRESSES  Comma-separated Lisk address(es) to get information about.
+  USERNAMES  Comma-separated username(s) to get information about.
 
 OPTIONS
   --limit          Limits the returned voters array by specified integer amount. Maximum is 100.
@@ -379,9 +379,9 @@ DESCRIPTION
   Gets voters information for given delegate(s) from the blockchain.
 
 EXAMPLES
-  delegate:voters 8004805717140184627L
-  delegate:voters 13133549779353512613L,16010222169256538112L
-  delegate:voters 8004805717140184627L,8820447240686843261L --limit 20 --offset 5 --sort publicKey:asc --pretty
+  delegate:voters lightcurve
+  delegate:voters lightcurve,4miners.net
+  delegate:voters lightcurve,4miners.net --limit 20 --offset 5 --sort publicKey:asc --pretty
 ```
 
 ## Get votes of a delegate
@@ -390,10 +390,10 @@ Gets votes information for given delegate(s) from the blockchain.
 
 ```
 USAGE
-  $ lisk delegate:votes USERNAMES
+  $ lisk delegate:votes ADDRESSES
 
 ARGUMENTS
-  USERNAMES  Comma-separated username(s) to get information about.
+  ADDRESSES  Comma-separated address(es) to get information about.
 
 OPTIONS
   --limit          Limits the returned voters array by specified integer amount. Maximum is 100.
@@ -407,12 +407,12 @@ OPTIONS
 
 
 DESCRIPTION
-  Gets voters information for given delegate(s) from the blockchain.
+  Gets voting information for given delegate(s) from the blockchain.
 
 EXAMPLES
-  delegate:votes lightcurve
-  delegate:votes lightcurve,4miners.net
-  delegate:votes lightcurve,4miners.net --limit 20 --offset 5 --sort balance:asc --pretty
+  delegate:votes 8004805717140184627L
+  delegate:votes 13133549779353512613L,16010222169256538112L
+  delegate:votes 8004805717140184627L,8820447240686843261L --limit 20 --offset 5 --sort balance:asc --pretty
 ```
 
 ## Help

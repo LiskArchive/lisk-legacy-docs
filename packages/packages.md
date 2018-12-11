@@ -32,6 +32,16 @@ const transaction = lisk.transaction.transfer({
 });
 ```
 
+**Example for sub packages**
+```js
+import * as transactions from '@liskhq/lisk-transactions';
+
+transactions.transfer({
+    amount: '123000000',
+    recipientId: '12668885769632475474L',
+});
+```
+
 ### Browser
 
 Load the Lisk Elements script via our CDN. For example to load the minified version 1.1.0 of Lisk Elements include the following script, which will then expose the `lisk` variable:

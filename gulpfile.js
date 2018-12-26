@@ -27,7 +27,9 @@ gulp.task('lint', ['lint:css', 'lint:js'])
 
 gulp.task('format', () => format(jsFiles))
 
-gulp.task('build', () => build(srcDir, destDir))
+gulp.task('build', function () {
+  return build(srcDir, destDir, this.seq.slice(0).some((name) => ~name.indexOf('preview')))
+})
 
 gulp.task('build:preview', ['build'], () =>
   buildPreview(srcDir, destDir, previewSiteSrcDir, previewSiteDestDir, connect.reload)

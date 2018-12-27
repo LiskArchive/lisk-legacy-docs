@@ -3,31 +3,34 @@
 const fs = require('fs-extra')
 const handlebars = require('handlebars')
 const { obj: map } = require('through2')
+const merge = require('merge-stream')
 const path = require('path')
 const requireFromString = require('require-from-string')
 const vfs = require('vinyl-fs')
 const yaml = require('js-yaml')
 
-module.exports = (src, dest, siteSrc, siteDest, onComplete) => () =>
-  Promise.all([loadSampleUiModel(siteSrc), compileLayouts(src), registerPartials(src), registerHelpers(src)]).then(
-    ([uiModel, layouts]) =>
-      vfs
-        .src('**/*.html', { base: siteSrc, cwd: siteSrc })
-        .pipe(
-          map((file, enc, next) => {
-            const compiledLayout = layouts[file.stem === '404' ? '404.hbs' : 'default.hbs']
-            const siteRootPath = path.relative(path.dirname(file.path), path.resolve(siteSrc))
-            uiModel.env = process.env
-            uiModel.siteRootPath = siteRootPath
-            uiModel.siteRootUrl = path.join(siteRootPath, 'index.html')
-            uiModel.uiRootPath = path.join(siteRootPath, '_')
-            uiModel.page.contents = file.contents.toString().trim()
-            file.contents = Buffer.from(compiledLayout(uiModel))
-            next(null, file)
-          })
-        )
-        .pipe(vfs.dest(siteDest))
-        .pipe(onComplete ? onComplete() : map((file, enc, next) => next()))
+module.exports = (src, dest, siteSrc, siteDest, onComplete, layouts = {}) => () =>
+  Promise.all([
+    loadSampleUiModel(siteSrc),
+    toPromise(merge(compileLayouts(src, layouts), registerPartials(src), registerHelpers(src))),
+  ]).then(([uiModel]) =>
+    vfs
+      .src('**/*.html', { base: siteSrc, cwd: siteSrc })
+      .pipe(
+        map((file, enc, next) => {
+          const compiledLayout = layouts[file.stem === '404' ? '404.hbs' : 'default.hbs']
+          const siteRootPath = path.relative(path.dirname(file.path), path.resolve(siteSrc))
+          uiModel.env = process.env
+          uiModel.siteRootPath = siteRootPath
+          uiModel.siteRootUrl = path.join(siteRootPath, 'index.html')
+          uiModel.uiRootPath = path.join(siteRootPath, '_')
+          uiModel.page.contents = file.contents.toString().trim()
+          file.contents = Buffer.from(compiledLayout(uiModel))
+          next(null, file)
+        })
+      )
+      .pipe(vfs.dest(siteDest))
+      .pipe(onComplete ? onComplete() : map((file, enc, next) => next()))
   )
 
 function loadSampleUiModel (siteSrc) {
@@ -35,47 +38,32 @@ function loadSampleUiModel (siteSrc) {
 }
 
 function registerPartials (src) {
-  return new Promise((resolve, reject) =>
-    vfs
-      .src('partials/*.hbs', { base: src, cwd: src })
-      .pipe(
-        map((file, enc, next) => {
-          handlebars.registerPartial(file.stem, file.contents.toString())
-          next()
-        })
-      )
-      .on('error', reject)
-      .on('finish', resolve)
+  return vfs.src('partials/*.hbs', { base: src, cwd: src }).pipe(
+    map((file, enc, next) => {
+      handlebars.registerPartial(file.stem, file.contents.toString())
+      next()
+    })
   )
 }
 
 function registerHelpers (src) {
-  return new Promise((resolve, reject) =>
-    vfs
-      .src('helpers/*.js', { base: src, cwd: src })
-      .pipe(
-        map((file, enc, next) => {
-          handlebars.registerHelper(file.stem, requireFromString(file.contents.toString()))
-          next()
-        })
-      )
-      .on('error', reject)
-      .on('finish', resolve)
+  return vfs.src('helpers/*.js', { base: src, cwd: src }).pipe(
+    map((file, enc, next) => {
+      handlebars.registerHelper(file.stem, requireFromString(file.contents.toString()))
+      next()
+    })
   )
 }
 
-function compileLayouts (src) {
-  const layouts = {}
-  return new Promise((resolve, reject) =>
-    vfs
-      .src('layouts/*.hbs', { base: src, cwd: src })
-      .pipe(
-        map((file, enc, next) => {
-          layouts[file.basename] = handlebars.compile(file.contents.toString(), { preventIndent: true })
-          next()
-        })
-      )
-      .on('error', reject)
-      .on('finish', () => resolve(layouts))
+function compileLayouts (src, layouts) {
+  return vfs.src('layouts/*.hbs', { base: src, cwd: src }).pipe(
+    map((file, enc, next) => {
+      layouts[file.basename] = handlebars.compile(file.contents.toString(), { preventIndent: true })
+      next()
+    })
   )
+}
+
+function toPromise (stream) {
+  return new Promise((resolve, reject) => stream.on('error', reject).on('finish', resolve))
 }

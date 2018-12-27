@@ -2,7 +2,7 @@
 
 const metadata = require('undertaker/lib/helpers/metadata')
 
-module.exports = ({ name, desc, anon, then: fn }) => {
+module.exports = ({ name, desc, exec: fn }) => {
   if (name) {
     const displayName = fn.displayName
     if (displayName === '<series>' || displayName === '<parallel>') {

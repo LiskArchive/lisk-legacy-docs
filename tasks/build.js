@@ -19,7 +19,7 @@ const postcssVar = require('postcss-custom-properties')
 const uglify = require('gulp-uglify')
 const vfs = require('vinyl-fs')
 
-module.exports = (src, dest) => {
+module.exports = (src, dest, preview) => {
   const opts = { base: src, cwd: src }
   const postcssPlugins = [
     postcssImport(),
@@ -42,10 +42,10 @@ module.exports = (src, dest) => {
         },
       },
     ]),
-    postcssVar(),
+    postcssVar({ preserve: preview ? 'preserve-computed' : false }),
     postcssCalc(),
     autoprefixer({ browsers: ['last 2 versions'] }),
-    cssnano({ preset: 'default' }),
+    preview ? () => {} : cssnano({ preset: 'default' }),
   ]
 
   return merge([

@@ -58,7 +58,6 @@ const buildTask = task({
 
 const bundleBuildTask = task({
   name: 'bundle:build',
-  desc: 'Lint the source files and build and stage the UI assets for bundling',
   exec: series(cleanTask, lintTask, buildTask),
 })
 
@@ -76,7 +75,6 @@ const bundleTask = task({
 
 const previewPagesTask = task({
   name: 'preview:pages',
-  desc: 'Generate pages for the preview by applying the specified layout template',
   exec: previewPages(srcDir, destDir, previewSiteSrcDir, previewSiteDestDir, livereload),
 })
 
@@ -88,7 +86,6 @@ const previewBuildTask = task({
 
 const previewServeTask = task({
   name: 'preview:serve',
-  desc: 'Launch server to preview UI',
   exec: previewServe(previewSiteDestDir, {
     port: 5252,
     livereload,
@@ -111,6 +108,7 @@ module.exports = exportTasks(
   formatTask,
   buildTask,
   bundleTask,
+  bundlePackTask,
   previewTask,
   previewBuildTask
 )

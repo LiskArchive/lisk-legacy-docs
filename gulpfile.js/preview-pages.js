@@ -9,29 +9,25 @@ const vfs = require('vinyl-fs')
 const yaml = require('js-yaml')
 
 module.exports = (src, dest, siteSrc, siteDest, onComplete) => () =>
-  Promise.all([
-    loadSampleUiModel(siteSrc),
-    compileLayouts(src),
-    registerPartials(src),
-    registerHelpers(src),
-  ]).then(([uiModel, layouts]) =>
-    vfs
-      .src('**/*.html', { base: siteSrc, cwd: siteSrc })
-      .pipe(
-        map((file, enc, next) => {
-          const compiledLayout = layouts[file.stem === '404' ? '404.hbs' : 'default.hbs']
-          const siteRootPath = path.relative(path.dirname(file.path), path.resolve(siteSrc))
-          uiModel.env = process.env
-          uiModel.siteRootPath = siteRootPath
-          uiModel.siteRootUrl = path.join(siteRootPath, 'index.html')
-          uiModel.uiRootPath = path.join(siteRootPath, '_')
-          uiModel.page.contents = file.contents.toString().trim()
-          file.contents = Buffer.from(compiledLayout(uiModel))
-          next(null, file)
-        })
-      )
-      .pipe(vfs.dest(siteDest))
-      .pipe(onComplete ? onComplete() : map((file, enc, next) => next()))
+  Promise.all([loadSampleUiModel(siteSrc), compileLayouts(src), registerPartials(src), registerHelpers(src)]).then(
+    ([uiModel, layouts]) =>
+      vfs
+        .src('**/*.html', { base: siteSrc, cwd: siteSrc })
+        .pipe(
+          map((file, enc, next) => {
+            const compiledLayout = layouts[file.stem === '404' ? '404.hbs' : 'default.hbs']
+            const siteRootPath = path.relative(path.dirname(file.path), path.resolve(siteSrc))
+            uiModel.env = process.env
+            uiModel.siteRootPath = siteRootPath
+            uiModel.siteRootUrl = path.join(siteRootPath, 'index.html')
+            uiModel.uiRootPath = path.join(siteRootPath, '_')
+            uiModel.page.contents = file.contents.toString().trim()
+            file.contents = Buffer.from(compiledLayout(uiModel))
+            next(null, file)
+          })
+        )
+        .pipe(vfs.dest(siteDest))
+        .pipe(onComplete ? onComplete() : map((file, enc, next) => next()))
   )
 
 function loadSampleUiModel (siteSrc) {

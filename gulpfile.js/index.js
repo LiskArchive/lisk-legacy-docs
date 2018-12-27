@@ -2,9 +2,9 @@
 
 const { parallel, series, tree } = require('gulp')
 const camelcase = (name) => name.replace(/[-]./g, (m) => m.substr(1).toUpperCase())
-const exportTasks = require('./tasks/lib/export-tasks')
-const task = require('./tasks/lib/task')
-const taskFns = require('require-directory')(module, './tasks', { recurse: false, rename: camelcase })
+const exportTasks = require('./lib/export-tasks')
+const task = require('./lib/task')
+const taskFns = require('require-directory')(module, '.', { recurse: false, rename: camelcase })
 const path = require('path')
 
 const bundleName = 'ui'
@@ -16,7 +16,7 @@ const destDir = path.join(previewSiteDestDir, '_')
 const { reload: livereload } = process.env.LIVERELOAD === 'true' ? require('gulp-connect') : {}
 
 const cssFileGlobs = path.join(srcDir, 'css/**/*.css')
-const jsFileGlobs = ['gulpfile.js', 'tasks/**/*.js', path.join(srcDir, '{helpers,js}/**/*.js')]
+const jsFileGlobs = ['gulpfile.js/**/*.js', path.join(srcDir, '{helpers,js}/**/*.js')]
 
 const { remove, lintCss, lintJs, format, build, pack, previewPages, previewServe } = taskFns
 

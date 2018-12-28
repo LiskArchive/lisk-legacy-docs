@@ -9,7 +9,7 @@ const requireFromString = require('require-from-string')
 const vfs = require('vinyl-fs')
 const yaml = require('js-yaml')
 
-module.exports = (src, dest, siteSrc, siteDest, onComplete, layouts = {}) => () =>
+module.exports = (src, dest, siteSrc, siteDest, sink = () => map((_0, _1, next) => next()), layouts = {}) => () =>
   Promise.all([
     loadSampleUiModel(siteSrc),
     toPromise(merge(compileLayouts(src, layouts), registerPartials(src), registerHelpers(src))),
@@ -30,7 +30,7 @@ module.exports = (src, dest, siteSrc, siteDest, onComplete, layouts = {}) => () 
         })
       )
       .pipe(vfs.dest(siteDest))
-      .pipe(onComplete ? onComplete() : map((file, enc, next) => next()))
+      .pipe(sink())
   )
 
 function loadSampleUiModel (siteSrc) {

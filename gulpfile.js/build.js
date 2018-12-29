@@ -30,7 +30,7 @@ module.exports = (src, dest, preview) => () => {
           const abspath = path.resolve('node_modules', relpath)
           const basename = path.basename(abspath)
           const destpath = path.join(dest, 'font', basename)
-          if (!fs.pathExists(destpath)) fs.copy(abspath, destpath)
+          if (!fs.pathExistsSync(destpath)) fs.copySync(abspath, destpath)
           return path.join('..', 'font', basename)
         },
       },

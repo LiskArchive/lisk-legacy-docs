@@ -17,6 +17,7 @@ const postcssImport = require('postcss-import')
 const postcssUrl = require('postcss-url')
 const postcssVar = require('postcss-custom-properties')
 const uglify = require('gulp-uglify')
+const sourcemaps = require('gulp-sourcemaps')
 const vfs = require('vinyl-fs')
 
 module.exports = (src, dest, preview) => () => {
@@ -45,8 +46,10 @@ module.exports = (src, dest, preview) => () => {
   return merge(
     vfs
       .src('js/+([0-9])-*.js', opts)
+      .pipe(sourcemaps.init())
       .pipe(uglify())
-      .pipe(concat('js/site.js')),
+      .pipe(concat('js/site.js'))
+      .pipe(sourcemaps.write('.')),
     vfs
       .src('js/vendor/*.js', { ...opts, read: false })
       .pipe(

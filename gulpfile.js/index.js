@@ -11,7 +11,7 @@ const srcDir = 'src'
 const destDir = `${previewDestDir}/_`
 const { reload: livereload } = process.env.LIVERELOAD === 'true' ? require('gulp-connect') : {}
 
-const { remove, lintCss, lintJs, format, build, pack, previewPages, previewServe } = require('./tasks')
+const { remove, lintCss, lintJs, format, build, pack, previewPages, serve } = require('./tasks')
 const glob = {
   all: [srcDir, previewSrcDir],
   css: `${srcDir}/css/**/*.css`,
@@ -84,7 +84,7 @@ const previewBuildTask = task({
 
 const previewServeTask = task({
   name: 'preview:serve',
-  call: previewServe(previewDestDir, { port: 5252, livereload }, () => watch(glob.all, previewBuildTask)),
+  call: serve(previewDestDir, { port: 5252, livereload }, () => watch(glob.all, previewBuildTask)),
 })
 
 const previewTask = task({

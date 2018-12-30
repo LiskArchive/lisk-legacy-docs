@@ -1,20 +1,22 @@
 'use strict'
 
 const { parallel, series, tree } = require('gulp')
-const camelCase = (name) => name.replace(/[-]./g, (m) => m.substr(1).toUpperCase())
 const task = require('./lib/task')
-const tasks = require('require-directory')(module, '.', { recurse: false, rename: camelCase })
 
 const bundleName = 'ui'
 const buildDir = 'build'
-const previewSiteSrcDir = 'preview-site-src'
-const previewSiteDestDir = 'public'
+const previewSrcDir = 'preview-site-src'
+const previewDestDir = 'public'
 const srcDir = 'src'
-const destDir = `${previewSiteDestDir}/_`
+const destDir = `${previewDestDir}/_`
 const { reload: livereload } = process.env.LIVERELOAD === 'true' ? require('gulp-connect') : {}
 
-const glob = { cssFiles: `${srcDir}/css/**/*.css`, jsFiles: ['gulpfile.js/**/*.js', `${srcDir}/{helpers,js}/**/*.js`] }
-const { remove, lintCss, lintJs, format, build, pack, previewPages, previewServe } = tasks
+const { remove, lintCss, lintJs, format, build, pack, previewPages, previewServe } = require('./tasks')
+const glob = {
+  all: [srcDir, previewSrcDir],
+  css: `${srcDir}/css/**/*.css`,
+  js: ['gulpfile.js/**/*.js', `${srcDir}/{helpers,js}/**/*.js`]
+}
 
 const cleanTask = task({
   name: 'clean',
@@ -25,13 +27,13 @@ const cleanTask = task({
 const lintCssTask = task({
   name: 'lint:css',
   desc: 'Lint the CSS source files using stylelint (standard config)',
-  call: lintCss(glob.cssFiles),
+  call: lintCss(glob.css),
 })
 
 const lintJsTask = task({
   name: 'lint:js',
   desc: 'Lint the JavaScript source files using eslint (JavaScript Standard Style)',
-  call: lintJs(glob.jsFiles),
+  call: lintJs(glob.js),
 })
 
 const lintTask = task({
@@ -43,7 +45,7 @@ const lintTask = task({
 const formatTask = task({
   name: 'format',
   desc: 'Format the JavaScript source files using prettify (JavaScript Standard Style)',
-  call: format(glob.jsFiles),
+  call: format(glob.js),
 })
 
 const buildTask = task({
@@ -71,7 +73,7 @@ const bundleTask = task({
 
 const previewPagesTask = task({
   name: 'preview:pages',
-  call: previewPages(srcDir, destDir, previewSiteSrcDir, previewSiteDestDir, livereload),
+  call: previewPages(srcDir, destDir, previewSrcDir, previewDestDir, livereload),
 })
 
 const previewBuildTask = task({
@@ -82,11 +84,7 @@ const previewBuildTask = task({
 
 const previewServeTask = task({
   name: 'preview:serve',
-  call: previewServe(previewSiteDestDir, {
-    port: 5252,
-    livereload,
-    watch: { glob: [srcDir, previewSiteSrcDir], call: previewBuildTask },
-  }),
+  call: previewServe(previewDestDir, { port: 5252, livereload, watch: { glob: glob.all, call: previewBuildTask } }),
 })
 
 const previewTask = task({

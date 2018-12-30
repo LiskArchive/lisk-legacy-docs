@@ -9,7 +9,8 @@ const fs = require('fs-extra')
 const imagemin = require('gulp-imagemin')
 const merge = require('merge-stream')
 const { obj: map } = require('through2')
-const path = require('path')
+const ospath = require('path')
+const path = ospath.posix
 const postcss = require('gulp-postcss')
 const postcssCalc = require('postcss-calc')
 const postcssImport = require('postcss-import')
@@ -27,9 +28,9 @@ module.exports = (src, dest, preview) => () => {
         filter: '**/~typeface-*/files/*',
         url: (asset) => {
           const relpath = asset.pathname.substr(1)
-          const abspath = path.resolve('node_modules', relpath)
-          const basename = path.basename(abspath)
-          const destpath = path.join(dest, 'font', basename)
+          const abspath = ospath.resolve('node_modules', relpath)
+          const basename = ospath.basename(abspath)
+          const destpath = ospath.join(dest, 'font', basename)
           if (!fs.pathExistsSync(destpath)) fs.copySync(abspath, destpath)
           return path.join('..', 'font', basename)
         },

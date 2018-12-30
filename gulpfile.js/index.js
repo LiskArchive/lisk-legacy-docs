@@ -1,6 +1,6 @@
 'use strict'
 
-const { parallel, series, tree } = require('gulp')
+const { parallel, series, tree, watch } = require('gulp')
 const task = require('./lib/task')
 
 const bundleName = 'ui'
@@ -84,7 +84,7 @@ const previewBuildTask = task({
 
 const previewServeTask = task({
   name: 'preview:serve',
-  call: previewServe(previewDestDir, { port: 5252, livereload, watch: { glob: glob.all, call: previewBuildTask } }),
+  call: previewServe(previewDestDir, { port: 5252, livereload }, () => watch(glob.all, previewBuildTask)),
 })
 
 const previewTask = task({

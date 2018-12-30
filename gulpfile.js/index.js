@@ -5,7 +5,7 @@ const task = require('./lib/task')
 
 const bundleName = 'ui'
 const buildDir = 'build'
-const previewSrcDir = 'preview-site-src'
+const previewSrcDir = 'preview-src'
 const previewDestDir = 'public'
 const srcDir = 'src'
 const destDir = `${previewDestDir}/_`

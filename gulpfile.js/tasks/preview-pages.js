@@ -1,31 +1,54 @@
 'use strict'
 
+const asciidoctor = require('asciidoctor.js')()
 const fs = require('fs-extra')
 const handlebars = require('handlebars')
 const { obj: map } = require('through2')
 const merge = require('merge-stream')
-const path = require('path')
+const ospath = require('path')
+const path = ospath.posix
 const requireFromString = require('require-from-string')
 const vfs = require('vinyl-fs')
 const yaml = require('js-yaml')
 
-module.exports = (src, dest, siteSrc, siteDest, sink = () => map((_0, _1, next) => next()), layouts = {}) => () =>
+const ASCIIDOC_ATTRIBUTES = {
+  experimental: '',
+  icons: 'font',
+  sectanchors: '',
+  'source-highlighter': 'highlight.js',
+}
+
+module.exports = (src, dest, siteSrc, siteDest, sink = () => map(), layouts = {}) => () =>
   Promise.all([
     loadSampleUiModel(siteSrc),
     toPromise(merge(compileLayouts(src, layouts), registerPartials(src), registerHelpers(src))),
-  ]).then(([uiModel]) =>
+  ]).then(([baseUiModel]) => Object.assign(baseUiModel, { env: process.env })).then((baseUiModel) =>
     vfs
-      .src('**/*.html', { base: siteSrc, cwd: siteSrc })
+      .src('**/*.adoc', { base: siteSrc, cwd: siteSrc })
       .pipe(
         map((file, enc, next) => {
-          const compiledLayout = layouts[file.stem === '404' ? '404.hbs' : 'default.hbs']
-          const siteRootPath = path.relative(path.dirname(file.path), path.resolve(siteSrc))
-          uiModel.env = process.env
+          const siteRootPath = path.relative(ospath.dirname(file.path), ospath.resolve(siteSrc))
+          const uiModel = Object.assign({}, baseUiModel)
+          uiModel.page = Object.assign({}, uiModel.page)
           uiModel.siteRootPath = siteRootPath
           uiModel.siteRootUrl = path.join(siteRootPath, 'index.html')
           uiModel.uiRootPath = path.join(siteRootPath, '_')
-          uiModel.page.contents = file.contents.toString().trim()
-          file.contents = Buffer.from(compiledLayout(uiModel))
+          if (file.stem === '404') {
+            uiModel.page = { layout: '404', title: 'Page Not Found' }
+          } else {
+            const doc = asciidoctor.load(file.contents, { safe: 'safe', attributes: ASCIIDOC_ATTRIBUTES })
+            uiModel.page.attributes = Object.entries(doc.getAttributes())
+              .filter(([name, val]) => name.startsWith('page-'))
+              .reduce((accum, [name, val]) => {
+                accum[name.substr(5)] = val
+                return accum
+              }, {})
+            uiModel.page.layout = doc.getAttribute('page-layout', 'default')
+            uiModel.page.title = doc.getDocumentTitle()
+            uiModel.page.contents = Buffer.from(doc.convert())
+          }
+          file.extname = '.html'
+          file.contents = Buffer.from(layouts[uiModel.page.layout](uiModel))
           next(null, file)
         })
       )
@@ -34,7 +57,7 @@ module.exports = (src, dest, siteSrc, siteDest, sink = () => map((_0, _1, next) 
   )
 
 function loadSampleUiModel (siteSrc) {
-  return fs.readFile(path.join(siteSrc, 'ui-model.yml'), 'utf8').then((contents) => yaml.safeLoad(contents))
+  return fs.readFile(ospath.join(siteSrc, 'ui-model.yml'), 'utf8').then((contents) => yaml.safeLoad(contents))
 }
 
 function registerPartials (src) {
@@ -58,7 +81,7 @@ function registerHelpers (src) {
 function compileLayouts (src, layouts) {
   return vfs.src('layouts/*.hbs', { base: src, cwd: src }).pipe(
     map((file, enc, next) => {
-      layouts[file.basename] = handlebars.compile(file.contents.toString(), { preventIndent: true })
+      layouts[file.stem] = handlebars.compile(file.contents.toString(), { preventIndent: true })
       next()
     })
   )

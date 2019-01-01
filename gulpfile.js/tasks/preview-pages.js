@@ -18,16 +18,16 @@ const ASCIIDOC_ATTRIBUTES = {
   'source-highlighter': 'highlight.js',
 }
 
-module.exports = (src, dest, siteSrc, siteDest, sink = () => map(), layouts = {}) => () =>
+module.exports = (src, previewSrc, previewDest, sink = () => map(), layouts = {}) => () =>
   Promise.all([
-    loadSampleUiModel(siteSrc),
-    toPromise(merge(compileLayouts(src, layouts), registerPartials(src), registerHelpers(src))),
+    loadSampleUiModel(previewSrc),
+    toPromise(merge(compileLayouts(src, layouts), registerPartials(src), registerHelpers(src), copyImages(previewSrc, previewDest))),
   ]).then(([baseUiModel]) => Object.assign(baseUiModel, { env: process.env })).then((baseUiModel) =>
     vfs
-      .src('**/*.adoc', { base: siteSrc, cwd: siteSrc })
+      .src('**/*.adoc', { base: previewSrc, cwd: previewSrc })
       .pipe(
         map((file, enc, next) => {
-          const siteRootPath = path.relative(ospath.dirname(file.path), ospath.resolve(siteSrc))
+          const siteRootPath = path.relative(ospath.dirname(file.path), ospath.resolve(previewSrc))
           const uiModel = Object.assign({}, baseUiModel)
           uiModel.page = Object.assign({}, uiModel.page)
           uiModel.siteRootPath = siteRootPath
@@ -52,12 +52,12 @@ module.exports = (src, dest, siteSrc, siteDest, sink = () => map(), layouts = {}
           next(null, file)
         })
       )
-      .pipe(vfs.dest(siteDest))
+      .pipe(vfs.dest(previewDest))
       .pipe(sink())
   )
 
-function loadSampleUiModel (siteSrc) {
-  return fs.readFile(ospath.join(siteSrc, 'ui-model.yml'), 'utf8').then((contents) => yaml.safeLoad(contents))
+function loadSampleUiModel (src) {
+  return fs.readFile(ospath.join(src, 'ui-model.yml'), 'utf8').then((contents) => yaml.safeLoad(contents))
 }
 
 function registerPartials (src) {
@@ -85,6 +85,10 @@ function compileLayouts (src, layouts) {
       next()
     })
   )
+}
+
+function copyImages (src, dest) {
+  return vfs.src('**/*.{png,svg}', { base: src, cwd: src }).pipe(vfs.dest(dest))
 }
 
 function toPromise (stream) {

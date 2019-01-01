@@ -73,7 +73,7 @@ const bundleTask = task({
 
 const previewPagesTask = task({
   name: 'preview:pages',
-  call: previewPages(srcDir, destDir, previewSrcDir, previewDestDir, livereload),
+  call: previewPages(srcDir, previewSrcDir, previewDestDir, livereload),
 })
 
 const previewBuildTask = task({

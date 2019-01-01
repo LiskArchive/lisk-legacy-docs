@@ -21,40 +21,49 @@ const ASCIIDOC_ATTRIBUTES = {
 module.exports = (src, previewSrc, previewDest, sink = () => map(), layouts = {}) => () =>
   Promise.all([
     loadSampleUiModel(previewSrc),
-    toPromise(merge(compileLayouts(src, layouts), registerPartials(src), registerHelpers(src), copyImages(previewSrc, previewDest))),
-  ]).then(([baseUiModel]) => Object.assign(baseUiModel, { env: process.env })).then((baseUiModel) =>
-    vfs
-      .src('**/*.adoc', { base: previewSrc, cwd: previewSrc })
-      .pipe(
-        map((file, enc, next) => {
-          const siteRootPath = path.relative(ospath.dirname(file.path), ospath.resolve(previewSrc))
-          const uiModel = Object.assign({}, baseUiModel)
-          uiModel.page = Object.assign({}, uiModel.page)
-          uiModel.siteRootPath = siteRootPath
-          uiModel.siteRootUrl = path.join(siteRootPath, 'index.html')
-          uiModel.uiRootPath = path.join(siteRootPath, '_')
-          if (file.stem === '404') {
-            uiModel.page = { layout: '404', title: 'Page Not Found' }
-          } else {
-            const doc = asciidoctor.load(file.contents, { safe: 'safe', attributes: ASCIIDOC_ATTRIBUTES })
-            uiModel.page.attributes = Object.entries(doc.getAttributes())
-              .filter(([name, val]) => name.startsWith('page-'))
-              .reduce((accum, [name, val]) => {
-                accum[name.substr(5)] = val
-                return accum
-              }, {})
-            uiModel.page.layout = doc.getAttribute('page-layout', 'default')
-            uiModel.page.title = doc.getDocumentTitle()
-            uiModel.page.contents = Buffer.from(doc.convert())
-          }
-          file.extname = '.html'
-          file.contents = Buffer.from(layouts[uiModel.page.layout](uiModel))
-          next(null, file)
-        })
+    toPromise(
+      merge(
+        compileLayouts(src, layouts),
+        registerPartials(src),
+        registerHelpers(src),
+        copyImages(previewSrc, previewDest)
       )
-      .pipe(vfs.dest(previewDest))
-      .pipe(sink())
-  )
+    ),
+  ])
+    .then(([baseUiModel]) => Object.assign(baseUiModel, { env: process.env }))
+    .then((baseUiModel) =>
+      vfs
+        .src('**/*.adoc', { base: previewSrc, cwd: previewSrc })
+        .pipe(
+          map((file, enc, next) => {
+            const siteRootPath = path.relative(ospath.dirname(file.path), ospath.resolve(previewSrc))
+            const uiModel = Object.assign({}, baseUiModel)
+            uiModel.page = Object.assign({}, uiModel.page)
+            uiModel.siteRootPath = siteRootPath
+            uiModel.siteRootUrl = path.join(siteRootPath, 'index.html')
+            uiModel.uiRootPath = path.join(siteRootPath, '_')
+            if (file.stem === '404') {
+              uiModel.page = { layout: '404', title: 'Page Not Found' }
+            } else {
+              const doc = asciidoctor.load(file.contents, { safe: 'safe', attributes: ASCIIDOC_ATTRIBUTES })
+              uiModel.page.attributes = Object.entries(doc.getAttributes())
+                .filter(([name, val]) => name.startsWith('page-'))
+                .reduce((accum, [name, val]) => {
+                  accum[name.substr(5)] = val
+                  return accum
+                }, {})
+              uiModel.page.layout = doc.getAttribute('page-layout', 'default')
+              uiModel.page.title = doc.getDocumentTitle()
+              uiModel.page.contents = Buffer.from(doc.convert())
+            }
+            file.extname = '.html'
+            file.contents = Buffer.from(layouts[uiModel.page.layout](uiModel))
+            next(null, file)
+          })
+        )
+        .pipe(vfs.dest(previewDest))
+        .pipe(sink())
+    )
 
 function loadSampleUiModel (src) {
   return fs.readFile(ospath.join(src, 'ui-model.yml'), 'utf8').then((contents) => yaml.safeLoad(contents))

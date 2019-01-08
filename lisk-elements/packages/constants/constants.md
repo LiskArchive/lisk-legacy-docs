@@ -23,14 +23,14 @@ npm update --save @liskhq/lisk-constants
 ## Usage
 
 ```js
-import constants from '@liskhq/lisk-constants';
+import * as constants from '@liskhq/lisk-constants';
 
 constants.EPOCH_TIME; // Date from which timestamps are calculated.
 constants.EPOCH_TIME_MILLISECONDS; // EPOCH_TIME as milliseconds since Unix Epoch.
 constants.EPOCH_TIME_SECONDS; // EPOCH_TIME as seconds since Unix Epoch.
 
 constants.MAX_ADDRESS_NUMBER; // Maximum valid number which can form an address when suffixed with an 'L'.
-constants.MAX_TRANSACTION_AMOUNT; // Maximum valid amount for a transaction.
+constants.MAX_TRANSACTION_AMOUNT; // Maximum valid amount for a transaction. Maximum value for PostgreSQL bigint.
 
 constants.SIGNED_MESSAGE_PREFIX; // The prefix attached to all messages signed according to the Lisk message signature protocol.
 

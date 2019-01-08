@@ -4,6 +4,8 @@ The Lisk Elements cryptography module provides all the cryptographic functionali
 
 - [Installation](#installation)
 - [Upgrade](#upgrade)
+- [Usage](#usage)
+- [Constants](#constants)
 - [Methods for converting between formats](#methods-for-converting-between-formats)
   - [bufferToHex](#buffertohex)
   - [getAddressFromPublicKey](#getAddressFromPublicKey)
@@ -36,13 +38,49 @@ The Lisk Elements cryptography module provides all the cryptographic functionali
 Add Lisk Client as a dependency of your project:
 
 ```bash
-$ npm install --save @liskhq/lisk-cryptography
+npm install --save @liskhq/lisk-cryptography
 ```
 
 ## Upgrade
 
 ```bash
 npm update --save @liskhq/lisk-cryptography
+```
+
+## Usage
+
+The `lisk-cryptography` package can be used on server-side as well as client-side code.
+
+In case `lisk-cryptography` is used server-side, you may want to speed up the application by using the [sodium-native](https://github.com/sodium-friends/sodium-native) library.
+
+To do this, expose `NACL_FAST=enable` as environment variable:
+
+```bash
+export NACL_FAST=enable
+```
+
+To switch back to the default library [TweetNaCl.js](https://github.com/dchest/tweetnacl-js), which is slower but can also be executed on client-side, set it to `disable`:
+
+```bash
+export NACL_FAST=disable
+```
+
+... or unset it completely:
+
+```bash
+unset NACL_FAST
+```
+
+## Constants
+
+Cryptography-specific constants are available via the `cryptography` key:
+
+### Usage
+
+```js
+import * as cryptography from '@liskhq/lisk-cryptography';
+
+cryptography.constants.SIGNED_MESSAGE_PREFIX; // Prefix for signed messages
 ```
 
 ## Methods for converting between formats
@@ -70,7 +108,7 @@ bufferToHex(buffer)
 #### Examples
 
 ```js
-import cryptography from '@liskhq/lisk-cryptography';
+import * as cryptography from '@liskhq/lisk-cryptography';
 
 const buffer = Buffer.from([0xab, 0xcd, 0x12, 0x34]);
 cryptography.bufferToHex(buffer); // 'abcd1234'

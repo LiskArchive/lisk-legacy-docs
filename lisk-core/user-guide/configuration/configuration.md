@@ -50,7 +50,7 @@ The `config.json` file and a description of each parameter.
     "logFileName": "logs/lisk.log", // The path and name of the logfile
     "consoleLogLevel": "none", // The console logging level for app.js: info, error, debug, none
     "trustProxy": false, // If true, client IP addresses are understood as the left-most entry in the X-Forwarded-* header
-    "topAccounts": false, // Enables the top accounts endpoint for the explorer when set to True
+    "topAccounts": false, // Deprecated, will be removed in future releases
     "cacheEnabled": false, // If true, enables cache
     "wsWorkers": 1, // Number of Web Workers
     "db": {

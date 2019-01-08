@@ -29,7 +29,7 @@ X Postgresql failed to stop.
 #### Solution:
 PostgreSQL is already installed on your system.
 To solve this issue simply remove postgres by running the following command:
-```shell
+```bash
 sudo apt-get --purge remove postgresql postgresql-doc postgresql-common
 ```
 
@@ -47,11 +47,11 @@ This happens for newer versions of npm, which are not supported by core 1.0.0, y
 Install npm version 3.10.10.
 Check if you have the correct Node version installed by running `node -v`
 If the version is not ^6.14.1, first install the supported Node version.
-```shell
+```bash
 nvm install 6.14.1
 ```
 With the right node version, you can proceed to install the right `npm` verison:
-```shell
+```bash
 node -v
 v6.14.1
 npm install npm@3.10.10

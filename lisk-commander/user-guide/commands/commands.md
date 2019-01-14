@@ -14,6 +14,8 @@
 - [copyright](#copyright)
 - [Delegate](#delegate)
   - [delegate:get](#get-delegate)
+  - [delegate:voters](#get-voters-of-a-delegate)
+  - [delegate:votes](#get-votes-of-a-delegate)
 - [help](#help)
 - [Message](#message)
   - [message:decrypt](#decrypt-message)
@@ -349,6 +351,68 @@ EXAMPLES
 		}
 	}
 ]
+```
+
+## Get voters of a delegate
+
+Gets voters information for given delegate(s) from the blockchain.
+
+```
+USAGE
+  $ lisk delegate:voters USERNAMES
+
+ARGUMENTS
+  USERNAMES  Comma-separated username(s) to get information about.
+
+OPTIONS
+  --limit          Limits the returned voters array by specified integer amount. Maximum is 100.
+
+  --offset         Offsets the returned voters array by specified integer amount.
+
+  --sort           Sorts the returned voters array. Sort type must be one of `publicKey:asc`, `publicKey:desc`, `balance:asc`, `balance:desc`, `username:asc` or `username:desc`.
+
+  --[no-]pretty    Prints JSON in pretty format rather than condensed. Has no effect if the output is set to table. You
+                   can change the default behaviour in your config.json file.
+
+
+DESCRIPTION
+  Gets voters information for given delegate(s) from the blockchain.
+
+EXAMPLES
+  delegate:voters lightcurve
+  delegate:voters lightcurve,4miners.net
+  delegate:voters lightcurve,4miners.net --limit 20 --offset 5 --sort publicKey:asc --pretty
+```
+
+## Get votes of a delegate
+
+Gets votes information for given delegate(s) from the blockchain.
+
+```
+USAGE
+  $ lisk delegate:votes ADDRESSES
+
+ARGUMENTS
+  ADDRESSES  Comma-separated address(es) to get information about.
+
+OPTIONS
+  --limit          Limits the returned voters array by specified integer amount. Maximum is 100.
+
+  --offset         Offsets the returned voters array by specified integer amount.
+
+  --sort           Sorts the returned voters array. Sort type must be one of `balance:asc`, `balance:desc`, `username:asc` or `username:desc`.
+
+  --[no-]pretty    Prints JSON in pretty format rather than condensed. Has no effect if the output is set to table. You
+                   can change the default behaviour in your config.json file.
+
+
+DESCRIPTION
+  Gets voting information for given delegate(s) from the blockchain.
+
+EXAMPLES
+  delegate:votes 8004805717140184627L
+  delegate:votes 13133549779353512613L,16010222169256538112L
+  delegate:votes 8004805717140184627L,8820447240686843261L --limit 20 --offset 5 --sort balance:asc --pretty
 ```
 
 ## Help
@@ -1042,6 +1106,11 @@ ARGUMENTS
   ADDRESS  Address of the recipient.
 
 OPTIONS
+  -d, --data=data
+      Optional UTF8 encoded data (maximum of 64 bytes) to include in the transaction asset.
+      	Examples:
+      	- --data=customInformation
+      	
   -j, --[no-]json
       Prints output in JSON format. You can change the default behaviour in your config.json file.
 
@@ -1414,14 +1483,45 @@ ARGUMENTS
   IDS  Comma-separated transaction ID(s) to get information about.
 
 OPTIONS
-  -j, --[no-]json  Prints output in JSON format. You can change the default behaviour in your config.json file.
+  -j, --[no-]json
+      Prints output in JSON format. You can change the default behaviour in your config.json file.
 
-  --[no-]pretty    Prints JSON in pretty format rather than condensed. Has no effect if the output is set to table. You
-                   can change the default behaviour in your config.json file.
+  -s, --state=unsigned|unprocessed
+      Get transactions based on a given state. Possible values for the state are 'unsigned' and 'unprocessed'.
+      	Examples:
+      	- --state=unsigned
+      	- --state=unprocessed
+
+  --limit=limit
+      [default: 10] Limits the returned transactions array by specified integer amount. Maximum is 100.
+
+  --offset=offset
+      [default: 0] Offsets the returned transactions array by specified integer amount.
+
+  --[no-]pretty
+      Prints JSON in pretty format rather than condensed. Has no effect if the output is set to table. You can change the
+      default behaviour in your config.json file.
+
+  --sender-id=sender-id
+      Get transactions based by senderId which is sender's lisk address'.
+      	Examples:
+      	- --sender-id=12668885769632475474L
+
+  --sort=amount:asc|amount:desc|fee:asc|fee:desc|type:asc|type:desc|timestamp:asc|timestamp:desc
+      [default: timestamp:asc] Fields to sort results by.
+
+DESCRIPTION
+  Gets transaction information from the blockchain.
 
 EXAMPLES
   transaction:get 10041151099734832021
   transaction:get 10041151099734832021,1260076503909567890
+  transaction:get 10041151099734832021,1260076503909567890 --state=unprocessed
+  transaction:get 10041151099734832021 --state=unsigned --sender-id=1813095620424213569L
+  transaction:get --state=unsigned --sender-id=1813095620424213569L
+  transaction:get --sender-id=1813095620424213569L
+  transaction:get --limit=10 --sort=amount:desc
+  transaction:get --limit=10 --offset=5
 ```
 
 **Example JSON Output**

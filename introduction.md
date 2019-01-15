@@ -2,6 +2,9 @@
 
 Lisk Elements is a JavaScript library containing several separately-installable npm packages, each covering a distinct region of Lisk-related functionality.
 
+- [Introduction](#lisk-elements-documentation)
+  - [Lisk Elements Version Reference](#versions)
+  - [Contribute to Codebase](#contribute-to-the-codebase)
 - [Setup](setup/setup.md)
   - [Pre-Installation](setup/setup.md#pre-installation)
   - [Installation](setup/setup.md#installation)

@@ -3,6 +3,7 @@
 ## Overview
 
 ### Setup
+- ['error: role "lisk" does not exist'](#role-lisk-does-not-exist)
 - **[Binary]** [Installation script fails](#installation-script-fails-binary)
 - **[Source]** ['npm install' fails with error 'Failed at the sodium@2.0.1 preinstall script.'](#npm-install-fails-with-error-source)
 - **[Source]** [Nothing shown in console after starting Lisk Core](#nothing-shown-in-console-after-starting-lisk-core)
@@ -12,6 +13,26 @@
 - [Enable forging: Invalid password and public key combination](#enable-forging-invalid-password-and-public-key-combination)
 
 ## Setup
+
+### Role "lisk" does not exist
+
+#### Problem:
+Starting the Lisk node fails with error: 
+```
+error: role "lisk" does not exist
+```
+This is, because Lisk Core expects that a user called "lisk" exists on the system.
+This user is specified in `config.json`.
+If the user is not present on the system, the above error will be thrown.
+
+#### Solution 1: create lisk user (recommended)
+```
+  sudo -u postgres createuser --createdb lisk
+```
+
+#### Solution 2: change `db.user` from "lisk" to custom username
+
+Edit `config.json` and replace "lisk" in `db.user` with an existing username on the system.
 
 ### Installation script fails (Binary)
 #### Problem:

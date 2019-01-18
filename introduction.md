@@ -22,7 +22,7 @@ Lisk Elements is a JavaScript library containing several separately-installable 
 
 ## Versions
 
-We release new versions of Lisk Elements regularly. Documentation on [lisk.io](https://lisk.io/documentation) will keep up to date with version updates. The table below provides an overview about the former releases and documentation versions of Lisk Elements.
+Documentation on [lisk.io](https://lisk.io/documentation) keeps up to date with version updates. The table below provides an overview about the former releases and documentation versions of Lisk Elements.
 
 Version | Release date <br> (yy/mm/dd)| Documentation reference
 ---     | ---         | ---

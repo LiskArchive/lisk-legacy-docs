@@ -7,7 +7,6 @@
   4. [Git](#git)
   5. [Node.js](#nodejs)
      * [Node version manager](#node-version-manager)
-  7. [PM2](#pm2)
   6. [Postgres](#postgresql-version-10)
   7. [Redis](#installing-redis)
 - [Installation](#installation)
@@ -132,18 +131,6 @@ nvm install 8.14.0
 ```
 
 For the following steps,  logout from the 'lisk' user again with `CTRL+D`, and continue with your user with sudo rights.
-
-### PM2
-
-[PM2](https://github.com/Unitech/pm2) manages the node process for Lisk.
-
-Info | Note
----- | ----
-![info note](../../info-icon.png "Info Note") | Though it is not required to install a process manager such as PM2 to run Lisk Core, we recommend it as it simplifies administration of Lisk Core from Source.
-
-```bash
-sudo npm install -g pm2
-```
 
 ### PostgreSQL (version 10)
 
@@ -286,7 +273,7 @@ Before proceeding, determine whether you wish to connect your node to the Mainne
 git clone https://github.com/LiskHQ/lisk.git
 cd lisk
 git checkout v1.1.0 -b v1.1.0 # check out latest release tag
-npm install
+npm ci
 ```
 
 Info | Note

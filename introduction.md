@@ -1,11 +1,16 @@
 # Lisk Commander Documentation
 
-Lisk Commander aims to be a low entry point and the most convenient tool for developers who are looking for an efficient way of coding with a command line interface (CLI).
-With Lisk Commander, it is easier and quicker to plug new commands into the CLI than building a Graphical User Interface (GUI) around every command.
-This will facilitate delegates, node operators, contributors to the Lisk codebase, developers using Lisk’s infrastructure (and anyone else who’s interested) to make use of Lisk’s functionality from the command line with ease.
+Lisk Commander is a Command-Line-Interface Tool designed to facilitate delegates, node operators, contributors to the Lisk codebase, developers using Lisk’s infrastructure (and anyone else who’s interested) to make use of Lisk’s functionality from the command line with ease.
 
-Lisk Commander allows you to communicate with a remote or local node and carry out Lisk-related functionality.
-Going forward we’ll be adding more commands to provide a comprehensive suite for all your Lisk-related needs.
+Lisk Commander allows to communicate with a remote or local node and carry out Lisk-related functionality.
+
+This can be for example:
+
+- create a transaction
+- decrypt/encrypt passphrases or messages
+- create accounts
+- get delegates
+- ... many more examples can be found on the [commands](user-guide/commands/commands.md) page.
 
 ## Table of contents
 

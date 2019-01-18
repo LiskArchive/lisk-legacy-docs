@@ -29,7 +29,7 @@ This can be for example:
 
 ## Versions
 
-We release new versions of Lisk Commander regularly. Documentation on [lisk.io](https://lisk.io/documentation) will keep up to date with version updates. The table below provides an overview about the former releases and documentation versions of Lisk Commander.
+Documentation on [lisk.io](https://lisk.io/documentation) keeps up to date with version updates. The table below provides an overview about the former releases and documentation versions of Lisk Commander.
 
 Version | Release date <br> (yy/mm/dd)| Documentation reference
 ---     | ---         | ---

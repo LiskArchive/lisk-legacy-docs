@@ -4,6 +4,7 @@
 
 - [Introduction](#lisk-core-documentation)
   - [Lisk Core Version Reference](#versions)
+  - [Versioning Scheme](#versioning-scheme)
   - [What is Lisk Core?](#what-is-lisk-core)
     - [Networks](#networks)
     - [Components](#components)
@@ -36,6 +37,37 @@ Version | Release date <br> (yy/mm/dd)| Documentation reference
 [v1.2.1](https://github.com/LiskHQ/lisk/releases/tag/v1.2.1) | 18/11/10 | [Lisk Core 1.2 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.2.0/introduction.md)
 [v1.1.1](https://github.com/LiskHQ/lisk/releases/tag/v1.1.1) | 18/10/23 | [Lisk Core 1.1 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.1.0/introduction.md)
 [v1.0.3](https://github.com/LiskHQ/lisk/releases/tag/v1.0.3) | 18/08/17 | [Lisk Core 1.0 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.0.0/introduction.md)
+
+## Versioning Schemes
+
+Lisk Core is decribed in 2 different versioning themes. The **Software Implementation Version** and the **Protocol Version**.
+
+### Software Implementation Versioning
+
+Any Lisk Core software changes, except for the logging system, are communicated following the exact rules specified by [Semver](https://semver.org/).
+
+Software versioning still follows a 3 digit notation **(MAJOR.MINOR.PATCH)**, where the individual digits represent the following types of software changes:
+
+```
+v<MAJOR>.<MINOR>.<PATCH> 
+
+v     - Version prefix
+MAJOR - Breaking change
+MINOR - New feature
+PATCH - Bug fix
+```
+
+The *Software Implementation Versioning* follows the popular SemVer scheme and gives a quick overview for developers about breaking and non-breaking changes in the software.
+
+### Protocol Versioning
+
+The protocol version is denoted by two digits, `H.S.`.
+The first digit, `H`, depends on the number of hard forks and is incremented with every hard fork.
+`S` represents the number of soft forks since the last hard fork.
+
+> The initial protocol version 1.0 is defined to be the one that was implemented by Lisk Core v1.0.0.
+
+The *Protocol Versioning* theme is used e.g. in P2P Communication between Lisk Core nodes, in order to determine, if the nodes have compatible versions of the Lisk protocol implemented.
 
 ## What is Lisk Core?
 

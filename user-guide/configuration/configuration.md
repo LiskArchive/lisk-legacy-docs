@@ -4,7 +4,7 @@
 
 - The **default** network is `devnet`. If you want to connect to another network specify the `network` when starting Lisk Core, as described in [Source Administration](../administration/source/admin-source.md#command-line-options)
 - The Lisk configuration is managed under different folder structures.
-- Root folder for all configuration is `./config/`.
+- Root folder for all configuration is `config/`.
 - Default configuration file that is used as base is `config/default/config.json`
 - You can find network specific configurations under `config/<network>/config.json`, where `<network>` can be any of these values:
    - `devnet`
@@ -19,17 +19,8 @@
    4. Command line configurations, specified as command-line flags or `ENV` variables.
 - For development purposes use `devnet` as a network option, other networks are specific to public Lisk networks.
 
-Info | Note 
---- | --- 
-![info note](../../info-icon.png "Info Note") | If none is specified, the default config value is `devnet`.
-
-Important | Note 
---- | --- 
-![important note](../../important-icon.png "Important Note") | Don't override any value in above mentioned files if you need custom configuration.
-
-Info | Note 
---- | --- 
-![info note](../../info-icon.png "Info Note") | To use a custom configuration: Create your own `json` file and pass it as [command line option](../administration/source/admin-source.md#command-line-options)
+> Don't override any value in above mentioned files if you need custom configuration.
+> To use a custom configuration: Create your own `.json` file and pass it as [command line option](../administration/source/admin-source.md#command-line-options)
 
 For advanced configurations, please go directly to the sections listed below :
 
@@ -168,9 +159,7 @@ To setup a public wallet, simply leave the`api.access.whitelist` array empty.
 
 For best security, disable all access setting `api.enabled` to `false`.
 
-Important | Note 
---- | --- 
-![important note](../../important-icon.png "Important Note") | This last configuration may prevent monitoring scripts from functioning.
+> Note: This last configuration may prevent monitoring scripts from functioning.
 
 ## Forging
 
@@ -222,15 +211,11 @@ Forging
 
 ### Enable/Disable Forging
 
-Info | Note 
---- | --- 
-![info note](../../info-icon.png "Info Note") | The endpoint to perform this action is **idempotent** what it means, the result has to be the same, no matter how many times you execute the same command. 
+> The endpoint to perform this action is **idempotent** what it means, the result has to be the same, no matter how many times you execute the same command. 
 
 If you are running your Lisk Node from a local machine, you can enable forging through the API client, without further interruption.
 
-Important | Note 
---- | --- 
-![important note](../../important-icon.png "Important Note") | Remember that after restarting you Lisk node, you must need to re-enable forging again.
+> Important: Remember that after restarting you Lisk node, you must need to re-enable forging again.
 
 Use the following curl command to **enable the forging** for your delegate:
 ```bash
@@ -288,9 +273,7 @@ The result should be something like this:
 
 ## SSL
 
-Info | Note 
---- | --- 
-![info note](../../info-icon.png "Info Note") | To complete this step require a signed certificate (from a CA, such as Let's Encrypt) or a self-signed certificate. You will need both the private and public keys in a location that is accessible to Lisk.
+> This step requires a signed certificate (from a CA, such as Let's Encrypt) or a self-signed certificate. You will need both the private and public keys in a location that is accessible to Lisk.
 
 Next snippet highlights the essential parameters to enable SSL security on your node's connections:
 
@@ -308,9 +291,7 @@ Next snippet highlights the essential parameters to enable SSL security on your 
 }
 ```
 
-Important | Note 
---- | --- 
-![important note](../../important-icon.png "Important Note") | If SSL Port configured above in `ssl.options.port` is a privileged port (below 1024), you must either allow node to use the specified port with `setcap` or change the configuration to use a port outside of that range.
+> If SSL Port configured above in `ssl.options.port` is a privileged port (below 1024), you must either allow node to use the specified port with `setcap` or change the configuration to use a port outside of that range.
 
 **Setcap:** Only required to grant Lisk access to port 443
 

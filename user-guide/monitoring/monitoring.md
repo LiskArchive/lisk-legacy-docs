@@ -93,7 +93,7 @@ Then start the node normally.
 
 ```bash
 bash lisk.sh start # start lisk core binary
-pm2 start lisk # start lisk core source
+npx pm2 start lisk # start lisk core source
 docker start container_id # start lisk core docker
 ```
 
@@ -101,7 +101,7 @@ docker start container_id # start lisk core docker
 
 ```bash
 bash lisk.sh reload # restart lisk core binary
-pm2 restart lisk # restart lisk core source
+npx pm2 restart lisk # restart lisk core source
 docker restart container_id # restart lisk core docker
 ```
 
@@ -114,13 +114,9 @@ There are several ways to create workload on your node:
 
 ### Option 1: Lisk Core Test Suite
 
-Info | Note 
---- | --- 
-![info note](../../info-icon.png "Info Note") | The Lisk Core Test Suite is only available for Lisk Core from Source.
+> The Lisk Core Test Suite is only available for Lisk Core from Source.
 
-Info | Note 
---- | --- 
-![info note](../../info-icon.png "Info Note") | The `unit` Testsuite is not suited for this purpose, as unit tests are not executed in the context of the running application.
+> The `unit` Testsuite is not suited for this purpose, as unit tests are not executed in the context of the running application.
 
 Tests are run using the following command:
 
@@ -196,7 +192,7 @@ Here are the steps we follow:
 ```bash
 $ cd ~/lisk_repo 
 ~/lisk_repo $ export NEW_RELIC_LICENSE_KEY=xxxxxxxxxxx
-~/lisk_repo $ pm2 start lisk
+~/lisk_repo $ npx pm2 start lisk
 ```
 Now start making some requests using Siege:
 
@@ -222,10 +218,7 @@ Please select the specific application by clicking its name. You will see the fo
 
 To know fine-grained details of this dashboard, please read https://learn.newrelic.com/courses/intro_apm. For now, since during the experiment we only executed the HTTP requests against our node (`GET /api/transactions`), there is only one section having interesting results. Please select "Transactions" from the left menu in above screen. See detailed instructions in the below image. 
 
-Info | Note 
---- | --- 
-![info note](../../info-icon.png "Info Note") | To clarify, New Relic transactions have no relation with Lisk transactions. It's just the grouping term New Relic use to show analytics. 
-
+> To clarify, New Relic transactions have no relation with Lisk transactions. It's just the grouping term New Relic use to show analytics. 
 
 ![Transactions UI](./assets/transactions.png)
 

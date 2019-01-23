@@ -106,14 +106,14 @@ Install System wide via package manager, like so:
 #### Ubuntu
 
 ```bash
-curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
+curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
 sudo apt-get install -y nodejs
 ```
 
 #### MacOS
 
 ```bash
-brew install node@8.14.0
+brew install node@10.14.1
 ```
 
 ### Node version manager
@@ -128,7 +128,7 @@ su - lisk
 2. Install nvm following these [instructions](https://github.com/creationix/nvm#installation)
 3. Install the correct version of Node.js using nvm:
 ```bash
-nvm install 8.14.0
+nvm install 10.14.1
 ```
 
 For the following steps,  logout from the 'lisk' user again with `CTRL+D`, and continue with your user with sudo rights.

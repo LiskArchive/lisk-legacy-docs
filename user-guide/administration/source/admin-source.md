@@ -2,10 +2,6 @@
 
 This section details how to manage a Source installation of Lisk Core.
 
-Info | Note 
---- | --- 
-![info note](../../../info-icon.png "Info Note") | Source installations are recommended to use a process manager. We use PM2 for this purpose. If you have not set it up yet, please refer to the [Setup from Source](../../../setup/source/source.md) page.
-
 - [Basic Commands](#basic-commands)
   * [Status of Lisk Core](#status)
   * [Start Lisk Core](#start)
@@ -26,44 +22,44 @@ Info | Note
 ### Status
 Check the status of the Lisk Core Node.
 ```bash
-pm2 status lisk
+npx pm2 status lisk
 ```
 
 ### Start
 Start Lisk Core.
 ```bash
-pm2 start lisk
+npx pm2 start lisk
 ```
 
 ### Stop
 Stop Lisk Core.
 ```bash
-pm2 stop lisk
+npx pm2 stop lisk
 ```
 
 ### Restart
 Restart Lisk Core.
 ```bash
-pm2 restart lisk
+npx pm2 restart lisk
 ```
 
 ### Delete
-Remove Lisk Core process from pm2 list.
+Remove Lisk Core process from npx pm2 list.
 ```bash
-pm2 delete lisk
+npx pm2 delete lisk
 ```
 
 ### Add
 In case you haven't done this during the Installation process, add your Lisk Core process to pm2 under the name `lisk`.
 ```bash
-pm2 start --name lisk app.js -- --network [network]
+npx pm2 start --name lisk app.js -- --network [network]
 ```
 Where `[network]` might be either `testnet` or `mainnet`.
 
 ### Logs
 Display Lisk Core logs in streaming.
 ```bash
-pm2 logs
+npx pm2 logs
 ```
 
 ## Command Line Options
@@ -75,7 +71,7 @@ node app.js -p [port] -a [address] -c [config-path] -n [network]
 ```
 or with pm2, e.g.:
 ```bash
-pm2 start lisk -p [port] -a [address] -c [config-path] -n [network]
+npx pm2 start lisk -p [port] -a [address] -c [config-path] -n [network]
 ```
 You can pass any of `devnet` (default), `alphanet`, `betanet`, `testnet` or `mainnet` for the network option.
 
@@ -185,21 +181,21 @@ In some scenarios it is recommended to restore the blockchain from a snapshot. T
 ### Mainnet
 
 ```bash
-pm2 stop lisk
+npx pm2 stop lisk
 dropdb lisk_main
 wget https://downloads.lisk.io/lisk/main/blockchain.db.gz
 createdb lisk_main
 gunzip -fcq blockchain.db.gz | psql -d lisk_main
-pm2 start lisk
+npx pm2 start lisk
 ```
 
 ### Testnet
 
 ```bash
-pm2 stop lisk
+npx pm2 stop lisk
 dropdb lisk_test
 wget https://downloads.lisk.io/lisk/test/blockchain.db.gz
 createdb lisk_test
 gunzip -fcq blockchain.db.gz | psql -d lisk_test
-pm2 start lisk
+npx pm2 start lisk
 ```

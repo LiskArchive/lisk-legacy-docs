@@ -273,7 +273,7 @@ The result should be something like this:
 
 ## SSL
 
-> To complete this step require a signed certificate (from a CA, such as Let's Encrypt) or a self-signed certificate. You will need both the private and public keys in a location that is accessible to Lisk.
+> This step requires a signed certificate (from a CA, such as Let's Encrypt) or a self-signed certificate. You will need both the private and public keys in a location that is accessible to Lisk.
 
 Next snippet highlights the essential parameters to enable SSL security on your node's connections:
 

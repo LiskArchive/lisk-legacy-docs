@@ -3,8 +3,8 @@
 ## Table of contents
 
 - [Introduction](#lisk-core-documentation)
-  - [Lisk Core Version Reference](#versions)
-  - [Versioning Scheme](#versioning-scheme)
+  - [Versions](#versions)
+  - [Versioning Schemes](#versioning-schemes)
   - [What is Lisk Core?](#what-is-lisk-core)
     - [Networks](#networks)
     - [Components](#components)
@@ -29,24 +29,26 @@
 
 ## Versions
 
-We release new versions of Lisk Core regularly. Documentation on [lisk.io](https://lisk.io/documentation) will keep up to date with version updates. The table below provides an overview about the former releases and documentation versions of Lisk Core.
+We release new versions of Lisk Core regularly. Documentation on [lisk.io](https://lisk.io/documentation) will keep up to date with version updates. The Lisk Core version reference below provides an overview about the former releases and documentation versions of Lisk Core.
 
-Version | Release date <br> (yy/mm/dd)| Documentation reference
----     | ---         | ---
-[v1.3.0](https://github.com/LiskHQ/lisk/releases/tag/v1.3.0) | 18/11/19 | *Current version, live on lisk.io/documentation*
-[v1.2.1](https://github.com/LiskHQ/lisk/releases/tag/v1.2.1) | 18/11/10 | [Lisk Core 1.2 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.2.0/introduction.md)
-[v1.1.1](https://github.com/LiskHQ/lisk/releases/tag/v1.1.1) | 18/10/23 | [Lisk Core 1.1 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.1.0/introduction.md)
-[v1.0.3](https://github.com/LiskHQ/lisk/releases/tag/v1.0.3) | 18/08/17 | [Lisk Core 1.0 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.0.0/introduction.md)
+Software Version | Protocol Version | Release date <br> (yy/mm/dd)| Documentation reference
+---     | ---       | ---         | ---
+[v1.5.0](https://github.com/LiskHQ/lisk/releases/tag/v1.5.0) | 1.0 | 19/mm/dd | *Current version, live on lisk.io/documentation*
+[v1.4.0](https://github.com/LiskHQ/lisk/releases/tag/v1.4.0) | 1.0 | 19/01/07 | [Lisk Core 1.4 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.4.0/introduction.md)
+[v1.3.0](https://github.com/LiskHQ/lisk/releases/tag/v1.3.0) | 1.0 | 18/11/19 | [Lisk Core 1.3 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.3.0/introduction.md)
+[v1.2.1](https://github.com/LiskHQ/lisk/releases/tag/v1.2.1) | 1.0 | 18/11/10 | [Lisk Core 1.2 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.2.0/introduction.md)
+[v1.1.1](https://github.com/LiskHQ/lisk/releases/tag/v1.1.1) | 1.0 | 18/10/23 | [Lisk Core 1.1 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.1.0/introduction.md)
+[v1.0.3](https://github.com/LiskHQ/lisk/releases/tag/v1.0.3) | 1.0 | 18/08/17 | [Lisk Core 1.0 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.0.0/introduction.md)
 
-## Versioning Schemes
+## Versioning schemes
 
-Lisk Core is decribed in 2 different versioning themes. The **Software Implementation Version** and the **Protocol Version**.
+Lisk Core is decribed in 2 different versioning schemes. The **Software Implementation Version** and the **Protocol Version**.
 
-### Software Implementation Versioning
+### Software implementation versioning
 
-Any Lisk Core software changes, except for the logging system, are communicated following the exact rules specified by [Semver](https://semver.org/).
+Any Lisk Core software changes, except for the logging system, are communicated following the exact rules specified by [SemVer](https://semver.org/).
 
-Software versioning still follows a 3 digit notation **(MAJOR.MINOR.PATCH)**, where the individual digits represent the following types of software changes:
+Software implementation versioning has a version prefix `v` followed by a 3 digit notation `<MAJOR>.<MINOR>.<PATCH>` , where the individual digits represent the following types of software changes:
 
 ```
 v<MAJOR>.<MINOR>.<PATCH> 
@@ -57,17 +59,17 @@ MINOR - New feature
 PATCH - Bug fix
 ```
 
-The *Software Implementation Versioning* follows the popular SemVer scheme and gives a quick overview for developers about breaking and non-breaking changes in the software.
+The *software implementation version* follows the popular SemVer scheme and gives a quick overview for developers about breaking and non-breaking changes in the software.
 
-### Protocol Versioning
+### Protocol versioning
 
-The protocol version is denoted by two digits, `H.S.`.
+The *protocol version* is denoted by two digits, `H.S.`.
 The first digit, `H`, depends on the number of hard forks and is incremented with every hard fork.
 `S` represents the number of soft forks since the last hard fork.
 
 > The initial protocol version 1.0 is defined to be the one that was implemented by Lisk Core v1.0.0.
 
-The *Protocol Versioning* theme is used e.g. in P2P Communication between Lisk Core nodes, in order to determine, if the nodes have compatible versions of the Lisk protocol implemented.
+The *protocol version* is used e.g. in P2P Communication between Lisk Core nodes, in order to determine, if the nodes have compatible versions of the Lisk protocol implemented.
 
 ## What is Lisk Core?
 
@@ -82,10 +84,8 @@ Lisk Core is the program that implements the [Lisk Protocol](/lisk-protocol/intr
 
 An instance of Lisk Core is generally detailed in two different ways: 
 
-Info | Note 
---- | --- 
-![info note](info-icon.png "Info Note") | A Lisk Core instance connected to a network is referred to as a Lisk **Node**. 
-| | A Lisk Node connected to other Lisk Nodes is referred to as a Lisk **Peer**.
+> A Lisk Core instance connected to a network is referred to as a Lisk **Node**. 
+> A Lisk Node connected to other Lisk Nodes is referred to as a Lisk **Peer**.
 
 Both meanings refer to a machine which, after installing and executing Lisk Core, become a server. The server participates in the network and provides blockchain data to its clients.
 

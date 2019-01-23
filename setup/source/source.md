@@ -221,9 +221,7 @@ Stop redis:
 brew services stop redis
 ```
 
-Info | Note 
---- | --- 
-![info note](../../info-icon.png "Info Note") | Lisk does not run on the redis default port of `6379`. Instead it is configured to run on port: `6380`. Due to this, in order to run Lisk, you have one of two options:
+> Lisk does not run on the redis default port of `6379`. Instead it is configured to run on port: `6380`. Due to this, in order to run Lisk, you have one of two options:
 
 1. **Change the Lisk configuration**
 
@@ -276,9 +274,7 @@ git checkout v1.1.0 -b v1.1.0 # check out latest release tag
 npm ci
 ```
 
-Info | Note
----- | ----
-![info note](../../info-icon.png "Info Note") | Please check for latest release on https://github.com/LiskHQ/lisk/releases
+> Please check for latest release on https://github.com/LiskHQ/lisk/releases
 
 To test that Lisk Core is built and configured correctly, issue the following command to connect to the network:
 
@@ -294,7 +290,7 @@ Once the process is verified as running correctly, `CTRL+C` and start the proces
 This will fork the process into the background and automatically recover the process if it fails.
 
 ```bash
-pm2 start --name lisk app.js -- --network [network]
+npx pm2 start --name lisk app.js -- --network [network]
 ```
 Where `[network]` might be either `testnet` or `mainnet`.
 

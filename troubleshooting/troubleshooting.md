@@ -35,12 +35,10 @@ locate postgresql.conf
 After chaning the config, restart the corresponding postgreSQL process.
 Now, the 2 postgreSQL instances shouldn't interfere each other anymore.
 
-
 #### Solution 2:
-The error can be ignored by setting the `-i` flag.
+The error can be ignored by setting the ignore flag `-i`.
 In that case, the installation script `installLisk.sh` will be executed regardless of the above error.
 The script might run successfully to the end, but ignoring the error might result in unwanted interferences between the different postgreSQL instances.
-
 ```bash
 bash installLisk.sh install -r main -i
 ```
@@ -65,7 +63,7 @@ If the user is not present on the system, the above error will be thrown.
 
 #### Solution 1: create lisk user (recommended)
 Create a postgres user with name "lisk" and grant it the right to create databases.
-```
+```bash
   sudo -u postgres createuser --createdb lisk
 ```
 

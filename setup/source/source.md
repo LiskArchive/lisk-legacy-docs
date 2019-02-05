@@ -49,9 +49,7 @@ In order to run and manage a Lisk Core node in the future, please create a separ
 
 #### Ubuntu
 
-Info | Note 
---- | --- 
-![info note](../../info-icon.png "Info Note") | The `lisk` user itself **does not need** any `sudo` rights to run Lisk Core.
+> The `lisk` user itself **does not need** any `sudo` rights to run Lisk Core.
     
 ```bash
 sudo adduser lisk
@@ -327,7 +325,7 @@ Inside this file, define the parameters for the log rotation.
 Example values:
 
 ```bash
-/path/to/lisk/logs/*.log { 
+/path/to/lisk/logs/mainnet/*.log { 
         daily                   # daily rotation
         rotate 5                # keep the 5 most recent logs
         maxage 14               # remove logs that are older than 14 days

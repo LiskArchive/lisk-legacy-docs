@@ -258,7 +258,7 @@ curl \
 
 The result should be something like this:
 
-```js
+```json
 {
   "meta": {},
   "data": [

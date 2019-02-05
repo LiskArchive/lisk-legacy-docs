@@ -47,7 +47,7 @@ bash installLisk.sh install -r main -i
 If postgreSQL has been installed globally on the system, disable it:
 ```bash
 sudo systemctl stop postgresql
-systemctl disable postgresql
+sudo systemctl disable postgresql
 ```
 Possible data inside of databases remains stored in this case.
 

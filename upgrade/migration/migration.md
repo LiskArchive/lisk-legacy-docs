@@ -109,7 +109,7 @@ To resolve this, rebuild your version of the blockchain [from snaphot](../../use
 
 The following utility scripts are run by `lisk_bridge.sh` :
 
-- [update_config.sh](#update-config): migrates config to new structure
+- [update_config.js](#update-config): migrates config to new structure
 
 During execution of `lisk_bridge.sh`, it will prompt you asking for a password in the case where it finds a passphrase.
 It will encrypt and migrate that passphrase to the new format.

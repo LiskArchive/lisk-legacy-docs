@@ -18,7 +18,7 @@
 
 #### Problem:
 After running `bash installLisk.sh install -r test` the installation script is aborted with the following output:
-```shell
+```
 Coldstarting Lisk for the first time
 √ Postgresql is running.
 X Failed to create Postgresql user.

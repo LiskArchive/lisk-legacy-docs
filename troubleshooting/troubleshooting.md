@@ -32,7 +32,7 @@ Locate the corresponding configuration file for PostgreSQL, `postgresql.conf`, a
 ```bash
 locate postgresql.conf 
 ```
-After chaning the config, restart the corresponding postgreSQL process.
+After changing the config, restart the corresponding postgreSQL process.
 Now, the 2 postgreSQL instances shouldn't interfere each other anymore.
 
 #### Solution 2:
@@ -44,8 +44,15 @@ bash installLisk.sh install -r main -i
 ```
 
 #### Solution 3:
-If postgreSQL has been installed globally on the system and is not needed anymore, the issue can be solved the following way.
-Simply remove the already installed postgreSQL by running the following command:
+If postgreSQL has been installed globally on the system, disable it temporary:
+```bash
+systemctl stop postgresql
+systemctl disable postgresql
+```
+Possible data inside of databases remains stored in this case.
+
+#### Solution 4:
+If postgreSQL has been installed globally on the system and the data in it is not needed anymore, simply remove the already installed postgreSQL by running the following command:
 ```bash
 sudo apt-get --purge remove postgresql postgresql-doc postgresql-common
 ```

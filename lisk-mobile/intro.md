@@ -32,6 +32,8 @@ It provides the users with all the functionality they need to send and receive L
 
 #### Login via Face ID 
 
+### 3D touch action menu
+
 ### Customization
 
 #### Dark mode

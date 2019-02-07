@@ -205,7 +205,7 @@ npx pm2 start lisk
 
 For code documentation, Lisk Core uses [JSDoc](http://usejsdoc.org/).
 With JSDoc generates a static HTML documentation site.
-To build the documentation site, run the following command inside the lisk folder:
+To build the documentation site, run the following command inside the lisk installation directory:
 
 ```
 npm run docs:build

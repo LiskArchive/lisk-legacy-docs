@@ -32,6 +32,7 @@
   - [signature:broadcast](#broadcast-signature)
   - [signature:create](#create-signature)
 - [Transaction](#transaction)
+  - [transaction:broadcast](#broadcast-transaction)
   - [transaction:create](#create-transaction)
     - [transaction:create:transfer](#transfer-transaction)
     - [transaction:create:second-passphrase](#second-passphrase-transaction)

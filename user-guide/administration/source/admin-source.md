@@ -205,16 +205,21 @@ npx pm2 start lisk
 
 For code documentation, Lisk Core uses [JSDoc](http://usejsdoc.org/).
 With JSDoc generates a static HTML documentation site.
-To build the documentation site, run the following command:
+To build the documentation site, run the following command inside the lisk folder:
 
 ```
 npm run docs:build
 ```
+
+The docs are generated inside of `docs/build`.
 
 To host the documentation site (e.g. for easy access via a browser), use the following command:
 
 ```
 npm run docs:serve
 ```
+
+This will start a webserver, and the docs will be accessible through the browser on port 8080, e.g. `localhost:8080`.
+The process will be started inside the terminal. To stop the webserver again, hit `CTRL + C`.
 
 For more information please have a look in the [Contribution Guidelines](https://github.com/LiskHQ/lisk/blob/development/docs/CONTRIBUTING.md) for Lisk Core on Github.

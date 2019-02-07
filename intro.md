@@ -18,9 +18,11 @@ It provides the users with all the functionality they need to send and receive L
 
 ### Security
 
-#### Keychain integration for iOS
+#### Built-in integration for Password managers
 
-#### Keystore integration for Android
+##### Keychain integration for iOS
+
+##### Keystore integration for Android
 
 #### Discreet Mode
 

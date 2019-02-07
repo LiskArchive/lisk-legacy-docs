@@ -211,7 +211,7 @@ To build the documentation site, run the following command inside the lisk insta
 npm run docs:build
 ```
 
-The docs are generated inside of `docs/build`.
+The JSDoc documentation is generated inside of `docs/jsdoc/`.
 
 To host the documentation site (e.g. for easy access via a browser), use the following command:
 
@@ -219,7 +219,7 @@ To host the documentation site (e.g. for easy access via a browser), use the fol
 npm run docs:serve
 ```
 
-This will start a webserver, and the docs will be accessible through the browser on port 8080, e.g. `localhost:8080`.
+This will start a webserver, and the documentation will be accessible through the browser on port 8080, e.g. `localhost:8080`.
 The process will be started inside the terminal. To stop the webserver again, hit `CTRL + C`.
 
 For more information please have a look in the [Contribution Guidelines](https://github.com/LiskHQ/lisk/blob/development/docs/CONTRIBUTING.md) for Lisk Core on Github.

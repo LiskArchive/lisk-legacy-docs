@@ -6,37 +6,95 @@ It provides the users with all the functionality they need to send and receive L
 
 ## Download
 
-[![Get it from iTunes](https://lisk.io/assets/svg/download_on_the_app_store_badge.svg)](https://itunes.apple.com/us/app/lisk/id1436809559?mt=8) [![Get it on Google Play](https://lisk.io/assets/svg/download_on_the_play_store_badge.svg)](https://play.google.com/store/apps/details?id=io.lisk.mobile&pcampaignid=MKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1)
+[![Get it on iTunes](https://lisk.io/assets/svg/download_on_the_app_store_badge.svg)](https://itunes.apple.com/us/app/lisk/id1436809559?mt=8) [![Get it on Google Play](https://lisk.io/assets/svg/download_on_the_play_store_badge.svg)](https://play.google.com/store/apps/details?id=io.lisk.mobile&pcampaignid=MKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1)
 
 ## Features
 
-### Sending and receiving transactions
+### Send and receive transactions
+
+Lisk Mobile offers different options for easy money transfer:
 
 #### QR-Code scanner
 
+> The QR-Code scanner needs access to the camera in order to work.
+
 #### iMessage Extension
 
-### Security
+Users with iOS devices can utilize the instant messenger "iMessage" to send and receive LSK without leaving the iMessage app.
 
-#### Built-in integration for Password managers
+#### Lisk protocol URL
 
-##### Keychain integration for iOS
+Quickly send LSK or request LSK, by utilizing Lisk protocol URLs.
+By clicking on the respective link, it will open Lisk Mobile on the desired page and with predefined values.
 
-##### Keystore integration for Android
+##### Send LSK
 
-#### Discreet Mode
+```
+lisk://wallet?recipient=1L&amount=1&reference=test
+```
+
+##### Request LSK
+
+```
+lisk://request
+```
+
+### View transaction history
+
+View the transaction details.
+ 
+#### Lisk protocol URL
+
+```
+lisk://transactions?id=1
+```
+
+#### In the app
+
+Navigate to the Dashboard in Lisk Mobile and click on the transaction to view the transaction details of that particular transaction.
+
+### Account creation
+
+Lisk Mobile offers the possibility to freshly create a new Lisk ID, in case the user doesn't have an Account, yet.
+
+### Discreet Mode
+
+The discreet mode blurrs the sensitive information inside Lisk Mobile.
+This helps protecting your privacym when using Lisk Mobile at public places.
+
+Following information gets blurred:
+- account balance
+- transaction amounts
+
+### Dark mode
+
+The style of Lisk Mobile can be changed on the "Settings" page.
+
+### Bookmarks
+
+Bookmarks offer the possibility to associate Lisk IDs with additional information.
+
+To bookmark an account, go to "Bookmarks" page and hit the "+"-button.
+Define then the respective adress and a label to be associated with that address.
+To save the bookmark, hit "Add to bookmarks".
 
 ### Login methods
 
+#### Login with passphrase
+
+Default way to log in to Lisk Mobile. Insert your passphrase and hit the login button.
+
 #### Login with Fingerprint
+
+This function can be enabled on the "Settings" page of Lisk mobile, if the device supports biometric login methods.
 
 #### Login via Face ID 
 
+This function can be enabled on the "Settings" page of Lisk mobile, if the device supports biometric login methods.
+
 ### 3D touch action menu
 
-### Customization
-
-#### Dark mode
+Quick way to perform most popular actions of Lisk Mobile, without the need to open the app.
 
 ## Contribute to the Codebase
 

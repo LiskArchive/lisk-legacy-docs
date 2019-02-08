@@ -121,10 +121,10 @@ In order to do so, the file `env.json` inside the lisk-mobile installation folde
 
 ```js
 {
- "network": "customNode",
- "address": "https://testnet.lisk.io",
- "passphrase": "drastic spot aerobic web wave tourist library first scout fatal inherit arrange",
- "secondPassphrase": "second custom passphrase"
+ "network": "customNode", // Lisk network's name
+ "address": "https://testnet.lisk.io", // Lisk network's url
+ "passphrase": "drastic spot aerobic web wave tourist library first scout fatal inherit arrange", // Passphrase of your LSK account, to be filled out automatically on login
+ "secondPassphrase": "second custom passphrase" // Second passphrase of your LSK account, to be filled out automatically on send process
 }
 ```
 
@@ -132,8 +132,15 @@ In order to do so, the file `env.json` inside the lisk-mobile installation folde
   - `customNode` indicates, another variable `address` is set, which will be used when Lisk Mobile is started.
   - `testnet` will try to connect to a predefined testnet node, it is not needed to set `address`. If `address` is set, it will overwrite the predefined node.
 - `address` takes an URL to a Lisk node, Lisk Mobile shall connect to.
-- `passphrase` a mnemonic passphrase cann be specified here, that will be prefilled on the Login screen of Lisk Mobile.
+- `passphrase` a mnemonic passphrase can be specified here, that will be prefilled on the login screen of Lisk Mobile.
 - `secondPassphrase` lets the user predefine the second passphrase for the account as well, if it is needed.
+
+
+> `env.json` should stay empty, when commiting changes back to Github. To achieve this in a convenient way, the user may want to run the following command in order to ignore changes to that file in git:
+
+```bash
+git update-index --no-assume-unchanged env.json
+```
 
 ### Run
 
@@ -142,6 +149,8 @@ npm start
 ```
 
 ### Build
+
+To build a release of Lisk Mobile, that can be installed on a device.
 
 #### Android
 
@@ -157,7 +166,7 @@ npm run build:ios
 
 ### Testing
 
-Run unit tests:
+To test if the software works as expected, run the unit tests like so:
 
 ```bash
 npm run test

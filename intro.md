@@ -2,7 +2,24 @@
 
 Lisk Mobile is the official LSK wallet for smartphones.
 Lisk Mobile is a cross-platform application written in React Native and primarily build for iOS and Android.
-It provides the users with all the functionality they need to send and receive LSK tokens, as well as reviewing the activity history of their or any other account in the Lisk blockchain.
+
+- [Download](#download)
+- [Features](#features)
+  - [Send and request LSK tokens](#send-and-request-lsk-tokens)
+    - [QR-Code scanner](#qr-code-scanner)
+    - [iMessage Extension](#imessage-extension)
+    - [Lisk URL](#lisk-url)
+  - [Account history](#account-history)
+  - [Account creation](#account-creation)
+  - [Dark mode](#dark-mode)
+  - [Discreet mode](#discreet-mode)
+  - [3d touch action menu](#3d-touch-action-menu)
+  - [Bookmarks](#bookmarks)
+  - [Login methods](#login-methods)
+    - [Login with passphrase](#login-with-passphrase)
+    - [Login with fingerprint](#login-with-fingerprint)
+    - [Login via face-ID](#login-via-face-id)    
+- [Contribute to the Codebase](#contribute-to-the-codebase)
 
 ## Download
 
@@ -10,9 +27,9 @@ It provides the users with all the functionality they need to send and receive L
 
 ## Features
 
-### Send and receive transactions
+### Send and request LSK tokens
 
-Lisk Mobile offers different options for easy money transfer:
+Lisk Mobile offers different options for easy LSK transfer:
 
 #### QR-Code scanner
 
@@ -22,9 +39,9 @@ Lisk Mobile offers different options for easy money transfer:
 
 Users with iOS devices can utilize the instant messenger "iMessage" to send and receive LSK without leaving the iMessage app.
 
-#### Lisk protocol URL
+#### Lisk URL
 
-Quickly send LSK or request LSK, by utilizing Lisk protocol URLs.
+Quickly send LSK or request LSK, by utilizing Lisk URLs.
 By clicking on the respective link, it will open Lisk Mobile on the desired page and with predefined values.
 
 ##### Send LSK
@@ -39,19 +56,16 @@ lisk://wallet?recipient=1L&amount=1&reference=test
 lisk://request
 ```
 
-### View transaction history
+### Account history
 
-View the transaction details.
- 
-#### Lisk protocol URL
+View the details of previous transactions on the dashboard in a chronological order.
+Click on the transaction to view further transaction details of that particular transaction.
 
-```
-lisk://transactions?id=1
-```
 
-#### In the app
-
-Navigate to the Dashboard in Lisk Mobile and click on the transaction to view the transaction details of that particular transaction.
+> The Lisk URL to display a specific transaction:
+> ```
+> lisk://transactions?id=1
+> ```
 
 ### Account creation
 
@@ -60,7 +74,7 @@ Lisk Mobile offers the possibility to freshly create a new Lisk ID, in case the 
 ### Discreet Mode
 
 The discreet mode blurrs the sensitive information inside Lisk Mobile.
-This helps protecting your privacym when using Lisk Mobile at public places.
+This helps protecting your privacy, e.g. when using Lisk Mobile at public places.
 
 Following information gets blurred:
 - account balance
@@ -70,19 +84,27 @@ Following information gets blurred:
 
 The style of Lisk Mobile can be changed on the "Settings" page.
 
+### 3D touch action menu
+
+Quick way to perform most popular actions of Lisk Mobile, without the need to open the app.
+
 ### Bookmarks
 
-Bookmarks offer the possibility to associate Lisk IDs with additional information.
+Bookmarks save other Lisk adresses in Lisk Mobile like in an address book.
+To save a Lisk ID as bookmark, it is needed to specify a unique identifier, e.g. the name of the person, that own the respective Lisk ID.
 
 To bookmark an account, go to "Bookmarks" page and hit the "+"-button.
-Define then the respective adress and a label to be associated with that address.
-To save the bookmark, hit "Add to bookmarks".
+Then define the respective adress and a label to be associated with that address.
+To save the bookmark, hit the "Add to bookmarks"-button.
+
+> The user can choose conveniently between the existing bookmarks, when sending tokens with Lisk Mobile.
 
 ### Login methods
 
 #### Login with passphrase
 
 Default way to log in to Lisk Mobile. Insert your passphrase and hit the login button.
+In case a second passphrase has been activated for this account, it needs to be provided as well.
 
 #### Login with Fingerprint
 
@@ -91,10 +113,6 @@ This function can be enabled on the "Settings" page of Lisk mobile, if the devic
 #### Login via Face ID 
 
 This function can be enabled on the "Settings" page of Lisk mobile, if the device supports biometric login methods.
-
-### 3D touch action menu
-
-Quick way to perform most popular actions of Lisk Mobile, without the need to open the app.
 
 ## Contribute to the Codebase
 

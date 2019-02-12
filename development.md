@@ -1,5 +1,23 @@
 # Lisk Mobile for developers
 
+This page provides documentation for developers about how to run Lisk Mobile from Source.
+
+- [Setup](#setup)
+  - [System requirements](#system-requirements)
+  - [Pre-Installation](#pre-installation)
+    - [Git](#git)
+    - [Node.js](#node-js)
+    - [Node Version Manager](#node-version-manager)
+    - [Watchman](#watchman)
+    - [React Native CLI](#react-native-cli)
+    - [Emulator](#choose-emulator)
+  - [Installation](#installation)
+- [User Guide](#user-guide)
+  - [Using enrironment variables](#using-environment-variables)
+  - [Run](#run)
+  - [Build](#build)
+  - [Testing](#testing)
+
 ## Setup
 
 ### System requirements
@@ -137,10 +155,10 @@ In order to do so, the file `env.json` inside the lisk-mobile installation folde
 
 
 > `env.json` should stay empty, when commiting changes back to Github. To achieve this in a convenient way, the user may want to run the following command in order to ignore changes to that file in git:
-
-```bash
-git update-index --no-assume-unchanged env.json
-```
+> 
+> ```bash
+> git update-index --no-assume-unchanged env.json
+> ```
 
 ### Run
 

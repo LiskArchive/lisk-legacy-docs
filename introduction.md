@@ -115,7 +115,6 @@ We use `14628350534858367799L` for the address and `8` LSK for the amount.
 
 ![hub-request](assets/hub-request.png "hub-request")
 
-
 ### Bookmarks
 
 Lisk Hub supports to create Bookmarks of accounts. Bookmarks work basically like an address book.
@@ -163,7 +162,21 @@ The below screenshot displays how it looks, if the votes are set manually inside
 Lisk Hub supports Ledger Nano hardware wallets.
 Support for more hardware wallet models is planned to add in future versions.
 
+Steps to connect your Ledger Nano with Lisk Hub:
+
+1. Connect and open your Ledger Nano
+2. Install the Lisk app on your Ledger Nano via [Ledger Live](https://www.ledger.com/pages/ledger-live).
+3. Open the Lisk Hub sign-in page.
+It should recognize your connected Ledger Nano, and offer an additional login method "Hardware login".
+4. Open the Lisk app on the Ledger Nano
+5. Click on the link named after your device after "Hardware login"
+6. Pick your account on the "Accounts on Ledger" page.
+
+The login page with recognized hardware wallet device.
+
 ![hub-ledger-login](assets/ledger-hub.png "hub-settings")
+
+If you see this page, Lisk Hub is successfully connected to your Ledger device.
 
 ![hub-ledger-accounts](assets/ledger-nano-accounts.png "hub-settings")
 
@@ -193,7 +206,7 @@ The second passphrase will be prompted each time the account performs important 
 
 ### Auto-logout
 
-Auto-logout is a security feature that automatically logs out, if the User has not performed any actions inside of Lisk hub during that time.
+Auto-logout is a security feature that automatically logs out, if the User has not performed any actions inside of Lisk Hub during that time.
 
 It is possible to turn it off on the Settings page.
 

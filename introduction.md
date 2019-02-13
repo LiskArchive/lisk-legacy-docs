@@ -13,6 +13,7 @@ Lisk Hub is an all-in-one solution to manage your Lisk ID, access and send LSK t
   - [Transaction history](#transaction-history)
   - [Send transaction](#send-transaction)
   - [Request LSK](#request-lsk)
+  - [Bookmarks](#bookmarks)
   - [Sign message](#sign-messages)
   - [Voting](#voting)
   - [Hardware wallet support](#hardware-wallet-support)

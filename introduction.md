@@ -16,6 +16,7 @@ Lisk Hub is an all-in-one solution to manage your Lisk ID, access and send LSK t
   - [Sign message](#sign-messages)
   - [Voting](#voting)
   - [Hardware wallet support](#hardware-wallet-support)
+  - [Create account](#create-account)
   - [Second passphrase](#second-passphrase)
   - [Auto-logout](#auto-logout)
   - [Local currencies](#local-currencies)
@@ -138,6 +139,10 @@ As an example we use `i love lisk hub`.
 
 ![hub-sign_messages](assets/hub-sign-message.png "hub-sign_messages")
 
+The signed message will look like this:
+
+![hub-sign_message-result](assets/hub-sign-message-result.png "hub-sign_message-result")
+
 ### Voting
 
 Makes voting for delegates easier. 
@@ -161,6 +166,20 @@ Support for more hardware wallet models is planned to add in future versions.
 ![hub-ledger-login](assets/ledger-hub.png "hub-settings")
 
 ![hub-ledger-accounts](assets/ledger-nano-accounts.png "hub-settings")
+
+### Create Account
+
+The most convenient way to create your personal Lisk ID within a few seconds.
+On the login screen of Lisk Hub, hit "Create an Account".
+
+![hub-start](assets/hub-start.png "hub-start")
+
+After a few clicks, the account creation is completed.
+
+![hub-create-account](assets/hub-create-account.png "hub-create-account")
+
+> **Important:** Make sure to keep your secret passphrase safe, that is generated during account creation.
+> The secret passphrase will be the only way to access your wallet.
 
 ### Second passphrase
 

@@ -20,6 +20,7 @@ Lisk Hub is an all-in-one solution to manage your Lisk ID, access and send LSK t
   - [Second passphrase](#second-passphrase)
   - [Auto-logout](#auto-logout)
   - [Local currencies](#local-currencies)
+- [Contribute to the Codebase](#contribute-to-the-codebase)
 
 ## Download
 
@@ -220,3 +221,16 @@ On the "Settings" page, you can select your preferred currency conversion.
 Currently supported:
 - Dollar
 - Euro
+
+## Contribute to the Codebase
+
+Everyone is invited to contribute to the Lisk Hub project. We welcome and appreciate all contributions. 
+
+### Github
+All necessary information can be found on our [Lisk Hub Github](https://github.com/LiskHQ/lisk-hub).
+
+### Contribution Guidelines
+Please be sure to read and follow our [Contribution Guidelines](https://github.com/LiskHQ/lisk-hub/blob/development/docs/CONTRIBUTING_GUIDE.md).
+
+### Gitter
+If you have any further questions please join our [Gitter](https://gitter.im/LiskHQ/lisk).

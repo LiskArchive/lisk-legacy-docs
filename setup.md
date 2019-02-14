@@ -65,9 +65,7 @@ npm run build
 
 ### Adding the Lisk Commander executable to your PATH
 
-Important | Note 
---- | --- 
-![important note](../important-icon.png "Important Note") | If you have installed Lisk Commander globally via NPM (see Install Lisk Commander via NPM), following the instructions in this section is not recommended as they will introduce conflicts.
+> **Important:** If you have installed Lisk Commander globally via NPM (see Install Lisk Commander via NPM), following the instructions in this section is not recommended as they will introduce conflicts.
 
 If you would like to add the `lisk` executable to your PATH you have two options: option 1 will install the current state of the code you are installing globally, while option 2 will only link to the code and therefore automatically reflect changes you make going forward.
 

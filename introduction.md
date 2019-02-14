@@ -2,13 +2,13 @@
 
 ## Table of contents
 
-- [Setup](setup/setup.md)
-  - [Pre-Installation](setup/setup.md#pre-installation)
-  - [Installation](setup/setup.md#installation)
-- [Upgrade](upgrade/upgrade.md)
-  - [via NPM](upgrade/upgrade.md#upgrade-lisk-commander-via-npm)
-  - [from Source](upgrade/upgrade.md#upgrade-lisk-commander-from-source)
-- [User Guide](user-guide/user-guide.md)
+- [Setup](setup.md)
+  - [Pre-Installation](setup.md#pre-installation)
+  - [Installation](setup.md#installation)
+- [Upgrade](upgrade.md)
+  - [via NPM](upgrade.md#upgrade-lisk-commander-via-npm)
+  - [from Source](upgrade.md#upgrade-lisk-commander-from-source)
+- [User Guide](user-guide.md)
   - [Commands](user-guide/commands/commands.md)
   - [Sensitive Inputs](user-guide/sensitive-inputs/sensitive-inputs.md)
 

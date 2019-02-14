@@ -439,11 +439,9 @@ Commands relating to user messages.
 
 Decrypts a previously encrypted message from a given sender public key for a known nonce using your secret passphrase.
 
-Important | Sensitive Input 
---- | --- 
-![important note](../../important-icon.png "Important Note") | Since the secret passphrase is a sensitive input, it can be provided using one of the available methods described in the [Sensitive Inputs section](../sensitive-inputs/sensitive-inputs.md). 
-|                |                                             The encrypted message can be provided either directly as an argument, or by specifying a source with the --message option. 
-|                |                                             If both the secret passphrase and the encrypted message are provided via stdin, the secret passphrase must be given in the first line and the encrypted message must be given in the subsequent lines.
+> **Important:** Since the secret passphrase is a sensitive input, it can be provided using one of the available methods described in the [Sensitive Inputs section](sensitive-inputs.md). 
+> The encrypted message can be provided either directly as an argument, or by specifying a source with the --message option. 
+> If both the secret passphrase and the encrypted message are provided via stdin, the secret passphrase must be given in the first line and the encrypted message must be given in the subsequent lines.
 
 ```bash
 USAGE
@@ -501,11 +499,9 @@ Encrypts a message for a given recipient public key using your secret passphrase
 
 This command uses lisk-elements passphrase module to encrypt a message you provide for a given public key using a randomly generated nonce. In order to decrypt the encrypted message later your recipient will need your public key (to verify the message came from you), the nonce and the secret passphrase which matches the specified public key.
 
-Important | Sensitive Input 
---- | --- 
-![important note](../../important-icon.png "Important Note") | Since the secret passphrase is a sensitive input, it can be provided using one of the available methods described in the [Sensitive Inputs section](../sensitive-inputs/sensitive-inputs.md). 
-|                |                                             The encrypted message can be provided either directly as an argument, or by specifying a source with the --message option. 
-|                |                                             If both the secret passphrase and the encrypted message are provided via stdin, the secret passphrase must be given in the first line and the encrypted message must be given in the subsequent lines.
+> **Important:** Since the secret passphrase is a sensitive input, it can be provided using one of the available methods described in the [Sensitive Inputs section](sensitive-inputs.md). 
+> The encrypted message can be provided either directly as an argument, or by specifying a source with the --message option. 
+> If both the secret passphrase and the encrypted message are provided via stdin, the secret passphrase must be given in the first line and the encrypted message must be given in the subsequent lines.
 
 ```bash
 USAGE
@@ -563,11 +559,9 @@ Signs a message using your secret passphrase.
 
 This command signs message. You will need the passphrase you sign with.
 
-Important | Sensitive Input 
---- | --- 
-![important note](../../important-icon.png "Important Note") | Since the secret passphrase is a sensitive input, it can be provided using one of the available methods described in the [Sensitive Inputs section](../sensitive-inputs/sensitive-inputs.md). 
-|                |                                             The encrypted message can be provided either directly as an argument, or by specifying a source with the --message option. 
-|                |                                             If both the secret passphrase and the encrypted message are provided via stdin, the secret passphrase must be given in the first line and the encrypted message must be given in the subsequent lines.
+> **Important:** Since the secret passphrase is a sensitive input, it can be provided using one of the available methods described in the [Sensitive Inputs section](sensitive-inputs.md). 
+> The encrypted message can be provided either directly as an argument, or by specifying a source with the --message option. 
+> If both the secret passphrase and the encrypted message are provided via stdin, the secret passphrase must be given in the first line and the encrypted message must be given in the subsequent lines.
 
 ```bash
 USAGE
@@ -781,11 +775,9 @@ Decrypts your secret passphrase using the password which was provided at the tim
 
 This command decrypts your secret passphrase after being encrypted with the encrypt passphrase command. You will need the password you used to encrypt the secret passphrase as well as the initialisation vector (IV) which was randomly generated at the time of encryption.
 
-Important | Sensitive Input 
---- | --- 
-![important note](../../important-icon.png "Important Note") | Since the secret passphrase is a sensitive input, it can be provided using one of the available methods described in the [Sensitive Inputs section](../sensitive-inputs/sensitive-inputs.md). 
-|                |                                             The encrypted message can be provided either directly as an argument, or by specifying a source with the --message option. 
-|                |                                             If both the secret passphrase and the encrypted message are provided via stdin, the secret passphrase must be given in the first line and the encrypted message must be given in the subsequent lines.
+> **Important:** Since the secret passphrase is a sensitive input, it can be provided using one of the available methods described in the [Sensitive Inputs section](sensitive-inputs.md). 
+> The encrypted message can be provided either directly as an argument, or by specifying a source with the --message option. 
+> If both the secret passphrase and the encrypted message are provided via stdin, the secret passphrase must be given in the first line and the encrypted message must be given in the subsequent lines.
 
 ```bash
 USAGE
@@ -843,11 +835,9 @@ Encrypts your secret passphrase under a password.
 
 This command uses AES-256-CBC to encrypt your secret passphrase under a password you provide using a randomly generated initialisation vector (IV). In order to decrypt the secret passphrase later you will need both the IV and the password.
 
-Important | Sensitive Input 
---- | --- 
-![important note](../../important-icon.png "Important Note") | Since the secret passphrase is a sensitive input, it can be provided using one of the available methods described in the [Sensitive Inputs section](../sensitive-inputs/sensitive-inputs.md). 
-|                |                                             The encrypted message can be provided either directly as an argument, or by specifying a source with the --message option. 
-|                |                                             If both the secret passphrase and the encrypted message are provided via stdin, the secret passphrase must be given in the first line and the encrypted message must be given in the subsequent lines.
+> **Important:** Since the secret passphrase is a sensitive input, it can be provided using one of the available methods described in the [Sensitive Inputs section](sensitive-inputs.md). 
+> The encrypted message can be provided either directly as an argument, or by specifying a source with the --message option. 
+> If both the secret passphrase and the encrypted message are provided via stdin, the secret passphrase must be given in the first line and the encrypted message must be given in the subsequent lines.
 
 ```bash
 USAGE
@@ -1552,11 +1542,9 @@ EXAMPLES
 
 Sign a transaction using your secret passphrase.
 
-Important | Sensitive Input 
---- | --- 
-![important note](../../important-icon.png "Important Note") | Since the secret passphrase is a sensitive input, it can be provided using one of the available methods described in the [Sensitive Inputs section](../sensitive-inputs/sensitive-inputs.md). 
-|                |                                             The encrypted message can be provided either directly as an argument, or by specifying a source with the --message option. 
-|                |                                             If both the secret passphrase and the encrypted message are provided via stdin, the secret passphrase must be given in the first line and the encrypted message must be given in the subsequent lines.
+> **Important:** Since the secret passphrase is a sensitive input, it can be provided using one of the available methods described in the [Sensitive Inputs section](sensitive-inputs.md). 
+> The encrypted message can be provided either directly as an argument, or by specifying a source with the --message option. 
+> If both the secret passphrase and the encrypted message are provided via stdin, the secret passphrase must be given in the first line and the encrypted message must be given in the subsequent lines.
 
 ```bash
 USAGE

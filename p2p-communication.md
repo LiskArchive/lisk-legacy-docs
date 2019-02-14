@@ -6,7 +6,7 @@ Peer-to-Peer communication serves a vital function within the Lisk network. The 
 
 The peers in the Lisk network use JSON objects with compressed [**blocks**](../blocks/blocks.md) and [**transactions**](../transactions/transactions.md). The Lisk logic running on every node in the Lisk network uses remote procedure calls (RPCs) and events to communicate the transaction and block JSON objects to the other peers. The RPCs and events are also transmitted as JSON objects with additional fields telling the Lisk application which method to use in order to process the transmitted object. In order to effectively transmit these JSON objects to the other peers, websockets are used via the [ SocketCluster Framework]( https://socketcluster.io). An overview of the architecture of the peer-to-peer communication in Lisk is provided below.
 
-![lisk_protocol-p2parchitecture](lisk_protocol-p2parchitecture.png "lisk_protocol-p2parchitecture")
+![lisk_protocol-p2parchitecture](assets/lisk_protocol-p2parchitecture.png "lisk_protocol-p2parchitecture")
 
 ## System Headers
 Every time a Lisk node communicates with a peer of the Lisk network, a system header is added to the message. The system headers are used to identify full nodes and provide basic information about the software running on the system.

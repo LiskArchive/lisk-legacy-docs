@@ -16,7 +16,7 @@ For every round, there is a fixed order of delegates, and 10 s time slots for fo
 In order to forge a block, the node associated with the delegate inserts up to 25 transactions into the block, signs it and broadcasts that block to the network. Once the block has reached the network, the next delegate will begin to forge in the next assigned slot.
 
 ## Broadhash Consensus
-Broadhash consensus serves a vital function in the Lisk network in preventing forks. The broadhash of a node is defined as an aggregated rolling hash of the past five blocks present in the node’s database. Thus all peers with the same last blocks will produce the same broadhash and propagate that information via the system headers described in [**peer-to-peer communication**](../peer-to-peer-communication/p2p-communication.md). Broadhash consensus is established if 51 out of 100 randomly selected peers connected to a node maintain the same broadhash. Delegates use the broadhash consensus as a guidance strategy to generate the block. Once broadhash consensus is established a delegate will generate a block in their assigned slot as described above.
+Broadhash consensus serves a vital function in the Lisk network in preventing forks. The broadhash of a node is defined as an aggregated rolling hash of the past five blocks present in the node’s database. Thus all peers with the same last blocks will produce the same broadhash and propagate that information via the system headers described in [**peer-to-peer communication**](p2p-communication.md). Broadhash consensus is established if 51 out of 100 randomly selected peers connected to a node maintain the same broadhash. Delegates use the broadhash consensus as a guidance strategy to generate the block. Once broadhash consensus is established a delegate will generate a block in their assigned slot as described above.
 
 
 ## Block Rewards
@@ -35,16 +35,16 @@ Reward | Milestone
 
 Which can be found as constants in the code as:
 
-Info | Note 
---- | --- 
-![info note](../info-icon.png "Info Note") | Block Reward Reduction
-|  | milestones: [
-|  | 500000000, // Initial Reward begins at block 1,451,520
-|  | 400000000, // Milestone 1 begins at block 4,451,520
-|  | 300000000, // Milestone 2 begins at block 7,451,520
-|  | 200000000, // Milestone 3 begins at block 10,451,520
-|  | 100000000 // Milestone 4 begins at block 13,451,520
-|  | ]
+```javascript
+// Block Reward Reduction
+milestones: [
+500000000, // Initial Reward begins at block 1,451,520
+400000000, // Milestone 1 begins at block 4,451,520
+300000000, // Milestone 2 begins at block 7,451,520
+200000000, // Milestone 3 begins at block 10,451,520
+100000000 // Milestone 4 begins at block 13,451,520
+]
+```
 
 The block reward linearly decreases over the lifetime of the network, providing significant incentive to actively participate as an active delegate. The reward will decrease every 3,000,000 blocks from the initial reward block.
 

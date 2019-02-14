@@ -4,8 +4,8 @@ Provides a default set of Elements for use by clients of the Lisk network.
 
 Info | Note
 ---- | ----
-![info note](../../info-icon.png "Info Note") | The `Client` package is a collection of the following packages:
-|   | [api-client](../api-client/api-client.md), [constants](../constants/constants.md), [cryptography](cryptography/cryptography.md), [passphrase](../passphrase/passphrase.md), [transactions](../transactions/transactions.md) |
+![info note](../assets/info-icon.png "Info Note") | The `Client` package is a collection of the following packages:
+|   | [api-client](../api-client/api-client.md), [constants](constants.md), [cryptography](cryptography/cryptography.md), [passphrase](passphrase.md), [transactions](transactions.md) |
 
 
 Lisk Elements will include a lot of different packages in the future, which can be plugged in to application as desired.

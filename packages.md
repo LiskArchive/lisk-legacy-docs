@@ -10,9 +10,9 @@ This section details how to use Lisk Elements, once you have successfully instal
   - [@liskhq/lisk-api-client](api-client/api-client.md): An API client for the Lisk network.
   - [@liskhq/lisk-client](client/client.md): A default set of Elements for use by clients of the Lisk network.
   - [@liskhq/lisk-constants](constants/constants.md): General constants for use with Lisk-related software.
-  - [@liskhq/lisk-cryptography](cryptography/cryptography.md): General cryptographic functions for use with Lisk-related software.
-  - [@liskhq/lisk-passphrase](passphrase/passphrase.md): Mnemonic passphrase helpers for use with Lisk-related software.
-  - [@liskhq/lisk-transactions](transactions/transactions.md): Everything related to transactions according to the Lisk protocol.
+  - [@liskhq/lisk-cryptography](packages/cryptography.md): General cryptographic functions for use with Lisk-related software.
+  - [@liskhq/lisk-passphrase](packages/passphrase.md): Mnemonic passphrase helpers for use with Lisk-related software.
+  - [@liskhq/lisk-transactions](packages/transactions.md): Everything related to transactions according to the Lisk protocol.
 
 ## Usage
 

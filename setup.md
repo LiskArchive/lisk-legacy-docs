@@ -51,7 +51,7 @@ This section details how to install Lisk Elements for a given distribution.
 
 Info | Note
 ---- | ----
-![info note](../info-icon.png "Info Note") | As all Packages in Lisk Elements are independent from each other, they can be installed seperately.
+![info note](assets/info-icon.png "Info Note") | As all Packages in Lisk Elements are independent from each other, they can be installed seperately.
 
 ### Installation via NPM
 
@@ -68,7 +68,7 @@ npm install --save @liskhq/<package-name>
 
 where `<package-name>` can be any of the sub packages in Lisk Elements.
 
-For concrete code examples for each package, check the [Packages section](../packages/packages.md).
+For concrete code examples for each package, check the [Packages section](packages.md).
 
 Upon successful completion, NPM will add the Lisk Elements package to your `package.json` file.
 
@@ -88,7 +88,7 @@ Or minified:
 
 where `<package-name>` can be any of the sub packages in Lisk Elements.
 
-For concrete code examples for each package, check the [Packages section](../packages/packages.md).
+For concrete code examples for each package, check the [Packages section](packages.md).
 
 ### Install Lisk Elements from Source
 

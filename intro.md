@@ -36,7 +36,7 @@ Lisk Mobile offers different options for easy LSK transfer:
 > The QR-Code scanner needs access to the camera in order to work.
 
 Request LSK by generating a corresponding QR-Code.
-The QR-Code can then be scanned directly fromt he display, or shared via email or the personal messenger app of choice. 
+The QR-Code can then be scanned directly from the display, or shared via email or the personal messenger app of choice. 
 
 When sending LSK, the user has the option to scan a QR-Code.
 In that case, the form will be prefilled with the predefined values for recipient of the transaction, amount of LSK and an optional reference.
@@ -51,6 +51,10 @@ Possible actions:
 
 - Send LSK
 - Request LSK
+
+Android | iOS
+ --- | --- 
+![3d-touch-android](assets/3D-Touch-Android.png) | ![3d-touch-ios](assets/3D-Touch-iOS.PNG)
 
 #### iMessage Extension
 
@@ -86,6 +90,10 @@ Click on the transaction to view further transaction details of that particular 
 > ```
 > lisk://transactions?id=1
 > ```
+
+![account-activity](assets/account-activity.PNG)
+
+![transaction-details-light](assets/transaction-details-light.PNG)
 
 ### Discreet Mode
 

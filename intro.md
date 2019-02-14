@@ -7,13 +7,13 @@ Lisk Mobile is a cross-platform application written in React Native and primaril
 - [Features](#features)
   - [Send and request LSK tokens](#send-and-request-lsk-tokens)
     - [QR-Code scanner](#qr-code-scanner)
+    - [3D Touch and App Shortcuts](#3d-touch-and-app-shortcuts)
     - [iMessage Extension](#imessage-extension)
     - [Lisk URL](#lisk-url)
-  - [Account history](#account-history)
   - [Account creation](#account-creation)
+  - [Account activity](#account-activity)
   - [Dark mode](#dark-mode)
   - [Discreet mode](#discreet-mode)
-  - [3d touch action menu](#3d-touch-action-menu)
   - [Bookmarks](#bookmarks)
   - [Login methods](#login-methods)
     - [Login with passphrase](#login-with-passphrase)
@@ -35,9 +35,26 @@ Lisk Mobile offers different options for easy LSK transfer:
 
 > The QR-Code scanner needs access to the camera in order to work.
 
+Request LSK by generating a corresponding QR-Code.
+The QR-Code can then be scanned directly fromt he display, or shared via email or the personal messenger app of choice. 
+
+When sending LSK, the user has the option to scan a QR-Code.
+In that case, the form will be prefilled with the predefined values for recipient of the transaction, amount of LSK and an optional reference.
+
+### 3D Touch and App Shortcuts
+
+Quick way to perform most popular actions of Lisk Mobile, without the need to open the app first.
+
+> For iOs devices, this is called "3D Touch", whereas Android calls the concept "App Shortcuts"
+
+Possible actions:
+
+- Send LSK
+- Request LSK
+
 #### iMessage Extension
 
-Users with iOS devices can utilize the instant messenger "iMessage" to send and receive LSK without leaving the iMessage app.
+Users with iOS devices can send and receive LSK via the instant messenger [iMessage](https://support.apple.com/explore/messages), without leaving the iMessage app.
 
 #### Lisk URL
 
@@ -56,24 +73,24 @@ lisk://wallet?recipient=1L&amount=1&reference=test
 lisk://request
 ```
 
-### Account history
+### Account creation
+
+Lisk Mobile offers the possibility to freshly create a new Lisk ID, in case the user doesn't have an Account, yet.
+
+### Account activity
 
 View the details of previous transactions on the dashboard in a chronological order.
 Click on the transaction to view further transaction details of that particular transaction.
-
 
 > The Lisk URL to display a specific transaction:
 > ```
 > lisk://transactions?id=1
 > ```
 
-### Account creation
-
-Lisk Mobile offers the possibility to freshly create a new Lisk ID, in case the user doesn't have an Account, yet.
-
 ### Discreet Mode
 
 The discreet mode blurrs the sensitive information inside Lisk Mobile.
+It can be enabled on the settings page.
 This helps protecting your privacy, e.g. when using Lisk Mobile at public places.
 
 Following information gets blurred:
@@ -84,9 +101,10 @@ Following information gets blurred:
 
 The style of Lisk Mobile can be changed on the "Settings" page.
 
-### 3D touch action menu
+Currently available themes for Lisk Mobile:
 
-Quick way to perform most popular actions of Lisk Mobile, without the need to open the app.
+- light theme
+- dark theme
 
 ### Bookmarks
 

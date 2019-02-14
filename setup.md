@@ -49,9 +49,7 @@ npm --version
 
 This section details how to install Lisk Elements for a given distribution.
 
-Info | Note
----- | ----
-![info note](assets/info-icon.png "Info Note") | As all Packages in Lisk Elements are independent from each other, they can be installed seperately.
+> As all Packages in Lisk Elements are independent from each other, they can be installed seperately.
 
 ### Installation via NPM
 

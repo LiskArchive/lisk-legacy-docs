@@ -29,7 +29,7 @@ Lisk Mobile is a cross-platform application written in React Native and primaril
 
 ### Send and request LSK tokens
 
-Lisk Mobile offers different options for easy LSK transfer:
+Lisk Mobile offers different options for token transfer:
 
 #### QR-Code scanner
 
@@ -40,6 +40,10 @@ The QR-Code can then be scanned directly from the display, or shared via email o
 
 When sending LSK, the user has the option to scan a QR-Code.
 In that case, the form will be prefilled with the predefined values for recipient of the transaction, amount of LSK and an optional reference.
+
+Request LSK | Send LSK
+ --- | --- 
+![request lsk](assets/Request-iOS.png) | ![3d-touch-ios](assets/IMG_0015.PNG)
 
 ### 3D Touch and App Shortcuts
 
@@ -59,6 +63,12 @@ Android | iOS
 #### iMessage Extension
 
 Users with iOS devices can send and receive LSK via the instant messenger [iMessage](https://support.apple.com/explore/messages), without leaving the iMessage app.
+
+Demo videos:
+
+[Request Lisk Tokens via iMessage](https://www.reddit.com/link/aprwxo/video/w7uowwy5y3g21/player?utm_source=reddit&utm_medium=usertext&utm_name=Lisk&utm_content=t3_aprwxo)
+
+[Answer to request via iMessage](https://www.reddit.com/link/aprwxo/video/rpe05ry5y3g21/player?utm_source=reddit&utm_medium=usertext&utm_name=Lisk&utm_content=t3_aprwxo)
 
 #### Lisk URL
 
@@ -81,6 +91,10 @@ lisk://request
 
 Lisk Mobile offers the possibility to freshly create a new Lisk ID, in case the user doesn't have an Account, yet.
 
+Create account | Sign in
+ --- | --- 
+![account-creation](assets/Account-creation-Step1.PNG) | ![account-creation](assets/Sign-in-or-create-an-account.PNG)
+
 ### Account activity
 
 View the details of previous transactions on the dashboard in a chronological order.
@@ -91,9 +105,9 @@ Click on the transaction to view further transaction details of that particular 
 > lisk://transactions?id=1
 > ```
 
-![account-activity](assets/account-activity.PNG)
-
-![transaction-details-light](assets/transaction-details-light.PNG)
+Account activity | Transaction details
+ --- | --- 
+![account-activity](assets/account-activity.PNG) | ![transaction-details-light](assets/transaction-details-light.PNG)
 
 ### Discreet Mode
 
@@ -105,6 +119,10 @@ Following information gets blurred:
 - account balance
 - transaction amounts
 
+Discreet Homepage | Discreet transaction details
+ --- | --- 
+ ![account-activity](assets/Home-Discreet-Enabled.PNG) | ![account-activity](assets/Transaction-Details-View.PNG)
+
 ### Dark mode
 
 The style of Lisk Mobile can be changed on the "Settings" page.
@@ -113,6 +131,10 @@ Currently available themes for Lisk Mobile:
 
 - light theme
 - dark theme
+
+dark theme | light theme
+--- | --- 
+![account-activity](assets/Homepage.PNG) | ![account-activity](assets/account-activity.PNG)
 
 ### Bookmarks
 
@@ -125,6 +147,10 @@ To save the bookmark, hit the "Add to bookmarks"-button.
 
 > The user can choose conveniently between the existing bookmarks, when sending tokens with Lisk Mobile.
 
+empty list | add new bookmark
+ --- | --- 
+ ![account-activity](assets/2_1-Adding-A-New-Bookmark.PNG) | ![account-activity](assets/2_2-Bookmark-Added.PNG)
+
 ### Login methods
 
 #### Login with passphrase
@@ -132,13 +158,19 @@ To save the bookmark, hit the "Add to bookmarks"-button.
 Default way to log in to Lisk Mobile. Insert your passphrase and hit the login button.
 In case a second passphrase has been activated for this account, it needs to be provided as well.
 
+![login-with-passphrase](assets/Login-With-Passphrase.png)
+
 #### Login with Fingerprint
 
 This function can be enabled on the "Settings" page of Lisk mobile, if the device supports biometric login methods.
 
+![login-with-touch-id](assets/Login-With-Touch-ID.png)
+
 #### Login via Face ID 
 
 This function can be enabled on the "Settings" page of Lisk mobile, if the device supports biometric login methods.
+
+![login-with-face-id](assets/Login-With-Face-ID.png)
 
 ## Contribute to the Codebase
 

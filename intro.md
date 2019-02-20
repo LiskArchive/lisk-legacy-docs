@@ -140,7 +140,7 @@ The following settings are available:
 ### Discreet Mode
 
 The discreet mode blurrs the sensitive information inside Lisk Mobile.
-It can be enabled on the settings page.
+It can be enabled on the [Settings](#settings) page.
 This helps protecting your privacy, e.g. when using Lisk Mobile at public places.
 
 Following information gets blurred:
@@ -153,7 +153,7 @@ Discreet Homepage | Discreet transaction details
 
 ### Dark mode
 
-The style of Lisk Mobile can be changed on the "Settings" page.
+The style of Lisk Mobile can be changed on the [Settings](#settings) page.
 
 Currently available themes for Lisk Mobile:
 
@@ -194,13 +194,13 @@ In case a second passphrase has been activated for this account, it needs to be 
 
 #### Login with Fingerprint
 
-This function can be enabled on the "Settings" page of Lisk mobile, if the device supports biometric login methods.
+This function can be enabled on the [Settings](#settings) page of Lisk mobile, if the device supports biometric login methods.
 
 ![login-with-touch-id](assets/Login-With-Touch-ID.png)
 
 #### Login via Face ID 
 
-This function can be enabled on the "Settings" page of Lisk mobile, if the device supports biometric login methods.
+This function can be enabled on the [Settings](#settings) page of Lisk mobile, if the device supports biometric login methods.
 
 ![login-with-face-id](assets/Login-With-Face-ID.png)
 

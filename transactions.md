@@ -185,7 +185,9 @@ The final maximum size of the transaction, with the signature is 2262 bytes, and
 
 ## Multisignature Registration Transaction
 
-A multisignature registration transaction (type 4) is a transaction used to add a  [multisignature](security.mdure)  to an account. For each account, at most one such transaction can be applied. Therefore, once such a transaction was done, it cannot be reverted or modified. The following parameters are needed in order to issue a multisignature registration transaction:
+A multisignature registration transaction (type 4) is a transaction used to add a  [multisignature](security.md#multisignature)  to an account.
+For each account, at most one such transaction can be applied. Therefore, once such a transaction was done, it cannot be reverted or modified.
+The following parameters are needed in order to issue a multisignature registration transaction:
 
 - passphrase: the passphrase of the account the multisignature will be applied to.
 - keysgroup: the array of public keys to add to the multisignature account.

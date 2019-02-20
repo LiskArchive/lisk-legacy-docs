@@ -12,6 +12,7 @@ Lisk Mobile is a cross-platform application written in React Native and primaril
     - [Lisk URL](#lisk-url)
   - [Account creation](#account-creation)
   - [Account activity](#account-activity)
+  - [Settings](#settings)
   - [Dark mode](#dark-mode)
   - [Discreet mode](#discreet-mode)
   - [Bookmarks](#bookmarks)
@@ -111,6 +112,31 @@ Account activity | Transaction details
  --- | --- 
 ![account-activity](assets/account-activity.PNG) | ![transaction-details-light](assets/transaction-details-light.PNG)
 
+### Settings
+
+The following settings are available:
+
+- Security
+  * Athentication methods: Alternative login methods
+    - Touch ID (only visible, if smartphone supports it)
+    - Face ID (only visible, if smartphone supports it)
+  * Discreet Mode
+    - On: Blurrs all transaction amounts and account balance.
+    - Off: No blurr.
+- General
+  * About Lisk: Information about the app, like version and website.
+  * Dark Mode: Dark theme for Lisk Mobile
+    - On: Lisk mobile in dark theme.
+    - Off: Lisk mobile in light theme.
+  * Currency: Convert LSK amounts to another currency.
+    - EUR
+    - USD
+  * Terms of Use: Read the terms of use.
+- Sign out: Sign out of Lisk Mobile
+
+
+![Settings Lisk Mobile](assets/Settings-Enable-DarkMode.jpeg)
+
 ### Discreet Mode
 
 The discreet mode blurrs the sensitive information inside Lisk Mobile.
@@ -144,6 +170,9 @@ Bookmarks save other Lisk adresses in Lisk Mobile like in an address book.
 To save a Lisk ID as bookmark, it is needed to specify a unique identifier, e.g. the name of the person, that own the respective Lisk ID.
 
 When sending LSk to another account with Lisk Mobile, you will be prompted automatically, to add the address to your bookmarks.
+
+> In case you don't want to save the address as bookmark, leave the reference empty. 
+
 To bookmark an account manually, go to "Bookmarks" page and hit the "+"-button.
 Then define the respective adress and a label to be associated with that address.
 To save the bookmark, hit the "Add to bookmarks"-button.

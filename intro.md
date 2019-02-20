@@ -179,7 +179,7 @@ To save the bookmark, hit the "Add to bookmarks"-button.
 
 > The user can choose conveniently between the existing bookmarks, while sending tokens with Lisk Mobile.
 
-Empty list | Add new bookmark
+Add new bookmark | Bookmark added
  --- | --- 
  ![account-activity](assets/2_1-Adding-A-New-Bookmark.PNG) | ![account-activity](assets/2_2-Bookmark-Added.PNG)
 

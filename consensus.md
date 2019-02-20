@@ -8,7 +8,7 @@ Delegates generate all of the blocks within the system and are elected by the st
 
 ## Delegates
 
-A delegate is a type of account that has registered using a delegate registration transaction as described in  [**transactions**](../transactions/transactions.md). These accounts have a key role in the Lisk ecosystem as they generate blocks and validate transactions. Any account can become a delegate, but only the 101 accounts with the most votes weighted by stake are allowed to generate blocks.
+A delegate is a type of account that has registered using a delegate registration transaction as described in  [**transactions**](transactions.md). These accounts have a key role in the Lisk ecosystem as they generate blocks and validate transactions. Any account can become a delegate, but only the 101 accounts with the most votes weighted by stake are allowed to generate blocks.
 
 ## Delegate Round
 

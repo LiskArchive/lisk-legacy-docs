@@ -136,14 +136,14 @@ The following settings are available:
 
 - Security
   * Athentication methods: Alternative login methods
-    - Touch ID (only visible, if smartphone supports it)
-    - Face ID (only visible, if smartphone supports it)
-  * Discreet Mode
+    - [Touch ID](#login-with-fingerprint) (only visible, if smartphone supports it)
+    - [Face ID](#Login-via-Face-ID ) (only visible, if smartphone supports it)
+  * [Discreet Mode](#discreet-mode)
     - On: Blurrs all transaction amounts and account balance.
     - Off: No blurr.
 - General
   * About Lisk: Information about the app, like version and website.
-  * Dark Mode: Dark theme for Lisk Mobile
+  * [Dark Mode](#dark-mode): Dark theme for Lisk Mobile
     - On: Lisk mobile in dark theme.
     - Off: Lisk mobile in light theme.
   * Currency: Convert LSK amounts to another currency.

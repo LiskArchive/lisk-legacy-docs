@@ -64,6 +64,8 @@ Android | iOS
 
 Users with iOS devices can send and receive LSK via the instant messenger [iMessage](https://support.apple.com/explore/messages), without leaving the iMessage app.
 
+> The iMessage feature can only be used, if a biometric authentication method like [Touch ID](#login-with-fingerprint) or [Face ID](#login-via-face-id) has been enabled for Lisk Mobile.
+
 Demo videos:
 
 [Request Lisk Tokens via iMessage](https://www.reddit.com/link/aprwxo/video/w7uowwy5y3g21/player?utm_source=reddit&utm_medium=usertext&utm_name=Lisk&utm_content=t3_aprwxo)
@@ -132,7 +134,7 @@ Currently available themes for Lisk Mobile:
 - light theme
 - dark theme
 
-dark theme | light theme
+Dark theme | Light theme
 --- | --- 
 ![account-activity](assets/Homepage.PNG) | ![account-activity](assets/account-activity.PNG)
 
@@ -141,13 +143,14 @@ dark theme | light theme
 Bookmarks save other Lisk adresses in Lisk Mobile like in an address book.
 To save a Lisk ID as bookmark, it is needed to specify a unique identifier, e.g. the name of the person, that own the respective Lisk ID.
 
-To bookmark an account, go to "Bookmarks" page and hit the "+"-button.
+When sending LSk to another account with Lisk Mobile, you will be prompted automatically, to add the address to your bookmarks.
+To bookmark an account manually, go to "Bookmarks" page and hit the "+"-button.
 Then define the respective adress and a label to be associated with that address.
 To save the bookmark, hit the "Add to bookmarks"-button.
 
-> The user can choose conveniently between the existing bookmarks, when sending tokens with Lisk Mobile.
+> The user can choose conveniently between the existing bookmarks, while sending tokens with Lisk Mobile.
 
-empty list | add new bookmark
+Empty list | Add new bookmark
  --- | --- 
  ![account-activity](assets/2_1-Adding-A-New-Bookmark.PNG) | ![account-activity](assets/2_2-Bookmark-Added.PNG)
 

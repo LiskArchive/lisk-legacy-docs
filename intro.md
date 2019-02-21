@@ -34,7 +34,7 @@ Lisk Mobile is a cross-platform application written in React Native and primaril
       - [Emulator](development.md/#choose-emulator)
     - [Installation](development.md/#installation)
   - [User Guide](development.md/#user-guide)
-    - [Using enrironment variables](development.md/#using-environment-variables)
+    - [Using environment variables](development.md/#using-environment-variables)
     - [Run](development.md/#run)
     - [Build](development.md/#build)
     - [Testing](development.md/#testing)

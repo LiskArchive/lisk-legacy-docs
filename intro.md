@@ -68,7 +68,7 @@ Request LSK | Send LSK
 
 Quick way to perform most popular actions of Lisk Mobile, without the need to open the app first.
 
-> For iOs devices, this is called "3D Touch", whereas Android calls the concept "App Shortcuts"
+> For iOS devices, this is called "3D Touch", whereas Android calls the concept "App Shortcuts"
 
 Possible actions:
 
@@ -135,12 +135,12 @@ Account activity | Transaction details
 The following settings are available:
 
 - Security
-  * Athentication methods: Alternative login methods
-    - [Touch ID](#login-with-fingerprint) (only visible, if smartphone supports it)
-    - [Face ID](#Login-via-Face-ID ) (only visible, if smartphone supports it)
-  * [Discreet Mode](#discreet-mode)
-    - On: Blurrs all transaction amounts and account balance.
-    - Off: No blurr.
+  * Authentication methods: Alternative login methods
+    - [Touch ID](#login-with-fingerprint) *(only visible, if smartphone supports it)*
+    - [Face ID](#login-via-face-id) *(only visible, if smartphone supports it)*
+  * [Discreet Mode](#discreet-mode): For use in public.
+    - On: Blurs all transaction amounts and account balance.
+    - Off: No blur.
 - General
   * About Lisk: Information about the app, like version and website.
   * [Dark Mode](#dark-mode): Dark theme for Lisk Mobile

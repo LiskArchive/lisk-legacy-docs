@@ -56,7 +56,7 @@ sudo apt-get install -y nodejs
 ##### macOS
 
 ```bash
-brew install node@8.3.0
+brew install node@8.14.0
 ```
 
 #### Node version manager
@@ -135,7 +135,7 @@ By using environment variables, the user can
 - automatically login to the application on startup, with a pre defined account during development
 - connect to a custom node
 
-In order to do so, the file `env.json` inside the lisk-mobile installation folder needs to serve the needed variables.
+In order to do so, the file `env.json` inside the `lisk-mobile` installation folder needs to serve the needed variables.
 
 ```js
 {

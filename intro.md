@@ -185,9 +185,9 @@ Dark theme | Light theme
 ### Bookmarks
 
 Bookmarks save other Lisk adresses in Lisk Mobile like in an address book.
-To save a Lisk ID as bookmark, it is needed to specify a unique identifier, e.g. the name of the person, that own the respective Lisk ID.
+To save a Lisk ID as bookmark, it is needed to specify a unique identifier, e.g. the name of the person, who owns the respective Lisk ID.
 
-When sending LSk to another account with Lisk Mobile, you will be prompted automatically, to add the address to your bookmarks.
+When sending LSK to another account with Lisk Mobile, you will be prompted automatically, to add the address to your bookmarks.
 
 > In case you don't want to save the address as bookmark, leave the reference empty. 
 

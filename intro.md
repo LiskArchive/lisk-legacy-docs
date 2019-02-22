@@ -144,8 +144,8 @@ The following settings are available:
 - General
   * About Lisk: Information about the app, like version and website.
   * [Dark Mode](#dark-mode): Dark theme for Lisk Mobile
-    - On: Lisk mobile in dark theme.
-    - Off: Lisk mobile in light theme.
+    - On: Lisk Mobile in dark theme.
+    - Off: Lisk Mobile in light theme.
   * Currency: Convert LSK amounts to another currency.
     - EUR
     - USD
@@ -157,11 +157,11 @@ The following settings are available:
 
 ### Discreet Mode
 
-The discreet mode blurrs the sensitive information inside Lisk Mobile.
+The discreet mode blurs the sensitive information inside Lisk Mobile.
 It can be enabled on the [Settings](#settings) page.
 This helps protecting your privacy, e.g. when using Lisk Mobile at public places.
 
-Following information gets blurred:
+Following information gets blured:
 - account balance
 - transaction amounts
 
@@ -171,7 +171,7 @@ Discreet Homepage | Discreet transaction details
 
 ### Dark mode
 
-The style of Lisk Mobile can be changed on the [Settings](#settings) page.
+The theme of Lisk Mobile can be changed on the [Settings](#settings) page.
 
 Currently available themes for Lisk Mobile:
 
@@ -189,10 +189,10 @@ To save a Lisk ID as bookmark, it is needed to specify a unique identifier, e.g.
 
 When sending LSK to another account with Lisk Mobile, you will be prompted automatically, to add the address to your bookmarks.
 
-> In case you don't want to save the address as bookmark, leave the reference empty. 
+> In case you don't want to save the address as bookmark, leave the label field empty. 
 
 To bookmark an account manually, go to "Bookmarks" page and hit the "+"-button.
-Then define the respective adress and a label to be associated with that address.
+Then define the respective address and a label to be associated with that address.
 To save the bookmark, hit the "Add to bookmarks"-button.
 
 > The user can choose conveniently between the existing bookmarks, while sending tokens with Lisk Mobile.
@@ -206,19 +206,18 @@ Add new bookmark | Bookmark added
 #### Login with passphrase
 
 Default way to log in to Lisk Mobile. Insert your passphrase and hit the login button.
-In case a second passphrase has been activated for this account, it needs to be provided as well.
 
 ![login-with-passphrase](assets/Login-With-Passphrase.png)
 
 #### Login with Fingerprint
 
-This function can be enabled on the [Settings](#settings) page of Lisk mobile, if the device supports biometric login methods.
+This function can be enabled on the [Settings](#settings) page of Lisk Mobile, if the device supports biometric login methods.
 
 ![login-with-touch-id](assets/Login-With-Touch-ID.png)
 
 #### Login via Face ID 
 
-This function can be enabled on the [Settings](#settings) page of Lisk mobile, if the device supports biometric login methods.
+This function can be enabled on the [Settings](#settings) page of Lisk Mobile, if the device supports biometric login methods.
 
 ![login-with-face-id](assets/Login-With-Face-ID.png)
 

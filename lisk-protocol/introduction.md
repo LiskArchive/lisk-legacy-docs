@@ -3,9 +3,9 @@
 ## Table of contents
 Blockchain | Network 
 --- | --- 
-[Blocks](blocks/blocks.md) | [Peers Communication](peer-to-peer-communication/p2p-communication.md) 
-[Security](security/security.md) |  [Transactions](transactions/transactions.md) 
-|  |  [Consensus](consensus/consensus.md) |
+[Blocks](blocks.md) | [Peers Communication](p2p-communication.md) 
+[Security](security.md) |  [Transactions](transactions.md) 
+|  |  [Consensus](consensus.md) |
 
 ## What is Lisk?
 Lisk is a blockchain application platform created to bring blockchain technology to the world through an SDK (Sidechain Development Kit) written in JavaScript, the most commonly used programming language in the world. 

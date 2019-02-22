@@ -28,17 +28,17 @@ The other fields will be added to this schema depending on the transaction type.
 
 A signed transaction uses the following flow:
 
-![lisk_protocol-txid](lisk_protocol-txid.png "lisk_protocol-txid")
+![lisk_protocol-txid](assets/lisk_protocol-txid.png "lisk_protocol-txid")
 
 With a second signature the flow looks like this:
 
-![lisk_protocol-2ndtxid](lisk_protocol-2ndtxid.png "lisk_protocol-2ndtxid")
+![lisk_protocol-2ndtxid](assets/lisk_protocol-2ndtxid.png "lisk_protocol-2ndtxid")
 
 ## Balance Transfer Transaction
 
 A balance transfer transaction (type 0) is a transfer of LSK from one account to another account. In order to issue a balance transfer transaction, a transaction object must be created.
 
-First, the public key of the sender is computed using the passphrase, as described in [Lisk Security](../security/security.md). Then the data block is created using the process outlined in  [transaction signing](#transaction-signing)  and the id of the account to whom the LSK is being transferred is added to the object. The resulting data block is 53 bytes.
+First, the public key of the sender is computed using the passphrase, as described in [Lisk Security](security.md). Then the data block is created using the process outlined in  [transaction signing](#transaction-signing)  and the id of the account to whom the LSK is being transferred is added to the object. The resulting data block is 53 bytes.
 
 At this point the block is signed using the method described in [transaction signing](#transaction-signing). The final step of the transaction generation process is to compute the fee of the transaction. In the current system, the fee is fixed at 0.1 Lisk. Once all of these steps have been completed and the transaction has been validated, the transaction can be broadcast to the network. While the transaction may be present on the network, it will remain in "Unconfirmed" status until it has been processed by a delegate. When the transaction is broadcast to the network, it is sent as a JSON object using the API. 
 
@@ -46,7 +46,7 @@ Optionally, the user can include a data field to the balance transfer transactio
 
 The following figure is a representation of a default transaction object (no optional data field included):
 
-![lisk_protocol-type0](lisk_protocol-type0.png "lisk_protocol-type0")
+![lisk_protocol-type0](assets/lisk_protocol-type0.png "lisk_protocol-type0")
 
 The following figure is a representation of the JSON.
 
@@ -80,7 +80,7 @@ This data block is then signed using the user’s passphrase, and the signature 
 
 The resulting object is represented by the following diagram:
 
-![lisk_protocol-type1](lisk_protocol-type1.png "lisk_protocol-type1")
+![lisk_protocol-type1](assets/lisk_protocol-type1.png "lisk_protocol-type1")
 
 The JSON object that will be broadcast on the network is shown below:
 
@@ -108,7 +108,7 @@ The final size of the transaction, with the signature, is 149 bytes.
 
 ## Delegate Registration Transaction
 
-A delegate transaction (type 2) is used to register an account as a [delegate](../consensus/consensus.md). In order to issue a delegate registration transaction the following parameters are required:
+A delegate transaction (type 2) is used to register an account as a [delegate](consensus.md). In order to issue a delegate registration transaction the following parameters are required:
 
 - passphrase: the passphrase of the account.
 - username: the delegate’s username.
@@ -119,7 +119,7 @@ This data block is then signed using the account's passphrase, and the signature
 
 The resulting object is represented by the following diagram:
 
-![lisk_protocol-type2](lisk_protocol-type2.png "lisk_protocol-type2")
+![lisk_protocol-type2](assets/lisk_protocol-type2.png "lisk_protocol-type2")
 
 The JSON object that will be broadcast to the network follows the format below:
 
@@ -159,7 +159,7 @@ This data block is then signed using the account's passphrase, and the signature
 
 The resulting object is represented by the following diagram:
 
-![lisk_protocol-type3](lisk_protocol-type3.png "lisk_protocol-type3")
+![lisk_protocol-type3](assets/lisk_protocol-type3.png "lisk_protocol-type3")
 
 The JSON object that will be broadcast to the network is the follows the format below:
 
@@ -185,7 +185,9 @@ The final maximum size of the transaction, with the signature is 2262 bytes, and
 
 ## Multisignature Registration Transaction
 
-A multisignature registration transaction (type 4) is a transaction used to add a  [multisignature](../security/security.md#multisignature)  to an account. For each account, at most one such transaction can be applied. Therefore, once such a transaction was done, it cannot be reverted or modified. The following parameters are needed in order to issue a multisignature registration transaction:
+A multisignature registration transaction (type 4) is a transaction used to add a  [multisignature](security.md#multisignature)  to an account.
+For each account, at most one such transaction can be applied. Therefore, once such a transaction was done, it cannot be reverted or modified.
+The following parameters are needed in order to issue a multisignature registration transaction:
 
 - passphrase: the passphrase of the account the multisignature will be applied to.
 - keysgroup: the array of public keys to add to the multisignature account.
@@ -198,7 +200,7 @@ This data block is then signed using the user’s passphrase, and the signature 
 
 The resulting object is represented by the following diagram:
 
-![lisk_protocol-type4](lisk_protocol-type4.png "lisk_protocol-type4")
+![lisk_protocol-type4](assets/lisk_protocol-type4.png "lisk_protocol-type4")
 
 The JSON object that will be broadcast to the network follows the format below:
 
@@ -242,7 +244,7 @@ Additional fields can be specified:
 
 Once those fields have been specified, the system will compute the sender account's public key, and start building the transaction’s data block described in the following figure (note that if second passphrase or multisignature are registered in the address, the corresponding fields must be specified too):
 
-![lisk_protocol-type5a](lisk_protocol-type5a.png "lisk_protocol-type5a")
+![lisk_protocol-type5a](assets/lisk_protocol-type5a.png "lisk_protocol-type5a")
 
 This data block is then signed using the account's passphrase, and the signature is appended to the data block. The system will then compute the fee of the transaction. In the present implementation, the fee for an application registration is 25 LSK. The following is a representation of the resulting JSON object that will be broadcast to the network:
 
@@ -290,7 +292,7 @@ An In Transfer transaction is a transaction used to transfer funds from the main
 
 Once this information is given, the system can compute the sender account's public key and begins building the transaction’s data block with a maximum of 73 bytes as described in the following figure (note that if second passphrase or multisignature are registered in the address, the corresponding fields must be specified too):
 
-![lisk_protocol-type6](lisk_protocol-type6.png "lisk_protocol-type6")
+![lisk_protocol-type6](assets/lisk_protocol-type6.png "lisk_protocol-type6")
 
 This data block is then signed using the account's passphrase, and the signature is appended to the data block. The system will then compute the fee of the transaction. In the present implementation, the fee for an In Transfer transaction is 0.1 LSK. 
 

@@ -13,7 +13,7 @@ This page provides documentation for developers about how to run Lisk Mobile fro
     - [Emulator](#choose-emulator)
   - [Installation](#installation)
 - [User Guide](#user-guide)
-  - [Using enrironment variables](#using-environment-variables)
+  - [Using environment variables](#using-environment-variables)
   - [Run](#run)
   - [Build](#build)
   - [Testing](#testing)

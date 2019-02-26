@@ -4,7 +4,7 @@
 
 Welcome to the Lisk Documentation repository!
 
-See the documentation for the each product:
+See the documentation for each product:
 
 - [Lisk Protocol](lisk-protocol/introduction.md)
 - [Lisk Core](lisk-core/introduction.md)

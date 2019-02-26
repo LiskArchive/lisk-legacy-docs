@@ -40,6 +40,6 @@ commander-2.0.0
 
 There are several ways to help improve the documentation:
 
-- Fix mistakes
-- Add missing information
-- Improve existing documentation
+- [Create issues](https://github.com/LiskHQ/lisk-docs/issues): If mistakes are spotted, or you miss certain information.
+- [Commit Pull Requests](https://github.com/LiskHQ/lisk-docs/pulls): Before committing any PRs, please have a look at our [Contribution Guidelines](CONTRIBUTING.md).
+- [Give Feedback on Lisk.chat](https://lisk.chat/channel/network): We will read it. Just ping `@tschakki` in your message.

@@ -16,7 +16,7 @@ See the documentation for each product:
 
 ## View previous versions of the documentation
 
-The versions of the documentation are tagged by release date in the following format:
+The versions of the documentation are listed under [Releases](https://github.com/LiskHQ/lisk-docs/releases) and are tagged by release date in the following format:
 
 ```
 lisk-docs-yyyy-mm-dd

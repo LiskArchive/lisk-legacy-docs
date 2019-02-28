@@ -26,7 +26,7 @@ The subtrees are created with the following command:
 git subtree split -P <name-of-folder> -b <name-of-new-branch>
 ```
 
-For each new version of the product, that needs updates / changes in the documentation, a corresponding milestone and branch will be created. Each **version branch** is branched from the development branch for the respective product.
+For each new version of the product that needs updates / changes in the documentation, a corresponding milestone and branch will be created. Each **version branch** is branched from the development branch for the respective product.
 
 E.g. For Lisk Core version 1.1.0:
 - The milestone would be: `Core 1.1.0`
@@ -131,7 +131,7 @@ Please read it carefully and use it as a checklist before and after every partic
 
 ### Writing in markdown
 
-The whole documentation content is purely written in Markdown.
+The whole documentation content is written in Markdown.
 
 For reference: [Markdown Cheatsheet](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet)
 
@@ -178,7 +178,7 @@ Headings create automatically internal anchors that can be referenced in other p
 
 > Only include images, if they are informative for the user.
 
-If you want to include a picture on a page, upload the image in the same folder and use a relative link to the image.
+If you want to include a picture on a page, upload the image in the assets folder and use a relative link to the image.
 
 Image name should be: `lisk_PRODUCT-DEFINITION`. Optionally and depending on how the documentation grows, another tag can be added as section ending in `lisk_PRODUCT-SECTION-DEFINITION`
 

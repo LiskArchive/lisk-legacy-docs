@@ -6,13 +6,13 @@ Welcome to the Lisk Documentation repository!
 
 See the documentation for each product:
 
-- [Lisk Protocol](lisk-protocol/introduction.md)
-- [Lisk Core](lisk-core/introduction.md)
-- [Lisk Elements](lisk-elements/introduction.md)
-- [Lisk Commander](lisk-commander/introduction.md)
-- [Lisk Explorer](lisk-explorer/introduction.md)
-- [Lisk Hub](lisk-hub/introduction.md)
-- [Lisk Mobile](lisk-mobile/intro.md)
+- [Lisk Protocol](https://github.com/LiskHQ/lisk-docs/blob/master/lisk-protocol/introduction.md)
+- [Lisk Core](https://github.com/LiskHQ/lisk-docs/blob/master/lisk-core/introduction.md)
+- [Lisk Elements](https://github.com/LiskHQ/lisk-docs/blob/master/lisk-elements/introduction.md)
+- [Lisk Commander](https://github.com/LiskHQ/lisk-docs/blob/master/lisk-commander/introduction.md)
+- [Lisk Explorer](https://github.com/LiskHQ/lisk-docs/blob/master/lisk-explorer/introduction.md)
+- [Lisk Hub](https://github.com/LiskHQ/lisk-docs/blob/master/lisk-hub/introduction.md)
+- [Lisk Mobile](https://github.com/LiskHQ/lisk-docs/blob/master/lisk-mobile/intro.md)
 
 ## View previous versions of the documentation
 
@@ -22,7 +22,7 @@ The versions of the documentation are listed under [Releases](https://github.com
 lisk-docs-yyyy-mm-dd
 ```
 
-Additionally, each products documentation has it's own release tags, referring to the products versioning scheme.
+Additionally, each product's documentation has its own release tags, referring to the product's versioning scheme.
 This makes it convenient to find the corresponding documentation version for a specific version of the product.
 
 Examples:
@@ -36,7 +36,7 @@ commander-2.0.0
 > If changes are made to the documentation in between two product versions, a new tag will be created for it and a documentation version will be appended to the tag.
 > Example: `commander-2.0.0-1.0.1`
 
-## Contribute to Lisk documentation
+## Contribute to Lisk Documentation
 
 There are several ways to help improve the documentation:
 

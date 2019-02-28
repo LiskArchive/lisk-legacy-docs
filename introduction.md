@@ -8,7 +8,6 @@ Lisk Hub is an all-in-one solution to manage your Lisk ID, access and send LSK t
 - [Upgrade](#upgrade)
 - [Features](#features)
   - [Lisk URLs](#lisk-urls)
-  - [Network switcher](#network-switcher)
   - [Dashboard](#dashboard)
   - [Transaction history](#transaction-history)
   - [Send transaction](#send-transaction)
@@ -18,9 +17,11 @@ Lisk Hub is an all-in-one solution to manage your Lisk ID, access and send LSK t
   - [Voting](#voting)
   - [Hardware wallet support](#hardware-wallet-support)
   - [Create account](#create-account)
-  - [Second passphrase](#second-passphrase)
-  - [Auto-logout](#auto-logout)
-  - [Local currencies](#local-currencies)
+  - [Settings](#settings)
+      - [Second passphrase](#second-passphrase)
+      - [Auto-logout](#auto-logout)
+      - [Network switcher](#network-switcher)
+      - [Local currencies](#local-currencies)
 - [Contribute to the Codebase](#contribute-to-the-codebase)
 
 ## Download
@@ -51,18 +52,6 @@ Everything that comes after `lisk://` is treated as a route so this example will
 > When clicking on a Lisk URL, the system opens Lisk Hub (if it is installed) directly on a desired page. It can prefill certain fields or enable certain features in Lisk Hub on the fly.
 
 ![lisk_wallet](assets/lisk_wallet.png "lisk_wallet")
-
-### Network switcher
-
-> The default network Lisk Hub will try to connect to is the Lisk Mainnet.
-> The network switcher on the login page is not visible by default, but can be enabled from the settings page or alternatively through Lisk URL.
-
-*Lisk URL:* `lisk://login?showNetwork=true`
-
-Opens the login page and enables the network switcher options.
-A new option will appear on the login screen, that allows the user change the network, or to specify a concrete custom Node, Lisk Hub should connect to.
-
-![hub-network_switcher](assets/hub-network_switcher.png "hub-network_switcher")
 
 ### Dashboard
 
@@ -196,26 +185,53 @@ After a few clicks, the account creation is completed.
 > **Important:** Make sure to keep your secret passphrase safe, that is generated during account creation.
 > The secret passphrase will be the only way to access your wallet.
 
-### Second passphrase
+### Settings
 
-On the settings page you can register for a `second passphrase` for a fee 5 LSK.
+List of Settngs:
+
+- Security: Security relevant features of Lisk Hub.
+  - [Second Passphrase](#second-passphrase)
+  - [Auto logout](#auto-logout)
+- Advanced features: General Settings.
+  - [Network switcher](#network-switcher)
+  - Delegate features: Enables voting for delegates features on Lisk Hub.
+  - Send anonymous statistics: Share anonymous usage statistics with Lisk Hub.
+- Local: Settings for customizing Lisk Hub appearance.
+  - [Local currencies](#local-currencies)
 
 ![hub-settings](assets/hub-settings.png "hub-settings")
+
+#### Second passphrase
+
+You can register for a `second passphrase` for a fee 5 LSK via the [Settings](#settings) page.
 
 The second passphrase will be prompted each time the account performs important actions, like sending transactions or voting.
 
 ![hub-settings](assets/hub-voting-confirm.png "hub-settings")
 
-### Auto-logout
+#### Auto-logout
 
-Auto-logout is a security feature that automatically logs out, if the User has not performed any actions inside of Lisk Hub during that time.
+Auto-logout is a security feature that logs the user out after 10 minutes automatically.
+The user may reset the timer manually to prevent auto-logout from happening.
 
-It is possible to turn it off on the Settings page.
+It is possible to turn it off completely on the Settings page.
 
 > Turning it off temporarily can make sense, e.g. during voting process, as it may log you off in the middle of it, if you spend more than 10 minutes on the selection page.
 > In that case, dont forget to turn it back on after the voting process.
 
-### Local Currencies
+#### Network switcher
+
+> The default network Lisk Hub will try to connect to is the Lisk Mainnet.
+> The network switcher on the login page is not visible by default, but can be enabled from the settings page or alternatively through Lisk URL.
+
+*Lisk URL:* `lisk://login?showNetwork=true`
+
+Opens the login page and enables the network switcher options.
+A new option will appear on the login screen, that allows the user change the network, or to specify a concrete custom Node, Lisk Hub should connect to.
+
+![hub-network_switcher](assets/hub-network_switcher.png "hub-network_switcher")
+
+#### Local Currencies
 
 On the "Settings" page, you can select your preferred currency conversion.
 

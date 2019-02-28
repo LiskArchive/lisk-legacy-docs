@@ -161,17 +161,17 @@ The below screenshot displays how it looks, if the votes are set manually inside
 
 ### Hardware wallet support
 
-Lisk Hub supports Ledger Nano hardware wallets.
+Lisk Hub supports [Ledger Nano](https://www.ledger.com/) hardware wallets.
 Support for more hardware wallet models is planned to add in future versions.
 
 Steps to connect your Ledger Nano with Lisk Hub:
 
-1. Connect and open your Ledger Nano
+1. Connect your Ledger Nano with the computer and login by entering your secret PIN on the Ledger Nano.
 2. Install the Lisk app on your Ledger Nano via [Ledger Live](https://www.ledger.com/pages/ledger-live).
 3. Open the Lisk Hub sign-in page.
 It should recognize your connected Ledger Nano, and offer an additional login method "Hardware login".
-4. Open the Lisk app on the Ledger Nano
-5. Click on the link named after your device after "Hardware login"
+4. Open the Lisk app on the Ledger Nano.
+5. Click on the link named after your Ledger device after "Hardware login".
 6. Pick your account on the "Accounts on Ledger" page.
 
 The login page with recognized hardware wallet device.
@@ -220,8 +220,8 @@ It is possible to turn it off on the Settings page.
 On the "Settings" page, you can select your preferred currency conversion.
 
 Currently supported:
-- Dollar
-- Euro
+- $ (USD)
+- € (EUR)
 
 ## Contribute to the Codebase
 

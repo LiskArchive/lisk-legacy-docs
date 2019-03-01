@@ -32,7 +32,7 @@ In order to download Lisk Hub, you can either go to [Lisk Products](https://lisk
 
 ### Automatic notification
 
-Lisk Hub has a built in notification system to alert you when a new version is available:
+Lisk Hub has a built-in notification system to alert you when a new version is available:
 
 ![update_available.png](assets/update_available.png "update_available.png")
 
@@ -49,13 +49,13 @@ In case you dismissed the upgrade, you can double-check by going to `Help` > `Ch
 After installing Lisk Hub on your device you will be able to use the `lisk` protocol. Example: `lisk://wallet`.
 Everything that comes after `lisk://` is treated as a route so this example will open the Lisk Hub app on the wallet page.
 
-> When clicking on a Lisk URL, the system opens Lisk Hub (if it is installed) directly on a desired page. It can prefill certain fields or enable certain features in Lisk Hub on the fly.
+> When clicking on a Lisk URL, the system opens Lisk Hub (if it is installed) directly on the desired page. It can prefill certain fields or enable certain features in Lisk Hub on the fly.
 
 ![lisk_wallet](assets/lisk_wallet.png "lisk_wallet")
 
 ### Dashboard
 
-The Dashboard provides an overview about recent transaction, market price changes, and recent social media updates of Lisk.
+The Dashboard provides an overview of the recent transaction, market price changes, and recent social media updates of Lisk.
 
 It also provides a list of all added [Booksmarks](#bookmarks) and the option to add new ones.
 
@@ -63,7 +63,7 @@ It also provides a list of all added [Booksmarks](#bookmarks) and the option to 
 
 ### Transaction history
 
-The transaction history provides a chronological overview about all transactions associated with this account on the Lisk blockchain.
+The transaction history provides a chronological overview of all transactions associated with this account on the Lisk blockchain.
 
 ![hub-wallet](assets/hub-wallet.png "hub-wallet")
 
@@ -71,16 +71,16 @@ The "Account Info" page displays information about the casted votes of an accoun
 
 ![hub-account-info](assets/hub-account-info.png "hub-account-info")
 
-In case the respective Lisk ID did register a delegate on the network, there will be a "Delegate stats" instead of the "Account info" page, which will display additional information, like a list of accounts that have voted for that particular delegate, and some general statistics about the productivity of the respective delgate.
+In case the respective Lisk ID did register a delegate on the network, there will be a "Delegate stats" instead of the "Account info" page, which will display additional information, like a list of accounts that have voted for that particular delegate, and some general statistics about the productivity of the respective delegate.
 
 ![hub-delegate-stats](assets/hub-delegate-stats.png "hub-delegate-stats")
 
 ### Send transaction
 
 Send transactions with Lisk Hub by navigating to the "Wallet" page and hit the "Send" button.
-On the next page, it is needed to specify the recepient address and the amount of LSK that should be send.
+On the next page, it is needed to specify the recipient address and the amount of LSK that should be sent.
 The Reference is an optional data string, that will be connected to the transaction.
-It can be a custom string of 64 bytes and is often used as reference, what the transaction is about.
+It can be a custom string of 64 bytes and is often used as a reference, what the transaction is about.
 
 ![hub-send_transactions](assets/hub-send.png "hub-send_transactions")
 
@@ -97,7 +97,7 @@ Lisk Hub offers different ways to request LSK from people:
 
 By clicking on "Request specific amount" button, Lisk Hub will help you to create a link with the recipient(in that case your Lisk ID) and the amount of LSK, you want to receive.
 Then post it to the person you want to receive LSK from.
-By clicking on the link, Lisk Hub will open (if installed on the system) and prefill amount, recepient and reference for the user, so he/she only needs to hit the send button to send the tokens.
+By clicking on the link, Lisk Hub will open (if installed on the system) and prefill amount, recipient and reference for the user, so he/she only needs to hit the send button to send the tokens.
 
 *Lisk URL example:* `lisk://wallet/send?recipient=8004805717140184627L&amount=8&reference=for being awesome`
 
@@ -187,7 +187,7 @@ After a few clicks, the account creation is completed.
 
 ### Settings
 
-List of Settngs:
+List of Settings:
 
 - Security: Security relevant features of Lisk Hub.
   - [Second Passphrase](#second-passphrase)
@@ -216,8 +216,8 @@ The user may reset the timer manually to prevent auto-logout from happening.
 
 It is possible to turn it off completely on the Settings page.
 
-> Turning it off temporarily can make sense, e.g. during voting process, as it may log you off in the middle of it, if you spend more than 10 minutes on the selection page.
-> In that case, dont forget to turn it back on after the voting process.
+> Turning it off temporarily can make sense, e.g. during the voting process, as it may log you off in the middle of it if you spend more than 10 minutes on the selection page.
+> In that case, don't forget to turn it back on after the voting process.
 
 #### Network switcher
 

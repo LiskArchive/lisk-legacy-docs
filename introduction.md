@@ -227,7 +227,7 @@ It is possible to turn it off completely on the Settings page.
 *Lisk URL:* `lisk://login?showNetwork=true`
 
 Opens the login page and enables the network switcher options.
-A new option will appear on the login screen, that allows the user change the network, or to specify a concrete custom Node, Lisk Hub should connect to.
+A new option will appear on the login screen, that allows the user to change the network, or to specify a concrete custom Node, Lisk Hub should connect to.
 
 ![hub-network_switcher](assets/hub-network_switcher.png "hub-network_switcher")
 

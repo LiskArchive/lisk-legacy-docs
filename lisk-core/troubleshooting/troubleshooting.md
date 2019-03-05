@@ -3,9 +3,10 @@
 ## Overview
 
 ### Setup
-- **[Binary]** [Installation script fails](#installation-script-fails-binary)
+- **[Binary]** [A process is already listening on port 5432](#a-process-is-already-listening-on-port-5432-binary)
+- **[Source]** [error: role "lisk" does not exist](#role-lisk-does-not-exist-source)
+- **[Source]** [Nothing shown in console after starting Lisk Core](#nothing-shown-in-console-after-starting-lisk-core-source)
 - **[Source]** ['npm install' fails with error 'Failed at the sodium@2.0.1 preinstall script.'](#npm-install-fails-with-error-source)
-- **[Source]** [Nothing shown in console after starting Lisk Core](#nothing-shown-in-console-after-starting-lisk-core)
 
 ### Administration
 - [Enable forging: delegate not found](#enable-forging-delegate-not-found)
@@ -13,31 +14,83 @@
 
 ## Setup
 
-### Installation script fails (Binary)
+### A process is already listening on port 5432 (Binary)
+
 #### Problem:
-After running `bash installLisk.sh install -r test` the installation script is aborted with the following output:
-```shell
-Coldstarting Lisk for the first time
-√ Postgresql is running.
-X Failed to create Postgresql user.
-Installation failed. Cleaning up...
-Stopping Lisk components before cleanup
-√ Lisk stopped successfully.
-X Postgresql failed to stop.
-√ Postgresql Killed.
+After running `installLisk.sh`, the installation script is aborted with the following output:
 ```
-#### Solution:
-PostgreSQL is already installed on your system.
-To solve this issue simply remove postgres by running the following command:
+Error: A process is already listening on port 5432
+PostgreSQL by default listens on 127.0.0.1:5432 and attempting to run two instances at the same time will result in this installation failing
+To proceed anyway, use the -i flag to ignore warning.
+```
+PostgreSQL is already installed on your system and listening to the postgreSQl default port 5432.
+This can happen e.g. when a second Lisk Core node is installed on the same server.
+
+#### Solution 1:
+Change the port of your already installed postgreSQL instance to an unused and available port number.
+Locate the corresponding configuration file for PostgreSQL, `postgresql.conf`, and change the port to e.g. `5433`.
+```bash
+locate postgresql.conf 
+```
+After changing the config, restart the corresponding postgreSQL process.
+Now, the 2 postgreSQL instances shouldn't interfere each other anymore.
+
+#### Solution 2:
+The error can be ignored by setting the ignore flag `-i`.
+In that case, the installation script `installLisk.sh` will be executed regardless of the above error.
+The script might run successfully to the end, but ignoring the error might result in unwanted interferences between the different postgreSQL instances.
+```bash
+bash installLisk.sh install -r main -i
+```
+
+#### Solution 3:
+If postgreSQL has been installed globally on the system, disable it:
+```bash
+sudo systemctl stop postgresql
+sudo systemctl disable postgresql
+```
+Possible data inside of databases remains stored in this case.
+
+#### Solution 4:
+If postgreSQL has been installed globally on the system and the data in it is not needed anymore, simply remove the already installed postgreSQL by running the following command:
 ```bash
 sudo apt-get --purge remove postgresql postgresql-doc postgresql-common
 ```
 
+### Role "lisk" does not exist (Source)
+
+#### Problem:
+Starting the Lisk node fails with error: 
+```
+error: role "lisk" does not exist
+```
+Lisk Core expects a postgres user called "lisk" exists on the system and has the rights to create database.
+This user is specified in `config.json`.
+If the user is not present on the system, the above error will be thrown.
+
+#### Solution 1: create lisk user (recommended)
+Create a postgres user with name "lisk" and grant it the right to create databases.
+```bash
+  sudo -u postgres createuser --createdb lisk
+```
+
+#### Solution 2: change `db.user` from "lisk" to custom username
+
+Edit [`config.json`](../user-guide/configuration/configuration.md) and replace the value "lisk" in `db.user` with an alternative postgres username on the system, that has the right to create databases.
+
+### Nothing shown in console after starting Lisk Core (Source)
+
+#### Problem: 
+After installing from Source and starting Lisk Core with `node app.js`, no are logs visible in console.
+This is in fact an expected behaviour, as the default console logging value in the config is `none`, which means no logs are shown in the console after starting the process.
+
+#### Solution: 
+To verify, that your installation works as expected, you can change the`consoleLogLevel` to `error`, `info` or `debug`.
+Alternatively, you can check the log files located in `logs/`, which are on `info` logging level by default.
+
 ### npm install fails with error (Source)
 
-Info | Note 
---- | --- 
-![info note](../../info-icon.png "Info Note") | This issue should not be present anymore since Lisk Core `1.2`
+> This issue should not be present anymore since Lisk Core `v1.2`
 
 #### Problem:
 `npm install` fails with error `Failed at the sodium@2.0.1 preinstall script.`
@@ -56,14 +109,6 @@ node -v
 v6.14.1
 npm install npm@3.10.10
 ```
-
-### Nothing shown in console after starting Lisk Core (Source)
-#### Problem: 
-After installing from Source and starting Lisk Core with `node app.js`, no are logs visible in console.
-This is in fact an expected behaviour, as the default console logging value in the config is `none`, which means no logs are shown in the console after starting the process.
-#### Solution: 
-To verify, that your installation works as expected, you can change the`consoleLogLevel` to `error`, `info` or `debug`.
-Alternatively, you can check the log files located in `logs/`, which are on `info` logging level by default.
 
 ## Administration
 

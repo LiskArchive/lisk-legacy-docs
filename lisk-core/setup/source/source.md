@@ -7,7 +7,6 @@
   4. [Git](#git)
   5. [Node.js](#nodejs)
      * [Node version manager](#node-version-manager)
-  7. [PM2](#pm2)
   6. [Postgres](#postgresql-version-10)
   7. [Redis](#installing-redis)
 - [Installation](#installation)
@@ -50,9 +49,7 @@ In order to run and manage a Lisk Core node in the future, please create a separ
 
 #### Ubuntu
 
-Info | Note 
---- | --- 
-![info note](../../info-icon.png "Info Note") | The `lisk` user itself **does not need** any `sudo` rights to run Lisk Core.
+> The `lisk` user itself **does not need** any `sudo` rights to run Lisk Core.
     
 ```bash
 sudo adduser lisk
@@ -106,14 +103,14 @@ Install System wide via package manager, like so:
 #### Ubuntu
 
 ```bash
-curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
+curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
 sudo apt-get install -y nodejs
 ```
 
 #### MacOS
 
 ```bash
-brew install node@8.14.0
+brew install node@10.14.1
 ```
 
 ### Node version manager
@@ -128,22 +125,10 @@ su - lisk
 2. Install nvm following these [instructions](https://github.com/creationix/nvm#installation)
 3. Install the correct version of Node.js using nvm:
 ```bash
-nvm install 8.14.0
+nvm install 10.14.1
 ```
 
 For the following steps,  logout from the 'lisk' user again with `CTRL+D`, and continue with your user with sudo rights.
-
-### PM2
-
-[PM2](https://github.com/Unitech/pm2) manages the node process for Lisk.
-
-Info | Note
----- | ----
-![info note](../../info-icon.png "Info Note") | Though it is not required to install a process manager such as PM2 to run Lisk Core, we recommend it as it simplifies administration of Lisk Core from Source.
-
-```bash
-sudo npm install -g pm2
-```
 
 ### PostgreSQL (version 10)
 
@@ -234,9 +219,7 @@ Stop redis:
 brew services stop redis
 ```
 
-Info | Note 
---- | --- 
-![info note](../../info-icon.png "Info Note") | Lisk does not run on the redis default port of `6379`. Instead it is configured to run on port: `6380`. Due to this, in order to run Lisk, you have one of two options:
+> Lisk does not run on the redis default port of `6379`. Instead it is configured to run on port: `6380`. Due to this, in order to run Lisk, you have one of two options:
 
 1. **Change the Lisk configuration**
 
@@ -286,12 +269,10 @@ Before proceeding, determine whether you wish to connect your node to the Mainne
 git clone https://github.com/LiskHQ/lisk.git
 cd lisk
 git checkout v1.1.0 -b v1.1.0 # check out latest release tag
-npm install
+npm ci
 ```
 
-Info | Note
----- | ----
-![info note](../../info-icon.png "Info Note") | Please check for latest release on https://github.com/LiskHQ/lisk/releases
+> Please check for latest release on https://github.com/LiskHQ/lisk/releases
 
 To test that Lisk Core is built and configured correctly, issue the following command to connect to the network:
 
@@ -307,7 +288,7 @@ Once the process is verified as running correctly, `CTRL+C` and start the proces
 This will fork the process into the background and automatically recover the process if it fails.
 
 ```bash
-pm2 start --name lisk app.js -- --network [network]
+npx pm2 start --name lisk app.js -- --network [network]
 ```
 Where `[network]` might be either `testnet` or `mainnet`.
 
@@ -344,7 +325,7 @@ Inside this file, define the parameters for the log rotation.
 Example values:
 
 ```bash
-/path/to/lisk/logs/*.log { 
+/path/to/lisk/logs/mainnet/*.log { 
         daily                   # daily rotation
         rotate 5                # keep the 5 most recent logs
         maxage 14               # remove logs that are older than 14 days

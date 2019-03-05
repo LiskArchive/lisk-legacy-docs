@@ -140,7 +140,7 @@ Inside of this file, define the parameters for the log rotation.
 Example values:
 
 ```bash
-/path/to/lisk/logs/*.log { 
+/path/to/lisk/logs/mainnet/*.log { 
         daily                   # daily rotation
         rotate 5                # keep the 5 most recent logs
         maxage 14               # remove logs that are older than 14 days

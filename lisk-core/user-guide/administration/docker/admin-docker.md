@@ -21,9 +21,7 @@ A brief summary of all commands and associated flags has been provided for advan
 
 ## Basic Commands
 
-Info | Note 
---- | --- 
-![info note](../../../info-icon.png "Info Note") | Below commands must be executed inside the `docker` directory of your Lisk Core installation.
+> Below commands must be executed inside the `docker` directory of your Lisk Core installation.
 
 
 ### Status
@@ -90,9 +88,7 @@ docker-compose up -d
 
 Caching using redis can be enabled with the `docker-compose.redis.yml` file, e.g.:
 
-Info | Note 
---- | --- 
-![info note](../../../info-icon.png "Info Note") | When specifying additional `docker-compose` files like `docker-compose.redis.yml`, they need to be chained in the correct order by using the `-f` flag like below:
+> When specifying additional `docker-compose` files like `docker-compose.redis.yml`, they need to be chained in the correct order by using the `-f` flag like below:
 
 ```bash
 docker-compose -f docker-compose.yml -f docker-compose.override.yml -f docker-compose.redis.yml up -d
@@ -149,9 +145,7 @@ Syncing from genesis can take a lot of time as the whole blockchain needs to be 
 To accelerate this process, it is recommended to sync your node from a snapshot.
 Snapshots are database dumps of the Blockchain on a certain blockheight. While syncing from a snapshot, your node will only validate blocks with heigher blockheight than the one of the used snapshot.
 
-Info | Note 
---- | --- 
-![info note](../../../info-icon.png "Info Note") | Lisk provides [official snapshots](https://downloads.lisk.io/lisk/) that will be used during automated synching process. If you want to use thirdparty snapshots make sure they come from a reliable source.
+> Lisk provides [official snapshots](https://downloads.lisk.io/lisk/) that will be used during automated synching process. If you want to use thirdparty snapshots make sure they come from a reliable source.
 
 ### Automated
 

@@ -149,9 +149,7 @@ In case you want to create your own, just run the following script. It will:
 2. validate the correctness of the blockchain, and
 3. compress the result and save it
 
-Info | Note 
---- | --- 
-![info note](../../../info-icon.png "Info Note") | Note, that this process may take a long time, depending on the size of your snapshot.
+> Note, that this process may take a long time, depending on the size of your snapshot.
 
 ```bash
 bash lisk_snapshot.sh

@@ -1,8 +1,6 @@
 # Lisk Core Migration
 
-Info | Note 
---- | --- 
-![info note](../../info-icon.png "Info Note") | Migration of a Lisk Node is only necessary during a hard fork. For normal software updates that don't invoke a hard fork, please go to [Upgrade section](../../upgrade/upgrade.md)
+> Migration of a Lisk Node is only necessary during a hard fork. For normal software updates that don't invoke a hard fork, please go to [Upgrade section](../../upgrade/upgrade.md)
 
 ## What happens during migration
 
@@ -80,9 +78,7 @@ The bridge script will run and wait for the specified height of the network and 
 
 If you're doing a fully automated migration, you could run `lisk_bridge.sh` inside of tmux, screen, byobu or another terminal multiplexer and detach your session even days ahead of time, though you'd want to minimize this lead time if you're exporting `LISK_MASTER_PASSWORD`.
 
-Important | Note 
---- | --- 
-![important note](../../important-icon.png "Important Note") | **Important note for delegates:** After automated upgrade, you still need to enable forging again manually, like described in [configuration section](../../user-guide/configuration/configuration.md#enable-disable-forging)
+> **Important note for delegates:** After automated upgrade, you still need to enable forging again manually, like described in [configuration section](../../user-guide/configuration/configuration.md#enable-disable-forging)
 
 We have prepared a small clip showing the expected output from the script execution.
 You can watch it to verify your migration was completed as expected: https://www.youtube.com/watch?v=Zy9gyH-toBM
@@ -113,7 +109,7 @@ To resolve this, rebuild your version of the blockchain [from snaphot](../../use
 
 The following utility scripts are run by `lisk_bridge.sh` :
 
-- [update_config.sh](#update-config): migrates config to new structure
+- [update_config.js](#update-config): migrates config to new structure
 
 During execution of `lisk_bridge.sh`, it will prompt you asking for a password in the case where it finds a passphrase.
 It will encrypt and migrate that passphrase to the new format.

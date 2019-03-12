@@ -277,7 +277,7 @@ npm ci
 To test that Lisk Core is built and configured correctly, issue the following command to connect to the network:
 
 ```bash
-node app.js --network [network]
+node src/index.js --network [network]
 ```
 
 Where `[network]` might be either `testnet` or `mainnet`.
@@ -288,7 +288,7 @@ Once the process is verified as running correctly, `CTRL+C` and start the proces
 This will fork the process into the background and automatically recover the process if it fails.
 
 ```bash
-npx pm2 start --name lisk app.js -- --network [network]
+npx pm2 start --name lisk src/index.js -- --network [network]
 ```
 Where `[network]` might be either `testnet` or `mainnet`.
 

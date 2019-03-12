@@ -39,7 +39,7 @@ The `config.json` file and a description of each parameter.
     "address": "0.0.0.0", // Specify the IPv4 Lisk will listen on (0.0.0.0 will listen to any IP)
     "fileLogLevel": "info", // Logging level for Lisk: info, error, debug, none
     "logFileName": "logs/lisk.log", // The path and name of the logfile
-    "consoleLogLevel": "none", // The console logging level for app.js: info, error, debug, none
+    "consoleLogLevel": "none", // The console logging level for lisk: info, error, debug, none
     "trustProxy": false, // If true, client IP addresses are understood as the left-most entry in the X-Forwarded-* header
     "topAccounts": false, // Deprecated, will be removed in future releases
     "cacheEnabled": false, // If true, enables cache

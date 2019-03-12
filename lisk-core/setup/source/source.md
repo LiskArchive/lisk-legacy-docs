@@ -277,20 +277,27 @@ npm ci
 To test that Lisk Core is built and configured correctly, issue the following command to connect to the network:
 
 ```bash
-node app.js --network [network]
+npm start # default: connect to Devnet
+LISK_NETWORK=[network] npm start # Use environment variables to overwrite config values (recommended)
+npm start -- --network [network]  # Use flags to overwrite config values
 ```
 
-Where `[network]` might be either `testnet` or `mainnet`.
+Where `[network]` might be either `devnet` (default), `alphanet`, `betanet`, `testnet` or `mainnet`.
+
+It is recommended to overwrite the config values with environment variables, if needed.
+Useable variables will always start with `LISK_` prefix.
+Alternatively, the user may define a custom `config.json`, like described in [Configuarion of Lisk Core](../../user-guide/configuration/configuration.md)
+Click here, to see a [list of available environment variables](../../user-guide/administration/source/source.md#command-line-options)
 
 If the process is running correctly, no errors are thrown in the logs.
-By default, errors will be logged in `logs/lisk.log` only. You can change the logging level in `config.json`.
+By default, errors will be logged in `logs/[network]/lisk.log`.
 Once the process is verified as running correctly, `CTRL+C` and start the process with `pm2`.
 This will fork the process into the background and automatically recover the process if it fails.
 
 ```bash
-npx pm2 start --name lisk app.js -- --network [network]
+npx pm2 start --name lisk src/index.js -- --network [network]
 ```
-Where `[network]` might be either `testnet` or `mainnet`.
+Where `[network]` might be either `devnet` (default), `alphanet`, `betanet`, `testnet` or `mainnet`.
 
 For details on how to manage or stop your Lisk node, please have a look in [Administration from Source](../../../user-guide/administration/source/admin-source.md).
 

@@ -290,7 +290,7 @@ Alternatively, the user may define a custom `config.json`, like described in [Co
 Click here, to see a [list of available environment variables](../../user-guide/administration/source/source.md#command-line-options)
 
 If the process is running correctly, no errors are thrown in the logs.
-By default, errors will be logged in `logs/[network]/lisk.log` only. You can change the logging level in `config.json`.
+By default, errors will be logged in `logs/[network]/lisk.log`.
 Once the process is verified as running correctly, `CTRL+C` and start the process with `pm2`.
 This will fork the process into the background and automatically recover the process if it fails.
 

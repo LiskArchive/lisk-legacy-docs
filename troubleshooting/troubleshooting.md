@@ -6,7 +6,6 @@
 - **[Binary]** [A process is already listening on port 5432](#a-process-is-already-listening-on-port-5432-binary)
 - **[Source]** [error: role "lisk" does not exist](#role-lisk-does-not-exist-source)
 - **[Source]** [Nothing shown in console after starting Lisk Core](#nothing-shown-in-console-after-starting-lisk-core-source)
-- **[Source]** ['npm install' fails with error 'Failed at the sodium@2.0.1 preinstall script.'](#npm-install-fails-with-error-source)
 
 ### Administration
 - [Enable forging: delegate not found](#enable-forging-delegate-not-found)
@@ -81,34 +80,12 @@ Edit [`config.json`](../user-guide/configuration/configuration.md) and replace t
 ### Nothing shown in console after starting Lisk Core (Source)
 
 #### Problem: 
-After installing from Source and starting Lisk Core with `node src/index.js`, no are logs visible in console.
+After installing from Source and starting Lisk Core with `npm start`, no are logs visible in console.
 This is in fact an expected behaviour, as the default console logging value in the config is `none`, which means no logs are shown in the console after starting the process.
 
 #### Solution: 
 To verify, that your installation works as expected, you can change the`consoleLogLevel` to `error`, `info` or `debug`.
 Alternatively, you can check the log files located in `logs/`, which are on `info` logging level by default.
-
-### npm install fails with error (Source)
-
-> This issue should not be present anymore since Lisk Core `v1.2`
-
-#### Problem:
-`npm install` fails with error `Failed at the sodium@2.0.1 preinstall script.`
-When trying to install the necessary node modules for Lisk Core, the install script fails while trying to build sodium.
-This happens for newer versions of npm, which are not supported by core 1.0.0, yet.
-#### Solution:
-Install npm version 3.10.10.
-Check if you have the correct Node version installed by running `node -v`
-If the version is not ^6.14.1, first install the supported Node version.
-```bash
-nvm install 6.14.1
-```
-With the right node version, you can proceed to install the right `npm` verison:
-```bash
-node -v
-v6.14.1
-npm install npm@3.10.10
-```
 
 ## Administration
 

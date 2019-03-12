@@ -67,12 +67,14 @@ npx pm2 logs
 
 There are plenty of options available that you can use to override configuration on runtime while starting Lisk Core.
 
+How to overwrite config options from the Command line:
 ```bash
-node src/index -p [port] -a [address] -c [config-path] -n [network]
+LISK_NETWORK=[network] LISK_CONFIG_FILE=[config-path] LISK_ADDRESS=[address] LISK_WS_PORT=[port] npm start # Pass options as environment variables (recommended)
+npm start -p [port] -a [address] -c [config-path] -n [network] # Pass options as flags
 ```
 or with pm2, e.g.:
 ```bash
-npx pm2 start lisk -p [port] -a [address] -c [config-path] -n [network]
+LISK_NETWORK=[network] LISK_CONFIG_FILE=[config-path] LISK_ADDRESS=[address] LISK_WS_PORT=[port] npx pm2 start lisk
 ```
 You can pass any of `devnet` (default), `alphanet`, `betanet`, `testnet` or `mainnet` for the network option.
 

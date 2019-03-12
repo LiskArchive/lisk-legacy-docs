@@ -286,6 +286,7 @@ Where `[network]` might be either `devnet` (default), `alphanet`, `betanet`, `te
 
 It is recommended to overwrite the config values with environment variables, if needed.
 Useable variables will always start with `LISK_` prefix.
+Alternatively, the user may define a custom `config.json`, like described in [Configuarion of Lisk Core](../../user-guide/configuration/configuration.md)
 Click here, to see a [list of available environment variables](../../user-guide/administration/source/source.md#command-line-options)
 
 If the process is running correctly, no errors are thrown in the logs.

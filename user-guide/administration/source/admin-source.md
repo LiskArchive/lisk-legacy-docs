@@ -67,7 +67,7 @@ npx pm2 logs
 
 There are plenty of options available that you can use to override configuration on runtime while starting Lisk Core.
 
-How to overwrite config options from the Command line:
+How to overwrite config options from the Command Line:
 ```bash
 LISK_NETWORK=[network] LISK_CONFIG_FILE=[config-path] LISK_ADDRESS=[address] LISK_WS_PORT=[port] npm start # Pass options as environment variables (recommended)
 npm start -p [port] -a [address] -c [config-path] -n [network] # Pass options as flags

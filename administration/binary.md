@@ -93,13 +93,13 @@ For more information about available commands, see the official [PostgreSQL Docu
 
 ## Utility scripts
 
-There are couple of command line scripts that facilitate users of lisk to perform handy operations.
+There are a couple of command line scripts that facilitate users of lisk to perform handy operations.
 
-All scripts are are located under `./scripts/` directory and can be executed directly by `node scripts/<file_name>`.
+All scripts are located under `./scripts/` directory and can be executed directly by `node scripts/<file_name>`.
 
 ### Generate Config
 
-This script will help you to generate unified version of configuration file for any network. Here is the usage of the script:
+This script will help you to generate a unified version of the configuration file for any network. Here is the usage of the script:
 
 ```bash
 Usage: node scripts/generate_config.js [options]
@@ -116,8 +116,8 @@ Argument `network` is required and can by `devnet`, `testnet`, `mainnet` or any 
 
 ### Update Config
 
-This script keep track of all changes introduced in Lisk over time in different versions. 
-If you have one config file in any of specific version and you want to make it compatible with other version of the Lisk, this scripts will do it for you.
+This script keeps track of all changes introduced in Lisk over time in different versions. 
+If you have one config file in any of specific version and you want to make it compatible with other versions of the Lisk, this scripts will do it for you.
 
 ```bash
 Usage: node scripts/update_config.js [options] <input_file> <from_version> [to_version]
@@ -182,15 +182,15 @@ bash lisk.sh rebuild -0
 ```
 
 ### Start node only
-This command is used to start individual nodejs processes apart from the database. 
-It is designed to be used with customized config.json files in order to manage vertically stacked Lisk processes on one node.
+This command is used to start individual Node.JS processes apart from the database. 
+It is designed to be used with customized config.json files to manage vertically stacked Lisk processes on one node.
 ```bash
 bash lisk.sh start_node -c <config.json>
 ```
 
 ### Stop node only
-This command is used to stop individual nodejs processes apart from the database. 
-It is designed to be used with customized `config.json` files in order to manage vertically stacked Lisk processes on one node.
+This command is used to stop individual Node.JS processes apart from the database. 
+It is designed to be used with customized `config.json` files to manage vertically stacked Lisk processes on one node.
 ```bash
 bash lisk.sh stop_node -c <config.json>
 ```

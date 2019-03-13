@@ -18,7 +18,7 @@
 ## Pre-Install
 
 This document details the prerequisites to install Lisk Core 1.0.0 from a Source installation using tagged releases on Github.
-To complete the installation there are prerequisites that need to be fulfilled.  If you have already performed these, please proceed to the [Installation](#installation) chapter.
+To complete the installation some prerequisites need to be fulfilled.  If you have already performed these, please proceed to the [Installation](#installation) chapter.
 
 Firstly, please determine if your platform can install Lisk Core from source.
 
@@ -31,7 +31,7 @@ Firstly, please determine if your platform can install Lisk Core from source.
 
 ### Open necessary ports
 
-In order to connect to the desired network with Lisk Core , please ensure that the corresponding ports are open:
+To connect to the desired network with Lisk Core, please ensure that the corresponding ports are open:
 
 | Network | httpPort(HTTP) | wsPort(TCP) |
 | -----------|-------------|-------------|
@@ -44,8 +44,8 @@ These are the default ports for connecting with the network, they can be altered
 
 ### Create a new user
 
-In order to install the required prerequisites, it is necessary to have a user with sudo rights on the server.
-In order to run and manage a Lisk Core node in the future, please create a separate 'Lisk' user like so:
+To install the required prerequisites, it is necessary to have a user with sudo rights on the server.
+To run and manage a Lisk Core node in the future, please create a separate 'Lisk' user like so:
 
 #### Ubuntu
 
@@ -55,7 +55,7 @@ In order to run and manage a Lisk Core node in the future, please create a separ
 sudo adduser lisk
 ```
 
-### Tool chain components
+### Toolchain components
 
 Used for compiling dependencies.
 
@@ -98,7 +98,7 @@ brew install git
 
 [Node.js](https://nodejs.org/) serves as the underlying engine for code execution.
 
-Install System wide via package manager, like so:
+Install system-wide via a package manager, like so:
 
 #### Ubuntu
 
@@ -115,7 +115,7 @@ brew install node@10.14.1
 
 ### Node version manager
 
-We recommend to use a Node version manager such as [NVM](https://github.com/creationix/nvm).
+We recommend using a Node version manager such as [NVM](https://github.com/creationix/nvm).
 NVM is a bash script that enables you to manage multiple active Node.js versions.
 
 1. Login as lisk user, that has been created in the first step:
@@ -128,7 +128,7 @@ su - lisk
 nvm install 10.14.1
 ```
 
-For the following steps,  logout from the 'lisk' user again with `CTRL+D`, and continue with your user with sudo rights.
+For the following steps,  log out from the 'lisk' user again with `CTRL+D`, and continue with your user with sudo rights.
 
 ### PostgreSQL (version 10)
 
@@ -144,7 +144,7 @@ sudo apt update
 sudo apt install postgresql-10
 ```
 
-After installation, you should see the postgres database cluster, by running
+After installation, you should see the Postgres database cluster, by running
 ```bash
   pg_lsclusters
 ```
@@ -165,7 +165,7 @@ Switch to the lisk user and create the databases, where `{network}` is the netwo
   createdb lisk_{network}
   ```
 
-For the following steps,  logout from the lisk user again with `CTRL+D`, and continue with your user with sudo rights.
+For the following steps,  log out from the lisk user again with `CTRL+D`, and continue with your user with sudo rights.
 Change `'password'` to a secure password of your choice.
 ```bash
   sudo -u postgres psql -d lisk_{network} -c "alter user lisk with password 'password';"
@@ -189,13 +189,13 @@ createdb lisk_{network}
 sudo apt-get install redis-server
 ```
 
-Start redis:
+Start Redis:
 
 ```bash
 sudo service redis-server start
 ```
 
-Stop redis:
+Stop Redis:
 
 ```bash
 sudo service redis-server stop
@@ -207,19 +207,19 @@ sudo service redis-server stop
 brew install redis
 ```
 
-Start redis:
+Start Redis:
 
 ```bash
 brew services start redis
 ```
 
-Stop redis:
+Stop Redis:
   
 ```bash
 brew services stop redis
 ```
 
-> Lisk does not run on the redis default port of `6379`. Instead it is configured to run on port: `6380`. Due to this, in order to run Lisk, you have one of two options:
+> Lisk does not run on the redis default port of `6379`. Instead it is configured to run on port: `6380`. Due to this, to run Lisk, you have one of two options:
 
 1. **Change the Lisk configuration**
 
@@ -227,7 +227,7 @@ In the next installation phase, remember to update the Redis port configuration 
 
 2. **Change the Redis launch configuration**
 
-Update the launch configuration file on your system. Note that there are a number of ways to do this. 
+Update the launch configuration file on your system. Note that there are many ways to do this. 
 
 The following is one example:
 
@@ -246,7 +246,7 @@ ping
 
 And you should get the result `PONG`.
 
-If you have finished all above steps successfully, your system is ready for installation of Lisk Core.
+If you have finished all the above steps successfully, your system is ready for installation of Lisk Core.
 
 ## Installation
 
@@ -268,7 +268,7 @@ Before proceeding, determine whether you wish to connect your node to the Mainne
 ```bash
 git clone https://github.com/LiskHQ/lisk.git
 cd lisk
-git checkout v1.1.0 -b v1.1.0 # check out latest release tag
+git checkout v1.1.0 -b v1.1.0 # check out the latest release tag
 npm ci
 ```
 
@@ -284,7 +284,7 @@ npm start -- --network [network]  # Use flags to overwrite config values
 
 Where `[network]` might be either `devnet` (default), `alphanet`, `betanet`, `testnet` or `mainnet`.
 
-It is recommended to overwrite the config values with environment variables, if needed.
+It is recommended to overwrite the config values with environment variables if needed.
 Useable variables will always start with `LISK_` prefix.
 Alternatively, the user may define a custom `config.json`, like described in [Configuarion of Lisk Core](../configuration.md)
 Click here, to see a [list of available environment variables](../administration/source.md#command-line-options)
@@ -303,8 +303,8 @@ For details on how to manage or stop your Lisk node, please have a look in [Admi
 
 If you are not running Lisk locally, you will need to follow the [Configuration - API](../configuration.md#api-access-control) document to enable access.
 
-With all of the above steps complete you are ready to move on to the configuration documentation if you wish to enable forging or SSL. 
-Please see [General Configuration](../configuration.md) for more information.
+That's it!
+You are ready to move on to the [configuration](../configuration.md) documentation if you wish to enable forging or SSL. 
 
 ## Post-installation (optional)
 

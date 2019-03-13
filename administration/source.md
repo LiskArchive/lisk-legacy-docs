@@ -79,7 +79,7 @@ LISK_NETWORK=[network] LISK_CONFIG_FILE=[config-path] LISK_ADDRESS=[address] LIS
 You can pass any of `devnet` (default), `alphanet`, `betanet`, `testnet` or `mainnet` for the network option.
 
 
-Each of these options can be appended on command line. There are also few `ENV` variables that can be utilized for this purpose.
+Each of these options can be appended on the command line. There are also a few `ENV` variables that can be utilized for this purpose.
 
 | Option                               | ENV Variable           | Config Option            | Description                                                                                                                                                                       |
 | ------------------------------------ | ---------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -110,17 +110,17 @@ Each of these options can be appended on command line. There are also few `ENV` 
 #### Note
 
 * All `ENV` variables restricted with operating system constraint of `ENV` variable maximum length.
-* Comma separated lists will replace the original config values. e.g. If you specify `LISK_PEERS`, original `peers.list` specific to network will be replaced completely.
+* Comma-separated lists will replace the original config values. e.g. If you specify `LISK_PEERS`, original `peers.list` specific to the network will be replaced completely.
 
 ## Utility scripts
 
-There are couple of command line scripts that facilitate users of lisk to perform handy operations.
+There are a couple of command line scripts that facilitate users of lisk to perform handy operations.
 
-All scripts are are located under `./scripts/` directory and can be executed directly by `node scripts/<file_name>`.
+All scripts are located under `./scripts/` directory and can be executed directly by `node scripts/<file_name>`.
 
 ### Generate Config
 
-This script will help you to generate unified version of configuration file for any network. Here is the usage of the script:
+This script will help you to generate a unified version of the configuration file for any network. Here is the usage of the script:
 
 ```bash
 Usage: node scripts/generate_config.js [options]
@@ -137,8 +137,8 @@ Argument `network` is required and can by `devnet`, `testnet`, `mainnet` or any 
 
 ### Update Config
 
-This script keep track of all changes introduced in Lisk over time in different versions. 
-If you have one config file in any of specific version and you want to make it compatible with other version of the Lisk, this scripts will do it for you.
+This script keeps track of all changes introduced in Lisk over time in different versions. 
+If you have one config file in any of specific version and you want to make it compatible with other versions of the Lisk, this scripts will do it for you.
 
 ```bash
 Usage: node scripts/update_config.js [options] <input_file> <from_version> [to_version]
@@ -159,7 +159,7 @@ If you do not specify `--network` argument you will have to load it from `LISK_N
 
 ### Console
 
-This script is really useful in development. It will initialize the components of Lisk and load these into nodejs REPL.
+This script is useful in development. It will initialize the components of Lisk and load these into Node.JS REPL.
 
 ```bash
 Usage: node scripts/console.js
@@ -179,7 +179,7 @@ Once you get the prompt, you can use `modules`, `helpers`, `logic`, `db` and `co
 
 ## Rebuild from a snapshot
 
-In some scenarios it is recommended to restore the blockchain from a snapshot. The command blocks below will perform this process. The URL can be substituted for another `blockchain.db.gz` snapshot file if desired.
+In some scenarios, it is recommended to restore the blockchain from a snapshot. The command blocks below will perform this process. The URL can be substituted for another `blockchain.db.gz` snapshot file if desired.
 
 ### Mainnet
 
@@ -206,7 +206,7 @@ npx pm2 start lisk
 ## Code documentation in Lisk Core
 
 For code documentation, Lisk Core uses [JSDoc](http://usejsdoc.org/).
-With JSDoc generates a static HTML documentation site.
+JSDoc generates a static HTML documentation site.
 To build the documentation site, run the following command inside the lisk installation directory:
 
 ```
@@ -221,7 +221,7 @@ To host the documentation site (e.g. for easy access via a browser), use the fol
 npm run docs:serve
 ```
 
-This will start a webserver, and the documentation will be accessible through the browser on port 8080, e.g. `localhost:8080`.
-The process will be started inside the terminal. To stop the webserver again, hit `CTRL + C`.
+This will start a web server, and the documentation will be accessible through the browser on port 8080, e.g. `localhost:8080`.
+The process will be started inside the terminal. To stop the web server again, hit `CTRL + C`.
 
 For more information please have a look in the [Contribution Guidelines](https://github.com/LiskHQ/lisk/blob/development/docs/CONTRIBUTING.md) for Lisk Core on Github.

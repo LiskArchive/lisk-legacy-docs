@@ -12,21 +12,21 @@
 - The **default** network is `devnet`. If you want to connect to another network specify the `network` when starting Lisk Core, as described in [Source Administration](administration/source.md#command-line-options)
 - The Lisk configuration is managed under different folder structures.
 - Root folder for all configuration is `config/`.
-- Default configuration file that is used as base is `config/default/config.json`
+- The default configuration file that is used as a base is `config/default/config.json`
 - You can find network specific configurations under `config/<network>/config.json`, where `<network>` can be any of these values:
    - `devnet`
    - `alphanet`
    - `betanet`
    - `testnet`
    - `mainnet`
-- Configurations will be loaded in following order, each one will override the previous one:
+- Configurations will be loaded in the following order, each one will override the previous one:
    1. Default configuration file
    2. Network specific configuration file
-   3. Custom configuration file (if specified by user)
+   3. A custom configuration file (if specified by the user)
    4. Command line configurations, specified as command-line flags or `ENV` variables.
 - For development purposes use `devnet` as a network option, other networks are specific to public Lisk networks.
 
-> Don't override any value in above mentioned files if you need custom configuration.
+> Don't override any value in above-mentioned files if you need custom configuration.
 > To use a custom configuration use environment variables or create your own `.json` file and pass it as [command line option](administration/source.md#command-line-options)
 
 The `config.json` file and a description of each parameter.
@@ -110,11 +110,11 @@ The `config.json` file and a description of each parameter.
     },
     "forging": {
         "force": false, // Forces forging to be on, only used on local development networks
-        "delegates": [ // Lists delegates, who are authorised to forge on this node.
+        "delegates": [ // Lists delegates, who are authorized to forge on this node.
            {
             "encryptedPassphrase":  "salt=5426da113a5896f11255f69bb49c49eb&cipherText=947b537de9&iv=67d7344ce8a3b2fc879e316a&tag=dc5db5bfb41a3e968278e99651c68523&version=1",
             "publicKey": "9d3058175acab969f41ad9b86f7a2926c74258670fe56b37c429c01fca9f2f0f"
-	       }
+           }
         ], 
         "access": {
             "whiteList": [ "127.0.0.1" ]// This parameter allows connections to the Forging API by IP. Defaults to allow only local connections
@@ -141,7 +141,7 @@ The `config.json` file and a description of each parameter.
 
 ## API Access Control
 
-Controlling access to a node plays a vital role in security. The following configurable flags are available in order to control the access to your node:
+Controlling access to a node plays a vital role in security. The following configurable flags are available to control the access to your node:
 
 ```js
      "api": {
@@ -154,7 +154,7 @@ Controlling access to a node plays a vital role in security. The following confi
 
 The recommended setup is to configure a whitelist for only trusted IP addresses, such as your home connection. Use IPV4 addresses only as the whitelist does not support IPV6. 
 
-To setup a public wallet, simply leave the`api.access.whitelist` array empty.
+To setup a public wallet, simply leave the `api.access.whitelist` array empty.
 
 For best security, disable all access setting `api.enabled` to `false`.
 
@@ -162,12 +162,12 @@ For best security, disable all access setting `api.enabled` to `false`.
 
 ## Forging
 
-In order to enable your node to forge, you need first to insert some encrypted data into the config file under forging.delegates array. To encrypt your passphrase, we offer and recommend one of the following alternatives:
+To enable your node to forge, you need first to insert some encrypted data into the config file under `forging.delegates` array. To encrypt your passphrase, we offer and recommend one of the following alternatives:
 
 - [Lisk Commander](/lisk-commander/user-guide/commands/commands.md) via `encrypt passphrase` command
 - [Cryptography module from Lisk Elements](/lisk-elements/user-guide/cryptography/cryptography.md)
 
-We explain further the first alternative. First, make sure you have installed Lisk Commander in a secure environment. Upon completion, please follow the commands below to generate the encryptedPassphrase:
+We explain further the first alternative. First, make sure you have installed Lisk Commander in a secure environment. Upon completion, please follow the commands below to generate the encrypted passphrase:
 
 ```bash
 $ lisk
@@ -183,7 +183,7 @@ Please re-enter your password: ***
 ```
 
  1. In the first step, type in your passphrase and then type in the password you want to use for encryption. 
- 2.  Afterwards you will get an `encryptedPassphrase` key value pair. 
+ 2.  Afterward, you will get an `encryptedPassphrase` key-value pair. 
  3. Create the JSON object and add it to your `config.json` under `forging.delegates`:
 
 ```js
@@ -192,11 +192,11 @@ Forging
         "force": false,
         "delegates": [
                 {
-				"encryptedPassphrase":
+                "encryptedPassphrase":
  "salt=5426da113a5896f11255f69bb49c49eb&cipherText=947b537de9&iv=67d7344ce8a3b2fc879e316a&tag=dc5db5bfb41a3e968278e99651c68523&version=1",
-				"publicKey":
-					"9d3058175acab969f41ad9b86f7a2926c74258670fe56b37c429c01fca9f2f0f"
-	       }              
+                "publicKey":
+                    "9d3058175acab969f41ad9b86f7a2926c74258670fe56b37c429c01fca9f2f0f"
+           }              
          ],
         "access": {
             "whiteList": [
@@ -206,7 +206,7 @@ Forging
     },
 ```
 
-4. Reload your Lisk Core process to make the changes  in the config effective, e.g. for Binary install, run : `bash lisk.sh reload`
+4. Reload your Lisk Core process to make the changes in the config effective, e.g. for Binary install, run: `bash lisk.sh reload`
 
 ### Check Forging
 Use the following curl command to verify the forging  status of your delegate:
@@ -239,7 +239,7 @@ The result should be something like this:
 
 If you are running your Lisk Node from a local machine, you can enable forging through the API client, without further interruption.
 
-> Important: Remember that after restarting you Lisk node, you must need to re-enable forging again.
+> Important: Remember that after restarting your Lisk node, you need to re-enable forging again.
 
 Use the following curl command to **enable the forging** for your delegate:
 ```bash
@@ -265,7 +265,7 @@ curl -X PUT \
           "forging": false
       }'
 ```
-- Where `publicKey` is the key for the delegate you want to enable/disbale
+- Where `publicKey` is the key for the delegate you want to enable/disable
 - `password` is the password used to encrypt your passphrase in `config.json`
 -  `forging` is the boolean value to enable or disable the forging
 - HTTP Port can be different based on your configuration, so check `httpPort` in your `config.json`
@@ -290,7 +290,7 @@ Next snippet highlights the essential parameters to enable SSL security on your 
 }
 ```
 
-> If SSL Port configured above in `ssl.options.port` is a privileged port (below 1024), you must either allow node to use the specified port with `setcap` or change the configuration to use a port outside of that range.
+> If SSL Port configured above in `ssl.options.port` is a privileged port (below 1024), you must either allow the node to use the specified port with `setcap` or change the configuration to use a port outside of that range.
 
 **Setcap:** Only required to grant Lisk access to port 443
 

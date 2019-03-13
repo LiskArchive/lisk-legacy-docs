@@ -13,7 +13,7 @@
 
 ## Pre-install
 
-This document will detail how to prepare a system to run Lisk Core as a Docker based container. In order to run Lisk in Docker a user must first install the Docker Engine. Additionally it is recommended to install Docker Compose for convenience.
+This document will detail how to prepare a system to run Lisk Core as a Docker-based container. To run Lisk in Docker a user must first install the Docker Engine. Additionally, it is recommended to install Docker Compose for convenience.
 
 Determine if your platform can run Docker.
 
@@ -35,7 +35,7 @@ Please note that Docker for Windows includes Docker Compose.
 
 Please refer to https://docs.docker.com/engine/installation/#server
 
-To install Docker Compose, please refer to: https://docs.docker.com/compose/install/
+To install Docker Compose, please refer to https://docs.docker.com/compose/install/
 
 **Important**: Configure Docker, so it can be run without `sudo` rights: https://docs.docker.com/install/linux/linux-postinstall/
 
@@ -47,7 +47,7 @@ sudo apt-get install make
 
 ### Open necessary ports
 
-In order to connect to the desired network with Lisk Core , please ensure that the corresponding ports are open:
+To connect to the desired network with Lisk Core, please ensure that the corresponding ports are open:
 
 | Network | httpPort(HTTP) | wsPort(TCP) |
 | --------|----------------|-------------|
@@ -60,16 +60,16 @@ These are the default ports for connecting with the network, these can be altere
 
 ### Create a new user
 
-In order to run and manage a Lisk Core node in the future, please create a separate 'lisk' user like so:
+To run and manage a Lisk Core node in the future, please create a separate 'lisk' user like so:
 
 #### Ubuntu
 
-The `lisk` user itself **does not need** any `sudo` rights to run Lisk Core. It is sufficient to create a group `docker` and add the newly created user to that group, in order to enable the user to use Docker (see: https://docs.docker.com/install/linux/linux-postinstall/).
+The `lisk` user itself **does not need** any `sudo` rights to run Lisk Core. It is sufficient to create a group `docker` and add the newly created user to that group, to enable the user to use Docker (see: https://docs.docker.com/install/linux/linux-postinstall/).
     
 ```bash
 sudo adduser lisk              # create a new user
 sudo groupadd docker           # create docker group
-sudo usermod -aG docker lisk   # add user to docker group
+sudo usermod -aG docker lisk   # add the user to docker group
 ```
 
 ## Installation
@@ -98,7 +98,7 @@ The `.env`-files are templates with network specific environment variables.
 
 ### Set environment variables
 
-In order to connect to the Lisk network, the environment variables need to be set accordingly.
+To connect to the Lisk network, the environment variables need to be set accordingly.
 
 Before setting the variables, you may want to edit them in the respective `.env.{network}` file.
 
@@ -134,7 +134,7 @@ make coldstart  # will download and restore a blockchain snapshot for you
 
 ```bash
 docker-compose up -d # initialize Lisk Core
-docker-compose ps    # see status of Lisk Core
+docker-compose ps    # see the status of Lisk Core
 docker-compose logs  # see logs
 ```
 

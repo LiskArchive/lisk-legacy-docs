@@ -31,7 +31,7 @@
 
 ## Versions
 
-We release new versions of Lisk Core regularly. Documentation on [lisk.io](https://lisk.io/documentation) will keep up to date with version updates. The Lisk Core version reference below provides an overview about the former releases and documentation versions of Lisk Core.
+We release new versions of Lisk Core regularly. Documentation on [lisk.io](https://lisk.io/documentation) will keep up to date with version updates. The Lisk Core version reference below provides an overview of the former releases and documentation versions of Lisk Core.
 
 Software Version | Protocol Version | Release date <br> (yy/mm/dd)| Documentation reference
 ---     | ---       | ---         | ---
@@ -44,7 +44,7 @@ Software Version | Protocol Version | Release date <br> (yy/mm/dd)| Documentatio
 
 ## Versioning schemes
 
-Lisk Core is decribed in 2 different versioning schemes. The **Software Implementation Version** and the **Protocol Version**.
+Lisk Core is described in 2 different versioning schemes. The **Software Implementation Version** and the **Protocol Version**.
 
 ### Software implementation versioning
 
@@ -71,7 +71,7 @@ The first digit, `H`, depends on the number of hard forks and is incremented wit
 
 > The initial protocol version 1.0 is defined to be the one that was implemented by Lisk Core v1.0.0.
 
-The *protocol version* is used e.g. in P2P Communication between Lisk Core nodes, in order to determine, if the nodes have compatible versions of the Lisk protocol implemented.
+The *protocol version* is used e.g. in P2P Communication between Lisk Core nodes, to determine, if the nodes have compatible versions of the Lisk protocol implemented.
 
 ## Upgrade vs Migration
 
@@ -83,16 +83,16 @@ Every time that a new software update of Lisk Core introduces a **hard fork** on
 [![What is Lisk Core?](https://img.youtube.com/vi/RfF9EPwQDOY/0.jpg)](https://www.youtube.com/watch?v=RfF9EPwQDOY)
 
 Lisk Core is the program that implements the [Lisk Protocol](/lisk-protocol/introduction.md).
-Every machine must set it up in order to run a node that allows for participation in the network.
+Every machine must set it up to run a node that allows for participation in the network.
 Setting up Lisk Core enables a user to:
 
 - Connect to a [Network](#networks) and communicate with other nodes in the network.
 - Full control to [configure](configuration.md) Lisk Core to specific needs, as required.
 - Create your own [snapshots](#snapshots) of the blockchain
-- Use your own custom Lisk Core node to perform actions on the Lisk blockchain, e.g. with [Lisk Hub](https://github.com/LiskHQ/lisk-docs/blob/master/lisk-hub/introduction.md#network-switcher).
-- [Forge](configuration.md#forging) new blocks (if your are an active delegate).
+- Use your custom Lisk Core node to perform actions on the Lisk blockchain, e.g. with [Lisk Hub](https://github.com/LiskHQ/lisk-docs/blob/master/lisk-hub/introduction.md#network-switcher).
+- [Forge](configuration.md#forging) new blocks (if you are an active delegate).
 
-By setting up your own node, you contribute to the decentralisation of the Lisk network.
+By setting up your node, you contribute to the decentralization of the Lisk network.
 
 An instance of Lisk Core is generally detailed in two different ways: 
 
@@ -107,10 +107,10 @@ Lisk Core can be connected to different networks.
 There are two key public networks, entirely independent of each other, that are always accessible: **Mainnet** and **Testnet**. 
 
 #### Mainnet
-Mainnet is where the true Lisk economy exists. On this network, Lisk users are able to transfer LSK tokens from one account to another, register accounts as delegates, vote for another delegates or register dApps. It can be explored via the [Lisk Explorer](https://explorer.lisk.io).
+Mainnet is where the true Lisk economy exists. On this network, Lisk users can transfer LSK tokens from one account to another, register accounts as delegates, vote for other delegates or register dApps. It can be explored via the [Lisk Explorer](https://explorer.lisk.io).
 
 #### Testnet
-Testnet is an independent replica of the Lisk Mainnet intended as an area to rehearse upgrades before they take place on the Lisk Mainet. This is where new versions and fixes of Lisk Core are tested. It can be explored via [Lisk Testnet Explorer](https://testnet-explorer.lisk.io).
+Testnet is an independent replica of the Lisk Mainnet intended as an area to rehearse upgrades before they take place on the Lisk Mainnet. This is where new versions and fixes of Lisk Core are tested. It can be explored via [Lisk Testnet Explorer](https://testnet-explorer.lisk.io).
 
 ### Components
 The Lisk Core consists of 4 main components:
@@ -136,7 +136,7 @@ The Lisk Core consists of 4 main components:
 A snapshot is a backup of the complete blockchain. It can be used to speed up the sync process, instead of having to validate all transactions starting from genesis block to current block height.
 Lisk provides official snapshots of the blockchain, see [http://snapshots.lisk.io](http://snapshots.lisk.io).
 
-> [Creating own snapshots](binary/admin-binary.md#create-snapshot) is only supported for Lisk Core Binary distributions. Rebuilding from snapshot is explained for each distribution in the Administration section.
+> [Creating own snapshots](administration/binary.md#create-snapshot) is only supported for Lisk Core Binary distributions. Rebuilding from a snapshot is explained for each distribution in the Administration section.
 
 ## Lisk Core Distributions
 
@@ -144,7 +144,7 @@ The 3 supported distributions for Lisk Core are presented below:
 
 ### [Binary](setup/binary.md)
 The **default** way to setup Lisk Core.
-The binary installation is an easy and automated way to set up Lisk Core, this includes nearly completely automated update scripts and a selection of tools to help maintain a Lisk Node in a seamless way.
+The binary installation is an easy and automated way to set up Lisk Core, this includes nearly completely automated update scripts and a selection of tools to help seamlessly maintain a Lisk Node.
 
 ### [Docker](setup/binary.md)
 Docker adds support for additional platforms upon which to run a Lisk node, e.g. running a Lisk node inside of a Docker on Windows and connecting it via a custom Node on Lisk Hub to Lisk Core, without the need to rent an additional server.
@@ -164,4 +164,3 @@ Please be sure to read and follow our [Contribution Guidelines](https://github.c
 
 ### Gitter
 If you have any further questions please join our [Gitter](https://gitter.im/LiskHQ/lisk).
-

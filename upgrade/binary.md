@@ -1,6 +1,6 @@
 # Lisk Core Binary Upgrade
 
-In order to upgrade Lisk Core from Binary please follow the instructions below.
+To upgrade Lisk Core from Binary please follow the instructions below.
 Please choose the instructions specific to the network (Mainnet or Testnet) your node is connected to.
 
 ## Automated Upgrade Lisk Core

@@ -23,11 +23,11 @@ This document will detail how to prepare a system for the installation of Lisk C
 - Ubuntu 18.04 x86_64
 - Ubuntu 16.04 (LTS) x86_64
 
-To complete the installation there are prerequisites that need to be fulfilled.  If you have already performed these, please proceed to the [Installation](#installation) chapter. Please follow the instructions below to load the required software to your system.
+To complete the installation some prerequisites need to be fulfilled.  If you have already performed these, please proceed to the [Installation](#installation) chapter. Please follow the instructions below to load the required software to your system.
 
 ### Open the necessary ports
 
-In order to connect to the desired network with Lisk Core , please ensure that the corresponding ports are open:
+To connect to the desired network with Lisk Core, please ensure that the corresponding ports are open:
 
 | Network | httpPort(HTTP) | wsPort(TCP) |
 | --------|----------------|-------------|
@@ -92,12 +92,12 @@ bash installLisk.sh install -r test
 
 You will be prompted for your installation directory, pressing enter will choose the default.
 
-Next you will be prompted, if you wish to synchronize from the Genesis block. If you answer 'no', which is the default option, 
+Next, you will be prompted, if you wish to synchronize from the Genesis block. If you answer 'no', which is the default option, 
 the node will download a recent snapshot of the database. This will be much faster than synching from the genesis block. 
 
-The installation may take a few minutes. Check the scripts output to verify that the installation was successful.
+The installation may take a few minutes. Check the output of the script to verify that the installation was successful.
 
-If you recognise an error, try to resolve it by analysing the error output, otherwise you can have a look at our [Troubleshooting Section](../troubleshooting.md).
+If you recognize an error, try to resolve it by analyzing the error output, otherwise, you can have a look at our [Troubleshooting Section](../troubleshooting.md).
 
 ### Verify successful installation
 
@@ -120,7 +120,7 @@ It is recommended to setup a log rotation for the logfile of Lisk Core.
 
 #### Ubuntu
 Ubuntu systems provide a service called `logrotate` for this purpose.
-First make sure Logrotate is installed on your system:
+First, make sure Logrotate is installed on your system:
 
 ```bash
 logrotate --version
@@ -143,7 +143,7 @@ Example values:
         rotate 5                # keep the 5 most recent logs
         maxage 14               # remove logs that are older than 14 days
         compress                # compress old log files
-        delaycompress           # compress the data, after it has been moved
+        delaycompress           # compress the data after it has been moved
         missingok               # if no logfile is present, ignore
         notifempty              # do not rotate empty log files
 }

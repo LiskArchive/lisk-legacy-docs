@@ -62,10 +62,10 @@ docker-compose logs
 
 ## Configuration
 
-Lisk Core normally gets configured by providing a suited [configuration file](../../configuration/configuration.md).
+Lisk Core normally gets configured by providing a suited [configuration file](../configuration.md).
 But this isn't convenient in a Docker installation.
 Instead, one can use environment variables to change values in the configuration.
-To do so, open the `.env` file, that you created during [docker installation](../../../setup/docker/docker.md#installation), and adjust the values to your needs.
+To do so, open the `.env` file, that you created during [docker installation](../setup/docker.md#installation), and adjust the values to your needs.
 All names of the environment variables start with `ENV_` prefix.
 
 ## Advanced configuration
@@ -74,7 +74,7 @@ For advanced configuration, open `docker/docker-compose.override.yml`.
 Configuration variables always start with `LISK_` and are mapped to their path in `config.json`.
 These can be changed directly in the file, if needed.
 For example, the value of `redis.db.host` can be changed by setting the `LISK_REDIS_DB_HOST` environment variable.
-If you are unsure what variable name to use, refer to the [list of command line options](../source/admin-source.md#command-line-options). 
+If you are unsure what variable name to use, refer to the [list of command line options](source.md#command-line-options). 
 
 After editing the variables, reinitialize Lisk Core. It will read `docker-compose.yml` and your customized `docker-compose.override.yml` file:
 

@@ -1,8 +1,15 @@
 # Lisk Core Configuration
 
+- [Structure](#structure)
+- [API access contrrol](#api-access-control)
+- [Forging](#forging)
+  - [Check forging](#check-forging)
+  - [Enable/Disable forging](#enable-disable-forging)
+- [SSL](#ssl)
+
 ## Structure
 
-- The **default** network is `devnet`. If you want to connect to another network specify the `network` when starting Lisk Core, as described in [Source Administration](../administration/source/admin-source.md#command-line-options)
+- The **default** network is `devnet`. If you want to connect to another network specify the `network` when starting Lisk Core, as described in [Source Administration](administration/source.md#command-line-options)
 - The Lisk configuration is managed under different folder structures.
 - Root folder for all configuration is `config/`.
 - Default configuration file that is used as base is `config/default/config.json`
@@ -20,15 +27,7 @@
 - For development purposes use `devnet` as a network option, other networks are specific to public Lisk networks.
 
 > Don't override any value in above mentioned files if you need custom configuration.
-> To use a custom configuration: Create your own `.json` file and pass it as [command line option](../administration/source/admin-source.md#command-line-options)
-
-For advanced configurations, please go directly to the sections listed below :
-
-- [API Access Control](#api-access-control)
-- [Forging](#forging)
-  - [Enable/Disable Forging](#enable-disable-forging)
-  - [Check Forging](#check-forging)
-- [SSL](#ssl)
+> To use a custom configuration use environment variables or create your own `.json` file and pass it as [command line option](administration/source.md#command-line-options)
 
 The `config.json` file and a description of each parameter.
 
@@ -209,6 +208,31 @@ Forging
 
 4. Reload your Lisk Core process to make the changes  in the config effective, e.g. for Binary install, run : `bash lisk.sh reload`
 
+### Check Forging
+Use the following curl command to verify the forging  status of your delegate:
+
+```bash
+curl \
+  http://127.0.0.1:7000/api/node/status/forging \
+  -H 'cache-control: no-cache' \
+  -H 'content-type: application/json' 
+```
+
+The result should be something like this:
+
+```json
+{
+  "meta": {},
+  "data": [
+    {
+      "forging": true,
+      "publicKey": "9bc945f92141d5e11e97274c275d127dc7656dda5c8fcbf1df7d44827a732664"
+    }
+  ],
+  "links": {}
+}
+```
+
 ### Enable/Disable Forging
 
 > The endpoint to perform this action is **idempotent** what it means, the result has to be the same, no matter how many times you execute the same command. 
@@ -245,31 +269,6 @@ curl -X PUT \
 - `password` is the password used to encrypt your passphrase in `config.json`
 -  `forging` is the boolean value to enable or disable the forging
 - HTTP Port can be different based on your configuration, so check `httpPort` in your `config.json`
-
-### Check Forging
-Use the following curl command to verify the forging  status of your delegate:
-
-```bash
-curl \
-  http://127.0.0.1:7000/api/node/status/forging \
-  -H 'cache-control: no-cache' \
-  -H 'content-type: application/json' 
-```
-
-The result should be something like this:
-
-```json
-{
-  "meta": {},
-  "data": [
-    {
-      "forging": true,
-      "publicKey": "9bc945f92141d5e11e97274c275d127dc7656dda5c8fcbf1df7d44827a732664"
-    }
-  ],
-  "links": {}
-}
-```
 
 ## SSL
 

@@ -23,4 +23,4 @@ This section details how to upgrade Lisk Core from source.
     npx pm2 start lisk
     ```
 
-> **Note for delegates:** You need to [enable forging](../../user-guide/configuration/configuration.md#forging) again after upgrade.
+> **Note for delegates:** You need to [enable forging](../configuration.md#forging) again after upgrade.

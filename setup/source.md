@@ -250,11 +250,11 @@ If you have finished all above steps successfully, your system is ready for inst
 
 ## Installation
 
-This section details how to install Lisk Core from Source. When completed, you will have a functioning node on the Lisk Network. If you are looking to upgrade your current Lisk Core installation, please see [Upgrade from Source](/lisk-core/upgrade/source/upgrade-source.md).
+This section details how to install Lisk Core from Source. When completed, you will have a functioning node on the Lisk Network. If you are looking to upgrade your current Lisk Core installation, please see [Upgrade from Source](../upgrade/source.md).
 
 ### Login as the Lisk user
 
-This user was created in the [ Prerequisites](../../setup/pre-install/source/preinstall-source.md). 
+This user was created in the [Prerequisites](#pre-install). 
 If you are already logged in to this user, please skip this step.
 
 ```bash
@@ -286,8 +286,8 @@ Where `[network]` might be either `devnet` (default), `alphanet`, `betanet`, `te
 
 It is recommended to overwrite the config values with environment variables, if needed.
 Useable variables will always start with `LISK_` prefix.
-Alternatively, the user may define a custom `config.json`, like described in [Configuarion of Lisk Core](../../user-guide/configuration/configuration.md)
-Click here, to see a [list of available environment variables](../../user-guide/administration/source/source.md#command-line-options)
+Alternatively, the user may define a custom `config.json`, like described in [Configuarion of Lisk Core](../configuration.md)
+Click here, to see a [list of available environment variables](../administration/source.md#command-line-options)
 
 If the process is running correctly, no errors are thrown in the logs.
 By default, errors will be logged in `logs/[network]/lisk.log`.
@@ -299,12 +299,12 @@ npx pm2 start --name lisk src/index.js -- --network [network]
 ```
 Where `[network]` might be either `devnet` (default), `alphanet`, `betanet`, `testnet` or `mainnet`.
 
-For details on how to manage or stop your Lisk node, please have a look in [Administration from Source](../../../user-guide/administration/source/admin-source.md).
+For details on how to manage or stop your Lisk node, please have a look in [Administration from Source](../administration/source.md).
 
-If you are not running Lisk locally, you will need to follow the [Configuration - API](../../../user-guide/configuration/configuration.md#api-access-control) document to enable access.
+If you are not running Lisk locally, you will need to follow the [Configuration - API](../configuration.md#api-access-control) document to enable access.
 
 With all of the above steps complete you are ready to move on to the configuration documentation if you wish to enable forging or SSL. 
-Please see [General Configuration](../../../user-guide/configuration/configuration.md) for more information.
+Please see [General Configuration](../configuration.md) for more information.
 
 ## Post-installation (optional)
 

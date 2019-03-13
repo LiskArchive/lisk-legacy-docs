@@ -5,27 +5,29 @@
 - [Introduction](#lisk-core-documentation)
   - [Versions](#versions)
   - [Versioning Schemes](#versioning-schemes)
+  - [Upgrade vs Migration](#upgrade-vs-migration)
   - [What is Lisk Core?](#what-is-lisk-core)
     - [Networks](#networks)
     - [Components](#components)
+    - [Snapshots](#snapshots)
+  - [Lisk Core distributions](#lisk-core-distributions)
   - [Contribute to Codebase](#contribute-to-the-codebase)
-- [Setup](setup/setup.md)
-  - [Binary](setup/binary/binary.md)
-  - [Docker](setup/docker/docker.md)
-  - [Source](setup/source/source.md)
-- [Upgrade](upgrade/upgrade.md)
-  - [Binary](upgrade/binary/upgrade-binary.md)
-  - [Docker](upgrade/docker/upgrade-docker.md)
-  - [Source](upgrade/source/upgrade-source.md)  
-  - [Migration](upgrade/migration/migration.md)
-- [User Guide](user-guide/user-guide.md)
-  - [Administration](user-guide/administration/admin.md)
-    - [Binary](user-guide/administration/binary/admin-binary.md)
-    - [Docker](user-guide/administration/docker/admin-docker.md)
-    - [Source](user-guide/administration/source/admin-source.md)
-  - [Configuration](user-guide/configuration/configuration.md)
-  - [API](user-guide/api/api.json)
-[Troubleshooting](troubleshooting/troubleshooting.md)
+- Setup
+  - [Binary](setup/binary.md)
+  - [Docker](setup/docker.md)
+  - [Source](setup/source.md)
+- Upgrade
+  - [Binary](upgrade/binary.md)
+  - [Docker](upgrade/docker.md)
+  - [Source](upgrade/source.md)  
+- [Migration](migration.md)
+- Administration
+    - [Binary](administration/binary.md)
+    - [Docker](administration/docker.md)
+    - [Source](administration/source.md)
+  - [Configuration](configuration.md)
+  - [API](api.json)
+[Troubleshooting](troubleshooting.md)
 
 ## Versions
 
@@ -34,8 +36,8 @@ We release new versions of Lisk Core regularly. Documentation on [lisk.io](https
 Software Version | Protocol Version | Release date <br> (yy/mm/dd)| Documentation reference
 ---     | ---       | ---         | ---
 [v1.5.0](https://github.com/LiskHQ/lisk/releases/tag/v1.5.0) | 1.0 | 19/mm/dd | *Current version, live on lisk.io/documentation*
-[v1.4.0](https://github.com/LiskHQ/lisk/releases/tag/v1.4.0) | 1.0 | 19/01/07 | [Lisk Core 1.4 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.4.0/introduction.md)
-[v1.3.0](https://github.com/LiskHQ/lisk/releases/tag/v1.3.0) | 1.0 | 18/11/19 | [Lisk Core 1.3 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.3.0/introduction.md)
+[v1.4.1](https://github.com/LiskHQ/lisk/releases/tag/v1.4.1) | 1.0 | 19/02/14 | [Lisk Core 1.4 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.4.0/introduction.md)
+[v1.3.1](https://github.com/LiskHQ/lisk/releases/tag/v1.3.1) | 1.0 | 18/12/05 | [Lisk Core 1.3 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.3.0/introduction.md)
 [v1.2.1](https://github.com/LiskHQ/lisk/releases/tag/v1.2.1) | 1.0 | 18/11/10 | [Lisk Core 1.2 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.2.0/introduction.md)
 [v1.1.1](https://github.com/LiskHQ/lisk/releases/tag/v1.1.1) | 1.0 | 18/10/23 | [Lisk Core 1.1 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.1.0/introduction.md)
 [v1.0.3](https://github.com/LiskHQ/lisk/releases/tag/v1.0.3) | 1.0 | 18/08/17 | [Lisk Core 1.0 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.0.0/introduction.md)
@@ -71,16 +73,26 @@ The first digit, `H`, depends on the number of hard forks and is incremented wit
 
 The *protocol version* is used e.g. in P2P Communication between Lisk Core nodes, in order to determine, if the nodes have compatible versions of the Lisk protocol implemented.
 
+## Upgrade vs Migration
+
+When to upgrade, when to migrate Lisk Core?
+Every time that a new software update of Lisk Core introduces a **hard fork** on the network, you need to **migrate** your existing Lisk Core version. In all other cases, you can use the normal upgrade process.
+
 ## What is Lisk Core?
 
 [![What is Lisk Core?](https://img.youtube.com/vi/RfF9EPwQDOY/0.jpg)](https://www.youtube.com/watch?v=RfF9EPwQDOY)
 
-Lisk Core is the program that implements the [Lisk Protocol](/lisk-protocol/introduction.md). Every machine must set it up in order to run a node that allows for participation in the network. Setting up Lisk Core enables a user to:
-- Contribute to the decentralisation of the Lisk network
-- Explore data recorded on the Lisk blockchain
-- Post transactions to the Lisk blockchain
-- Enable/Disable forging for a registered delegate
-- Configure Lisk Core to specific needs, as required
+Lisk Core is the program that implements the [Lisk Protocol](/lisk-protocol/introduction.md).
+Every machine must set it up in order to run a node that allows for participation in the network.
+Setting up Lisk Core enables a user to:
+
+- Connect to a [Network](#networks) and communicate with other nodes in the network.
+- Full control to [configure](configuration.md) Lisk Core to specific needs, as required.
+- Create your own [snapshots](#snapshots) of the blockchain
+- Use your own custom Lisk Core node to perform actions on the Lisk blockchain, e.g. with [Lisk Hub](https://github.com/LiskHQ/lisk-docs/blob/master/lisk-hub/introduction.md#network-switcher).
+- [Forge](configuration.md#forging) new blocks (if your are an active delegate).
+
+By setting up your own node, you contribute to the decentralisation of the Lisk network.
 
 An instance of Lisk Core is generally detailed in two different ways: 
 
@@ -91,7 +103,8 @@ Both meanings refer to a machine which, after installing and executing Lisk Core
 
 ### Networks
 
-Lisk Core can be connected to different networks. There are two key public networks, entirely independent of each other, that are always accessible: **Mainnet** and **Testnet**. 
+Lisk Core can be connected to different networks.
+There are two key public networks, entirely independent of each other, that are always accessible: **Mainnet** and **Testnet**. 
 
 #### Mainnet
 Mainnet is where the true Lisk economy exists. On this network, Lisk users are able to transfer LSK tokens from one account to another, register accounts as delegates, vote for another delegates or register dApps. It can be explored via the [Lisk Explorer](https://explorer.lisk.io).
@@ -99,27 +112,45 @@ Mainnet is where the true Lisk economy exists. On this network, Lisk users are a
 #### Testnet
 Testnet is an independent replica of the Lisk Mainnet intended as an area to rehearse upgrades before they take place on the Lisk Mainet. This is where new versions and fixes of Lisk Core are tested. It can be explored via [Lisk Testnet Explorer](https://testnet-explorer.lisk.io).
 
-Each connects to a network specified in the config file [`config.json`](https://github.com/LiskHQ/lisk/blob/development/config.json#L2). 
-When a user decides which network they wish to connect to, they must follow the correspondent tutorial in the [Setup](setup/setup.md) section.
-
 ### Components
 The Lisk Core consists of 4 main components:
 
-[![Node.js](nodejs.png "Node.js")](https://nodejs.org)
+[![Node.js](assets/nodejs.png "Node.js")](https://nodejs.org)
 
 [Node.js](https://nodejs.org/) serves as the underlying engine for code execution in Lisk Core. Node.js is an open-source, cross-platform JavaScript run-time environment that executes JavaScript code server-side. Node.js uses an event-driven, non-blocking I/O model that makes it lightweight and efficient.
 
-[![Swagger](swagger-logo.png "Swagger")](https://swagger.io)
+[![Swagger](assets/swagger-logo.png "Swagger")](https://swagger.io)
 
 [Swagger](https://swagger.io) is an open source software framework backed by a large ecosystem of tools that helps developers design, build, document, and consume RESTful Web services. As part of the Lisk Core documentation, the whole API specification can be explored interactively via the Swagger-UI interface.
 
-[![PostgreSQL](postgresql.png "PostgreSQL")](https://www.postgresql.org)
+[![PostgreSQL](assets/postgresql.png "PostgreSQL")](https://www.postgresql.org)
 
 [PostgreSQL](https://www.postgresql.org) is a powerful, open source object-relational database system with over 30 years of active development which has earned it a strong reputation for reliability, feature robustness, and performance. All Information on the Lisk mainchain is stored inside of PostgreSQL databases.
 
-[![Redis](redis.png "Swagger")](https://redis.io)
+[![Redis](assets/redis.png "Swagger")](https://redis.io)
 
 [Redis](https://redis.io) is an open source, in-memory data structure store. Lisk Core mainly uses it to cache API responses. This prevents performance drops in the application, for example when the same API request is sent repeatedly.
+
+### Snapshots
+
+A snapshot is a backup of the complete blockchain. It can be used to speed up the sync process, instead of having to validate all transactions starting from genesis block to current block height.
+Lisk provides official snapshots of the blockchain, see [http://snapshots.lisk.io](http://snapshots.lisk.io).
+
+> [Creating own snapshots](binary/admin-binary.md#create-snapshot) is only supported for Lisk Core Binary distributions. Rebuilding from snapshot is explained for each distribution in the Administration section.
+
+## Lisk Core Distributions
+
+The 3 supported distributions for Lisk Core are presented below:
+
+### [Binary](setup/binary.md)
+The **default** way to setup Lisk Core.
+The binary installation is an easy and automated way to set up Lisk Core, this includes nearly completely automated update scripts and a selection of tools to help maintain a Lisk Node in a seamless way.
+
+### [Docker](setup/binary.md)
+Docker adds support for additional platforms upon which to run a Lisk node, e.g. running a Lisk node inside of a Docker on Windows and connecting it via a custom Node on Lisk Hub to Lisk Core, without the need to rent an additional server.
+
+### [Source](setup/binary.md)
+This is made for anyone wishing to develop on the Lisk Core codebase. It also comes with an extensive test-suite, detailed in `README.md`. Installation from Source enables a developer to work on the newest codebase for Lisk Core, which might not have been tagged for a release.
 
 ## Contribute to the Codebase
 

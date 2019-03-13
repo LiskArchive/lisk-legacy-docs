@@ -124,7 +124,7 @@ We recommend to use the Makefile:
 make  # will run `docker-compose up` for you
 ```
 
-Makefile provides a convenient way to [sync your node from snapshot](../../user-guide/administration/docker/admin-docker.md#sync-from-snapshot):
+Makefile provides a convenient way to [sync your node from snapshot](../administration/docker.md#sync-from-snapshot):
 
 ```bash
 make coldstart  # will download and restore a blockchain snapshot for you
@@ -138,4 +138,4 @@ docker-compose ps    # see status of Lisk Core
 docker-compose logs  # see logs
 ```
 
-As next step, check out [Docker Administration](../../user-guide/administration/docker/admin-docker.md) to learn how to manage your Node.
+As next step, check out [Docker Administration](../administration/docker.md) to learn how to manage your Node.

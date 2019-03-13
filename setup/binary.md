@@ -47,9 +47,7 @@ sudo apt-get install curl wget tar unzip zip ntp
 
 ### Create a user to run Lisk
 
-Info | Note 
---- | --- 
-![info note](../../info-icon.png "Info Note") | The `lisk` user itself **does not need** any `sudo` rights to run Lisk Core.
+> The `lisk` user itself **does not need** any `sudo` rights to run Lisk Core.
 
 ```bash
 sudo adduser lisk
@@ -57,7 +55,7 @@ sudo adduser lisk
 
 ## Installation
 
-This section details how to install Lisk Core using pre-built binary packages. Once completed, you will have a functioning node on the Lisk Network. If you are looking to upgrade your current Lisk Core installation, please see the [Upgrade Binary](../../upgrade/binary/upgrade-binary.md) section.
+This section details how to install Lisk Core using pre-built binary packages. Once completed, you will have a functioning node on the Lisk Network. If you are looking to upgrade your current Lisk Core installation, please see the [Upgrade Binary](../upgrade/binary.md) section.
 
 ### Login to the Lisk user
 
@@ -88,7 +86,7 @@ Download Lisk Core:
 wget https://downloads.lisk.io/lisk/test/installLisk.sh
 ```
 To connect your node to the Testnet, run:
-```shell
+```bash
 bash installLisk.sh install -r test
 ```
 
@@ -99,7 +97,7 @@ the node will download a recent snapshot of the database. This will be much fast
 
 The installation may take a few minutes. Check the scripts output to verify that the installation was successful.
 
-If you recognise an error, try to resolve it by analysing the error output, otherwise you can have a look at our [Troubleshooting Section](../../../troubleshooting/troubleshooting.md).
+If you recognise an error, try to resolve it by analysing the error output, otherwise you can have a look at our [Troubleshooting Section](../troubleshooting.md).
 
 ### Verify successful installation
 
@@ -108,11 +106,11 @@ You can verify that your Lisk node is up and running, by running the following c
 ```bash
 bash lisk.sh status
 ```
-For further information and how to administer your Lisk node, please have a look at our [Administration Section](../../../user-guide/administration/binary/admin-binary.md).
+For further information and how to administer your Lisk node, please have a look at our [Administration Section](../administration/binary.md).
 
-If you are not running Lisk locally, you will need to follow the [Configuration - API](../../../user-guide/configuration/configuration.md#api-access-control) document to enable access.
+If you are not running Lisk locally, you will need to follow the [Configuration - API](../configuration.md#api-access-control) document to enable access.
 
-With all of the above steps complete you are ready to move on to the configuration documentation if you wish to enable forging or SSL, please see [General Configuration](../../../user-guide/configuration/configuration.md).
+With all of the above steps complete you are ready to move on to the configuration documentation if you wish to enable forging or SSL, please see [General Configuration](../configuration.md).
 
 ## Post-installation (optional)
 

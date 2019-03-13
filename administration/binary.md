@@ -84,7 +84,7 @@ source env.sh
 ### pm2
 
 PM2 comes bundled with the Lisk Core Binary distribution and will be available after [Updating the PATH environment](#update-path-environment-variable).
-For more information, how to manage your Node with PM2, go to the [Source Administration](../../user-guide/administration/source/admin-source.md) page. 
+For more information, how to manage your Node with PM2, go to the [Source Administration](administration/source.md) page. 
 
 ### psql 
 

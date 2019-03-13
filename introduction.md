@@ -150,7 +150,7 @@ The binary installation is an easy and automated way to set up Lisk Core, this i
 Docker adds support for additional platforms upon which to run a Lisk node, e.g. running a Lisk node inside of a Docker on Windows and connecting it via a custom Node on Lisk Hub to Lisk Core, without the need to rent an additional server.
 
 ### [Source](setup/binary.md)
-This is made for anyone wishing to develop on the Lisk Core codebase. It also comes with an extensive test-suite, detailed in `README.md`. Installation from Source enables a developer to work on the newest codebase for Lisk Core, which might not have been tagged for a release.
+This is made for anyone wishing to develop on the Lisk Core codebase. It also comes with an extensive test-suite, detailed in `README.md`. Installation from Source enables a developer to work on the newest codebase for Lisk Core, which might not have been tagged for a release, yet.
 
 ## Contribute to the Codebase
 

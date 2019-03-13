@@ -22,12 +22,12 @@
   - [Source](upgrade/source.md)  
 - [Migration](migration.md)
 - Administration
-    - [Binary](administration/binary.md)
-    - [Docker](administration/docker.md)
-    - [Source](administration/source.md)
-  - [Configuration](configuration.md)
-  - [API](api.json)
-[Troubleshooting](troubleshooting.md)
+  - [Binary](administration/binary.md)
+  - [Docker](administration/docker.md)
+  - [Source](administration/source.md)
+- [Configuration](configuration.md)
+- [API](api.json)
+- [Troubleshooting](troubleshooting.md)
 
 ## Versions
 

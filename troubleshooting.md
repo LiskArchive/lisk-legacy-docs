@@ -26,32 +26,15 @@ PostgreSQL is already installed on your system and listening to the PostgreSQL d
 This can happen e.g. when a second Lisk Core node is installed on the same server.
 
 #### Solution 1:
-Change the port of your already installed PostgreSQL instance to an unused and available port number.
-Locate the corresponding configuration file for PostgreSQL, `postgresql.conf`, and change the port to e.g. `5433`.
-```bash
-locate postgresql.conf 
-```
-After changing the config, restart the corresponding PostgreSQL process.
-Now, the 2 PostgreSQL instances shouldn't interfere with each other anymore.
-
-#### Solution 2:
-The error can be ignored by setting the ignore flag `-i`.
-In that case, the installation script `installLisk.sh` will be executed regardless of the above error.
-The script might run successfully to the end, but ignoring the error might result in unwanted interferences between the different PostgreSQL instances.
-```bash
-bash installLisk.sh install -r main -i
-```
-
-#### Solution 3:
-If PostgreSQL has been installed globally on the system, disable it:
+If postgreSQL has been installed globally on the system, disable it:
 ```bash
 sudo systemctl stop postgresql
 sudo systemctl disable postgresql
 ```
 Possible data inside of databases remains stored in this case.
 
-#### Solution 4:
-If PostgreSQL has been installed globally on the system and the data in it is not needed anymore, simply remove the already installed PostgreSQL by running the following command:
+#### Solution 2:
+If postgreSQL has been installed globally on the system and the data in it is not needed anymore, simply remove the already installed postgreSQL by running the following command:
 ```bash
 sudo apt-get --purge remove postgresql postgresql-doc postgresql-common
 ```
@@ -98,7 +81,7 @@ If your Nodes' height is significantly lower than the height shown in the Explor
 To solve it, just wait until your Node is fully synced.
 #### Solution 2: Missing data in config
 Check your `config.json` in section `forging.delegates`.
-If you want to enable forging for a particular delegate on your node, you need to store an object with the delegates' public key and encrypted passphrase in that section as described in the [configuration](user-guide/configuration/configuration.md#forging) section.
+If you want to enable forging for a particular delegate on your node, you need to store an object with the delegates' public key and encrypted passphrase in that section as described in the [configuration](configuration.md#forging) section.
 
 ### Enable forging: Invalid password and public key combination
 #### Problem:
@@ -107,7 +90,7 @@ When trying to activate forging on a node like described in section [Enable/Disa
 As the message states, the provided combination of your delegates publicKey and the password don't seem to be valid. Please ensure, both properties are set to the correct values, especially that you don't use the original passphrase of your account with that command.
 
 We further explain the chosen naming to avoid confusion:
-- **Passphrase** is always referring to your 12-word long mnemonic passphrase that was created at the same time as your Lisk ID. You should always keep this secure and private! For communication with the API, the passphrase is not passed in plaintext. Instead, the password is passed so you use it to encrypt your passphrase and the encrypted passphrase is stored in your [config](user-guide/configuration/configuration.md).
-- **Password** is always referring to the secret word/s you use to encrypt your passphrase symmetrically like described in this [section](user-guide/configuration/configuration.md#forging)
+- **Passphrase** is always referring to your 12-word long mnemonic passphrase that was created at the same time as your Lisk ID. You should always keep this secure and private! For communication with the API, the passphrase is not passed in plaintext. Instead, the password is passed so you use it to encrypt your passphrase and the encrypted passphrase is stored in your [config](configuration.md).
+- **Password** is always referring to the secret word/s you use to encrypt your passphrase symmetrically like described in the [Forging section](configuration.md#forging).
 
 Should you have any further queries please reach out to one of the team or the Lisk community on [Lisk Chat](https://lisk.chat/home)

@@ -26,23 +26,6 @@ PostgreSQL is already installed on your system and listening to the postgreSQl d
 This can happen e.g. when a second Lisk Core node is installed on the same server.
 
 #### Solution 1:
-Change the port of your already installed postgreSQL instance to an unused and available port number.
-Locate the corresponding configuration file for PostgreSQL, `postgresql.conf`, and change the port to e.g. `5433`.
-```bash
-locate postgresql.conf 
-```
-After changing the config, restart the corresponding postgreSQL process.
-Now, the 2 postgreSQL instances shouldn't interfere each other anymore.
-
-#### Solution 2:
-The error can be ignored by setting the ignore flag `-i`.
-In that case, the installation script `installLisk.sh` will be executed regardless of the above error.
-The script might run successfully to the end, but ignoring the error might result in unwanted interferences between the different postgreSQL instances.
-```bash
-bash installLisk.sh install -r main -i
-```
-
-#### Solution 3:
 If postgreSQL has been installed globally on the system, disable it:
 ```bash
 sudo systemctl stop postgresql
@@ -50,7 +33,7 @@ sudo systemctl disable postgresql
 ```
 Possible data inside of databases remains stored in this case.
 
-#### Solution 4:
+#### Solution 2:
 If postgreSQL has been installed globally on the system and the data in it is not needed anymore, simply remove the already installed postgreSQL by running the following command:
 ```bash
 sudo apt-get --purge remove postgresql postgresql-doc postgresql-common

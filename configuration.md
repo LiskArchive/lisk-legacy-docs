@@ -9,24 +9,26 @@
 
 ## Structure
 
-- The **default** network is `devnet`. If you want to connect to another network specify the `network` when starting Lisk Core, as described in [Source Administration](administration/source.md#command-line-options)
-- The Lisk configuration is managed under different folder structures.
-- Root folder for all configuration is `config/`.
-- The default configuration file that is used as a base is `config/default/config.json`
-- You can find network specific configurations under `config/<network>/config.json`, where `<network>` can be any of these values:
+The root folder for all configuration is `config/`.
+The **default** network is `devnet`. If you want to connect to another network specify the `network` when starting Lisk Core, as described in [Source Administration](administration/source.md#command-line-options).
+The default configuration file that is used as a base is `config/default/config.json`
+You can find network specific configurations under `config/<network>/config.json`, where `<network>` can be any of these values:
+
    - `devnet`
    - `alphanet`
    - `betanet`
    - `testnet`
    - `mainnet`
-- Configurations will be loaded in the following order, each one will override the previous one:
+   
+Configurations will be loaded in the following order, each one will override the previous one:
    1. Default configuration file
    2. Network specific configuration file
    3. A custom configuration file (if specified by the user)
    4. Command line configurations, specified as command-line flags or `ENV` variables.
-- For development purposes use `devnet` as a network option, other networks are specific to public Lisk networks.
 
-> Don't override any value in above-mentioned files if you need custom configuration.
+For development purposes use `devnet` as a network option, other networks are specific to public Lisk networks.
+
+> Don't override any value in above-mentioned files if you need custom configuration. The changes will be overwritten everytime you upgrade Lisk Core.
 > To use a custom configuration use environment variables or create your own `.json` file and pass it as [command line option](administration/source.md#command-line-options)
 
 The `config.json` file and a description of each parameter.

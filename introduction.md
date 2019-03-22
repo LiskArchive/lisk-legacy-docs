@@ -1,6 +1,6 @@
 # Lisk Hub Documentation
 
-Lisk Hub is an all-in-one solution to manage your Lisk ID, access and send LSK tokens, as well as vote for delegates. It combines functionality from the former wallet and blockchain explorer. In the future, Lisk Hub will feature a DEX (decentralised exchange), Sidechain's registration and the ability to launch your own ICO.
+Lisk Hub is an all-in-one solution to manage your Lisk ID, access and send LSK tokens, as well as vote for delegates. It combines functionality from the former wallet and blockchain explorer. In the future, Lisk Hub will feature a DEX (decentralized exchange), Sidechain's registration and the ability to launch your own ICO.
 
 ## Table of contents
 
@@ -33,7 +33,7 @@ Lisk Hub is an all-in-one solution to manage your Lisk ID, access and send LSK t
 
 ## Download
 
-In order to download Lisk Hub, you can either go to [Lisk Products](https://lisk.io/products) and download Lisk Hub there, or you can go directly to [Lisk Hub Releases](https://github.com/LiskHQ/lisk-hub/releases) to pull the desired release from our GitHub repository.
+To download Lisk Hub, you can either go to [Lisk Products](https://lisk.io/products) and download Lisk Hub there, or you can go directly to [Lisk Hub Releases](https://github.com/LiskHQ/lisk-hub/releases) to pull the desired release from our GitHub repository.
 
 ## Upgrade
 
@@ -66,8 +66,8 @@ The following features are available without login:
 
 ### Create Account
 
-The most convenient way to create your personal Lisk ID within a few seconds.
-On the login screen of Lisk Hub, hit "Create an Account".
+The most convenient way to create your Lisk ID within a few seconds.
+On the Welcome screen of Lisk Hub, hit "Create an Account".
 
 After a few clicks, the account creation is completed.
 
@@ -80,7 +80,7 @@ After a few clicks, the account creation is completed.
 
 #### With passphrase
 
-All you need to access your Wallet is your passphrase of your Lisk account.
+All you need to access your Wallet is the passphrase of your Lisk account.
 
 The passphrase is the 12-word mnemonic, that was created during the [account creation](#create-account).
 
@@ -91,7 +91,7 @@ Support for more hardware wallet models is planned to add in future versions.
 
 Steps to connect your Ledger Nano with Lisk Hub:
 
-1. Connect your Ledger Nano with the computer and login by entering your secret PIN on the Ledger Nano.
+1. Connect your Ledger Nano with the computer and log in by entering your secret PIN on the Ledger Nano.
 2. Install the Lisk app on your Ledger Nano via [Ledger Live](https://www.ledger.com/pages/ledger-live).
 3. Open the Lisk Hub sign-in page.
 It should recognize your connected Ledger Nano, and offer an additional login method "Hardware login".
@@ -113,11 +113,11 @@ The Dashboard provides an overview of the recent transaction, market price chang
 
 It also provides a list of all added [Booksmarks](#bookmarks) and the option to add new ones.
 
-![hub-dashboard](assets/hub-dashboard.png "hub-dashboard")
+![lisk_hub-dashboard](assets/lisk_hub-dashboard.png "lisk_hub-dashboard")
 
 ### Wallet
 
-The Wallet page "My Wallet" displays a general overview of the account, like the transaction history and the current balance of ones personal account.
+The Wallet page "My Wallet" displays a general overview of the account, like the transaction history and the current balance of one's personal account.
 
 ![lisk_hub-wallet](assets/lisk_hub-wallet.png "lisk_wallet")
 
@@ -164,8 +164,8 @@ We use `14628350534858367799L` for the address and `8` LSK for the amount.
 
 ### Delegates
 
-Provides a GUI to conveniently manage the votes of ones account.
-As example, we want to vote for `samuray` and `slasheks` and unvote `vipertkd`.
+Provides a GUI to conveniently manage the votes of one's account.
+As an example, we want to vote for `samuray` and `slasheks` and unvote `vipertkd`.
 
 *Lisk URL:* `lisk://delegates/vote?votes=samuray,slasheks&unvotes=vipertkd` 
 
@@ -173,7 +173,7 @@ This will open the Lisk app and automatically select the delegates `samuray` and
 
 ![hub-voting_example](assets/hub-voting_example.png "hub-voting_example")
 
-The below screenshot displays how it looks, if the votes are set manually inside the GUI.
+The below screenshot displays how it looks if the votes are set manually inside the GUI.
 
 ![hub-voting](assets/hub-voting.png "hub-voting")
 
@@ -216,7 +216,7 @@ It is possible to turn it off completely on the Settings page.
 #### Network switcher
 
 > The default network Lisk Hub will try to connect to is the Lisk Mainnet.
-> The network switcher on the login page is not visible by default, but can be enabled from the settings page or alternatively through Lisk URL.
+> The network switcher on the login page is not visible by default but can be enabled from the settings page or through Lisk URL.
 
 *Lisk URL:* `lisk://login?showNetwork=true`
 

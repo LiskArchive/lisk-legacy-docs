@@ -78,6 +78,12 @@ After a few clicks, the account creation is completed.
 
 ### Login
 
+#### With passphrase
+
+All you need to access your Wallet is your passphrase of your Lisk account.
+
+The passphrase is the 12-word mnemonic, that was created during the [account creation](#create-account).
+
 ####  With Hardware wallet
 
 Lisk Hub supports [Ledger Nano](https://www.ledger.com/) hardware wallets.
@@ -114,6 +120,16 @@ It also provides a list of all added [Booksmarks](#bookmarks) and the option to 
 The Wallet page "My Wallet" displays a general overview of the account, like the transaction history and the current balance of ones personal account.
 
 ![lisk_hub-wallet](assets/lisk_hub-wallet.png "lisk_wallet")
+
+The user may filter the transactions to find or compare specific transactions quickly.
+
+Available filters:
+
+- filter transactions by date
+- filter transactions by amount
+- filter transaction by message
+
+![lisk_hub-wallet-filter](assets/lisk_hub-wallet-filter.png "lisk_wallet-filter")
 
 #### Send transaction
 

@@ -49,32 +49,32 @@ npm run build
 
 #### Start
 
-Start the Electron client. Before staring you need to make sure the application is built.
+Start the Electron client. Before starting you need to make sure the application is built.
 If you need to build the entire application, run
 
 ```bash
 npm run build
 ```
 
-as mentioned before. And if you want to solely build electron app, run
+as mentioned before. And if you want to solely build the Electron app, run
 
 ```bash
 npm run build-electron
 ```
 
-Then, in order to launch electron, you can run
+Then, to launch Electron, you can run
 
 ```bash
 npm run start
 ```
 
-Then, in order to launch version with hardware wallet, you can run
+Then, to launch the version with hardware wallet, you can run
 
 ```bash
 npm run dev-hardware-wallet
 ```
 
-In order to launch electron that gets live updates from already running webpack-dev-server on port 8080, you can run
+To launch Electron that gets live updates from already running webpack-dev-server on port 8080, you can run
 
 ```bash
 LISK_HUB_URL="http://localhost:8080" npm run start
@@ -130,7 +130,7 @@ npm run test-live
 
 #### Run end-to-end tests
 
-In order to run e2e tests you need to install [Lisk Core](https://github.com/LiskHQ/lisk).
+To run e2e tests you need to install [Lisk Core](https://github.com/LiskHQ/lisk).
 
 ##### Setup Lisk Core
 
@@ -150,7 +150,7 @@ Apply blockchain snapshot
 ./test/e2e-test-setup.sh ~/git/lisk/
 ```
 
-(replace `~/git/lisk/` with your path to lisk core)
+(replace `~/git/lisk/` with your path to Lisk Core)
 
 Run e2e tests
 ```bash

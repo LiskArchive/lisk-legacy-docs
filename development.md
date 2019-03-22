@@ -7,8 +7,9 @@ This page provides documentation for developers about how to run Lisk Hub from S
   - [Installation](#installation)
 - [User Guide](#user-guide)
   - [Build](#build)
-  - [Testing](#testing)
+  - [Electron](#electron)
   - [React Storybook](#react-storybook)
+  - [Testing](#testing)
 
 ## Setup
 
@@ -19,12 +20,11 @@ This page provides documentation for developers about how to run Lisk Hub from S
 
 ### Installation
 
-Clone the Lisk Hub repository:
 ```bash
-git clone https://github.com/LiskHQ/lisk-hub.git
+git clone https://github.com/LiskHQ/lisk-hub.git # clone the Lisk Hub repository
 cd lisk-hub
-npm install
-npm run dev
+npm install # install dependencies
+npm run dev # start development version of Lisk Hub
 ```
 
 Open `http://localhost:8080` in a browser, to verify that the installation was successful.
@@ -104,6 +104,14 @@ Build package for Linux (on Linux).
 npm run pack 
 ```
 
+### React Storybook
+
+To launch storybook sandbox with components run
+```bash
+npm run storybook
+```
+and navigate to `localhost:6006`
+
 ### Testing
 
 #### Run unit tests
@@ -121,13 +129,14 @@ npm run test-live
 ```
 
 #### Run end-to-end tests
-In order to run e2e tests you need to install [lisk-core](https://github.com/LiskHQ/lisk)
 
-##### Setup core
+In order to run e2e tests you need to install [Lisk Core](https://github.com/LiskHQ/lisk).
 
-Setup a lisk test node as described in [https://github.com/LiskHQ/lisk](https://github.com/LiskHQ/lisk)
+##### Setup Lisk Core
 
-Run lisk test node with [pm2](http://pm2.keymetrics.io/)  on `localhost:4000`
+Setup a Lisk node from Source, as described in [https://github.com/LiskHQ/lisk](https://github.com/LiskHQ/lisk)
+
+And connect to `devnet` with it (`localhost:4000`)
 
 ##### Run
 
@@ -147,13 +156,3 @@ Run e2e tests
 ```bash
 npm run cypress:run
 ```
-
-### React Storybook
-
-To launch storybook sandbox with components run
-```
-npm run storybook
-```
-and navigate to
-
-`localhost:6006`

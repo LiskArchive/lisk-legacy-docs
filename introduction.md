@@ -256,11 +256,11 @@ Search for other Lisk addresses and view their account data.
 
 The transaction history provides a chronological overview of all transactions associated with this account on the Lisk blockchain.
 
-![hub-wallet](assets/hub-wallet.png "hub-wallet")
+![lisk_hub-account-page](assets/lisk_hub-account-page.png "lisk_hub-account-page")
 
 The "Account Info" page displays general information, like the casted votes of an account.
 
-![hub-account-info](assets/hub-account-info.png "hub-account-info")
+![hub-account-info](assets/lisk_hub-account-info.png "hub-account-info")
 
 #### Delegate
 
@@ -268,7 +268,20 @@ Search for a registered delegate name to view the respective delegate profile pa
 
 ![hub-delegate-info](assets/lisk_hub-search-delegate.png "hub-delegate-info")
 
-Instead of the tab "Account Info", a registered Delegates account page will contain the tab "Delegate statistics"
+Instead of the tab "Account Info", a registered Delegates account page will contain the tab "Delegate statistics".
+
+Here one can find the following information about a delegate:
+
+- Rank: The rank of the delegate depends on the voteweight compared to other delegates in the network.
+- Uptime: Productivity of the delegate's node.
+- Approval: The Approval is displayed in percent(%) and depends on the vote weight compared to other delegates in the network.
+- Vote weight: Total sum of the current account balances of all the accounts that have voted for this delegate.
+- Amount of LSK forged: Amount of LSK the delegate earned from block rewards when forging a new block to the blockchain.
+- Amount forged blocks: Total amount of forged blocks by this delegate.
+- Who voted for this delegate: List of Lisk addresses, who votes for this delegate.
+- Which delegates the delegate account voted for: List of delegates this delegates is voting for.
+
+![hub-delegate-info](assets/lisk_hub-delegate-statistics.png "hub-delegate-info")
 
 #### Transaction
  

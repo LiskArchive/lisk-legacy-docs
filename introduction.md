@@ -6,22 +6,29 @@ Lisk Hub is an all-in-one solution to manage your Lisk ID, access and send LSK t
 
 - [Download](#download)
 - [Upgrade](#upgrade)
+- [Pages](#pages)
+  - [Welcome](#welcome)
+  - [Create Account](#create-account)
+  - [Login](#login)
+    - [With Hardware Wallet](#with-hardware-wallet)
+  - [Dashboard](#dashboard)
+  - [Wallet](#wallet)
+    - [Send Transaction](#send-transaction)
+    - [Request LSK](#request-lsk)
+  - [Delegates](#delegates)
+  - [Settings](#settings)
+    - [Second passphrase](#second-passphrase)
+    - [Auto-logout](#auto-logout)
+    - [Network switcher](#network-switcher)
+    - [Local currencies](#local-currencies)
 - [Features](#features)
   - [Lisk URLs](#lisk-urls)
-  - [Dashboard](#dashboard)
-  - [Transaction history](#transaction-history)
-  - [Send transaction](#send-transaction)
-  - [Request LSK](#request-lsk)
+  - [Search](#search)
+    - [Lisk Address](#lisk-address)
+    - [Delegate](#delegate)
+    - [Transaction](#transaction)
   - [Bookmarks](#bookmarks)
   - [Sign message](#sign-messages)
-  - [Voting](#voting)
-  - [Hardware wallet support](#hardware-wallet-support)
-  - [Create account](#create-account)
-  - [Settings](#settings)
-      - [Second passphrase](#second-passphrase)
-      - [Auto-logout](#auto-logout)
-      - [Network switcher](#network-switcher)
-      - [Local currencies](#local-currencies)
 - [Contribute to the Codebase](#contribute-to-the-codebase)
 
 ## Download
@@ -42,113 +49,36 @@ In case you dismissed the upgrade, you can double-check by going to `Help` > `Ch
 
 ![check_updates](assets/check_updates.png "check_updates")
 
-## Features
+## Pages
 
-### Lisk URLs
+### Welcome
 
-After installing Lisk Hub on your device you will be able to use the `lisk` protocol. Example: `lisk://wallet`.
-Everything that comes after `lisk://` is treated as a route so this example will open the Lisk Hub app on the wallet page.
+The Welcome page is the first page that shows up when starting Lisk Hub.
+Without login, the user will have limited access to Lisk Hub.
+The following features are available without login:
 
-> When clicking on a Lisk URL, the system opens Lisk Hub (if it is installed) directly on the desired page. It can prefill certain fields or enable certain features in Lisk Hub on the fly.
+- [Create an account](#create-account)
+- [Settings](#settings)
+- [Dashboard](#dashboard)
+- [Search](#search)
 
-![lisk_wallet](assets/lisk_wallet.png "lisk_wallet")
+![hub-start](assets/lisk_hub-start.png "hub-start")
 
-### Dashboard
+### Create Account
 
-The Dashboard provides an overview of the recent transaction, market price changes, and recent social media updates of Lisk.
+The most convenient way to create your personal Lisk ID within a few seconds.
+On the login screen of Lisk Hub, hit "Create an Account".
 
-It also provides a list of all added [Booksmarks](#bookmarks) and the option to add new ones.
+After a few clicks, the account creation is completed.
 
-![hub-dashboard](assets/hub-dashboard.png "hub-dashboard")
+![hub-create-account](assets/lisk_hub-create-account.png "hub-create-account")
 
-### Transaction history
+> **Important:** Make sure to keep your secret passphrase safe, that is generated during account creation.
+> The secret passphrase will be the only way to access your wallet.
 
-The transaction history provides a chronological overview of all transactions associated with this account on the Lisk blockchain.
+### Login
 
-![hub-wallet](assets/hub-wallet.png "hub-wallet")
-
-The "Account Info" page displays information about the casted votes of an account.
-
-![hub-account-info](assets/hub-account-info.png "hub-account-info")
-
-In case the respective Lisk ID did register a delegate on the network, there will be a "Delegate stats" instead of the "Account info" page, which will display additional information, like a list of accounts that have voted for that particular delegate, and some general statistics about the productivity of the respective delegate.
-
-![hub-delegate-stats](assets/hub-delegate-stats.png "hub-delegate-stats")
-
-### Send transaction
-
-Send transactions with Lisk Hub by navigating to the "Wallet" page and hit the "Send" button.
-On the next page, it is needed to specify the recipient address and the amount of LSK that should be sent.
-The Reference is an optional data string, that will be connected to the transaction.
-It can be a custom string of 64 bytes and is often used as a reference, what the transaction is about.
-
-![hub-send_transactions](assets/hub-send.png "hub-send_transactions")
-
-### Request LSK
-
-LSK can be requested from the "Wallet" page of Lisk Hub. Hit the "request" button on the upper right corner.
-Lisk Hub offers different ways to request LSK from people:
- 
- - request LSK via email
- - request LSK via QR-Code
- - request LSK via Lisk URL *(described below)*
-
-![hub-request](assets/hub-request-lsk.png "hub-request")
-
-By clicking on "Request specific amount" button, Lisk Hub will help you to create a link with the recipient(in that case your Lisk ID) and the amount of LSK, you want to receive.
-Then post it to the person you want to receive LSK from.
-By clicking on the link, Lisk Hub will open (if installed on the system) and prefill amount, recipient and reference for the user, so he/she only needs to hit the send button to send the tokens.
-
-*Lisk URL example:* `lisk://wallet/send?recipient=8004805717140184627L&amount=8&reference=for being awesome`
-
-Opens the wallet and prefills the send form with recipient and amount.
-We use `14628350534858367799L` for the address and `8` LSK for the amount.
-
-![hub-request](assets/hub-request.png "hub-request")
-
-### Bookmarks
-
-Lisk Hub supports to create Bookmarks of accounts. Bookmarks work basically like an address book.
-The user can save his*her favorite Lisk addresses with name, what makes finding and recognizing addresses much more simple.
-
-![hub-add-to-bookmarks](assets/hub-add-to-bookmarks.png "hub-add-to-bookmarks")
-
-When sending LSK with Lisk Hub, the user may choose conveniently among the already created bookmarks.
-
-![hub-send-lsk-bookmark](assets/hub-send-lsk-bookmark.png "hub-send-lsk-bookmark")
-
-### Sign message
-
-> This feature is not accessible through the GUI (graphical user interface) of Lisk Hub.
-> To sign a message, use the Lisk URL below. 
-
-Opens the sign message form and prefills it with your message.
-As an example we use `i love lisk hub`.
-
-*Lisk URL example:* `lisk://sign-message?message=i love lisk hub`
-
-![hub-sign_messages](assets/hub-sign-message.png "hub-sign_messages")
-
-The signed message will look like this:
-
-![hub-sign_message-result](assets/hub-sign-message-result.png "hub-sign_message-result")
-
-### Voting
-
-Makes voting for delegates easier. 
-As example, we want to vote for `samuray` and `slasheks` and unvote `vipertkd`.
-
-*Lisk URL:* `lisk://delegates/vote?votes=samuray,slasheks&unvotes=vipertkd` 
-
-This will open the Lisk app and automatically select the delegates `samuray` and ` slasheks` for upvoting and `vipertkd` for unvoting.
-
-![hub-voting_example](assets/hub-voting_example.png "hub-voting_example")
-
-The below screenshot displays how it looks, if the votes are set manually inside the GUI.
-
-![hub-voting](assets/hub-voting.png "hub-voting")
-
-### Hardware wallet support
+####  With Hardware wallet
 
 Lisk Hub supports [Ledger Nano](https://www.ledger.com/) hardware wallets.
 Support for more hardware wallet models is planned to add in future versions.
@@ -171,19 +101,65 @@ If you see this page, Lisk Hub is successfully connected to your Ledger device.
 
 ![hub-ledger-accounts](assets/ledger-nano-accounts.png "hub-settings")
 
-### Create Account
+### Dashboard
 
-The most convenient way to create your personal Lisk ID within a few seconds.
-On the login screen of Lisk Hub, hit "Create an Account".
+The Dashboard provides an overview of the recent transaction, market price changes, and recent social media updates of Lisk.
 
-![hub-start](assets/hub-start.png "hub-start")
+It also provides a list of all added [Booksmarks](#bookmarks) and the option to add new ones.
 
-After a few clicks, the account creation is completed.
+![hub-dashboard](assets/hub-dashboard.png "hub-dashboard")
 
-![hub-create-account](assets/hub-create-account.png "hub-create-account")
+### Wallet
 
-> **Important:** Make sure to keep your secret passphrase safe, that is generated during account creation.
-> The secret passphrase will be the only way to access your wallet.
+The Wallet page "My Wallet" displays a general overview of the account, like the transaction history and the current balance of ones personal account.
+
+![lisk_hub-wallet](assets/lisk_hub-wallet.png "lisk_wallet")
+
+#### Send transaction
+
+Send transactions with Lisk Hub by navigating to the "Wallet" page and hit the "Send" button.
+On the next page, it is needed to specify the recipient address and the amount of LSK that should be sent.
+The Reference is an optional data string, that will be connected to the transaction.
+It can be a custom string of 64 bytes and is often used as a reference, what the transaction is about.
+
+![hub-send_transactions](assets/hub-send.png "hub-send_transactions")
+
+#### Request LSK
+
+LSK can be requested from the "Wallet" page of Lisk Hub. Hit the "request" button on the upper right corner.
+Lisk Hub offers different ways to request LSK from people:
+ 
+ - request LSK via email
+ - request LSK via QR-Code
+ - request LSK via Lisk URL *(described below)*
+
+![hub-request](assets/hub-request-lsk.png "hub-request")
+
+By clicking on "Request specific amount" button, Lisk Hub will help you to create a link with the recipient(in that case your Lisk ID) and the amount of LSK, you want to receive.
+Then post it to the person you want to receive LSK from.
+By clicking on the link, Lisk Hub will open (if installed on the system) and prefill amount, recipient and reference for the user, so he/she only needs to hit the send button to send the tokens.
+
+*Lisk URL example:* `lisk://wallet/send?recipient=8004805717140184627L&amount=8&reference=for being awesome`
+
+Opens the wallet and prefills the send form with recipient and amount.
+We use `14628350534858367799L` for the address and `8` LSK for the amount.
+
+![hub-request](assets/hub-request.png "hub-request")
+
+### Delegates
+
+Provides a GUI to conveniently manage the votes of ones account.
+As example, we want to vote for `samuray` and `slasheks` and unvote `vipertkd`.
+
+*Lisk URL:* `lisk://delegates/vote?votes=samuray,slasheks&unvotes=vipertkd` 
+
+This will open the Lisk app and automatically select the delegates `samuray` and ` slasheks` for upvoting and `vipertkd` for unvoting.
+
+![hub-voting_example](assets/hub-voting_example.png "hub-voting_example")
+
+The below screenshot displays how it looks, if the votes are set manually inside the GUI.
+
+![hub-voting](assets/hub-voting.png "hub-voting")
 
 ### Settings
 
@@ -238,6 +214,80 @@ On the "Settings" page, you can select your preferred currency conversion.
 Currently supported:
 - $ (USD)
 - € (EUR)
+
+
+## Features
+
+### Lisk URLs
+
+After installing Lisk Hub on your device you will be able to use the `lisk` protocol. Example: `lisk://wallet`.
+Everything that comes after `lisk://` is treated as a route so this example will open the Lisk Hub app on the wallet page.
+
+> When clicking on a Lisk URL, the system opens Lisk Hub (if it is installed) directly on the desired page. It can prefill certain fields or enable certain features in Lisk Hub on the fly.
+
+![lisk_wallet](assets/lisk_wallet.png "lisk_wallet")
+
+### Search
+
+Inside the navigation bar at the top, one can find the Search field.
+Here the user may search for the following:
+
+#### Lisk Address
+
+Search for other Lisk addresses and view their account data.
+
+The transaction history provides a chronological overview of all transactions associated with this account on the Lisk blockchain.
+
+![hub-wallet](assets/hub-wallet.png "hub-wallet")
+
+The "Account Info" page displays general information, like the casted votes of an account.
+
+![hub-account-info](assets/hub-account-info.png "hub-account-info")
+
+#### Delegate
+
+Search for a registered delegate name to view the respective delegate profile page.
+
+![hub-delegate-info](assets/lisk_hub-search-delegate.png "hub-delegate-info")
+
+Instead of the tab "Account Info", a registered Delegates account page will contain the tab "Delegate statistics"
+
+#### Transaction
+ 
+Search for a specific transaction and its details by its ID.
+
+![hub-account-info](assets/lisk_hub-search-delegate.png "hub-account-info")
+
+In case the respective Lisk ID did register a delegate on the network, there will be a "Delegate stats" instead of the "Account info" page, which will display additional information, like a list of accounts that have voted for that particular delegate, and some general statistics about the productivity of the respective delegate.
+
+![hub-delegate-stats](assets/hub-tx-details.png "hub-delegate-stats")
+
+### Bookmarks
+
+Lisk Hub supports to create Bookmarks of accounts. Bookmarks work basically like an address book.
+The user can save his*her favorite Lisk addresses with name, what makes finding and recognizing addresses much more simple.
+
+![hub-add-to-bookmarks](assets/hub-add-to-bookmarks.png "hub-add-to-bookmarks")
+
+When sending LSK with Lisk Hub, the user may choose conveniently among the already created bookmarks.
+
+![hub-send-lsk-bookmark](assets/hub-send-lsk-bookmark.png "hub-send-lsk-bookmark")
+
+### Sign message
+
+> This feature is not accessible through the GUI (graphical user interface) of Lisk Hub.
+> To sign a message, use the Lisk URL below. 
+
+Opens the sign message form and prefills it with your message.
+As an example we use `i love lisk hub`.
+
+*Lisk URL example:* `lisk://sign-message?message=i love lisk hub`
+
+![hub-sign_messages](assets/hub-sign-message.png "hub-sign_messages")
+
+The signed message will look like this:
+
+![hub-sign_message-result](assets/hub-sign-message-result.png "hub-sign_message-result")
 
 ## Contribute to the Codebase
 

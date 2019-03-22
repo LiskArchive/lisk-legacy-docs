@@ -71,10 +71,10 @@ On the login screen of Lisk Hub, hit "Create an Account".
 
 After a few clicks, the account creation is completed.
 
-![hub-create-account](assets/lisk_hub-create-account.png "hub-create-account")
-
 > **Important:** Make sure to keep your secret passphrase safe, that is generated during account creation.
 > The secret passphrase will be the only way to access your wallet.
+
+![hub-create-account](assets/lisk_hub-create-account.png "hub-create-account")
 
 ### Login
 

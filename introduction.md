@@ -211,6 +211,8 @@ It is possible to turn it off completely on the Settings page.
 > Turning it off temporarily can make sense, e.g. during the voting process, as it may log you off in the middle of it if you spend more than 10 minutes on the selection page.
 > In that case, don't forget to turn it back on after the voting process.
 
+![lisk_hub-auto-logout](assets/lisk_hub-timeout.png "lisk_hub-auto-logout")
+
 #### Network switcher
 
 > The default network Lisk Hub will try to connect to is the Lisk Mainnet.
@@ -276,7 +278,7 @@ Search for a specific transaction and its details by its ID.
 
 In case the respective Lisk ID did register a delegate on the network, there will be a "Delegate stats" instead of the "Account info" page, which will display additional information, like a list of accounts that have voted for that particular delegate, and some general statistics about the productivity of the respective delegate.
 
-![hub-delegate-stats](assets/hub-tx-details.png "hub-delegate-stats")
+![hub-delegate-stats](assets/lisk_hub-tx-details.png "hub-delegate-stats")
 
 ### Bookmarks
 

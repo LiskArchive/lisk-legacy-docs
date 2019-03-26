@@ -111,7 +111,7 @@ If you see this page, Lisk Hub is successfully connected to your Ledger device.
 
 The Dashboard provides an overview of the recent transaction, market price changes, and recent social media updates of Lisk.
 
-It also provides a list of all added [Booksmarks](#bookmarks) and the option to add new ones.
+It also provides a list of all added [Bookmarks](#bookmarks) and the option to add new ones.
 
 ![lisk_hub-dashboard](assets/lisk_hub-dashboard.png "lisk_hub-dashboard")
 
@@ -281,13 +281,13 @@ Here one can find the following information about a delegate:
 - Who voted for this delegate: List of Lisk addresses, who votes for this delegate.
 - Which delegates the delegate account voted for: List of delegates this delegates is voting for.
 
-![hub-delegate-info](assets/lisk_hub-delegate-statistics.png "hub-delegate-info")
+![hub-delegate-statistics](assets/lisk_hub-delegate-statistics.png "hub-delegate-statistics")
 
 #### Transaction
  
 Search for a specific transaction and its details by its ID.
 
-![hub-delegate-stats](assets/lisk_hub-tx-details.png "hub-delegate-stats")
+![hub-tx-details](assets/lisk_hub-tx-details.png "hub-tx-details")
 
 ### Bookmarks
 

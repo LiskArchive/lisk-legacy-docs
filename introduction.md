@@ -287,10 +287,6 @@ Here one can find the following information about a delegate:
  
 Search for a specific transaction and its details by its ID.
 
-![hub-account-info](assets/lisk_hub-search-delegate.png "hub-account-info")
-
-In case the respective Lisk ID did register a delegate on the network, there will be a "Delegate stats" instead of the "Account info" page, which will display additional information, like a list of accounts that have voted for that particular delegate, and some general statistics about the productivity of the respective delegate.
-
 ![hub-delegate-stats](assets/lisk_hub-tx-details.png "hub-delegate-stats")
 
 ### Bookmarks

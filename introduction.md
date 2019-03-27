@@ -425,35 +425,35 @@ The following events and actions are available for all enabled modules and are a
 | ----------------------- | ------------------------------------------------------------------------------------------ |
 | lisk:getComponentConfig | A controller action to get the configuration of any component defined in controller space. |
 
-### Components
+## Components
 
 Components are shared objects within the [controller](#controller) layer which any [module](#modules) can utilize.
 Components can use [channels](#channels) if required for implementation behavior.
 The following components are available currently.
 
-#### Cache
+### Cache
 
 This component provides basic caching capabilities, generic enough for any module to use if required.
 
-#### Logger
+### Logger
 
 Logger is responsible for all application-level logging activity.
 The logger component can be passed to any module, where it can be extended by adding module-specific behaviour.
 
-#### Storage
+### Storage
 
 The storage component is responsible for all database activity in the system.
 It exposes an interface with specific features for getting or setting particular database entities and a raw handler to the database object so that any module can extend it for its own use.
 
 Find more details about the storage component in the dedicated [LIP](https://github.com/LiskHQ/lips/blob/master/proposals/lip-0011.md).
 
-#### System
+### System
 
 The system component provides per-module system information. Each module is responsible for keeping the information up-to-date.
 
 It holds the variables and constants critical for the whole application, possibly affecting other modules. For now, those are: "os", "version", "wsPort", "httpPort", "minVersion", "protocolVersion", "height", "nethash", "broadhash" and "nonce".
 
-### Technology stack
+## Technology stack
 
 The Lisk Core consists of 4 main technologies:
 

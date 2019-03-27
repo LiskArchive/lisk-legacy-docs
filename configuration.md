@@ -44,7 +44,6 @@ The `config.json` file and a description of each parameter.
     "trustProxy": false, // If true, client IP addresses are understood as the left-most entry in the X-Forwarded-* header
     "topAccounts": false, // Deprecated, will be removed in future releases
     "cacheEnabled": false, // If true, enables cache
-    "wsWorkers": 1, // Number of Web Workers
     "db": {
         "host": "localhost", // The ip of the database
         "port": 5432, // The port of the database
@@ -64,11 +63,23 @@ The `config.json` file and a description of each parameter.
         "db": 0, // Set the database to use. Default is '0'
         "password": null // If null, Redis is not password protected
     },
+    "ipc": {
+        "enabled": false // If true, enables IPC channels for modules
+    },
     "api": {
         "enabled": true, // Controls the API's availability. If disabled no API access is possible
         "access": {
             "public": false, // Controls the whitelist. When true all incoming connections are allowed
             "whiteList": ["127.0.0.1"] // This parameter allows connections to the API by IP. Defaults to only allow local host
+        },
+        "ssl": {
+            "enabled": false, // Enables SSL for HTTP requests - Default is false
+            "options": {
+                "port": 443, // Port to host the Lisk Wallet on, default is 443 but is recommended to use a port above 1024 with iptables
+                "address": "0.0.0.0", // Interface to listen on for the Lisk Wallet
+                "key": "./ssl/lisk.key", // Required private key to decrypt and verify the SSL Certificate
+                "cert": "./ssl/lisk.crt" // SSL certificate to use with the Lisk Wallet
+            }
         },
         "options": {
             "limits": {
@@ -76,6 +87,8 @@ The `config.json` file and a description of each parameter.
                 "delayMs": 0, // Minimum delay between API calls in ms
                 "delayAfter": 0, // Minimum delay after an API call in ms
                 "windowMs": 60000 // Minimum delay between API calls from the same window
+                "headersTimeout": 5000,
+                "serverSetTimeout": 20000
             },
             "cors": {
                "origin": "*", // Defines the domains, that the resource can be accessed by in a cross-site manner. Defaults to all domains. 
@@ -96,7 +109,8 @@ The `config.json` file and a description of each parameter.
                 },
         "options": {
             "timeout": 5000, // How long to wait for peers to respond with data. Defaults to 5 seconds
-            "broadhashConsensusCalculationInterval": 5000 // Interval for recalculating the broadhash consensus. Defaults to 5 seconds
+            "broadhashConsensusCalculationInterval": 5000, // Interval for recalculating the broadhash consensus. Defaults to 5 seconds
+            "wsEngine": "ws"
         }
     },
     "broadcasts": {
@@ -127,17 +141,7 @@ The `config.json` file and a description of each parameter.
     },
     "loading": {
         "loadPerIteration": 5000 // How many blocks to load from a peer or the database during verification
-    },
-    "ssl": {
-        "enabled": false, // Enables SSL for HTTP requests - Default is false
-        "options": {
-            "port": 443, // Port to host the Lisk Wallet on, default is 443 but is recommended to use a port above 1024 with iptables
-            "address": "0.0.0.0", // Interface to listen on for the Lisk Wallet
-            "key": "./ssl/lisk.key", // Required private key to decrypt and verify the SSL Certificate
-            "cert": "./ssl/lisk.crt" // SSL certificate to use with the Lisk Wallet
-        }
-    },
-    "nethash": "ed14889723f24ecc54871d058d98ce91ff2f973192075c0155ba2b7b70ad2511" // Network hash of the Genesis block, used to differentiate networks. This should never be manually edited
+    }
 }
 ```
 

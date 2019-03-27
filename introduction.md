@@ -336,6 +336,28 @@ This function accepts two arguments.
 The first one is the event name prefixed with the name of the relevant module.
 The second argument is the data object to be passed along the action.
 
+##### Event objects
+
+An event object is a simple JavaScript object with the following attributes.
+
+| Property | Type   | Description                                                  |
+| -------- | ------ | ------------------------------------------------------------ |
+| name     | string | The name of the event which is triggered.                    |
+| module   | string | The name of the target module for which event was triggered. |
+| source   | string | The name of source module which published that event.        |
+| data     | mixed  | The data which was sent while publishing the event.          |
+
+##### Action objects
+
+An action object is a simple javascript object with attributes listed below.
+
+| Property | Type   | Description                                                       |
+| -------- | ------ | ----------------------------------------------------------------- |
+| name     | string | Name of the action which is invoked.                              |
+| module   | string | The name of the target module for which action was invoked.       |
+| source   | string | The name of source module which invoked that action.              |
+| params   | mixed  | The data which was associated with the invocation for the action. |
+
 #### Module Life Cycle
 
 The [controller](#controller) will load/unload each module one after another.

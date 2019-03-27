@@ -6,11 +6,25 @@
   - [Versions](#versions)
   - [Versioning Schemes](#versioning-schemes)
   - [Upgrade vs Migration](#upgrade-vs-migration)
-  - [What is Lisk Core?](#what-is-lisk-core)
+  - [Lisk Core Overview](#lisk-core-overview)
     - [Networks](#networks)
-    - [Components](#components)
     - [Snapshots](#snapshots)
-  - [Lisk Core distributions](#lisk-core-distributions)
+    - [Lisk Core distributions](#lisk-core-distributions)
+    - [Architecture](#architecture)
+    * [Modules](#modules)
+      * [Core Modules](#core-modules)
+      * [Custom Modules](#custom-modules)
+      * [Module Communication](#module-communication)
+      * [Module Lifecycle](#module-life-cycle)
+    * [Controller](#controller)
+      * [Events](#events)
+      * [Actions](#actions)
+    * [Components](#components)
+      * [Cache](#cache)
+      * [Logger](#logger)
+      * [Storage](#storage)
+      * [System](#system)
+    * [Technology stack](#technology-stack)
   - [Contribute to Codebase](#contribute-to-the-codebase)
 - Setup
   - [Binary](setup/binary.md)
@@ -78,7 +92,7 @@ The *protocol version* is used e.g. in P2P Communication between Lisk Core nodes
 When to upgrade, when to migrate Lisk Core?
 Every time that a new software update of Lisk Core introduces a **hard fork** on the network, you need to **migrate** your existing Lisk Core version. In all other cases, you can use the normal upgrade process.
 
-## What is Lisk Core?
+## Lisk Core Overview
 
 [![What is Lisk Core?](https://img.youtube.com/vi/RfF9EPwQDOY/0.jpg)](https://www.youtube.com/watch?v=RfF9EPwQDOY)
 
@@ -88,8 +102,8 @@ Setting up Lisk Core enables a user to:
 
 - Connect to a [Network](#networks) and communicate with other nodes in the network.
 - Full control to [configure](configuration.md) Lisk Core to specific needs, as required.
-- Create your own [snapshots](#snapshots) of the blockchain
-- Use your custom Lisk Core node to perform actions on the Lisk blockchain, e.g. with [Lisk Hub](https://github.com/LiskHQ/lisk-docs/blob/master/lisk-hub/introduction.md#network-switcher).
+- Create your own [snapshots](#snapshots) of the blockchain.
+- Use Lisk Core to perform actions on the Lisk blockchain, e.g. with [Lisk Hub](https://github.com/LiskHQ/lisk-docs/blob/master/lisk-hub/introduction.md#network-switcher).
 - [Forge](configuration.md#forging) new blocks (if you are an active delegate).
 
 By setting up your node, you contribute to the decentralization of the Lisk network.
@@ -112,8 +126,310 @@ Mainnet is where the true Lisk economy exists. On this network, Lisk users can t
 #### Testnet
 Testnet is an independent replica of the Lisk Mainnet intended as an area to rehearse upgrades before they take place on the Lisk Mainnet. This is where new versions and fixes of Lisk Core are tested. It can be explored via [Lisk Testnet Explorer](https://testnet-explorer.lisk.io).
 
+### Lisk Core Distributions
+
+The 3 supported distributions for Lisk Core are presented below:
+
+#### [Binary](setup/binary.md)
+The **default** way to setup Lisk Core.
+The binary installation is an easy and automated way to set up Lisk Core, this includes nearly completely automated update scripts and a selection of tools to help seamlessly maintain a Lisk Node.
+
+#### [Docker](setup/docker.md)
+Docker adds support for additional platforms upon which to run a Lisk node, e.g. running a Lisk node inside of a Docker on Windows and connecting it via a custom Node on Lisk Hub to Lisk Core, without the need to rent an additional server.
+
+#### [Source](setup/source.md)
+This is made for anyone wishing to develop on the Lisk Core codebase. It also comes with an extensive test-suite, detailed in `README.md`. Installation from Source enables a developer to work on the newest codebase for Lisk Core, which might not have been tagged for a release, yet.
+
+### Snapshots
+
+A snapshot is a backup of the complete blockchain. It can be used to speed up the sync process, instead of having to validate all transactions starting from genesis block to current block height.
+Lisk provides official snapshots of the blockchain, see [http://snapshots.lisk.io](http://snapshots.lisk.io).
+
+> [Creating own snapshots](administration/binary.md#create-snapshot) is only supported for Lisk Core Binary distributions. Rebuilding from a snapshot is explained for each distribution in the **Administration** section.
+
+### Architecture
+
+A simplified overview of the architecture of Lisk Core:
+
+```
++---------------------------------------------------------------------+
+|                              LISK CORE                              |
+|+-------------------------------------------------------------------+|
+||                              MODULES                              ||
+||                                                                   ||
+||+-------------------------------+ +-------------------------------+||
+|||                               | |                               |||
+|||        CORE MODULES           | |     PLUGGABLE MODULES         |||
+|||                               | |                               |||
+||+-------------------------------+ +-------------------------------+||
+|+-------------------------------------------------------------------+|
+|                                 /|\                                 |
+|                                / | \                                |
+|                                  |   CHANNELS                       |
+|                                \ | /                                |
+|                                 \|/                                 |
+|+-------------------------------------------------------------------+|
+||                            COMPONENTS                             ||
+|+-------------------------------------------------------------------+|
+||                            CONTROLLER                             ||
+|+-------------------------------------------------------------------+|
++---------------------------------------------------------------------+
+```
+
+### Modules
+
+Modules are individual building blocks for Lisk Core.
+
+#### Core Modules
+
+Core Modules are shipped along with the Lisk Core distribution itself. These modules constitute the minimum requirements to run a functional Lisk Core instance.
+
+#### List of Core Modules
+
+* **Chain Module:** handles all events and actions, that are related to the blockchain system.
+* **HTTP API Module:** provides API endpoints, that enable users and other programs to communicate with the Lisk blockchain through the API.
+
+#### Custom Modules
+
+> The implementation of each module is up-to user but it must inherit from `BaseModule` class and implement its methods.
+
+Custom Modules can be plugged into Lisk Core and may offer new features/capabilities for the application, or replace Core modules functionalities.
+They extend the existing instance with a specific (and circumscribed) set of features.
+
+```js
+// Exported as main file to javascript package
+export default class MyModule extends BaseModule {
+    /**
+    * Constructor of the module.
+    *
+     * @param {Object} options - An object of module options
+    */
+    constructor(options) {
+     super(options);
+    }
+
+    /**
+    * Required.
+    *
+    * A unique module identifier, that can be accessed through out the system.
+    * If some module already registered with the same alias, it will throw an error.
+    *
+    * @return {string} alias - Return the module alias as string.
+    * */
+    static get alias(){ return 'moduleAlias'; },
+
+    /**
+    * Required.
+    *
+    * Package meta information.
+    *
+    * @return {Object} info - JSON object referring the version, module name and module author.  
+    */
+    static get info(){
+        return {
+            author: '',
+            version: '',
+            name: '',
+            };
+    },
+
+    /**
+    * Required.
+    *
+    * Method which will be invoked by controller to load the module.
+    * Make sure all loading logic get completed during the life cycle of load.
+    * Controller emit an event `lisk:ready` which you can use to perform
+    * some activities which you want to perform when every other module is loaded.
+    *
+    * @param {Channel} channel - An instance of a communication channel.
+    * @return {Promise<void>}
+    */
+    async load(channel) {},
+
+
+    /**
+     * Supported configurations for the module with default values.
+     *
+     * @return {Object} defaults - JSON object with default options for the module.
+     */
+    get defaults() { return {}; },
+
+    /**
+     * List of valid events which this module wants to register with the controller.
+     * Each event name will be prefixed by module alias, e.g. moduleName:event1.
+     * Listing an event means to register the event in the application.
+     * Any module can subscribe or publish that event in the application.
+     *
+     * @return {Array} events - String Array of events.
+     */
+    get events() { return []; },
+
+    /**
+     * Object of valid actions which this module want to register with the controller.
+     * Each action name will be prefixed by module alias, e.g. moduleName:action1.
+     * Source module can define the action while others can invoke that action.
+     *
+     * @return {Object} actions - Contains all available action names as key, and the corresponding function as value.
+     */
+    get actions() {
+        return {
+            action1: action => {},
+        }
+    },
+
+    /**
+     * Method to be invoked by controller to perform the cleanup.
+     *
+     * @return {Promise<void>}
+     */
+    async unload() {},
+};
+```
+
+#### Module Communication
+
+Modules communicate with each other through event-based [channels](#channels).
+Modules running in different processes communicate with each other over [IPC channels](#child-process-channel).
+
+By default, modules will run in the same process as the controller, which loads the module.
+To load a module in a child process, make sure you have `ipc` enabled in the [config](configuration.md#structure) file and [set the environment variable](administration/source.md#command-line-options) `LISK_CHILD_PROCESS_MODULES` with the module alias.
+
+> If the respective module is using a lot of CPU power, loading a module in a child process can prevent CPU usage bottlenecks.
+
+Multiple modules can be defined by using commas like: `LISK_CHILD_PROCESS_MODULES=httpApi,chain`.
+
+The following methods are available for every module to use:
+
+##### `subscribe`
+
+Used to subscribe to events occurring on the controller.
+
+```js
+channel.subscribe("someModule:someEvent", eventObject => {});
+```
+
+This function accepts two arguments.
+The first is the event name prefixed with the name of the relevant module.
+The second argument is a callback which accepts one argument, which will be an instance of an [event object](#specification_channels_event).
+
+##### `publish`
+
+Used to publish events to the controller, which will be delivered to all events subscribers.
+
+```js
+channel.publish('myModule:myContext:myEvent', eventObject);
+```
+
+This function accepts two arguments.
+The first one is the event name prefixed with the name of the relevant module.
+The second argument is the data object to be passed along the event.
+
+##### `invoke`
+
+Used to invoke an action for a module.
+
+```js
+result = await channel.invoke('someModule:someEvent', actionObject);
+```
+
+This function accepts two arguments.
+The first one is the event name prefixed with the name of the relevant module.
+The second argument is the data object to be passed along the action.
+
+#### Module Life Cycle
+
+The [controller](#controller) will load/unload each module one after another.
+A modules' life cycle consists of following events in the right order:
+
+**Loading**
+
+* `channel.someModule:registeredToBus`
+* `channel.someModule:loading:started`
+* `channel.someModule:loading:finished`
+
+**Unloading**
+
+* `channel.someModule:unloading:started`
+* `channel.someModule:unloading:finished`
+
+### Channels
+
+#### InMemory Channel
+
+Communicates with modules which reside in the same process as the [controller](#controller).
+
+By default, modules will load in the same process as the controller.
+
+#### Child Process Channel
+
+Communicates with modules which do not reside in the same process as the Controller.
+
+### Controller
+
+The controller is a parent process, that is responsible for managing every user interaction with each [component](#components) and [module](#modules) of the framework.
+E.g. restarting the node, starting a snapshot process, etc.
+
+The controller is responsible for initialization of the infrastructure-level components.
+The controller also initializes each module separately.
+If any module is configured to load as a child process, then it is the controller's responsibility to do so.
+The controller defines a set of events, that each component can subscribe to:
+
+The following events and actions are available for all enabled modules and are at the same time accessible by all enabled modules.
+
+#### Events
+
+| Event                       | Description                                                                                                                                                                                                                                    |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| _module_:registeredToBus    | Triggered when the module has completed registering its events and actions with the controller. So when this event is triggered, the subscriber of the event can be sure that the controller has whitelisted its requested events and actions. |
+| _module_:loading:started    | Triggered just before the controller calls the module’s `load` method.                                                                                                                                                                         |
+| _module_:loading:error      | Triggered if any error occurred during the call of the module's `load` method.                                                                                                                                                                 |
+| _module_:loading:finished   | Triggered just after the module’s `load` method has completed execution.                                                                                                                                                                       |
+| _module_:unloading:started  | Triggered just before the controller calls the module’s `unload` method.                                                                                                                                                                       |
+| _module_:unloading:error    | Triggered if any error occurred during the call of module’s `unload` method.                                                                                                                                                                   |
+| _module_:unloading:finished | Triggered just after the module’s `unload` method has completed execution.                                                                                                                                                                     |
+| lisk:ready                  | Triggered when the controller has finished initializing the modules and each module has been successfully loaded.                                                                                                                              |
+
+#### Actions
+
+| Action                  | Description                                                                                |
+| ----------------------- | ------------------------------------------------------------------------------------------ |
+| lisk:getComponentConfig | A controller action to get the configuration of any component defined in controller space. |
+
+Most of the data flow will be handled through the propagation of such events.
+Each module can also define its own custom events or actions and will register that list with the controller at the time of initialization.
+The controller contains a complete list of events which may occur in the modules of Lisk Core at any given time.
+
 ### Components
-The Lisk Core consists of 4 main components:
+
+Components are shared objects within the [controller](#controller) layer which any [module](#modules) can utilize.
+Components can use [channels](#channels) if required for implementation behavior.
+The following components are available currently.
+
+#### Cache
+
+This component provides basic caching capabilities, generic enough for any module to use if required.
+
+#### Logger
+
+Logger is responsible for all application-level logging activity.
+The logger component can be passed to any module, where it can be extended by adding module-specific behaviour.
+
+#### Storage
+
+The storage component is responsible for all database activity in the system.
+It exposes an interface with specific features for getting or setting particular database entities and a raw handler to the database object so that any module can extend it for its own use.
+
+Find more details about the storage component in the dedicated [LIP](https://github.com/LiskHQ/lips/blob/master/proposals/lip-0011.md).
+
+#### System
+
+The system component provides per-module system information. Each module is responsible for keeping the information up-to-date.
+
+It holds the variables and constants critical for the whole application, possibly affecting other modules. For now, those are: "os", "version", "wsPort", "httpPort", "minVersion", "protocolVersion", "height", "nethash", "broadhash" and "nonce".
+
+### Technology stack
+
+The Lisk Core consists of 4 main technologies:
 
 [![Node.js](assets/nodejs.png "Node.js")](https://nodejs.org)
 
@@ -130,27 +446,6 @@ The Lisk Core consists of 4 main components:
 [![Redis](assets/redis.png "Swagger")](https://redis.io)
 
 [Redis](https://redis.io) is an open source, in-memory data structure store. Lisk Core mainly uses it to cache API responses. This prevents performance drops in the application, for example when the same API request is sent repeatedly.
-
-### Snapshots
-
-A snapshot is a backup of the complete blockchain. It can be used to speed up the sync process, instead of having to validate all transactions starting from genesis block to current block height.
-Lisk provides official snapshots of the blockchain, see [http://snapshots.lisk.io](http://snapshots.lisk.io).
-
-> [Creating own snapshots](administration/binary.md#create-snapshot) is only supported for Lisk Core Binary distributions. Rebuilding from a snapshot is explained for each distribution in the Administration section.
-
-## Lisk Core Distributions
-
-The 3 supported distributions for Lisk Core are presented below:
-
-### [Binary](setup/binary.md)
-The **default** way to setup Lisk Core.
-The binary installation is an easy and automated way to set up Lisk Core, this includes nearly completely automated update scripts and a selection of tools to help seamlessly maintain a Lisk Node.
-
-### [Docker](setup/docker.md)
-Docker adds support for additional platforms upon which to run a Lisk node, e.g. running a Lisk node inside of a Docker on Windows and connecting it via a custom Node on Lisk Hub to Lisk Core, without the need to rent an additional server.
-
-### [Source](setup/source.md)
-This is made for anyone wishing to develop on the Lisk Core codebase. It also comes with an extensive test-suite, detailed in `README.md`. Installation from Source enables a developer to work on the newest codebase for Lisk Core, which might not have been tagged for a release, yet.
 
 ## Contribute to the Codebase
 

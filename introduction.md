@@ -90,7 +90,13 @@ The *protocol version* is used e.g. in P2P Communication between Lisk Core nodes
 ## Upgrade vs Migration
 
 When to upgrade, when to migrate Lisk Core?
-Every time that a new software update of Lisk Core introduces a **hard fork** on the network, you need to **migrate** your existing Lisk Core version. In all other cases, you can use the normal upgrade process.
+
+Every time that a new software update of Lisk Core introduces a **hard fork** on the network, you need to [migrate](migration.md) your existing Lisk Core version.
+
+In all other cases, you can use the normal **upgrade** process, according to the distribution you are using:
+- [Upgrade Lisk Core Binary](upgrade/binary.md)
+- [Upgrade Lisk Core Docker](upgrade/docker.md)
+- [Upgrade Lisk Core Source](upgrade/source.md)
 
 ## Lisk Core Overview
 

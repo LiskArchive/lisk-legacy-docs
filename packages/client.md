@@ -3,7 +3,7 @@
 Provides a default set of Elements for use by clients of the Lisk network.
 
 > The `Client` package is a collection of the following packages:
-> [api-client](../api-client/api-client.md), [constants](constants.md), [cryptography](cryptography/cryptography.md), [passphrase](passphrase.md), [transactions](transactions.md) |
+> [api-client](api-client.md), [constants](constants.md), [cryptography](cryptography.md), [passphrase](passphrase.md), [transactions](transactions.md) |
 
 Lisk Elements will include a lot of different packages in the future, which can be plugged in to application as desired.
 

@@ -9,8 +9,8 @@
   - [via NPM](upgrade.md#upgrade-lisk-commander-via-npm)
   - [from Source](upgrade.md#upgrade-lisk-commander-from-source)
 - [User Guide](user-guide.md)
-  - [Commands](user-guide/commands/commands.md)
-  - [Sensitive Inputs](user-guide/sensitive-inputs/sensitive-inputs.md)
+  - [Commands](user-guide/commands.md)
+  - [Sensitive Inputs](user-guide/sensitive-inputs.md)
 
 Lisk Commander aims to be a low entry point and the most convenient tool for developers who are looking for an efficient way of coding with a command line interface (CLI).
 With Lisk Commander, it is easier and quicker to plug new commands into the CLI than building a Graphical User Interface (GUI) around every command.

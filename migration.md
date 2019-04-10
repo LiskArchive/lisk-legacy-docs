@@ -16,7 +16,7 @@ This way the probabilities of creating forks are lower.
 Besides the normal update script, the **Lisk Bridge** script might include additional scripts, e.g. if the new update includes changes in the structure of the configuration file, the script would try to reorganize your existing config to the new structure and then run the normal update script afterward.
 If you don't want to use the automated script, you can read a [detailed explanation](#migrate-manually) of how to migrate manually below. 
 
-The following section describes how to use the automated migration script for binary distributions of Lisk Core, to make your migration as seamless as possible, additionally, you can find information below on how to perform the migration process manually.
+The following section describes how to use the automated migration script for binary distributions of Lisk Core, to make your migration as seamless as possible. Additionally, you can find information below on how to perform the migration process manually.
 
 The **recommended** migration path is as follows:
 - [Automated Migration](#automated-migration)

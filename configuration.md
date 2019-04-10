@@ -10,7 +10,7 @@
 ## Structure
 
 The root folder for all configuration is `config/`.
-The **default** network is `devnet`. If you want to connect to another network specify the `network` when starting Lisk Core, as described in [Source Administration](administration/source.md#command-line-options).
+The **default** network is `devnet`. If you want to connect to another network, specify the `network` when starting Lisk Core, as described in [Source Administration](administration/source.md#command-line-options).
 The default configuration file that is used as a base is `config/default/config.json`
 You can find network specific configurations under `config/<network>/config.json`, where `<network>` can be any of these values:
 
@@ -26,7 +26,7 @@ Configurations will be loaded in the following order, each one will override the
    3. A custom configuration file (if specified by the user)
    4. Command line configurations, specified as command-line flags or `ENV` variables.
 
-For development purposes use `devnet` as a network option, other networks are specific to public Lisk networks.
+For development purposes, use `devnet` as the network option. Other networks are specific to public Lisk networks.
 
 > Don't override any value in above-mentioned files if you need custom configuration. The changes will be overwritten everytime you upgrade Lisk Core.
 > To use a custom configuration use environment variables or create your own `.json` file and pass it as [command line option](administration/source.md#command-line-options)

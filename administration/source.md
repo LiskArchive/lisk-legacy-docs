@@ -15,6 +15,7 @@ This section details how to manage a Source installation of Lisk Core.
   - [Generate Config](#generate-config)
   - [Update Config](#update-config)
   - [Console](#console)
+- [Create Snapshots Manually](#)
 - [Rebuild from Snapshot](#rebuild-from-a-snapshot)
 - [Code documentation in Lisk Core](#code-documentation-in-lisk-core)
 
@@ -176,6 +177,10 @@ lisk-core [lisk_dev] >
 
 Once you get the prompt, you can use `modules`, `helpers`, `logic`, `db` and `config` objects and play with these in REPL.
 
+## Create snapshots manually
+
+> For creating snapshots the most convenient way, it is recommended to use Lisk Core from [binary distribution](binary.md#create-snapshot).
+> Just execute the script `lisk-snapshot.sh`, what will perform all necessary steps to create a snapshot of the blockchain.
 
 ## Rebuild from a snapshot
 

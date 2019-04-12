@@ -15,7 +15,7 @@ This section details how to manage a Source installation of Lisk Core.
   - [Generate Config](#generate-config)
   - [Update Config](#update-config)
   - [Console](#console)
-- [Create Snapshots Manually](#)
+- [Creating Snapshots](#creating-snapshots)
 - [Rebuild from Snapshot](#rebuild-from-a-snapshot)
 - [Code documentation in Lisk Core](#code-documentation-in-lisk-core)
 

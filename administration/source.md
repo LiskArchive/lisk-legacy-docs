@@ -177,10 +177,31 @@ lisk-core [lisk_dev] >
 
 Once you get the prompt, you can use `modules`, `helpers`, `logic`, `db` and `config` objects and play with these in REPL.
 
-## Create snapshots manually
+## Creating snapshots
 
 > For creating snapshots the most convenient way, it is recommended to use Lisk Core from [binary distribution](binary.md#create-snapshot).
 > Just execute the script `lisk-snapshot.sh`, what will perform all necessary steps to create a snapshot of the blockchain.
+
+To create a snapshot, perform the following steps:
+
+> The template database should be the one defined in `components.storage.database` in the `config.json` file of Lisk Core.
+
+Exmaple: Creating a snapshot for Mainnet.
+
+```bash
+npx pm2 stop lisk # stop Lisk Core node
+createdb --template="lisk_main" lisk_snapshot # create template for Mainnet snapshot
+npx pm2 start lisk # start Lisk Core node
+psql --dbname=lisk_snapshot --command='TRUNCATE peers, mem_accounts2u_delegates, mem_accounts2u_multisignatures;' # Remove unneccessary tables (they will be rebuilt while the node is synching)
+pg_dump --no-owner lisk_snapshot |gzip -9 > snapshot-lisk_mainnet-8852728.gz # Dump the database
+
+```
+
+> Its recommended to document the current block height of the snapshot, and include it in the snapshots' filename.
+> This query will return the current block height in the database for Mainnet: 
+> ```
+> psql --dbname=lisk_main --tuples-only --command='SELECT height FROM blocks ORDER BY height DESC LIMIT 1;' | xargs`
+> ```
 
 ## Rebuild from a snapshot
 

@@ -118,7 +118,7 @@ There are several ways to create workload on your node:
 
 > The `unit` Testsuite is not suited for this purpose, as unit tests are not executed in the context of the running application.
 
-The README of the Lisk Core repository in Github describes [how to run the Testsuite](https://github.com/LiskHQ/lisk-core#tests)
+The README of the Lisk Core repository in Github describes [how to run the Testsuite](https://github.com/LiskHQ/lisk-core#tests).
 
 ### Option 2: Apache Bench
 
@@ -273,4 +273,4 @@ Please make sure to check following.
 1. Performance of the machine may affect the behavior of interacting with the node.
 2. You can create alert policies on New Relic to inform you when your app taking more memory.
 3. You can set alerts to see if the database is getting slow.
-4. You can track if some errors occurred in the system which were not handled properly.   
+4. You can track if some errors occurred in the system, which were not handled properly.   

@@ -195,14 +195,14 @@ Exmaple: Creating a snapshot for Mainnet.
 ```bash
 npx pm2 stop lisk # stop Lisk Core node
 createdb --template="lisk_main" lisk_snapshot # create template from Lisk Mainnet database
-npx pm2 start lisk # start Lisk Core node
+npx pm2 start lisk # start Lisk Core node again
 psql --dbname=lisk_snapshot --command='TRUNCATE peers, mem_accounts2u_delegates, mem_accounts2u_multisignatures;' # Remove unneccessary tables (they will be recreated during rebuild from snapshot)
 pg_dump --no-owner lisk_snapshot |gzip -9 > snapshot-lisk_mainnet-8852728.gz # Dump the database and compress it
 
 ```
 
 > Its recommended to document the current block height of the snapshot, and include it in the snapshots' filename.
-> This query will return the current block height in the database for Mainnet: 
+> This query will return the current block height in the database for the Lisk Mainnet: 
 > ```
 > psql --dbname=lisk_main --tuples-only --command='SELECT height FROM blocks ORDER BY height DESC LIMIT 1;' | xargs`
 > ```

@@ -1,23 +1,42 @@
 # Lisk Commander Documentation
 
+Lisk Commander is a Command-Line-Interface Tool designed to facilitate delegates, node operators, contributors to the Lisk codebase, developers using Lisk’s infrastructure (and anyone else who’s interested) to make use of Lisk’s functionality from the command line with ease.
+
+Lisk Commander allows to communicate with a remote or local node and carry out Lisk-related functionality.
+
+This can be for example:
+
+- create a transaction
+- decrypt/encrypt passphrases or messages
+- create accounts
+- get delegates
+- ... many more examples can be found on the [commands](user-guide/commands/commands.md) page.
+
 ## Table of contents
 
-- [Setup](setup.md)
-  - [Pre-Installation](setup.md#pre-installation)
-  - [Installation](setup.md#installation)
-- [Upgrade](upgrade.md)
-  - [via NPM](upgrade.md#upgrade-lisk-commander-via-npm)
-  - [from Source](upgrade.md#upgrade-lisk-commander-from-source)
-- [User Guide](user-guide.md)
-  - [Commands](user-guide/commands.md)
-  - [Sensitive Inputs](user-guide/sensitive-inputs.md)
+- [Introduction](#lisk-commander-documentation)
+  - [Lisk Commander Version Reference](#versions)
+  - [Contribute to Codebase](#contribute-to-the-codebase)
+- [Setup](setup/setup.md)
+  - [Pre-Installation](setup/setup.md#pre-installation)
+  - [Installation](setup/setup.md#installation)
+- [Upgrade](upgrade/upgrade.md)
+  - [via NPM](upgrade/upgrade.md#upgrade-lisk-commander-via-npm)
+  - [from Source](upgrade/upgrade.md#upgrade-lisk-commander-from-source)
+- [User Guide](user-guide/user-guide.md)
+  - [Commands](user-guide/commands/commands.md)
+  - [Sensitive Inputs](user-guide/sensitive-inputs/sensitive-inputs.md)
 
-Lisk Commander aims to be a low entry point and the most convenient tool for developers who are looking for an efficient way of coding with a command line interface (CLI).
-With Lisk Commander, it is easier and quicker to plug new commands into the CLI than building a Graphical User Interface (GUI) around every command.
-This will facilitate delegates, node operators, contributors to the Lisk codebase, developers using Lisk’s infrastructure (and anyone else who’s interested) to make use of Lisk’s functionality from the command line with ease.
+## Versions
 
-Lisk Commander allows you to communicate with a remote or local node and carry out Lisk-related functionality.
-Going forward we’ll be adding more commands to provide a comprehensive suite for all your Lisk-related needs.
+Documentation on [lisk.io](https://lisk.io/documentation) keeps up to date with version updates. The table below provides an overview about the former releases and documentation versions of Lisk Commander.
+
+Version | Release date <br> (yy/mm/dd)| Documentation reference
+---     | ---         | ---
+[v2.2.0](https://github.com/LiskHQ/lisk/releases/tag/v2.1.0) | 19/0x/xx | *Current version, live on lisk.io/documentation*
+[v2.1.0](https://github.com/LiskHQ/lisk-commander/releases/tag/v2.1.0) | 19/01/14 | [Lisk Commander 2.1 docs](https://github.com/LiskHQ/lisk-docs/blob/commander-2.1.0/introduction.md)
+[v2.0.0](https://github.com/LiskHQ/lisk-commander/releases/tag/v2.0.0) | 18/11/14 | [Lisk Commander 2.0 docs](https://github.com/LiskHQ/lisk-docs/blob/commander-2.0.0-1.0.1/introduction.md)
+[v1.0.0](https://github.com/LiskHQ/lisk-commander/releases/tag/v1.0.0) | 18/08/13 | [Lisk Commander 1.0 docs](https://github.com/LiskHQ/lisk-docs/blob/commander-1.0.0/introduction.md)
 
 ## Contribute to the Codebase
 

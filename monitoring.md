@@ -118,31 +118,7 @@ There are several ways to create workload on your node:
 
 > The `unit` Testsuite is not suited for this purpose, as unit tests are not executed in the context of the running application.
 
-Tests are run using the following command:
-
-```bash
-npm test -- mocha:<tag>:<suite>:[section]
-```
-
-* Where **tag** can be one of `default | unstable | slow | extensive` (required)
-* Where **suite** can be one of `unit | integration | functional | network` (required)
-* Where **section** depending of the chosen suite can be:
-* when `functional` --> `get | post | ws` (optional)
-
-Examples:
-
-```bash
-npm test -- mocha:extensive:integration
-npm test -- mocha:default:functional
-npm test -- mocha:unstable:functional:get
-npm test -- mocha:untagged:network
-```
-
-Individual test files can be run using the following command:
-
-```bash
-npm run mocha -- path/to/test.js
-```
+The README of the Lisk Core repository in Github describes [how to run the Testsuite](https://github.com/LiskHQ/lisk-core#tests)
 
 ### Option 2: Apache Bench
 

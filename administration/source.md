@@ -138,7 +138,7 @@ Options:
 -n, --network [network]  specify the network or use LISK_NETWORK
 ```
 
-Argument `network` is required and can by `devnet`, `testnet`, `mainnet` or any other network folder available under `./config` directory.
+Argument `network` is required and may be `devnet`, `testnet`, `mainnet` or any other network folder available under `./config` directory.
 
 ### Update Config
 
@@ -188,10 +188,10 @@ Once you get the prompt, you can use `modules`, `helpers`, `logic`, `db` and `co
 
 To create a snapshot manually, perform the following steps:
 
-**Exmaple:** Creating a snapshot for Lisk Mainnet.
+**Example:** Creating a snapshot for Lisk Mainnet.
 
 > The template database should be the one defined in `components.storage.database` in the `config.json` file of Lisk Core.
-> Its recommended to document the current block height of the snapshot, and to include it in the snapshots' filename.
+> Its recommended to document the current block height of the snapshot and to include it in the snapshots' filename.
 
 ```bash
 npx pm2 stop lisk # stop Lisk Core node
@@ -227,7 +227,7 @@ npx pm2 stop lisk # stop Lisk Core node
 dropdb lisk_test # delete Lisk Testnet database
 wget https://downloads.lisk.io/lisk/test/blockchain.db.gz # download Lisk snapshot
 createdb lisk_test # create fresh Lisk Testnet database
-gunzip -fcq blockchain.db.gz | psql -d lisk_test # import the downloaded snapshot into the new databse
+gunzip -fcq blockchain.db.gz | psql -d lisk_test # import the downloaded snapshot into the new database
 npx pm2 start lisk # start Lisk Core node again
 ```
 

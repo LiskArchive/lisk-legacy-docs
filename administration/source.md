@@ -186,7 +186,7 @@ Once you get the prompt, you can use `modules`, `helpers`, `logic`, `db` and `co
 > For creating snapshots the most convenient way, it is recommended to use Lisk Core from [binary distribution](binary.md#create-snapshot).
 > Just execute the script `lisk-snapshot.sh`, what will perform all necessary steps to create a snapshot of the blockchain.
 
-To create a snapshot, perform the following steps:
+To create a snapshot manually, perform the following steps:
 
 > The template database should be the one defined in `components.storage.database` in the `config.json` file of Lisk Core.
 
@@ -194,10 +194,10 @@ Exmaple: Creating a snapshot for Mainnet.
 
 ```bash
 npx pm2 stop lisk # stop Lisk Core node
-createdb --template="lisk_main" lisk_snapshot # create template for Mainnet snapshot
+createdb --template="lisk_main" lisk_snapshot # create template from Lisk Mainnet database
 npx pm2 start lisk # start Lisk Core node
-psql --dbname=lisk_snapshot --command='TRUNCATE peers, mem_accounts2u_delegates, mem_accounts2u_multisignatures;' # Remove unneccessary tables (they will be rebuilt while the node is synching)
-pg_dump --no-owner lisk_snapshot |gzip -9 > snapshot-lisk_mainnet-8852728.gz # Dump the database
+psql --dbname=lisk_snapshot --command='TRUNCATE peers, mem_accounts2u_delegates, mem_accounts2u_multisignatures;' # Remove unneccessary tables (they will be recreated during rebuild from snapshot)
+pg_dump --no-owner lisk_snapshot |gzip -9 > snapshot-lisk_mainnet-8852728.gz # Dump the database and compress it
 
 ```
 
@@ -209,28 +209,30 @@ pg_dump --no-owner lisk_snapshot |gzip -9 > snapshot-lisk_mainnet-8852728.gz # D
 
 ## Rebuild from a snapshot
 
-In some scenarios, it is recommended to restore the blockchain from a snapshot. The command blocks below will perform this process. The URL can be substituted for another `blockchain.db.gz` snapshot file if desired.
+In some scenarios, it is recommended to restore the blockchain from a snapshot.
+The command blocks below will perform this process.
+The URL can be substituted for another `blockchain.db.gz` snapshot file if desired.
 
 ### Mainnet
 
 ```bash
-npx pm2 stop lisk
-dropdb lisk_main
-wget https://downloads.lisk.io/lisk/main/blockchain.db.gz
-createdb lisk_main
-gunzip -fcq blockchain.db.gz | psql -d lisk_main
-npx pm2 start lisk
+npx pm2 stop lisk # stop Lisk Core node
+dropdb lisk_main # delete Lisk Mainnet database
+wget https://downloads.lisk.io/lisk/main/blockchain.db.gz # download Lisk snapshot
+createdb lisk_main # create fresh Lisk Mainnet database
+gunzip -fcq blockchain.db.gz | psql -d lisk_main # import the downloaded snapshot into the new databse
+npx pm2 start lisk # start Lisk Core node again
 ```
 
 ### Testnet
 
 ```bash
-npx pm2 stop lisk
-dropdb lisk_test
-wget https://downloads.lisk.io/lisk/test/blockchain.db.gz
-createdb lisk_test
-gunzip -fcq blockchain.db.gz | psql -d lisk_test
-npx pm2 start lisk
+npx pm2 stop lisk # stop Lisk Core node
+dropdb lisk_test # delete Lisk Testnet database
+wget https://downloads.lisk.io/lisk/test/blockchain.db.gz # download Lisk snapshot
+createdb lisk_test # create fresh Lisk Testnet database
+gunzip -fcq blockchain.db.gz | psql -d lisk_test # import the downloaded snapshot into the new databse
+npx pm2 start lisk # start Lisk Core node again
 ```
 
 ## Code documentation in Lisk Core
@@ -239,7 +241,7 @@ For code documentation, Lisk Core uses [JSDoc](http://usejsdoc.org/).
 JSDoc generates a static HTML documentation site.
 To build the documentation site, run the following command inside the lisk installation directory:
 
-```
+```bash
 npm run docs:build
 ```
 
@@ -247,7 +249,7 @@ The JSDoc documentation is generated inside of `docs/jsdoc/`.
 
 To host the documentation site (e.g. for easy access via a browser), use the following command:
 
-```
+```bash
 npm run docs:serve
 ```
 

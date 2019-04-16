@@ -197,10 +197,10 @@ To create a snapshot manually, perform the following steps:
 npx pm2 stop lisk # stop Lisk Core node
 createdb --template="lisk_main" lisk_snapshot # copy Lisk Mainnet database to a new database `lisk_snapshot`. During this process, no open connections are allowed to `lisk_main` or it will fail
 npx pm2 start lisk # start Lisk Core node again
-psql --dbname=lisk_snapshot --command='TRUNCATE peers, mem_accounts2u_delegates, mem_accounts2u_multisignatures;' # remove unneccessary tables (they will be recreated during rebuild from snapshot)
-psql --dbname=lisk_snapshot --tuples-only --command='SELECT height FROM blocks ORDER BY height DESC LIMIT 1;' | xargs # Query current block height
-pg_dump --no-owner lisk_snapshot |gzip -9 > snapshot-lisk_mainnet-<current-block-height>.gz # dump the database and compress it
-dropdb --if-exists lisk_snapshot # delete the snapshot database
+psql --dbname=lisk_snapshot --command='TRUNCATE peers, mem_accounts2u_delegates, mem_accounts2u_multisignatures;' # remove redundant data (the data will be recreated during rebuild from snapshot)
+psql --dbname=lisk_snapshot --tuples-only --command='SELECT height FROM blocks ORDER BY height DESC LIMIT 1;' | xargs # execute this SQL query to get the block / blockchain height of the snapshot
+pg_dump --no-owner lisk_snapshot |gzip -9 > snapshot-lisk_mainnet-<current-block-height>.gz # dump the database and compress it. Replace <current-block-height> with the blockheight that was returned by the SQL query above
+dropdb lisk_snapshot # delete the snapshot database
 ```
 
 ## Rebuild from a snapshot

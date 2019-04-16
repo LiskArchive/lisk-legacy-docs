@@ -15,6 +15,7 @@ This section details how to manage a Source installation of Lisk Core.
   - [Generate Config](#generate-config)
   - [Update Config](#update-config)
   - [Console](#console)
+- [Creating Snapshots](#creating-snapshots)
 - [Rebuild from Snapshot](#rebuild-from-a-snapshot)
 - [Code documentation in Lisk Core](#code-documentation-in-lisk-core)
 
@@ -137,7 +138,7 @@ Options:
 -n, --network [network]  specify the network or use LISK_NETWORK
 ```
 
-Argument `network` is required and can by `devnet`, `testnet`, `mainnet` or any other network folder available under `./config` directory.
+Argument `network` is required and may be `devnet`, `testnet`, `mainnet` or any other network folder available under `./config` directory.
 
 ### Update Config
 
@@ -180,31 +181,54 @@ lisk-core [lisk_dev] >
 
 Once you get the prompt, you can use `modules`, `helpers`, `logic`, `db` and `config` objects and play with these in REPL.
 
+## Creating snapshots
+
+> For creating [snapshots](../introduction.md#snapshots) the most convenient way, it is recommended to use Lisk Core from [binary distribution](binary.md#create-snapshot).
+> Just execute the script `lisk-snapshot.sh`, what will perform all necessary steps to create a snapshot of the blockchain.
+
+To create a snapshot manually, perform the following steps:
+
+**Example:** Creating a snapshot for Lisk Mainnet.
+
+> The template database should be the one defined in `components.storage.database` in the `config.json` file of Lisk Core.
+> Its recommended to document the current block height of the snapshot and to include it in the snapshots' filename.
+
+```bash
+npx pm2 stop lisk # stop Lisk Core node
+createdb --template="lisk_main" lisk_snapshot # copy Lisk Mainnet database to a new database `lisk_snapshot`. During this process, no open connections are allowed to `lisk_main` or it will fail
+npx pm2 start lisk # start Lisk Core node again
+psql --dbname=lisk_snapshot --command='TRUNCATE peers, mem_accounts2u_delegates, mem_accounts2u_multisignatures;' # remove redundant data
+psql --dbname=lisk_snapshot --tuples-only --command='SELECT height FROM blocks ORDER BY height DESC LIMIT 1;' | xargs # execute this SQL query to get the last block height of the snapshot
+pg_dump --no-owner lisk_snapshot |gzip -9 > snapshot-lisk_mainnet-<current-block-height>.gz # dump the database and compress it. Replace <current-block-height> with the height that was returned by the SQL query above
+dropdb lisk_snapshot # delete the snapshot database
+```
 
 ## Rebuild from a snapshot
 
-In some scenarios, it is recommended to restore the blockchain from a snapshot. The command blocks below will perform this process. The URL can be substituted for another `blockchain.db.gz` snapshot file if desired.
+In some scenarios, it is recommended to restore the blockchain from a [snapshot](../introduction.md#snapshots).
+The command blocks below will perform this process.
+The URL can be substituted for another `blockchain.db.gz` snapshot file if desired.
 
 ### Mainnet
 
 ```bash
-npx pm2 stop lisk
-dropdb lisk_main
-wget https://downloads.lisk.io/lisk/main/blockchain.db.gz
-createdb lisk_main
-gunzip -fcq blockchain.db.gz | psql -d lisk_main
-npx pm2 start lisk
+npx pm2 stop lisk # stop Lisk Core node
+dropdb lisk_main # delete Lisk Mainnet database
+wget https://downloads.lisk.io/lisk/main/blockchain.db.gz # download Lisk snapshot
+createdb lisk_main # create fresh Lisk Mainnet database
+gunzip -fcq blockchain.db.gz | psql -d lisk_main # import the downloaded snapshot into the new databse
+npx pm2 start lisk # start Lisk Core node again
 ```
 
 ### Testnet
 
 ```bash
-npx pm2 stop lisk
-dropdb lisk_test
-wget https://downloads.lisk.io/lisk/test/blockchain.db.gz
-createdb lisk_test
-gunzip -fcq blockchain.db.gz | psql -d lisk_test
-npx pm2 start lisk
+npx pm2 stop lisk # stop Lisk Core node
+dropdb lisk_test # delete Lisk Testnet database
+wget https://downloads.lisk.io/lisk/test/blockchain.db.gz # download Lisk snapshot
+createdb lisk_test # create fresh Lisk Testnet database
+gunzip -fcq blockchain.db.gz | psql -d lisk_test # import the downloaded snapshot into the new database
+npx pm2 start lisk # start Lisk Core node again
 ```
 
 ## Code documentation in Lisk Core
@@ -213,7 +237,7 @@ For code documentation, Lisk Core uses [JSDoc](http://usejsdoc.org/).
 JSDoc generates a static HTML documentation site.
 To build the documentation site, run the following command inside the lisk installation directory:
 
-```
+```bash
 npm run docs:build
 ```
 
@@ -221,7 +245,7 @@ The JSDoc documentation is generated inside of `docs/jsdoc/`.
 
 To host the documentation site (e.g. for easy access via a browser), use the following command:
 
-```
+```bash
 npm run docs:serve
 ```
 

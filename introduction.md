@@ -149,7 +149,9 @@ This is made for anyone wishing to develop on the Lisk Core codebase. It also co
 A snapshot is a backup of the complete blockchain. It can be used to speed up the sync process, instead of having to validate all transactions starting from genesis block to current block height.
 Lisk provides official snapshots of the blockchain, see [http://snapshots.lisk.io](http://snapshots.lisk.io).
 
-> [Creating own snapshots](administration/binary.md#create-snapshot) is only supported for Lisk Core Binary distributions. Rebuilding from a snapshot is explained for each distribution in the **Administration** section.
+How to rebuild from a snapshot, and how to create your own snapshots is explained in the Administration section for each [distribution](#lisk-core-distributions) of Lisk Core.
+
+> We recommend using [Lisk Core Binary](administration/binary.md#create-snapshot) for creating own snapshots, as it provides a script to create snapshots most convenience.
 
 ## Architecture
 

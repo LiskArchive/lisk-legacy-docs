@@ -6,7 +6,7 @@ If you already have Lisk Commander installed and wish to upgrade your installati
 
 To update your global installation to the latest version of Lisk Commander, simply run the following command:
 
-```shell
+```bash
 npm update --global lisk-commander
 ```
 
@@ -14,7 +14,7 @@ npm update --global lisk-commander
 
 Pull the latest tagged release using Git from your Lisk Commander Directory
 
-```shell
+```bash
 git pull master
 npm install
 ```

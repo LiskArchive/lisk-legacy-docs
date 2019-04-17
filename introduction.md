@@ -17,7 +17,7 @@ This can be for example:
 - [Introduction](#lisk-commander-documentation)
   - [Lisk Commander Version Reference](#versions)
   - [Contribute to Codebase](#contribute-to-the-codebase)
-- [Setup](setup/setup.md)
+- [Setup](setup.md)
   - [Pre-Installation](setup.md#pre-installation)
   - [Installation](setup.md#installation)
 - [Upgrade](upgrade.md)

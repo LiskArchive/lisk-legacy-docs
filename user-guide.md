@@ -9,7 +9,9 @@ This guide details important information on how to use and configure Lisk Comman
 
 ## Configuration
 
-This section provides a greater understanding of the `config.json` file and a description of each parameter. The file is stored by default in your home directory, nested inside a `.lisk-commander` directory. If you would prefer to store it elsewhere, run Lisk Commander with the environmental variable `LISK_COMMANDER_CONFIG_DIR` set to the path of your choice.
+This section provides a greater understanding of the `config.json` file and a description of each parameter.
+The file is stored by default in your home directory, nested inside a `.lisk-commander` directory.
+If you would prefer to store it elsewhere, run Lisk Commander with the environmental variable `LISK_COMMANDER_CONFIG_DIR` set to the path of your choice.
 
 ```js
 {

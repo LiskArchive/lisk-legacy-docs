@@ -10,7 +10,7 @@ This can be for example:
 - decrypt/encrypt passphrases or messages
 - create accounts
 - get delegates
-- ... many more examples can be found on the [commands](user-guide/commands/commands.md) page.
+- ... many more examples can be found on the [commands](user-guide/commands.md) page.
 
 ## Table of contents
 

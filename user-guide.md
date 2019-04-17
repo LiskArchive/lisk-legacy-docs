@@ -4,8 +4,8 @@ This guide details important information on how to use and configure Lisk Comman
 
 - [Configuration](#configuration)
 - [Usage](#usage)
-- [Command List](commands/commands.md)
-- [Sensitive Inputs](sensitive-inputs/sensitive-inputs.md)
+- [Command List](user-guide/commands.md)
+- [Sensitive Inputs](user-guide/sensitive-inputs.md)
 
 ## Configuration
 

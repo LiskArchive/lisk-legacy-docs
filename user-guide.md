@@ -61,9 +61,9 @@ COMMANDS
 ### Examples
 
 ```sh-session
-# Example: Get delegate info for delegate "lightcurve"
+EXAMPLE: Get delegate info for delegate "lightcurve"
 $ lisk delegate:get lightcurve  --json
-# Result:
+Result:
 [
 	{
 		"username": "lightcurve",
@@ -82,11 +82,11 @@ $ lisk delegate:get lightcurve  --json
 	}
 ]
 
-# Example: Create vote transaction object
+EXAMPLE: Create vote transaction object
 $ lisk transaction:create:vote --votes=cd83b889f577c9bb042ec874142d16d67e7d4a1ee89dd8af86911b6fe064ec47,1bcafb3f338b3c85b2f2de1076a93140fe052042a71c4aa0531f32af15772d6a,da9bd81b85c5a26fc1f6ae336a7a0fed00db4c8ef192b85febf6ed9070f7c235,7beb5f1e8592022fe5272b45eeeda6a1b6923a801af6e1790933cc6a78ed95a1,abf9787621f8f43ec4e4a645b515094f42fc5615f2e231eca24eaf6e69dc6a65
 ? Please enter your secret passphrase:  [hidden]
 ? Please re-enter your secret passphrase:  [hidden]
-# Result: 
+RESULT: 
 {
 	"amount": "0",
 	"recipientId": "8004805717140184627L",

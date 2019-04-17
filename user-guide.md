@@ -34,7 +34,10 @@ Do not pretty print JSON | `--pretty false`
 
 ## Usage
 
+> For a full list of all commands and their available options, check the [Command reference](user-guide/commands.md)
+
 Pass arguments and options directly from the command line. E.g.:
+
 
 ```sh-session
 $ lisk (-v|--version|version) # returns current version of Lisk Commander.

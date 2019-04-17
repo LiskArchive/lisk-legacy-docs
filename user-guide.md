@@ -38,6 +38,7 @@ Pass arguments and options directly from the command line. E.g.:
 
 ```sh-session
 $ lisk (-v|--version|version) # returns current version of Lisk Commander.
+$ lisk [COMMAND]:[ACTION] # to run a command. Available actions depend on the command.
 $ lisk [COMMAND] # displays help for a specific command.
 $ lisk # displays general help and the command list.
 ```
@@ -82,7 +83,7 @@ Result:
 	}
 ]
 
-EXAMPLE: Create vote transaction object
+EXAMPLE: Create vote transaction object. Specify delegates you want to vote/unvote by their publickey.
 $ lisk transaction:create:vote --votes=cd83b889f577c9bb042ec874142d16d67e7d4a1ee89dd8af86911b6fe064ec47,1bcafb3f338b3c85b2f2de1076a93140fe052042a71c4aa0531f32af15772d6a,da9bd81b85c5a26fc1f6ae336a7a0fed00db4c8ef192b85febf6ed9070f7c235,7beb5f1e8592022fe5272b45eeeda6a1b6923a801af6e1790933cc6a78ed95a1,abf9787621f8f43ec4e4a645b515094f42fc5615f2e231eca24eaf6e69dc6a65
 ? Please enter your secret passphrase:  [hidden]
 ? Please re-enter your secret passphrase:  [hidden]
@@ -93,7 +94,7 @@ RESULT:
 	"senderPublicKey": "30c07dbb72b41e3fda9f29e1a4fc0fce893bb00788515a5e6f50b80312e2f483",
 	"timestamp": 91316601,
 	"type": 3,
-	"fee": "100000000", # voting fee in Beddows
+	"fee": "100000000", 
 	"asset": {
 		"votes": [
 			"+cd83b889f577c9bb042ec874142d16d67e7d4a1ee89dd8af86911b6fe064ec47",

@@ -73,7 +73,7 @@ Upon successful completion, NPM will add the Lisk Commander executable to your P
 Too see usage examples and configuration options, check the [Lisk Commander User Guide](user-guide.md).
 For a full reference of all commands and their available options, check the [Command Reference](user-guide/commands.md).
 
-### Upgrade
+## Upgrade
 
 To update your global installation to the latest version of Lisk Commander, simply run the following command:
 

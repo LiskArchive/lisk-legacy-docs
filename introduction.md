@@ -4,13 +4,13 @@ Lisk Elements is a JavaScript library containing several separately-installable 
 
 - [Introduction](#lisk-elements-documentation)
   - [Lisk Elements Version Reference](#versions)
-- [Setup](#setup)
-  - [Pre-Installation](#pre-installation)
-  - [Installation](#installation)
-- [Upgrade](#upgrade)
-  - [via NPM](#upgrade-lisk-elements-via-npm)
-  - [via CDN](#upgrade-lisk-elements-via-cdn)
-- [Contribute to Codebase](#contribute-to-the-codebase)
+  - [Setup](#setup)
+    - [Pre-Installation](#pre-installation)
+    - [Installation](#installation)
+  - [Upgrade](#upgrade)
+    - [via NPM](#upgrade-lisk-elements-via-npm)
+    - [via CDN](#upgrade-lisk-elements-via-cdn)
+  - [Contribute to Codebase](#contribute-to-the-codebase)
 - [Packages](packages.md): Stand-alone packages of Lisk Elements
   - [API Client](packages/api-client.md): An API client for interacting with nodes on the Lisk network.
   - [Client](packages/client.md):  A default set of Elements for use by clients of the Lisk network

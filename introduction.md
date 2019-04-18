@@ -86,10 +86,10 @@ npm update --global lisk-commander
 Everyone is invited to contribute to the Lisk Commander project. We welcome and appreciate all contributions. 
 
 ### Github
-All necessary information can be found on our [Lisk Commander Github](https://github.com/LiskHQ/lisk-commander).
+All necessary information can be found on our [Lisk Commander Github](https://github.com/LiskHQ/lisk-sdk/tree/development/commander).
 
 ### Contribution Guidelines
-Please be sure to read and follow our [Contribution Guidelines](https://github.com/LiskHQ/lisk-commander/blob/development/docs/CONTRIBUTING.md).
+Please be sure to read and follow our [Contribution Guidelines](https://github.com/LiskHQ/lisk-sdk/blob/development/docs/CONTRIBUTING.md).
 
 ### Gitter
 If you have any further questions please join our [Gitter](https://gitter.im/LiskHQ/lisk).

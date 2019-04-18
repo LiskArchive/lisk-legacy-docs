@@ -4,7 +4,7 @@ This guide details important information on how to use and configure Lisk Comman
 
 - [Configuration](#configuration)
 - [Usage](#usage)
-- [Command List](user-guide/commands.md)
+- [Command Reference](user-guide/commands.md)
 - [Sensitive Inputs](user-guide/sensitive-inputs.md)
 
 ## Configuration
@@ -37,7 +37,6 @@ Do not pretty print JSON | `--pretty false`
 > For a full list of all commands and their available options, check the [Command reference](user-guide/commands.md)
 
 Pass arguments and options directly from the command line. E.g.:
-
 
 ```sh-session
 $ lisk (-v|--version|version) # returns current version of Lisk Commander.

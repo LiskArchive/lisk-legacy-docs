@@ -1,6 +1,4 @@
-# Lisk Commander Commands
-
-## List of commands
+# Lisk Commander Reference
 
 - [Account](#account)
   - [account:create](#create-account)

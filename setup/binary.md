@@ -36,7 +36,7 @@ To connect to the desired network with Lisk Core, please ensure that the corresp
 | Betanet | 5000           | 5001        |
 | Devnet  | 4000           | 5000        |
 
-These are the default ports for connecting with the network, they can be altered later in [`config.json`](https://github.com/LiskHQ/lisk/blob/development/config.json#L2).
+These are the default ports for connecting with the network, they can be altered later in the [`config.json`](https://github.com/LiskHQ/lisk-sdk/blob/development/config.json#L2), which is specific for the network.
 
 ### Install dependencies
 

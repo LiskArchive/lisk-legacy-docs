@@ -118,7 +118,7 @@ There are several ways to create workload on your node:
 
 > The `unit` Testsuite is not suited for this purpose, as unit tests are not executed in the context of the running application.
 
-The README of the Lisk Core repository in Github describes [how to run the Testsuite](https://github.com/LiskHQ/lisk-core#tests).
+The README of the Lisk Core repository in Github describes [how to run the Testsuite](https://github.com/LiskHQ/lisk-sdk/tree/development/lisk#tests).
 
 ### Option 2: Apache Bench
 

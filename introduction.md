@@ -70,12 +70,13 @@ We release new versions of Lisk Core regularly. Documentation on [lisk.io](https
 
 Software Version | Protocol Version | Release date <br> (yy/mm/dd)| Documentation reference
 ---     | ---       | ---         | ---
-[v1.5.0](https://github.com/LiskHQ/lisk/releases/tag/v1.5.0) | 1.0 | 19/mm/dd | *Current version, live on lisk.io/documentation*
-[v1.4.1](https://github.com/LiskHQ/lisk/releases/tag/v1.4.1) | 1.0 | 19/02/14 | [Lisk Core 1.4 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.4.0/introduction.md)
-[v1.3.1](https://github.com/LiskHQ/lisk/releases/tag/v1.3.1) | 1.0 | 18/12/05 | [Lisk Core 1.3 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.3.0/introduction.md)
-[v1.2.1](https://github.com/LiskHQ/lisk/releases/tag/v1.2.1) | 1.0 | 18/11/10 | [Lisk Core 1.2 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.2.0/introduction.md)
-[v1.1.1](https://github.com/LiskHQ/lisk/releases/tag/v1.1.1) | 1.0 | 18/10/23 | [Lisk Core 1.1 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.1.0/introduction.md)
-[v1.0.3](https://github.com/LiskHQ/lisk/releases/tag/v1.0.3) | 1.0 | 18/08/17 | [Lisk Core 1.0 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.0.0/introduction.md)
+[v1.6.0](https://github.com/LiskHQ/lisk-sdk/releases/tag/v1.6.0-rc.2) | 1.0 | 19/04/24 | *Current version, live on lisk.io/documentation*
+[v1.5.1](https://github.com/LiskHQ/lisk-sdk/releases/tag/v1.5.1) | 1.0 | 19/04/10 | [Lisk Core 1.5 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.4.0/introduction.md)
+[v1.4.1](https://github.com/LiskHQ/lisk-sdk/releases/tag/v1.4.1) | 1.0 | 19/02/14 | [Lisk Core 1.4 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.4.0/introduction.md)
+[v1.3.1](https://github.com/LiskHQ/lisk-sdk/releases/tag/v1.3.1) | 1.0 | 18/12/05 | [Lisk Core 1.3 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.3.0/introduction.md)
+[v1.2.1](https://github.com/LiskHQ/lisk-sdk/releases/tag/v1.2.1) | 1.0 | 18/11/10 | [Lisk Core 1.2 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.2.0/introduction.md)
+[v1.1.1](https://github.com/LiskHQ/lisk-sdk/releases/tag/v1.1.1) | 1.0 | 18/10/23 | [Lisk Core 1.1 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.1.0/introduction.md)
+[v1.0.3](https://github.com/LiskHQ/lisk-sdk/releases/tag/v1.0.3) | 1.0 | 18/08/17 | [Lisk Core 1.0 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.0.0/introduction.md)
 
 ## Versioning schemes
 
@@ -153,13 +154,15 @@ How to rebuild from a snapshot, and how to create your own snapshots is explaine
 
 > We recommend using [Lisk Core Binary](administration/binary.md#create-snapshot) for creating own snapshots, as it provides a script to create snapshots most convenience.
 
-## Architecture
+## The Lisk Framework
 
-A simplified overview of the architecture of Lisk Core:
+Lisk Core utilizes the Lisk Framework and its' modules and components, to set up a Lisk node.
+The Lisk framework offers some core-specific modules for this purpose.
+A simplified overview of the architecture of the Lisk Framework:
 
 ```
 +---------------------------------------------------------------------+
-|                              LISK CORE                              |
+|                           LISK FRAMEWORK                            |
 |+-------------------------------------------------------------------+|
 ||                              MODULES                              ||
 ||                                                                   ||
@@ -182,20 +185,20 @@ A simplified overview of the architecture of Lisk Core:
 +---------------------------------------------------------------------+
 ```
 
-## Modules
+### Modules
 
 Modules are individual building blocks for Lisk Core.
 
-### Core Modules
+#### Core Modules
 
 Core Modules are shipped along with the Lisk Core distribution itself. These modules constitute the minimum requirements to run a functional Lisk Core instance.
 
-### List of Core Modules
+##### List of Core Modules
 
 * **Chain Module:** handles all events and actions, that are related to the blockchain system.
 * **HTTP API Module:** provides API endpoints, that enable users and other programs to communicate with the Lisk blockchain through the API.
 
-### Custom Modules
+#### Custom Modules
 
 > The implementation of each module is up-to user but it must inherit from `BaseModule` class and implement its methods.
 
@@ -292,7 +295,7 @@ export default class MyModule extends BaseModule {
 };
 ```
 
-### Module Communication
+#### Module Communication
 
 Modules communicate with each other through event-based [channels](#channels).
 Modules running in different processes communicate with each other over [IPC channels](#child-process-channel).
@@ -306,7 +309,7 @@ Multiple modules can be defined by using commas like: `LISK_CHILD_PROCESS_MODULE
 
 The following methods are available for every module to use:
 
-#### `subscribe`
+##### `subscribe`
 
 Used to subscribe to events occurring on the controller.
 
@@ -318,7 +321,7 @@ This function accepts two arguments.
 The first is the event name prefixed with the name of the relevant module.
 The second argument is a callback which accepts one argument, which will be an instance of an [event object](#specification_channels_event).
 
-#### `publish`
+##### `publish`
 
 Used to publish events to the controller, which will be delivered to all events subscribers.
 
@@ -330,7 +333,7 @@ This function accepts two arguments.
 The first one is the event name prefixed with the name of the relevant module.
 The second argument is the data object to be passed along the event.
 
-#### `invoke`
+##### `invoke`
 
 Used to invoke an action for a module.
 
@@ -342,7 +345,7 @@ This function accepts two arguments.
 The first one is the event name prefixed with the name of the relevant module.
 The second argument is the data object to be passed along the action.
 
-#### Event objects
+##### Event objects
 
 An event object is a simple JavaScript object with the following attributes.
 
@@ -353,7 +356,7 @@ An event object is a simple JavaScript object with the following attributes.
 | source   | string | The name of source module which published that event.        |
 | data     | mixed  | The data which was sent while publishing the event.          |
 
-#### Action objects
+##### Action objects
 
 An action object is a simple javascript object with attributes listed below.
 
@@ -364,7 +367,7 @@ An action object is a simple javascript object with attributes listed below.
 | source   | string | The name of source module which invoked that action.              |
 | params   | mixed  | The data which was associated with the invocation for the action. |
 
-### Module Life Cycle
+#### Module Life Cycle
 
 The [controller](#controller) will load/unload each module one after another.
 A modules' life cycle consists of following events in the right order:
@@ -380,19 +383,19 @@ A modules' life cycle consists of following events in the right order:
 * `channel.moduleAlias:unloading:started`
 * `channel.moduleAlias:unloading:finished`
 
-## Channels
+### Channels
 
-### InMemory Channel
+#### InMemory Channel
 
 Communicates with modules which reside in the same process as the [controller](#controller).
 
 By default, modules will load in the same process as the controller.
 
-### Child Process Channel
+#### Child Process Channel
 
 Communicates with modules which do not reside in the same process as the Controller.
 
-## Controller
+### Controller
 
 The controller is a parent process, that is responsible for managing every user interaction with each [component](#components) and [module](#modules) of the framework.
 E.g. restarting the node, starting a snapshot process, etc.
@@ -404,7 +407,7 @@ The controller defines a set of events, that each component can subscribe to:
 
 The following events and actions are available for all enabled modules and are at the same time accessible by all enabled modules.
 
-### Events
+#### Events
 
 > Each module can also define its own custom events or actions and will register that list with the controller at the time of initialization.
 > The controller contains a complete list of events which may occur in the modules of Lisk Core at any given time.
@@ -421,35 +424,35 @@ The following events and actions are available for all enabled modules and are a
 | moduleAlias:unloading:finished | Triggered just after the module’s `unload` method has completed execution.                                                                                                                                                                     |
 | lisk:ready                  | Triggered when the controller has finished initializing the modules and each module has been successfully loaded.                                                                                                                              |
 
-### Actions
+#### Actions
 
 | Action                  | Description                                                                                |
 | ----------------------- | ------------------------------------------------------------------------------------------ |
 | lisk:getComponentConfig | A controller action to get the configuration of any component defined in controller space. |
 
-## Components
+### Components
 
 Components are shared objects within the [controller](#controller) layer which any [module](#modules) can utilize.
 Components can use [channels](#channels) if required for implementation behavior.
 The following components are available currently.
 
-### Cache
+#### Cache
 
 This component provides basic caching capabilities, generic enough for any module to use if required.
 
-### Logger
+#### Logger
 
 Logger is responsible for all application-level logging activity.
 The logger component can be passed to any module, where it can be extended by adding module-specific behaviour.
 
-### Storage
+#### Storage
 
 The storage component is responsible for all database activity in the system.
 It exposes an interface with specific features for getting or setting particular database entities and a raw handler to the database object so that any module can extend it for its own use.
 
 Find more details about the storage component in the dedicated [LIP](https://github.com/LiskHQ/lips/blob/master/proposals/lip-0011.md).
 
-### System
+#### System
 
 The system component provides per-module system information. Each module is responsible for keeping the information up-to-date.
 
@@ -480,10 +483,10 @@ The Lisk Core consists of 4 main technologies:
 Everyone is invited to contribute to the Lisk Core project. We welcome and appreciate all contributions. 
 
 ### Github
-All necessary information can be found on our [Lisk Core Github](https://github.com/LiskHQ/lisk).
+All necessary information can be found on our [Lisk SDK Github](https://github.com/LiskHQ/lisk-sdk).
 
 ### Contribution Guidelines
-Please be sure to read and follow our [Contribution Guidelines](https://github.com/LiskHQ/lisk/blob/development/docs/CONTRIBUTING.md).
+Please be sure to read and follow our [Contribution Guidelines](https://github.com/LiskHQ/lisk-sdk/blob/development/docs/CONTRIBUTING.md).
 
 ### Gitter
 If you have any further questions please join our [Gitter](https://gitter.im/LiskHQ/lisk).

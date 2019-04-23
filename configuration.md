@@ -11,7 +11,6 @@
 
 The root folder for all configuration is `config/`.
 The **default** network is `devnet`. If you want to connect to another network, specify the `network` when starting Lisk Core, as described in [Source Administration](administration/source.md#command-line-options).
-The default configuration file that is used as a base is `config/default/config.json`
 You can find network specific configurations under `config/<network>/config.json`, where `<network>` can be any of these values:
 
    - `devnet`
@@ -21,7 +20,7 @@ You can find network specific configurations under `config/<network>/config.json
    - `mainnet`
    
 Configurations will be loaded in the following order, each one will override the previous one:
-   1. Default configuration file
+   1. Devnet configuration file
    2. Network specific configuration file
    3. A custom configuration file (if specified by the user)
    4. Command line configurations, specified as command-line flags or `ENV` variables.
@@ -34,114 +33,57 @@ For development purposes, use `devnet` as the network option. Other networks are
 The `config.json` file and a description of each parameter.
 
 ```js
- {
-    "wsPort": 8001, // The port Lisk will listen to for WebSocket connections, e.g. P2P broadcasts
-    "httpPort": 8000, // The port Lisk will listen to for HTTP connections, e.g. API calls
-    "address": "0.0.0.0", // Specify the IPv4 Lisk will listen on (0.0.0.0 will listen to any IP)
-    "fileLogLevel": "info", // Logging level for Lisk: info, error, debug, none
-    "logFileName": "logs/lisk.log", // The path and name of the logfile
-    "consoleLogLevel": "none", // The console logging level for lisk: info, error, debug, none
-    "trustProxy": false, // If true, client IP addresses are understood as the left-most entry in the X-Forwarded-* header
-    "topAccounts": false, // Deprecated, will be removed in future releases
-    "cacheEnabled": false, // If true, enables cache
-    "db": {
-        "host": "localhost", // The ip of the database
-        "port": 5432, // The port of the database
-        "database": "lisk_main", // The name of the instance to use
-        "user": "", // The user to use with the database, defaults to the current user
-        "password": "password", // The default password to use with the database
-        "min": 10, // Specifies the minimum amount of database handles
-        "max": 95, // Specifies the maximum amount of database handles
-        "poolIdleTimeout": 30000, // This parameter sets how long to hold connection handles open
-        "reapIntervalMillis": 1000, // Closes & removes clients which have been idle > 1 second
-        "logEvents": [ "error"], // Database logging events: connect, disconnect, query, task, transact, error
-        "logFileName": "logs/lisk_db.log" // Relative path of the log file
-    },
-    "redis": {
-        "host": "127.0.0.1", // The ip of the Redis instance
-        "port": 6380, // The port Redis will listen on
-        "db": 0, // Set the database to use. Default is '0'
-        "password": null // If null, Redis is not password protected
-    },
-    "ipc": {
-        "enabled": false // If true, enables IPC channels for modules
-    },
-    "api": {
-        "enabled": true, // Controls the API's availability. If disabled no API access is possible
-        "access": {
-            "public": false, // Controls the whitelist. When true all incoming connections are allowed
-            "whiteList": ["127.0.0.1"] // This parameter allows connections to the API by IP. Defaults to only allow local host
-        },
-        "ssl": {
-            "enabled": false, // Enables SSL for HTTP requests - Default is false
-            "options": {
-                "port": 443, // Port to host the Lisk Wallet on, default is 443 but is recommended to use a port above 1024 with iptables
-                "address": "0.0.0.0", // Interface to listen on for the Lisk Wallet
-                "key": "./ssl/lisk.key", // Required private key to decrypt and verify the SSL Certificate
-                "cert": "./ssl/lisk.crt" // SSL certificate to use with the Lisk Wallet
-            }
-        },
-        "options": {
-            "limits": {
-                "max": 0, // Maximum of API conncections
-                "delayMs": 0, // Minimum delay between API calls in ms
-                "delayAfter": 0, // Minimum delay after an API call in ms
-                "windowMs": 60000 // Minimum delay between API calls from the same window
-                "headersTimeout": 5000,
-                "serverSetTimeout": 20000
-            },
-            "cors": {
-               "origin": "*", // Defines the domains, that the resource can be accessed by in a cross-site manner. Defaults to all domains. 
-               "methods": ["GET", "POST", "PUT"] // Defines the allowed methods for CORS
-            }
-        }
-    },
-    "peers": {
-        "enabled": true, // Controls the Peers API's availability. If disabled, no inbound network communications will function
-        "list": [ // Specifies a list of seed peers to connect to 
-            {
-                "ip": "192.168.1.1", // The ip of the peer
-                "wsPort": 8000 // The WebSocket Port of the peer
-            }
-        ],
-        "access": {
-                    "blackList": [] // Peers to exclude from communicating with
-                },
-        "options": {
-            "timeout": 5000, // How long to wait for peers to respond with data. Defaults to 5 seconds
-            "broadhashConsensusCalculationInterval": 5000, // Interval for recalculating the broadhash consensus. Defaults to 5 seconds
-            "wsEngine": "ws"
-        }
-    },
-    "broadcasts": {
-        "active": true, // If true, enables broadcasts
-        "broadcastInterval": 5000, // Specifies how often the node will broadcast transaction bundles
-        "broadcastLimit": 25, // How many nodes will be used in a single broadcast
-        "parallelLimit": 20, // Specifies how many parallel threads will be used to broadcast transactions
-        "releaseLimit": 25, // How many transactions can be included in a single bundle
-        "relayLimit": 3 // Specifies how many times a transaction broadcast from the node will be relayed
-    },
-    "transactions": {
-        "maxTxsPerQueue": 1000 // Sets the maximum size of each transaction queue. Default: 1000
-    },
-    "forging": {
-        "force": false, // Forces forging to be on, only used on local development networks
-        "delegates": [ // Lists delegates, who are authorized to forge on this node.
-           {
-            "encryptedPassphrase":  "salt=5426da113a5896f11255f69bb49c49eb&cipherText=947b537de9&iv=67d7344ce8a3b2fc879e316a&tag=dc5db5bfb41a3e968278e99651c68523&version=1",
-            "publicKey": "9d3058175acab969f41ad9b86f7a2926c74258670fe56b37c429c01fca9f2f0f"
-           }
-        ], 
-        "access": {
-            "whiteList": [ "127.0.0.1" ]// This parameter allows connections to the Forging API by IP. Defaults to allow only local connections
-        }
-    },
-    "syncing": {
-        "active": true // If true, enables syncing (fallback for broadcasts)
-    },
-    "loading": {
-        "loadPerIteration": 5000 // How many blocks to load from a peer or the database during verification
-    }
+{
+	"app": { // Contains general application configurations.
+		"ipc": {
+			"enabled": true // If true, allows modules to communicate over IPCs (inter-process-channels).
+		}
+	},
+	"components": { // Contains configurations related to components.
+		"logger": { // Contains options for the logger component.
+			"fileLogLevel": "debug", // Minimum loglevel, that should be logged in the log file. Available values: trace, debug, log, info, warn, error, fatal, none.
+			"logFileName": "logs/devnet/lisk.log", // define name and path of the log file.
+			"consoleLogLevel": "info" // Minimum loglevel, that should be logged in the console, when starting the node. Available values: trace, debug, log, info, warn, error, fatal, none.
+		},
+		"storage": { // Contains options for the storage component.
+			"database": "lisk_dev", // The name of the database to use.
+			"min": 1, // Specifies the minimum amount of database handles.
+			"max": 10, // Specifies the maximum amount of database handles.
+			"logFileName": "logs/devnet/lisk_db.log" // Relative path of the log file
+		},
+		"cache": { // Contains options for the cache component.
+			"enabled": true // If true, enables cache.
+		}
+	},
+	"modules": { // Contains configurations related to modules.
+		"http_api": { // Contains options for the api module.
+			"access": { // Contains API access options.
+				"public": true // If true, the API endpoints of the node are available to public.
+			},
+			"httpPort": 4000, // HTTP port, the node listens on.
+		},
+		"chain": { // Contains options for the chain module.
+			"forging": { // Contains forging options for delegates.
+				"force": false, // Forces forging to be on, only used on local development networks.
+				"delegates": [ // List of delegates, who are allowed to forge on this node. To successfully enable forging for a delegate, the publickey and the encrypted passphrase need to be deposited here as JSON object.
+					{
+						"encryptedPassphrase": "iterations=1&salt=476d4299531718af8c88156aab0bb7d6&cipherText=663dde611776d87029ec188dc616d96d813ecabcef62ed0ad05ffe30528f5462c8d499db943ba2ded55c3b7c506815d8db1c2d4c35121e1d27e740dc41f6c405ce8ab8e3120b23f546d8b35823a30639&iv=1a83940b72adc57ec060a648&tag=b5b1e6c6e225c428a4473735bc8f1fc9&version=1",
+						"publicKey": "9d3058175acab969f41ad9b86f7a2926c74258670fe56b37c429c01fca9f2f0f"
+					}
+				],
+				"defaultPassword": "elephant tree paris dragon chair galaxy" // Default password for dummy delegates, only used on local development networks.
+			},
+			"network": { // Contains network options for the node.
+				"wsPort": 5000, // Websocket port, the node communicates over.
+				"list": [ // list of seed nodes, the node will connect to on first startup.
+					{
+						"ip": "127.0.0.1", // IP of the seed node.
+						"wsPort": 5000 // Websocket port of the seed node.
+					}
+				]
+			}
+		}
+	}
 }
 ```
 

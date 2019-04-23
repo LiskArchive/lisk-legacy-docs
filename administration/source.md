@@ -82,8 +82,12 @@ LISK_NETWORK=[network] LISK_CONFIG_FILE=[config-path] LISK_ADDRESS=[address] LIS
 ```
 You can pass `devnet` (default), `alphanet`, `betanet`, `testnet` or `mainnet` for the `[network]` option.
 
+> All `ENV` variables restricted with operating system constraint of `ENV` variable maximum length.
 
-Each of these options can be appended on the command line. There are also a few `ENV` variables that can be utilized for this purpose.
+> Comma-separated lists will replace the original config values. e.g. If you specify `LISK_PEERS`, original `peers.list` specific to the network will be replaced completely.
+
+
+Each of these options can be appended on the command line. 
 
 | Command-line Option                  | ENV Variable             | Config Option            | Description                                                                                                                                                                       |
 | ------------------------------------ | ----------------------   | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -111,11 +115,6 @@ Each of these options can be appended on the command line. There are also a few 
 |                                      | LISK_FORGING_WHITELIST   | forging.access.whiteList | Comma separated list of IPs to enable access to forging endpoints. Format `192.168.99.100,172.169.99.77`                                                                          |
 | <pre nowrap>--snapshot<br> -s</pre>  |                          |                          | Number of round for which take the snapshot. If none specified it will use the highest round available.                                                                           |
 |                                      |LISK_CHILD_PROCESS_MODULES|                          | Comma separated list of modules, that shall be loaded in a separate process. To enable inter process communication, set `ipc.enabled` to `true` inside the `config.json` file.    |
-
-#### Note
-
-* All `ENV` variables restricted with operating system constraint of `ENV` variable maximum length.
-* Comma-separated lists will replace the original config values. e.g. If you specify `LISK_PEERS`, original `peers.list` specific to the network will be replaced completely.
 
 ## Utility scripts
 
@@ -252,4 +251,4 @@ npm run docs:serve
 This will start a web server, and the documentation will be accessible through the browser on port 8080, e.g. `localhost:8080`.
 The process will be started inside the terminal. To stop the web server again, hit `CTRL + C`.
 
-For more information please have a look in the [Contribution Guidelines](https://github.com/LiskHQ/lisk/blob/development/docs/CONTRIBUTING.md) for Lisk Core on Github.
+For more information please have a look in the [Contribution Guidelines](https://github.com/LiskHQ/lisk-sdk/blob/development/docs/CONTRIBUTING.md) for Lisk Core on Github.

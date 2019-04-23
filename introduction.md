@@ -154,10 +154,10 @@ How to rebuild from a snapshot, and how to create your own snapshots is explaine
 
 > We recommend using [Lisk Core Binary](administration/binary.md#create-snapshot) for creating own snapshots, as it provides a script to create snapshots most convenience.
 
-## The Lisk Framework
+## Architecture
 
 Lisk Core utilizes the Lisk Framework and its' modules and components, to set up a Lisk node.
-The Lisk framework offers some core-specific modules for this purpose.
+The Lisk Framework offers some core-specific modules for this purpose.
 A simplified overview of the architecture of the Lisk Framework:
 
 ```

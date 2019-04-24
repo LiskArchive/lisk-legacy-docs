@@ -8,11 +8,11 @@ This section details how to upgrade Lisk Core from source.
     npx pm2 stop lisk
     ```
 
-2. Pull the latest [tagged release](https://github.com/LiskHQ/lisk/releases) using Git and install node modules.
+2. Pull the latest [tagged release](https://github.com/LiskHQ/lisk-sdk/releases) using Git and install node modules.
     ```bash
     cd lisk # navigate into the root directory of Lisk Core
     git fetch # fetch newest releases
-    git checkout vX.Y.Z -b vX.Y.Z # check out latest release tag, see https://github.com/LiskHQ/lisk/releases
+    git checkout vX.Y.Z -b vX.Y.Z # check out latest release tag, see https://github.com/LiskHQ/lisk-sdk/releases
     rm -rf node_modules # remove old node modules
     npm ci # install node modules
     ```
@@ -23,4 +23,4 @@ This section details how to upgrade Lisk Core from source.
     npx pm2 start lisk
     ```
 
-> **Note for delegates:** You need to [enable forging](../../user-guide/configuration/configuration.md#forging) again after upgrade.
+> **Note for delegates:** You need to [enable forging](../configuration.md#forging) again after upgrade.

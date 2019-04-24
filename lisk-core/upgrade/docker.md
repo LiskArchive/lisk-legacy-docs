@@ -15,4 +15,4 @@ services:
 [...]
 ```
 
-To actually upgrade the Lisk installation run `docker-compose up -d`.
+To upgrade the Lisk installation run `docker-compose up -d`.

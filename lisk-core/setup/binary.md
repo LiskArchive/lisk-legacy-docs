@@ -23,11 +23,11 @@ This document will detail how to prepare a system for the installation of Lisk C
 - Ubuntu 18.04 x86_64
 - Ubuntu 16.04 (LTS) x86_64
 
-To complete the installation there are prerequisites that need to be fulfilled.  If you have already performed these, please proceed to the [Installation](#installation) chapter. Please follow the instructions below to load the required software to your system.
+To complete the installation some prerequisites need to be fulfilled.  If you have already performed these, please proceed to the [Installation](#installation) chapter. Please follow the instructions below to load the required software to your system.
 
 ### Open the necessary ports
 
-In order to connect to the desired network with Lisk Core , please ensure that the corresponding ports are open:
+To connect to the desired network with Lisk Core, please ensure that the corresponding ports are open:
 
 | Network | httpPort(HTTP) | wsPort(TCP) |
 | --------|----------------|-------------|
@@ -36,7 +36,7 @@ In order to connect to the desired network with Lisk Core , please ensure that t
 | Betanet | 5000           | 5001        |
 | Devnet  | 4000           | 5000        |
 
-These are the default ports for connecting with the network, they can be altered later in [`config.json`](https://github.com/LiskHQ/lisk/blob/development/config.json#L2).
+These are the default ports for connecting with the network, they can be altered later in the [`config.json`](https://github.com/LiskHQ/lisk-sdk/blob/development/config.json#L2), which is specific for the network.
 
 ### Install dependencies
 
@@ -47,9 +47,7 @@ sudo apt-get install curl wget tar unzip zip ntp
 
 ### Create a user to run Lisk
 
-Info | Note 
---- | --- 
-![info note](../../info-icon.png "Info Note") | The `lisk` user itself **does not need** any `sudo` rights to run Lisk Core.
+> The `lisk` user itself **does not need** any `sudo` rights to run Lisk Core.
 
 ```bash
 sudo adduser lisk
@@ -57,7 +55,7 @@ sudo adduser lisk
 
 ## Installation
 
-This section details how to install Lisk Core using pre-built binary packages. Once completed, you will have a functioning node on the Lisk Network. If you are looking to upgrade your current Lisk Core installation, please see the [Upgrade Binary](../../upgrade/binary/upgrade-binary.md) section.
+This section details how to install Lisk Core using pre-built binary packages. Once completed, you will have a functioning node on the Lisk Network. If you are looking to upgrade your current Lisk Core installation, please see the [Upgrade Binary](../upgrade/binary.md) section.
 
 ### Login to the Lisk user
 
@@ -88,18 +86,18 @@ Download Lisk Core:
 wget https://downloads.lisk.io/lisk/test/installLisk.sh
 ```
 To connect your node to the Testnet, run:
-```shell
+```bash
 bash installLisk.sh install -r test
 ```
 
 You will be prompted for your installation directory, pressing enter will choose the default.
 
-Next you will be prompted, if you wish to synchronize from the Genesis block. If you answer 'no', which is the default option, 
+Next, you will be prompted, if you wish to synchronize from the Genesis block. If you answer 'no', which is the default option, 
 the node will download a recent snapshot of the database. This will be much faster than synching from the genesis block. 
 
-The installation may take a few minutes. Check the scripts output to verify that the installation was successful.
+The installation may take a few minutes. Check the output of the script to verify that the installation was successful.
 
-If you recognise an error, try to resolve it by analysing the error output, otherwise you can have a look at our [Troubleshooting Section](../../../troubleshooting/troubleshooting.md).
+If you recognize an error, try to resolve it by analyzing the error output, otherwise, you can have a look at our [Troubleshooting Section](../troubleshooting.md).
 
 ### Verify successful installation
 
@@ -108,11 +106,11 @@ You can verify that your Lisk node is up and running, by running the following c
 ```bash
 bash lisk.sh status
 ```
-For further information and how to administer your Lisk node, please have a look at our [Administration Section](../../../user-guide/administration/binary/admin-binary.md).
+For further information and how to administer your Lisk node, please have a look at our [Administration Section](../administration/binary.md).
 
-If you are not running Lisk locally, you will need to follow the [Configuration - API](../../../user-guide/configuration/configuration.md#api-access-control) document to enable access.
+If you are not running Lisk locally, you will need to follow the [Configuration - API](../configuration.md#api-access-control) document to enable access.
 
-With all of the above steps complete you are ready to move on to the configuration documentation if you wish to enable forging or SSL, please see [General Configuration](../../../user-guide/configuration/configuration.md).
+With all of the above steps complete you are ready to move on to the configuration documentation if you wish to enable forging or SSL, please see [General Configuration](../configuration.md).
 
 ## Post-installation (optional)
 
@@ -122,7 +120,7 @@ It is recommended to setup a log rotation for the logfile of Lisk Core.
 
 #### Ubuntu
 Ubuntu systems provide a service called `logrotate` for this purpose.
-First make sure Logrotate is installed on your system:
+First, make sure Logrotate is installed on your system:
 
 ```bash
 logrotate --version
@@ -145,7 +143,7 @@ Example values:
         rotate 5                # keep the 5 most recent logs
         maxage 14               # remove logs that are older than 14 days
         compress                # compress old log files
-        delaycompress           # compress the data, after it has been moved
+        delaycompress           # compress the data after it has been moved
         missingok               # if no logfile is present, ignore
         notifempty              # do not rotate empty log files
 }

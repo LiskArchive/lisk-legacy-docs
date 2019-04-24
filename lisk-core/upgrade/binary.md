@@ -1,6 +1,6 @@
 # Lisk Core Binary Upgrade
 
-In order to upgrade Lisk Core from Binary please follow the instructions below.
+To upgrade Lisk Core from Binary please follow the instructions below.
 Please choose the instructions specific to the network (Mainnet or Testnet) your node is connected to.
 
 ## Automated Upgrade Lisk Core
@@ -23,7 +23,7 @@ bash installLisk.sh upgrade -r test
 
 After running the above script manually or through `lisk_bridge.sh`,  you will be prompted to pick from a few options. Please read these thoroughly and follow the steps. 
 
-> You have to enable forging manually after the upgrade. Please follow this guide to [enable forging on your delegate node](../../user-guide/configuration/configuration.md#forging) for further details.
+> You have to enable forging manually after the upgrade. Please follow this guide to [enable forging on your delegate node](../configuration.md#forging) for further details.
 
 ## Manual Upgrade Lisk Core
 

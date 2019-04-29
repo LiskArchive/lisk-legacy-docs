@@ -32,8 +32,8 @@ Core Modules are shipped along with the Lisk Core distribution itself. These mod
 ##### List of Core Modules
 
 * **Chain Module:** handles all events and actions, that are related to the blockchain system.
-* **HTTP API Module:** provides API endpoints, that enable users and other programs to communicate with the Lisk blockchain through the API.
-* **Network Module:** handles websocket-based peer-to-peer communication of nodes in the network.
+* **API Module:** provides HTTP API endpoints, that enable users and other programs to interact with the Lisk blockchain through the API.
+* **Network Module:** handles peer-to-peer communication of nodes in the network.
 
 #### Custom Modules
 

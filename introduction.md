@@ -36,11 +36,11 @@ The diagram below provides a high-level overview of the architecture:
 
 ## Package Directories
 
-| Directory                | Description                                                                                                                                          |
-| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Framework](./framework) | An application framework responsible for establishing and maintaining the interactions between the modules of a Lisk blockchain application.         |
-| [Elements](./elements)   | A collection of libraries, each of them implementing some form of blockchain application functionality such as cryptography, transactions, p2p, etc. |
-| [Commander](./commander) | A command line tool allowing developers to manage a Lisk node instance and interact with a Lisk compatible network.                                  |
+| Directory                                   | Description                                                                                                                                          |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Framework](lisk-framework/introduction.md) | An application framework responsible for establishing and maintaining the interactions between the modules of a Lisk blockchain application.         |
+| [Elements](lisk-elements/introduction.md)   | A collection of libraries, each of them implementing some form of blockchain application functionality such as cryptography, transactions, p2p, etc. |
+| [Commander](lisk-commander/introduction.md) | A command line tool allowing developers to manage a Lisk node instance and interact with a Lisk compatible network.                                  |
 
 ## Installation
 
@@ -50,11 +50,11 @@ The following dependencies need to be installed in order to run applications cre
 
 | Dependencies     | Version |
 | ---------------- | ------- |
-| NodeJS           | 10.14.3 |
+| Node.js          | 10.14.3 |
 | PostgreSQL       | 10+     |
 | Redis (optional) | 5+      |
 
-You can find further details on installing these dependencies in our [pre-installation setup guide](https://lisk.io/documentation/lisk-core/setup/source#pre-install).
+You can find further details on installing these dependencies in our [pre-installation setup guide](framework/setup.md#pre-install).
 
 ### Installation of Lisk Framework
 
@@ -92,7 +92,7 @@ After that you can start the application by:
 node index.js
 ```
 
-More usage examples and configuration samples will be made available during the alpha phase on the official Lisk [documentation portal](http://docs.lisk.io).
+For next steps, please chek out the [usage examples](...) and [configuration options](...) of the [Lisk Framework](lisk-framework/introduction.md).
 
 ## Get Involved
 

@@ -69,14 +69,6 @@ sudo apt-get install -y build-essential
 
 Ensure that both [XCode](https://developer.apple.com/xcode/) and [Homebrew](https://brew.sh/) are installed.
 
-Update homebrew and install dependencies:
-
-```bash
-brew update
-brew doctor
-brew install curl automake autoconf libtool
-```
-
 ### Git 
 
 [Git](https://github.com/git/git) is used for cloning and updating Lisk.
@@ -102,7 +94,7 @@ brew install git
 We recommend using a Node version manager such as [NVM](https://github.com/creationix/nvm).
 NVM is a bash script that enables you to manage multiple active Node.js versions.
 
-1. Login as lisk user, that has been created in the first step:
+1. Login as `lisk` user, that has been created in the first step:
 ```bash
 su - lisk
 ```
@@ -112,7 +104,7 @@ su - lisk
 nvm install 10.14.1
 ```
 
-For the following steps,  log out from the 'lisk' user again with `CTRL+D`, and continue with your user with sudo rights.
+For the following steps, log out from the `lisk` user again with `CTRL+D`, and continue with your user with sudo rights.
 
 #### Node.js Package
 
@@ -252,7 +244,8 @@ If you have finished all the above steps successfully, your system is ready for 
 
 ## Installation
 
-This section details how to install Lisk Core from Source. When completed, you will have a functioning node on the Lisk Network. If you are looking to upgrade your current Lisk Core installation, please see [Upgrade from Source](../upgrade/source.md).
+This section details how to install Lisk Core from Source. When completed, you will have a functioning node on the Lisk Network.
+If you are looking to upgrade your current Lisk Core installation, please see [Upgrade from Source](../upgrade/source.md).
 
 ### Login as the Lisk user
 

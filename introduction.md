@@ -7,7 +7,7 @@
 
 ## Disclaimer - Mostly Harmless
 
-Please read our disclaimer carefully. With this repository we have opened access to the alpha release of the Lisk SDK.
+Please read our disclaimer carefully. The current version of the Lisk SDK is the alpha release of the Lisk SDK.
 We have released the Lisk SDK in its current form in order for us to improve the development experience through community feedback and contributions.
 
 We strictly discourage anyone from using the alpha release of the Lisk SDK for any production-based blockchain applications, i.e. a blockchain operating on a real mainnet.
@@ -58,7 +58,7 @@ You can find further details on installing these dependencies in our [pre-instal
 
 ### Installation of Lisk Framework
 
-To start using the Lisk SDK you need to install one npm package - `lisk-framework`:
+To start using the Lisk SDK you need to install one NPM package - [lisk-framework](https://www.npmjs.com/package/lisk-framework):
 
 ```bash
 npm install lisk-framework@alpha

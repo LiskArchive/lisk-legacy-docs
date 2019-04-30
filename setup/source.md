@@ -23,11 +23,10 @@ To complete the installation, some prerequisites need to be fulfilled.  If you h
 Firstly, please determine if your platform can install Lisk Core from source.
 
 ###### Supported Platforms
-- Ubuntu 14.04 (LTS) x86_64
 - Ubuntu 16.04 (LTS) x86_64
 - Ubuntu 18.04 (LTS) x86_64
-- MacOS 10.12 (Sierra)
 - MacOS 10.13 (High Sierra)
+- MacOS 10.14 (Mojave)
 
 ### Open necessary ports
 
@@ -63,7 +62,7 @@ Used for compiling dependencies.
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y python build-essential curl automake autoconf libtool ntp
+sudo apt-get install -y build-essential
 ```
 
 #### MacOS
@@ -98,22 +97,7 @@ brew install git
 
 [Node.js](https://nodejs.org/) serves as the underlying engine for code execution.
 
-Install system-wide via a package manager, like so:
-
-#### Ubuntu
-
-```bash
-curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
-sudo apt-get install -y nodejs
-```
-
-#### MacOS
-
-```bash
-brew install node@10.14.1
-```
-
-### Node version manager
+#### Node version manager
 
 We recommend using a Node version manager such as [NVM](https://github.com/creationix/nvm).
 NVM is a bash script that enables you to manage multiple active Node.js versions.
@@ -129,6 +113,23 @@ nvm install 10.14.1
 ```
 
 For the following steps,  log out from the 'lisk' user again with `CTRL+D`, and continue with your user with sudo rights.
+
+#### Node.js Package
+
+Alternatively, you can install Node.js system-wide via a package manager, like so:
+
+#### Ubuntu
+
+```bash
+curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
+sudo apt-get install -y nodejs
+```
+
+#### MacOS
+
+```bash
+brew install node@10.14.1
+```
 
 ### PostgreSQL (version 10)
 
@@ -159,7 +160,7 @@ Create a new database user called `lisk` and grant it rights to create databases
   sudo -u postgres createuser --createdb lisk
 ```
 
-Switch to the lisk user and create the databases, where `{network}` is the network you want to connect your Lisk Core node to:
+Switch to the `lisk` user and create the databases, where `{network}` is the network you want to connect your Lisk Core node to:
 ```bash
   su - lisk
   createdb lisk_{network}
@@ -169,7 +170,7 @@ For the following steps,  log out from the lisk user again with `CTRL+D`, and co
 Change `'password'` to a secure password of your choice.
 ```bash
   sudo -u postgres psql -d lisk_{network} -c "alter user lisk with password 'password';"
-  ```
+```
 
 #### MacOS
 
@@ -219,13 +220,14 @@ Stop Redis:
 brew services stop redis
 ```
 
-> Lisk does not run on the redis default port of `6379`. Instead it is configured to run on port: `6380`. Due to this, to run Lisk, you have one of two options:
+> Lisk does not run on the redis default port of `6379`. Instead it is configured to run on port: `6380`.
+> Due to this, to run Lisk, you have one of two options:
 
-1. **Change the Lisk configuration**
+A. **Change the Lisk configuration**
 
-In the next installation phase, remember to update the Redis port configuration in both `config.json` and `test/data/config.json`. 
+In the next installation phase, remember to update the Redis port configuration in `config.json`.
 
-2. **Change the Redis launch configuration**
+B. **Change the Redis launch configuration**
 
 Update the launch configuration file on your system. Note that there are many ways to do this. 
 
@@ -266,7 +268,7 @@ su - lisk
 Before proceeding, determine whether you wish to connect your node to the Mainnet (Main Network) or Testnet (Test Network).
 
 ```bash
-git clone git@github.com:LiskHQ/lisk-sdk.git
+git clone https://github.com/LiskHQ/lisk-sdk.git
 cd lisk
 git checkout v1.1.0 -b v1.1.0 # check out the latest release tag
 npm ci

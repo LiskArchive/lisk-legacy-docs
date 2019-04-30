@@ -80,7 +80,7 @@ Clone the [Lisk Repository](https://github.com/LiskHQ/lisk).
 
 ```bash
 su - lisk                                    # switch to lisk user
-git clone git@github.com:LiskHQ/lisk-sdk.git # clone the repository
+git https://github.com/LiskHQ/lisk-sdk.git   # clone the repository
 cd lisk/docker                               # navigate into docker directory
 ```
 

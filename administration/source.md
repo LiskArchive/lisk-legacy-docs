@@ -113,7 +113,7 @@ Each of these options can be appended on the command line.
 |                                      | LISK_API_WHITELIST       | api.access.whiteList     | Comma separated list of IPs to enable API access. Format `192.168.99.100,172.169.99.77`                                                                                           |
 |                                      | LISK_FORGING_DELEGATES   | forging.delegates        | Comma separated list of delegates to load in the format _publicKey&#x7c;encryptedPassphrase,publicKey2&#x7c;encryptedPassphrase2_                                                 |
 |                                      | LISK_FORGING_WHITELIST   | forging.access.whiteList | Comma separated list of IPs to enable access to forging endpoints. Format `192.168.99.100,172.169.99.77`                                                                          |
-| <pre nowrap>--snapshot<br> -s</pre>  |                          |                          | Number of round for which take the snapshot. If none specified it will use the highest round available.                                                                           |
+| <pre nowrap>--rebuild<br> -b</pre>   |                          |                          | Rebuilds certain database tables on basis of the local blockchain data.                                                                           |
 |                                      |LISK_CHILD_PROCESS_MODULES|                          | Comma separated list of modules, that shall be loaded in a separate process. To enable inter process communication, set `ipc.enabled` to `true` inside the `config.json` file.    |
 
 ## Utility scripts

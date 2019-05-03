@@ -106,8 +106,8 @@ The `config.json` file and a description of each parameter.
                     "delayMs": 0, // Minimum delay between API calls in ms.
                     "delayAfter": 0, // Minimum delay after an API call in ms.
                     "windowMs": 60000, // Minimum delay between API calls from the same window.
-                    "headersTimeout": 5000,  
-                    "serverSetTimeout": 20000,
+                    "headersTimeout": 5000, // Indicating the minimum amount of time an idle connection has to be kept opened (in seconds).
+                    "serverSetTimeout": 20000, // Time to wait for response from server before timing out.
                 },
                 "cors": {
                     "origin": '*', // Defines the domains, that the resource can be accessed by in a cross-site manner. Defaults to all domains.
@@ -147,7 +147,7 @@ The `config.json` file and a description of each parameter.
             },
             "loading": {
                 "loadPerIteration": 5000, // How many blocks to load from a peer or the database during verification.
-                "rebuildUpToRound": null,
+                "rebuildUpToRound": null, // Integer. If this value is defined, the node will start and rebuild until the defined round (set to 0 to rebuild until current round). Otherwise, the application continues normal execution.
             },
             "exceptions": { // Define network specific exceptions. More details about exceptions: https://github.com/LiskHQ/lisk-sdk/blob/development/lisk/EXCEPTIONS.md
                 "blockRewards": [],

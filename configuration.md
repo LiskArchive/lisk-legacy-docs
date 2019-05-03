@@ -9,9 +9,9 @@
 
 ## Structure
 
-The root folder for all configuration is `config/`.
+The root folder for all configurations is `config/`.
 The **default** network is `devnet`. If you want to connect to another network, specify the `network` when starting Lisk Core, as described in [Source Administration](administration/source.md#command-line-options).
-You can find network specific configurations under `config/<network>/config.json`, where `<network>` can be any of these values:
+You can find **network specific configurations** under `config/<network>/config.json`, where `<network>` can be any of these values:
 
    - `devnet`
    - `alphanet`
@@ -19,16 +19,16 @@ You can find network specific configurations under `config/<network>/config.json
    - `testnet`
    - `mainnet`
    
-Configurations will be loaded in the following order, each one will override the previous one:
-   1. Devnet configuration file
-   2. Network specific configuration file
-   3. A custom configuration file (if specified by the user)
-   4. Command line configurations, specified as command-line flags or `ENV` variables.
-
-For development purposes, use `devnet` as the network option. Other networks are specific to public Lisk networks.
-
 > Don't override any value in above-mentioned files if you need custom configuration. The changes will be overwritten everytime you upgrade Lisk Core.
 > To use a custom configuration use environment variables or create your own `.json` file and pass it as [command line option](administration/source.md#command-line-options)
+   
+Configurations will be loaded in the following order, each one will override the previous one:
+   1. Default configuration values of modules and components of the [Lisk Framework](https://github.com/LiskHQ/lisk-sdk/tree/development/framework)
+   2. Network specific configuration file
+   3. A [custom configuration file](administration/source.md#command-line-options) (if specified by the user)
+   4. [Command line configurations](administration/source.md#command-line-options), specified as command-line flags or `ENV` variables.
+
+For development purposes, use `devnet` as the network option. Other networks are specific to public Lisk networks.
 
 The `config.json` file and a description of each parameter.
 
@@ -69,8 +69,8 @@ The `config.json` file and a description of each parameter.
 			"password": 'password', // Password of the datbase user.
 			"min": 10, // Specifies the minimum amount of database handles.
 			"max": 95, // Specifies the maximum amount of database handles.
-			"poolIdleTimeout": 30000,
-            "reapIntervalMillis": 1000,
+			"poolIdleTimeout": 30000, // This parameter sets how long to hold connection handles open
+            "reapIntervalMillis": 1000, // Closes & removes clients which have been idle > 1 second
             "logEvents": ['error'], // Specify the minimal log level for database logs.
 			"logFileName": "logs/lisk_db.log" // Relative path of the database log file.
 		},
@@ -84,12 +84,12 @@ The `config.json` file and a description of each parameter.
 	"modules": { // Contains configurations related to modules.
 		"http_api": { // Contains options for the API module.
 			"httpPort": 4000, // HTTP port, the node listens on.
-			"address": "0.0.0.0",
+			"address": "0.0.0.0", // Address of the API of the node.
 			"enabled": true, // Controls the API's availability. If disabled, no API access is possible.
-            "trustProxy": false,
+            "trustProxy": false, // For nodes taht sit behind a proxy. If true, client IP addresses are understood as the left-most entry in the X-Forwarded-* header.
             "access": { // Contains API access options.
                 "public": false, // If true, the API endpoints of the node are available to public.
-                "whiteList": ['127.0.0.1'],
+                "whiteList": ['127.0.0.1'], // This parameter allows connections to the API by IP. Defaults to only allow local host.
             },
             "ssl": { 
                 "enabled": false, // Enables SSL for HTTP requests - Default is false.
@@ -106,7 +106,7 @@ The `config.json` file and a description of each parameter.
                     "delayMs": 0, // Minimum delay between API calls in ms.
                     "delayAfter": 0, // Minimum delay after an API call in ms.
                     "windowMs": 60000, // Minimum delay between API calls from the same window.
-                    "headersTimeout": 5000,
+                    "headersTimeout": 5000,  
                     "serverSetTimeout": 20000,
                 },
                 "cors": {
@@ -149,7 +149,7 @@ The `config.json` file and a description of each parameter.
                 "loadPerIteration": 5000, // How many blocks to load from a peer or the database during verification.
                 "rebuildUpToRound": null,
             },
-            "exceptions": {
+            "exceptions": { // Define network specific exceptions. More details about exceptions: https://github.com/LiskHQ/lisk-sdk/blob/development/lisk/EXCEPTIONS.md
                 "blockRewards": [],
                 "senderPublicKey": [],
                 "signatures": [],
@@ -171,21 +171,21 @@ The `config.json` file and a description of each parameter.
 			    "wsPort": 5000, // Websocket port of the node.
                 "address": '0.0.0.0', // Address of the node.
                 "discoveryInterval": 30000, // Time interval(ms), in that the nodes performs peer discovery.
-                "seedPeers": [
+                "seedPeers": [ // List of Seed Peers. On first startup, the node will initially connect to the Seed Peers in order to discover the rest of the network.
                 	{
-                        "ip": 1.2.3.4, // IP or address of the blacklisted node.
-                        "wsPort": 4000 // Port of the blacklisted node.
+                        "ip": "1.2.3.4", // IP or address of the Seed Peer.
+                        "wsPort": 4000 // Port of the Seed Peer.
                     }
                 ],
                 "blacklistedPeers": [ // Peers to exclude from communicating with.
-                	"9.8.7.6:4000",
-                	"4.3.2.1",
+                	"9.8.7.6:4000", // IP or address of the blacklisted peer.
+                	"4.3.2.1", // Port of the blacklisted peer.
                 ],
                 "ackTimeout": 20000,
-                "connectTimeout": 5000, // How long to wait for peers to respond with data. Defaults to 5 seconds.
+                "connectTimeout": 5000,
                 "wsEngine": 'ws',
 				"wsPort": 5000, // Websocket port, the node communicates over.
-				"list": [ // list of seed nodes, the node will connect to on first startup.
+				"list": [ // List of seed nodes, the node will connect to on first startup.
 					{
 						"ip": "127.0.0.1", // IP of the seed node.
 						"wsPort": 5000 // Websocket port of the seed node.

@@ -36,8 +36,8 @@ The `config.json` file and a description of each parameter.
 {
 	"app": { // Contains general application configurations.
 	    "genesisConfig": {
-	    	"BLOCK_TIME": 10// Slot time interval in seconds
-	    	"EPOCH_TIME": 2016-05-24T17:00:00.000Z// Timestamp indicating the initial network start (`Date.toISOString()`).
+	    	"BLOCK_TIME": 10 // Slot time interval in seconds
+	    	"EPOCH_TIME": "2016-05-24T17:00:00.000Z" // Timestamp indicating the initial network start (`Date.toISOString()`).
 	    	"MAX_TRANSACTIONS_PER_BLOCK": 25 // Maximum number of transactions allowed per block.
             "REWARDS": {
 	    		"DISTANCE": 1000, // Distance between each milestone.
@@ -296,7 +296,7 @@ The result should be something like this:
 ### Enable/Disable Forging
 
 > Important: Remember that after restarting your Lisk node, you need to re-enable forging again.
-> The endpoint to perform this action is **idempotent**. That means, the result is the same, no matter how many times you execute query. 
+> The endpoint to perform this action is **idempotent**. That means, the result is the same, no matter how many times you execute the query. 
 
 If you are running your Lisk Node from a local machine, you can enable forging through the API client, without further interruption.
 
@@ -331,7 +331,7 @@ curl -X PUT \
 
 ## SSL
 
-> This step requires a signed certificate (from a CA, such as Let's Encrypt) or a self-signed certificate.
+> This step requires a signed certificate (from a CA, such as [Let's Encrypt](https://letsencrypt.org)) or a self-signed certificate.
 > You will need both the private and public keys in a location that is accessible to Lisk.
 
 The next snippet highlights the essential parameters to enable SSL security on your node's connections:

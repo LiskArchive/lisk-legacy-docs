@@ -1,31 +1,14 @@
-## Log Analysis
+# Log Monitoring
 
-For monitoring or debugging your Node, Lisk Core tracks all important events that happen on the node by creating log messages for them.
+The [log files](configuration.md#file-log-stream) provide a chronological list of all events that happened on a node.
+These events can be analyzed further in order to provide monitoring for a particular node or for the network in general.
+As the logs are created in JSON format, it is possible to pipe the log messages to additional monitoring software.
+With a monitoring software, the node operator can filter automatically for certain events and visualize them through a frontend application.
+Also, it could be used to send notifications to the operator, in case of an emergeny.
 
-These log messages are grouped in different log levels, which makes it easy to define the level of detail for the logs.
+Suitable for this are all kinds monitoring software that supports log analysis, e.g. [Kibana](https://www.elastic.co/products/kibana), [Grafana](https://grafana.com/) or [Graylog](https://www.graylog.org/).
 
-### Log Levels
-
-| Log Level | Description                                                                                                                 |
-| ----------| ----------------------------------------------------------------------------------------------------------------------------|
-| Fatal(60) | The node is going to stop or become unusable now. An operator should definitely look into this soon.                        |
-| Error(50) | Fatal for a particular request, but the node continues servicing other requests. An operator should look at this soon(ish). |
-| Warn(40)  | A note on something that should probably be looked at by an operator eventually.                                            |
-| Info(30)  | Detail on regular operation.                                                                                                |
-| Debug(20) | Anything else, i.e. too verbose to be included in "info" level.                                                             |
-| Trace(10) | Logging from external libraries used by your node or very detailed application logging.                                     |
-
-### Logging destinations
-
-There are two possible output sources for logs: The "file log stream" and the "console log stream".
-Each output source can be configured independently inside of `config.json` und the options for the `logger` component.
-
-#### File log stream
-
-#### Console log stream
-
-
-## Performance Monitoring
+# Performance Monitoring
 
 We use [New Relic](http://newrelic.com/) to monitor the activities inside of the application. It enables detailed insight into the system and keeps track of the performance of any activity, e.g. an HTTP API call or a background process from Lisk Core jobs queue.
 

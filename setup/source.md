@@ -13,7 +13,6 @@
   1. [Login as the Lisk user](#login-as-the-lisk-user)
   2. [Installing Lisk from Source](#installing-lisk-from-source)
 - [Post-installation (optional)](#post-installation-optional)
-  - [Logrotate Setup](#logrotate-setup)
 
 ## Pre-Install
 
@@ -262,7 +261,6 @@ Before proceeding, determine whether you wish to connect your node to the Mainne
 
 ```bash
 git clone https://github.com/LiskHQ/lisk-sdk.git
-cd lisk
 git checkout v1.1.0 -b v1.1.0 # check out the latest release tag
 npm ci
 ```
@@ -303,43 +301,4 @@ You are ready to move on to the [configuration](../configuration.md) documentati
 
 ## Post-installation (optional)
 
-### Logrotate Setup
-
-It is recommended to setup a log rotation for the logfile of Lisk Core.
-
-#### Ubuntu
-Ubuntu systems provide a service called `logrotate` for this purpose.
-Please ensure Logrotate is installed on your system:
-
-```bash
-logrotate --version
-```
-
-Next, go to the logrotate config directory and create a new logrotate file for Lisk Core:
-
-```bash
-cd /etc/logrotate.d
-touch lisk
-```
-
-Inside this file, define the parameters for the log rotation.
-
-Example values:
-
-```bash
-/path/to/lisk/logs/mainnet/*.log { 
-        daily                   # daily rotation
-        rotate 5                # keep the 5 most recent logs
-        maxage 14               # remove logs that are older than 14 days
-        compress                # compress old log files
-        delaycompress           # compress the data, after it has been moved
-        missingok               # if no logfile is present, ignore
-        notifempty              # do not rotate empty log files
-}
-```
-
-After customizing the config to fit your needs and saving it, you can test it by doing a dry run:
-
-```bash
-sudo logrotate /etc/logrotate.conf --debug
-```
+- Recommended: Set up a [log rotation](../configuration.md#logrotation)

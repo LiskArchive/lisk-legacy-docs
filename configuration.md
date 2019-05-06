@@ -1,11 +1,12 @@
 # Lisk Core Configuration
 
 - [Structure](#structure)
-- [API access contrrol](#api-access-control)
+- [API access control](#api-access-control)
 - [Forging](#forging)
   - [Check forging](#check-forging)
   - [Enable/Disable forging](#enable-disable-forging)
 - [SSL](#ssl)
+- [Logging](#logging)
 
 ## Structure
 
@@ -247,3 +248,99 @@ Next snippet highlights the essential parameters to enable SSL security on your 
 ```
 
 To verify all you have properly configured your node, open the web client using `https://MY_IP_OR_HOST`. You should now see a secure SSL connection.
+
+## Logging 
+
+For monitoring or debugging your node, Lisk Core tracks all important events that happen on the node by creating log messages for them.
+
+These log messages are grouped in different log levels, which makes it easy to define the level of detail for the logs.
+
+We use [Bunyan](https://github.com/trentm/node-bunyan) as logging library. Bunyan allows simple and fast JSON logging for Node.js services.
+
+### Log Levels
+
+| Log Level | Description                                                                                                                 |
+| ----------| ----------------------------------------------------------------------------------------------------------------------------|
+| None(>60) | No events are logged.                                                                                                       |
+| Fatal(60) | The node is going to stop or become unusable now. An operator should definitely look into this soon.                        |
+| Error(50) | Fatal for a particular request, but the node continues servicing other requests. An operator should look at this soon(ish). |
+| Warn(40)  | A note on something that should probably be looked at by an operator eventually.                                            |
+| Info(30)  | Detail on regular operation.                                                                                                |
+| Debug(20) | Anything else, i.e. too verbose to be included in "info" level.                                                             |
+| Trace(10) | Logging from external libraries used by your node or very detailed application logging.                                     |
+
+### Logging destinations
+
+There are two possible output sources for logs: The **"file log stream"** and the **"console log stream"**.
+Each output source can be configured independently inside of `config.json` under the options for the `logger` component.
+
+#### Console log stream
+
+The console log level displays the logs directly to the console where the Lisk Core process is started from.
+It is useful for quick debugging or verifying that Lisk Core starts correctly.
+Default log level for the console log stream is `none`.
+
+##### Bunyan CLI-Tool
+
+Bunyan log output is a stream of JSON objects.
+This is great for processing, but not for reading directly.
+Bunyan provides a [CLI-tool](http://trentm.com/node-bunyan/bunyan.1.html) for pretty-printing and filtering the JSON logs for human readers nicely.
+
+1. Start Lisk Core with a console log level low enough to produce logs, e.g. "info".
+2. Pipe the console log output through bunyan and specify the desired filters.
+
+```bash
+LISK_CONSOLE_LOG_LEVEL="info" npm start | bunyan -l warn # Pretty-print all logs with log level "warn".
+LISK_CONSOLE_LOG_LEVEL="info" npm start | bunyan -c this.message="App started..." # Filter for logs that have the string "App started..." inside the message field.
+```
+
+For more information about the Bunyan CLI tool, please check out the official [Bunyan Documentation](http://trentm.com/node-bunyan/bunyan.1.html).
+
+#### File log stream
+
+All logs that have equal or higher log levels than the in `config.json` specified file log level, are saved in a `.log`-file for further analysis.
+By default, the generated lof files are saved inside of the `logs` folder of Lisk Core.
+Default log level for the file log stream is `info`.
+
+The file log stream is perfect to [monitor the node via logs](monitoring.md#log-monitoring).
+
+### Logrotation
+
+It is recommended to setup some form of log rotation for the logfiles of Lisk Core.
+If no log rotation is set up, the log files may grow very big over time (depending on the specified file log level), and will eventually exceed the servers' disk space limits.
+
+Ubuntu systems, e.g. provide a service called `logrotate` for this purpose.
+Please ensure Logrotate is installed on your system:
+
+```bash
+logrotate --version
+```
+
+Next, go to the logrotate config directory and create a new logrotate file for Lisk Core:
+
+```bash
+cd /etc/logrotate.d
+touch lisk
+```
+
+Inside this file, define the parameters for the log rotation.
+
+Example values:
+
+```bash
+/path/to/lisk/logs/mainnet/*.log { 
+        daily                   # daily rotation
+        rotate 5                # keep the 5 most recent logs
+        maxage 14               # remove logs that are older than 14 days
+        compress                # compress old log files
+        delaycompress           # compress the data, after it has been moved
+        missingok               # if no logfile is present, ignore
+        notifempty              # do not rotate empty log files
+}
+```
+
+After customizing the config to fit your needs and saving it, you can test it by doing a dry run:
+
+```bash
+sudo logrotate /etc/logrotate.conf --debug
+```

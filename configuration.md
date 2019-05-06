@@ -304,7 +304,7 @@ For more information about the Bunyan CLI tool, please check out the official [B
 #### File log stream
 
 All logs that have equal or higher log levels than the in `config.json` specified file log level, are saved in a `.log`-file for further analysis.
-By default, the generated lof files are saved inside of the `logs` folder of Lisk Core.
+By default, the generated log files are saved inside of the `logs` folder of Lisk Core.
 Default log level for the file log stream is `info`.
 
 The file log stream is perfect to [monitor the node via logs](monitoring.md#log-monitoring).

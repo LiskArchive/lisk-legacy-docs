@@ -38,7 +38,7 @@ The diagram below provides a high-level overview of the architecture:
 
 | Directory                                   | Description                                                                                                                                          |
 | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Framework](lisk-framework/introduction.md) | An application framework responsible for establishing and maintaining the interactions between the modules of a Lisk blockchain application.         |
+| [Framework](lisk-framework/introduction.md) | The application framework is establishing and maintaining the interactions between the modules of a Lisk blockchain application.                     |
 | [Elements](lisk-elements/introduction.md)   | A collection of libraries, each of them implementing some form of blockchain application functionality such as cryptography, transactions, p2p, etc. |
 | [Commander](lisk-commander/introduction.md) | A command line tool allowing developers to manage a Lisk node instance and interact with a Lisk compatible network.                                  |
 
@@ -56,43 +56,13 @@ The following dependencies need to be installed in order to run applications cre
 
 You can find further details on installing these dependencies in our [pre-installation setup guide](framework/setup.md#pre-install).
 
-### Installation of Lisk Framework
+### Installation of the Lisk Framework
 
 To start using the Lisk SDK you need to install one NPM package - [lisk-framework](https://www.npmjs.com/package/lisk-framework):
 
 ```bash
 npm install lisk-framework@alpha
 ```
-
-## Usage
-
-To start, create the project structure of your blockchain application. There are no special requirements here, you can create the basic Node.js project folder structure with `npm init`.
-
-To create a blockchain application, you need to provide an entry point of your application (like `index.js`) and set-up your network by using the modules of Lisk SDK.
-
-It is quite simple to have a working blockchain application, mirroring the configuration of the existing Lisk network. This can be done by copying the following three lines of code to your `index.js`:
-
-```js
-const { Application, SampleGenesisBlock } = require('lisk-framework');
-
-const app = new Application('my-app', SampleGenesisBlock);
-
-app
-	.run()
-	.then(() => app.logger.info('App started...'))
-	.catch(error => {
-		console.error('Faced error in application', error);
-		process.exit(1);
-	});
-```
-
-After that you can start the application by:
-
-```bash
-node index.js
-```
-
-For next steps, please chek out the [usage examples](...) and [configuration options](...) of the [Lisk Framework](lisk-framework/introduction.md).
 
 ## Get Involved
 

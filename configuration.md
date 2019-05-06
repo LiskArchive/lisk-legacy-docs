@@ -290,8 +290,13 @@ Bunyan provides a [CLI-tool](http://trentm.com/node-bunyan/bunyan.1.html) for pr
 2. Pipe the console log output through bunyan and specify the desired filters.
 
 ```bash
+# Example for Lisk Core from Source
 LISK_CONSOLE_LOG_LEVEL="info" npm start | bunyan -l warn # Pretty-print all logs with log level "warn".
-LISK_CONSOLE_LOG_LEVEL="info" npm start | bunyan -c this.message="App started..." # Filter for logs that have the string "App started..." inside the message field.
+LISK_CONSOLE_LOG_LEVEL="info" npm start | bunyan -c 'this.message.includes("App started")' # Filter for logs that have the string "App started" inside the message field.
+
+# Example for Lisk Core Binary
+bash lisk.sh start | bunyan -l error # Pretty-print all logs with log level "error".
+bash lisk.sh start | bunyan -c 'this.message.includes("App started")' # Filter for logs that have the string "App started" inside the message field.
 ```
 
 For more information about the Bunyan CLI tool, please check out the official [Bunyan Documentation](http://trentm.com/node-bunyan/bunyan.1.html).

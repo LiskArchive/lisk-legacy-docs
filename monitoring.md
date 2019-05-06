@@ -4,9 +4,9 @@ The [log files](configuration.md#file-log-stream) provide a chronological list o
 These events can be analyzed further in order to provide monitoring for a particular node or for the network in general.
 As the logs are created in JSON format, it is possible to pipe the log messages to additional monitoring software.
 With a monitoring software, the node operator can filter automatically for certain events and visualize them through a frontend application.
-Also, it could be used to send notifications to the operator, in case of an emergeny.
+Also, it could be used to send notifications to the operator, in case of an emergency.
 
-Suitable for this are all kinds monitoring software that supports log analysis, e.g. [Kibana](https://www.elastic.co/products/kibana), [Grafana](https://grafana.com/) or [Graylog](https://www.graylog.org/).
+Suitable for this are all kinds of monitoring softwares that supports log analysis, e.g. [Kibana](https://www.elastic.co/products/kibana), [Grafana](https://grafana.com/) or [Graylog](https://www.graylog.org/).
 
 # Performance Monitoring
 

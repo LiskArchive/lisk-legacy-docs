@@ -183,7 +183,7 @@ The `config.json` file and a description of each parameter.
                 ],
                 "ackTimeout": 20000, // When a node tries to make an RPC against a peer (and expects a response), this value determines the maximum amount of time (in milliseconds) that the node will wait to receive a response from the peer. If the peer does not respond in time, then the RPC will fail with an error.
                 "connectTimeout": 5000, // When a node tries to connect to a peer, this value determines the maximum amount of time (in milliseconds) that the node will wait to complete the handshake with the peer. If the peer does not complete the handshake in time, then the connection will be closed.
-                "wsEngine": 'ws', //  Represents the low-level WebSocket engine which the node should use (for advanced users).
+                "wsEngine": 'ws', //  Represents the low-level WebSocket engine which the node should use (for advanced users). Possible values are "ws" (default, recommended) and "uws" (more performant, but not compatible with all systems).
 				"wsPort": 5000, // Websocket port, the node communicates over.
 				"list": [ // List of seed nodes, the node will connect to on first startup.
 					{

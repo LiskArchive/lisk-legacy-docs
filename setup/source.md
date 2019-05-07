@@ -258,16 +258,14 @@ su - lisk
 
 ### Installing Lisk from Source
 
-Before proceeding, determine whether you wish to connect your node to the Mainnet (Main Network) or Testnet (Test Network).
-
 ```bash
-git clone https://github.com/LiskHQ/lisk-sdk.git
+git clone https://github.com/LiskHQ/lisk-core.git
 cd lisk
-git checkout v1.1.0 -b v1.1.0 # check out the latest release tag
+git checkout v2.0.0 -b v2.0.0 # check out the latest release tag
 npm ci
 ```
 
-> Please check for latest release on https://github.com/LiskHQ/lisk-sdk/releases
+> Please check for latest release on https://github.com/LiskHQ/lisk-core/releases
 
 To test that Lisk Core is built and configured correctly, issue the following command to connect to the network:
 

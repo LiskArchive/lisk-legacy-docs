@@ -86,7 +86,7 @@ The `config.json` file and a description of each parameter.
 			"httpPort": 4000, // HTTP port, the node listens on.
 			"address": "0.0.0.0", // Address of the API of the node.
 			"enabled": true, // Controls the API's availability. If disabled, no API access is possible.
-            "trustProxy": false, // For nodes taht sit behind a proxy. If true, client IP addresses are understood as the left-most entry in the X-Forwarded-* header.
+            "trustProxy": false, // For nodes that sit behind a proxy. If true, client IP addresses are understood as the left-most entry in the X-Forwarded-* header.
             "access": { // Contains API access options.
                 "public": false, // If true, the API endpoints of the node are available to public.
                 "whiteList": ['127.0.0.1'], // This parameter allows connections to the API by IP. Defaults to only allow local host.
@@ -147,7 +147,7 @@ The `config.json` file and a description of each parameter.
             },
             "loading": {
                 "loadPerIteration": 5000, // How many blocks to load from a peer or the database during verification.
-                "rebuildUpToRound": null, // Integer. If this value is defined, the node will start and rebuild until the defined round (set to 0 to rebuild until current round). Otherwise, the application continues normal execution.
+                "rebuildUpToRound": null, // Integer. If this value is defined, the node will start and rebuild up to the defined round (set to 0 to rebuild until current round). Otherwise, the application continues normal execution.
             },
             "exceptions": { // Define network specific exceptions. More details about exceptions: https://github.com/LiskHQ/lisk-sdk/blob/development/lisk/EXCEPTIONS.md
                 "blockRewards": [],
@@ -177,9 +177,8 @@ The `config.json` file and a description of each parameter.
                         "wsPort": 4000 // Port of the Seed Peer.
                     }
                 ],
-                "blacklistedPeers": [ // Peers to exclude from communicating with.
+                "blacklistedPeers": [ // List of peers to exclude from communicating with.
                 	"9.8.7.6:4000", // IP or address of the blacklisted peer.
-                	"4.3.2.1", // Port of the blacklisted peer.
                 ],
                 "ackTimeout": 20000, // When a node tries to make an RPC against a peer (and expects a response), this value determines the maximum amount of time (in milliseconds) that the node will wait to receive a response from the peer. If the peer does not respond in time, then the RPC will fail with an error.
                 "connectTimeout": 5000, // When a node tries to connect to a peer, this value determines the maximum amount of time (in milliseconds) that the node will wait to complete the handshake with the peer. If the peer does not complete the handshake in time, then the connection will be closed.

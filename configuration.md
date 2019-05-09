@@ -280,23 +280,9 @@ The console log level displays the logs directly to the console where the Lisk C
 It is useful for quick debugging or verifying that Lisk Core starts correctly.
 Default log level for the console log stream is `none`.
 
-##### Bunyan CLI-Tool
-
-Bunyan log output is a stream of JSON objects.
-This is great for processing, but not for reading directly.
-Bunyan provides a [CLI-tool](http://trentm.com/node-bunyan/bunyan.1.html) for pretty-printing and filtering the JSON logs for human readers nicely.
-
-1. Start Lisk Core with a console log level low enough to produce logs, e.g. "info".
-2. Pipe the console log output through bunyan and specify the desired filters.
-
+**Example: Display the console log stream:**
 ```bash
-# Example for Lisk Core from Source
-LISK_CONSOLE_LOG_LEVEL="info" npm start | bunyan -l warn # Pretty-print all logs with log level "warn".
-LISK_CONSOLE_LOG_LEVEL="info" npm start | bunyan -c 'this.message.includes("App started")' # Filter for logs that have the string "App started" inside the message field.
-
-# Example for Lisk Core Binary
-bash lisk.sh start | bunyan -l error # Pretty-print all logs with log level "error".
-bash lisk.sh start | bunyan -c 'this.message.includes("App started")' # Filter for logs that have the string "App started" inside the message field.
+npm start | npx bunyan  # Pretty-prints console logs with log level equal or higher to the console log level.
 ```
 
 For more information about the Bunyan CLI tool, please check out the official [Bunyan Documentation](http://trentm.com/node-bunyan/bunyan.1.html).

@@ -3,7 +3,7 @@
 - [Pre-Installation](#pre-install)
   1. [Open necessary ports](#open-necessary-ports)
   2. [Create a new user](#create-a-new-user)
-  3. [Install Tool chain components](#tool-chain-components)
+  3. [Install Tool chain components](#toolchain-components)
   4. [Git](#git)
   5. [Node.js](#nodejs)
      * [Node version manager](#node-version-manager)

@@ -62,7 +62,7 @@ A **pure blockchain application** has no central data storage at all, and all in
 
 A **hybrid blockchain application** may have certain data stored inside of a blockchain, but might additionally use centralized data storage solutions in certain areas.
 
-#### And why do I need it?
+#### Why do I need a blockchain application?
 
 As described in [What is a blockchain application?](#what-is-a-blockchain-application), blockchain application don't really offer new features, that centralized applications don't already have.
 
@@ -108,6 +108,26 @@ When you have the network up and running as desired, it is time to build a nice 
 
 ### Interact with the network
 
+To interact with the network, the corresponding API queries need to be invoked.
+There are numerous reasons one would like to interact with the network:
+
+- 
+
+#### How?
+
+To interact with an already existing network, choose the way that is most convenient in your use case:
+
+1. Query the API
+Query the API from a public node, or connect to your own private node in order to interact with the network.
+
+2. Lisk Commander
+Lisk Commander is the CLI-tool that let's you interact with the network conveniently through the command line.
+
+3. Lisk Elements
+Lisk Elements is a Javascript library that offers specific packages, like `lisk-api-client` or `lisk-transactions` that help javascript applications to interact with the network.
+
+4. Lisk Hub
+Lisk Hub is the Graphical User Interface (GUI) for normal users to interact with the network.
+It consists of normal wallet functionalities and more extended features, like delegate voting.
+
 ### Contribute to the codebase
-
-

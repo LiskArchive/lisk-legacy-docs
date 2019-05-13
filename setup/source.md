@@ -34,10 +34,10 @@ To connect to the desired network with Lisk Core, please ensure that the corresp
 
 | Network | httpPort(HTTP) | wsPort(TCP) |
 | -----------|-------------|-------------|
-| Mainnet    | 8000         | 8001       |
-| Testnet    | 7000         | 7001       |
-| Betanet    | 5000         | 5001       |
-| Devnet     | 4000         | 5000       |
+| Mainnet    | 8000        | 8001        |
+| Testnet    | 7000        | 7001        |
+| Betanet    | 5000        | 5001        |
+| Devnet     | 4000        | 5000        |
 
 These are the default ports for connecting with the network, they can be altered later in `config.json`. 
 
@@ -259,10 +259,11 @@ su - lisk
 ### Installing Lisk from Source
 
 ```bash
-git clone https://github.com/LiskHQ/lisk-core.git
-cd lisk
+git clone https://github.com/LiskHQ/lisk-core.git # clone the repository
+cd lisk-core                  # navigate into the lisk-core root folder
 git checkout v2.0.0 -b v2.0.0 # check out the latest release tag
-npm ci
+npm ci                        # install dependencies
+npm run build                 # compile packages
 ```
 
 > Please check for latest release on https://github.com/LiskHQ/lisk-core/releases

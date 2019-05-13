@@ -43,7 +43,7 @@ There are several good reasons for it:
 - Create your own **snapshots** of the blockchain
 - **Forge** new blocks (if you are an active delegate)
 
-For the followign user groups, it is recommended to set up an own node:
+For the following user groups, it is recommended to set up an own node:
 
 - Exchanges and other services that rely on a stable API interface to the network.
 - Registered Delegates, who would like forge actively.
@@ -56,9 +56,20 @@ To become a node operator, you need to setup [Lisk Core](../lisk-core/introducti
 #### What is a blockchain application?
 
 Blockchain applications are applications that communicate with a blockchain network in the background.
-
 This blockchain network can be used as decentralized database layer to create, read, update or delete data within the system.
 
+A **pure blockchain application** has no central data storage at all, and all information that is needed to perform its actions is actually stored within the blockchain itself.
+
+A **hybrid blockchain application** may have certain data stored inside of a blockchain, but might additionally use centralized data storage solutions in certain areas.
+
+#### And why do I need it?
+
+As described in [What is a blockchain application?](#what-is-a-blockchain-application), blockchain application don't really offer new features, that centralized applications don't already have.
+
+What distincts them is the level of trust, the user needs to have in the maintainers of the particular application.
+
+Depending on the use case and service that the application is offering, users could have an interest in trustless interaction with an application.
+If you plan to develop an application, that is putting a lot of power into the maintainers hands, it could be a trustbuilding decision to develop these crucial parts as part of a blockchain application. 
 
 #### How to build a blockchain application
 
@@ -69,31 +80,31 @@ The Lisk SDK consists of the following tools:
 - [Lisk Elements](../lisk-sdk/lisk-elements/introduction.md)
 - [Lisk Commander](../lisk-sdk/lisk-commander/introduction.md)
 
-The Lisk Framework consists of a selection of various modules, which each provide a specific functionality or logic related to blockchain networks.
-The different modules are the building blocks for the backend your blockchain application.
+The Lisk Framework consists of a selection of various Modules, which each provide a specific functionality or logic related to blockchain networks.
+The different Modules are the building blocks for the backend your blockchain application.
 These building blocks can be assembled as desired to create a custom network, that is optimized to work seamlessly with your blockchain application.
 
 1. Setup the Framework<br>
 To get started in building your own blockchain application, set up the [Lisk Framework](../lisk-sdk/lisk-framework/introduction.md).
-The modules come with a set of predefined default configuration, that let you start and test out your own network immediately.
+The Modules come with a set of predefined default configuration, that let you start and test out your own network immediately.
 
-2. Configure the modules<br>
-After the first successful start, feel free to configure, exchange or extend the modules, suited to your specific needs.
+2. Configure the Modules<br>
+After the first successful start, feel free to configure, exchange or extend the Modules, suited to your specific needs.
 
-3. Write own modules<br>
-It is also possible to create own custom modules from scratch, if needed.
+3. Write own Modules<br>
+It is also possible to create own custom Modules from scratch, if needed.
 For convenience, you may reuse the packages of [Lisk Elements](../lisk-sdk/lisk-elements/introduction.md) which provide related functionalities for creating blockchain applications, like cryptography.
 Beside this, the **Lisk Framework** offers [Components](../lisk-sdk/lisk-framework/introduction.md).
-Components consist of functionalities that are useful for most modules, and provide an easy to use interface to perform actions on the application as a whole.
-<br>The [Lisk Framework](../lisk-sdk/lisk-framework/introduction.md) initializes the modules and controls their communication between each other and with the application as a whole.
-To do this, each module creates its' own communication channel, where it can publish events that it wants to share with the whole application.
-Modules can passively listen to certain events that have been published by other modules, or they can actively ask for information from other modules.
+Components consist of functionalities that are useful for most Modules, and provide an easy to use interface to perform actions on the application as a whole.
+<br>The [Lisk Framework](../lisk-sdk/lisk-framework/introduction.md) initializes the Modules and controls their communication between each other and with the application as a whole.
+To do this, each Module creates its' own communication channel, where it can publish events that it wants to share with the whole application.
+Modules can passively listen to certain events that have been published by other Modules, or they can actively ask for information from other Modules.
 
 4. Interact with your network<br>
 While your network is up and running, use [Lisk Commander](../lisk-sdk/lisk-commander/introduction.md) to interact with the network via the CLI (Command-Line-Interface).
 
 5. Build the frontend<br>
-When you have the network up and running as desired, it is time to build a nice frontend for your application, so that users are satisfied using it.
+When you have the network up and running as desired, it is time to build a nice frontend for your application, so that users are happy to use it.
 
 ### Interact with the network
 

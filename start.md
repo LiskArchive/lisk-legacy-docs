@@ -2,7 +2,8 @@
 
 Welcome to the Lisk documentation!
 
-Beside the **Lisk Protocol**, you find all you need to **setup, run and configure** the different parts of the **Lisk ecosystem**.
+Here you will find all you need to **setup, run and configure**  a Lisk Node and join the network. 
+We also describe the **Lisk Protocol**  and **Lisk products**.
 
 ## The Lisk Protocol
 
@@ -14,17 +15,16 @@ The protocol defines these rules without focus on concrete implementation, and i
 
 Currently, the official implementations of the Lisk protocol are [Lisk Core](../lisk-core/introduction.md) and [Lisk Elements](../lisk-sdk/lisk-elements/introduction.md), which are written in Javascript and Typescript.
 
-## The Lisk ecosystem
+## Lisk products
 
-The Lisk Ecosystem consists of a set of modular software products that provide developers with all the tools they need to develop their own custom blockchain applications.
-It also consists of software that is needed to maintain and monitor the Lisk Main network.
 
 Tool                                                         | Description
 ------------------------------------------------------------ | --------------------------------------------------
-[Lisk SDK](../lisk-sdk/introduction.md) > [Lisk Framework](../lisk-sdk/lisk-framework/introduction.md) | Modular set of building blocks with specific blockchain related functionality.
-[Lisk SDK](../lisk-sdk/introduction.md) > [Lisk Elements](../lisk-sdk/lisk-elements/introduction.md)   | JS library for interacting with the network.
-[Lisk SDK](../lisk-sdk/introduction.md) > [Lisk Commander](../lisk-sdk/lisk-commander/introduction.md) | CLI-tool to interact with the network.
-[Lisk Hub](../lisk-hub/introduction.md)                      | UI for users to interact with the network, e.g. to manage their accounts, or to send or receive tokens.
+[Lisk SDK](../lisk-sdk/introduction.md) |  Set of modular software products that provide developers with all the tools they need to develop their own custom blockchain applications.
+[Lisk SDK](../lisk-sdk/introduction.md) > [Lisk Framework](../lisk-sdk/lisk-framework/introduction.md) | Modular set of building blocks with specific, blockchain-related, functionality.
+[Lisk SDK](../lisk-sdk/introduction.md) > [Lisk Elements](../lisk-sdk/lisk-elements/introduction.md)   | Set of libraries implementing Lisk protocol, contains all of the cryptography tools you may need to implement Lisk network interactions into your application.
+[Lisk SDK](../lisk-sdk/introduction.md) > [Lisk Commander](../lisk-sdk/lisk-commander/introduction.md) | Command line tool to interact with the network and maintain a node.
+[Lisk Hub](../lisk-hub/introduction.md)                      | Lisk wallet and UI tool for users to interact with the network, e.g. to manage their accounts, send or receive tokens or vote for delegates.
 [Lisk Core](../lisk-core/introduction.md)                    | The software needed to run a node on the Lisk Mainchain.
 [Lisk Service](../lisk-service/introduction.md)              | Extended API interface for Lisk nodes and the extended network.
 
@@ -38,7 +38,7 @@ Great!
 
 There are several good reasons for it:
 
-- Have your **private entry point** to [communicate](../lisk-core/api) with the network
+- Have your **private entry point** to [communicate](../lisk-core/api) with the network, it's important if you are an **exchange** implementing LSK tokens.
 - **Full control** to [configure](../lisk-core/configuration.md) your node to your specific needs
 - Create your own **snapshots** of the blockchain
 - **Forge** new blocks (if you are an active delegate)
@@ -55,12 +55,9 @@ To become a node operator, you need to setup [Lisk Core](../lisk-core/introducti
 
 #### What is a blockchain application?
 
-Blockchain applications are applications that communicate with a blockchain network in the background.
-This blockchain network can be used as decentralized database layer to create, read, update or delete data within the system.
+Blockchain applications communicate within a network to agree upon which data is valid and should be stored and which should be rejected and bad actors potentially punished. The set of blockchain rules is already implemented by Lisk modules and libraries. By re-using them and implementing well-designed Lisk SDK Framework it's easy to compose new case-specific applications. Explore more great content of [Blockchain Business](https://lisk.io/academy/blockchain-business) in [Lisk Academy](https://lisk.io/academy).
 
-A **pure blockchain application** has no central data storage at all, and all information that is needed to perform its actions is actually stored within the blockchain itself.
 
-A **hybrid blockchain application** may have certain data stored inside of a blockchain, but might additionally use centralized data storage solutions in certain areas.
 
 #### And why do I need it?
 

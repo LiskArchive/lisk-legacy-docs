@@ -103,6 +103,18 @@ To interact with an already existing network, choose the way that is most conven
 [Lisk Hub](https://lisk.io/hub) is the Graphical User Interface (GUI) for normal users to interact with the network.
 It consists of normal wallet functionalities and more extended features, like delegate voting.
 
+### Get to know Lisk Protocol
+
+The [Lisk Protocol](../lisk-protocol/introduction.md) is a formal set of rules of the Lisk blockchain.
+
+It consists of rules about the [P2P communication](https://lisk.io/academy/blockchain-basics/how-does-blockchain-work/what-is-a-peer-to-peer-network), block and transaction formats, the [consensus algorithm](https://lisk.io/academy/blockchain-basics/how-does-blockchain-work/consensus-protocols), and of rules how [signatures](https://lisk.io/academy/blockchain-basics/how-does-blockchain-work/digital-signatures) and IDs are computed and verified.
+
+The Lisk protocol is constantly evolving. The discussions about planned changed takes place at [research.lisk.io](https://research.lisk.io), the result of the discussions in reflected LIPs (Lisk Improvement Proposals) at [LIPs Github repository](https://github.com/LiskHQ/lips) and later as part of documentation on official [Lisk documentation](https://docs.lisk.io).
+
+The protocol defines these rules without a focus on concrete implementation, and it is, therefore, possible to implement it in any compatible programming language.
+
+Currently, the official implementations of the Lisk protocol are [Lisk Core](../lisk-core/introduction.md), [Lisk Framework](../lisk-sdk/lisk-framework/introduction.md) and [Lisk Elements](../lisk-sdk/lisk-elements/introduction.md), which are written in Javascript and Typescript.
+
 ### Contribute to the project
 
 First off, thanks for taking the time to contribute!
@@ -114,13 +126,3 @@ There are several ways how to participate in the Lisk project:
 Contribute to the protocol | Discuss future changes of the protocol with the Science team on [research.lisk.io](https://research.lisk.io/).
 Contribute to the codebase | [LiskHQ Github](https://github.com/LiskHQ) is the place to be! Be sure to follow our [Contribution Guidelines](https://github.com/LiskHQ/lisk-sdk/blob/development/docs/CONTRIBUTING.md) before submitting any code.
 Give feedback              | For general feedback, please use [Lisk on Reddit](https://www.reddit.com/r/Lisk/) or [Lisk Chat](https://lisk.chat/), and [Gitter](https://gitter.im/LiskHQ/lisk) for technical questions and feedback.
-
-## The Lisk Protocol
-
-The [Lisk Protocol](../lisk-protocol/introduction.md) is a formal set of rules of the Lisk blockchain.
-
-It consists of rules about the [P2P communication](https://lisk.io/academy/blockchain-basics/how-does-blockchain-work/what-is-a-peer-to-peer-network), block and transaction formats, the [consensus algorithm](https://lisk.io/academy/blockchain-basics/how-does-blockchain-work/consensus-protocols), and of rules how [signatures](https://lisk.io/academy/blockchain-basics/how-does-blockchain-work/digital-signatures) and IDs are computed and verified.
-
-The protocol defines these rules without a focus on concrete implementation, and it is, therefore, possible to implement it in any compatible programming language.
-
-Currently, the official implementations of the Lisk protocol are [Lisk Core](../lisk-core/introduction.md), [Lisk Framework](../lisk-sdk/lisk-framework/introduction.md) and [Lisk Elements](../lisk-sdk/lisk-elements/introduction.md), which are written in Javascript and Typescript.

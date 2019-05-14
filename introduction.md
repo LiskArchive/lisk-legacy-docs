@@ -144,66 +144,6 @@ To load a module in a child process, make sure you have `ipc` enabled in the [co
 
 Multiple modules can be defined by using commas like: `LISK_CHILD_PROCESS_MODULES=httpApi,chain`.
 
-The following methods are available for every module to use:
-
-##### `subscribe`
-
-Used to subscribe to events occurring on the controller.
-
-```js
-channel.subscribe("moduleAlias:someEvent", eventObject => {});
-```
-
-This function accepts two arguments.
-The first is the event name prefixed with the name of the relevant module.
-The second argument is a callback which accepts one argument, which will be an instance of an [event object](#specification_channels_event).
-
-##### `publish`
-
-Used to publish events to the controller, which will be delivered to all events subscribers.
-
-```js
-channel.publish('myModule:myContext:myEvent', eventObject);
-```
-
-This function accepts two arguments.
-The first one is the event name prefixed with the name of the relevant module.
-The second argument is the data object to be passed along the event.
-
-##### `invoke`
-
-Used to invoke an action for a module.
-
-```js
-result = await channel.invoke('moduleAlias:someEvent', actionObject);
-```
-
-This function accepts two arguments.
-The first one is the event name prefixed with the name of the relevant module.
-The second argument is the data object to be passed along the action.
-
-##### Event objects
-
-An event object is a simple JavaScript object with the following attributes.
-
-| Property | Type   | Description                                                  |
-| -------- | ------ | ------------------------------------------------------------ |
-| name     | string | The name of the event which is triggered.                    |
-| module   | string | The name of the target module for which event was triggered. |
-| source   | string | The name of source module which published that event.        |
-| data     | mixed  | The data which was sent while publishing the event.          |
-
-##### Action objects
-
-An action object is a simple javascript object with attributes listed below.
-
-| Property | Type   | Description                                                       |
-| -------- | ------ | ----------------------------------------------------------------- |
-| name     | string | Name of the action which is invoked.                              |
-| module   | string | The name of the target module for which action was invoked.       |
-| source   | string | The name of source module which invoked that action.              |
-| params   | mixed  | The data which was associated with the invocation for the action. |
-
 #### Module Life Cycle
 
 The [controller](#controller) will load/unload each module one after another.
@@ -231,6 +171,66 @@ By default, modules will load in the same process as the controller.
 #### Child Process Channel
 
 Communicates with modules which do not reside in the same process as the Controller.
+
+The following methods are available for every module to use:
+
+#### `subscribe`
+
+Used to subscribe to events occurring on the controller.
+
+```js
+channel.subscribe("moduleAlias:someEvent", eventObject => {});
+```
+
+This function accepts two arguments.
+The first is the event name prefixed with the name of the relevant module.
+The second argument is a callback which accepts one argument, which will be an instance of an [event object](#specification_channels_event).
+
+#### `publish`
+
+Used to publish events to the controller, which will be delivered to all events subscribers.
+
+```js
+channel.publish('myModule:myContext:myEvent', eventObject);
+```
+
+This function accepts two arguments.
+The first one is the event name prefixed with the name of the relevant module.
+The second argument is the data object to be passed along the event.
+
+#### `invoke`
+
+Used to invoke an action for a module.
+
+```js
+result = await channel.invoke('moduleAlias:someEvent', actionObject);
+```
+
+This function accepts two arguments.
+The first one is the event name prefixed with the name of the relevant module.
+The second argument is the data object to be passed along the action.
+
+#### Event objects
+
+An event object is a simple JavaScript object with the following attributes.
+
+| Property | Type   | Description                                                  |
+| -------- | ------ | ------------------------------------------------------------ |
+| name     | string | The name of the event which is triggered.                    |
+| module   | string | The name of the target module for which event was triggered. |
+| source   | string | The name of source module which published that event.        |
+| data     | mixed  | The data which was sent while publishing the event.          |
+
+#### Action objects
+
+An action object is a simple javascript object with attributes listed below.
+
+| Property | Type   | Description                                                       |
+| -------- | ------ | ----------------------------------------------------------------- |
+| name     | string | Name of the action which is invoked.                              |
+| module   | string | The name of the target module for which action was invoked.       |
+| source   | string | The name of source module which invoked that action.              |
+| params   | mixed  | The data which was associated with the invocation for the action. |
 
 ### Controller
 
@@ -288,12 +288,6 @@ The storage component is responsible for all database activity in the system.
 It exposes an interface with specific features for getting or setting particular database entities and a raw handler to the database object so that any module can extend it for its own use.
 
 Find more details about the storage component in the dedicated [LIP](https://github.com/LiskHQ/lips/blob/master/proposals/lip-0011.md).
-
-#### System
-
-The system component provides per-module system information. Each module is responsible for keeping the information up-to-date.
-
-It holds the variables and constants critical for the whole application, possibly affecting other modules. For now, those are: "os", "version", "wsPort", "httpPort", "minVersion", "protocolVersion", "height", "nethash", "broadhash" and "nonce".
 
 ## Get Involved
 

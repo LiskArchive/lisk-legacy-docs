@@ -261,7 +261,7 @@ We use [Bunyan](https://github.com/trentm/node-bunyan) as logging library. Bunya
 
 | Log Level | Description                                                                                                                 |
 | ----------| ----------------------------------------------------------------------------------------------------------------------------|
-| None(>60) | No events are logged.                                                                                                       |
+| None      | No events are logged.                                                                                                       |
 | Fatal(60) | The node is going to stop or become unusable now. An operator should definitely look into this soon.                        |
 | Error(50) | Fatal for a particular request, but the node continues servicing other requests. An operator should look at this soon(ish). |
 | Warn(40)  | A note on something that should probably be looked at by an operator eventually.                                            |

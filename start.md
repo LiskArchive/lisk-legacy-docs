@@ -13,9 +13,7 @@ Tool                                                         | Description
 [Lisk SDK](../lisk-sdk/introduction.md) > [Lisk Framework](../lisk-sdk/lisk-framework/introduction.md) | Modular set of building blocks with specific, blockchain-related, functionality.
 [Lisk SDK](../lisk-sdk/introduction.md) > [Lisk Elements](../lisk-sdk/lisk-elements/introduction.md)   | Set of libraries, that are implementing Lisk protocol. Contains all of the cryptography tools you may need to implement Lisk network interactions into your application.
 [Lisk SDK](../lisk-sdk/introduction.md) > [Lisk Commander](../lisk-sdk/lisk-commander/introduction.md) | Command line tool to interact with the network and maintain a node.
-[Lisk Hub](../lisk-hub/introduction.md)                      | Lisk wallet and UI tool for users to interact with the network, e.g. to manage their accounts, send or receive tokens or vote for delegates.
 [Lisk Core](../lisk-core/introduction.md)                    | The software needed to run a node on the Lisk Mainchain.
-[Lisk Service](../lisk-service/introduction.md)              | Extended API interface for Lisk nodes and the extended network.
 
 ## Getting started
 

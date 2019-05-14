@@ -97,7 +97,7 @@ To interact with an already existing network, choose the way that is most conven
 [Lisk Commander](../lisk-sdk/lisk-commander/introduction.md) is the CLI-tool that lets you interact with the network conveniently through the command line.
 
 **C. Lisk Elements**<br>
-[Lisk Elements](../lisk-sdk/lisk-elements/introduction.md) is a collection of Javascript libraries, like [lisk-api-client](../lisk-sdk/lisk-elements/packages/api-client.md) or [lisk-transactions](../lisk-sdk/lisk-elements/packages/transactions.md) that help applications to interact with the network.
+[Lisk Elements](../lisk-sdk/lisk-elements/introduction.md) is a collection of Javascript libraries like [lisk-api-client](../lisk-sdk/lisk-elements/packages/api-client.md) or [lisk-transactions](../lisk-sdk/lisk-elements/packages/transactions.md) that help applications to interact with the network.
 
 **D. Lisk Hub**<br>
 [Lisk Hub](https://lisk.io/hub) is the Graphical User Interface (GUI) for normal users to interact with the network.

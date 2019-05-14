@@ -62,7 +62,7 @@ These building blocks can be assembled as desired to create a custom network, th
 
 **1. Setup the Framework**<br>
 To get started in building your own blockchain application, set up [Lisk Framework](../lisk-sdk/lisk-framework/introduction.md).
-The Modules come with a set of predefined default configuration, that let you start and test out your own network immediately.
+The Modules come with a set of predefined default configurations, that let you start and test out your own network immediately.
 
 **2. Configure the Modules**<br>
 After the first successful start, feel free to configure, exchange or extend the Modules, suited to your specific needs.
@@ -78,13 +78,13 @@ Components consist of functionalities that are useful for most Modules, and prov
 To do this, each Module creates its' own communication channel, where it can publish events that it wants to share with the whole application.
 Modules can passively listen to certain events that have been published by other Modules, or they can actively ask for information from other Modules.
 
-**4. Interact with your network**<br>
+**4. Build the frontend**<br>
 While your network is up and running, use [Lisk Commander](../lisk-sdk/lisk-commander/introduction.md) to interact with the network via the CLI (Command-Line-Interface).
 
-See other alternative ways in section [Interact with the network](#interact-with-the-network).
+When everything works as expected, it is time to build a nice frontend for your application, so that users are happy to use it.
+To let your frontend interact with the network, make use of Lisk Elements' packages like [lisk-api-client](../lisk-sdk/lisk-elements/packages/api-client.md).
 
-**5. Build the frontend**<br>
-When you have the network up and running as desired, it is time to build a nice frontend for your application, so that users are happy to use it.
+See other alternative ways in section [Interact with the network](#interact-with-the-network).
 
 ### Interact with the network
 

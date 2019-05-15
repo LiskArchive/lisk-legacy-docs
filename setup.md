@@ -23,7 +23,7 @@ NVM is a bash script that enables you to manage multiple active Node.js versions
 1. Install nvm following these [instructions](https://github.com/creationix/nvm#installation)
 3. Install the correct version of Node.js using NVM:
 ```bash
-nvm install 10.14.1
+nvm install 10.15.3
 ```
 
 #### Node.js package
@@ -38,7 +38,7 @@ sudo apt-get install -y nodejs
 ##### MacOS
 
 ```bash
-brew install node@10.14.1
+brew install node@10.15.3
 ```
 
 ## Installation

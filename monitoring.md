@@ -1,7 +1,7 @@
 # Log Monitoring
 
-The [log files](configuration.md#file-log-stream) provide a chronological list of all events that happened on a node.
-These events can be analyzed further in order to provide monitoring for a particular node or for the network in general.
+The [log files](configuration.md#file-log-stream) provide a chronological list of activities that happened on a node.
+These activities can be analyzed further in order to provide monitoring for a particular node or for the network in general.
 As the logs are created in JSON format, it is possible to pipe the log messages to additional monitoring software.
 With a monitoring software, the node operator can filter automatically for certain events and visualize them through a frontend application.
 Also, it could be used to send notifications to the operator, in case of an emergency.

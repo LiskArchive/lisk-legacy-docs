@@ -251,7 +251,7 @@ To verify all you have properly configured your node, open the web client using 
 
 ## Logging 
 
-For monitoring or debugging your node, Lisk Core tracks all important events that happen on the node by creating log messages for them.
+For monitoring or debugging your node, Lisk Core tracks all activity that happen in the node by creating log messages for them.
 
 These log messages are grouped in different log levels, which makes it easy to define the level of detail for the logs.
 

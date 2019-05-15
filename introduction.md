@@ -50,7 +50,7 @@ The following dependencies need to be installed in order to run applications cre
 
 | Dependencies     | Version |
 | ---------------- | ------- |
-| Node.js          | 10.14.3 |
+| Node.js          | 10.15.3 |
 | PostgreSQL       | 10+     |
 | Redis (optional) | 5+      |
 
@@ -61,7 +61,7 @@ You can find further details on installing these dependencies in our [pre-instal
 To start using the Lisk SDK you need to install one NPM package - [lisk-framework](https://www.npmjs.com/package/lisk-framework):
 
 ```bash
-npm install lisk-framework@alpha
+npm install lisk-sdk@alpha
 ```
 
 ## Get Involved

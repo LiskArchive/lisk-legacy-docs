@@ -100,7 +100,7 @@ su - lisk
 2. Install nvm following these [instructions](https://github.com/creationix/nvm#installation)
 3. Install the correct version of Node.js using nvm:
 ```bash
-nvm install 10.14.1
+nvm install 10.15.3
 ```
 
 For the following steps, log out from the `lisk` user again with `CTRL+D`, and continue with your user with sudo rights.
@@ -119,7 +119,7 @@ sudo apt-get install -y nodejs
 #### MacOS
 
 ```bash
-brew install node@10.14.1
+brew install node@10.15.3
 ```
 
 ### PostgreSQL (version 10)

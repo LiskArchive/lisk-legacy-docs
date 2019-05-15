@@ -1,12 +1,12 @@
 # Log Monitoring
 
 The [log files](configuration.md#file-log-stream) provide a chronological list of activities that happened on a node.
-These activities can be analyzed further in order to provide monitoring for a particular node or for the network in general.
+These activities can be analyzed further to provide monitoring for a particular node or the network in general.
 As the logs are created in JSON format, it is possible to pipe the log messages to additional monitoring software.
-With a monitoring software, the node operator can filter automatically for certain events and visualize them through a frontend application.
+With monitoring software, the node operator can filter automatically for certain events and visualize them through a frontend application.
 Also, it could be used to send notifications to the operator, in case of an emergency.
 
-Suitable for this are all kinds of monitoring softwares that supports log analysis, e.g. [Kibana](https://www.elastic.co/products/kibana), [Grafana](https://grafana.com/) or [Graylog](https://www.graylog.org/).
+Suitable for this are all kinds of monitoring softwares that support log analysis, e.g. [Kibana](https://www.elastic.co/products/kibana), [Grafana](https://grafana.com/) or [Graylog](https://www.graylog.org/).
 
 # Performance Monitoring
 
@@ -69,7 +69,7 @@ services:
       - NEW_RELIC_LICENSE_KEY=XXXXXXXXX
 ```
 
-Then, save your changes to the file and reinitialize Docker, so it can use the new environment variable.
+Then, save your changes to the file and reinitialize Docker so it can use the new environment variable.
 
 ```bash
 docker-compose up -d # (re)start docker containers
@@ -164,7 +164,7 @@ siege -c 10 -t 30m http://127.0.0.1:7000/api/blocks
 
 ### Option 4: Custom script
 
-Feel free to write your own custom scripts and specify the order and amount of actions you want the node to perform during the analysis, depending on a special use case or a scenario you want to benchmark.
+Feel free to write own custom scripts and specify the order and amount of actions you want the node to perform during the analysis, depending on a special use case or a scenario you want to benchmark.
 
 ## Analysis with New Relic 
 

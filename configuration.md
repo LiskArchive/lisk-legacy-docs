@@ -28,63 +28,63 @@ Configurations will be loaded in the following order, each one will override the
 
 For development purposes, use `devnet` as the network option. Other networks are specific to public Lisk networks.
 
-> Don't override any value in above-mentioned files if you need custom configuration. The changes will be overwritten everytime you upgrade Lisk Core.
+> Don't override any value in files mentioned above if you need a custom configuration. The changes will be overwritten every time you upgrade Lisk Core.
 > To use a custom configuration use environment variables or create your own `.json` file and pass it as [command line option](administration/source.md#command-line-options)
 
 The `config.json` file and a description of each parameter.
 
 ```js
 {
-	"app": { // Contains general application configurations.
-		"ipc": {
-			"enabled": true // If true, allows modules to communicate over IPCs (inter-process-channels).
-		}
-	},
-	"components": { // Contains configurations related to components.
-		"logger": { // Contains options for the logger component.
-			"fileLogLevel": "debug", // Minimum loglevel, that should be logged in the log file. Available values: trace, debug, log, info, warn, error, fatal, none.
-			"logFileName": "logs/devnet/lisk.log", // define name and path of the log file.
-			"consoleLogLevel": "info" // Minimum loglevel, that should be logged in the console, when starting the node. Available values: trace, debug, log, info, warn, error, fatal, none.
-		},
-		"storage": { // Contains options for the storage component.
-			"database": "lisk_dev", // The name of the database to use.
-			"min": 1, // Specifies the minimum amount of database handles.
-			"max": 10, // Specifies the maximum amount of database handles.
-			"logFileName": "logs/devnet/lisk_db.log" // Relative path of the log file
-		},
-		"cache": { // Contains options for the cache component.
-			"enabled": true // If true, enables cache.
-		}
-	},
-	"modules": { // Contains configurations related to modules.
-		"http_api": { // Contains options for the api module.
-			"access": { // Contains API access options.
-				"public": true // If true, the API endpoints of the node are available to public.
-			},
-			"httpPort": 4000, // HTTP port, the node listens on.
-		},
-		"chain": { // Contains options for the chain module.
-			"forging": { // Contains forging options for delegates.
-				"force": false, // Forces forging to be on, only used on local development networks.
-				"delegates": [ // List of delegates, who are allowed to forge on this node. To successfully enable forging for a delegate, the publickey and the encrypted passphrase need to be deposited here as JSON object.
-					{
-						"encryptedPassphrase": "iterations=1&salt=476d4299531718af8c88156aab0bb7d6&cipherText=663dde611776d87029ec188dc616d96d813ecabcef62ed0ad05ffe30528f5462c8d499db943ba2ded55c3b7c506815d8db1c2d4c35121e1d27e740dc41f6c405ce8ab8e3120b23f546d8b35823a30639&iv=1a83940b72adc57ec060a648&tag=b5b1e6c6e225c428a4473735bc8f1fc9&version=1",
-						"publicKey": "9d3058175acab969f41ad9b86f7a2926c74258670fe56b37c429c01fca9f2f0f"
-					}
-				],
-				"defaultPassword": "elephant tree paris dragon chair galaxy" // Default password for dummy delegates, only used on local development networks.
-			},
-			"network": { // Contains network options for the node.
-				"wsPort": 5000, // Websocket port, the node communicates over.
-				"list": [ // list of seed nodes, the node will connect to on first startup.
-					{
-						"ip": "127.0.0.1", // IP of the seed node.
-						"wsPort": 5000 // Websocket port of the seed node.
-					}
-				]
-			}
-		}
-	}
+    "app": { // Contains general application configurations.
+        "ipc": {
+            "enabled": true // If true, allows modules to communicate over IPCs (inter-process-channels).
+        }
+    },
+    "components": { // Contains configurations related to components.
+        "logger": { // Contains options for the logger component.
+            "fileLogLevel": "debug", // Minimum log level, that should be logged in the log file. Available values: trace, debug, log, info, warn, error, fatal, none.
+            "logFileName": "logs/devnet/lisk.log", // define name and path of the log file.
+            "consoleLogLevel": "info" // Minimum loglevel, that should be logged in the console, when starting the node. Available values: trace, debug, log, info, warn, error, fatal, none.
+        },
+        "storage": { // Contains options for the storage component.
+            "database": "lisk_dev", // The name of the database to use.
+            "min": 1, // Specifies the minimum amount of database handles.
+            "max": 10, // Specifies the maximum amount of database handles.
+            "logFileName": "logs/devnet/lisk_db.log" // Relative path of the log file
+        },
+        "cache": { // Contains options for the cache component.
+            "enabled": true // If true, enables cache.
+        }
+    },
+    "modules": { // Contains configurations related to modules.
+        "http_api": { // Contains options for the api module.
+            "access": { // Contains API access options.
+                "public": true // If true, the API endpoints of the node are available to public.
+            },
+            "httpPort": 4000, // HTTP port, the node listens on.
+        },
+        "chain": { // Contains options for the chain module.
+            "forging": { // Contains forging options for delegates.
+                "force": false, // Forces forging to be on, only used on local development networks.
+                "delegates": [ // List of delegates, who are allowed to forge on this node. To successfully enable forging for a delegate, the publickey and the encrypted passphrase need to be deposited here as JSON object.
+                    {
+                        "encryptedPassphrase": "iterations=1&salt=476d4299531718af8c88156aab0bb7d6&cipherText=663dde611776d87029ec188dc616d96d813ecabcef62ed0ad05ffe30528f5462c8d499db943ba2ded55c3b7c506815d8db1c2d4c35121e1d27e740dc41f6c405ce8ab8e3120b23f546d8b35823a30639&iv=1a83940b72adc57ec060a648&tag=b5b1e6c6e225c428a4473735bc8f1fc9&version=1",
+                        "publicKey": "9d3058175acab969f41ad9b86f7a2926c74258670fe56b37c429c01fca9f2f0f"
+                    }
+                ],
+                "defaultPassword": "elephant tree paris dragon chair galaxy" // Default password for dummy delegates, only used on local development networks.
+            },
+            "network": { // Contains network options for the node.
+                "wsPort": 5000, // Websocket port, the node communicates over.
+                "list": [ // list of seed nodes, the node will connect to, on the first startup.
+                    {
+                        "ip": "127.0.0.1", // IP of the seed node.
+                        "wsPort": 5000 // Websocket port of the seed node.
+                    }
+                ]
+            }
+        }
+    }
 }
 ```
 
@@ -103,7 +103,7 @@ Controlling access to a node plays a vital role in security. The following confi
 
 The recommended setup is to configure a whitelist for only trusted IP addresses, such as your home connection. Use IPV4 addresses only as the whitelist does not support IPV6. 
 
-To setup a public wallet, simply leave the `api.access.whitelist` array empty.
+To set up a public wallet, simply leave the `api.access.whitelist` array empty.
 
 For best security, disable all access setting `api.enabled` to `false`.
 
@@ -251,7 +251,7 @@ To verify all you have properly configured your node, open the web client using 
 
 ## Logging 
 
-For monitoring or debugging your node, Lisk Core tracks all activity that happen in the node by creating log messages for them.
+For monitoring or debugging your node, Lisk Core tracks all activity that happens in the node by creating log messages for them.
 
 These log messages are grouped in different log levels, which makes it easy to define the level of detail for the logs.
 
@@ -265,7 +265,7 @@ We use [Bunyan](https://github.com/trentm/node-bunyan) as logging library. Bunya
 | Fatal(60) | The node is going to stop or become unusable now. An operator should definitely look into this soon.                        |
 | Error(50) | Fatal for a particular request, but the node continues servicing other requests. An operator should look at this soon(ish). |
 | Warn(40)  | A note on something that should probably be looked at by an operator eventually.                                            |
-| Info(30)  | Detail on regular operation.                                                                                                |
+| Info(30)  | Detail on a regular operation.                                                                                                |
 | Debug(20) | Anything else, i.e. too verbose to be included in "info" level.                                                             |
 | Trace(10) | Logging from external libraries used by your node or very detailed application logging.                                     |
 
@@ -289,7 +289,7 @@ For more information about the Bunyan CLI tool, please check out the official [B
 
 #### File log stream
 
-All logs that have equal or higher log levels than the in `config.json` specified file log level, are saved in a `.log`-file for further analysis.
+All logs that have equal or higher log levels than the in `config.json` specified file log level are saved in a `.log`-file for further analysis.
 By default, the generated log files are saved inside of the `logs` folder of Lisk Core.
 Default log level for the file log stream is `info`.
 
@@ -297,7 +297,7 @@ The file log stream is perfect to [monitor the node via logs](monitoring.md#log-
 
 ### Logrotation
 
-It is recommended to setup some form of log rotation for the logfiles of Lisk Core.
+It is recommended to set up some form of log rotation for the log files of Lisk Core.
 If no log rotation is set up, the log files may grow very big over time (depending on the specified file log level), and will eventually exceed the servers' disk space limits.
 
 Ubuntu systems, e.g. provide a service called `logrotate` for this purpose.
@@ -324,8 +324,8 @@ Example values:
         rotate 5                # keep the 5 most recent logs
         maxage 14               # remove logs that are older than 14 days
         compress                # compress old log files
-        delaycompress           # compress the data, after it has been moved
-        missingok               # if no logfile is present, ignore
+        delaycompress           # compress the data after it has been moved
+        missingok               # if no log file is present, ignore
         notifempty              # do not rotate empty log files
 }
 ```

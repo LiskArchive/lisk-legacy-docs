@@ -155,11 +155,6 @@ A modules' life cycle consists of following events in the right order:
 * `channel.moduleAlias:loading:started`
 * `channel.moduleAlias:loading:finished`
 
-**Unloading**
-
-* `channel.moduleAlias:unloading:started`
-* `channel.moduleAlias:unloading:finished`
-
 ### Channels
 
 #### InMemory Channel

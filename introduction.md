@@ -460,10 +460,10 @@ The Lisk Core consists of 4 main technologies:
 Everyone is invited to contribute to the Lisk Core project. We welcome and appreciate all contributions. 
 
 ### Github
-All necessary information can be found on our [Lisk SDK Github](https://github.com/LiskHQ/lisk-sdk).
+All necessary information can be found on our [Lisk Core Github](https://github.com/LiskHQ/lisk-core).
 
 ### Contribution Guidelines
-Please be sure to read and follow our [Contribution Guidelines](https://github.com/LiskHQ/lisk-sdk/blob/development/docs/CONTRIBUTING.md).
+Please be sure to read and follow our [Contribution Guidelines](https://github.com/LiskHQ/lisk-core/blob/master/docs/CONTRIBUTING.md).
 
 ### Gitter
 If you have any further questions please join our [Gitter](https://gitter.im/LiskHQ/lisk).

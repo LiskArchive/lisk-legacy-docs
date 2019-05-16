@@ -76,12 +76,12 @@ sudo usermod -aG docker lisk   # add the user to docker group
 
 ### Get configuration and Makefile
 
-Clone the [Lisk Repository](https://github.com/LiskHQ/lisk). 
+Clone the [Lisk Repository](https://github.com/LiskHQ/lisk-core). 
 
 ```bash
 su - lisk                                    # switch to lisk user
-git https://github.com/LiskHQ/lisk-sdk.git   # clone the repository
-cd lisk/docker                               # navigate into docker directory
+git https://github.com/LiskHQ/lisk-core.git  # clone the repository
+cd docker                                    # navigate into docker directory
 ```
 
 It contains a directory `docker` with the following files:

@@ -3,7 +3,7 @@
 - [Pre-Installation](#pre-install)
   1. [Open necessary ports](#open-necessary-ports)
   2. [Create a new user](#create-a-new-user)
-  3. [Install Tool chain components](#tool-chain-components)
+  3. [Install Tool chain components](#toolchain-components)
   4. [Git](#git)
   5. [Node.js](#nodejs)
      * [Node version manager](#node-version-manager)
@@ -33,10 +33,10 @@ To connect to the desired network with Lisk Core, please ensure that the corresp
 
 | Network | httpPort(HTTP) | wsPort(TCP) |
 | -----------|-------------|-------------|
-| Mainnet    | 8000         | 8001       |
-| Testnet    | 7000         | 7001       |
-| Betanet    | 5000         | 5001       |
-| Devnet     | 4000         | 5000       |
+| Mainnet    | 8000        | 8001        |
+| Testnet    | 7000        | 7001        |
+| Betanet    | 5000        | 5001        |
+| Devnet     | 4000        | 5000        |
 
 These are the default ports for connecting with the network, they can be altered later in `config.json`. 
 
@@ -257,20 +257,20 @@ su - lisk
 
 ### Installing Lisk from Source
 
-Before proceeding, determine whether you wish to connect your node to the Mainnet (Main Network) or Testnet (Test Network).
-
 ```bash
-git clone https://github.com/LiskHQ/lisk-sdk.git
-git checkout v1.1.0 -b v1.1.0 # check out the latest release tag
-npm ci
+git clone https://github.com/LiskHQ/lisk-core.git # clone the repository
+cd lisk-core                  # navigate into the lisk-core root folder
+git checkout v2.0.0 -b v2.0.0 # check out the latest release tag
+npm ci                        # install dependencies
+npm run build                 # compile packages
 ```
 
-> Please check for latest release on https://github.com/LiskHQ/lisk-sdk/releases
+> Please check for latest release on https://github.com/LiskHQ/lisk-core/releases
 
 To test that Lisk Core is built and configured correctly, issue the following command to connect to the network:
 
 ```bash
-npm start # default: connect to Devnet
+npm start # Default: connect to Devnet
 LISK_NETWORK=[network] npm start # Use environment variables to overwrite config values (recommended)
 npm start -- --network [network]  # Use flags to overwrite config values
 ```

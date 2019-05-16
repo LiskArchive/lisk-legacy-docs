@@ -215,7 +215,7 @@ npx pm2 stop lisk # stop Lisk Core node
 dropdb lisk_main # delete Lisk Mainnet database
 wget https://downloads.lisk.io/lisk/main/blockchain.db.gz # download Lisk snapshot
 createdb lisk_main # create fresh Lisk Mainnet database
-gunzip -fcq blockchain.db.gz | psql -d lisk_main # import the downloaded snapshot into the new databse
+gunzip -fcq blockchain.db.gz | psql -d lisk_main # import the downloaded snapshot into the new database
 npx pm2 start lisk # start Lisk Core node again
 ```
 
@@ -251,4 +251,4 @@ npm run docs:serve
 This will start a web server, and the documentation will be accessible through the browser on port 8080, e.g. `localhost:8080`.
 The process will be started inside the terminal. To stop the web server again, hit `CTRL + C`.
 
-For more information please have a look in the [Contribution Guidelines](https://github.com/LiskHQ/lisk-sdk/blob/development/docs/CONTRIBUTING.md) for Lisk Core on Github.
+For more information please have a look in the [Contribution Guidelines](https://github.com/LiskHQ/lisk-core/blob/master/docs/CONTRIBUTING.md) for Lisk Core on Github.

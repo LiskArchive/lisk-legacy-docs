@@ -129,8 +129,8 @@ const { Application, genesisBlockDevnet } = require('lisk-sdk'); // require the 
 const app = new Application(genesisBlockDevnet); // Create a new application with default genesis block for a local devnet
 
 app.run() // start the application
-   .then(() => app.logger.info('App started...')) // Code that shall be executed after the successful start of the application.
-   .catch(error => { // Code that shall be executed, if the application start fails.
+   .then(() => app.logger.info('App started...')) // Code that is executed after the successful start of the application.
+   .catch(error => { // Code that is executed if the application start fails.
         console.error('Faced error in application', error);
         process.exit(1);
 });               
@@ -141,6 +141,9 @@ Now, save and close `index.js` and try to start your newly created blockchain ap
 ```bash
 node index.js # start the application
 ```
+
+This should start the application with predefined default configurations, what will connect your app to a local Devnet.
+From this point, you can start to configure and customize the application further.
 
 ## Contributing to the Alpha SDK
 

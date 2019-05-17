@@ -42,7 +42,14 @@ The diagram below provides a high-level overview of the architecture:
 | [Elements](lisk-elements/introduction.md)   | A collection of libraries, each of them implementing some form of blockchain application functionality such as cryptography, transactions, p2p, etc. |
 | [Commander](lisk-commander/introduction.md) | A command line tool allowing developers to manage a Lisk node instance and interact with a Lisk compatible network.                                  |
 
-## Installation
+## Setup
+
+### Supported Platforms
+
+- Ubuntu 16.04 (LTS) x86_64
+- Ubuntu 18.04 (LTS) x86_64
+- MacOS 10.13 (High Sierra)
+- MacOS 10.14 (Mojave)
 
 ### Dependencies
 
@@ -53,16 +60,92 @@ The following dependencies need to be installed in order to run applications cre
 | Node.js          | 10.15.3 |
 | PostgreSQL       | 10+     |
 | Redis (optional) | 5+      |
+| Python           | 2       |
 
-You can find further details on installing these dependencies in our [pre-installation setup guide](framework/setup.md#pre-install).
+### Pre-Installation
 
-### Installation of the Lisk Framework
+### Node.js
 
-To start using the Lisk SDK you need to install one NPM package - [lisk-framework](https://www.npmjs.com/package/lisk-framework):
+[Node.js](https://nodejs.org/) serves as the underlying engine for code execution.
+There are several different ways and version managers to install Node.JS on your system.
+We recommend one of the following two:
+
+#### Node Version Manager
+
+We recommend using a Node version manager such as [NVM](https://github.com/creationix/nvm).
+NVM is a bash script that enables you to manage multiple active Node.js versions.
+
+1. Install nvm following these [instructions](https://github.com/creationix/nvm#install--update-script)
+3. Install the correct version of Node.js using NVM:
+```bash
+nvm install 10.15.3
+```
+
+#### Node.js package
+
+If you do not want to use NVM or other package managers, you can install the Node package globally on your system alternatively:
+
+##### Ubuntu
 
 ```bash
-npm install lisk-sdk@alpha
+curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
+sudo apt-get install -y nodejs
 ```
+
+##### MacOS
+
+```bash
+brew install node@10.15.3
+```
+
+### Installation
+
+To install the `alpha` version of the NPM package [lisk-sdk](https://www.npmjs.com/package/lisk-sdk), run:
+
+```bash
+npm install lisk-sdk@alpha # install lisk-sdk alpha version 
+npm install --save lisk-sdk@alpha # add --save flag to save it to package.json
+```
+
+### Usage
+
+First steps to start developing your blockchain application:
+
+```bash
+mkdir my-app # create the root folder for your blockchain application
+cd my-app # navigate into the root folder
+npm init # initialize your package.json
+npm install --save lisk-sdk@alpha # install lisk-sdk alpha version and save it to package.json
+touch index.js # create the index file to start the application
+```
+
+Inside of `index.js`, require the `lisk-sdk` package to create and start the application.
+
+Below you see the minimal version of `index.js` that is needed to successfully kick-start the blockchain application:
+
+```js
+const { Application, genesisBlockDevnet } = require('lisk-sdk'); // require the lisk-sdk package
+  
+const app = new Application(genesisBlockDevnet); // Create a new application with default genesis block for a local devnet
+
+app.run() // start the application
+   .then(() => app.logger.info('App started...')) // Code that shall be executed after the successful start of the application.
+   .catch(error => { // Code that shall be executed, if the application start fails.
+        console.error('Faced error in application', error);
+        process.exit(1);
+});               
+```
+
+Now, save and close `index.js` and try to start your newly created blockchain application by running:
+
+```bash
+node index.js # start the application
+```
+
+## Contributing to the Alpha SDK
+
+If you want to contribute directly to the codebase of Lisk SDK, there are a few things to follow:
+
 
 ## Get Involved
 

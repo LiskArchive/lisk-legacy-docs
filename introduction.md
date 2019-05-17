@@ -213,7 +213,6 @@ An event object is a simple JavaScript object with the following attributes.
 | -------- | ------ | ------------------------------------------------------------ |
 | name     | string | The name of the event which is triggered.                    |
 | module   | string | The name of the target module for which event was triggered. |
-| source   | string | The name of source module which published that event.        |
 | data     | mixed  | The data which was sent while publishing the event.          |
 
 #### Action objects

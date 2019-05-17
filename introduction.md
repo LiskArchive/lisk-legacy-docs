@@ -28,7 +28,7 @@
 - [API](api.json)
 - [Troubleshooting](troubleshooting.md)
 
-[![What is Lisk Core?](https://img.youtube.com/vi/RfF9EPwQDOY/0.jpg)](https://www.youtube.com/watch?v=RfF9EPwQDOY)
+## Introduction
 
 Lisk Core is the program that implements the [Lisk Protocol](/lisk-protocol/introduction.md).
 Every machine must set it up to run a node that allows for participation in the network.
@@ -49,6 +49,7 @@ An instance of Lisk Core is generally detailed in two different ways:
 
 Both meanings refer to a machine which, after installing and executing Lisk Core, become a server. The server participates in the network and provides blockchain data to its clients.
 
+[![What is Lisk Core?](https://img.youtube.com/vi/RfF9EPwQDOY/0.jpg)](https://www.youtube.com/watch?v=RfF9EPwQDOY)
 
 ## Versions
 

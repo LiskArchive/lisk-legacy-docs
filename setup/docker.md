@@ -79,9 +79,9 @@ sudo usermod -aG docker lisk   # add the user to docker group
 Clone the [Lisk Repository](https://github.com/LiskHQ/lisk-core). 
 
 ```bash
-su - lisk                                    # switch to lisk user
-git https://github.com/LiskHQ/lisk-core.git  # clone the repository
-cd docker                                    # navigate into docker directory
+su - lisk                                          # switch to lisk user
+git clone https://github.com/LiskHQ/lisk-core.git  # clone the repository
+cd lisk-core/docker                                # navigate into docker directory
 ```
 
 It contains a directory `docker` with the following files:
@@ -118,16 +118,18 @@ Where `{network}` stands for the Lisk network you want to connect to.
 
 #### Option 1: Makefile
 
-We recommend to use the Makefile:
-
-```bash
-make  # will run `docker-compose up` for you
-```
-
+We recommend to use the Makefile.
 Makefile provides a convenient way to [sync your node from snapshot](../administration/docker.md#sync-from-snapshot):
 
 ```bash
-make coldstart  # will download and restore a blockchain snapshot for you
+make coldstart  # will download and sync from a recent blockchain snapshot for you
+```
+
+> **Note:** If you want to synchronize your node starting form the genesis block, it might take a significant amount of time until your local node will be fully syncronized with the blockchain network.
+> We recommend to use "make coldstart" in case you want/need your node ready to use quickly.
+
+```bash
+make  # will sync from genesis block on first start up
 ```
 
 #### Option 2: docker-compose
@@ -137,5 +139,45 @@ docker-compose up -d # initialize Lisk Core
 docker-compose ps    # see the status of Lisk Core
 docker-compose logs  # see logs
 ```
+
+### Verify
+
+As final step, verify your node is connected and in sync with the network, e.g. by asking about your nodes' status by using the API:
+
+```bash
+docker exec <container> curl -X GET "http://localhost:7000/api/node/status" -H "accept: application/json"
+```
+
+Where `<container>` is the docker container, Lisk Core is running in.
+
+The result should look like this:
+
+```json
+{
+  "meta": {},
+  "data": {
+    "broadhash": "ca930994bc1a6a92a47afb7310e3d9903f5e98ce56a6c5fdf444ba34f24c1543",
+    "consensus": 94,
+    "currentTime": 1558358294074,
+    "secondsSinceEpoch": 94249094,
+    "height": 8306047,
+    "loaded": true,
+    "networkHeight": 8306047,
+    "syncing": false,
+    "transactions": {
+      "confirmed": 928836,
+      "unconfirmed": 0,
+      "unprocessed": 0,
+      "unsigned": 0,
+      "total": 928836
+    }
+  },
+  "links": {}
+}
+```
+
+When your node is synced, the values of `networkHeight` and `height` should be (nearly) equal.
+
+From this point, your node should be fully functional.
 
 As next step, check out [Docker Administration](../administration/docker.md) to learn how to manage your Node.

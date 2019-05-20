@@ -60,6 +60,17 @@ make coldstart
 docker-compose logs
 ```
 
+### Run a command
+
+To run a command in the container where your Lisk Core node is running:
+```bash
+docker exec <container> COMMAND # pass any command you want to execute inside the docker container
+docker exec <container> curl -X GET "http://localhost:7000/api/node/status" -H "accept: application/json" # Example: make an API request to your node
+```
+Where `<container>` is the docker container, Lisk Core is running in.
+
+> To get a list of all your available docker containers, execute `docker container ls`
+
 ## Configuration
 
 Lisk Core normally gets configured by providing a suited [configuration file](../configuration.md).

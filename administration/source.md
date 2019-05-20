@@ -161,24 +161,13 @@ If you do not specify `--output` path the final config.json will be printed to s
 If you do not specify `--network` argument you will have to load it from `LISK_NETWORK` env variable.
 
 
-### Console
+### JSON History
 
-This script is useful in development. It will initialize the components of Lisk and load these into Node.JS REPL.
 
-```bash
-Usage: node scripts/console.js
 
-initApplication: Application initialization inside test environment started...
-initApplication: Target database - lisk_dev
-initApplication: Rewired modules available
-initApplication: Fake onBlockchainReady event called
-initApplication: Loading delegates...
-initApplication: Delegates loaded from config file - 101
-initApplication: Done
-lisk-core [lisk_dev] >
-```
+### New Migration
 
-Once you get the prompt, you can use `modules`, `helpers`, `logic`, `db` and `config` objects and play with these in REPL.
+
 
 ## Creating snapshots
 

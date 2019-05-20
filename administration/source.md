@@ -54,9 +54,9 @@ npx pm2 delete lisk
 ### Add
 In case you haven't done this during the Installation process, add your Lisk Core process to pm2 under the name `lisk`.
 ```bash
-npx pm2 start --name lisk src/index.js -- --network [network]
+npx pm2 start --name lisk dist/index.js -- --network [network]
 ```
-Where `[network]` might be either `testnet` or `mainnet`.
+You can pass `devnet` (default), `alphanet`, `betanet`, `testnet` or `mainnet` for the `[network]` option.
 
 ### Logs
 Display Lisk Core logs in streaming.

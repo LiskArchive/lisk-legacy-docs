@@ -61,7 +61,7 @@ Used for compiling dependencies.
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y build-essential
+sudo apt-get install -y build-essential python-minimal
 ```
 
 #### MacOS
@@ -288,7 +288,7 @@ Once the process is verified as running correctly, `CTRL+C` and start the proces
 This will fork the process into the background and automatically recover the process if it fails.
 
 ```bash
-npx pm2 start --name lisk src/index.js -- --network [network]
+npx pm2 start --name lisk dist/index.js -- --network [network]
 ```
 Where `[network]` might be either `devnet` (default), `alphanet`, `betanet`, `testnet` or `mainnet`.
 

@@ -17,7 +17,6 @@ This section details how to manage a Source installation of Lisk Core.
   - [Console](#console)
 - [Creating Snapshots](#creating-snapshots)
 - [Rebuild from Snapshot](#rebuild-from-a-snapshot)
-- [Code documentation in Lisk Core](#code-documentation-in-lisk-core)
 
 ## Basic Commands
 
@@ -229,26 +228,3 @@ createdb lisk_test # create fresh Lisk Testnet database
 gunzip -fcq blockchain.db.gz | psql -d lisk_test # import the downloaded snapshot into the new database
 npx pm2 start lisk # start Lisk Core node again
 ```
-
-## Code documentation in Lisk Core
-
-For code documentation, Lisk Core uses [JSDoc](http://usejsdoc.org/).
-JSDoc generates a static HTML documentation site.
-To build the documentation site, run the following command inside the lisk installation directory:
-
-```bash
-npm run docs:build
-```
-
-The JSDoc documentation is generated inside of `docs/jsdoc/`.
-
-To host the documentation site (e.g. for easy access via a browser), use the following command:
-
-```bash
-npm run docs:serve
-```
-
-This will start a web server, and the documentation will be accessible through the browser on port 8080, e.g. `localhost:8080`.
-The process will be started inside the terminal. To stop the web server again, hit `CTRL + C`.
-
-For more information please have a look in the [Contribution Guidelines](https://github.com/LiskHQ/lisk-core/blob/master/docs/CONTRIBUTING.md) for Lisk Core on Github.

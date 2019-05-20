@@ -12,6 +12,7 @@ A summary of all commands and associated flags has been provided for advanced us
   * [Reload Lisk Core](#reload)
   * [Reset Lisk Core](#reset--coldstart)
   * [Show logs](#logs)
+  * [Run command](#run-a-command)
 - [Configuration](#configuration)
 - [Advanced Configuration](#advanced-configuration)
   * [Examples](#examples)

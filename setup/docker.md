@@ -145,10 +145,10 @@ docker-compose logs  # see logs
 As final step, verify your node is connected and in sync with the network, e.g. by asking about your nodes' status by using the API:
 
 ```bash
-docker exec <container> curl http://localhost:7000/api/node/status --header "accept: application/json"
+docker-compose exec lisk curl http://localhost:<PORT>/api/node/status --header "accept: application/json"
 ```
 
-Where `<container>` is the docker container, Lisk Core is running in.
+Where `<PORT>` is the network specific `httpPort` of your node.
 
 The result should look like this:
 
@@ -177,6 +177,11 @@ The result should look like this:
 ```
 
 When your node is synced, the values of `networkHeight` and `height` should be (nearly) equal.
+
+To fully verify that your node is in sync with the network, go to the [Lisk Explorer(Mainnet)](https://explorer.lisk.io/) or [Lisk Explorer(Testnet)](https://testnet-explorer.lisk.io/) and compare the Network height in the explorer with the height of your node. 
+Again, they should be (nearly) equal.
+
+If needed, use the different Explorer tools for further verification, like comparing the last forged blocks on the chain.
 
 From this point, your node should be fully functional.
 

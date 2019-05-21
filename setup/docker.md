@@ -118,18 +118,18 @@ Where `{network}` stands for the Lisk network you want to connect to.
 
 #### Option 1: Makefile
 
-We recommend to use the Makefile.
+We recommend using the Makefile.
 Makefile provides a convenient way to [sync your node from snapshot](../administration/docker.md#sync-from-snapshot):
 
 ```bash
-make coldstart  # will download and sync from a recent blockchain snapshot for you
+make coldstart  # will download and restore from a recent blockchain snapshot for you
 ```
 
 > **Note:** If you want to synchronize your node starting form the genesis block, it might take a significant amount of time until your local node will be fully syncronized with the blockchain network.
 > We recommend to use "make coldstart" in case you want/need your node ready to use quickly.
 
 ```bash
-make  # will sync from genesis block on first start up
+make  # will sync from genesis block on first startup
 ```
 
 #### Option 2: docker-compose
@@ -145,7 +145,7 @@ docker-compose logs  # see logs
 As final step, verify your node is connected and in sync with the network, e.g. by asking about your nodes' status by using the API:
 
 ```bash
-docker exec <container> curl -X GET "http://localhost:7000/api/node/status" -H "accept: application/json"
+docker exec <container> curl http://localhost:7000/api/node/status --header "accept: application/json"
 ```
 
 Where `<container>` is the docker container, Lisk Core is running in.

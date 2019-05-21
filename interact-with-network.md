@@ -26,11 +26,11 @@ To change this, it is possible to define exclusive [whitelists](../lisk-core/con
 See a list of all commands and their example responses on the [Commands page](../lisk-commander/user-guide/commands.md).
 
 ## 3. Write scripts in Javascript
-[Lisk Elements](../lisk-elements/introduction.md) is a collection of Javascript libraries like lisk-api-client or lisk-transactions that help applications to interact with the network.
+[Lisk Elements](../lisk-elements/introduction.md) is a collection of Javascript libraries that help applications to interact with the network.
 
 On the [Packages page](../lisk-elements/packages.md) of Lisk Elements, all available libraries are listed and documented.
 
-One of the most useful packages in this regard is the [@liskhq/lisk-api-client](../lisk-elements/packages/api-client.md) as it provides a slick interface to interact with the network with Javascript.
+One of the most useful packages in this regard is the [@liskhq/lisk-api-client](../lisk-elements/packages/api-client.md) as it provides a slick interface to interact with the network in Javascript.
 
 ## 4. Use Lisk Hub
 [Lisk Hub](https://lisk.io/hub) is the Graphical User Interface (GUI) to interact with the network.

@@ -13,7 +13,7 @@
 Lisk Framework is an application framework responsible for establishing and maintaining the interactions between the modules of a Lisk blockchain application.
 
 Lisk Framework aims to provide a consistent and intuitive interface between each module and component.
-Currently, Lisk Framework establishes interactions between the `chain`, `api` and `network` modules.
+Currently, Lisk Framework contains `chain`, `api` and `network` modules.
 
 ### Architecture Overview
 

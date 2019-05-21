@@ -32,7 +32,18 @@ It is possible as well to exchange Modules with other ones, or to add new Module
 
 To see which ready-to-use Modules and Components already exist, check out the [list of Modules](../lisk-sdk/lisk-framework/introduction.md#list-of-core-modules) and [list of Components](../lisk-sdk/lisk-framework/introduction.md#components).
 
-#### 2.b Write own Modules
+#### 2.b Design custom transaction types
+Transactions are the main way for users to add data to the blockchain.
+The most basic transaction types that are part of nearly any blockchain are for example a transaction type for creating a new account on the network, or a transaction type to send tokens from one account to another.
+Depending on the use-case for your network, you need to pick the fitting transaction types for your application.
+
+For comparison, see a [list of all transaction types](../lisk-protocol/transactions), which are implemented in the Lisk Protocol.
+
+The Lisk Core transaction types are already implemented in Lisk Elements as part of the [@liskhq/lisk-transactions](../lisk-sdk/lisk-elements/packages/transactions.md) package.
+
+See [Examples]() for creating custom transaction types and how to add them to the application.
+
+#### 2.c Write own Modules
 If a Module with a desired functionality doesn't exist yet, create own [custom Modules](../lisk-sdk/lisk-framework/introduction.md#custom-modules) from scratch if needed.
 
 Lisk Framework provides a [BaseModule](https://github.com/LiskHQ/lisk-sdk/blob/development/framework/src/modules/base_module.js) class for this purpose, which every new module needs to inherit from.
@@ -43,6 +54,8 @@ The `BaseModule` class defines all required methods, the Lisk Framework expects 
 Lisk Framework initializes the Modules and controls their communication between each other and with the application as a whole.
 To do this, each Module creates its' own communication channel, where it can publish events that it wants to share with the whole application.
 Modules can passively listen to certain events that have been published by other Modules, or they can actively ask for information from other Modules.
+
+See [Examples]() for creating custom Modules.
 
 ### 4. Build the frontend
 While your network is up and running, use [Lisk Commander](../lisk-sdk/lisk-commander/introduction.md) to interact with the network via the CLI (Command-Line-Interface).

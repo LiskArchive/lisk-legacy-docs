@@ -17,113 +17,55 @@ Tool                                                         | Description
 
 ## Getting started
 
-### Maintain a node
+For a quick & easy start, we provide getting started Guides for the most common use cases and actions people want to take:
 
-You want to become a node operator?
+Action                                                            | Description                                                                                                               
+ ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ 
+[Maintain a node](maintain-node.md)                               | Deploy your first blockchain node on our Testnet or Mainnet - it’s only one line of code and will take you less than 5 minutes. Get started at [insert docs url]
+[Build a blockchain application](build-blockchain-app.md)         | Introduction for building blockchain applications with the Lisk SDK.
+[Interact with the network](interact-with-network.md)             | Summary of different ways and tools to interact with the blockchain network.
+[Get to know the Lisk Protocol](../lisk-protocol/introduction.md) | Specification of the Lisk Protocol.
 
-Great!
-
-There are several good reasons for it:
-
-- Have your **private entry point** to [communicate](../lisk-core/api) with the network, it's important if you are an **exchange** implementing LSK tokens.
-- **Full control** to [configure](../lisk-core/configuration.md) your node to your specific needs
-- Create your own **snapshots** of the blockchain
-- **Forge** new blocks (if you are an active delegate)
-
-For the following user groups, it is recommended to set up an own node:
-
-- Exchanges and other services that rely on a stable API interface to the network.
-- Registered Delegates, who would like to forge actively.
-- Users who do not trust external sources and want to be in full control.
-
-To become a node operator, you need to set up [Lisk Core](../lisk-core/introduction.md) on a server and connect it to the desired network.
-
-### Build a blockchain application
-
-#### What is a blockchain application?
-
-Blockchain applications communicate within a network to agree upon which data is valid and should be stored, or whether it should be rejected and bad actors potentially punished.
-The set of blockchain rules is already implemented by Lisk modules and libraries.
-By re-using them and implementing the well-designed Lisk SDK Framework, it's easy to compose new case-specific applications.
-Explore more great content of [Blockchain Business](https://lisk.io/academy/blockchain-business) in [Lisk Academy](https://lisk.io/academy).
-
-#### How to build a blockchain application
-
-The [Lisk SDK](../lisk-sdk/introduction.md) provides you with a development framework, that enables developers to create their own custom blockchain applications with ease.
-The Lisk SDK consists of the following tools:
-
-- [Lisk Framework](../lisk-sdk/lisk-framework/introduction.md)
-- [Lisk Elements](../lisk-sdk/lisk-elements/introduction.md)
-- [Lisk Commander](../lisk-sdk/lisk-commander/introduction.md)
-
-The Lisk Framework consists of a selection of various Modules, which each provide specific functionality or logic related to blockchain networks.
-The different Modules are the building blocks for the backend your blockchain application.
-These building blocks can be assembled as desired to create a custom network, that is optimized to work seamlessly with your blockchain application.
-
-**1. Setup the Framework**<br>
-To get started in building your blockchain application, set up [Lisk Framework](../lisk-sdk/lisk-framework/introduction.md).
-The Modules come with a set of predefined default configurations, that let you start and test out your network immediately.
-
-**2. Configure the Modules**<br>
-After the first successful start, feel free to configure, exchange or extend the Modules, suited to your specific needs.
-
-**3. Write own Modules**<br>
-It is also possible to create own custom Modules from scratch if needed.
-Lisk Framework provides a `BaseModule` class for this purpose, which every new module needs to inherit from.
-The `BaseModule` class defines all required methods, the Lisk Framework expects for successful communication to the application or to other Modules.
-For convenience, you may want to reuse the packages of [Lisk Elements](../lisk-sdk/lisk-elements/introduction.md) which provide related functionalities for creating blockchain applications, like [lisk-cryptography](../lisk-sdk/lisk-elements/packages/cryptography.md).
-Beside this, **Lisk Framework** offers [Components](../lisk-sdk/lisk-framework/introduction.md).
-Components consist of functionalities that are useful for most Modules and provide an easy to use interface to perform actions on the application as a whole.
-<br>Lisk Framework initializes the Modules and controls their communication between each other and with the application as a whole.
-To do this, each Module creates its' own communication channel, where it can publish events that it wants to share with the whole application.
-Modules can passively listen to certain events that have been published by other Modules, or they can actively ask for information from other Modules.
-
-**4. Build the frontend**<br>
-While your network is up and running, use [Lisk Commander](../lisk-sdk/lisk-commander/introduction.md) to interact with the network via the CLI (Command-Line-Interface).
-
-When everything works as expected, it is time to build a nice frontend for your application, so that users are happy to use it.
-To let your frontend interact with the network, make use of Lisk Elements' packages like [lisk-api-client](../lisk-sdk/lisk-elements/packages/api-client.md).
-
-See other alternative ways in section [Interact with the network](#interact-with-the-network).
-
-### Interact with the network
-
-To interact with an already existing network, choose the way that is most convenient in your use case:
-
-**A. Query the API**<br>
-[Query the API](https://lisk.io/documentation/lisk-core/api) manually from a public node, or connect to your own private node to interact with the network.
-
-**B. Lisk Commander**<br>
-[Lisk Commander](../lisk-sdk/lisk-commander/introduction.md) is the CLI-tool that lets you interact with the network conveniently through the command line.
-
-**C. Lisk Elements**<br>
-[Lisk Elements](../lisk-sdk/lisk-elements/introduction.md) is a collection of Javascript libraries like [lisk-api-client](../lisk-sdk/lisk-elements/packages/api-client.md) or [lisk-transactions](../lisk-sdk/lisk-elements/packages/transactions.md) that help applications to interact with the network.
-
-**D. Lisk Hub**<br>
-[Lisk Hub](https://lisk.io/hub) is the Graphical User Interface (GUI) for normal users to interact with the network.
-It consists of normal wallet functionalities and more extended features, like delegate voting.
-
-### Get to know the Lisk Protocol
-
-The [Lisk Protocol](../lisk-protocol/introduction.md) is a formal set of rules of the Lisk blockchain.
-
-It consists of rules about the [P2P communication](https://lisk.io/academy/blockchain-basics/how-does-blockchain-work/what-is-a-peer-to-peer-network), block and transaction formats, the [consensus algorithm](https://lisk.io/academy/blockchain-basics/how-does-blockchain-work/consensus-protocols), and of rules how [signatures](https://lisk.io/academy/blockchain-basics/how-does-blockchain-work/digital-signatures) and IDs are computed and verified.
-
-The Lisk protocol is constantly evolving. The discussions about planned changed take place at [research.lisk.io](https://research.lisk.io) and are open to the public.
-The result of the discussions in reflected LIPs (Lisk Improvement Proposals) at [LIPs Github repository](https://github.com/LiskHQ/lips) and later as part of the official [Lisk documentation](https://docs.lisk.io).
-
-The protocol defines these rules without a focus on concrete implementation, and it is, therefore, possible to implement it in any compatible programming language.
-
-Currently, the official implementations of the Lisk protocol are [Lisk Core](../lisk-core/introduction.md), [Lisk Framework](../lisk-sdk/lisk-framework/introduction.md) and [Lisk Elements](../lisk-sdk/lisk-elements/introduction.md), which are written in Javascript and Typescript.
-
-### Contribute to the project
+## Contribute to the project
 
 First off, thanks for taking the time to contribute!
+There are several ways you can participate in the Lisk project:
 
-There are several ways how to participate in the Lisk project:
+ How                                                                                   | Where
+-------------------------------------------------------------------------------------  | -------------------------------------------------------------------------------------------------------------------
+[Contribute to the codebase](https://github.com/LiskHQ/lisk-sdk)                       | [LiskHQ Github](https://github.com/LiskHQ) is the place to be! Be sure to follow our [Contribution Guidelines](https://github.com/LiskHQ/lisk-sdk/blob/development/docs/CONTRIBUTING.md) before submitting any code.
+[Contribute to the documentation](https://github.com/LiskHQ/lisk-docs/)                | Contribute to the [Lisk Documentation](https://github.com/LiskHQ/lisk-docs/) on Github! Be sure to follow our [Contribution Guidelines](https://github.com/LiskHQ/lisk-docs/blob/master/CONTRIBUTING.md) before submitting any code.
+[Contribute to the protocol](https://research.lisk.io/)                                | Discuss future changes of the protocol with the Science team on [research.lisk.io](https://research.lisk.io/).
+[Hunt for bugs](https://blog.lisk.io/announcing-lisk-bug-bounty-program-5895bdd46ed4)  | We value community contributions to the mission of building and maintaining a secure network. Read the submission guidelines to get started.
 
- How                       | Where
--------------------------  | -------------------------------------------------------------------------------------------------------------------
-Contribute to the protocol | Discuss future changes of the protocol with the Science team on [research.lisk.io](https://research.lisk.io/).
-Contribute to the codebase | [LiskHQ Github](https://github.com/LiskHQ) is the place to be! Be sure to follow our [Contribution Guidelines](https://github.com/LiskHQ/lisk-sdk/blob/development/docs/CONTRIBUTING.md) before submitting any code.
-Give feedback              | For general feedback, please use [Lisk on Reddit](https://www.reddit.com/r/Lisk/) or [Lisk Chat](https://lisk.chat/), and [Gitter](https://gitter.im/LiskHQ/lisk) for technical questions and feedback.
+## Resources
+
+- [LiskHQ Github](https://github.com/LiskHQ) - Source code of all software products of Lisk.
+- [LiskHQ NPM packages](https://www.npmjs.com/~lisk) - List of all published NPM packages of LiskHQ.
+- [Community Tools](https://docs.google.com/spreadsheets/d/1EJ2ni5LBBNM43cCFkvQ7lYyAHeGm_cFwOQkfAqd-fQc/edit#gid=0) -  List of community built tools, wallets and scripts to help make your life easier.
+- [Help Center](https://lisk.io/help-center) - A searchable database of frequently asked questions.
+- [Lisk Academy](https://lisk.io/academy) - A comprehensive and unbiased educational platform on blockchain technology. 
+- [Lisk Improvement Proposals](https://github.com/LiskHQ/lips) - A collection of proposed improvements to the Lisk protocol
+- [Roadmap](https://lisk.io/roadmap) - Explore the development roadmap as we make progress towards the SDK 
+- [News](https://blog.lisk.io/) - Links to the latest news about Lisk, updated weekly.
+
+## Community
+
+Join the community!
+
+Below are the most essential links to the official Lisk community channels.
+
+- [Subscribe to the Lisk newsletter](https://mailchi.mp/lisk/newsletter) - Updates straight to your inbox
+- [Lisk Gitter](https://gitter.im/LiskHQ/lisk) - Technical discussions for developers.
+- [Lisk Research](https://research.lisk.io/) - Forum to propose and discuss technical improvements to the Lisk Protocol.
+- [Lisk Events](https://lisk.io/events) - Information on upcoming events .
+- [Lisk.chat](https://lisk.chat/)
+   - [Announcements](https://lisk.chat/channel/announcements): Important updates from LiskHQ.
+   - [Network](https://lisk.chat/channel/network): More technical updates and discussions about Lisk Mainnet and Testnet.
+   - [Help Desk](https://lisk.chat/channel/help-desk): The perfect spot for beginners to get questions answered quickly by the community.
+   - [General](https://lisk.chat/channel/general): General Lisk questions and discussions.
+   - [Projects](https://lisk.chat/channel/projects): Collaborate, organize and grow your ideas in the projects room.
+- [Lisk Twitter](https://twitter.com/LiskHQ)
+- [Lisk Reddit](https://www.reddit.com/r/Lisk/)
+- [Lisk Youtube](https://www.youtube.com/channel/UCuqpGfg_bOQ8Ja4pj811PWg): Video content that outlines our vision, products, updates as well as educational content to learn about blockchain from the Lisk Academy
+- [Lisk Telegram](https://t.me/Lisk_HQ)

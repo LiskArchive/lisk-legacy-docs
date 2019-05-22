@@ -95,7 +95,7 @@ NVM is a bash script that enables you to manage multiple active Node.js versions
 
 1. Login as `lisk` user, that has been created in the first step:
 ```bash
-su - lisk
+sudo -u lisk -i
 ```
 2. Install nvm following these [instructions](https://github.com/creationix/nvm#installation)
 3. Install the correct version of Node.js using nvm:
@@ -153,7 +153,7 @@ Create a new database user called `lisk` and grant it rights to create databases
 
 Switch to the `lisk` user and create the databases, where `{network}` is the network you want to connect your Lisk Core node to:
 ```bash
-  su - lisk
+  sudo -u lisk -i
   createdb lisk_{network}
   ```
 
@@ -252,7 +252,7 @@ This user was created in the [Prerequisites](#pre-install).
 If you are already logged in to this user, please skip this step.
 
 ```bash
-su - lisk
+sudo -u lisk -i
 ```
 
 ### Installing Lisk from Source

@@ -156,7 +156,7 @@ To test out your local changes of the Lisk SDK, use a blockchain application(e.g
 1) If you have made changes in `elements` lib then make sure you run `npm run build` to see the changes
 2) To clean up, install and build from scratch, `npm run clean:node_modules && rm -rf ./node_modules && npm ci && npm run bootstrap -- --ci && npm run build`
 
-For more information about how to contribute to Lisk SDK, check out our [Contribution Guidelines](https://github.com/LiskHQ/lisk-sdk/blob/development/docs/CONTRIBUTING.md) on Github.
+For more information about how to contribute to the Lisk SDK, check out our [Contribution Guidelines](https://github.com/LiskHQ/lisk-sdk/blob/development/docs/CONTRIBUTING.md) on Github.
 
 ## Get Involved
 

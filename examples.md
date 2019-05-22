@@ -17,4 +17,6 @@ To achieve this, a custom transaction type `CashbackTransaction` is created.
 
 It extends the already existing transaction type `TransferTransaction`.
 
-See the whole code for creating the Cashback transaction type below:
+The here Cashback transaction type return half of the amount of tokens that are transferred back to the senders account.
+
+So if Alice sends 100 token to Bob as a Cashback transaction, Bob would receive the 100 token and Alice would receive additional 50 tokens as a cashback.

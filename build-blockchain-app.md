@@ -41,7 +41,7 @@ For comparison, see a [list of all transaction types](../lisk-protocol/transacti
 
 The Lisk Core transaction types are already implemented in Lisk Elements as part of the [@liskhq/lisk-transactions](../lisk-sdk/lisk-elements/packages/transactions.md) package.
 
-See [Examples]() for creating custom transaction types and how to add them to the application.
+See the [Examples page](examples.md) for creating custom transaction types and how to add them to the application.
 
 #### 2.c Write own Modules
 If a Module with a desired functionality doesn't exist yet, create own [custom Modules](../lisk-sdk/lisk-framework/introduction.md#custom-modules) from scratch if needed.
@@ -55,9 +55,7 @@ Lisk Framework initializes the Modules and controls their communication between 
 To do this, each Module creates its' own communication channel, where it can publish events that it wants to share with the whole application.
 Modules can passively listen to certain events that have been published by other Modules, or they can actively ask for information from other Modules.
 
-See [Examples]() for creating custom Modules.
-
-### 4. Build the frontend
+### 3. Build the frontend
 While your network is up and running, use [Lisk Commander](../lisk-sdk/lisk-commander/introduction.md) to interact with the network via the CLI (Command-Line-Interface).
 To monitor and explore the network, you may want to set up a monitoring solution like e.g. [Lisk Explorer](https://github.com/LiskHQ/lisk-explorer).
 Depending on the level of customization, it might be needed to customize the Lisk Explorer as well, or otherwise certain services might fail.

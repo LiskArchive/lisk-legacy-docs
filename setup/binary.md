@@ -60,7 +60,7 @@ This section details how to install Lisk Core using pre-built binary packages. O
 The user was created in the [Binary - Prerequisites Section](#pre-install). If you are already logged in to this user, please skip this step.
 
 ```bash
-su - lisk
+sudo -u lisk -i
 ```
 
 ### Execute the installation script

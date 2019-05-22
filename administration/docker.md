@@ -12,6 +12,7 @@ A summary of all commands and associated flags has been provided for advanced us
   * [Reload Lisk Core](#reload)
   * [Reset Lisk Core](#reset--coldstart)
   * [Show logs](#logs)
+  * [Run command](#run-a-command)
 - [Configuration](#configuration)
 - [Advanced Configuration](#advanced-configuration)
   * [Examples](#examples)
@@ -58,6 +59,14 @@ make coldstart
 
 ```bash
 docker-compose logs
+```
+
+### Run a command
+
+To run a command in the container where your Lisk Core node is running, use [docker-compose exec](https://docs.docker.com/compose/reference/exec/).
+
+```bash
+docker-compose exec lisk curl "http://localhost:7000/api/node/status" --header "accept: application/json" # Example: How to make an API request to your node
 ```
 
 ## Configuration

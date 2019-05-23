@@ -2,12 +2,12 @@
 
 > Every action that puts data on the blockchain, or gets data from it, is an interaction with the blockchain network. 
 
-There are several groups that need to interact with the network :
+There are several groups that need/want to interact with the network. Below you find a list with the most relevant groups and their recommended tools:
 
 - __Exchanges__ interact heavily with the network, e.g. by transferring tokens for their customers. For exchanges, it is recommended to [set up their own node](maintain-node.md) to interact with the network reliably.
 - __Delegates__ interact with the network by forging new blocks and adding them to the blockchain. A delegate typically is also a __node operator__.
 - __Node operators__ have a general interest in monitoring their node and the network. Their node provides them with a private API that can be used to make different queries or to post transactions to the network. Depending on their preferences, node operators might want to use [Lisk Commander](#a-use-the-command-line), [Lisk Elements](#b-write-scripts-in-javascript) or a graphical interface like [Lisk Hub](#c-use-lisk-hub).
-- __Developers__ test and prove the functionality of their blockchain application. For quick testing we recommend to use [Lisk Commander](#a-use-the-command-line).
+- __Developers__ test and prove the functionality of their blockchain application. For quick interaction we recommend to use [Lisk Commander](#a-use-the-command-line).
 - __Applications__ interact through the API with the network. For convenience, applications would use wrappers like [@liskHQ/lisk-api-client](../lisk-sdk/lisk-elements/packages/api-client.md). Applications might also want to make use of [Lisk Service](https://github.com/LiskHQ/lisk-service) and its extended API.
 - __End users__ mostly interact with the network through Graphical User Interfaces such as wallet applications like [Lisk Hub](#c-use-lisk-hub).
 
@@ -15,7 +15,7 @@ There are several groups that need to interact with the network :
 
 > The following tools are suited for interacting with the Main- and Testnet of Lisk, but they can be used for interaction with other blockchain applications that have been developed with the Lisk SDK as well
 
-You can choose from up to five ways to interact with an existing network based on what is most convenient for your case:
+You can choose from up to 5 ways to interact with an existing network based on what is most convenient for your case:
 
 ## A. Use the Command-line
 [Lisk Commander](../lisk-sdk/lisk-commander/introduction.md) is the CLI-tool that lets you interact with the network conveniently through the command line.

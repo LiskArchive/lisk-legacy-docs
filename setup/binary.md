@@ -1,19 +1,80 @@
 # Lisk Core Binary Setup
 
-- [Pre-Install](#pre-install)
-  1. [Determine if your platform can run Lisk Core](#determine-if-your-platform-can-run-lisk-core)
-  2. [Open necessary ports](#open-the-necessary-ports)
-  3. [Install dependencies](#install-dependencies)
-  4. [Create `lisk` user](#create-a-user-to-run-lisk)
-- [Installation](#installation)
-  1. [Login as lisk user](#login-to-the-lisk-user)
-  2. [Execute the installation script](#execute-the-installation-script)
-  3. [Verify successful installation](#verify-successful-installation)
+This document will detail how to prepare a system for the installation of Lisk Core. 
+It will guide you through the installation of important dependencies, as well as user creation.
+
+* [Option A: Lisk Commander](#option-a-lisk-commander)
+   - [Pre-Install](#pre-install)
+      1. [Determine if your platform can run Lisk Core](#determine-if-your-platform-can-run-lisk-core)
+      2. [Open necessary ports](#open-the-necessary-ports)
+      3. [Install Lisk Commander](#install-lisk-commander)
+   - [Installation](#installation)
+* [Option B: The Bash script](#option-b-the-bash-script)
+   - [Pre-Install](#pre-install-1)
+      1. [Determine if your platform can run Lisk Core](#determine-if-your-platform-can-run-lisk-core-1)
+      2. [Open necessary ports](#open-the-necessary-ports-1)
+      3. [Install dependencies](#install-dependencies)
+      4. [Create `lisk` user](#create-a-user-to-run-lisk)
+   - [Installation](#installation-1)
+      1. [Login as lisk user](#login-to-the-lisk-user)
+      2. [Execute the installation script](#execute-the-installation-script)
+      3. [Verify successful installation](#verify-successful-installation)
 - [Post-Installation (optional)](#post-installation-optional)  
+
+# Option A: Lisk Commander
+
+Setup and manage your Lisk node conveniently with Lisk Commander.
+
+> **Note:** This setup option is supported from Lisk Core v2.0.0 upwards.
+> If you have Lisk Core v1.6 or lower installed, you wont be able to upgrade your node with Lisk Commander.
+> In this case, use the bash script or remove your old version and make a fresh install with Lisk Commander.
 
 ## Pre-Install
 
-This document will detail how to prepare a system for the installation of Lisk Core.  It will guide you through the installation of important dependencies, as well as user creation.
+### Determine if your platform can run Lisk Core
+
+###### Supported Platforms
+- Ubuntu 18.04 x86_64
+- Ubuntu 16.04 (LTS) x86_64
+
+To complete the installation some prerequisites need to be fulfilled.  If you have already performed these, please proceed to the [Installation](#installation) chapter. Please follow the instructions below to load the required software to your system.
+
+### Open the necessary ports
+
+To connect to the desired network with Lisk Core, please ensure that the corresponding ports are open:
+
+| Network | httpPort(HTTP) | wsPort(TCP) |
+| --------|----------------|-------------|
+| Mainnet | 8000           | 8001        |
+| Testnet | 7000           | 7001        |
+| Betanet | 5000           | 5001        |
+| Devnet  | 4000           | 5000        |
+
+These are the default ports for connecting with the network, they can be altered later in the [`config.json`](https://github.com/LiskHQ/lisk-core/blob/master/config/mainnet/config.json#L21), which is specific for the network.
+
+### Install Lisk Commander
+
+Head to the Lisk Commander docs and follow the [installation instructions](../lisk-sdk/lisk-commander/introduction.md#setup).
+
+## Installation
+
+```bash
+lisk core:install lisk-mainnet
+```
+
+This will install Lisk Core latest version into a directory `lisk-mainnet`.
+
+To verify your node is running correctly, run e.g.
+
+```bash
+lisk core:status lisk-mainnet
+```
+
+See for all available options the Lisk Commander [Command reference for Lisk Core](../lisk-sdk/lisk-commander/user-guide/lisk-core.md) as well as the [general Command reference](../lisk-sdk/lisk-commander/user-guide/commands.md).
+
+# Option B: The Bash script
+
+## Pre-Install
 
 ### Determine if your platform can run Lisk Core
 

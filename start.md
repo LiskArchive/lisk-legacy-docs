@@ -2,10 +2,14 @@
 
 Welcome to the Lisk documentation!
 
-Here you will find all you need to **setup, run and configure**  a Lisk Node and join the network. 
-We also describe the **Lisk Protocol**  and **Lisk products**.
+Here you will find all you need to [setup, run and configure](maintain-node.md) a Lisk Node and join the network. 
+We also describe the [Lisk Protocol](../lisk-protocol/introduction.md) and the [Lisk products](#lisk-products).
+
+In the [getting started section](#getting-started) you will find all the information to get you started and the direct links to the important parts of our documentation in that context.
 
 ## Lisk products
+
+For each product we provide a general introduction, step-by-step How-Tos and detailed specifications.
 
 Tool                                                         | Description
 ------------------------------------------------------------ | --------------------------------------------------
@@ -21,7 +25,7 @@ For a quick & easy start, we provide getting started Guides for the most common 
 
 Action                                                            | Description                                                                                                               
  ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ 
-[Maintain a node](maintain-node.md)                               | Deploy your first blockchain node on our Testnet or Mainnet - it’s only one line of code and will take you less than 5 minutes. Get started at [insert docs url]
+[Maintain a node](maintain-node.md)                               | Deploy your first blockchain node on our Testnet or Mainnet.
 [Build a blockchain application](build-blockchain-app.md)         | Introduction for building blockchain applications with the Lisk SDK.
 [Interact with the network](interact-with-network.md)             | Summary of different ways and tools to interact with the blockchain network.
 [Get to know the Lisk Protocol](../lisk-protocol/introduction.md) | Specification of the Lisk Protocol.

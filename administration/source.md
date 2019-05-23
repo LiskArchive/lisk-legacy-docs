@@ -14,7 +14,6 @@ This section details how to manage a Source installation of Lisk Core.
 - [Utility scripts](#utility-scripts)
   - [Generate Config](#generate-config)
   - [Update Config](#update-config)
-  - [Console](#console)
 - [Creating Snapshots](#creating-snapshots)
 - [Rebuild from Snapshot](#rebuild-from-a-snapshot)
 - [Code documentation in Lisk Core](#code-documentation-in-lisk-core)
@@ -159,15 +158,6 @@ As you can see from the usage guide, `input_file` and` from_version` are require
 If you skip `to_version` argument changes in config.json will be applied up to the latest version of Lisk Core.
 If you do not specify `--output` path the final config.json will be printed to stdout.
 If you do not specify `--network` argument you will have to load it from `LISK_NETWORK` env variable.
-
-
-### JSON History
-
-
-
-### New Migration
-
-
 
 ## Creating snapshots
 

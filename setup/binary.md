@@ -1,7 +1,6 @@
 # Lisk Core Binary Setup
 
-This document will detail how to prepare a system for the installation of Lisk Core. 
-It will guide you through the installation of important dependencies, as well as user creation.
+This document details how to setup Lisk Core Binary distribution on a system. 
 
 * [Option A: Lisk Commander](#option-a-lisk-commander)
    - [Pre-Install](#pre-install)
@@ -18,7 +17,7 @@ It will guide you through the installation of important dependencies, as well as
       1. [Login as lisk user](#login-to-the-lisk-user)
       2. [Execute the installation script](#execute-the-installation-script)
       3. [Verify successful installation](#verify-successful-installation)
-- [Post-Installation (optional)](#post-installation-optional)  
+- [Post-Installation (optional)](#post-installation-optional)
 
 # Option A: Lisk Commander
 
@@ -68,7 +67,7 @@ See for all available options the Lisk Commander [Command reference for Lisk Cor
 - Ubuntu 18.04 x86_64
 - Ubuntu 16.04 (LTS) x86_64
 
-To complete the installation some prerequisites need to be fulfilled.  If you have already performed these, please proceed to the [Installation](#installation) chapter. Please follow the instructions below to load the required software to your system.
+To complete the installation some prerequisites need to be fulfilled. If you have already performed these, please proceed to the [Installation](#installation) chapter. Please follow the instructions below to load the required software to your system.
 
 ### Open the necessary ports
 

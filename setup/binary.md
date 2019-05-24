@@ -31,26 +31,13 @@ Setup and manage your Lisk node conveniently with Lisk Commander.
 
 ## Pre-Install
 
+To complete the installation some prerequisites need to be fulfilled.  If you have already performed these, please proceed to the [Installation](#installation) chapter.
+
 ### Determine if your platform can run Lisk Core
 
 ###### Supported Platforms
 - Ubuntu 18.04 x86_64
 - Ubuntu 16.04 (LTS) x86_64
-
-To complete the installation some prerequisites need to be fulfilled.  If you have already performed these, please proceed to the [Installation](#installation) chapter. Please follow the instructions below to load the required software to your system.
-
-### Open the necessary ports
-
-To connect to the desired network with Lisk Core, please ensure that the corresponding ports are open:
-
-| Network | httpPort(HTTP) | wsPort(TCP) |
-| --------|----------------|-------------|
-| Mainnet | 8000           | 8001        |
-| Testnet | 7000           | 7001        |
-| Betanet | 5000           | 5001        |
-| Devnet  | 4000           | 5000        |
-
-These are the default ports for connecting with the network, they can be altered later in the [`config.json`](https://github.com/LiskHQ/lisk-core/blob/master/config/mainnet/config.json#L21), which is specific for the network.
 
 ### Install Lisk Commander
 

@@ -26,9 +26,12 @@ The Lisk Protocol is a formal set of rules of the Lisk blockchain.
 
 It consists of rules about the [P2P communication](p2p-communication.md), block and transaction formats, the [consensus algorithm](consensus.md), and of rules how [signatures](https://lisk.io/academy/blockchain-basics/how-does-blockchain-work/digital-signatures) and [IDs](security.md) are computed and verified.
 
-The Lisk protocol is constantly evolving. The discussions about planned changed take place at [research.lisk.io](https://research.lisk.io).
+The Lisk protocol is constantly evolving. The discussions about planned changes take place at [research.lisk.io](https://research.lisk.io).
 The result of the discussions is reflected in LIPs (Lisk Improvement Proposals) in the [LIPs Github repository](https://github.com/LiskHQ/lips) and later as part of documentation on official [Lisk documentation](https://docs.lisk.io).
 
 The protocol defines these rules without a focus on concrete implementation, and it is, therefore, possible to implement it in any compatible programming language.
 
 Currently, the official implementations of the Lisk protocol are [Lisk Core](../lisk-core/introduction.md), [Lisk Framework](../lisk-sdk/lisk-framework/introduction.md) and [Lisk Elements](../lisk-sdk/lisk-elements/introduction.md), which are written in Javascript and Typescript.
+
+
+

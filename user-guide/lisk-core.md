@@ -231,7 +231,10 @@ _See code: [dist/commands/core/uninstall.ts](https://github.com/LiskHQ/lisk-sdk/
 
 ## lisk core:upgrade NAME
 
-Upgrade an instance of Lisk Core to a specified or latest version.
+Upgrade an instance of Lisk Core(Binary) to a specified or latest version.
+
+> __Note:__ The `core:upgrade` command is only supported for Lisk Core version `v2.0.0` and higher.<br>
+> To upgrade Lisk Core(Binary) `v1.6.0` or lower versions, please use the [bash script](../../lisk-core/setup/binary.md#option-b-the-bash-script), or [remove](#lisk-coreuninstall-name) the old version and make a fresh [install](#lisk-coreinstall-name).
 
 ```bash
 USAGE

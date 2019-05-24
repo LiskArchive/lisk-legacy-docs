@@ -49,7 +49,7 @@ EXAMPLES
   core:install --network=mainnet --snapshot-url=https://downloads.lisk.io/lisk/mainnet/blockchain.db.gz custom-mainnet
 ```
 
-_See code: [dist/commands/core/install.ts](https://github.com/LiskHQ/lisk-sdk/blob/v2.0.0-alpha.9/commander/src/commands/core/install.ts)_
+_See code: [dist/commands/core/install.ts](https://github.com/LiskHQ/lisk-sdk/blob/master/commander/src/commands/core/install.ts)_
 
 ## lisk core:logs NAME
 
@@ -66,7 +66,7 @@ EXAMPLE
   core:logs mainnet-latest
 ```
 
-_See code: [dist/commands/core/logs.ts](https://github.com/LiskHQ/lisk-sdk/blob/v2.0.0-alpha.9/commander/src/commands/core/logs.ts)_
+_See code: [dist/commands/core/logs.ts](https://github.com/LiskHQ/lisk-sdk/blob/master/commander/src/commands/core/logs.ts)_
 
 ## lisk core:restart NAME
 
@@ -83,7 +83,7 @@ EXAMPLE
   core:restart mainnet-latest
 ```
 
-_See code: [dist/commands/core/restart.ts](https://github.com/LiskHQ/lisk-sdk/blob/v2.0.0-alpha.9/commander/src/commands/core/restart.ts)_
+_See code: [dist/commands/core/restart.ts](https://github.com/LiskHQ/lisk-sdk/blob/master/commander/src/commands/core/restart.ts)_
 
 ## lisk core:start NAME
 
@@ -100,7 +100,7 @@ EXAMPLE
   core:start mainnet-latest
 ```
 
-_See code: [dist/commands/core/start/index.ts](https://github.com/LiskHQ/lisk-sdk/blob/v2.0.0-alpha.9/commander/src/commands/core/start/index.ts)_
+_See code: [dist/commands/core/start/index.ts](https://github.com/LiskHQ/lisk-sdk/blob/master/commander/src/commands/core/start/index.ts)_
 
 ## lisk core:start:cache NAME
 
@@ -117,7 +117,7 @@ EXAMPLE
   core:start:cache mainnet-latest
 ```
 
-_See code: [dist/commands/core/start/cache.ts](https://github.com/LiskHQ/lisk-sdk/blob/v2.0.0-alpha.9/commander/src/commands/core/start/cache.ts)_
+_See code: [dist/commands/core/start/cache.ts](https://github.com/LiskHQ/lisk-sdk/blob/master/commander/src/commands/core/start/cache.ts)_
 
 ## lisk core:start:database NAME
 
@@ -134,7 +134,7 @@ EXAMPLE
   core:start:database mainnet-latest
 ```
 
-_See code: [dist/commands/core/start/database.ts](https://github.com/LiskHQ/lisk-sdk/blob/v2.0.0-alpha.9/commander/src/commands/core/start/database.ts)_
+_See code: [dist/commands/core/start/database.ts](https://github.com/LiskHQ/lisk-sdk/blob/master/commander/src/commands/core/start/database.ts)_
 
 ## lisk core:status NAME
 
@@ -158,7 +158,7 @@ EXAMPLES
   core:status mainnet-latest
 ```
 
-_See code: [dist/commands/core/status.ts](https://github.com/LiskHQ/lisk-sdk/blob/v2.0.0-alpha.9/commander/src/commands/core/status.ts)_
+_See code: [dist/commands/core/status.ts](https://github.com/LiskHQ/lisk-sdk/blob/master/commander/src/commands/core/status.ts)_
 
 ## lisk core:stop NAME
 
@@ -175,7 +175,7 @@ EXAMPLE
   core:stop mainnet-latest
 ```
 
-_See code: [dist/commands/core/stop/index.ts](https://github.com/LiskHQ/lisk-sdk/blob/v2.0.0-alpha.9/commander/src/commands/core/stop/index.ts)_
+_See code: [dist/commands/core/stop/index.ts](https://github.com/LiskHQ/lisk-sdk/blob/master/commander/src/commands/core/stop/index.ts)_
 
 ## lisk core:stop:cache NAME
 
@@ -192,7 +192,7 @@ EXAMPLE
   core:stop:cache mainnet-latest
 ```
 
-_See code: [dist/commands/core/stop/cache.ts](https://github.com/LiskHQ/lisk-sdk/blob/v2.0.0-alpha.9/commander/src/commands/core/stop/cache.ts)_
+_See code: [dist/commands/core/stop/cache.ts](https://github.com/LiskHQ/lisk-sdk/blob/master/commander/src/commands/core/stop/cache.ts)_
 
 ## lisk core:stop:database NAME
 
@@ -209,7 +209,7 @@ EXAMPLE
   core:stop:database mainnet-latest
 ```
 
-_See code: [dist/commands/core/stop/database.ts](https://github.com/LiskHQ/lisk-sdk/blob/v2.0.0-alpha.9/commander/src/commands/core/stop/database.ts)_
+_See code: [dist/commands/core/stop/database.ts](https://github.com/LiskHQ/lisk-sdk/blob/master/commander/src/commands/core/stop/database.ts)_
 
 ## lisk core:uninstall NAME
 
@@ -226,7 +226,7 @@ EXAMPLE
   core:uninstall mainnet-latest
 ```
 
-_See code: [dist/commands/core/uninstall.ts](https://github.com/LiskHQ/lisk-sdk/blob/v2.0.0-alpha.9/commander/src/commands/core/uninstall.ts)_
+_See code: [dist/commands/core/uninstall.ts](https://github.com/LiskHQ/lisk-sdk/blob/master/commander/src/commands/core/uninstall.ts)_
 
 ## lisk core:upgrade NAME
 
@@ -250,4 +250,4 @@ EXAMPLES
   lisk-mainnet
 ```
 
-_See code: [dist/commands/core/upgrade.ts](https://github.com/LiskHQ/lisk-sdk/blob/v2.0.0-alpha.9/commander/src/commands/core/upgrade.ts)_
+_See code: [dist/commands/core/upgrade.ts](https://github.com/LiskHQ/lisk-sdk/blob/master/commander/src/commands/core/upgrade.ts)_

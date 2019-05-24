@@ -2,7 +2,7 @@
 
 ## What is a Lisk node?
 
-The Lisk blockchain is a decentralized network that consists of many different servers/nodes around the world, which are controlled by individuals.
+The Lisk blockchain is a decentralized network that consists of many different servers/nodes around the world, which are maintained by individuals.
 These nodes communicate with the network, e.g. by broadcasting and receiving blocks or transactions from their peers.
 A Lisk node is also required to forge/add new blocks to the blockchain.
 
@@ -24,7 +24,7 @@ There are several reasons why you would want to operate a node:
 
 ## How to set up a node
 
-To set up a node, simply follow the setup guide for your desired ditribution, described on the [Lisk Core Introduction](../lisk-core/introduction.md#distributions) page.
+To set up a node, simply follow the setup guide for your desired distribution, described on the [Lisk Core Introduction](../lisk-core/introduction.md#distributions) page.
 
 The 3 available distributions of Lisk Core are:
 

@@ -1,11 +1,8 @@
 # Lisk Documentation
 
-Welcome to the Lisk documentation!
+Welcome!
 
-Here you will find all you need to [setup, run and configure](maintain-node.md) a Lisk Node and join the network. 
-We also describe the [Lisk Protocol](../lisk-protocol/introduction.md) and the [Lisk products](#lisk-products).
-
-In the [getting started section](#getting-started) you will find all the information to get you started and the direct links to the important parts of our documentation in that context.
+For a smooth and efficient onboarding, we’ve updated our documentation to reflect the most common actions that developers take on our site so that you can easily find documentation guides that you are looking for:
 
 ## Lisk products
 
@@ -42,34 +39,7 @@ There are several ways you can participate in the Lisk project:
 [Contribute to the protocol](https://research.lisk.io/)                                | Discuss future changes of the protocol with the Science team on [research.lisk.io](https://research.lisk.io/).
 [Hunt for bugs](https://blog.lisk.io/announcing-lisk-bug-bounty-program-5895bdd46ed4)  | We value community contributions to the mission of building and maintaining a secure network. Read the submission guidelines to get started.
 
-## Resources
+## Check our resources
 
-- [LiskHQ Github](https://github.com/LiskHQ) - Source code of all software products of Lisk.
-- [LiskHQ NPM packages](https://www.npmjs.com/~lisk) - List of all published NPM packages of LiskHQ.
-- [Community Tools](https://docs.google.com/spreadsheets/d/1EJ2ni5LBBNM43cCFkvQ7lYyAHeGm_cFwOQkfAqd-fQc/edit#gid=0) -  List of community built tools, wallets and scripts to help make your life easier.
-- [Help Center](https://lisk.io/help-center) - A searchable database of frequently asked questions.
-- [Lisk Academy](https://lisk.io/academy) - A comprehensive and unbiased educational platform on blockchain technology. 
-- [Lisk Improvement Proposals](https://github.com/LiskHQ/lips) - A collection of proposed improvements to the Lisk protocol
-- [Roadmap](https://lisk.io/roadmap) - Explore the development roadmap as we make progress towards the SDK 
-- [News](https://blog.lisk.io/) - Links to the latest news about Lisk, updated weekly.
-
-## Community
-
-Join the community!
-
-Below are the most essential links to the official Lisk community channels.
-
-- [Subscribe to the Lisk newsletter](https://mailchi.mp/lisk/newsletter) - Updates straight to your inbox
-- [Lisk Gitter](https://gitter.im/LiskHQ/lisk) - Technical discussions for developers.
-- [Lisk Research](https://research.lisk.io/) - Forum to propose and discuss technical improvements to the Lisk Protocol.
-- [Lisk Events](https://lisk.io/events) - Information on upcoming events .
-- [Lisk.chat](https://lisk.chat/)
-   - [Announcements](https://lisk.chat/channel/announcements): Important updates from LiskHQ.
-   - [Network](https://lisk.chat/channel/network): More technical updates and discussions about Lisk Mainnet and Testnet.
-   - [Help Desk](https://lisk.chat/channel/help-desk): The perfect spot for beginners to get questions answered quickly by the community.
-   - [General](https://lisk.chat/channel/general): General Lisk questions and discussions.
-   - [Projects](https://lisk.chat/channel/projects): Collaborate, organize and grow your ideas in the projects room.
-- [Lisk Twitter](https://twitter.com/LiskHQ)
-- [Lisk Reddit](https://www.reddit.com/r/Lisk/)
-- [Lisk Youtube](https://www.youtube.com/channel/UCuqpGfg_bOQ8Ja4pj811PWg): Video content that outlines our vision, products, updates as well as educational content to learn about blockchain from the Lisk Academy
-- [Lisk Telegram](https://t.me/Lisk_HQ)
+- [General resources](resources.md#resources): all important ressources about Lisk and its products.
+- [Community](resources.md#community): references to all community channels and resources.

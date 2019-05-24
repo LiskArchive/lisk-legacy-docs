@@ -22,11 +22,11 @@ LSK tokens can be acquired through a number of ways, such as purchasing them fro
 
 ## The Lisk Protocol
 
-The Lisk Protocol is a formal set of rules of the Lisk blockchain.
+The Lisk Protocol is the formal set of rules of the Lisk blockchain.
 
-It defines the rules for the [P2P communication](p2p-communication.md), [block](blocks.md) and [transaction](transactions.md) formats, the [consensus algorithm](consensus.md), and how [signatures](https://lisk.io/academy/blockchain-basics/how-does-blockchain-work/digital-signatures) and [IDs](security.md) are computed and verified.
+It defines rules for the [peer-to-peer communication](p2p-communication.md), [block](blocks.md) and [transaction](transactions.md) formats, the [consensus algorithm](consensus.md), and how [signatures](https://lisk.io/academy/blockchain-basics/how-does-blockchain-work/digital-signatures) and [IDs](security.md) are computed and verified.
 
-The Lisk protocol is in the process of evolution along the objectives outlined by the [Lisk roadmap](https://lisk.io/roadmap). Changes of the Lisk protocol are formally specified as Lisk Improvement Proposals (LIPs) and published in the [LIPs Github repository](https://github.com/LiskHQ/lips). The process regarding LIPs is described in detail in the [LIP purpose and guidelines](https://github.com/LiskHQ/lips/blob/master/proposals/lip-0001.md) and discussions about possible LIPs take place openly and transparently at [Lisk Research](https://research.lisk.io).
+The Lisk protocol is evolving following the objectives outlined by the [Lisk roadmap](https://lisk.io/roadmap). Changes of the Lisk protocol are formally specified as Lisk Improvement Proposals (LIPs) and published in the [LIPs Github repository](https://github.com/LiskHQ/lips). The process regarding LIPs is described in detail in the [LIP purpose and guidelines](https://github.com/LiskHQ/lips/blob/master/proposals/lip-0001.md) and discussions about possible LIPs take place openly and transparently at [Lisk Research](https://research.lisk.io).
 After a LIP comes into effect, i.e., the protocol changes have been adopted by the Lisk blockchain, the official Lisk documentation will be updated accordingly.
 
 The protocol defines these rules without a focus on concrete implementation, and it is, therefore, possible to implement it in any common programming language.

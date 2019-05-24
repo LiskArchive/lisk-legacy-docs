@@ -2,6 +2,9 @@
 
 Install and manage an instance of Lisk Core.
 
+> __Important:__ The commands for Lisk Core are not compatible with other distributions or with installations from the [bash script](../../lisk-core/setup/binary.md#option-b-the-bash-script).<br>
+> To manage Lisk Core with Lisk Commander, first uninstall the old version and perform a fresh [installation](#lisk-coreinstall-name).
+
 * [lisk core:install NAME](#lisk-coreinstall-name)
 * [lisk core:logs NAME](#lisk-corelogs-name)
 * [lisk core:restart NAME](#lisk-corerestart-name)
@@ -233,8 +236,7 @@ _See code: [dist/commands/core/uninstall.ts](https://github.com/LiskHQ/lisk-sdk/
 
 Upgrade an instance of Lisk Core (Binary) to a specified or latest version.
 
-> __Note:__ The `core:upgrade` command is only supported for Lisk Core version `v2.0.0` and higher.<br>
-> To upgrade Lisk Core (Binary) `v1.6.0` or lower versions, please use the [bash script](../../lisk-core/setup/binary.md#option-b-the-bash-script), or [remove](#lisk-coreuninstall-name) the old version and make a fresh [install](#lisk-coreinstall-name).
+> __Note:__ The `core:upgrade` command is only supported for Lisk Core versions > `2.0.0`.
 
 ```bash
 USAGE

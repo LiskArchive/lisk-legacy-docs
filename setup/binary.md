@@ -12,7 +12,6 @@ It will guide you through the installation of important dependencies, as well as
 * [Option B: The Bash script](#option-b-the-bash-script)
    - [Pre-Install](#pre-install-1)
       1. [Determine if your platform can run Lisk Core](#determine-if-your-platform-can-run-lisk-core-1)
-      2. [Open necessary ports](#open-the-necessary-ports-1)
       3. [Install dependencies](#install-dependencies)
       4. [Create `lisk` user](#create-a-user-to-run-lisk)
    - [Installation](#installation-1)

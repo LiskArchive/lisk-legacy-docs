@@ -2,7 +2,20 @@
 
 Welcome!
 
-For a smooth and efficient onboarding, we’ve updated our documentation to reflect the most common actions that developers take on our site so that you can easily find documentation guides that you are looking for:
+Welcome! For a smooth and efficient onboarding, we’ve updated our documentation to reflect the most common actions that developers take on our site so that you can easily find the information that is most relevant for you.
+
+[What is Lisk?](https://lisk.io/documentation/lisk-protocol) Our vision at Lisk is to empower individuals to create a more decentralized, efficient and transparent global economy. We welcome you to join us in our mission.
+
+## Getting started
+
+For a quick & easy start, we provide getting started Guides for the most common use cases and actions people want to take:
+
+Action                                                            | Description                                                                                                               
+ ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ 
+[Maintain a node](maintain-node.md)                               | 1. Deploy your first blockchain node in 5 minutes<br>2. Maintain your existing node<br>3. Benefits of operating a node
+[Build a blockchain application](build-blockchain-app.md)         | Introduction for building blockchain applications with the Lisk SDK.
+[Interact with the network](interact-with-network.md)             | Interact with the blockchain network through our API and install useful tools.
+[Get to know the Lisk Protocol](../lisk-protocol/introduction.md) | Learn the underlying logic and technical concepts behind the Lisk Protocol including its consensus algorithm, security, blocks, transactions and peer communications.
 
 ## Lisk products
 
@@ -15,17 +28,10 @@ Tool                                                         | Description
 [Lisk SDK](../lisk-sdk/introduction.md) > [Lisk Elements](../lisk-sdk/lisk-elements/introduction.md)   | Set of libraries, that are implementing Lisk protocol. Contains all of the cryptography tools you may need to implement Lisk network interactions into your application.
 [Lisk SDK](../lisk-sdk/introduction.md) > [Lisk Commander](../lisk-sdk/lisk-commander/introduction.md) | Command line tool to interact with the network and maintain a node.
 [Lisk Core](../lisk-core/introduction.md)                    | The software needed to run a node on the Lisk Mainchain.
+[Lisk Explorer](../lisk-explorer/introduction.md)            | Lisk Explorer is a tool that visualizes the vast information from Lisk's blockchain.
+[Lisk Hub](../lisk-hub/introduction.md)                      | Lisk Hub is an all-in-one solution to manage your Lisk ID, access and send LSK tokens, as well as vote for delegates.
+[Lisk Mobile](../lisk-mobile/introduction.md)                | Lisk Mobile is the official LSK wallet for smartphones.
 
-## Getting started
-
-For a quick & easy start, we provide getting started Guides for the most common use cases and actions people want to take:
-
-Action                                                            | Description                                                                                                               
- ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ 
-[Maintain a node](maintain-node.md)                               | Deploy your first blockchain node on our Testnet or Mainnet.
-[Build a blockchain application](build-blockchain-app.md)         | Introduction for building blockchain applications with the Lisk SDK.
-[Interact with the network](interact-with-network.md)             | Summary of different ways and tools to interact with the blockchain network.
-[Get to know the Lisk Protocol](../lisk-protocol/introduction.md) | Specification of the Lisk Protocol.
 
 ## Contribute to the project
 

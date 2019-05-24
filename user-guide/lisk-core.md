@@ -49,7 +49,7 @@ EXAMPLES
   core:install --network=mainnet --snapshot-url=https://downloads.lisk.io/lisk/mainnet/blockchain.db.gz custom-mainnet
 ```
 
-_See code: [dist/commands/core/install.ts](https://github.com/LiskHQ/lisk-sdk/blob/v2.2.0-alpha.9/commander/src/commands/core/install.ts)_
+_See code: [dist/commands/core/install.ts](https://github.com/LiskHQ/lisk-sdk/blob/v2.0.0-alpha.9/commander/src/commands/core/install.ts)_
 
 ## lisk core:logs NAME
 

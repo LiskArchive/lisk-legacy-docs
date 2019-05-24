@@ -228,13 +228,8 @@ An action object is a simple javascript object with attributes listed below.
 
 ### Controller
 
-The controller is a parent process, that is responsible for managing every user interaction with each [component](#components) and [module](#modules) of the framework.
-E.g. restarting the node, starting a snapshot process, etc.
-
-The controller is responsible for initialization of the infrastructure-level components.
-The controller also initializes each module separately.
-If any module is configured to load as a child process, then it is the controller's responsibility to do so.
-The controller defines a set of events, that each component can subscribe to:
+The controller is responsible for initialization the communication bus and any other dependencies required to load the modules. If any module is configured to load as a child process, then it is the controller's responsibility to do so.
+The controller defines a set of events, that each component can subscribe to.
 
 The following events and actions are available for all enabled modules and are at the same time accessible by all enabled modules.
 
@@ -282,6 +277,19 @@ The storage component is responsible for all database activity in the system.
 It exposes an interface with specific features for getting or setting particular database entities and a raw handler to the database object so that any module can extend it for its own use.
 
 Find more details about the storage component in the dedicated [LIP](https://github.com/LiskHQ/lips/blob/master/proposals/lip-0011.md).
+
+## Configuration of the Lisk Framework
+
+Configuration options are located in 
+- `framework/src/modules/<module-name>/defaults/config.js` for each module.
+- `framework/src/components/<component-name>/defaults/config.js` for each component.
+
+Each `config.js` file consists of 2 parts:
+
+1. JSON-schema specification for all available config options
+2. Default values for the available config options for this specific module.
+
+> Please don't change the default values in these files directly as they will be overwritten on software updates, instead define the [custom configuration options](../introduction.md) inside your blockchain application.
 
 ## Get Involved
 

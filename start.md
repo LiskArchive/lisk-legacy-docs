@@ -28,9 +28,9 @@ Tool                                                         | Description
 [Lisk SDK](../lisk-sdk/introduction.md) > [Lisk Elements](../lisk-sdk/lisk-elements/introduction.md)   | Set of libraries, that are implementing Lisk protocol. Contains all of the cryptography tools you may need to implement Lisk network interactions into your application.
 [Lisk SDK](../lisk-sdk/introduction.md) > [Lisk Commander](../lisk-sdk/lisk-commander/introduction.md) | Command line tool to interact with the network and maintain a node.
 [Lisk Core](../lisk-core/introduction.md)                    | The software needed to run a node on the Lisk Mainchain.
-[Lisk Explorer](../lisk-explorer/introduction.md)            | Lisk Explorer is a tool that visualizes the vast information from Lisk's blockchain.
-[Lisk Hub](../lisk-hub/introduction.md)                      | Lisk Hub is an all-in-one solution to manage your Lisk ID, access and send LSK tokens, as well as vote for delegates.
-[Lisk Mobile](../lisk-mobile/introduction.md)                | Lisk Mobile is the official LSK wallet for smartphones.
+[Lisk Explorer](https://explorer.lisk.io/)            | Lisk Explorer is a tool that visualizes the vast information from Lisk's blockchain.
+[Lisk Hub](https://lisk.io/hub)                      | Lisk Hub is an all-in-one solution to manage your Lisk ID, access and send LSK tokens, as well as vote for delegates.
+[Lisk Mobile](https://lisk.io/hub)                | Lisk Mobile is the official LSK wallet for smartphones.
 
 ## Contribute to the project
 

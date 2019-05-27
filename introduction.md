@@ -143,7 +143,7 @@ node index.js # start the application
 ```
 
 This should start the application with predefined default configurations, what will connect your app to a local Devnet.
-From this point, you can start to configure and customize the application further.
+From this point, you can start to [configure](configuration.md) and customize the application further.
 
 ## Contributing to the Lisk SDK
 

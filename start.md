@@ -12,10 +12,10 @@ For a quick & easy start, we provide getting started Guides for the most common 
 
 Action                                                            | Description                                                                                                               
  ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ 
-[Build a blockchain application](build-blockchain-app.md)         | <PRE>1. Alpha SDK [step by step guide](build-blockchain-app.md#how-to-build-a-blockchain-application-with-the-lisk-sdk)<br>  a) How to [create](build-blockchain-app.md#1-setup-the-sdk) your custom blockchain<br>  b) How to [configure](build-blockchain-app.md#2-configure-and-customize-the-application) your blockchain<br>  c) How to create a [custom transaction](build-blockchain-app.md#2b-design-custom-transaction-types)<br>  d) Build the [frontend](build-blockchain-app.md#3-build-the-frontend) and [interact](interact-with-network.md) with the network<br>2. [Why blockchain?](https://lisk.io/academy/blockchain-basics/use-cases)</PRE>
-[Maintain a node](maintain-node.md)                               | <PRE>1. [Deploy](maintain-node.md#how-to-set-up-a-node) your first blockchain node in 5 minutes<br>2. Maintain your existing \[[Binary](../lisk-core/administration/binary.md)&#124;[Docker](../lisk-core/administration/docker.md)&#124;[Source](../lisk-core/administration/source.md)\] node<br>3. Benefits of operating a node.</PRE>
-[Interact with the network](interact-with-network.md)             | <PRE>Interact with the blockchain network through our [API](https://lisk.io/documentation/lisk-core/api) and install useful [tools](interact-with-network.md#a-use-the-command-line).</PRE>
-[Get to know the Lisk Protocol](../lisk-protocol/introduction.md) | <PRE>Learn the underlying logic and technical concepts behind the Lisk Protocol including its [consensus algorithm](../lisk-protocol/consensus.md), [security](../lisk-protocol/security.md), [blocks](../lisk-protocol/blocks.md), [transactions](../lisk-protocol/transactions.md) and [peer communications](../lisk-protocol/p2p-communication.md).</PRE>
+<PRE>[Build a blockchain application](build-blockchain-app.md)</PRE>         | <PRE>1. Alpha SDK [step by step guide](build-blockchain-app.md#how-to-build-a-blockchain-application-with-the-lisk-sdk)<br>  a) How to [create](build-blockchain-app.md#1-setup-the-sdk) your custom blockchain<br>  b) How to [configure](build-blockchain-app.md#2-configure-and-customize-the-application) your blockchain<br>  c) How to create a [custom transaction](build-blockchain-app.md#2b-design-custom-transaction-types)<br>  d) Build the [frontend](build-blockchain-app.md#3-build-the-frontend) and [interact](interact-with-network.md) with the network<br>2. [Why blockchain?](https://lisk.io/academy/blockchain-basics/use-cases)</PRE>
+<PRE>[Maintain a node](maintain-node.md)</PRE>                               | <PRE>1. [Deploy](maintain-node.md#how-to-set-up-a-node) your first blockchain node in 5 minutes<br>2. Maintain your existing \[[Binary](../lisk-core/administration/binary.md)&#124;[Docker](../lisk-core/administration/docker.md)&#124;[Source](../lisk-core/administration/source.md)\] node<br>3. Benefits of operating a node.</PRE>
+<PRE>[Interact with the network](interact-with-network.md)</PRE>             | <PRE>Interact with the blockchain network through our [API](https://lisk.io/documentation/lisk-core/api) and install useful [tools](interact-with-network.md#a-use-the-command-line).</PRE>
+<PRE>[Get to know the Lisk Protocol](../lisk-protocol/introduction.md)</PRE> | <PRE>Learn the underlying logic and technical concepts behind the Lisk Protocol including its [consensus algorithm](../lisk-protocol/consensus.md), [security](../lisk-protocol/security.md), [blocks](../lisk-protocol/blocks.md), [transactions](../lisk-protocol/transactions.md) and [peer communications](../lisk-protocol/p2p-communication.md).</PRE>
 
 ## Lisk products
 
@@ -23,14 +23,14 @@ For each product we provide a general introduction, step-by-step How-Tos and det
 
 Tool                                                         | Description
 ------------------------------------------------------------ | --------------------------------------------------
-[Lisk SDK](../lisk-sdk/introduction.md) |  Set of modular software products that provide developers with all the tools they need to develop their own custom blockchain applications.
-[Lisk SDK](../lisk-sdk/introduction.md) > [Lisk Framework](../lisk-sdk/lisk-framework/introduction.md) | Modular set of building blocks with specific, blockchain-related, functionality.
-[Lisk SDK](../lisk-sdk/introduction.md) > [Lisk Elements](../lisk-sdk/lisk-elements/introduction.md)   | Set of libraries, that are implementing Lisk protocol. Contains all of the cryptography tools you may need to implement Lisk network interactions into your application.
-[Lisk SDK](../lisk-sdk/introduction.md) > [Lisk Commander](../lisk-sdk/lisk-commander/introduction.md) | Command line tool to interact with the network and maintain a node.
-[Lisk Core](../lisk-core/introduction.md)                    | The software needed to run a node on the Lisk Mainchain.
-[Lisk Explorer](../lisk-explorer/introduction.md)            | Lisk Explorer is a tool that visualizes the vast information from Lisk's blockchain.
-[Lisk Hub](../lisk-hub/introduction.md)                      | Lisk Hub is an all-in-one solution to manage your Lisk ID, access and send LSK tokens, as well as vote for delegates.
-[Lisk Mobile](../lisk-mobile/introduction.md)                | Lisk Mobile is the official LSK wallet for smartphones.
+<PRE>[Lisk SDK](../lisk-sdk/introduction.md)</PRE> |  <PRE>Set of modular software products that provide developers with all the tools they need to develop their own custom blockchain applications.</PRE>
+<PRE>[Lisk SDK](../lisk-sdk/introduction.md) > [Lisk Framework](../lisk-sdk/lisk-framework/introduction.md)</PRE> | <PRE>Modular set of building blocks with specific, blockchain-related, functionality.</PRE>
+<PRE>[Lisk SDK](../lisk-sdk/introduction.md) > [Lisk Elements](../lisk-sdk/lisk-elements/introduction.md)</PRE>   | <PRE>Set of libraries, that are implementing Lisk protocol. Contains all of the cryptography tools you may need to implement Lisk network interactions into your application.</PRE>
+<PRE>[Lisk SDK](../lisk-sdk/introduction.md) > [Lisk Commander](../lisk-sdk/lisk-commander/introduction.md)</PRE> | <PRE>Command line tool to interact with the network and maintain a node.</PRE>
+<PRE>[Lisk Core](../lisk-core/introduction.md)</PRE>                    | <PRE>The software needed to run a node on the Lisk Mainchain.</PRE>
+<PRE>[Lisk Explorer](../lisk-explorer/introduction.md)</PRE>            | <PRE>Lisk Explorer is a tool that visualizes the vast information from Lisk's blockchain.</PRE>
+<PRE>[Lisk Hub](../lisk-hub/introduction.md)</PRE>                      | <PRE>Lisk Hub is an all-in-one solution to manage your Lisk ID, access and send LSK tokens, as well as vote for delegates.</PRE>
+<PRE>[Lisk Mobile](../lisk-mobile/introduction.md)</PRE>                | <PRE>Lisk Mobile is the official LSK wallet for smartphones.</PRE>
 
 
 ## Contribute to the project

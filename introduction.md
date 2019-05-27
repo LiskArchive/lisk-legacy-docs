@@ -30,7 +30,7 @@
 
 ## Introduction
 
-Lisk Core is the program that implements the [Lisk Protocol](/lisk-protocol/introduction.md).
+Lisk Core is the program that implements the [Lisk Protocol](../lisk-protocol/introduction.md).
 Every machine must set it up to run a node that allows for participation in the network.
 Setting up Lisk Core enables a user to:
 

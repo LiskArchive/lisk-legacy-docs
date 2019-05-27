@@ -3,7 +3,22 @@
 To upgrade Lisk Core from Binary please follow the instructions below.
 Please choose the instructions specific to the network (Mainnet or Testnet) your node is connected to.
 
-## Automated Upgrade Lisk Core
+## Upgrade with Lisk Commander
+
+> __Note:__ The `core:upgrade` command is only supported for Lisk Core versions > `2.0.0` and will only work, if Lisk Core has been installed with Lisk Commander before.
+
+First, go into the directory, where your Lisk Core installation is located.
+
+Then, run the following command to upgrade Lisk Core:
+
+```bash
+lisk core:upgrade <location>
+```
+Where `<location>` should be the root folder of your Lisk Core installation.
+
+See for all available options the Lisk Commander [Command reference for Lisk Core](../lisk-sdk/lisk-commander/user-guide/lisk-core.md) as well as the [general Command reference](../lisk-sdk/lisk-commander/user-guide/commands.md).
+
+## Upgrade with bash script
 
 #### Mainnet
 ```bash

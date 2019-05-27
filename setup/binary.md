@@ -34,7 +34,7 @@ To complete the installation some prerequisites need to be fulfilled.  If you ha
 ### Determine if your platform can run Lisk Core
 
 ###### Supported Platforms
-- Ubuntu 18.04 x86_64
+- Ubuntu 18.04 (LTS) x86_64
 - Ubuntu 16.04 (LTS) x86_64
 
 ### Install Lisk Commander
@@ -57,6 +57,22 @@ lisk core:status lisk-mainnet
 
 See for all available options the Lisk Commander [Command reference for Lisk Core](../lisk-sdk/lisk-commander/user-guide/lisk-core.md) as well as the [general Command reference](../lisk-sdk/lisk-commander/user-guide/commands.md).
 
+## Post-Install
+
+After installation, check which ports Lisk Core is listening by checking the status:
+
+```bash
+lisk core:status lisk-mainnet
+```
+
+Check you network settings to verify, the corresponding ports are open.
+
+It's also recommended to set up a [log rotation](../configuration.md#logrotation).
+
+If you are not running Lisk locally, you will need to follow the [Configuration - API](../configuration.md#api-access-control) document to enable access.
+
+With all of the above steps complete you are ready to move on to the configuration documentation if you wish to enable forging or SSL, please see [General Configuration](../configuration.md).
+
 # Option B: The Bash script
 
 ## Pre-Install
@@ -64,7 +80,7 @@ See for all available options the Lisk Commander [Command reference for Lisk Cor
 ### Determine if your platform can run Lisk Core
 
 ###### Supported Platforms
-- Ubuntu 18.04 x86_64
+- Ubuntu 18.04 (LTS) x86_64
 - Ubuntu 16.04 (LTS) x86_64
 
 To complete the installation some prerequisites need to be fulfilled. If you have already performed these, please proceed to the [Installation](#installation) chapter. Please follow the instructions below to load the required software to your system.

@@ -12,8 +12,8 @@ For a quick & easy start, we provide getting started Guides for the most common 
 
 Action                                                            | Description                                                                                                               
  ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ 
-[Maintain a node](maintain-node.md)                               | 1. Deploy your first blockchain node in 5 minutes<br>2. Maintain your existing node<br>3. Benefits of operating a node
-[Build a blockchain application](build-blockchain-app.md)         | Introduction for building blockchain applications with the Lisk SDK.
+[Build a blockchain application](build-blockchain-app.md)         | <PRE>1. Alpha SDK step by step guide<br>  - How to create your custom blockchain<br>  - How to configure your blockchain<br>  - How to create a custom transaction<br>  - Build the frontend and interact with the network<br>2. Why blockchain? {Lisk Academy}</PRE>
+[Maintain a node](maintain-node.md)                               | <PRE>1. Deploy your first blockchain node in 5 minutes<br>2. Maintain your existing node<br>3. Benefits of operating a node</PRE>
 [Interact with the network](interact-with-network.md)             | Interact with the blockchain network through our API and install useful tools.
 [Get to know the Lisk Protocol](../lisk-protocol/introduction.md) | Learn the underlying logic and technical concepts behind the Lisk Protocol including its consensus algorithm, security, blocks, transactions and peer communications.
 

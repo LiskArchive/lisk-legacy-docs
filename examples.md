@@ -11,8 +11,6 @@ The purpose of Hello World application is to explain how to use and how to imple
 The implementation is saving the string value of the "hello" transaction's asset property to the asset property of the sender's account.
 
 Hello World transaction implements only the required functions from the BaseTransaction abstract interface.
-The overview of Custom Transaction implementation you can find in the dedicated section.
-So after sending a valid `{"type": 10, "senderId": "16313739661670634666L", ... "asset": { "hello": "world" } }` transaction, the sender's account changes from e.g.: `{ address: "16313739661670634666L", ..., asset: null }`, to `{ "address": "16313739661670634666L", ..., "asset": {"hello": "world"}} }`. 
 
 The Hello World implementation goes as following:
 
@@ -40,12 +38,13 @@ const app = new Application(genesisBlockDevnet, {
 
 In the `line 1`, we require the needed dependencies from the `lisk-sdk` package.
 The most important one is the `Application` class, which is used in `line 3` to create the application object.
-The application object will start the whole application as last step inside of `index.js`.
+The application object will start the whole application later as last step inside of `index.js`.
 
 ### 3. Create a new transaction type
 
 For the Hello World App, we want to create a [custom transaction type](custom-transactions.md) `HelloWorld`: 
 If an account is able to afford a `HelloWorld` transaction (fee is set to 1 LSK by default), the new "hello" property appears into this account's asset field.
+So after sending a valid `{"type": 10, "senderId": "16313739661670634666L", ... "asset": { "hello": "world" } }` transaction, the sender's account changes from e.g.: `{ address: "16313739661670634666L", ..., asset: null }`, to `{ "address": "16313739661670634666L", ..., "asset": {"hello": "world"}} }`. 
 
 #### TYPE
 

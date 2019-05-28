@@ -5,14 +5,14 @@
 > Check out the full code example for the [Hello World App on Github](https://github.com/LiskHQ/lisk-sdk-test-app/tree/development/hello_world).
 
 Welcome to the step-by-step guide of creating the Hello World application with Lisk Alpha SDK.
-A simple App, showcasing a minimal setup of a blockchain application with 1 custom transaction type: the "Hello" transaction.
+A simple App, showcasing a minimal setup of a blockchain application with 1 [custom transaction](custom-transactions.md) type: the "Hello" transaction.
 
 The purpose of Hello World application is to explain how to use and how to implement custom transaction with the Lisk SDK. 
 The implementation is saving the string value of the "hello" transaction's asset property to the asset property of the sender's account.
 
 Hello World transaction implements only the required functions from the BaseTransaction abstract interface.
 The overview of Custom Transaction implementation you can find in the dedicated section.
-So after sending a valid `{"type": 10, "senderId": "16313739661670634666L", ... "asset": { "hello": "world" } }` transaction, the sender's account changes from: `{ address: "16313739661670634666L", ..., asset: null }`, to `{ "address": "16313739661670634666L", ..., "asset": {"hello": "world"}} }`. 
+So after sending a valid `{"type": 10, "senderId": "16313739661670634666L", ... "asset": { "hello": "world" } }` transaction, the sender's account changes from e.g.: `{ address: "16313739661670634666L", ..., asset: null }`, to `{ "address": "16313739661670634666L", ..., "asset": {"hello": "world"}} }`. 
 
 The Hello World implementation goes as following:
 
@@ -20,11 +20,32 @@ The Hello World implementation goes as following:
 
 First, you need to set up the Lisk SDK following the instructions in the [Lisk SDK - Usage](../lisk-sdk/introduction.md#usage) section.
 
-### 2. Create a new transaction type
+### 2. Configure the application
 
-For the Hello App, we want to create a new transaction type `HelloWorld`.
+Next, let's configure the application, to provide basic information about the app we are going to build:
 
-If the account of an address "16313739661670634666L" is able to afford a `HelloWorld` transaction (fee is set to 1 LSK by default), the new "hello" property appears into this account's asset field.
+```js
+//index.js
+const { Application, genesisBlockDevnet } = require('lisk-sdk'); // require Application class and a default genesis block
+
+const app = new Application(genesisBlockDevnet, {
+	app: {
+		label: 'hello-world-app', // the name of your blockchain application
+		minVersion: '0.0.0', // the minimal compatible version with this version of the app
+		version: '0.0.0', // version of the app
+		protocolVersion: '0.0', // protocol version the app is running on
+	}
+});
+```
+
+In the `line 1`, we require the needed dependencies from the `lisk-sdk` package.
+The most important one is the `Application` class, which is used in `line 3` to create the application object.
+The application object will start the whole application as last step inside of `index.js`.
+
+### 3. Create a new transaction type
+
+For the Hello World App, we want to create a [custom transaction type](custom-transactions.md) `HelloWorld`: 
+If an account is able to afford a `HelloWorld` transaction (fee is set to 1 LSK by default), the new "hello" property appears into this account's asset field.
 
 #### TYPE
 
@@ -94,6 +115,36 @@ async prepare(store) {
     ]);
 }
 ```
+
+### 4. Register the new transaction type
+
+```js
+//index.js
+const { Application, genesisBlockDevnet } = require('lisk-sdk'); // require Application class and a default genesis block
+const HelloTransaction = require('./hello_transaction');
+
+const app = new Application(genesisBlockDevnet, {
+	app: {
+		label: 'hello-world-app', // the name of your blockchain application
+		minVersion: '0.0.0', // the minimal compatible version with this version of the app
+		version: '0.0.0', // version of the app
+		protocolVersion: '0.0', // protocol version the app is running on
+	}
+});
+
+app.registerTransaction(10, HelloTransaction);
+
+app
+	.run()
+	.then(() => app.logger.info('App started...'))
+	.catch(error => {
+		console.error('Faced error in application', error);
+		process.exit(1);
+	});
+```
+### 5. Start the network
+
+### 6. Create the Client-side of the blockchain application
 
 ## Cashback App
 

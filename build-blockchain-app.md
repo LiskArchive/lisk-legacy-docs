@@ -33,15 +33,19 @@ It is possible as well to exchange Modules with other ones, or to add new Module
 To see which ready-to-use Modules and Components already exist, check out the [list of Modules](../lisk-sdk/lisk-framework/introduction.md#list-of-core-modules) and [list of Components](../lisk-sdk/lisk-framework/introduction.md#components).
 
 #### 2.b Design custom transaction types
-Transactions are the main way for users to add data to the blockchain.
-The most basic transaction types that are part of nearly any blockchain are for example a transaction type for creating a new account on the network, or a transaction type to send tokens from one account to another.
-Depending on the use-case for your network, you need to pick the fitting transaction types for your application.
+Transactions are needed to add data to the blockchain.
+The most basic transaction types that are part of nearly any blockchain are for example:
 
-For comparison, see a [list of all transaction types](../lisk-protocol/transactions), which are implemented in the Lisk Protocol.
+1. One transaction type for creating a new account on the network
+2. One transaction type to send tokens from one account to another
 
-The Lisk Core transaction types are already implemented in Lisk Elements as part of the [@liskhq/lisk-transactions](../lisk-sdk/lisk-elements/packages/transactions.md) package.
+Depending on the use-case for your network, you need to pick the fitting transaction types for your application.<br>
+For comparison, see the [list of all transaction types](../lisk-protocol/transactions), which are described in the Lisk Protocol.
+These default transaction types are already implemented in Lisk Elements as part of the [@liskhq/lisk-transactions](../lisk-sdk/lisk-elements/packages/transactions.md) package.
 
-See the [Examples page](examples.md) for creating custom transaction types and how to add them to the application.
+To create custom transaction types, utilize the provided `BaseTransaction` interface as described in the section for [custom transactions](custom-transactions.md).
+
+See the [Examples applications](examples.md) for creating custom transaction types and how to add them to the application.
 
 #### 2.c Write own Modules
 If a Module with a desired functionality doesn't exist yet, create own [custom Modules](../lisk-sdk/lisk-framework/introduction.md#custom-modules) from scratch if needed.

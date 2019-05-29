@@ -48,7 +48,7 @@ module.exports = (src, dest, preview) => () => {
       .pipe(uglify())
       .pipe(concat('js/site.js')),
     vfs
-      .src('js/vendor/*.js', Object.assign({ read: false }, opts))
+      .src('js/vendor/*.js', { ...opts, read: false })
       .pipe(
         // see https://gulpjs.org/recipes/browserify-multiple-destination.html
         map((file, enc, next) => {

@@ -52,8 +52,16 @@ module.exports = (src, dest, preview) => () => {
       .pipe(
         // see https://gulpjs.org/recipes/browserify-multiple-destination.html
         map((file, enc, next) => {
-          file.contents = browserify(file.relative, { basedir: src, detectGlobals: false }).bundle()
-          next(null, file)
+          if (file.relative.endsWith('.bundle.js')) {
+            file.contents = browserify(file.relative, { basedir: src, detectGlobals: false }).bundle()
+            file.path = file.path.slice(0, file.path.length - 10) + '.js'
+            next(null, file)
+          } else {
+            fs.readFile(file.path, 'UTF-8').then((contents) => {
+              file.contents = Buffer.from(contents)
+              next(null, file)
+            })
+          }
         })
       )
       .pipe(buffer())

@@ -22,7 +22,7 @@ The default transaction types each implement a different use-case of the Lisk ne
 
 For a complete list of all default transaction types, check out the section [Lisk Transactions](https://lisk.io/documentation/lisk-protocol/transactions) of the Lisk Protocol.
 
-Check out the Lisk SDK [Example Apps](https://github.com/LiskHQ/lisk-sdk-test-app) for simple [code examples of custom transaction types](https://github.com/LiskHQ/lisk-sdk-test-app/blob/development/hello_world/hello_transaction.js).
+Check out the Lisk SDK [Example Apps](examples.md) for simple code examples of custom transaction types.
 
 ## Lifecycle
 

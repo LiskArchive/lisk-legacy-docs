@@ -147,7 +147,7 @@ app
 
 ## Cashback App
 
-> Check out the full code example for the [code example on Github](https://github.com/LiskHQ/lisk-sdk-test-app).
+> Check out the full code example for the [Cashback App on Github](https://github.com/LiskHQ/lisk-sdk-test-app).
 
 A simple application which is rewarding it's users for sending tokens. 
 

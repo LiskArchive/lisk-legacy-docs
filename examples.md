@@ -24,27 +24,38 @@ Next, let's configure the application, to provide basic information about the ap
 
 ```js
 //index.js
-const { Application, genesisBlockDevnet } = require('lisk-sdk'); // require Application class and a default genesis block
+const { Application, genesisBlockDevnet, configDevnet } = require('lisk-sdk'); // require Application class and a default genesis block
 
-const app = new Application(genesisBlockDevnet, {
-	app: {
-		label: 'hello-world-app', // the name of your blockchain application
-		minVersion: '0.0.0', // the minimal compatible version with this version of the app
-		version: '0.0.0', // version of the app
-		protocolVersion: '0.0', // protocol version the app is running on
-	}
-});
+const app = new Application(genesisBlockDevnet, configDevnet);
 ```
 
 In the `line 1`, we require the needed dependencies from the `lisk-sdk` package.
-The most important one is the `Application` class, which is used in `line 3` to create the application object.
-The application object will start the whole application later as last step inside of `index.js`.
+The most important one is the `Application` class, which is used in `line 3` to create the application instance.
+The application instance will start the whole application at the bottom of `index.js`.
+
+In `line 3` , the application instance gets initialized.
+By passing the parameters for the [genesis block](../lisk-sdk/configuration.md) and the [configuration template](https://github.com/LiskHQ/lisk-sdk/blob/development/sdk/src/samples/config_devnet.json), the application is configured with most basic configurations to start the node.
+
 
 ### 3. Create a new transaction type
 
 For the Hello World App, we want to create a [custom transaction type](custom-transactions.md) `HelloWorld`: 
 If an account is able to afford a `HelloWorld` transaction (fee is set to 1 LSK by default), the new "hello" property appears into this account's asset field.
-So after sending a valid `{"type": 10, "senderId": "16313739661670634666L", ... "asset": { "hello": "world" } }` transaction, the sender's account changes from e.g.: `{ address: "16313739661670634666L", ..., asset: null }`, to `{ "address": "16313739661670634666L", ..., "asset": {"hello": "world"}} }`. 
+So after sending a valid `{"type": 10, "senderId": "16313739661670634666L", ... "asset": { "hello": "world" } }` transaction, the sender's account changes from e.g.: `{ address: "16313739661670634666L", ..., asset: null }`, to `{ "address": "16313739661670634666L", ..., "asset": {"hello": "world"}} }`.
+
+Now, let's create a new file `hello_transaction.js`, which is defining the new transaction type `HelloTransaction`:
+
+```js
+const {	BaseTransaction, TransactionError } = require('@liskhq/lisk-transactions');
+
+class HelloTransaction extends BaseTransaction {
+
+// add the all methods described below here
+
+}
+
+module.exports = HelloTransaction;
+``` 
 
 #### TYPE
 
@@ -120,7 +131,7 @@ async prepare(store) {
 ```js
 //index.js
 const { Application, genesisBlockDevnet } = require('lisk-sdk'); // require Application class and a default genesis block
-const HelloTransaction = require('./hello_transaction');
+const HelloTransaction = require('./hello_transaction'); // require the newly created transaction type 'Hellotransaction'
 
 const app = new Application(genesisBlockDevnet, {
 	app: {

@@ -9,9 +9,9 @@ const app = new Application(genesisBlockDevnet, configDevnet); // start the node
 
 ## List of configuration options
 
-Here is a complete list of all available configuration options of the Lisk SDK.
+Here is a complete list of all the available configuration options of the Lisk SDK.
 
-The values below are the default values. They will be used automatically when starting the application like described in [start with default values](#start-with-default-values).
+The values below are the default values. They will be used automatically when starting the application as described in [start with default values](#start-with-default-values).
 To change them, override the specific default values with custom ones, when initializing the application.
 
 ```js
@@ -160,7 +160,7 @@ const app = new Application(genesisBlockDevnet, {
 
 ## Constants
 
-Inside of `app.genesisConfig`, specific constants for the blockchain application are set.
+Inside `app.genesisConfig` specific constants for the blockchain application are set.
 
 In the alpha version of the Lisk SDK, not all available constants are configurable by the user.
 Only the configurable constants are listed above.

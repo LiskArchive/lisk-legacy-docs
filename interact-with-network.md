@@ -7,13 +7,13 @@ There are several groups that need/want to interact with the network. Below you 
 - __Exchanges__ interact heavily with the network, e.g. by transferring tokens for their customers. For exchanges, it is recommended to [set up their own node](maintain-node.md) to interact with the network reliably.
 - __Delegates__ interact with the network by forging new blocks and adding them to the blockchain. A delegate typically is also a __node operator__.
 - __Node operators__ have a general interest in monitoring their node and the network. Their node provides them with a private API that can be used to make different queries or to post transactions to the network. Depending on their preferences, node operators might want to use [Lisk Commander](#a-use-the-command-line), [Lisk Elements](#b-write-scripts-in-javascript) or a graphical interface like [Lisk Hub](#c-use-lisk-hub).
-- __Developers__ test and prove the functionality of their blockchain application. For quick interaction we recommend to use [Lisk Commander](#a-use-the-command-line).
+- __Developers__ test and improve the functionality of their blockchain application. For quick interaction we recommend to use [Lisk Commander](#a-use-the-command-line).
 - __Applications__ interact through the API with the network. For convenience, applications would use wrappers like [@liskHQ/lisk-api-client](../lisk-sdk/lisk-elements/packages/api-client.md). Applications might also want to make use of [Lisk Service](https://github.com/LiskHQ/lisk-service) and its extended API.
 - __End users__ mostly interact with the network through Graphical User Interfaces such as wallet applications like [Lisk Hub](#c-use-lisk-hub).
 
 ## How to interact with the network
 
-> The following tools are suited for interacting with the Main- and Testnet of Lisk, but they can be used for interaction with other blockchain applications that have been developed with the Lisk SDK as well
+> The following tools are suited for interacting with the Mainnet and Testnet of Lisk, but they can be used for interaction with other blockchain applications that have been developed with the Lisk SDK as well
 
 You can choose from up to 5 ways to interact with an existing network based on what is most convenient for your case:
 
@@ -32,7 +32,7 @@ One of the most useful packages in this regard is the [@liskhq/lisk-api-client](
 ## C. Use Lisk Hub
 [Lisk Hub](https://lisk.io/hub) is the Graphical User Interface (GUI) to interact with the network.
 
-It consists of wallet functionalities like sending transactions and view account history, and more extended features like delegate voting or registering as a delegate.
+It consists of wallet functionalities like sending transactions and viewing account history, as well as more extended features like delegate voting or registering as a delegate.
 
 ## D. Query the API
 Query the [API](https://lisk.io/documentation/lisk-core/api) manually. Either from a public node, or connect to your own private node to interact with the network.
@@ -43,8 +43,8 @@ There are a number of nodes that are available for the public use.
 
 LiskHQ for example is running a public testnet node, that is also used to make [live requests](https://lisk.io/documentation/lisk-core/api) while trying out the different API endpoints in the documentation.
 
-> When hitting the "Try it out" button beside each endpoint, it is possible to execute the corresponding API request and get a live response from the Lisk Testnet.
-> It will also display the corresponding Curl command to make the request from the Command-line
+> When hitting the "Try it out" button beside each endpoint, it is possible to execute the corresponding API request and get a live response from Lisk Testnet.
+> It will also display the corresponding curl command to make the request from the command-line
 
 ### Use your private node
 
@@ -54,4 +54,4 @@ To change this, it is possible to define exclusive [whitelists](../lisk-core/con
 
 ## E. Query the extended API
 
-[Lisk Service](https://github.com/LiskHQ/lisk-service) combines various services in the Lisk ecosystem and makes it available through an extended API with a bigger selection of endpoints.
+[Lisk Service](https://github.com/LiskHQ/lisk-service) combines various services in the Lisk ecosystem and makes it available through an extended API with a larger selection of endpoints.

@@ -4,6 +4,7 @@
 
 ```js
 const app = new Application(genesisBlockDevnet); // uses predefined values, see full list below
+const app = new Application(genesisBlockDevnet, configDevnet); // start the node in a fully functional devnet
 ```
 
 ## List of configuration options
@@ -16,13 +17,13 @@ To change them, override the specific default values with custom ones, when init
 ```js
 const app = new Application(genesisBlockDevnet, {
 	app:{
-	    ipc: { enabled: false},
-	    genesisConfig: {
-	        EPOCH_TIME: new Date(Date.UTC(2016, 4, 24, 17, 0, 0, 0)).toISOString(),
-	        BLOCK_TIME: 10,
-	        MAX_TRANSACTIONS_PER_BLOCK: 25,
+	    ipc: { enabled: false}, // If true, allows modules to communicate over IPCs (inter-process-channels).
+	    genesisConfig: { // Network specific constants
+	        EPOCH_TIME: new Date(Date.UTC(2016, 4, 24, 17, 0, 0, 0)).toISOString(), // Timestamp indicating the initial network start (`Date.toISOString()`).
+	        BLOCK_TIME: 10, // Slot time interval in seconds
+	        MAX_TRANSACTIONS_PER_BLOCK: 25, // Maximum number of transactions allowed per block.
 	        REWARDS: {
-	            MILESTONES: [
+	            MILESTONES: [ // Initial 5 LSK, and decreasing until 1 LSK.
 	                '500000000', // Initial Reward
 	                '400000000', // Milestone 1
 	                '300000000', // Milestone 2
@@ -166,3 +167,36 @@ Only the configurable constants are listed above.
 In future versions of the Lisk SDK, more constants will become configurable.
 
 To see a full list of all constants and their predefined values, check out [Lisk SDK on Github](https://github.com/LiskHQ/lisk-sdk/blob/development/framework/src/controller/schema/constants_schema.js).
+
+# The Genesis block
+
+The genesis block describes the very first block in the blockchain.
+It defines the initial state of the blockchain on start of the network.
+
+The genesis block is not forged by a delegate, like all other blocks, which come after the genesis block.
+Instead, it is defined by the blockchain application developer, when creating the `Application` instance of the blockchain app (see section [start with default values](#start-with-default-values)).
+
+> Go to Github, to see the full file [genesis_block_devnet.json](https://github.com/LiskHQ/lisk-sdk/blob/development/sdk/src/samples/genesis_block_devnet.json)
+
+A genesis block generator to create genesis blocks conveniently will be included in the Lisk SDK eventually. For Lisk Alpha SDK, you can use the exposed `genesisBlockDevnet` as a template, and customize it to your needs.
+
+It's possible and recommended to customize the genesis block to suit the use case of your blockchain application. The following template describes all available options for the genesis block.
+
+```js
+{
+	"version": 0, // block version
+	"totalAmount": "10000000000000000", // the total amount of tokens that are transferred in this block
+	"totalFee": "0", // the total amount of fees associated with the block
+	"reward": "0", // reward for forging the block
+	"payloadHash": "198f2b61a8eb95fbeed58b8216780b68f697f26b849acf00c8c93bb9b24f783d", // hashes of the combined transactional data blocks
+	"timestamp": 0, // epoch timestamp of when the block was created
+	"numberOfTransactions": 103, // number of transactions processed in the block
+	"payloadLength": 19619, // sum of data blocks of all transaction in this block in bytes
+	"previousBlock": null, // null, because the genesis block has no previous block by definition
+	"generatorPublicKey": "c96dec3595ff6041c3bd28b76b8cf75dce8225173d1bd00241624ee89b50f2a8", // public key of the delegate who forged the block
+	"transactions": [], // list of transactions in the genesis block
+	"height": 1, // current height of the blockchain, always equals 1 for the genesis block
+	"blockSignature": "c81204bf67474827fd98584e7787084957f42ce8041e713843dd2bb352b73e81143f68bd74b06da8372c43f5e26406c4e7250bbd790396d85dea50d448d62606", // signature of the block, signed by the delegate
+	"id": "6524861224470851795" // block id
+}
+```

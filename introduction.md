@@ -145,6 +145,8 @@ node index.js # start the application
 This should start the application with the predefined default configurations, which will connect your app to a local devnet.
 From this point, you can start to [configure](configuration.md) and customize the application further.
 
+For more detailed explanations, check out the getting started sections for [building lockchain applications](../start/build-blockchain-app.md) and the [example applications](../start/examples.md), which describe the process of creating a blockchain application step-by-step.
+
 ## Contributing to the Lisk SDK
 
 To test out your local changes of the Lisk SDK, use a blockchain application(e.g. [Lisk Core](../lisk-core/introduction.md)) as basis and link it your locally customized `lisk-sdk` .

@@ -1,12 +1,12 @@
 # Resources
 
-- [LiskHQ Github](https://github.com/LiskHQ) - Source code of all software products of Lisk.
-- [LiskHQ NPM packages](https://www.npmjs.com/~lisk) - List of all published NPM packages of LiskHQ.
+- [LiskHQ Github](https://github.com/LiskHQ) - Source code for all software products of Lisk.
+- [LiskHQ NPM packages](https://www.npmjs.com/~lisk) - Lists all NPM packages published by LiskHQ.
 - [Community Tools](https://docs.google.com/spreadsheets/d/1EJ2ni5LBBNM43cCFkvQ7lYyAHeGm_cFwOQkfAqd-fQc/edit#gid=0) -  List of community built tools, wallets and scripts to help make your life easier.
 - [Help Center](https://lisk.io/help-center) - A searchable database of frequently asked questions.
 - [Lisk Academy](https://lisk.io/academy) - A comprehensive and unbiased educational platform on blockchain technology. 
-- [Lisk Improvement Proposals](https://github.com/LiskHQ/lips) - A collection of proposed improvements to the Lisk protocol
-- [Roadmap](https://lisk.io/roadmap) - Explore the development roadmap as we make progress towards the SDK 
+- [Lisk Improvement Proposals](https://github.com/LiskHQ/lips) - A collection of proposed improvements to the Lisk protocol.
+- [Roadmap](https://lisk.io/roadmap) - Explore Lisk's development roadmap. 
 - [News](https://blog.lisk.io/) - Links to the latest news about Lisk, updated weekly.
 
 ## Community

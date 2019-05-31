@@ -11,9 +11,9 @@
 
 ## Community
 
-Join the community!
+Join our community!
 
-Below are the most essential links to the official Lisk community channels.
+Below are the essential links to the Lisk community channels.
 
 - [Subscribe to the Lisk newsletter](https://mailchi.mp/lisk/newsletter) - Updates straight to your inbox
 - [Lisk Gitter](https://gitter.im/LiskHQ/lisk) - Technical discussions for developers.

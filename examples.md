@@ -339,7 +339,7 @@ module.exports = (Transaction, inputs) => {
     // next, newly created transaction object needs to be signed by the sender, by utilizing the sign() method of the transaction type. As arguments, the passphrase and , if existent, the secondPassphrase are passed.
     transaction.sign(passphrase, secondPassphrase);
     
-    // the signed trasnaction object is returned in JSON format
+    // the signed transaction object is returned in JSON format
     return asJSON(skipUndefined(transaction.toJSON()));
 }
 ```
@@ -365,14 +365,14 @@ let h = createSendableTransaction(HelloTransaction, {
 	timestamp: 0,
 });
 
-console.log(h); // the desired trasnaction is created and signed, and then displayed as JSON object in the console
+console.log(h); // the desired transaction is created and signed, and then displayed as JSON object in the console
 ```
 
 Now that we have a sendable transaction object, let's send it to our node and see how it gets processed by analyzing the logs.
 
 For this, we utilize the API of the node and post the created transaction object to the transaction endpoint of the API.
 
-Because the API of every node is only accessible form localhost by default, you need to execute this query on the same server that your node is runnign on, unless you changed the config to make your API accessible others or to the public.
+Because the API of every node is only accessible form localhost by default, you need to execute this query on the same server that your node is runnign on, unless you changed the config to make your API accessible to others or to the public.
 
 ```bash
 node print_sendable.js | curl -X POST -H "Content-Type: application/json" -d @- localhost:4000/api/transactions
@@ -391,6 +391,8 @@ configDevnet.components.logger.consoleLogLevel = "none"; // no logs will be show
 
 const app = new Application(genesisBlockDevnet, configDevnet); // create the application instance
 ```
+
+As next step, you can design a nice frontend application like [Lisk Explorer](https://explorer.lisk.io/), which is showing users assets data inside of their account page. 
 
 ## Cashback App
 

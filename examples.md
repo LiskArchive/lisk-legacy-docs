@@ -398,12 +398,12 @@ As next step, you can design a nice frontend application like [Lisk Explorer](ht
 
 > Check out the full code example for the [Cashback App on Github](https://github.com/LiskHQ/lisk-sdk-test-app).
 
-A simple application which is rewarding it's users for sending tokens. 
+A simple application which rewards its users for sending tokens. 
 
 To achieve this, a custom transaction type `CashbackTransaction` is created.
 
-It extends the already existing transaction type `TransferTransaction`.
+It extends the pre-existing transaction type `TransferTransaction`.
 
-The Cashback transaction type returns half of the amount of tokens that are transferred back to the senders account.
+Here the Cashback transaction type pays out a 50% bonus reward to the sender of any Cashback transaction type.
 
 So e.g. if Alice sends 100 token to Bob as a Cashback transaction, Bob would receive the 100 token and Alice would receive additional 50 tokens as a cashback.

@@ -29,7 +29,7 @@ The Lisk SDK makes every effort to allow developers to focus simply and purely o
 
 ### Architecture Overview
 
-The Lisk SDK operates on the NodeJS runtime and consists primarily of an application framework (Lisk Framework), a collection of libraries providing blockchain application functionalities (Lisk Elements), and a powerful command-line tool (Lisk Commander) allowing developers to manage a Lisk node instance and interact with a Lisk compatible network.
+The Lisk SDK operates on the NodeJS runtime and consists primarily of an application framework (Lisk Framework), a collection of libraries providing blockchain application functionalities (Lisk Elements), and a powerful command-line tool (Lisk Commander) which allows developers to manage a Lisk node instance and interact with a Lisk compatible network.
 The diagram below provides a high-level overview of the architecture:
 
 ![Diagram](assets/diagram_sdk.png)
@@ -38,9 +38,9 @@ The diagram below provides a high-level overview of the architecture:
 
 | Directory                                   | Description                                                                                                                                          |
 | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Framework](lisk-framework/introduction.md) | The application framework is establishing and maintaining the interactions between the modules of a Lisk blockchain application.                     |
+| [Framework](lisk-framework/introduction.md) | The application framework establishes and maintains the interactions between the modules of a Lisk blockchain application.                           |
 | [Elements](lisk-elements/introduction.md)   | A collection of libraries, each of them implementing some form of blockchain application functionality such as cryptography, transactions, p2p, etc. |
-| [Commander](lisk-commander/introduction.md) | A command line tool allowing developers to manage a Lisk node instance and interact with a Lisk compatible network.                                  |
+| [Commander](lisk-commander/introduction.md) | A command line tool which allows developers to manage a Lisk node instance and interact with a Lisk compatible network.                                  |
 
 ## Setup
 
@@ -109,7 +109,7 @@ npm install --save lisk-sdk@alpha # add --save flag to save it to package.json
 
 ### Usage
 
-First steps to start developing your blockchain application:
+The first steps to start developing your blockchain application:
 
 ```bash
 mkdir my-app # create the root folder for your blockchain application
@@ -121,16 +121,16 @@ touch index.js # create the index file to start the application
 
 Inside of `index.js`, require the `lisk-sdk` package to create and start the application.
 
-Below you see the minimal version of `index.js` that is needed to successfully kick-start the blockchain application:
+Below is the minimal version of `index.js` that is needed to successfully kick-start the blockchain application:
 
 ```js
-const { Application, genesisBlockDevnet } = require('lisk-sdk'); // require the lisk-sdk package
+const { Application, genesisBlockDevnet, configDevnet} = require('lisk-sdk'); // require the lisk-sdk package
   
-const app = new Application(genesisBlockDevnet); // Create a new application with default genesis block for a local devnet
+const app = new Application(genesisBlockDevnet, configDevnet); // create a new application with default genesis block for a local devnet
 
 app.run() // start the application
-   .then(() => app.logger.info('App started...')) // Code that is executed after the successful start of the application.
-   .catch(error => { // Code that is executed if the application start fails.
+   .then(() => app.logger.info('App started...')) // code that is executed after the successful start of the application.
+   .catch(error => { // code that is executed if the application start fails.
         console.error('Faced error in application', error);
         process.exit(1);
 });               
@@ -142,19 +142,19 @@ Now, save and close `index.js` and try to start your newly created blockchain ap
 node index.js # start the application
 ```
 
-This should start the application with predefined default configurations, what will connect your app to a local Devnet.
+This should start the application with the predefined default configurations, which will connect your app to a local devnet.
 From this point, you can start to [configure](configuration.md) and customize the application further.
 
 ## Contributing to the Lisk SDK
 
-To test out your local changes of the Lisk SDK, use a blockchain application(e.g. [Lisk Core](../lisk-core/introduction.md)) as basis and link your locally customized `lisk-sdk`  to it.
+To test out your local changes of the Lisk SDK, use a blockchain application(e.g. [Lisk Core](../lisk-core/introduction.md)) as basis and link it your locally customized `lisk-sdk` .
 
-1) At root of `lisk-sdk` repo,  run `npx lerna link`
-2) At root level of your blockchain application, run `npm link lisk-sdk`
+1) At root of the `lisk-sdk` repository, run `npx lerna link`.
+2) At root level of your blockchain application, run `npm link lisk-sdk`.
 
 *Notes:*
-1) If you have made changes in `elements` lib then make sure you run `npm run build` to see the changes
-2) To clean up, install and build from scratch, `npm run clean:node_modules && rm -rf ./node_modules && npm ci && npm run bootstrap -- --ci && npm run build`
+1) If you have made changes in the Lisk Elements, then make sure you run `npm run build` to see the changes.
+2) To clean up, install and build from scratch, `npm run clean:node_modules && rm -rf ./node_modules && npm ci && npm run bootstrap -- --ci && npm run build`.
 
 For more information about how to contribute to the Lisk SDK, check out our [Contribution Guidelines](https://github.com/LiskHQ/lisk-sdk/blob/development/docs/CONTRIBUTING.md) on Github.
 

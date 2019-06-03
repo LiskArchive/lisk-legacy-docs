@@ -7,7 +7,7 @@
 Welcome to the step-by-step guide of creating the Hello World application with Lisk Alpha SDK.
 A simple App, showcasing a minimal setup of a blockchain application with 1 [custom transaction](custom-transactions.md) type: the "Hello" transaction.
 
-The purpose of Hello World application is to explain how to use and how to implement custom transaction with the Lisk SDK. 
+The purpose of Hello World application is to explain how to use and how to implement custom transactions with the Lisk SDK. 
 The implementation is saving the string value of the "hello" transaction's asset property to the asset property of the sender's account.
 
 Hello World transaction implements only the required functions from the BaseTransaction abstract interface.
@@ -64,9 +64,10 @@ module.exports = HelloTransaction;
 
 The __required__ methods are described here in detail:
 
-#### TYP
+#### TYPE
 
-Set the HelloWorld transaction TYPE to 10. Every time a transaction is received, it gets differentiated by the type. The first 10 types, from 0-9 is reserved for the default Lisk Network functions.
+Set the HelloWorld transaction TYPE to 10. Every time a transaction is received, it gets differentiated by the type.
+The first 10 types, from 0-9 is reserved for the default Lisk Network functions.
 ```js
 static get TYPE () {
     return 10;
@@ -78,7 +79,7 @@ That's where the custom logic of the Hello World app is implemented.
 
 It shows how to store an additional information about accounts using the `asset` field. The content of property of "hello" transaction's asset gets saved into the "hello" property of the account's asset.
 
-`applyAsset` and `undoAsset` uses the information about the sender's account from the `store`, which is defined in the `prepare` step.
+`applyAsset` and `undoAsset` use the information about the sender's account from the `store`, which is defined in the `prepare` step.
 
 Invoked as part of the `apply` step of the BaseTransaction and block processing.  
 ```js
@@ -400,10 +401,206 @@ As next step, you can design a nice frontend application like [Lisk Explorer](ht
 
 A simple application which rewards its users for sending tokens. 
 
-To achieve this, a custom transaction type `CashbackTransaction` is created.
+### 1. Set up Lisk SDK
 
+First, you need to set up the Lisk SDK following the instructions in the [Lisk SDK - Usage](../lisk-sdk/introduction.md#usage) section.
+
+### 2. Configure the application
+
+Next, let's configure the application, to provide basic information about the app we are going to build:
+
+```js
+//index.js
+const { Application, genesisBlockDevnet, configDevnet } = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
+
+const app = new Application(genesisBlockDevnet, configDevnet); // create the application instance
+```
+
+In the `line 2`, we require the needed dependencies from the `lisk-sdk` package.
+The most important one is the `Application` class, which is used in `line 4` to create the application instance.
+The application instance will start the whole application at the bottom of `index.js`.
+
+In `line 4` , the application instance gets initialized.
+By passing the parameters for the [genesis block](../lisk-sdk/configuration.md) and the [configuration template](https://github.com/LiskHQ/lisk-sdk/blob/development/sdk/src/samples/config_devnet.json), the application is configured with most basic configurations to start the node.
+
+### 3. Create a new transaction type
+
+Now, we want to create a new [custom transaction type](custom-transactions.md) `CashbackTransaction`: 
 It extends the pre-existing transaction type `TransferTransaction`.
-
-Here the Cashback transaction type pays out a 50% bonus reward to the sender of any Cashback transaction type.
+In difference to the normal `TransferTransaction`, the Cashback transaction type pays out a 50% bonus reward to the sender of any Cashback transaction type.
 
 So e.g. if Alice sends 100 token to Bob as a Cashback transaction, Bob would receive the 100 token and Alice would receive additional 50 tokens as a cashback.
+
+> If you compare the methods we implemented for the `HelloTransaction`, you will notice, that we implement less methods for the `CashbackTransaction`.
+> This is because we extend the `CashbackTransaction` from an already existing transaction type `TransferTransaction`.
+> As a result, all required methods are implemented already inside the `Transfertransaction` class, and we only need to overwrite explicitely the methods we want to customize.
+
+Now, let's create a new file `cashback_transaction.js`, which is defining the new transaction type `CashbackTransaction`:
+
+```js
+//cashback_transaction.js
+const {	TransferTransaction, BigNum } = require('lisk-sdk'); // import the TransferTransaction class and Bignum from the Lisk SDK package
+
+class CashbackTransaction extends TransferTransaction { // let the CashbackTransaction become a child class of TransferTransaction
+
+// add the all methods described below here
+
+}
+
+module.exports = CashbackTransaction;
+``` 
+
+> You find a version of [the complete `cashback_transaction.js` file](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/cashback/transactions/cashback_transaction.js) on Github
+
+#### TYPE
+
+Set the Cashback transaction TYPE to `11`.
+The first 10 types, from `0-9` is reserved for the default Lisk Network functions.
+Type `10` was used previously for the `HelloTransaction`, so we set it to `11`, but any other integer value (that is not already used by another transaction type) is a valid value.
+```js
+static get TYPE () {
+    return 11;
+}
+```
+
+#### applyAsset
+
+That's where the custom logic of the Cashback transaction is implemented. 
+
+Invoked as part of the `apply` step of the BaseTransaction and block processing.  
+
+Is it overriding the method of https://github.com/LiskHQ/lisk-sdk/blob/development/elements/lisk-transactions/src/0_transfer_transaction.ts ?
+if yes, are the tokens transferred at all, or is the sender just getting the bonus?
+```js
+applyAsset(store) {
+    super.applyAsset(store);
+
+    const sender = store.account.get(this.senderId);
+    const updatedSenderBalanceAfterBonus = new BigNum(sender.balance).add(
+        new BigNum(this.amount).div(10)
+    );
+    const updatedSender = {
+        ...sender,
+        balance: updatedSenderBalanceAfterBonus.toString(),
+    };
+    store.account.set(sender.address, updatedSender);
+
+    return [];
+}
+```
+
+#### undoAsset
+
+Inverse of `applyAsset`.
+Undoes the changes made in applyAsset step - removes the "hello" property from the account's asset field.
+```js
+undoAsset(store) {
+    super.applyAsset(store);
+
+    const sender = store.account.get(this.senderId);
+    const updatedSenderBalanceAfterBonus = new BigNum(sender.balance).sub( 
+        new BigNum(this.amount).div(10)
+    );
+    const updatedSender = {
+        ...sender,
+        balance: updatedSenderBalanceAfterBonus.toString(),
+    };
+    store.account.set(sender.address, updatedSender);
+
+    return [];
+}
+```
+
+### 4. Register the new transaction type
+
+Right now, your project should have the following file structure:
+
+```bash
+/cashback-app # root directory of the application
+/cashback-app/cashback_transaction.js # the custom transaction, created in step 3
+/cashback-app/index.js # the index file of your application, created in step 1, extended in step 2 and 4
+/cashback-app/node_modules/ # project dependencies, created in step 1
+/cashback-app/package.json # project manifest file, created in step 1
+```
+
+Add the new transaction type to your application, by registering it to the application instance:
+
+```js
+//index.js
+const { Application, genesisBlockDevnet, configDevnet} = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
+const CashbackTransaction = require('./cashback_transaction'); // require the newly created transaction type 'CashbackTransaction'
+
+const app = new Application(genesisBlockDevnet, configDevnet); // create the application instance
+
+app.registerTransaction(11, CashbackTransaction); // register the 'CashbackTransaction' 
+
+
+// the code block below starts the application and doesn't need to be changed
+app
+    .run()
+    .then(() => app.logger.info('App started...'))
+    .catch(error => {
+        console.error('Faced error in application', error);
+        process.exit(1);
+    });
+```
+
+### 5. Start the network
+
+Now, let's start our customized blockchain network for the first time.
+
+The parameter `configDevnet`, which we pass to our `Application` instance in step 3, is preconfigured to start the node with a set of dummy delegates, that have enabled forging by default.
+These dummy delegates stabilize the new network and make it possible to test out the basic functionality of the network with only one node immediately.
+
+This creates a simple Devnet, which is beneficial during development of the blockchain application.
+The dummy delegates can be replaced by real delegates later on.
+
+To start the network, execute the following command:
+
+```bash
+node index.js | npx bunyan -o short
+```
+
+`node index.js` will start the node, and `| npx bunyan -o short` will pretty-print the logs in the console.
+
+Check the logs, to verify the network has started successfully.
+
+If something went wrong, the process should stop and an error with debug information is displayed.
+
+If everything is ok, you should be able to see similar logs like the ones displayed in [step 5 of the Hello World app tutorial](#5-start-the-network).
+
+### 6. Interact with the network
+
+Now that the network is started, let's try to send a `CashbackTransaction` to our node to see if it gets accepted.
+
+As first step, create the transaction object.
+
+First, let's reuse the script [create_sendable_transaction.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/scripts/create_sendable_transaction_base_trs.js) which we already described in [step 6 of Hello World app](#6-interact-with-the-network).
+
+We can use this function in our script for printing a sendable Cashback transaction object:
+
+```js
+//print_sendable.js
+const createSendableTransaction = require('./create_sendable_transaction_base_trs');
+const CashbackTransaction = require('../cashback-app/cashback_transaction');
+
+/**
+ *  To send printed transaction:
+ *  > node src/transactions/create_trs.js | curl -X POST -H "Content-Type: application/json" -d @- localhost:4000/api/transactions
+ *  Note: An application needs to run on port 4000 (the default one) before.
+ */
+let c = createSendableTransaction(CashbackTransaction, {
+	type: 9,
+	data: null,
+	amount: `${10 ** 8}`,
+	fee: `${10 ** 7}`,
+ 	recipientId: '10881167371402274308L', //delegate genesis_100
+ 	recipientPublicKey: 'addb0e15a44b0fdc6ff291be28d8c98f5551d0cd9218d749e30ddb87c6e31ca9',
+ 	senderPublicKey: 'c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f',
+ 	passphrase: 'wagon stock borrow episode laundry kitten salute link globe zero feed marble',
+ 	secondPassphrase: null,
+ 	timestamp: 2,
+});
+
+console.log(c); // the desired transaction is created and signed, and then displayed as JSON object in the console
+```

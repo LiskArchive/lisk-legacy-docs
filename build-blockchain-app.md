@@ -54,12 +54,12 @@ See the [Examples page](examples.md) for creating custom transaction types and h
 ### 3. Interact with the network
 While your network is up and running, use [Lisk Commander](../lisk-sdk/lisk-commander/introduction.md) to interact with the network via the CLI (Command-Line-Interface).
 To monitor and explore the network, you may want to set up a monitoring solution like e.g. [Lisk Explorer](https://github.com/LiskHQ/lisk-explorer).
-Depending on the level of customization, it might be needed to customize the Lisk Explorer and Lisk Commander as well, or otherwise certain services might fail.
+Depending on the level of customization, Lisk Explorer and Lisk Commander may also require customization to prevent other services from failing.
 
-Another simple way to interact with the network is by connecting to it with [Lisk Hub](https://github.com/LiskHQ/lisk-hub).
-Lisk Hub provides a simple and beautiful user interface to create and manage accounts in the network and to interact with it by sending different types of transactions.
+Another simple way to interact with the network is by connecting it to [Lisk Hub](https://github.com/LiskHQ/lisk-hub).
+Lisk Hub provides a simple and beautiful user interface to create and manage accounts on the network, and also to interact with the network by sending different types of transactions.
 
-Once your blockchain is finished, and it is possible to send the transactions and custom transactions your use case requires,  you can create a frontend to allow users to interact and use your blockchain application.
+Once your blockchain is finished, and it is possible to send the transactions (and custom transactions), you can create a frontend to allow users to interact and use your blockchain application.
 To connect your frontend to your network, we recommend to make use of [Lisk Elements' packages](../lisk-sdk/lisk-elements/packages.md) like [lisk-api-client](../lisk-sdk/lisk-elements/packages/api-client.md).
 
 See more options in the getting started section [Interact with the network](interact-with-network.md).

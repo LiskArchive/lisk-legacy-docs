@@ -8,7 +8,7 @@ Welcome to the step-by-step guide of creating the Hello World application with L
 A simple App, showcasing a minimal setup of a blockchain application with 1 [custom transaction](custom-transactions.md) type: the "Hello" transaction.
 
 The purpose of Hello World application is to explain how to use and how to implement custom transaction with the Lisk SDK. 
-The implementation is saving the string value of the "hello" transaction's asset property to the asset property of the sender's account.
+This custom transaction will extract the "hello" key value from the transaction asset property and save to the senders account.
 
 Hello World transaction implements only the required functions from the BaseTransaction abstract interface.
 
@@ -42,7 +42,7 @@ By passing the parameters for the [genesis block](../lisk-sdk/configuration.md) 
 ### 3. Create a new transaction type
 
 For the Hello World App, we want to create a [custom transaction type](custom-transactions.md) `HelloWorld`: 
-If an account is able to afford a `HelloWorld` transaction (fee is set to 1 LSK by default), the new "hello" property appears into this account's asset field.
+If an account has enough balance to process `HelloWorld` transaction (fee is set to 1 LSK by default), the new "hello" property appears into this account's asset field.
 So after sending a valid `{"type": 10, "senderId": "16313739661670634666L", ... "asset": { "hello": "world" } }` transaction, the sender's account changes from e.g.: `{ address: "16313739661670634666L", ..., asset: null }`, to `{ "address": "16313739661670634666L", ..., "asset": {"hello": "world"}} }`.
 
 Now, let's create a new file `hello_transaction.js`, which is defining the new transaction type `HelloTransaction`:
@@ -78,9 +78,8 @@ That's where the custom logic of the Hello World app is implemented.
 
 It shows how to store an additional information about accounts using the `asset` field. The content of property of "hello" transaction's asset gets saved into the "hello" property of the account's asset.
 
-`applyAsset` and `undoAsset` uses the information about the sender's account from the `store`, which is defined in the `prepare` step.
+`applyAsset` and `undoAsset` uses the information about the sender's account from the `store`.
 
-Invoked as part of the `apply` step of the BaseTransaction and block processing.  
 ```js
 applyAsset(store) {
     const sender = store.account.get(this.senderId);
@@ -90,7 +89,7 @@ applyAsset(store) {
 }
 ```
 #### undoAsset
-Inverse of `applyAsset`. Undoes the changes made in applyAsset step - removes the "hello" property from the account's asset field.
+Inverse of `applyAsset`. Undoes the changes made in applyAsset step - reverts to the previous value of "hello" property, if not previously set this will be null.
 
 ```js
 undoAsset(store) {
@@ -154,7 +153,7 @@ const HelloTransaction = require('./hello_transaction'); // require the newly cr
 
 const app = new Application(genesisBlockDevnet, configDevnet); // create the application instance
 
-app.registerTransaction(10, HelloTransaction); // register the 'HelloTransaction' 
+app.registerTransaction(HelloTransaction); // register the 'HelloTransaction' 
 
 
 // the code block below starts the application and doesn't need to be changed

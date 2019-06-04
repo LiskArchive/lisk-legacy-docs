@@ -40,9 +40,35 @@ While implementing a custom transaction, it is necessary to implement some of th
 
 ## Interface
 
+### Required Properties
+
+#### TYPE
+
+```js
+static get TYPE (): Integer
+```
+
+The hallmark of a transaction. Set this constant to any number, except `0-9`, which are reserved for the default transactions.
+
 ### Required Methods
 
 All of the abstract methods and properties on the base transaction's interface are required to implement. These are the following:
+
+#### prepare
+
+```js
+prepare(store: StateStorePrepare): Promise<void>
+```
+
+#### validateAsset
+
+```js
+validateAsset(): ReadonlyArray<TransactionError>
+```
+
+Before a transaction reaches the apply step it gets validated. Check the transaction's asset correctness from the schema perspective (no access to StateStore here).
+Invalidate the transaction by pushing an error into the result array.
+Prepare the relevant information about the accounts, which will be accessible in the later steps during the `apply` and `undo` steps.
 
 #### applyAsset
 
@@ -61,35 +87,9 @@ undoAsset(store: StateStore): ReadonlyArray<TransactionError>
 
 The inversion of the `applyAsset` method. Undoes all of the changes to the accounts applied by the `applyAsset` step.
 
-#### validateAsset
-
-```js
-validateAsset(): ReadonlyArray<TransactionError>
-```
-
-Before a transaction reaches the apply step it gets validated. Check the transaction's asset correctness from the schema perspective (no access to StateStore here).
-Invalidate the transaction by pushing an error into the result array.
-
-#### prepare
-
-```js
-prepare(store: StateStorePrepare): Promise<void>
-```
-
-Prepare the relevant information about the accounts, which will be accessible in the later steps during the `apply` and `undo` steps.
-
-### Required Properties
-
-#### TYPE
-
-```js
-static get TYPE (): Integer
-```
-
-The hallmark of a transaction. Set this constant to any number, except `0-9`, which are reserved for the default transactions.
-
-### Optional
+### Additional Methods
 
 To increase your application's performance, you should override the following functions: `verifyAgainstTransactions`, `assetFromSync`, `fromSync`.
 
-The BaseTransaction provides the default implementation of the methods revolving around the signatures. As your application matures you can provide the custom ways of how your a transaction's signature is derived: `sign`, `getBytes`, `assetToBytes`.
+The BaseTransaction provides the default implementation of the methods revolving around the signatures.
+As your application matures you can provide the custom ways of how your a transaction's signature is derived: `sign`, `getBytes`, `assetToBytes`.

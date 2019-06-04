@@ -350,7 +350,7 @@ The second script simply will print a sendable `HelloTransaction` when executed.
 Therefore, it will make use of the function `createSendableTransaction()`, which we have created above:
 
 ```js
-//print_sendable.js
+//print_sendable_hello-world.js
 const createSendableTransaction = require('./create_sendable_transaction_base_trs');
 const HelloTransaction = require('../hello_world/hello_transaction');
 
@@ -566,6 +566,14 @@ If something went wrong, the process should stop and an error with debug informa
 
 If everything is ok, you should be able to see similar logs like the ones displayed in [step 5 of the Hello World app tutorial](#5-start-the-network).
 
+For further interaction with the network, you can run the process in the background by executing:
+
+```bash
+npx pm2 start --name cashback index.js # add the application to pm2 under the name 'cashback'
+npx pm2 stop cashback # stop the cashback app
+npx pm2 start cashback # start the cashback app
+```
+
 ### 6. Interact with the network
 
 Now that the network is started, let's try to send a `CashbackTransaction` to our node to see if it gets accepted.
@@ -577,15 +585,10 @@ First, let's reuse the script [create_sendable_transaction.js](https://github.co
 We can use this function in our script for printing a sendable cashback transaction object:
 
 ```js
-//print_sendable.js
+//print_sendable_cashback.js
 const createSendableTransaction = require('./create_sendable_transaction_base_trs');
 const CashbackTransaction = require('../cashback-app/cashback_transaction');
 
-/**
- *  To send printed transaction:
- *  > node src/transactions/create_trs.js | curl -X POST -H "Content-Type: application/json" -d @- localhost:4000/api/transactions
- *  Note: An application needs to run on port 4000 (the default one) before.
- */
 let c = createSendableTransaction(CashbackTransaction, { // the desired transaction gets created and signed
 	type: 11, // we want to send a transaction type 11 (= CashbackTransaction)
 	data: null,
@@ -618,7 +621,7 @@ node print_sendable.js | curl -X POST -H "Content-Type: application/json" -d @- 
 ```js
 //index.js
 const { Application, genesisBlockDevnet, configDevnet} = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
-const HelloTransaction = require('./hello_transaction'); // require the newly created transaction type 'HelloTransaction'
+const CashbackTransaction = require('./cashback_transaction'); // require the newly created transaction type 'CashbackTransaction'
 
 configDevnet.components.logger.fileLogLevel = "error"; // will only log errors and fatal errors in the log file
 configDevnet.components.logger.consoleLogLevel = "none"; // no logs will be shown in console
@@ -626,4 +629,6 @@ configDevnet.components.logger.consoleLogLevel = "none"; // no logs will be show
 const app = new Application(genesisBlockDevnet, configDevnet); // create the application instance
 ```
 
-As next step, you can design a nice frontend application like [Lisk Explorer](https://explorer.lisk.io/), which is showing users assets data inside of their account page. 
+As next step, you can use a wallet software like e.g. a customized [Lisk Hub](https://lisk.io/hub), so that users can utlize the new transaction type.
+
+See also section [Interact with the network](interact-with-network.md).

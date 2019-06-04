@@ -74,7 +74,7 @@ static get TYPE () {
 
 #### prepare
 Prepares the necessary data for the `apply` and `undo` step.
-The "hello" property will be added only to sender's account, therefore it's the only resource needed in the `appluAsset` and `undoAsset` steps. 
+The "hello" property will be added only to sender's account, therefore it's the only resource needed in the `applyAsset` and `undoAsset` steps. 
 ```js
 async prepare(store) {
     await store.account.cache([
@@ -373,7 +373,7 @@ Now that we have a sendable transaction object, let's send it to our node and se
 
 For this, we utilize the API of the node and post the created transaction object to the transaction endpoint of the API.
 
-Because the API of every node is only accessible form localhost by default, you need to execute this query on the same server that your node is running on, unless you changed the config to make your API accessible to others or to the public.
+Because the API of every node is only accessible from localhost by default, you need to execute this query on the same server that your node is running on, unless you changed the config to make your API accessible to others or to the public.
 
 ```bash
 node print_sendable.js | curl -X POST -H "Content-Type: application/json" -d @- localhost:4000/api/transactions

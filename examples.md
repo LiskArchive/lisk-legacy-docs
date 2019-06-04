@@ -64,7 +64,7 @@ module.exports = HelloTransaction;
 
 The __required__ methods are described here in detail:
 
-#### TYP
+#### TYPE
 
 Set the HelloWorld transaction TYPE to 10. Every time a transaction is received, it gets differentiated by the type. The first 10 types, from 0-9 is reserved for the default Lisk Network functions.
 ```js

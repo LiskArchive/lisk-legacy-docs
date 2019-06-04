@@ -6,6 +6,7 @@ Welcome to the Lisk Documentation repository!
 
 See the documentation for each product:
 
+- [Lisk SDK](https://github.com/LiskHQ/lisk-docs/blob/development/lisk-sdk/introduction.md)
 - [Lisk Protocol](https://github.com/LiskHQ/lisk-docs/blob/master/lisk-protocol/introduction.md)
 - [Lisk Core](https://github.com/LiskHQ/lisk-docs/blob/master/lisk-core/introduction.md)
 - [Lisk Elements](https://github.com/LiskHQ/lisk-docs/blob/master/lisk-elements/introduction.md)

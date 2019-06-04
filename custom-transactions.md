@@ -83,7 +83,7 @@ Prepare the relevant information about the accounts, which will be accessible in
 #### TYPE
 
 ```js
-const CUSTOM_TX_TYPE: number
+static get TYPE (): Integer
 ```
 
 The hallmark of a transaction. Set this constant to any number, except `0-9`, which are reserved for the default transactions.

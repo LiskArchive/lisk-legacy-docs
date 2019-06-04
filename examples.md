@@ -10,8 +10,6 @@ A simple App, showcasing a minimal setup of a blockchain application with 1 [cus
 The purpose of Hello World application is to explain how to use and how to implement custom transaction with the Lisk SDK. 
 This custom transaction will extract the "hello" key value from the transaction asset property and save to the senders account.
 
-Hello World transaction implements only the required functions from the BaseTransaction abstract interface.
-
 The Hello World implementation goes as following:
 
 - __Steps 1-5__ describe what needs to be implemented on the server-side of the blockchain application.
@@ -72,6 +70,41 @@ static get TYPE () {
     return 10;
 }
 ```
+
+#### prepare
+Prepares the necessary data for the `apply` and `undo` step.
+The "hello" property will be added only to sender's account, therefore it's the only resource needed in the `appluAsset` and `undoAsset` steps. 
+```js
+async prepare(store) {
+    await store.account.cache([
+        {
+            address: this.senderId,
+        },
+    ]);
+}
+```
+
+#### validateAsset
+Validation of the value of the "hello" property, defined by the HelloWorld transaction signer.
+The implementation below checks, that the value of the "hello" property needs to be a string, no longer than 64 characters. 
+```js
+validateAsset() {
+    const errors = [];
+    if (!this.asset.hello || typeof this.asset.hello !== 'string' || this.asset.hello.length > 64) {
+        errors.push(
+            new TransactionError(
+                'Invalid "asset.hello" defined on transaction',
+                this.id,
+                '.asset.hello',
+                this.asset.hello,
+                'A string value no longer than 64 characters',
+            )
+        );
+    }
+    return errors;
+}
+```
+
 #### applyAsset
 
 That's where the custom logic of the Hello World app is implemented. 
@@ -97,38 +130,6 @@ undoAsset(store) {
     const oldObj = { ...sender, asset: null };
     store.account.set(sender.address, sender);
     return [];
-}
-```
-#### validateAsset
-Validation of the value of the "hello" property, defined by the HelloWorld transaction signer.
-The implementation below checks, that the value of the "hello" property needs to be a string, no longer than 64 characters. 
-```js
-validateAsset() {
-    const errors = [];
-    if (!this.asset.hello || typeof this.asset.hello !== 'string' || this.asset.hello.length > 64) {
-        errors.push(
-            new TransactionError(
-                'Invalid "asset.hello" defined on transaction',
-                this.id,
-                '.asset.hello',
-                this.asset.hello,
-                'A string value no longer than 64 characters',
-            )
-        );
-    }
-    return errors;
-}
-```
-#### prepare
-Prepares the necessary data for the `apply` and `undo` step.
-The "hello" property will be added only to sender's account, therefore it's the only resource needed in the `appluAsset` and `undoAsset` steps. 
-```js
-async prepare(store) {
-    await store.account.cache([
-        {
-            address: this.senderId,
-        },
-    ]);
 }
 ```
 
@@ -170,7 +171,7 @@ app
 
 Now, let's start our customized blockchain network for the first time.
 
-The parameter `configDevnet`, which we pass to our `Application` instance in step 3, is preconfigured to start the node with a set of dummy delegates, that have enabled forging by default.
+The parameter `configDevnet`, which we pass to our `Application` instance in [step 3](#3-create-a-new-transaction-type), is preconfigured to start the node with a set of dummy delegates, that have enabled forging by default.
 These dummy delegates stabilize the new network and make it possible to test out the basic functionality of the network with only one node immediately.
 
 This creates a simple Devnet, which is beneficial during development of the blockchain application.
@@ -377,7 +378,7 @@ Because the API of every node is only accessible form localhost by default, you 
 node print_sendable.js | curl -X POST -H "Content-Type: application/json" -d @- localhost:4000/api/transactions
 ```
 
-> __Optional:__ After first successful verification, you may wan to reduce the default console log level (info) and file log level (debug).<br> 
+> __Optional:__ After first successful verification, you may want to reduce the default console log level (info) and file log level (debug).<br> 
 > You can do so, by passing a copy of the config object `configDevnet` with customized config for the logger component:
 
 ```js

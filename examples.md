@@ -7,10 +7,8 @@
 Welcome to the step-by-step guide of creating the Hello World application with Lisk Alpha SDK.
 A simple App, showcasing a minimal setup of a blockchain application with 1 [custom transaction](custom-transactions.md) type: the "Hello" transaction.
 
-The purpose of Hello World application is to show how to implement custom transactions with the Lisk SDK. 
-The implementation is saving the string value of the "hello" transaction's asset property to the asset property of the sender's account.
-
-Hello World transaction implements only the required functions from the BaseTransaction abstract interface.
+The purpose of Hello World application is to explain how to use and how to implement custom transaction with the Lisk SDK. 
+This custom transaction will extract the "hello" key value from the transaction asset property and save to the senders account.
 
 The Hello World implementation goes as following:
 
@@ -42,7 +40,7 @@ By passing the parameters for the [genesis block](../lisk-sdk/configuration.md) 
 ### 3. Create a new transaction type
 
 For the Hello World App, we want to create a [custom transaction type](custom-transactions.md) `HelloWorld`: 
-If an account is able to afford a `HelloWorld` transaction (fee is set to 1 LSK by default), the new "hello" property appears into this account's asset field.
+If an account has enough balance to process `HelloWorld` transaction (fee is set to 1 LSK by default), the new "hello" property appears into this account's asset field.
 So after sending a valid `{"type": 10, "senderId": "16313739661670634666L", ... "asset": { "hello": "world" } }` transaction, the sender's account changes from e.g.: `{ address: "16313739661670634666L", ..., asset: null }`, to `{ "address": "16313739661670634666L", ..., "asset": {"hello": "world"}} }`.
 
 Now, let's create a new file `hello_transaction.js`, which is defining the new transaction type `HelloTransaction`:
@@ -66,41 +64,28 @@ The __required__ methods are described here in detail:
 
 #### TYPE
 
-Set the HelloWorld transaction TYPE to 10. Every time a transaction is received, it gets differentiated by the type.
+
+Set the HelloWorld transaction TYPE to `10`. Every time a transaction is received, it gets differentiated by the type.
 The first 10 types, from 0-9 is reserved for the default Lisk Network functions.
 ```js
 static get TYPE () {
     return 10;
 }
 ```
-#### applyAsset
 
-That's where the custom logic of the Hello World app is implemented. 
-
-It shows how to store an additional information about accounts using the `asset` field. The content of property of "hello" transaction's asset gets saved into the "hello" property of the account's asset.
-
-`applyAsset` and `undoAsset` use the information about the sender's account from the `store`, which is defined in the `prepare` step.
-
-Invoked as part of the `apply` step of the BaseTransaction and block processing.  
+#### prepare
+Prepares the necessary data for the `apply` and `undo` step.
+The "hello" property will be added only to sender's account, therefore it's the only resource needed in the `appluAsset` and `undoAsset` steps. 
 ```js
-applyAsset(store) {
-    const sender = store.account.get(this.senderId);
-    const newObj = { ...sender, asset: { hello: this.asset.hello } };
-    store.account.set(sender.address, newObj);
-    return [];
+async prepare(store) {
+    await store.account.cache([
+        {
+            address: this.senderId,
+        },
+    ]);
 }
 ```
-#### undoAsset
-Inverse of `applyAsset`. Undoes the changes made in applyAsset step - removes the "hello" property from the account's asset field.
 
-```js
-undoAsset(store) {
-    const sender = store.account.get(this.senderId);
-    const oldObj = { ...sender, asset: null };
-    store.account.set(sender.address, sender);
-    return [];
-}
-```
 #### validateAsset
 Validation of the value of the "hello" property, defined by the HelloWorld transaction signer.
 The implementation below checks, that the value of the "hello" property needs to be a string, no longer than 64 characters. 
@@ -121,16 +106,32 @@ validateAsset() {
     return errors;
 }
 ```
-#### prepare
-Prepares the necessary data for the `apply` and `undo` step.
-The "hello" property will be added only to sender's account, therefore it's the only resource needed in the `appluAsset` and `undoAsset` steps. 
+
+#### applyAsset
+
+That's where the custom logic of the Hello World app is implemented. 
+
+It shows how to store an additional information about accounts using the `asset` field. The content of property of "hello" transaction's asset gets saved into the "hello" property of the account's asset.
+
+`applyAsset` and `undoAsset` uses the information about the sender's account from the `store`.
+
 ```js
-async prepare(store) {
-    await store.account.cache([
-        {
-            address: this.senderId,
-        },
-    ]);
+applyAsset(store) {
+    const sender = store.account.get(this.senderId);
+    const newObj = { ...sender, asset: { hello: this.asset.hello } };
+    store.account.set(sender.address, newObj);
+    return [];
+}
+```
+#### undoAsset
+Inverse of `applyAsset`. Undoes the changes made in applyAsset step - reverts to the previous value of "hello" property, if not previously set this will be null.
+
+```js
+undoAsset(store) {
+    const sender = store.account.get(this.senderId);
+    const oldObj = { ...sender, asset: null };
+    store.account.set(sender.address, sender);
+    return [];
 }
 ```
 
@@ -155,7 +156,7 @@ const HelloTransaction = require('./hello_transaction'); // require the newly cr
 
 const app = new Application(genesisBlockDevnet, configDevnet); // create the application instance
 
-app.registerTransaction(10, HelloTransaction); // register the 'HelloTransaction' 
+app.registerTransaction(HelloTransaction); // register the 'HelloTransaction' 
 
 
 // the code block below starts the application and doesn't need to be changed
@@ -172,7 +173,7 @@ app
 
 Now, let's start our customized blockchain network for the first time.
 
-The parameter `configDevnet`, which we pass to our `Application` instance in step 3, is preconfigured to start the node with a set of dummy delegates, that have enabled forging by default.
+The parameter `configDevnet`, which we pass to our `Application` instance in [step 3](#3-create-a-new-transaction-type), is preconfigured to start the node with a set of dummy delegates, that have enabled forging by default.
 These dummy delegates stabilize the new network and make it possible to test out the basic functionality of the network with only one node immediately.
 
 This creates a simple Devnet, which is beneficial during development of the blockchain application.
@@ -379,7 +380,7 @@ Because the API of every node is only accessible form localhost by default, you 
 node print_sendable.js | curl -X POST -H "Content-Type: application/json" -d @- localhost:4000/api/transactions
 ```
 
-> __Optional:__ After first successful verification, you may wan to reduce the default console log level (info) and file log level (debug).<br> 
+> __Optional:__ After first successful verification, you may want to reduce the default console log level (info) and file log level (debug).<br> 
 > You can do so, by passing a copy of the config object `configDevnet` with customized config for the logger component:
 
 ```js

@@ -48,11 +48,11 @@ To create custom transaction types, utilize the provided `BaseTransaction` inter
 
 See the [Examples page](examples.md) for creating custom transaction types and how to add them to your application:
 
-- [Hello World App](examples.md#hello-world-app): Most simple example of a blockchain application with 1 custom transaction type.
-- [Cashback App](examples.md#hello-world-app): Simple example blockchain app, that is implementing the new transaction type `Cashback`.
+- [Hello World App](examples.md#hello-world-app): A very basic example of a Lisk blockchain application with 1 custom transaction type.
+- [Cashback App](examples.md#hello-world-app): A simple example blockchain app, that implements the new transaction type `Cashback`.
 
 ### 3. Interact with the network
-While your network is up and running, use [Lisk Commander](../lisk-sdk/lisk-commander/introduction.md) to interact with the network via the CLI (Command-Line-Interface).
+While your network is up and running, use [Lisk Commander](../lisk-sdk/lisk-commander/introduction.md) to interact with the network via its CLI (Command-Line-Interface).
 To monitor and explore the network, you may want to set up a monitoring solution like e.g. [Lisk Explorer](https://github.com/LiskHQ/lisk-explorer).
 Depending on the level of customization, Lisk Explorer and Lisk Commander may also require customization to prevent other services from failing.
 

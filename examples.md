@@ -7,7 +7,7 @@
 Welcome to the step-by-step guide of creating the Hello World application with Lisk Alpha SDK.
 A simple App, showcasing a minimal setup of a blockchain application with 1 [custom transaction](custom-transactions.md) type: the "Hello" transaction.
 
-The purpose of Hello World application is to explain how to use and how to implement custom transactions with the Lisk SDK. 
+The purpose of Hello World application is to show how to implement custom transactions with the Lisk SDK. 
 The implementation is saving the string value of the "hello" transaction's asset property to the asset property of the sender's account.
 
 Hello World transaction implements only the required functions from the BaseTransaction abstract interface.
@@ -465,7 +465,7 @@ static get TYPE () {
 
 #### applyAsset
 
-It sends the transaction amount to the recipient and substracts 1/10 of the transaction amount from the senders account balance
+The CashbackTransaction adds an inflationary 10% to senders account.
 
 Invoked as part of the `apply` step of the BaseTransaction and block processing.  
 ```js

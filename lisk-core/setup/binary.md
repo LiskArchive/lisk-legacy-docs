@@ -1,29 +1,89 @@
 # Lisk Core Binary Setup
 
-- [Pre-Install](#pre-install)
-  1. [Determine if your platform can run Lisk Core](#determine-if-your-platform-can-run-lisk-core)
-  2. [Open necessary ports](#open-the-necessary-ports)
-  3. [Install dependencies](#install-dependencies)
-  4. [Create `lisk` user](#create-a-user-to-run-lisk)
-- [Installation](#installation)
-  1. [Login as lisk user](#login-to-the-lisk-user)
-  2. [Execute the installation script](#execute-the-installation-script)
-  3. [Verify successful installation](#verify-successful-installation)
+This document details how to setup Lisk Core Binary distribution on a system. 
+
+* [Option A: Lisk Commander](#option-a-lisk-commander)
+   - [Pre-Install](#pre-install)
+      1. [Determine if your platform can run Lisk Core](#determine-if-your-platform-can-run-lisk-core)
+      2. [Open necessary ports](#open-the-necessary-ports)
+      3. [Install Lisk Commander](#install-lisk-commander)
+   - [Installation](#installation)
+* [Option B: The Bash script](#option-b-the-bash-script)
+   - [Pre-Install](#pre-install-1)
+      1. [Determine if your platform can run Lisk Core](#determine-if-your-platform-can-run-lisk-core-1)
+      3. [Install dependencies](#install-dependencies)
+      4. [Create `lisk` user](#create-a-user-to-run-lisk)
+   - [Installation](#installation-1)
+      1. [Login as lisk user](#login-to-the-lisk-user)
+      2. [Execute the installation script](#execute-the-installation-script)
+      3. [Verify successful installation](#verify-successful-installation)
 - [Post-Installation (optional)](#post-installation-optional)
-  - [Logrotate Setup](#logrotate-setup)
-  
+
+# Option A: Lisk Commander
+
+Setup and manage your Lisk node conveniently with Lisk Commander.
+
+> **Note:** This setup option is supported from Lisk Core v2.0.0 upwards.
+> If you have Lisk Core v1.6 or lower installed, you wont be able to upgrade your node with Lisk Commander.
+> In this case, use the bash script or remove your old version and make a fresh install with Lisk Commander.
 
 ## Pre-Install
 
-This document will detail how to prepare a system for the installation of Lisk Core.  It will guide you through the installation of important dependencies, as well as user creation.
+To complete the installation some prerequisites need to be fulfilled.  If you have already performed these, please proceed to the [Installation](#installation) chapter.
 
 ### Determine if your platform can run Lisk Core
 
 ###### Supported Platforms
-- Ubuntu 18.04 x86_64
+- Ubuntu 18.04 (LTS) x86_64
 - Ubuntu 16.04 (LTS) x86_64
 
-To complete the installation some prerequisites need to be fulfilled.  If you have already performed these, please proceed to the [Installation](#installation) chapter. Please follow the instructions below to load the required software to your system.
+### Install Lisk Commander
+
+Head to the Lisk Commander docs and follow the [installation instructions](../lisk-sdk/lisk-commander/introduction.md#setup).
+
+## Installation
+
+```bash
+lisk core:install lisk-mainnet
+```
+
+This will install Lisk Core latest version into a directory `lisk-mainnet`.
+
+To verify your node is running correctly, run e.g.
+
+```bash
+lisk core:status lisk-mainnet
+```
+
+See for all available options the Lisk Commander [Command reference for Lisk Core](../lisk-sdk/lisk-commander/user-guide/lisk-core.md) as well as the [general Command reference](../lisk-sdk/lisk-commander/user-guide/commands.md).
+
+## Post-Install
+
+After installation, check which ports Lisk Core is listening by checking the status:
+
+```bash
+lisk core:status lisk-mainnet
+```
+
+Check you network settings to verify, the corresponding ports are open.
+
+It's also recommended to set up a [log rotation](../configuration.md#logrotation).
+
+If you are not running Lisk locally, you will need to follow the [Configuration - API](../configuration.md#api-access-control) document to enable access.
+
+With all of the above steps complete you are ready to move on to the configuration documentation if you wish to enable forging or SSL, please see [General Configuration](../configuration.md).
+
+# Option B: The Bash script
+
+## Pre-Install
+
+### Determine if your platform can run Lisk Core
+
+###### Supported Platforms
+- Ubuntu 18.04 (LTS) x86_64
+- Ubuntu 16.04 (LTS) x86_64
+
+To complete the installation some prerequisites need to be fulfilled. If you have already performed these, please proceed to the [Installation](#installation) chapter. Please follow the instructions below to load the required software to your system.
 
 ### Open the necessary ports
 
@@ -36,7 +96,7 @@ To connect to the desired network with Lisk Core, please ensure that the corresp
 | Betanet | 5000           | 5001        |
 | Devnet  | 4000           | 5000        |
 
-These are the default ports for connecting with the network, they can be altered later in the [`config.json`](https://github.com/LiskHQ/lisk-sdk/blob/development/config.json#L2), which is specific for the network.
+These are the default ports for connecting with the network, they can be altered later in the [`config.json`](https://github.com/LiskHQ/lisk-core/blob/master/config/mainnet/config.json#L21), which is specific for the network.
 
 ### Install dependencies
 
@@ -62,7 +122,7 @@ This section details how to install Lisk Core using pre-built binary packages. O
 The user was created in the [Binary - Prerequisites Section](#pre-install). If you are already logged in to this user, please skip this step.
 
 ```bash
-su - lisk
+sudo -u lisk -i
 ```
 
 ### Execute the installation script
@@ -114,43 +174,4 @@ With all of the above steps complete you are ready to move on to the configurati
 
 ## Post-installation (optional)
 
-### Logrotate Setup
-
-It is recommended to setup a log rotation for the logfile of Lisk Core.
-
-#### Ubuntu
-Ubuntu systems provide a service called `logrotate` for this purpose.
-First, make sure Logrotate is installed on your system:
-
-```bash
-logrotate --version
-```
-
-Next, create a new file called `lisk` in the logrotate directory `/etc/logrotate.d`:
-
-```bash
-cd /etc/logrotate.d
-touch lisk
-```
-
-Inside of this file, define the parameters for the log rotation.
-
-Example values:
-
-```bash
-/path/to/lisk/logs/mainnet/*.log { 
-        daily                   # daily rotation
-        rotate 5                # keep the 5 most recent logs
-        maxage 14               # remove logs that are older than 14 days
-        compress                # compress old log files
-        delaycompress           # compress the data after it has been moved
-        missingok               # if no logfile is present, ignore
-        notifempty              # do not rotate empty log files
-}
-```
-
-After customizing the config to fit your needs and saving it, you can test it by doing a dry run:
-
-```bash
-sudo logrotate /etc/logrotate.conf --debug
-```
+- Recommended: Set up a [log rotation](../configuration.md#logrotation)

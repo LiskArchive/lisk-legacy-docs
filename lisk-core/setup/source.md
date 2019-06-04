@@ -3,7 +3,7 @@
 - [Pre-Installation](#pre-install)
   1. [Open necessary ports](#open-necessary-ports)
   2. [Create a new user](#create-a-new-user)
-  3. [Install Tool chain components](#tool-chain-components)
+  3. [Install Tool chain components](#toolchain-components)
   4. [Git](#git)
   5. [Node.js](#nodejs)
      * [Node version manager](#node-version-manager)
@@ -13,7 +13,6 @@
   1. [Login as the Lisk user](#login-as-the-lisk-user)
   2. [Installing Lisk from Source](#installing-lisk-from-source)
 - [Post-installation (optional)](#post-installation-optional)
-  - [Logrotate Setup](#logrotate-setup)
 
 ## Pre-Install
 
@@ -23,11 +22,10 @@ To complete the installation, some prerequisites need to be fulfilled.  If you h
 Firstly, please determine if your platform can install Lisk Core from source.
 
 ###### Supported Platforms
-- Ubuntu 14.04 (LTS) x86_64
 - Ubuntu 16.04 (LTS) x86_64
 - Ubuntu 18.04 (LTS) x86_64
-- MacOS 10.12 (Sierra)
 - MacOS 10.13 (High Sierra)
+- MacOS 10.14 (Mojave)
 
 ### Open necessary ports
 
@@ -35,10 +33,10 @@ To connect to the desired network with Lisk Core, please ensure that the corresp
 
 | Network | httpPort(HTTP) | wsPort(TCP) |
 | -----------|-------------|-------------|
-| Mainnet    | 8000         | 8001       |
-| Testnet    | 7000         | 7001       |
-| Betanet    | 5000         | 5001       |
-| Devnet     | 4000         | 5000       |
+| Mainnet    | 8000        | 8001        |
+| Testnet    | 7000        | 7001        |
+| Betanet    | 5000        | 5001        |
+| Devnet     | 4000        | 5000        |
 
 These are the default ports for connecting with the network, they can be altered later in `config.json`. 
 
@@ -63,20 +61,12 @@ Used for compiling dependencies.
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y python build-essential curl automake autoconf libtool ntp
+sudo apt-get install -y build-essential python-minimal
 ```
 
 #### MacOS
 
 Ensure that both [XCode](https://developer.apple.com/xcode/) and [Homebrew](https://brew.sh/) are installed.
-
-Update homebrew and install dependencies:
-
-```bash
-brew update
-brew doctor
-brew install curl automake autoconf libtool
-```
 
 ### Git 
 
@@ -98,7 +88,26 @@ brew install git
 
 [Node.js](https://nodejs.org/) serves as the underlying engine for code execution.
 
-Install system-wide via a package manager, like so:
+#### Node version manager
+
+We recommend using a Node version manager such as [NVM](https://github.com/creationix/nvm).
+NVM is a bash script that enables you to manage multiple active Node.js versions.
+
+1. Login as `lisk` user, that has been created in the first step:
+```bash
+sudo -u lisk -i
+```
+2. Install nvm following these [instructions](https://github.com/creationix/nvm#installation)
+3. Install the correct version of Node.js using nvm:
+```bash
+nvm install 10.15.3
+```
+
+For the following steps, log out from the `lisk` user again with `CTRL+D`, and continue with your user with sudo rights.
+
+#### Node.js Package
+
+Alternatively, you can install Node.js system-wide via a package manager, like so:
 
 #### Ubuntu
 
@@ -110,25 +119,8 @@ sudo apt-get install -y nodejs
 #### MacOS
 
 ```bash
-brew install node@10.14.1
+brew install node@10.15.3
 ```
-
-### Node version manager
-
-We recommend using a Node version manager such as [NVM](https://github.com/creationix/nvm).
-NVM is a bash script that enables you to manage multiple active Node.js versions.
-
-1. Login as lisk user, that has been created in the first step:
-```bash
-su - lisk
-```
-2. Install nvm following these [instructions](https://github.com/creationix/nvm#installation)
-3. Install the correct version of Node.js using nvm:
-```bash
-nvm install 10.14.1
-```
-
-For the following steps,  log out from the 'lisk' user again with `CTRL+D`, and continue with your user with sudo rights.
 
 ### PostgreSQL (version 10)
 
@@ -159,9 +151,9 @@ Create a new database user called `lisk` and grant it rights to create databases
   sudo -u postgres createuser --createdb lisk
 ```
 
-Switch to the lisk user and create the databases, where `{network}` is the network you want to connect your Lisk Core node to:
+Switch to the `lisk` user and create the databases, where `{network}` is the network you want to connect your Lisk Core node to:
 ```bash
-  su - lisk
+  sudo -u lisk -i
   createdb lisk_{network}
   ```
 
@@ -169,7 +161,7 @@ For the following steps,  log out from the lisk user again with `CTRL+D`, and co
 Change `'password'` to a secure password of your choice.
 ```bash
   sudo -u postgres psql -d lisk_{network} -c "alter user lisk with password 'password';"
-  ```
+```
 
 #### MacOS
 
@@ -219,13 +211,14 @@ Stop Redis:
 brew services stop redis
 ```
 
-> Lisk does not run on the redis default port of `6379`. Instead it is configured to run on port: `6380`. Due to this, to run Lisk, you have one of two options:
+> Lisk does not run on the redis default port of `6379`. Instead it is configured to run on port: `6380`.
+> Due to this, to run Lisk, you have one of two options:
 
-1. **Change the Lisk configuration**
+A. **Change the Lisk configuration**
 
-In the next installation phase, remember to update the Redis port configuration in both `config.json` and `test/data/config.json`. 
+In the next installation phase, remember to update the Redis port configuration in `config.json`.
 
-2. **Change the Redis launch configuration**
+B. **Change the Redis launch configuration**
 
 Update the launch configuration file on your system. Note that there are many ways to do this. 
 
@@ -250,7 +243,8 @@ If you have finished all the above steps successfully, your system is ready for 
 
 ## Installation
 
-This section details how to install Lisk Core from Source. When completed, you will have a functioning node on the Lisk Network. If you are looking to upgrade your current Lisk Core installation, please see [Upgrade from Source](../upgrade/source.md).
+This section details how to install Lisk Core from Source. When completed, you will have a functioning node on the Lisk Network.
+If you are looking to upgrade your current Lisk Core installation, please see [Upgrade from Source](../upgrade/source.md).
 
 ### Login as the Lisk user
 
@@ -258,26 +252,25 @@ This user was created in the [Prerequisites](#pre-install).
 If you are already logged in to this user, please skip this step.
 
 ```bash
-su - lisk
+sudo -u lisk -i
 ```
 
 ### Installing Lisk from Source
 
-Before proceeding, determine whether you wish to connect your node to the Mainnet (Main Network) or Testnet (Test Network).
-
 ```bash
-git clone git@github.com:LiskHQ/lisk-sdk.git
-cd lisk
-git checkout v1.1.0 -b v1.1.0 # check out the latest release tag
-npm ci
+git clone https://github.com/LiskHQ/lisk-core.git # clone the repository
+cd lisk-core                  # navigate into the lisk-core root folder
+git checkout v2.0.0 -b v2.0.0 # check out the latest release tag
+npm ci                        # install dependencies
+npm run build                 # compile packages
 ```
 
-> Please check for latest release on https://github.com/LiskHQ/lisk-sdk/releases
+> Please check for latest release on https://github.com/LiskHQ/lisk-core/releases
 
 To test that Lisk Core is built and configured correctly, issue the following command to connect to the network:
 
 ```bash
-npm start # default: connect to Devnet
+npm start # Default: connect to Devnet
 LISK_NETWORK=[network] npm start # Use environment variables to overwrite config values (recommended)
 npm start -- --network [network]  # Use flags to overwrite config values
 ```
@@ -295,7 +288,7 @@ Once the process is verified as running correctly, `CTRL+C` and start the proces
 This will fork the process into the background and automatically recover the process if it fails.
 
 ```bash
-npx pm2 start --name lisk src/index.js -- --network [network]
+npx pm2 start --name lisk dist/index.js -- --network [network]
 ```
 Where `[network]` might be either `devnet` (default), `alphanet`, `betanet`, `testnet` or `mainnet`.
 
@@ -308,43 +301,4 @@ You are ready to move on to the [configuration](../configuration.md) documentati
 
 ## Post-installation (optional)
 
-### Logrotate Setup
-
-It is recommended to setup a log rotation for the logfile of Lisk Core.
-
-#### Ubuntu
-Ubuntu systems provide a service called `logrotate` for this purpose.
-Please ensure Logrotate is installed on your system:
-
-```bash
-logrotate --version
-```
-
-Next, go to the logrotate config directory and create a new logrotate file for Lisk Core:
-
-```bash
-cd /etc/logrotate.d
-touch lisk
-```
-
-Inside this file, define the parameters for the log rotation.
-
-Example values:
-
-```bash
-/path/to/lisk/logs/mainnet/*.log { 
-        daily                   # daily rotation
-        rotate 5                # keep the 5 most recent logs
-        maxage 14               # remove logs that are older than 14 days
-        compress                # compress old log files
-        delaycompress           # compress the data, after it has been moved
-        missingok               # if no logfile is present, ignore
-        notifempty              # do not rotate empty log files
-}
-```
-
-After customizing the config to fit your needs and saving it, you can test it by doing a dry run:
-
-```bash
-sudo logrotate /etc/logrotate.conf --debug
-```
+- Recommended: Set up a [log rotation](../configuration.md#logrotation)

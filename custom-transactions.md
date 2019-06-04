@@ -45,7 +45,7 @@ While implementing a custom transaction, it is necessary to implement some of th
 #### TYPE
 
 ```js
-static get TYPE (): Integer
+static get TYPE (): number
 ```
 
 The hallmark of a transaction. Set this constant to any number, except `0-9`, which are reserved for the default transactions.

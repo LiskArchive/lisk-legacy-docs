@@ -13,6 +13,7 @@ We have released the Lisk SDK in its current form in order for us to improve the
 We strictly discourage anyone from using the alpha release of the Lisk SDK for any production-based blockchain applications, i.e. a blockchain operating on a real mainnet.
 Over the course of the alpha phase there will be significant changes in the Lisk protocol and implementation, which will eventually bring the accessibility and reliability to a level which is feasible for production-based blockchain applications.
 At this time we only recommend the Lisk SDK for proof-of-concept blockchain applications, i.e. a blockchain operating on a fake testnet.
+Be aware that the dummy delegate accounts are insecure, as their secret passphrases are public. And also, that the convenient creation of a new genesis block is not supported by Lisk Alpha SDK.
 
 The only application built using the Lisk SDK currently feasible for production usage is [Lisk Core](https://github.com/liskhq/lisk-core), the client of the Lisk network itself.
 
@@ -40,7 +41,7 @@ The diagram below provides a high-level overview of the architecture:
 | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [Framework](lisk-framework/introduction.md) | The application framework establishes and maintains the interactions between the modules of a Lisk blockchain application.                           |
 | [Elements](lisk-elements/introduction.md)   | A collection of libraries, each of them implementing some form of blockchain application functionality such as cryptography, transactions, p2p, etc. |
-| [Commander](lisk-commander/introduction.md) | A command line tool which allows developers to manage a Lisk node instance and interact with a Lisk compatible network.                                  |
+| [Commander](lisk-commander/introduction.md) | A command line tool which allows developers to manage a Lisk node instance and interact with a Lisk compatible network.                              |
 
 ## Setup
 

@@ -48,8 +48,8 @@ To create custom transaction types, utilize the provided `BaseTransaction` inter
 
 See the [tutorials](tutorials.md) to see examples of how to create custom transaction types and how to add them to your application:
 
-- [Hello World App](tutorials/hello-world.md): A very basic example of a Lisk blockchain application with 1 custom transaction type.
-- [Cashback App](tutorials/cashback.md): A simple example blockchain app, that implements the new transaction type `Cashback`.
+- [Hello World App](tutorials/hello-world.md): A example of a Lisk blockchain application with 1 custom transaction type, which extends the BaseTransaction type.
+- [Cashback App](tutorials/cashback.md): A more practical example creating the new transaction type `Cashback`. Cashback extends the pre-existing transaction type TransferTransaction, making for a straightforward implementation.
 
 ### 3. Interact with the network
 While your network is up and running, use [Lisk Commander](../lisk-sdk/lisk-commander/introduction.md) to interact with the network via its CLI (Command-Line-Interface).

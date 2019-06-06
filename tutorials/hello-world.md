@@ -33,7 +33,9 @@ The most important one is the `Application` class, which is used in `line 4` to 
 The application instance will start the whole application at the bottom of `index.js`.
 
 In `line 4` , the application instance gets initialized.
-By passing the parameters for the [genesis block](../lisk-sdk/configuration.md) and the [configuration template](https://github.com/LiskHQ/lisk-sdk/blob/development/sdk/src/samples/config_devnet.json), the application is configured with most basic configurations to start the node.
+By passing the parameters for the [genesis block](../lisk-sdk/configuration.md#genesis-block) and the [configuration template](https://github.com/LiskHQ/lisk-sdk/blob/development/sdk/src/samples/config_devnet.json), the application is configured with most basic configurations to start the node.
+
+> If you want to change any of the values for `configDevnet`, check out the [full list of configurations](../lisk-sdk/configuration.md##list-of-configuration-options) for Lisk SDK and overwrite them like described in [step 6](#6-interact-with-the-network)
 
 ## 3. Create a new transaction type
 
@@ -396,15 +398,18 @@ node print_sendable_hello-world.js | curl -X POST -H "Content-Type: application/
 
 To run the script from remote, change the configuration before creating the `Application` instance, to make the API accessible:
 
+> For more configuration options, check out the [full list of configurations](../lisk-sdk/configuration.md##list-of-configuration-options) for Lisk SDK
+
 ```js
 //index.js
 const { Application, genesisBlockDevnet, configDevnet} = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
 const HelloTransaction = require('./hello_transaction'); // require the newly created transaction type 'HelloTransaction'
 
-configDevnet.modules.http_api.access.public = true; // make the API accessible from everywhere
-//configDevnet.modules.http_api.access.whitelist.push('1.2.3.4'); // example how to make the API accessible for specific IPs: add the host 1.2.3.4 to the whitelist of hosts
+let customConfig = configDevnet;
+customConfig.modules.http_api.access.public = true; // make the API accessible from everywhere
+//customConfig.modules.http_api.access.whitelist.push('1.2.3.4'); // example how to make the API accessible for specific IPs: add the host 1.2.3.4 to the whitelist of hosts
 
-const app = new Application(genesisBlockDevnet, configDevnet); // create the application instance
+const app = new Application(genesisBlockDevnet, customConfig); // create the application instance
 
 app.registerTransaction(11, HelloTransaction); // register the 'HelloTransaction' 
 
@@ -422,8 +427,8 @@ app
 > You can do so, by passing a copy of the config object `configDevnet` with customized config for the logger component:
 
 ```js
-configDevnet.components.logger.fileLogLevel = "error"; // will only log errors and fatal errors in the log file
-configDevnet.components.logger.consoleLogLevel = "none"; // no logs will be shown in console
+customConfig.components.logger.fileLogLevel = "error"; // will only log errors and fatal errors in the log file
+customConfig.components.logger.consoleLogLevel = "none"; // no logs will be shown in console
 ```
 
 As next step, you can design a nice frontend application like [Lisk Explorer](https://explorer.lisk.io/), which is showing users assets data inside of their account page. 

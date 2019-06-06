@@ -115,10 +115,22 @@ It shows how to store an additional information about accounts using the `asset`
 
 ```js
 applyAsset(store) {
+    const errors = [];
     const sender = store.account.get(this.senderId);
-    const newObj = { ...sender, asset: { hello: this.asset.hello } };
-    store.account.set(sender.address, newObj);
-    return [];
+    if (sender.asset && sender.asset.hello) {
+        errors.push(
+            new TransactionError(
+            'You cannot send a hello transaction multiple times',
+            this.id,
+            '.asset.hello',
+            this.amount.toString()
+            )
+        );
+    } else {
+        const newObj = { ...sender, asset: { hello: this.asset.hello } };
+        store.account.set(sender.address, newObj);
+    }
+    return errors; // array of TransactionErrors, returns empty array if no errors are thrown
 }
 ```
 ### undoAsset
@@ -127,9 +139,9 @@ Inverse of `applyAsset`. Undoes the changes made in applyAsset step - reverts to
 ```js
 undoAsset(store) {
     const sender = store.account.get(this.senderId);
-    const oldObj = { ...sender, asset: null };
+    const oldObj = { ...sender.asset: null };
     store.account.set(sender.address, sender);
-    return [];
+    return []; // array of TransactionErrors, returns empty array if no errors are thrown
 }
 ```
 
@@ -368,28 +380,50 @@ let h = createSendableTransaction(HelloTransaction, { // the desired transaction
 console.log(h); // the transaction is displayed as JSON object in the console
 ```
 
-Now that we have a sendable transaction object, let's send it to our node and see how it gets processed by analyzing the logs.
+Now that we have a sendable transaction object, let's send it to our node and see how it gets processed by analyzing the logs:
+
+```bash
+add corresponding logs here
+```
 
 For this, we utilize the API of the node and post the created transaction object to the transaction endpoint of the API.
 
 Because the API of every node is only accessible from localhost by default, you need to execute this query on the same server that your node is running on, unless you changed the config to make your API accessible to others or to the public.
 
 ```bash
-node print_sendable.js | curl -X POST -H "Content-Type: application/json" -d @- localhost:4000/api/transactions
+node print_sendable_hello-world.js | curl -X POST -H "Content-Type: application/json" -d @- localhost:4000/api/transactions
 ```
 
-> __Optional:__ After first successful verification, you may want to reduce the default console log level (info) and file log level (debug).<br> 
-> You can do so, by passing a copy of the config object `configDevnet` with customized config for the logger component:
+To run the script from remote, change the configuration before creating the `Application` instance, to make the API accessible:
 
 ```js
 //index.js
 const { Application, genesisBlockDevnet, configDevnet} = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
 const HelloTransaction = require('./hello_transaction'); // require the newly created transaction type 'HelloTransaction'
 
-configDevnet.components.logger.fileLogLevel = "error"; // will only log errors and fatal errors in the log file
-configDevnet.components.logger.consoleLogLevel = "none"; // no logs will be shown in console
+configDevnet.modules.http_api.access.public = true; // make the API accessible from everywhere
+//configDevnet.modules.http_api.access.whitelist.push('1.2.3.4'); // example how to make the API accessible for specific IPs: add the host 1.2.3.4 to the whitelist of hosts
 
 const app = new Application(genesisBlockDevnet, configDevnet); // create the application instance
+
+app.registerTransaction(11, HelloTransaction); // register the 'HelloTransaction' 
+
+// the code block below starts the application and doesn't need to be changed
+app
+    .run()
+    .then(() => app.logger.info('App started...'))
+    .catch(error => {
+        console.error('Faced error in application', error);
+        process.exit(1);
+    });
+```
+
+> __Optional:__ After first successful verification, you may want to reduce the default console log level (info) and file log level (debug).<br> 
+> You can do so, by passing a copy of the config object `configDevnet` with customized config for the logger component:
+
+```js
+configDevnet.components.logger.fileLogLevel = "error"; // will only log errors and fatal errors in the log file
+configDevnet.components.logger.consoleLogLevel = "none"; // no logs will be shown in console
 ```
 
 As next step, you can design a nice frontend application like [Lisk Explorer](https://explorer.lisk.io/), which is showing users assets data inside of their account page. 

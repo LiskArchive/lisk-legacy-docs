@@ -85,7 +85,7 @@ applyAsset(store) {
     };
     store.account.set(sender.address, updatedSender); // push updated account back to database
 
-    return [];
+    return []; // array of TransactionErrors, returns empty array if no errors are thrown
 }
 ```
 
@@ -107,7 +107,7 @@ undoAsset(store) {
     };
     store.account.set(sender.address, updatedSender); // push updated account back to database
 
-    return [];
+    return []; // array of TransactionErrors, returns empty array if no errors are thrown
 }
 ```
 
@@ -215,7 +215,7 @@ For this, we utilize the API of the node and post the created transaction object
 Because the API of every node is only accessible form localhost by default, you need to execute this query on the same server that your node is running on, unless you changed the config to make your API accessible to others or to the public.
 
 ```bash
-node print_sendable.js | curl -X POST -H "Content-Type: application/json" -d @- localhost:4000/api/transactions
+node print_sendable_cashback.js | curl -X POST -H "Content-Type: application/json" -d @- localhost:4000/api/transactions
 ```
 
 > __Optional:__ After first successful verification, you may wan to reduce the default console log level (info) and file log level (debug).<br> 

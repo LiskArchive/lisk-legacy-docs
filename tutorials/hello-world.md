@@ -13,9 +13,23 @@ The Hello World implementation goes as following:
 - __Steps 1-5__ describe what needs to be implemented on the server-side of the blockchain application.
 - __Step 6__ explains how to interact with the network from the client-side.
 
-## 1. Set up Lisk SDK
+## 1. Set up the project
 
-First, you need to set up the Lisk SDK following the instructions in the [Lisk SDK - Setup](../lisk-sdk/introduction.md#setup) section.
+First, let's create the root folder for the Hello World App and initialize the project:
+
+```bash
+mkdir hello_world # create the root folder for the blockchain application
+cd hello_world # navigate into the root folder
+npm init # initialize the manifest file of the project
+```
+
+As next step, we want to install the `lisk-sdk` package and add it to our projects' dependencies.
+Before installing it, make sure to follow the instructions in the [Lisk SDK - Pre-Install](../lisk-sdk/introduction.md#pre-installation) section.
+
+```bash
+npm install --save lisk-sdk@alpha # install lisk-sdk alpha version and save it to package.json
+touch index.js # create the index file to start the application
+```
 
 ## 2. Configure the application
 
@@ -395,6 +409,8 @@ Because the API of every node is only accessible from localhost by default, you 
 ```bash
 node print_sendable_hello-world.js | curl -X POST -H "Content-Type: application/json" -d @- localhost:4000/api/transactions
 ```
+
+## 7. Customize the default configuration
 
 To run the script from remote, change the configuration before creating the `Application` instance, to make the API accessible:
 

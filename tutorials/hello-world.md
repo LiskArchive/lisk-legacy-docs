@@ -15,7 +15,7 @@ The Hello World implementation goes as following:
 
 ## 1. Set up Lisk SDK
 
-First, you need to set up the Lisk SDK following the instructions in the [Lisk SDK - Usage](../lisk-sdk/introduction.md#usage) section.
+First, you need to set up the Lisk SDK following the instructions in the [Lisk SDK - Setup](../lisk-sdk/introduction.md#setup) section.
 
 ## 2. Configure the application
 
@@ -35,7 +35,7 @@ The application instance will start the whole application at the bottom of `inde
 In `line 4` , the application instance gets initialized.
 By passing the parameters for the [genesis block](../lisk-sdk/configuration.md#genesis-block) and the [configuration template](https://github.com/LiskHQ/lisk-sdk/blob/development/sdk/src/samples/config_devnet.json), the application is configured with most basic configurations to start the node.
 
-> If you want to change any of the values for `configDevnet`, check out the [full list of configurations](../lisk-sdk/configuration.md##list-of-configuration-options) for Lisk SDK and overwrite them like described in [step 6](#6-interact-with-the-network)
+> If you want to change any of the values for `configDevnet`, check out the [full list of configurations](../lisk-sdk/configuration.md#list-of-configuration-options) for Lisk SDK and overwrite them like described in [step 6](#6-interact-with-the-network)
 
 ## 3. Create a new transaction type
 
@@ -141,8 +141,8 @@ Inverse of `applyAsset`. Undoes the changes made in applyAsset step - reverts to
 ```js
 undoAsset(store) {
     const sender = store.account.get(this.senderId);
-    const oldObj = { ...sender.asset: null };
-    store.account.set(sender.address, sender);
+    const oldObj = { ...sender, asset: null };
+    store.account.set(sender.address, oldObj);
     return []; // array of TransactionErrors, returns empty array if no errors are thrown
 }
 ```
@@ -398,7 +398,7 @@ node print_sendable_hello-world.js | curl -X POST -H "Content-Type: application/
 
 To run the script from remote, change the configuration before creating the `Application` instance, to make the API accessible:
 
-> For more configuration options, check out the [full list of configurations](../lisk-sdk/configuration.md##list-of-configuration-options) for Lisk SDK
+> For more configuration options, check out the [full list of configurations](../lisk-sdk/configuration.md#list-of-configuration-options) for Lisk SDK
 
 ```js
 //index.js

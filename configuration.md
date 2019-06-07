@@ -1,10 +1,23 @@
 # Lisk SDK Configuration
 
-## Start with default values
+## Pass and modify default values
 
 ```js
 const app = new Application(genesisBlockDevnet); // uses predefined values, see full list below
 const app = new Application(genesisBlockDevnet, configDevnet); // start the node in a fully functional devnet
+```
+The configuration object `configDevnet` has the same structure like shown in the [list of configuration options](#list-of-configuration-options).
+It can be modified accordingly, before passing the config to the `Application` instance:
+
+```js
+const { Application, genesisBlockDevnet, configDevnet} = require('lisk-sdk'); // require the lisk-sdk package
+
+let customConfig = configDevnet;
+customConfig.components.storage.database = 'my-custom-db' //change the db name to my-custom-db
+customConfig.modules.http_api.access.public = true; // make the API accessible from everywhere
+
+
+const app = new Application(genesisBlockDevnet, customConfig);
 ```
 
 ## List of configuration options

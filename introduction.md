@@ -65,13 +65,67 @@ The following dependencies need to be installed in order to run applications cre
 
 ### Pre-Installation
 
+### PostgreSQL
+
+#### Ubuntu
+
+Firstly, install postgreSQL on your machine:
+```bash
+sudo apt-get purge -y postgres* # remove all already installed postgres versions
+sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+sudo apt install wget ca-certificates
+wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+sudo apt update
+sudo apt install postgresql-10
+```
+
+After installation, you should see the Postgres database cluster, by running
+```bash
+  pg_lsclusters
+```
+
+Drop the existing database cluster, and replace it with a cluster with the locale `en_US.UTF-8`:
+```bash
+  sudo pg_dropcluster --stop 10 main
+  sudo pg_createcluster --locale en_US.UTF-8 --start 10 main
+```
+Create a new database user called `lisk` and grant it rights to create databases:
+```bash
+  sudo -u postgres createuser --createdb lisk
+```
+
+Switch to the `lisk` user and create the databases, which shall hold the data of the blockchain:
+```bash
+  sudo -u lisk -i
+  createdb lisk_dev
+  ```
+
+For the following steps,  log out from the lisk user again with `CTRL+D`, and continue with your user with sudo rights.
+Change `'password'` to a secure password of your choice.
+```bash
+  sudo -u postgres psql -d lisk_{network} -c "alter user lisk with password 'password';"
+```
+
+> 
+
+#### MacOS
+
+```bash
+brew install postgresql@10
+initdb /usr/local/var/postgres -E utf8 --locale=en_US.UTF-8
+brew services start postgresql@10
+createdb lisk_{network}
+```
+`{network}` is the network you want to connect your Lisk Core node to.
+
+
 ### Node.js
 
 [Node.js](https://nodejs.org/) serves as the underlying engine for code execution.
 There are several different ways and version managers to install Node.JS on your system.
 We recommend one of the following two:
 
-#### Node Version Manager
+#### Option A: Node Version Manager
 
 We recommend using a Node version manager such as [NVM](https://github.com/creationix/nvm).
 NVM is a bash script that enables you to manage multiple active Node.js versions.
@@ -82,7 +136,7 @@ NVM is a bash script that enables you to manage multiple active Node.js versions
 nvm install 10.15.3
 ```
 
-#### Node.js package
+#### Option B: Node.js package
 
 If you do not want to use NVM or other package managers, you can install the Node package globally on your system alternatively:
 

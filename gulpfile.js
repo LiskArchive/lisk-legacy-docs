@@ -72,6 +72,12 @@ const bundleTask = createTask({
   call: series(bundleBuildTask, bundlePackTask),
 })
 
+const packTask = createTask({
+  name: 'pack',
+  desc: 'Clean, lint, build, and bundle the UI for publishing (deprecated; use bundle instead)',
+  call: series(bundleTask),
+})
+
 const buildPreviewPagesTask = createTask({
   name: 'preview:build-pages',
   call: task.buildPreviewPages(srcDir, previewSrcDir, previewDestDir, livereload),
@@ -102,6 +108,7 @@ module.exports = exportTasks(
   buildTask,
   bundleTask,
   bundlePackTask,
+  packTask,
   previewTask,
   previewBuildTask
 )

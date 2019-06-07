@@ -4,7 +4,8 @@ This guide details important information on how to use and configure Lisk Comman
 
 - [Configuration](#configuration)
 - [Usage](#usage)
-- [Command Reference](user-guide/commands.md)
+- [Lisk Core Commands](user-guide/lisk-core.md)
+- [General Command Reference](user-guide/commands.md)
 - [Sensitive Inputs](user-guide/sensitive-inputs.md)
 
 ## Configuration

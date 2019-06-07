@@ -8,6 +8,7 @@ This can be for example:
 
 - create a transaction
 - decrypt/encrypt passphrases or messages
+- install and manage a Lisk node
 - create accounts
 - get delegates
 - ... many more examples can be found on the [commands](user-guide/commands.md) page.
@@ -22,8 +23,9 @@ This can be for example:
   - [Upgrade](#upgrade)
   - [Contribute to Codebase](#contribute-to-the-codebase)
 - [User Guide](user-guide.md)
-  - [Commands](user-guide/commands.md)
-  - [Sensitive Inputs](user-guide/sensitive-inputs.md)
+- [Lisk Core Commands](user-guide/lisk-core.md)
+- [General Command Reference](user-guide/commands.md)
+- [Sensitive Inputs](user-guide/sensitive-inputs.md)
 
 ## Versions
 

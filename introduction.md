@@ -65,9 +65,23 @@ The following dependencies need to be installed in order to run applications cre
 
 ### Pre-Installation
 
-### PostgreSQL
+### Create a new user
+
+To install the required prerequisites, it is necessary to have a user with sudo rights on the server.
+
+> The `lisk` user itself **does not need** any `sudo` rights to run Lisk Core.
+
+To run and manage a node in the future, please create a separate `lisk` user like so:
 
 #### Ubuntu
+
+```bash
+sudo adduser lisk
+```
+
+#### PostgreSQL
+
+##### Ubuntu
 
 Firstly, install postgreSQL on your machine:
 ```bash
@@ -103,12 +117,10 @@ Switch to the `lisk` user and create the databases, which shall hold the data of
 For the following steps,  log out from the lisk user again with `CTRL+D`, and continue with your user with sudo rights.
 Change `'password'` to a secure password of your choice.
 ```bash
-  sudo -u postgres psql -d lisk_{network} -c "alter user lisk with password 'password';"
+  sudo -u postgres psql -d lisk_dev -c "alter user lisk with password 'password';"
 ```
 
-> 
-
-#### MacOS
+##### MacOS
 
 ```bash
 brew install postgresql@10
@@ -119,13 +131,13 @@ createdb lisk_{network}
 `{network}` is the network you want to connect your Lisk Core node to.
 
 
-### Node.js
+#### Node.js
 
 [Node.js](https://nodejs.org/) serves as the underlying engine for code execution.
 There are several different ways and version managers to install Node.JS on your system.
 We recommend one of the following two:
 
-#### Option A: Node Version Manager
+##### Option A: Node Version Manager
 
 We recommend using a Node version manager such as [NVM](https://github.com/creationix/nvm).
 NVM is a bash script that enables you to manage multiple active Node.js versions.
@@ -136,18 +148,18 @@ NVM is a bash script that enables you to manage multiple active Node.js versions
 nvm install 10.15.3
 ```
 
-#### Option B: Node.js package
+##### Option B: Node.js package
 
 If you do not want to use NVM or other package managers, you can install the Node package globally on your system alternatively:
 
-##### Ubuntu
+###### Ubuntu
 
 ```bash
 curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
 sudo apt-get install -y nodejs
 ```
 
-##### MacOS
+###### MacOS
 
 ```bash
 brew install node@10.15.3

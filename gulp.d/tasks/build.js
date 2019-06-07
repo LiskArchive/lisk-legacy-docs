@@ -28,7 +28,7 @@ module.exports = (src, dest, preview) => () => {
         filter: '**/~typeface-*/files/*',
         url: (asset) => {
           const relpath = asset.pathname.substr(1)
-          const abspath = ospath.resolve('node_modules', relpath)
+          const abspath = require.resolve(relpath)
           const basename = ospath.basename(abspath)
           const destpath = ospath.join(dest, 'font', basename)
           if (!fs.pathExistsSync(destpath)) fs.copySync(abspath, destpath)

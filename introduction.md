@@ -68,7 +68,6 @@ The following dependencies need to be installed in order to run applications cre
 #### Create a new user
 
 > To install the required prerequisites, it is necessary to have a user with sudo rights on the server.
-
 > The `lisk` user itself **does not need** any `sudo` rights to run the node.
 
 To run and manage a node in the future, please create a separate `lisk` user. E.g. execute:
@@ -228,19 +227,6 @@ This should start the application with the predefined default configurations, wh
 From this point, you can start to [configure](configuration.md) and customize the application further.
 
 For more detailed explanations, check out the getting started sections for [building lockchain applications](../start/build-blockchain-app.md) and the [example applications](../start/examples.md), which describe the process of creating a blockchain application step-by-step.
-
-## Contributing to the Lisk SDK
-
-To test out your local changes of the Lisk SDK, use a blockchain application(e.g. [Lisk Core](../lisk-core/introduction.md)) as basis and link it your locally customized `lisk-sdk` .
-
-1) At root of the `lisk-sdk` repository, run `npx lerna link`.
-2) At root level of your blockchain application, run `npm link lisk-sdk`.
-
-*Notes:*
-1) If you have made changes in the Lisk Elements, then make sure you run `npm run build` to see the changes.
-2) To clean up, install and build from scratch, `npm run clean:node_modules && rm -rf ./node_modules && npm ci && npm run bootstrap -- --ci && npm run build`.
-
-For more information about how to contribute to the Lisk SDK, check out our [Contribution Guidelines](https://github.com/LiskHQ/lisk-sdk/blob/development/docs/CONTRIBUTING.md) on Github.
 
 ## Get Involved
 

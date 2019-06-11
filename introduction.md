@@ -219,7 +219,7 @@ app.run() // start the application
 Now, save and close `index.js` and try to start your newly created blockchain application by running:
 
 ```bash
-node index.js # start the application
+node index.js | npx bunyan -o short # start the application
 ```
 
 > `node index.js` will start the node, and `| npx bunyan -o short` will pretty-print the logs in the console.

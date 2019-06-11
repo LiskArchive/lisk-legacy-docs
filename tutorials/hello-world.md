@@ -185,7 +185,7 @@ Right now, your project should have the following file structure:
 
 ```bash
 /hello-world-app # root directory of the application
-/hello-world-app/client # location for scripts fro the client side, empty right now, created in step 1
+/hello-world-app/client # location for scripts from the client side, empty right now, created in step 1
 /hello-world-app/server/hello_transaction.js # the custom transaction, created in step 3
 /hello-world-app/server/index.js # the index file of your application, created in step 1, extended in step 2 and 4
 /hello-world-app/node_modules # project dependencies, created in step 1
@@ -421,9 +421,7 @@ The generated transaction object should look like this:
    "recipientId":"10881167371402274308L",
    "fee":"100000000",
    "signature":"e6da5923ee9b769bd5624612af536ca4348d5b32c4552a05161a356e472b8708487022fd4e9787a1b7e548a98c64341f52f2b8b12a39d4115f820b8f01064003",
-   "signatures":[  
-
-   ],
+   "signatures":[],
    "asset":{  
       "hello":"world"
    }
@@ -509,7 +507,7 @@ customConfig.modules.http_api.access.public = true; // make the API accessible f
 
 const app = new Application(genesisBlockDevnet, customConfig); // create the application instance
 
-app.registerTransaction(11, HelloTransaction); // register the 'HelloTransaction' 
+app.registerTransaction(10, HelloTransaction); // register the 'HelloTransaction' 
 
 // the code block below starts the application and doesn't need to be changed
 app

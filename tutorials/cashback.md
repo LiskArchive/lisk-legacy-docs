@@ -2,22 +2,58 @@
 
 A simple application which rewards its users for sending tokens. 
 
-> Check out the full code example for the [Cashback App on Github](https://github.com/LiskHQ/lisk-sdk-test-app).
+The Cashback App implementation goes as following:
+
+- __Steps 1-5__ describe what needs to be implemented on the server-side of the blockchain application.
+- __Step 6__ explains how to interact with the network from the client-side.
+
+> Check out the __full code example__ for the [Cashback App on Github](https://github.com/LiskHQ/lisk-sdk-test-app/cashback).
 
 ## 1. Set up Lisk SDK
 
-First, you need to set up the Lisk SDK. Please follow the instructions in the [Lisk SDK - Usage](../lisk-sdk/introduction.md#usage) section.
+First, let's create the root folder for the Cashback App and initialize the project:
+
+```bash
+mkdir cashback # create the root folder for the blockchain application
+cd cashback # navigate into the root folder
+npm init # initialize the manifest file of the project
+```
+
+As next step, we want to install the `lisk-sdk` package and add it to our projects' dependencies.
+Before installing it, make sure to follow the instructions in the [Lisk SDK - Pre-Install](../lisk-sdk/introduction.md#pre-installation) section.
+
+```bash
+npm install --save lisk-sdk@alpha # install lisk-sdk as dependency for the server side
+npm install --save @liskhq/validator @liskhq/cryptography # install lisk-elements dependencies for the client side scripts
+```
+
+Create 2 folders `client` and `server`, which will hold the corresponding scripts for the blockchain application.
+
+- the `server` folder holds all the code that is needed to start a node and connect it to a network.
+- the `client` folder holds scritps that communicate with the network through the API of the node.
+
+```bash
+mkdir client server # create the 2 folder inside the root directory of your blockchain application
+cd server # move inside the server folder
+```
+
+Inside the `server` folder, create the index file of your blockchain application:
+
+```bash
+touch index.js
+```
 
 ## 2. Configure the application
 
 Next, let's configure the application, to provide basic information about the app we are going to build:
 
 ```js
-//index.js
+//server/index.js
 const { Application, genesisBlockDevnet, configDevnet } = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
 
 const app = new Application(genesisBlockDevnet, configDevnet); // create the application instance
 ```
+> *See the complete file on Github: [cashback/server/index.js](https://github.com/LiskHQ/lisk-sdk-test-app/tree/development/cashback/server/index.js).*
 
 In the `line 2`, we require the needed dependencies from the `lisk-sdk` package.
 The most important one is the `Application` class, which is used in `line 4` to create the application instance.
@@ -41,7 +77,7 @@ So e.g. if Alice sends 100 token to Bob as a Cashback transaction, Bob would rec
 Now, let's create a new file `cashback_transaction.js`, which is defining the new transaction type `CashbackTransaction`:
 
 ```js
-//cashback_transaction.js
+//server/cashback_transaction.js
 const {	TransferTransaction, BigNum } = require('lisk-sdk'); // import the TransferTransaction class and Bignum from the Lisk SDK package
 
 class CashbackTransaction extends TransferTransaction { // let the CashbackTransaction become a child class of TransferTransaction
@@ -52,8 +88,7 @@ class CashbackTransaction extends TransferTransaction { // let the CashbackTrans
 
 module.exports = CashbackTransaction;
 ``` 
-
-> You find a version of [the complete `cashback_transaction.js` file](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/cashback/transactions/cashback_transaction.js) on Github.
+> *See the complete file on Github: [cashback/server/cashback_transaction.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/cashback/server/cashback_transaction.js)*
 
 ### TYPE
 
@@ -117,8 +152,9 @@ Right now, your project should have the following file structure:
 
 ```bash
 /cashback-app # root directory of the application
-/cashback-app/cashback_transaction.js # the custom transaction, created in step 3
-/cashback-app/index.js # the index file of your application, created in step 1, extended in step 2 and 4
+/cashback-app/client # location for scripts from the client side, empty right now, created in step 1
+/cashback-app/server/cashback_transaction.js # the custom transaction, created in step 3
+/cashback-app/server/index.js # the index file of your application, created in step 1, extended in step 2 and 4
 /cashback-app/node_modules/ # project dependencies, created in step 1
 /cashback-app/package.json # project manifest file, created in step 1
 ```
@@ -126,7 +162,7 @@ Right now, your project should have the following file structure:
 Add the new transaction type to your application, by registering it to the application instance:
 
 ```js
-//index.js
+//server/index.js
 const { Application, genesisBlockDevnet, configDevnet} = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
 const CashbackTransaction = require('./cashback_transaction'); // require the newly created transaction type 'CashbackTransaction'
 
@@ -167,15 +203,95 @@ Check the logs, to verify the network has started successfully.
 
 If something went wrong, the process should stop and an error with debug information is displayed.
 
-If everything is ok, you should be able to see similar logs like the ones displayed in [step 5 of the Hello World app tutorial](#5-start-the-network).
+If everything is ok, you should be able to see the following console logs:
 
-For further interaction with the network, you can run the process in the background by executing:
-
-```bash
-npx pm2 start --name cashback index.js # add the application to pm2 under the name 'cashback'
-npx pm2 stop cashback # stop the cashback app
-npx pm2 start cashback # start the cashback app
 ```
+$ node index.js | npx bunyan -o short
+14:01:39.384Z  INFO lisk-framework: Booting the application with Lisk Framework(0.1.0)
+14:01:39.391Z  INFO lisk-framework: Starting the app - devnet-alpha-sdk
+14:01:39.392Z  INFO lisk-framework: Initializing controller
+14:01:39.392Z  INFO lisk-framework: Loading controller
+14:01:39.451Z  INFO lisk-framework: Old PID: 7707
+14:01:39.452Z  INFO lisk-framework: Current PID: 7732
+14:01:39.467Z  INFO lisk-framework: Loading module lisk-framework-chain:0.1.0 with alias "chain"
+14:01:39.613Z  INFO lisk-framework: Event network:bootstrap was subscribed but not registered to the bus yet.
+14:01:39.617Z  INFO lisk-framework: Event network:bootstrap was subscribed but not registered to the bus yet.
+14:01:39.682Z  INFO lisk-framework: Modules ready and launched
+14:01:39.683Z  INFO lisk-framework: Event network:event was subscribed but not registered to the bus yet.
+14:01:39.684Z  INFO lisk-framework: Module ready with alias: chain(lisk-framework-chain:0.1.0)
+14:01:39.684Z  INFO lisk-framework: Loading module lisk-framework-network:0.1.0 with alias "network"
+14:01:39.726Z  INFO lisk-framework: Blocks 1886
+14:01:39.727Z  INFO lisk-framework: Genesis block matched with database
+14:01:39.791Z ERROR lisk-framework: Error occurred while fetching information from 127.0.0.1:5000
+14:01:39.794Z  INFO lisk-framework: Module ready with alias: network(lisk-framework-network:0.1.0)
+14:01:39.795Z  INFO lisk-framework: Loading module lisk-framework-http-api:0.1.0 with alias "http_api"
+14:01:39.796Z  INFO lisk-framework: Module ready with alias: http_api(lisk-framework-http-api:0.1.0)
+14:01:39.797Z  INFO lisk-framework:
+  Bus listening to events [ 'app:ready',
+    'app:state:updated',
+    'chain:bootstrap',
+    'chain:blocks:change',
+    'chain:signature:change',
+    'chain:transactions:change',
+    'chain:rounds:change',
+    'chain:multisignatures:signature:change',
+    'chain:multisignatures:change',
+    'chain:delegates:fork',
+    'chain:loader:sync',
+    'chain:dapps:change',
+    'chain:registeredToBus',
+    'chain:loading:started',
+    'chain:loading:finished',
+    'network:bootstrap',
+    'network:event',
+    'network:registeredToBus',
+    'network:loading:started',
+    'network:loading:finished',
+    'http_api:registeredToBus',
+    'http_api:loading:started',
+    'http_api:loading:finished' ]
+14:01:39.799Z  INFO lisk-framework:
+  Bus ready for actions [ 'app:getComponentConfig',
+    'app:getApplicationState',
+    'app:updateApplicationState',
+    'chain:calculateSupply',
+    'chain:calculateMilestone',
+    'chain:calculateReward',
+    'chain:generateDelegateList',
+    'chain:updateForgingStatus',
+    'chain:postSignature',
+    'chain:getForgingStatusForAllDelegates',
+    'chain:getTransactionsFromPool',
+    'chain:getTransactions',
+    'chain:getSignatures',
+    'chain:postTransaction',
+    'chain:getDelegateBlocksRewards',
+    'chain:getSlotNumber',
+    'chain:calcSlotRound',
+    'chain:getNodeStatus',
+    'chain:blocks',
+    'chain:blocksCommon',
+    'network:request',
+    'network:emit',
+    'network:getNetworkStatus',
+    'network:getPeers',
+    'network:getPeersCountByFilter' ]
+14:01:39.800Z  INFO lisk-framework: App started...
+14:01:39.818Z  INFO lisk-framework: Validating current block with height 1886
+14:01:39.819Z  INFO lisk-framework: Loader->validateBlock Validating block 10258884836986606075 at height 1886
+14:01:40.594Z  INFO lisk-framework: Lisk started: 0.0.0.0:4000
+14:01:40.600Z  INFO lisk-framework: Verify->verifyBlock succeeded for block 10258884836986606075 at height 1886.
+14:01:40.600Z  INFO lisk-framework: Loader->validateBlock Validating block succeed for 10258884836986606075 at height 1886.
+14:01:40.600Z  INFO lisk-framework: Finished validating the chain. You are at height 1886.
+14:01:40.601Z  INFO lisk-framework: Blockchain ready
+14:01:40.602Z  INFO lisk-framework: Loading 101 delegates using encrypted passphrases from config
+14:01:40.618Z  INFO lisk-framework: Forging enabled on account: 8273455169423958419L
+14:01:40.621Z  INFO lisk-framework: Forging enabled on account: 12254605294831056546L
+14:01:40.624Z  INFO lisk-framework: Forging enabled on account: 14018336151296112016L
+14:01:40.627Z  INFO lisk-framework: Forging enabled on account: 2003981962043442425L
+[...]
+```
+
 
 ## 6. Interact with the network
 
@@ -183,14 +299,14 @@ Now that the network is started, let's try to send a `CashbackTransaction` to ou
 
 As first step, create the transaction object.
 
-First, let's reuse the script [create_sendable_transaction.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/scripts/create_sendable_transaction_base_trs.js) which we already described in [step 6 of Hello World app](#6-interact-with-the-network).
+First, let's reuse the script [create_sendable_transaction_base_trs.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/scripts/create_sendable_transaction_base_trs.js) which we already described in [step 6 of Hello World app](#6-interact-with-the-network).
 
-We can use this function in our script for printing a sendable cashback transaction object:
+We can use this function in our script for printing a sendable `CashbackTransaction` object:
 
 ```js
-//print_sendable_cashback.js
+//client/print_sendable_cashback.js
 const createSendableTransaction = require('./create_sendable_transaction_base_trs');
-const CashbackTransaction = require('../cashback-app/cashback_transaction');
+const CashbackTransaction = require('../server/cashback_transaction');
 
 let c = createSendableTransaction(CashbackTransaction, { // the desired transaction gets created and signed
 	type: 11, // we want to send a transaction type 11 (= CashbackTransaction)
@@ -207,6 +323,24 @@ let c = createSendableTransaction(CashbackTransaction, { // the desired transact
 
 console.log(c); // the transaction is displayed as JSON object in the console
 ```
+> *See the complete file on Github: [hello_world/client/print_sendable_cashback.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/hello_world/client/print_sendable_hello-world.js).*
+
+The generated transaction object should look like this:
+```json
+{  
+   "id":"5372254888441494149",
+   "amount":"100000000",
+   "type":11,
+   "timestamp":3,
+   "senderPublicKey":"c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f",
+   "senderId":"16313739661670634666L",
+   "recipientId":"10881167371402274308L",
+   "fee":"10000000",
+   "signature":"0a3f41cc529f9de523cadc7db64e9436014d1b10ca2158bbce0469e8e76dfd021358496440da43acaf64d0223d3514609fc1aa41646be56353207d88a03b1305",
+   "signatures":[],
+   "asset":{}
+}
+```
 
 Now that we have a sendable transaction object, let's send it to our node and see how it gets processed by analyzing the logs.
 
@@ -218,18 +352,109 @@ Because the API of every node is only accessible form localhost by default, you 
 node print_sendable_cashback.js | curl -X POST -H "Content-Type: application/json" -d @- localhost:4000/api/transactions
 ```
 
+If the node accepted the transaction, it should respond with `{"meta":{"status":true},"data":{"message":"Transaction(s) accepted"},"links":{}}`.
+
+Look at the logs of your node, to verify that the transaction has been added to the transaction pool:
+
+```
+15:12:30.602Z  INFO lisk-framework: Verify->verifyBlock succeeded for block 752004853642534413 at height 1908.
+15:12:30.626Z  INFO lisk-framework: Transaction pool - received size: 0 validated size: 0 verified size: 0 pending size: 0 ready size: 0
+15:12:30.630Z  INFO lisk-framework: Forged new block id: 752004853642534413 height: 1908 round: 19 slot: 9615675 reward: 0
+15:12:33.846Z  INFO lisk-framework: Transaction pool - added transactions to verified queue on action: addTransactions with ID(s): 7885526580000209472
+15:12:33.872Z  INFO lisk-framework: Transaction pool - received size: 0 validated size: 0 verified size: 0 pending size: 0 ready size: 1
+15:12:38.829Z  INFO lisk-framework: Broadcasts released: 1
+15:12:40.647Z  INFO lisk-framework: Broadhash consensus before forging a block: 0 %
+15:12:40.662Z  INFO lisk-framework: Verify->verifyBlock succeeded for block 9532247529504404125 at height 1909.
+15:12:40.728Z  INFO lisk-framework: Transaction pool - removed transactions on action: removeConfirmedTransactions with ID(s): 7885526580000209472
+15:12:40.729Z  INFO lisk-framework: Transaction pool - received size: 0 validated size: 0 verified size: 0 pending size: 0 ready size: 0
+15:12:40.737Z  INFO lisk-framework: Forged new block id: 9532247529504404125 height: 1909 round: 19 slot: 9615676 reward: 0
+15:12:50.753Z  INFO lisk-framework: Broadhash consensus before forging a block: 0 %
+15:12:50.756Z  INFO lisk-framework: Verify->verifyBlock succeeded for block 8025723351893303634 at height 1910.
+```
+
+For further interaction with the network, you can run the process in the background by executing:
+
+```bash
+npx pm2 start --name cashback index.js # add the application to pm2 under the name 'cashback'
+npx pm2 stop cashback # stop the cashback app
+npx pm2 start cashback # start the cashback app
+```
+
+To verify, that the transaction got included in the blockchain as well, query the database of your node, where the blockchain data is stored:
+
+> Use as id the id of your transaction object, that gets created by the script `print_sendable_cashback.js`
+
+```
+psql lisk_dev
+lisk_dev=> SELECT address, balance from mem_accounts WHERE address = '16313739661670634666L';
+        address        |     balance      
+-----------------------+------------------
+ 16313739661670634666L | 9999999800000000
+(1 row)
+
+lisk_dev=> SELECT address, balance from mem_accounts WHERE address = '10881167371402274308L';
+        address        |  balance  
+-----------------------+-----------
+ 10881167371402274308L | 101089108
+(1 row)
+```
+
+```
+SELECT id, "blockId", type, amount, fee, "senderId", "recipientId" from trs WHERE id = '7885526580000209472';
+         id          |       blockId       | type |  amount   |   fee    |       senderId        |      recipientId      
+---------------------+---------------------+------+-----------+----------+-----------------------+-----------------------
+ 7885526580000209472 | 9532247529504404125 |   11 | 100000000 | 10000000 | 16313739661670634666L | 10881167371402274308L
+```
+
+```
+lisk_dev=> SELECT address, balance from mem_accounts WHERE address = '16313739661670634666L';
+        address        |     balance      
+-----------------------+------------------
+ 16313739661670634666L | 9999999700000000
+
+lisk_dev=> SELECT address, balance from mem_accounts WHERE address = '10881167371402274308L';
+        address        |  balance  
+-----------------------+-----------
+ 10881167371402274308L | 201089108
+```
+
+## 7. Customize the default configuration
+
+To run the script from remote, change the configuration before creating the `Application` instance, to make the API accessible:
+
+> For more configuration options, check out the [full list of configurations](../lisk-sdk/configuration.md#list-of-configuration-options) for Lisk SDK
+
+```js
+//server/index.js
+const { Application, genesisBlockDevnet, configDevnet} = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
+const CashbackTransaction = require('./cashback_transaction'); // require the newly created transaction type 'CashbackTransaction'
+
+let customConfig = configDevnet;
+customConfig.modules.http_api.access.public = true; // make the API accessible from everywhere
+//customConfig.modules.http_api.access.whitelist.push('1.2.3.4'); // example how to make the API accessible for specific IPs: add the host 1.2.3.4 to the whitelist of hosts
+
+const app = new Application(genesisBlockDevnet, customConfig); // create the application instance
+
+app.registerTransaction(11, CashbackTransaction); // register the 'HelloTransaction' 
+
+// the code block below starts the application and doesn't need to be changed
+app
+    .run()
+    .then(() => app.logger.info('App started...'))
+    .catch(error => {
+        console.error('Faced error in application', error);
+        process.exit(1);
+    });
+```
+> *See the complete file on Github: [cashback/server/index.js](https://github.com/LiskHQ/lisk-sdk-test-app/tree/development/cashback/server/index.js).*
+
+
 > __Optional:__ After first successful verification, you may wan to reduce the default console log level (info) and file log level (debug).<br> 
 > You can do so, by passing a copy of the config object `configDevnet` with customized config for the logger component:
 
 ```js
-//index.js
-const { Application, genesisBlockDevnet, configDevnet} = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
-const CashbackTransaction = require('./cashback_transaction'); // require the newly created transaction type 'CashbackTransaction'
-
 configDevnet.components.logger.fileLogLevel = "error"; // will only log errors and fatal errors in the log file
 configDevnet.components.logger.consoleLogLevel = "none"; // no logs will be shown in console
-
-const app = new Application(genesisBlockDevnet, configDevnet); // create the application instance
 ```
 
 As next step, you can use a wallet software like e.g. a customized [Lisk Hub](https://lisk.io/hub), so that users can utlize the new transaction type.

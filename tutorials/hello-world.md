@@ -440,7 +440,7 @@ Look at the logs of your node, to verify that the transaction has been added to 
 10:14:40.469Z  INFO lisk-framework: Transaction pool - received size: 0 validated size: 0 verified size: 0 pending size: 0 ready size: 0
 10:14:40.472Z  INFO lisk-framework: Forged new block id: 14503322979811202014 height: 525 round: 6 slot: 9613888 reward: 0
 10:14:50.487Z  INFO lisk-framework: Broadhash consensus before forging a block: 0 %
-10:14:50.489Z  INFO lisk-framework: Verify->verifyBlock succeeded for block 15361727502078138109 at height 526.```
+10:14:50.489Z  INFO lisk-framework: Verify->verifyBlock succeeded for block 15361727502078138109 at height 526.
 ```
 
 For further interaction with the network, you can run the process in the background by executing:

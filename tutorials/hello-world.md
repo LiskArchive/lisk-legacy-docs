@@ -27,7 +27,8 @@ As next step, we want to install the `lisk-sdk` package and add it to our projec
 Before installing it, make sure to follow the instructions in the [Lisk SDK - Pre-Install](../lisk-sdk/introduction.md#pre-installation) section.
 
 ```bash
-npm install --save lisk-sdk@alpha # install lisk-sdk alpha version and save it to package.json
+npm install --save lisk-sdk@alpha # install lisk-sdk as dependency for the server side
+npm install --save @liskhq/validator @liskhq/cryptography # install lisk-elements dependencies for the client side scripts
 ```
 
 Create 2 folders `client` and `server`, which will hold the corresponding scripts for the blockchain application.

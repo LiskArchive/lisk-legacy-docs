@@ -408,6 +408,27 @@ console.log(h); // the transaction is displayed as JSON object in the console
 ```
 > *See the complete file on Github: [hello_world/client/print_sendable_hello-world.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/hello_world/client/print_sendable_hello-world.js).*
 
+The generated transaction object should look like this:
+```json
+{  
+   "id":"1199714748623931346",
+   "amount":"0",
+   "type":10,
+   "timestamp":0,
+   "senderPublicKey":"c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f",
+   "senderId":"16313739661670634666L",
+   "recipientId":"10881167371402274308L",
+   "fee":"100000000",
+   "signature":"e6da5923ee9b769bd5624612af536ca4348d5b32c4552a05161a356e472b8708487022fd4e9787a1b7e548a98c64341f52f2b8b12a39d4115f820b8f01064003",
+   "signatures":[  
+
+   ],
+   "asset":{  
+      "hello":"world"
+   }
+}
+```
+
 Now that we have a sendable transaction object, let's send it to our node and see how it gets processed by analyzing the logs:
 
 For this, we utilize the API of the node and post the created transaction object to the transaction endpoint of the API.
@@ -418,7 +439,7 @@ Because the API of every node is only accessible from localhost by default, you 
 node print_sendable_hello-world.js | curl -X POST -H "Content-Type: application/json" -d @- localhost:4000/api/transactions
 ```
 
-If the node accepted the trasnaction, it should respond with success code `200`.
+If the node accepted the transaction, it should respond with `{"meta":{"status":true},"data":{"message":"Transaction(s) accepted"},"links":{}}`.
 
 Look at the logs of your node, to verify that the transaction has been added to the transaction pool:
 

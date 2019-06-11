@@ -65,19 +65,33 @@ The following dependencies need to be installed in order to run applications cre
 
 ### Pre-Installation
 
-### Create a new user
+#### Create a new user
 
-To install the required prerequisites, it is necessary to have a user with sudo rights on the server.
+> To install the required prerequisites, it is necessary to have a user with sudo rights on the server.
 
-> The `lisk` user itself **does not need** any `sudo` rights to run Lisk Core.
+> The `lisk` user itself **does not need** any `sudo` rights to run the node.
 
-To run and manage a node in the future, please create a separate `lisk` user like so:
+To run and manage a node in the future, please create a separate `lisk` user. E.g. execute:
 
-#### Ubuntu
+##### Ubuntu
 
 ```bash
 sudo adduser lisk
 ```
+
+#### Toolchain components
+
+Used for compiling dependencies.
+
+##### Ubuntu
+
+```bash
+sudo apt install -y python-minimal
+```
+
+##### MacOS
+
+Ensure that both [XCode](https://developer.apple.com/xcode/) and [Homebrew](https://brew.sh/) are installed.
 
 #### PostgreSQL
 
@@ -95,29 +109,29 @@ sudo apt install postgresql-10
 
 After installation, you should see the Postgres database cluster, by running
 ```bash
-  pg_lsclusters
+pg_lsclusters
 ```
 
 Drop the existing database cluster, and replace it with a cluster with the locale `en_US.UTF-8`:
 ```bash
-  sudo pg_dropcluster --stop 10 main
-  sudo pg_createcluster --locale en_US.UTF-8 --start 10 main
+sudo pg_dropcluster --stop 10 main
+sudo pg_createcluster --locale en_US.UTF-8 --start 10 main
 ```
 Create a new database user called `lisk` and grant it rights to create databases:
 ```bash
-  sudo -u postgres createuser --createdb lisk
+sudo -u postgres createuser --createdb lisk
 ```
 
 Switch to the `lisk` user and create the databases, which shall hold the data of the blockchain:
 ```bash
-  sudo -u lisk -i
-  createdb lisk_dev
+sudo -u lisk -i
+createdb lisk_dev
   ```
 
 For the following steps,  log out from the lisk user again with `CTRL+D`, and continue with your user with sudo rights.
 Change `'password'` to a secure password of your choice.
 ```bash
-  sudo -u postgres psql -d lisk_dev -c "alter user lisk with password 'password';"
+sudo -u postgres psql -d lisk_dev -c "alter user lisk with password 'password';"
 ```
 
 ##### MacOS
@@ -170,7 +184,6 @@ brew install node@10.15.3
 To install the `alpha` version of the NPM package [lisk-sdk](https://www.npmjs.com/package/lisk-sdk), run:
 
 ```bash
-npm install lisk-sdk@alpha # install lisk-sdk alpha version 
 npm install --save lisk-sdk@alpha # add --save flag to save it to package.json
 ```
 
@@ -209,6 +222,8 @@ Now, save and close `index.js` and try to start your newly created blockchain ap
 node index.js # start the application
 ```
 
+> `node index.js` will start the node, and `| npx bunyan -o short` will pretty-print the logs in the console.
+  
 This should start the application with the predefined default configurations, which will connect your app to a local devnet.
 From this point, you can start to [configure](configuration.md) and customize the application further.
 

@@ -311,7 +311,7 @@ Now that your network is running, let's try to send a `CashbackTransaction` to o
 
 As first step, create the transaction object.
 
-First, let's reuse the script [create_sendable_transaction_base_trs.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/scripts/create_sendable_transaction_base_trs.js) which we already described in [step 6 of Hello World app](#6-interact-with-the-network).
+First, let's reuse the script [create_sendable_transaction_base_trs.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/scripts/create_sendable_transaction_base_trs.js) which we already described in [step 6 of Hello World app](hello-world.md#6-interact-with-the-network).
 
 We can call the `createSendableTransaction` function to print a sendable `CashbackTransaction` object:
 

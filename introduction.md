@@ -85,7 +85,7 @@ Used for compiling dependencies.
 ##### Ubuntu
 
 ```bash
-sudo apt install -y python-minimal
+sudo apt install -y python-minimal build-essential
 ```
 
 ##### MacOS

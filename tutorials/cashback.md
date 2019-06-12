@@ -4,11 +4,11 @@ A simple application which rewards its users for sending tokens.
 
 The Cashback App implementation goes as following:
 
-- __Steps 1-5__ describe what needs to be implemented on the server-side of the blockchain application.
-- __Step 6__ explains how to interact with the network from the client-side.
+- __Steps 1-5__ describes the sever-side implementation of the blockchain application.
+- __Step 6__  shows how to interact with the network from the (blockchain) client-side using a node script.
 - __Step 7__ explains how to override specific config values.
 
-> Check out the __full code example__ for the [Cashback App on Github](https://github.com/LiskHQ/lisk-sdk-test-app/cashback).
+> Check out the __full code example__ of the [Cashback App on Github](https://github.com/LiskHQ/lisk-sdk-test-app/cashback).
 
 ## 1. Set up Lisk SDK
 
@@ -28,13 +28,13 @@ npm install --save lisk-sdk@alpha # install lisk-sdk as dependency for the serve
 npm install --save @liskhq/validator @liskhq/cryptography # install lisk-elements dependencies for the client side scripts
 ```
 
-Create 2 folders `client` and `server`, which will hold the corresponding scripts for the blockchain application.
+Create two folders `client` and `server`, which will hold the corresponding scripts for the blockchain application.
 
 - the `server` folder holds all the code that is needed to start a node and connect it to a network.
 - the `client` folder holds scritps that communicate with the network through the API of the node.
 
 ```bash
-mkdir client server # create the 2 folder inside the root directory of your blockchain application
+mkdir client server # creates the folder inside the root directory of your blockchain application
 cd server # move inside the server folder
 ```
 
@@ -46,7 +46,7 @@ touch index.js
 
 ## 2. Configure the application
 
-Next, let's configure the application, to provide basic information about the app we are going to build:
+Next, let's configure the application, to provide basic information about the application we are going to build:
 
 ```js
 //server/index.js
@@ -65,12 +65,12 @@ app
 ```
 > *See the complete file on Github: [cashback/server/index.js](https://github.com/LiskHQ/lisk-sdk-test-app/tree/development/cashback/server/index.js).*
 
-In the `line 2`, we require the needed dependencies from the `lisk-sdk` package.
+On `line 2`, we require the needed dependencies from the `lisk-sdk` package.
 The most important one is the `Application` class, which is used in `line 4` to create the application instance.
-The application instance will start the whole application at the bottom of `index.js`.
+The application instance is used to start the blockchain application at the bottom of `index.js`.
 
 In `line 4` , the application instance gets initialized.
-By passing the parameters for the [genesis block](../lisk-sdk/configuration.md) and the [configuration template](https://github.com/LiskHQ/lisk-sdk/blob/development/sdk/src/samples/config_devnet.json), the application is configured with most basic configurations to start the node.
+By passing the parameters for the [genesis block](../lisk-sdk/configuration.md) and the [configuration template](https://github.com/LiskHQ/lisk-sdk/blob/development/sdk/src/samples/config_devnet.json), the application is configured with the most basic configurations to start the node.
 
 > If you want to change any of the values for `configDevnet`, check out the [full list of configurations](../lisk-sdk/configuration.md#list-of-configuration-options) for Lisk SDK and overwrite them like described in [step 7](#7-customize-the-default-configuration)
 
@@ -78,13 +78,13 @@ By passing the parameters for the [genesis block](../lisk-sdk/configuration.md) 
 
 Now, we want to create a new [custom transaction type](custom-transactions.md) `CashbackTransaction`: 
 It extends the pre-existing transaction type `TransferTransaction`.
-In difference to the normal `TransferTransaction`, the Cashback transaction type pays out a 10% bonus reward to the sender of any Cashback transaction type.
+The difference between the regular `TransferTransaction` and the `CashbackTransaction`, is that Cashback transaction type also pays out a 10% bonus reward to its sender.
 
 So e.g. if Alice sends 100 token to Bob as a Cashback transaction, Bob would receive the 100 token and Alice would receive additional 10 tokens as a cashback.
 
-> If you compare the methods below with the methods we implemented for the `HelloTransaction`, you will notice, that we implement less methods for the `CashbackTransaction`.
+> If you compare the methods below with the methods we implemented in the `HelloTransaction`, you will notice, that we implement fewer methods for the `CashbackTransaction`.
 > This is because we extend the `CashbackTransaction` from an already existing transaction type `TransferTransaction`.
-> As a result, all required methods are implemented already inside the `Transfertransaction` class, and we only need to overwrite/extend explicitely the methods we want to customize.
+> As a result, all required methods are implemented already inside the `TransferTransaction` class, and we only need to overwrite/extend explicitely the methods we want to customize.
 
 Now, let's create a new file `cashback_transaction.js`, which is defining the new transaction type `CashbackTransaction`:
 
@@ -213,9 +213,9 @@ node index.js | npx bunyan -o short
 
 Check the logs, to verify the network has started successfully.
 
-If something went wrong, the process should stop and an error with debug information is displayed.
+If an error occurs, the process should stop and the error with debug information will be displayed.
 
-If everything is ok, you should be able to see the following console logs:
+If everything is ok, the following logs will be displayed:
 
 ```
 $ node index.js | npx bunyan -o short
@@ -307,13 +307,13 @@ $ node index.js | npx bunyan -o short
 
 ## 6. Interact with the network
 
-Now that the network is started, let's try to send a `CashbackTransaction` to our node to see if it gets accepted.
+Now that your network is running, let's try to send a `CashbackTransaction` to our node to see if it gets accepted.
 
 As first step, create the transaction object.
 
 First, let's reuse the script [create_sendable_transaction_base_trs.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/scripts/create_sendable_transaction_base_trs.js) which we already described in [step 6 of Hello World app](#6-interact-with-the-network).
 
-We can use this function in our script for printing a sendable `CashbackTransaction` object:
+We can call the `createSendableTransaction` function to print a sendable `CashbackTransaction` object:
 
 ```js
 //client/print_sendable_cashback.js
@@ -356,7 +356,7 @@ The generated transaction object should look like this:
 
 Now that we have a sendable transaction object, let's send it to our node and see how it gets processed by analyzing the logs.
 
-For this, we utilize the API of the node and post the created transaction object to the transaction endpoint of the API.
+For this, we utilize the http API of the node and post the created transaction object to the transaction endpoint of the API.
 
 Because the API of every node is only accessible form localhost by default, you need to execute this query on the same server that your node is running on, unless you changed the config to make your API accessible to others or to the public.
 

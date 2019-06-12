@@ -11,7 +11,7 @@ All tutorials cover the following steps:
 - how to create a sendable transaction object of the new type, and send it to the network.
 
 ## Hello World
-A hello world application of the alpha SDK.
+A hello world application built using the alpha SDK.
 
 Explains how to create a new transaction type from scratch.
 
@@ -22,10 +22,10 @@ A simple example to showcase how to create a new transaction type by implementin
 
 ## Cashback
 
-The example of a simple but valid use-case - cashback.
-On top of the regular balance transfer, the example implements the cashback functionality. 
+The example of a simple but valid use-case - a cashback transaction.
+Built by extending the balance transfer transaction, in addition to the regular transfer functionality, the cashback transaction also applies an inflationary 10% to senders account.
 
-Explains how to create a new transaction type that inherits from an already existing transaction type.
+This example shows you how to create a new custom transaction inheriting from a pre-existing transaction type.
 
-- [Full code example of Cashback app](https://github.com/LiskHQ/lisk-sdk-examples/tree/development/cashback) on Github.
-- [Cashback Tutorial](tutorials/hello-world.md)
+- [A full example Cashback application's codebase ](https://github.com/LiskHQ/lisk-sdk-examples/tree/development/cashback) is available Github.
+- [Cashback Tutorial](tutorials/cashback.md)

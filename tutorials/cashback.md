@@ -6,6 +6,7 @@ The Cashback App implementation goes as following:
 
 - __Steps 1-5__ describe what needs to be implemented on the server-side of the blockchain application.
 - __Step 6__ explains how to interact with the network from the client-side.
+- __Step 7__ explains how to override specific config values.
 
 > Check out the __full code example__ for the [Cashback App on Github](https://github.com/LiskHQ/lisk-sdk-test-app/cashback).
 

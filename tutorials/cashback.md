@@ -51,7 +51,16 @@ Next, let's configure the application, to provide basic information about the ap
 //server/index.js
 const { Application, genesisBlockDevnet, configDevnet } = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
 
-const app = new Application(genesisBlockDevnet, configDevnet); // create the application instance
+const app = new Application(genesisBlockDevnet, {...configDevnet, app: {label: 'Cashback blockchain application'}}); // create the application instance
+
+// the code block below starts the application and doesn't need to be changed
+app
+    .run()
+    .then(() => app.logger.info('App started...'))
+    .catch(error => {
+        console.error('Faced error in application', error);
+        process.exit(1);
+    });        
 ```
 > *See the complete file on Github: [cashback/server/index.js](https://github.com/LiskHQ/lisk-sdk-test-app/tree/development/cashback/server/index.js).*
 

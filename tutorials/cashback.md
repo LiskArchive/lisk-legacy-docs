@@ -71,6 +71,8 @@ The application instance will start the whole application at the bottom of `inde
 In `line 4` , the application instance gets initialized.
 By passing the parameters for the [genesis block](../lisk-sdk/configuration.md) and the [configuration template](https://github.com/LiskHQ/lisk-sdk/blob/development/sdk/src/samples/config_devnet.json), the application is configured with most basic configurations to start the node.
 
+> If you want to change any of the values for `configDevnet`, check out the [full list of configurations](../lisk-sdk/configuration.md#list-of-configuration-options) for Lisk SDK and overwrite them like described in [step 7](#7-customize-the-default-configuration)
+
 ## 3. Create a new transaction type
 
 Now, we want to create a new [custom transaction type](custom-transactions.md) `CashbackTransaction`: 
@@ -391,8 +393,7 @@ npx pm2 start cashback # start the cashback app
 
 To verify, that the transaction got included in the blockchain as well, query the database of your node, where the blockchain data is stored:
 
-> Use as id the id of your transaction object, that gets created by the script `print_sendable_cashback.js`
-
+Check the account balances of sender and recipient, before posting the transaction to the node:
 ```
 psql lisk_dev
 lisk_dev=> SELECT address, balance from mem_accounts WHERE address = '16313739661670634666L';
@@ -408,12 +409,18 @@ lisk_dev=> SELECT address, balance from mem_accounts WHERE address = '1088116737
 (1 row)
 ```
 
+After posting the transaction to the node, check if it got included in the blockchain by querying the database:
+
+> Use as id the id of your transaction object, that gets created by the script `print_sendable_cashback.js`
+
 ```
 SELECT id, "blockId", type, amount, fee, "senderId", "recipientId" from trs WHERE id = '7885526580000209472';
          id          |       blockId       | type |  amount   |   fee    |       senderId        |      recipientId      
 ---------------------+---------------------+------+-----------+----------+-----------------------+-----------------------
  7885526580000209472 | 9532247529504404125 |   11 | 100000000 | 10000000 | 16313739661670634666L | 10881167371402274308L
 ```
+
+And compare the account balances of sender and recipient, to verify that the sender account received the cashback and the token were transferred:
 
 ```
 lisk_dev=> SELECT address, balance from mem_accounts WHERE address = '16313739661670634666L';
@@ -426,6 +433,10 @@ lisk_dev=> SELECT address, balance from mem_accounts WHERE address = '1088116737
 -----------------------+-----------
  10881167371402274308L | 201089108
 ```
+
+In this example, the sender gets paid back the transaction fee as cashback:
+The sender was sending 1 LSK to the recipient, and paid a transaction fee of 0.1 LSK.
+At the same time, the sender gets a cashback of 10% of the transaction amount: 1 LSK * 10% = 0.1 LSK.
 
 ## 7. Customize the default configuration
 

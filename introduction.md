@@ -65,13 +65,92 @@ The following dependencies need to be installed in order to run applications cre
 
 ### Pre-Installation
 
-### Node.js
+#### Create a new user
+
+> To install the required prerequisites, it is necessary to have a user with sudo rights on the server.
+> The `lisk` user itself **does not need** any `sudo` rights to run the node.
+
+To run and manage a node in the future, please create a separate `lisk` user. E.g. execute:
+
+##### Ubuntu
+
+```bash
+sudo adduser lisk
+```
+
+#### Toolchain components
+
+Used for compiling dependencies.
+
+##### Ubuntu
+
+```bash
+sudo apt install -y python-minimal build-essential
+```
+
+##### MacOS
+
+Ensure that both [XCode](https://developer.apple.com/xcode/) and [Homebrew](https://brew.sh/) are installed.
+
+#### PostgreSQL
+
+##### Ubuntu
+
+Firstly, install postgreSQL on your machine:
+```bash
+sudo apt-get purge -y postgres* # remove all already installed postgres versions
+sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+sudo apt install wget ca-certificates
+wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+sudo apt update
+sudo apt install postgresql-10
+```
+
+After installation, you should see the Postgres database cluster, by running
+```bash
+pg_lsclusters
+```
+
+Drop the existing database cluster, and replace it with a cluster with the locale `en_US.UTF-8`:
+```bash
+sudo pg_dropcluster --stop 10 main
+sudo pg_createcluster --locale en_US.UTF-8 --start 10 main
+```
+Create a new database user called `lisk` and grant it rights to create databases:
+```bash
+sudo -u postgres createuser --createdb lisk
+```
+
+Switch to the `lisk` user and create the databases, which shall hold the data of the blockchain:
+```bash
+sudo -u lisk -i
+createdb lisk_dev
+  ```
+
+For the following steps,  log out from the lisk user again with `CTRL+D`, and continue with your user with sudo rights.
+Change `'password'` to a secure password of your choice.
+```bash
+sudo -u postgres psql -d lisk_dev -c "alter user lisk with password 'password';"
+```
+
+##### MacOS
+
+```bash
+brew install postgresql@10
+initdb /usr/local/var/postgres -E utf8 --locale=en_US.UTF-8
+brew services start postgresql@10
+createdb lisk_{network}
+```
+`{network}` is the network you want to connect your Lisk Core node to.
+
+
+#### Node.js
 
 [Node.js](https://nodejs.org/) serves as the underlying engine for code execution.
 There are several different ways and version managers to install Node.JS on your system.
 We recommend one of the following two:
 
-#### Node Version Manager
+##### Option A: Node Version Manager
 
 We recommend using a Node version manager such as [NVM](https://github.com/creationix/nvm).
 NVM is a bash script that enables you to manage multiple active Node.js versions.
@@ -82,18 +161,18 @@ NVM is a bash script that enables you to manage multiple active Node.js versions
 nvm install 10.15.3
 ```
 
-#### Node.js package
+##### Option B: Node.js package
 
 If you do not want to use NVM or other package managers, you can install the Node package globally on your system alternatively:
 
-##### Ubuntu
+###### Ubuntu
 
 ```bash
 curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
 sudo apt-get install -y nodejs
 ```
 
-##### MacOS
+###### MacOS
 
 ```bash
 brew install node@10.15.3
@@ -104,7 +183,6 @@ brew install node@10.15.3
 To install the `alpha` version of the NPM package [lisk-sdk](https://www.npmjs.com/package/lisk-sdk), run:
 
 ```bash
-npm install lisk-sdk@alpha # install lisk-sdk alpha version 
 npm install --save lisk-sdk@alpha # add --save flag to save it to package.json
 ```
 
@@ -140,26 +218,15 @@ app.run() // start the application
 Now, save and close `index.js` and try to start your newly created blockchain application by running:
 
 ```bash
-node index.js # start the application
+node index.js | npx bunyan -o short # start the application
 ```
 
+> `node index.js` will start the node, and `| npx bunyan -o short` will pretty-print the logs in the console.
+  
 This should start the application with the predefined default configurations, which will connect your app to a local devnet.
 From this point, you can start to [configure](configuration.md) and customize the application further.
 
-For more detailed explanations, check out the getting started sections for [building lockchain applications](../start/build-blockchain-app.md) and the [example applications](../start/examples.md), which describe the process of creating a blockchain application step-by-step.
-
-## Contributing to the Lisk SDK
-
-To test out your local changes of the Lisk SDK, use a blockchain application(e.g. [Lisk Core](../lisk-core/introduction.md)) as basis and link it your locally customized `lisk-sdk` .
-
-1) At root of the `lisk-sdk` repository, run `npx lerna link`.
-2) At root level of your blockchain application, run `npm link lisk-sdk`.
-
-*Notes:*
-1) If you have made changes in the Lisk Elements, then make sure you run `npm run build` to see the changes.
-2) To clean up, install and build from scratch, `npm run clean:node_modules && rm -rf ./node_modules && npm ci && npm run bootstrap -- --ci && npm run build`.
-
-For more information about how to contribute to the Lisk SDK, check out our [Contribution Guidelines](https://github.com/LiskHQ/lisk-sdk/blob/development/docs/CONTRIBUTING.md) on Github.
+For more detailed explanations, check out the getting started sections for [building blockchain applications](../start/build-blockchain-app.md) and the [example applications](../start/tutorials.md), which describe the process of creating a blockchain application step-by-step.
 
 ## Get Involved
 

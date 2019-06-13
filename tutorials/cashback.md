@@ -21,7 +21,7 @@ npm init # initialize the manifest file of the project
 ```
 
 As next step, we want to install the `lisk-sdk` package and add it to our projects' dependencies.
-Before installing it, make sure to follow the instructions in the [Lisk SDK - Pre-Install](../lisk-sdk/introduction.md#pre-installation) section.
+Before installing it, make sure to follow the instructions in the [Lisk SDK - Pre-Install](../../lisk-sdk/introduction.md#pre-installation) section.
 
 ```bash
 npm install --save lisk-sdk@alpha # install lisk-sdk as dependency for the server side
@@ -70,9 +70,9 @@ The most important one is the `Application` class, which is used in `line 4` to 
 The application instance is used to start the blockchain application at the bottom of `index.js`.
 
 In `line 4` , the application instance gets initialized.
-By passing the parameters for the [genesis block](../lisk-sdk/configuration.md) and the [configuration template](https://github.com/LiskHQ/lisk-sdk/blob/development/sdk/src/samples/config_devnet.json), the application is configured with the most basic configurations to start the node.
+By passing the parameters for the [genesis block](../../lisk-sdk/configuration.md) and the [configuration template](https://github.com/LiskHQ/lisk-sdk/blob/development/sdk/src/samples/config_devnet.json), the application is configured with the most basic configurations to start the node.
 
-> If you want to change any of the values for `configDevnet`, check out the [full list of configurations](../lisk-sdk/configuration.md#list-of-configuration-options) for Lisk SDK and overwrite them like described in [step 7](#7-customize-the-default-configuration)
+> If you want to change any of the values for `configDevnet`, check out the [full list of configurations](../../lisk-sdk/configuration.md#list-of-configuration-options) for Lisk SDK and overwrite them like described in [step 7](#7-customize-the-default-configuration)
 
 ## 3. Create a new transaction type
 
@@ -443,7 +443,7 @@ At the same time, the sender gets a cashback of 10% of the transaction amount: 1
 
 To run the script from remote, change the configuration before creating the `Application` instance, to make the API accessible:
 
-> For more configuration options, check out the [full list of configurations](../lisk-sdk/configuration.md#list-of-configuration-options) for Lisk SDK
+> For more configuration options, check out the [full list of configurations](../../lisk-sdk/configuration.md#list-of-configuration-options) for Lisk SDK
 
 ```js
 //server/index.js

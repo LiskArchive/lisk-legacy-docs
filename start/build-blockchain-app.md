@@ -33,7 +33,7 @@ After the first successful start, feel free to [configure](../lisk-sdk/lisk-fram
 
 It is also possible to exchange Modules with different ones, or to add new Modules to provide additional functionality.
 
-To view the list of currently available ready-to-use Modules and Components, check out this [list of Modules](../lisk-sdk/lisk-framework/introduction.md#list-of-core-modules) and this [list of Components](../lisk-sdk/lisk-framework/introduction.md#components).
+To view the list of currently available ready-to-use Modules and Components, check out the [list of Modules](../lisk-sdk/lisk-framework/introduction.md#list-of-core-modules) and the [list of Components](../lisk-sdk/lisk-framework/introduction.md#components).
 
 For a full list of all config options and their default values, see the [List of configuration options](configuration.md#list-of-configuration-options) or the file [config_devnet.json](https://github.com/LiskHQ/lisk-sdk/blob/development/sdk/src/samples/config_devnet.json) on Github.
 
@@ -42,17 +42,17 @@ Transactions are the main way for users to add data to their blockchain.
 The most basic transaction types are part of almost all blockchains, for example a transaction type for creating new accounts on the network, or a transaction type to send tokens from one account to another.
 You can choose the appropriate transaction types for your application and its use-case.
 
-For comparison, please view the [list of all transaction types](../lisk-protocol/transactions) which are implemented in the Lisk Protocol.
+For comparison, please view the [list of all transaction types](../lisk-protocol/transactions.md) which are implemented in the Lisk Protocol.
 
 To create custom transaction types, utilize the provided `BaseTransaction` interface as described in the section for [custom transactions](custom-transactions.md).
 
-See the [Examples page](examples.md) for creating custom transaction types and how to add them to your application:
+See the [tutorials](tutorials.md) to see examples of how to create custom transaction types and how to add them to your application:
 
-- [Hello World App](examples.md#hello-world-app): A very basic example of a Lisk blockchain application with 1 custom transaction type.
-- [Cashback App](examples.md#hello-world-app): A simple example blockchain app, that implements the new transaction type `Cashback`.
+- [Hello World App](tutorials/hello-world.md): A example of a Lisk blockchain application with 1 custom transaction type, which extends the BaseTransaction type.
+- [Cashback App](tutorials/cashback.md): A more practical example creating the new transaction type `Cashback`. Cashback extends the pre-existing transaction type TransferTransaction, making for a straightforward implementation.
 
 ### 3. Interact with the network
-While your network is up and running, use [Lisk Commander](../lisk-sdk/lisk-commander/introduction.md) to interact with the network via its CLI (Command-Line-Interface).
+While your network is up and running, interact with the network and the node through the API and use [Lisk Commander](../lisk-sdk/lisk-commander/introduction.md) or [Lisk Elements](../lisk-sdk/lisk-elements/introduction.md) to create sendable transaction objects.
 To monitor and explore the network, you may want to set up a monitoring solution like e.g. [Lisk Explorer](https://github.com/LiskHQ/lisk-explorer).
 Depending on the level of customization, Lisk Explorer and Lisk Commander may also require customization to prevent other services from failing.
 
@@ -61,5 +61,7 @@ Lisk Hub provides a simple and beautiful user interface to create and manage acc
 
 Once your blockchain is finished, and it is possible to send the transactions (and custom transactions), you can create a frontend to allow users to interact and use your blockchain application.
 To connect your frontend to your network, we recommend to make use of [Lisk Elements' packages](../lisk-sdk/lisk-elements/packages.md) like [lisk-api-client](../lisk-sdk/lisk-elements/packages/api-client.md).
+
+> Check out the example applications at the [tutorials](tutorials.md), to see concrete examples how to make first interactions with a blockchain application.
 
 See more options in the getting started section [Interact with the network](interact-with-network.md).

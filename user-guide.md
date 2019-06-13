@@ -4,8 +4,6 @@ This guide details important information on how to use and configure Lisk Comman
 
 - [Usage](#usage)
 - [Configuration](#configuration)
-
-
 - [Lisk Core Commands](user-guide/lisk-core.md)
 - [General Command Reference](user-guide/commands.md)
 - [Sensitive Inputs](user-guide/sensitive-inputs.md)
@@ -39,14 +37,9 @@ COMMANDS
   warranty     Displays warranty notice.
 ```
 
-Check out the [Commands page](user-guide/commands.md) for __concrete usage examples__.
+See concrete examples on the [Commands page](user-guide/commands.md).
 
 ## Configuration
-
-Lisk Commander can be configured to:
-
-- talk to different public blockchain networks like the Lisk [Testnet](../lisk-core/introduction.md#tesnet) and [Mainnet](../lisk-core/introduction.md#mainnet).
-- talk to specific nodes in a blockchain network.
 
 Show Lisk Commander Config:
 ```bash
@@ -58,7 +51,7 @@ lisk config:show
 	"json": true, // Provide output as json if set to true, otherwise output is table.
 	"api": {
 		"nodes": [], // Specify nodes to send requests.
-		"network": "main"  // Specify a default network. It can be "main", "test", "beta" or custom nethash.
+		"network": "main"  // Specify a default network. It can be "main", "test", "beta" or a custom nethash.
 	},
 	"pretty": false // Pretty print JSON output if set to true.
 } 
@@ -89,10 +82,9 @@ See more examples with the [`config` command](user-guide/commands.md#config) on 
 The configuration file `config.json` is located in `lisk-sdk/commander/src/config.json`.
 If you would prefer to store it elsewhere, run Lisk Commander with the environmental variable `LISK_COMMANDER_CONFIG_DIR` set to the path of your choice.
 
-
 ### Override config options 
 
-Some elements of this configuration can be overridden when executing a command by using the following options:
+Some elements of this configuration can be overridden while executing a command, by using the following options:
 
 Setting | Option
 --- | ---
@@ -100,3 +92,5 @@ Use JSON output | `--json`
 Use table output | `--no-json`
 Pretty print JSON | `--pretty`
 Do not pretty print JSON | `--pretty false`
+
+See concrete examples on the [Commands page](user-guide/commands.md).

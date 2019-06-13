@@ -1,7 +1,7 @@
 # Hello World App
 
 Welcome to the step-by-step guide of creating the Hello World application with Lisk Alpha SDK.
-A simple App, showcasing a minimal setup of a blockchain application with 1 [custom transaction](custom-transactions.md) type: the "Hello" transaction.
+A simple App, showcasing a minimal setup of a blockchain application with 1 [custom transaction](../custom-transactions.md) type: the "Hello" transaction.
 
 The purpose of Hello World application is to explain how to use and how to implement custom transaction with the Lisk SDK. 
 This custom transaction will extract the "hello" key value from the transaction asset property and save to the senders account.
@@ -81,7 +81,7 @@ By passing the parameters for the [genesis block](../../lisk-sdk/configuration.m
 
 ## 3. Create a new transaction type
 
-For the Hello World App, we want to create a [custom transaction type](custom-transactions.md) `HelloTransaction`: 
+For the Hello World App, we want to create a [custom transaction type](../custom-transactions.md) `HelloTransaction`: 
 If an account has enough balance to process `HelloTransaction` transaction (fee is set to 1 LSK by default), the new "hello" property appears into this account's asset field.
 So after sending a valid `{"type": 10, "senderId": "16313739661670634666L", ... "asset": { "hello": "world" } }` transaction, the sender's account changes from e.g.: `{ address: "16313739661670634666L", ..., asset: null }`, to `{ "address": "16313739661670634666L", ..., "asset": {"hello": "world"}} }`.
 
@@ -540,3 +540,5 @@ customConfig.components.logger.consoleLogLevel = "none"; // no logs will be show
 ```
 
 As next step, you can design a nice frontend application like [Lisk Explorer](https://explorer.lisk.io/), which is showing users assets data inside of their account page. 
+
+See also section [Interact with the network](../interact-with-network.md).

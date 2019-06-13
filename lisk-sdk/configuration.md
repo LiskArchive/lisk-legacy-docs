@@ -1,22 +1,41 @@
 # Lisk SDK Configuration
 
-## Start with default values
+## Pass and modify default values
 
 ```js
-const app = new Application(genesisBlockDevnet); // uses predefined values, see full list below
+const { Application, genesisBlockDevnet, configDevnet} = require('lisk-sdk'); // require the lisk-sdk package
+
 const app = new Application(genesisBlockDevnet, configDevnet); // start the node in a fully functional devnet
+const app = new Application(genesisBlockDevnet, {app: {label: 'my-label', minVersion: '0.0.2',version: '2.3.4', protocolVersion: '4.1'},components: {logger: {consoleLogLevel: "info"}}}); // sets the required values for label, protocol and version, overrides consoleLogLevel, uses default values for everything else
+```
+The configuration object `configDevnet` has the structure like shown in the [list of configuration options](#list-of-configuration-options).
+It can be modified accordingly, before passing the config to the `Application` instance:
+
+```js
+const { Application, genesisBlockDevnet, configDevnet} = require('lisk-sdk'); // require the lisk-sdk package
+
+let customConfig = configDevnet;
+customConfig.components.storage.database = 'my-custom-db' // change the db name to my-custom-db
+customConfig.modules.http_api.access.public = true; // make the API accessible from everywhere
+
+
+const app = new Application(genesisBlockDevnet, customConfig);
 ```
 
 ## List of configuration options
 
 Here is a complete list of all the available configuration options of the Lisk SDK.
 
-The values below are the default values. They will be used automatically when starting the application as described in [start with default values](#start-with-default-values).
+The values below are the __default values__. They will be used automatically when starting the application as described in [start with default values](#start-with-default-values).
 To change them, override the specific default values with custom ones, when initializing the application.
 
 ```js
-const app = new Application(genesisBlockDevnet, {
+{
 	app:{
+	    label: '', // label of the application (required)
+	    version: '', // version of the application (required)
+	    minVersion: '', // minimal compatible version (required)
+	    protocolVersion: '', // protocol Version of the application (required)
 	    ipc: { enabled: false}, // If true, allows modules to communicate over IPCs (inter-process-channels).
 	    genesisConfig: { // Network specific constants
 	        EPOCH_TIME: new Date(Date.UTC(2016, 4, 24, 17, 0, 0, 0)).toISOString(), // Timestamp indicating the initial network start (`Date.toISOString()`).
@@ -155,7 +174,7 @@ const app = new Application(genesisBlockDevnet, {
             ]
 		}
 	}
-}); 
+}
 ```
 
 ## Constants
@@ -166,7 +185,7 @@ In the alpha version of the Lisk SDK, not all available constants are configurab
 Only the configurable constants are listed above.
 In future versions of the Lisk SDK, more constants will become configurable.
 
-To see a full list of all constants and their predefined values, check out [Lisk SDK on Github](https://github.com/LiskHQ/lisk-sdk/blob/development/framework/src/controller/schema/constants_schema.js).
+*To see a full list of all constants and their predefined values, check out [framework/src/controller/schema/constants_schema.js](https://github.com/LiskHQ/lisk-sdk/blob/development/framework/src/controller/schema/constants_schema.js).*
 
 # The Genesis block
 

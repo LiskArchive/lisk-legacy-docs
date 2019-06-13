@@ -76,7 +76,7 @@ By passing the parameters for the [genesis block](../../lisk-sdk/configuration.m
 
 ## 3. Create a new transaction type
 
-Now, we want to create a new [custom transaction type](custom-transactions.md) `CashbackTransaction`: 
+Now, we want to create a new [custom transaction type](../custom-transactions.md) `CashbackTransaction`: 
 It extends the pre-existing transaction type `TransferTransaction`.
 The difference between the regular `TransferTransaction` and the `CashbackTransaction`, is that Cashback transaction type also pays out a 10% bonus reward to its sender.
 
@@ -480,4 +480,4 @@ configDevnet.components.logger.consoleLogLevel = "none"; // no logs will be show
 
 As next step, you can use a wallet software like e.g. a customized [Lisk Hub](https://lisk.io/hub), so that users can utlize the new transaction type.
 
-See also section [Interact with the network](interact-with-network.md).
+See also section [Interact with the network](../interact-with-network.md).

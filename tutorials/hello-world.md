@@ -22,6 +22,7 @@ First, let's create the root folder for the Hello World App and initialize the p
 mkdir hello_world # create the root folder for the blockchain application
 cd hello_world # navigate into the root folder
 npm init # initialize the manifest file of the project
+dropdb lisk_dev && createdb lisk_dev # start with a fresh database
 ```
 
 As next step, we want to install the `lisk-sdk` package and add it to our projects' dependencies.
@@ -92,6 +93,7 @@ touch hello_transaction.js
 ```
 
 ```js
+//server/hello_transaction.js
 const {
 	BaseTransaction,
 	TransactionError,
@@ -191,27 +193,10 @@ Right now, your project should have the following file structure:
 ```
 hello_world
 ├── client
-│   ├── create_sendable_transaction_base_trs.js
-│   └── print_sendable_hello-world.js
-├── logs
-│   └── devnet
-│       ├── lisk.log
-│       └── lisk_db.log
-├── package-lock.json
 ├── package.json
 └── server
     ├── hello_transaction.js
     ├── index.js
-    ├── logs
-    │   └── devnet
-    │       ├── lisk.log
-    │       └── lisk_db.log
-    └── tmp
-        └── devnet-alpha-sdk
-            ├── pids
-            │   └── controller.pid
-            └── sockets
-
 ```
 
 Add the new transaction type to your application, by registering it to the application instance:
@@ -235,7 +220,7 @@ app
         process.exit(1);
     });
 ```
-> *See the complete file on Github: [hello_world/server/index.js](https://github.com/LiskHQ/lisk-sdk-test-app/tree/development/hello_world/server/index.js).*
+> *See the file on Github: [hello_world/server/index.js](https://github.com/LiskHQ/lisk-sdk-test-app/tree/development/hello_world/server/index.js).*
 
 ## 5. Start the network
 
@@ -353,12 +338,19 @@ Now that the network is started, let's try to send a `HelloTransaction` to our n
 
 As first step, create the transaction object.
 
-First, we create a script [create_sendable_base_transaction.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/hello_world/client/create_sendable_transaction_base_trs.js).
+First, we create a script [createSendableTransaction](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/hello_world/client/create_sendable_transaction_base_trs.js).
+
+```bash
+cd ../client
+touch create_sendable_transaction_base_trs.js
+```
 
 The purpose of this script is to offer a function `createSendableTransaction(Transaction, inputs)` that accepts two parameters: 1) `Transaction`: the *transaction type* and 2) `inputs`: the *corresponding transaction object*.
 
 To view a full code example of this file, please click on the link above.
 We present the most important parts of the script below:
+
+> Go to Github to see the complete code of [create_sendable_transaction_base_trs.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/hello_world/client/create_sendable_transaction_base_trs.js)
 
 ```js
 //client/create_sendable_transaction_base_trs.js
@@ -408,6 +400,10 @@ module.exports = (Transaction, inputs) => {
 
 The second script simply will print a sendable `HelloTransaction` when executed.
 
+```bash
+touch print_sendable_hello-world.js
+```
+
 Therefore, it will make use of the function `createSendableTransaction()`, which we have created above:
 
 ```js
@@ -430,6 +426,12 @@ let h = createSendableTransaction(HelloTransaction, { // the desired transaction
 console.log(h); // the transaction is displayed as JSON object in the console
 ```
 > *See the complete file on Github: [hello_world/client/print_sendable_hello-world.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/hello_world/client/print_sendable_hello-world.js).*
+
+This script will print the transaction in the console, when executed:
+
+```bash
+node print_sendable_hello-world.js
+```
 
 The generated transaction object should look like this:
 ```json
@@ -460,7 +462,10 @@ Because the API of every node is only accessible from localhost by default, you 
 node print_sendable_hello-world.js | curl -X POST -H "Content-Type: application/json" -d @- localhost:4000/api/transactions
 ```
 
-If the node accepted the transaction, it should respond with `{"meta":{"status":true},"data":{"message":"Transaction(s) accepted"},"links":{}}`.
+If the node accepted the transaction, it should respond with: 
+```
+{"meta":{"status":true},"data":{"message":"Transaction(s) accepted"},"links":{}}
+```
 
 Look at the logs of your node, to verify that the transaction has been added to the transaction pool:
 
@@ -485,14 +490,6 @@ Look at the logs of your node, to verify that the transaction has been added to 
 10:14:50.489Z  INFO lisk-framework: Verify->verifyBlock succeeded for block 15361727502078138109 at height 526.
 ```
 
-For further interaction with the network, you can run the process in the background by executing:
-
-```bash
-npx pm2 start --name hello index.js # add the application to pm2 under the name 'hello'
-npx pm2 stop hello # stop the hello app
-npx pm2 start hello # start the hello app
-```
-
 To verify, that the transaction got included in the blockchain as well, query the database of your node, where the blockchain data is stored:
 
 > Use as id the id of your transaction object, that gets created by the script `print_sendable_hello-world.js`
@@ -510,6 +507,14 @@ lisk_dev=> SELECT address, "publicKey", asset from mem_accounts WHERE address = 
         address        |                             publicKey                              |       asset        
 -----------------------+--------------------------------------------------------------------+--------------------
  16313739661670634666L | \xc094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f | {"hello": "world"}
+```
+
+For further interaction with the network, you can run the process in the background by executing:
+
+```bash
+npx pm2 start --name hello index.js # add the application to pm2 under the name 'hello'
+npx pm2 stop hello # stop the hello app
+npx pm2 start hello # start the hello app
 ```
 
 ## 7. Customize the default configuration

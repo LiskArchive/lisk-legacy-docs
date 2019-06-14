@@ -18,6 +18,7 @@ First, let's create the root folder for the Cashback App and initialize the proj
 mkdir cashback # create the root folder for the blockchain application
 cd cashback # navigate into the root folder
 npm init # initialize the manifest file of the project
+dropdb lisk_dev && createdb lisk_dev # start with a fresh database
 ```
 
 As next step, we want to install the `lisk-sdk` package and add it to our projects' dependencies.
@@ -93,6 +94,7 @@ touch cashback_transaction.js
 ```
 
 ```js
+//server/cashback_transaction.js
 const {
 	TransferTransaction,
 	BigNum,
@@ -162,25 +164,10 @@ Right now, your project should have the following file structure:
 ```
 cashback
 ├── client
-│   ├── create_sendable_transaction_base_trs.js
-│   └── print_sendable_cashback.js
-├── package-lock.json
 ├── package.json
 └── server
     ├── cashback_transaction.js
     ├── index.js
-    ├── logs
-    │   └── devnet
-    │       ├── lisk.log
-    │       └── lisk_db.log
-    └── tmp
-        └── devnet-alpha-sdk
-            ├── pids
-            │   └── controller.pid
-            └── sockets
-                ├── lisk_pub.sock
-                ├── lisk_rpc.sock
-                └── lisk_sub.sock
 ```
 
 Add the new transaction type to your application, by registering it to the application instance:
@@ -204,6 +191,7 @@ app
         process.exit(1);
     });
 ```
+> *See the file on Github: [cashback/server/index.js](https://github.com/LiskHQ/lisk-sdk-test-app/tree/development/cashback/server/index.js).*
 
 ## 5. Start the network
 
@@ -325,7 +313,12 @@ As first step, create the transaction object.
 
 First, let's reuse the script [create_sendable_transaction_base_trs.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/scripts/create_sendable_transaction_base_trs.js) which we already described in [step 6 of Hello World app](hello-world.md#6-interact-with-the-network).
 
-We can call the `createSendableTransaction` function to print a sendable `CashbackTransaction` object:
+We can call `createSendableTransaction()` to print a sendable `CashbackTransaction` object:
+
+```bash
+cd ../client
+touch print_sendable_cashback.js
+```
 
 ```js
 //client/print_sendable_cashback.js
@@ -335,7 +328,7 @@ const CashbackTransaction = require('../server/cashback_transaction');
 let c = createSendableTransaction(CashbackTransaction, { // the desired transaction gets created and signed
 	type: 11, // we want to send a transaction type 11 (= CashbackTransaction)
 	data: null,
-	amount: `${10 ** 8}`, // we set the amount to 1 LSK
+	amount: `${20 ** 8}`, // we set the amount to 1 LSK
 	fee: `${10 ** 7}`, // we set the fee to 0.1 LSK
  	recipientId: '10881167371402274308L', // recipient address: dummy delegate genesis_100
  	recipientPublicKey: 'addb0e15a44b0fdc6ff291be28d8c98f5551d0cd9218d749e30ddb87c6e31ca9', // public key of the recipient 
@@ -348,6 +341,12 @@ let c = createSendableTransaction(CashbackTransaction, { // the desired transact
 console.log(c); // the transaction is displayed as JSON object in the console
 ```
 > *See the complete file on Github: [hello_world/client/print_sendable_cashback.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/hello_world/client/print_sendable_hello-world.js).*
+
+This script will print the transaction in the console, when executed:
+
+```bash
+node print_sendable_cashback.js
+```
 
 The generated transaction object should look like this:
 ```json
@@ -372,11 +371,16 @@ For this, we utilize the http API of the node and post the created transaction o
 
 Because the API of every node is only accessible form localhost by default, you need to execute this query on the same server that your node is running on, unless you changed the config to make your API accessible to others or to the public.
 
+> Make sure your node is running, before sending the transaction
+
 ```bash
 node print_sendable_cashback.js | curl -X POST -H "Content-Type: application/json" -d @- localhost:4000/api/transactions
 ```
 
-If the node accepted the transaction, it should respond with `{"meta":{"status":true},"data":{"message":"Transaction(s) accepted"},"links":{}}`.
+If the node accepted the transaction, it should respond with: 
+```
+{"meta":{"status":true},"data":{"message":"Transaction(s) accepted"},"links":{}}
+```
 
 Look at the logs of your node, to verify that the transaction has been added to the transaction pool:
 
@@ -394,14 +398,6 @@ Look at the logs of your node, to verify that the transaction has been added to 
 15:12:40.737Z  INFO lisk-framework: Forged new block id: 9532247529504404125 height: 1909 round: 19 slot: 9615676 reward: 0
 15:12:50.753Z  INFO lisk-framework: Broadhash consensus before forging a block: 0 %
 15:12:50.756Z  INFO lisk-framework: Verify->verifyBlock succeeded for block 8025723351893303634 at height 1910.
-```
-
-For further interaction with the network, you can run the process in the background by executing:
-
-```bash
-npx pm2 start --name cashback index.js # add the application to pm2 under the name 'cashback'
-npx pm2 stop cashback # stop the cashback app
-npx pm2 start cashback # start the cashback app
 ```
 
 To verify, that the transaction got included in the blockchain as well, query the database of your node, where the blockchain data is stored:
@@ -451,6 +447,14 @@ In this example, the sender gets paid back the transaction fee as cashback:
 The sender was sending 1 LSK to the recipient, and paid a transaction fee of 0.1 LSK.
 At the same time, the sender gets a cashback of 10% of the transaction amount: 1 LSK * 10% = 0.1 LSK.
 
+For further interaction with the network, you can run the process in the background by executing:
+
+```bash
+npx pm2 start --name cashback index.js # add the application to pm2 under the name 'cashback'
+npx pm2 stop cashback # stop the cashback app
+npx pm2 start cashback # start the cashback app
+```
+
 ## 7. Customize the default configuration
 
 To run the script from remote, change the configuration before creating the `Application` instance, to make the API accessible:
@@ -480,7 +484,6 @@ app
     });
 ```
 > *See the complete file on Github: [cashback/server/index.js](https://github.com/LiskHQ/lisk-sdk-test-app/tree/development/cashback/server/index.js).*
-
 
 > __Optional:__ After first successful verification, you may wan to reduce the default console log level (info) and file log level (debug).<br> 
 > You can do so, by passing a copy of the config object `configDevnet` with customized config for the logger component:

@@ -87,119 +87,131 @@ So after sending a valid `{"type": 10, "senderId": "16313739661670634666L", ... 
 
 Now, let's create a new file `hello_transaction.js`, which is defining the new transaction type `HelloTransaction`:
 
+```bash
+touch hello_transaction.js
+```
+
 ```js
-//server/hello_transaction.js
-const {	BaseTransaction, TransactionError } = require('@liskhq/lisk-transactions'); // import the BaseTransaction class from Lisk Elements transactions package
+const {
+	BaseTransaction,
+	TransactionError,
+} = require('lisk-sdk');
 
-class HelloTransaction extends BaseTransaction { // let the HelloTransaction become a child class of BaseTransaction
+class HelloTransaction extends BaseTransaction {
 
-// add the all methods described below here
+    /**
+    * Set the `HelloTransaction` transaction TYPE to `10`.
+    * Every time a transaction is received, it gets differentiated by the type.
+    * The first 10 types, from 0-9 is reserved for the default Lisk Network functions. 
+    */
+	static get TYPE () {
+		return 10;
+	}
+	
+    /**
+    * Prepares the necessary data for the `apply` and `undo` step.
+    * The "hello" property will be added only to sender's account, therefore it's the only resource needed in the `applyAsset` and `undoAsset` steps. 
+    */
+    async prepare(store) {
+        await store.account.cache([
+            {
+                address: this.senderId,
+            },
+        ]);
+    }
+    	
+    /**
+    * Validation of the value of the "hello" property, defined by the `HelloTransaction` transaction signer.
+    * The implementation below checks, that the value of the "hello" property needs to be a string, no longer than 64 characters. 
+    */
+    validateAsset() {
+        const errors = [];
+        if (!this.asset.hello || typeof this.asset.hello !== 'string' || this.asset.hello.length > 64) {
+            errors.push(
+                new TransactionError(
+                    'Invalid "asset.hello" defined on transaction',
+                    this.id,
+                    '.asset.hello',
+                    this.asset.hello,
+                    'A string value no longer than 64 characters',
+                )
+            );
+        }
+        return errors;
+    }
+    
+    /**
+    * That's where the custom logic of the Hello World app is implemented. 
+    * It shows how to store an additional information about accounts using the `asset` field. The content of property of "hello" transaction's asset gets saved into the "hello" property of the account's asset.
+    * applyAsset() and undoAsset() use the information about the sender's account from the `store`.
+    */
+	applyAsset(store) {
+        const errors = [];
+        const sender = store.account.get(this.senderId);
+        const newObj = { ...sender, asset: { hello: this.asset.hello } };
+        store.account.set(sender.address, newObj);
+        if (sender.asset && sender.asset.hello) {
+            errors.push(
+                new TransactionError(
+                    'You cannot send a hello transaction multiple times',
+                    this.id,
+                    '.asset.hello',
+                    this.amount.toString()
+                )
+            );
+        } else {
+            const newObj = { ...sender, asset: { hello: this.asset.hello } };
+            store.account.set(sender.address, newObj);
+        }
+        return errors; // array of TransactionErrors, returns empty array if no errors are thrown
+	}
+
+    /**
+    * Inverse of `applyAsset`.
+    * Undoes the changes made in applyAsset() step - reverts to the previous value of "hello" property, if not previously set this will be null.
+    */
+	undoAsset(store) {
+		const sender = store.account.get(this.senderId);
+		const oldObj = { ...sender, asset: null };
+		store.account.set(sender.address, oldObj);
+		return [];
+	}
 
 }
 
 module.exports = HelloTransaction;
 ``` 
 
-> *See the complete file on Github: [hello_world/server/hello_transaction.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/hello_world/server/hello_transaction.js)*
-
-The __required__ methods are described here in detail:
-
-### TYPE
-
-
-Set the `HelloTransaction` transaction TYPE to `10`. Every time a transaction is received, it gets differentiated by the type.
-The first 10 types, from 0-9 is reserved for the default Lisk Network functions.
-```js
-static get TYPE () {
-    return 10;
-}
-```
-
-### prepare
-Prepares the necessary data for the `apply` and `undo` step.
-The "hello" property will be added only to sender's account, therefore it's the only resource needed in the `applyAsset` and `undoAsset` steps. 
-```js
-async prepare(store) {
-    await store.account.cache([
-        {
-            address: this.senderId,
-        },
-    ]);
-}
-```
-
-### validateAsset
-Validation of the value of the "hello" property, defined by the `HelloTransaction` transaction signer.
-The implementation below checks, that the value of the "hello" property needs to be a string, no longer than 64 characters. 
-```js
-validateAsset() {
-    const errors = [];
-    if (!this.asset.hello || typeof this.asset.hello !== 'string' || this.asset.hello.length > 64) {
-        errors.push(
-            new TransactionError(
-                'Invalid "asset.hello" defined on transaction',
-                this.id,
-                '.asset.hello',
-                this.asset.hello,
-                'A string value no longer than 64 characters',
-            )
-        );
-    }
-    return errors;
-}
-```
-
-### applyAsset
-
-That's where the custom logic of the Hello World app is implemented. 
-
-It shows how to store an additional information about accounts using the `asset` field. The content of property of "hello" transaction's asset gets saved into the "hello" property of the account's asset.
-
-`applyAsset` and `undoAsset` uses the information about the sender's account from the `store`.
-
-```js
-applyAsset(store) {
-    const errors = [];
-    const sender = store.account.get(this.senderId);
-    if (sender.asset && sender.asset.hello) {
-        errors.push(
-            new TransactionError(
-            'You cannot send a hello transaction multiple times',
-            this.id,
-            '.asset.hello',
-            this.amount.toString()
-            )
-        );
-    } else {
-        const newObj = { ...sender, asset: { hello: this.asset.hello } };
-        store.account.set(sender.address, newObj);
-    }
-    return errors; // array of TransactionErrors, returns empty array if no errors are thrown
-}
-```
-### undoAsset
-Inverse of `applyAsset`. Undoes the changes made in applyAsset step - reverts to the previous value of "hello" property, if not previously set this will be null.
-
-```js
-undoAsset(store) {
-    const sender = store.account.get(this.senderId);
-    const oldObj = { ...sender, asset: null };
-    store.account.set(sender.address, oldObj);
-    return []; // array of TransactionErrors, returns empty array if no errors are thrown
-}
-```
+> *See the file on Github: [hello_world/server/hello_transaction.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/hello_world/server/hello_transaction.js)*
 
 ## 4. Register the new transaction type
 
 Right now, your project should have the following file structure:
 
-```bash
-/hello-world-app # root directory of the application
-/hello-world-app/client # location for scripts from the client side, empty right now, created in step 1
-/hello-world-app/server/hello_transaction.js # the custom transaction, created in step 3
-/hello-world-app/server/index.js # the index file of your application, created in step 1, extended in step 2 and 4
-/hello-world-app/node_modules # project dependencies, created in step 1
-/hello-world-app/package.json # project manifest file, created in step 1
+```
+hello_world
+├── client
+│   ├── create_sendable_transaction_base_trs.js
+│   └── print_sendable_hello-world.js
+├── logs
+│   └── devnet
+│       ├── lisk.log
+│       └── lisk_db.log
+├── package-lock.json
+├── package.json
+└── server
+    ├── hello_transaction.js
+    ├── index.js
+    ├── logs
+    │   └── devnet
+    │       ├── lisk.log
+    │       └── lisk_db.log
+    └── tmp
+        └── devnet-alpha-sdk
+            ├── pids
+            │   └── controller.pid
+            └── sockets
+
 ```
 
 Add the new transaction type to your application, by registering it to the application instance:

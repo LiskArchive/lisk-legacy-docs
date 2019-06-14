@@ -88,87 +88,99 @@ So e.g. if Alice sends 100 token to Bob as a Cashback transaction, Bob would rec
 
 Now, let's create a new file `cashback_transaction.js`, which is defining the new transaction type `CashbackTransaction`:
 
+```bash
+touch cashback_transaction.js
+```
+
 ```js
-//server/cashback_transaction.js
-const {	TransferTransaction, BigNum } = require('lisk-sdk'); // import the TransferTransaction class and Bignum from the Lisk SDK package
+const {
+	TransferTransaction,
+	BigNum,
+} = require('lisk-sdk');
 
-class CashbackTransaction extends TransferTransaction { // let the CashbackTransaction become a child class of TransferTransaction
 
-// add the all methods described below here
+class CashbackTransaction extends TransferTransaction {
 
+    /**
+    * Set the Cashback transaction TYPE to `11`.
+    * The first 10 types, from `0-9` is reserved for the default Lisk Network functions.
+    * Type `10` was used previously for the `HelloTransaction`, so we set it to `11`, but any other integer value (that is not already used by another transaction type) is a valid value.
+    */
+	static get TYPE () {
+		return 11;
+	}
+
+    /**
+    * The CashbackTransaction adds an inflationary 10% to senders account.
+    * Invoked as part of the apply() step of the BaseTransaction and block processing.  
+    */
+	applyAsset(store) {
+		super.applyAsset(store);
+
+		const sender = store.account.get(this.senderId);
+		const updatedSenderBalanceAfterBonus = new BigNum(sender.balance).add(
+			new BigNum(this.amount).div(10)
+		);
+		const updatedSender = {
+			...sender,
+			balance: updatedSenderBalanceAfterBonus.toString(),
+		};
+		store.account.set(sender.address, updatedSender);
+
+		return [];
+	}
+
+    /**
+    * Inverse of applyAsset().
+    * Undoes the changes made in `applyAsset` step: It sends the transaction amount back to the sender and substracts 10% of the transaction amount from the senders account balance.
+    */
+	undoAsset(store) {
+		super.undoAsset(store);
+
+		const sender = store.account.get(this.senderId);
+		const updatedSenderBalanceAfterBonus = new BigNum(sender.balance).sub(
+			new BigNum(this.amount).div(10)
+		);
+		const updatedSender = {
+			...sender,
+			balance: updatedSenderBalanceAfterBonus.toString(),
+		};
+		store.account.set(sender.address, updatedSender);
+
+		return [];
+	}
 }
 
 module.exports = CashbackTransaction;
 ``` 
-> *See the complete file on Github: [cashback/server/cashback_transaction.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/cashback/server/cashback_transaction.js)*
-
-### TYPE
-
-Set the Cashback transaction TYPE to `11`.
-The first 10 types, from `0-9` is reserved for the default Lisk Network functions.
-Type `10` was used previously for the `HelloTransaction`, so we set it to `11`, but any other integer value (that is not already used by another transaction type) is a valid value.
-```js
-static get TYPE () {
-    return 11;
-}
-```
-
-### applyAsset
-
-The CashbackTransaction adds an inflationary 10% to senders account.
-
-Invoked as part of the `apply` step of the BaseTransaction and block processing.  
-```js
-applyAsset(store) {
-    super.applyAsset(store); // transfer the tokens to the recipient account, executes applyAsset() of TransferTransaction
-
-    const sender = store.account.get(this.senderId); // get sender id
-    const updatedSenderBalanceAfterBonus = new BigNum(sender.balance).add( // add 1/10 of the transaction amount to senders account balance
-        new BigNum(this.amount).div(10) 
-    );
-    const updatedSender = { // update senders account balance
-        ...sender,
-        balance: updatedSenderBalanceAfterBonus.toString(),
-    };
-    store.account.set(sender.address, updatedSender); // push updated account back to database
-
-    return []; // array of TransactionErrors, returns empty array if no errors are thrown
-}
-```
-
-### undoAsset
-
-Inverse of `applyAsset`.
-Undoes the changes made in `applyAsset` step: It sends the transaction amount back to the sender and substracts 1/10 of the transaction amount from the senders account balance.
-```js
-undoAsset(store) {
-    super.undoAsset(store); // transfer the tokens back from the recipient account to the senders account, executes undoAsset() of TransferTransaction
-
-    const sender = store.account.get(this.senderId); // get sender id
-    const updatedSenderBalanceAfterBonus = new BigNum(sender.balance).sub( // substract 1/10 of the transaction amount from senders account balance
-        new BigNum(this.amount).div(10)
-    );
-    const updatedSender = { // update senders account balance
-        ...sender,
-        balance: updatedSenderBalanceAfterBonus.toString(),
-    };
-    store.account.set(sender.address, updatedSender); // push updated account back to database
-
-    return []; // array of TransactionErrors, returns empty array if no errors are thrown
-}
-```
+> *See the file on Github: [cashback/server/cashback_transaction.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/cashback/server/cashback_transaction.js)*
 
 ## 4. Register the new transaction type
 
 Right now, your project should have the following file structure:
 
-```bash
-/cashback-app # root directory of the application
-/cashback-app/client # location for scripts from the client side, empty right now, created in step 1
-/cashback-app/server/cashback_transaction.js # the custom transaction, created in step 3
-/cashback-app/server/index.js # the index file of your application, created in step 1, extended in step 2 and 4
-/cashback-app/node_modules/ # project dependencies, created in step 1
-/cashback-app/package.json # project manifest file, created in step 1
+```
+cashback
+├── client
+│   ├── create_sendable_transaction_base_trs.js
+│   └── print_sendable_cashback.js
+├── package-lock.json
+├── package.json
+└── server
+    ├── cashback_transaction.js
+    ├── index.js
+    ├── logs
+    │   └── devnet
+    │       ├── lisk.log
+    │       └── lisk_db.log
+    └── tmp
+        └── devnet-alpha-sdk
+            ├── pids
+            │   └── controller.pid
+            └── sockets
+                ├── lisk_pub.sock
+                ├── lisk_rpc.sock
+                └── lisk_sub.sock
 ```
 
 Add the new transaction type to your application, by registering it to the application instance:

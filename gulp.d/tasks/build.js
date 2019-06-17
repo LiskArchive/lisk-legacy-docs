@@ -17,11 +17,11 @@ const postcssImport = require('postcss-import')
 const postcssUrl = require('postcss-url')
 const postcssVar = require('postcss-custom-properties')
 const uglify = require('gulp-uglify')
-const sourcemaps = require('gulp-sourcemaps')
 const vfs = require('vinyl-fs')
 
 module.exports = (src, dest, preview) => () => {
   const opts = { base: src, cwd: src }
+  const sourcemaps = preview || process.env.SOURCEMAPS === 'true'
   const postcssPlugins = [
     postcssImport(),
     postcssUrl([
@@ -45,11 +45,9 @@ module.exports = (src, dest, preview) => () => {
 
   return merge(
     vfs
-      .src('js/+([0-9])-*.js', opts)
-      .pipe(sourcemaps.init())
+      .src('js/+([0-9])-*.js', { ...opts, sourcemaps })
       .pipe(uglify())
-      .pipe(concat('js/site.js'))
-      .pipe(sourcemaps.write('.')),
+      .pipe(concat('js/site.js')),
     vfs
       .src('js/vendor/*.js', { ...opts, read: false })
       .pipe(
@@ -84,5 +82,5 @@ module.exports = (src, dest, preview) => () => {
     vfs.src('helpers/*.js', opts),
     vfs.src('layouts/*.hbs', opts),
     vfs.src('partials/*.hbs', opts)
-  ).pipe(vfs.dest(dest))
+  ).pipe(vfs.dest(dest, { sourcemaps: sourcemaps && '.' }))
 }

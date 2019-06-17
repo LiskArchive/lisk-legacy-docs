@@ -163,7 +163,8 @@ Right now, your project should have the following file structure:
 
 ```
 cashback
-├── client
+├── client // currently empty
+├── node_modules
 ├── package.json
 └── server
     ├── cashback_transaction.js
@@ -369,6 +370,62 @@ Now that we have a sendable transaction object, let's send it to our node and se
 
 For this, we utilize the http API of the node and post the created transaction object to the transaction endpoint of the API.
 
+Before posting the transaction, let's check the balances of sender and recipient, to verify later that the transaction got applied correctly:
+
+Checking the account balance of the sender:
+```bash
+curl -X GET "http://localhost:4000/api/accounts?address=16313739661670634666L" -H "accept: application/json"
+```
+```json
+{
+  "meta": {
+    "offset": 0,
+    "limit": 10
+  },
+  "data": [
+    {
+      "address": "16313739661670634666L",
+      "publicKey": "c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f",
+      "balance": "9999999600000000",
+      "secondPublicKey": ""
+    }
+  ],
+  "links": {}
+}
+```
+
+Checking the account balance of the recipient:
+```bash
+curl -X GET "http://localhost:4000/api/accounts?address=10881167371402274308L" -H "accept: application/json"
+```
+```json
+{
+  "meta": {
+    "offset": 0,
+    "limit": 10
+  },
+  "data": [
+    {
+      "address": "10881167371402274308L",
+      "publicKey": "addb0e15a44b0fdc6ff291be28d8c98f5551d0cd9218d749e30ddb87c6e31ca9",
+      "balance": "1801188117",
+      "secondPublicKey": "",
+      "delegate": {
+        "username": "genesis_100",
+        "vote": "9999999680000000",
+        "rewards": "1500000000",
+        "producedBlocks": 26,
+        "missedBlocks": 0,
+        "rank": 70,
+        "productivity": 100,
+        "approval": 100
+      }
+    }
+  ],
+  "links": {}
+}
+```
+
 Because the API of every node is only accessible form localhost by default, you need to execute this query on the same server that your node is running on, unless you changed the config to make your API accessible to others or to the public.
 
 > Make sure your node is running, before sending the transaction
@@ -382,70 +439,103 @@ If the node accepted the transaction, it should respond with:
 {"meta":{"status":true},"data":{"message":"Transaction(s) accepted"},"links":{}}
 ```
 
-Look at the logs of your node, to verify that the transaction has been added to the transaction pool:
+To verify, that the transaction got included into a block:
 
-```
-15:12:30.602Z  INFO lisk-framework: Verify->verifyBlock succeeded for block 752004853642534413 at height 1908.
-15:12:30.626Z  INFO lisk-framework: Transaction pool - received size: 0 validated size: 0 verified size: 0 pending size: 0 ready size: 0
-15:12:30.630Z  INFO lisk-framework: Forged new block id: 752004853642534413 height: 1908 round: 19 slot: 9615675 reward: 0
-15:12:33.846Z  INFO lisk-framework: Transaction pool - added transactions to verified queue on action: addTransactions with ID(s): 7885526580000209472
-15:12:33.872Z  INFO lisk-framework: Transaction pool - received size: 0 validated size: 0 verified size: 0 pending size: 0 ready size: 1
-15:12:38.829Z  INFO lisk-framework: Broadcasts released: 1
-15:12:40.647Z  INFO lisk-framework: Broadhash consensus before forging a block: 0 %
-15:12:40.662Z  INFO lisk-framework: Verify->verifyBlock succeeded for block 9532247529504404125 at height 1909.
-15:12:40.728Z  INFO lisk-framework: Transaction pool - removed transactions on action: removeConfirmedTransactions with ID(s): 7885526580000209472
-15:12:40.729Z  INFO lisk-framework: Transaction pool - received size: 0 validated size: 0 verified size: 0 pending size: 0 ready size: 0
-15:12:40.737Z  INFO lisk-framework: Forged new block id: 9532247529504404125 height: 1909 round: 19 slot: 9615676 reward: 0
-15:12:50.753Z  INFO lisk-framework: Broadhash consensus before forging a block: 0 %
-15:12:50.756Z  INFO lisk-framework: Verify->verifyBlock succeeded for block 8025723351893303634 at height 1910.
+```bash
+curl -X GET "http://localhost:4000/api/transactions?id=5372254888441494149" -H "accept: application/json"
 ```
 
-To verify, that the transaction got included in the blockchain as well, query the database of your node, where the blockchain data is stored:
-
-Check the account balances of sender and recipient, before posting the transaction to the node:
-```
-psql lisk_dev
-lisk_dev=> SELECT address, balance from mem_accounts WHERE address = '16313739661670634666L';
-        address        |     balance      
------------------------+------------------
- 16313739661670634666L | 9999999800000000
-(1 row)
-
-lisk_dev=> SELECT address, balance from mem_accounts WHERE address = '10881167371402274308L';
-        address        |  balance  
------------------------+-----------
- 10881167371402274308L | 101089108
-(1 row)
-```
-
-After posting the transaction to the node, check if it got included in the blockchain by querying the database:
-
-> Use as id the id of your transaction object, that gets created by the script `print_sendable_cashback.js`
-
-```
-SELECT id, "blockId", type, amount, fee, "senderId", "recipientId" from trs WHERE id = '7885526580000209472';
-         id          |       blockId       | type |  amount   |   fee    |       senderId        |      recipientId      
----------------------+---------------------+------+-----------+----------+-----------------------+-----------------------
- 7885526580000209472 | 9532247529504404125 |   11 | 100000000 | 10000000 | 16313739661670634666L | 10881167371402274308L
-```
-
-And compare the account balances of sender and recipient, to verify that the sender account received the cashback and the token were transferred:
-
-```
-lisk_dev=> SELECT address, balance from mem_accounts WHERE address = '16313739661670634666L';
-        address        |     balance      
------------------------+------------------
- 16313739661670634666L | 9999999700000000
-
-lisk_dev=> SELECT address, balance from mem_accounts WHERE address = '10881167371402274308L';
-        address        |  balance  
------------------------+-----------
- 10881167371402274308L | 201089108
+```json
+{
+  "meta": {
+    "offset": 0,
+    "limit": 10,
+    "count": 1
+  },
+  "data": [
+    {
+      "id": "5372254888441494149",
+      "height": 2048,
+      "blockId": "12427514488773581697",
+      "type": 11,
+      "timestamp": 3,
+      "senderPublicKey": "c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f",
+      "recipientPublicKey": "addb0e15a44b0fdc6ff291be28d8c98f5551d0cd9218d749e30ddb87c6e31ca9",
+      "senderId": "16313739661670634666L",
+      "recipientId": "10881167371402274308L",
+      "amount": "100000000",
+      "fee": "10000000",
+      "signature": "0a3f41cc529f9de523cadc7db64e9436014d1b10ca2158bbce0469e8e76dfd021358496440da43acaf64d0223d3514609fc1aa41646be56353207d88a03b1305",
+      "signatures": [],
+      "asset": {},
+      "confirmations": 5
+    }
+  ],
+  "links": {}
+}
 ```
 
 In this example, the sender gets paid back the transaction fee as cashback:
-The sender was sending 1 LSK to the recipient, and paid a transaction fee of 0.1 LSK.
-At the same time, the sender gets a cashback of 10% of the transaction amount: 1 LSK * 10% = 0.1 LSK.
+The sender was sending 2 LSK to the recipient, and paid a transaction fee of 0.1 LSK.
+At the same time, the sender gets a cashback of 10% of the transaction amount: 2 LSK * 10% = 0.2 LSK.
+
+__As a result, the sender should get a credit of 0.1 LSK \[= 0.2 LSK (cashback) - 0.1 LSK (tx fee)], and the recipient should get a credit of 2 LSK.__
+
+Verify, that the sender account got a credit of 0.1 LSK:
+```bash
+curl -X GET "http://localhost:4000/api/accounts?address=16313739661670634666L" -H "accept: application/json"
+```
+```json
+{
+  "meta": {
+    "offset": 0,
+    "limit": 10
+  },
+  "data": [
+    {
+      "address": "16313739661670634666L",
+      "publicKey": "c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f",
+      "balance": "9999999410000000",
+      "secondPublicKey": ""
+    }
+  ],
+  "links": {}
+}
+```
+
+Verify, that the recipient account got the credit of 2 LSK:
+```bash
+curl -X GET "http://localhost:4000/api/accounts?address=10881167371402274308L" -H "accept: application/json"
+```
+```json
+{
+  "meta": {
+    "offset": 0,
+    "limit": 10
+  },
+  "data": [
+    {
+      "address": "10881167371402274308L",
+      "publicKey": "addb0e15a44b0fdc6ff291be28d8c98f5551d0cd9218d749e30ddb87c6e31ca9",
+      "balance": "2001188117",
+      "secondPublicKey": "",
+      "delegate": {
+        "username": "genesis_100",
+        "vote": "9999999680000000",
+        "rewards": "1500000000",
+        "producedBlocks": 26,
+        "missedBlocks": 0,
+        "rank": 70,
+        "productivity": 100,
+        "approval": 100
+      }
+    }
+  ],
+  "links": {}
+}
+```
+
+If the balances equal the expected values, it is verified the new custom transaction type `CashbackTransaction` is successfully integrated into the application.
 
 For further interaction with the network, you can run the process in the background by executing:
 
@@ -456,6 +546,20 @@ npx pm2 start cashback # start the cashback app
 ```
 
 ## 7. Customize the default configuration
+
+Your project should have now the following file structure:
+
+```
+hello_world
+├── client
+│   ├── create_sendable_transaction_base_trs.js
+│   └── print_sendable_cashback.js
+├── node_modules
+├── package.json
+└── server
+    ├── hello_transaction.js
+    ├── index.js
+```
 
 To run the script from remote, change the configuration before creating the `Application` instance, to make the API accessible:
 

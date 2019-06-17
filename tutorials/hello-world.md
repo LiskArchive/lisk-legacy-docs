@@ -192,7 +192,8 @@ Right now, your project should have the following file structure:
 
 ```
 hello_world
-├── client
+├── client // currently empty
+├── node_modules
 ├── package.json
 └── server
     ├── hello_transaction.js
@@ -518,6 +519,20 @@ npx pm2 start hello # start the hello app
 ```
 
 ## 7. Customize the default configuration
+
+Your project should have now the following file structure:
+
+```
+hello_world
+├── client
+│   ├── create_sendable_transaction_base_trs.js
+│   └── print_sendable_hello-world.js
+├── node_modules
+├── package.json
+└── server
+    ├── hello_transaction.js
+    ├── index.js
+```
 
 To run the script from remote, change the configuration before creating the `Application` instance, to make the API accessible:
 

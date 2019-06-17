@@ -62,7 +62,7 @@ lisk config:show
 ```bash
 lisk config:set api.network <NETWORK> 
 ```
-where `<NETWORK>` may be `main` for Mainnet and `test` for Testnet.
+Possible values for `<NETWORK>` are, `test` for Testnet, `main` for Mainnet, `alpha` for Alphanet and `beta` for Betanet.
 If you didn't specify specific nodes for Lisk Commander, it will connect to predefined public nodes of Lisk Mainnet or Testnet.
 
 ### Configure specific nodes

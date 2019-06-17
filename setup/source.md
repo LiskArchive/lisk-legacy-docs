@@ -270,7 +270,7 @@ npm run build                 # compile packages
 To test that Lisk Core is built and configured correctly, issue the following command to connect to the network:
 
 ```bash
-node  # Default: connect to Devnet
+node dist/index.js # Default: connect to Devnet
 LISK_NETWORK=[network] node dist/index.js # Use environment variables to overwrite config values (recommended)
 node dist/index.js --network [network]  # Use flags to overwrite config values
 ```

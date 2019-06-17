@@ -1,6 +1,6 @@
 'use strict'
 
-const { parallel, series, tree, watch } = require('gulp')
+const { parallel, series, watch } = require('gulp')
 const createTask = require('./gulp.d/lib/create-task')
 const exportTasks = require('./gulp.d/lib/export-tasks')
 
@@ -52,7 +52,7 @@ const formatTask = createTask({
 const buildTask = createTask({
   name: 'build',
   desc: 'Build and stage the UI assets for bundling',
-  call: task.build(srcDir, destDir, tree().nodes.some((name) => ~name.indexOf('preview'))),
+  call: task.build(srcDir, destDir, process.argv.slice(2).some((name) => name.startsWith('preview'))),
 })
 
 const bundleBuildTask = createTask({

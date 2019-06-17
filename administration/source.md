@@ -69,10 +69,10 @@ There are plenty of options available that you can use to override configuration
 How to overwrite config options from the Command Line:
 ```bash
 # recommended: Pass options as environment variables
-LISK_NETWORK=[network] LISK_CONFIG_FILE=[config-path] LISK_ADDRESS=[address] LISK_WS_PORT=[port] npm start
+LISK_NETWORK=[network] LISK_CONFIG_FILE=[config-path] LISK_ADDRESS=[address] LISK_WS_PORT=[port] node dist/index.js
 
 # alternative (deprecated): Pass options as flags
-npm start -- -p [port] -a [address] -c [config-path] -n [network]
+node dist/index.js -p [port] -a [address] -c [config-path] -n [network]
 ```
 or with pm2, e.g.:
 ```bash

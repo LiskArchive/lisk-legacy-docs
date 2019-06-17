@@ -53,6 +53,8 @@ Next, let's configure the application, to provide basic information about the ap
 //server/index.js
 const { Application, genesisBlockDevnet, configDevnet } = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
 
+configDevnet.app.label = 'Cashback-blockchain-application';
+
 const app = new Application(genesisBlockDevnet, {...configDevnet, app: {label: 'Cashback blockchain application'}}); // create the application instance
 
 // the code block below starts the application and doesn't need to be changed
@@ -86,7 +88,7 @@ If everything is ok, the following logs will be displayed:
 ```
 $ node index.js | npx bunyan -o short
 14:01:39.384Z  INFO lisk-framework: Booting the application with Lisk Framework(0.1.0)
-14:01:39.391Z  INFO lisk-framework: Starting the app - devnet-alpha-sdk
+14:01:39.391Z  INFO lisk-framework: Starting the app - Cashback-blockchain-application
 14:01:39.392Z  INFO lisk-framework: Initializing controller
 14:01:39.392Z  INFO lisk-framework: Loading controller
 14:01:39.451Z  INFO lisk-framework: Old PID: 7707
@@ -272,6 +274,8 @@ Add the new transaction type to your application, by registering it to the appli
 //server/index.js
 const { Application, genesisBlockDevnet, configDevnet} = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
 const CashbackTransaction = require('./cashback_transaction'); // require the newly created transaction type 'CashbackTransaction'
+
+configDevnet.app.label = 'Cashback-blockchain-application';
 
 const app = new Application(genesisBlockDevnet, configDevnet); // create the application instance
 
@@ -573,13 +577,13 @@ To run the script from remote, change the configuration before creating the `App
 const { Application, genesisBlockDevnet, configDevnet} = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
 const CashbackTransaction = require('./cashback_transaction'); // require the newly created transaction type 'CashbackTransaction'
 
-let customConfig = configDevnet;
-customConfig.modules.http_api.access.public = true; // make the API accessible from everywhere
+configDevnet.app.label = 'Cashback-blockchain-application';
+configDevnet.modules.http_api.access.public = true; // make the API accessible from everywhere
 //customConfig.modules.http_api.access.whitelist.push('1.2.3.4'); // example how to make the API accessible for specific IPs: add the host 1.2.3.4 to the whitelist of hosts
 
-const app = new Application(genesisBlockDevnet, customConfig); // create the application instance
+const app = new Application(genesisBlockDevnet, configDevnet); // create the application instance
 
-app.registerTransaction(11, CashbackTransaction); // register the 'HelloTransaction' 
+app.registerTransaction(CashbackTransaction.TYPE, CashbackTransaction); // register the 'HelloTransaction' 
 
 // the code block below starts the application and doesn't need to be changed
 app

@@ -57,6 +57,8 @@ Next, let's configure the application, to provide basic information about the ap
 //server/index.js
 const { Application, genesisBlockDevnet, configDevnet } = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
 
+configDevnet.app.label = 'HelloWorld-blockchain-application';
+
 const app = new Application(genesisBlockDevnet, configDevnet); // create the application instance
 
 // the code block below starts the application and doesn't need to be changed
@@ -91,7 +93,7 @@ If everything is ok, the following logs will be displayed:
 ```
 $ node index.js | npx bunyan -o short
 14:01:39.384Z  INFO lisk-framework: Booting the application with Lisk Framework(0.1.0)
-14:01:39.391Z  INFO lisk-framework: Starting the app - devnet-alpha-sdk
+14:01:39.391Z  INFO lisk-framework: Starting the app - HelloWorld-blockchain-application
 14:01:39.392Z  INFO lisk-framework: Initializing controller
 14:01:39.392Z  INFO lisk-framework: Loading controller
 14:01:39.451Z  INFO lisk-framework: Old PID: 7707
@@ -302,9 +304,11 @@ Add the new transaction type to your application, by registering it to the appli
 const { Application, genesisBlockDevnet, configDevnet} = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
 const HelloTransaction = require('./hello_transaction'); // require the newly created transaction type 'HelloTransaction'
 
+configDevnet.app.label = 'HelloWorld-blockchain-application';
+
 const app = new Application(genesisBlockDevnet, configDevnet); // create the application instance
 
-app.registerTransaction(10, HelloTransaction); // register the 'HelloTransaction' 
+app.registerTransaction(HelloTransaction.TYPE, HelloTransaction); // register the 'HelloTransaction' 
 
 
 // the code block below starts the application and doesn't need to be changed
@@ -525,13 +529,13 @@ To run the script from remote, change the configuration before creating the `App
 const { Application, genesisBlockDevnet, configDevnet} = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
 const HelloTransaction = require('./hello_transaction'); // require the newly created transaction type 'HelloTransaction'
 
-let customConfig = configDevnet;
-customConfig.modules.http_api.access.public = true; // make the API accessible from everywhere
-//customConfig.modules.http_api.access.whitelist.push('1.2.3.4'); // example how to make the API accessible for specific IPs: add the host 1.2.3.4 to the whitelist of hosts
+configDevnet.app.label = 'HelloWorld-blockchain-application';
+configDevnet.modules.http_api.access.public = true; // make the API accessible from everywhere
+//configDevnet.modules.http_api.access.whitelist.push('1.2.3.4'); // example how to make the API accessible for specific IPs: add the host 1.2.3.4 to the whitelist of hosts
 
-const app = new Application(genesisBlockDevnet, customConfig); // create the application instance
+const app = new Application(genesisBlockDevnet, configDevnet); // create the application instance
 
-app.registerTransaction(10, HelloTransaction); // register the 'HelloTransaction' 
+app.registerTransaction(HelloTransaction.TYPE, HelloTransaction); // register the 'HelloTransaction' 
 
 // the code block below starts the application and doesn't need to be changed
 app
@@ -549,8 +553,8 @@ app
 > You can do so, by passing a copy of the config object `configDevnet` with customized config for the logger component:
 
 ```js
-customConfig.components.logger.fileLogLevel = "error"; // will only log errors and fatal errors in the log file
-customConfig.components.logger.consoleLogLevel = "none"; // no logs will be shown in console
+configDevnet.components.logger.fileLogLevel = "error"; // will only log errors and fatal errors in the log file
+configDevnet.components.logger.consoleLogLevel = "none"; // no logs will be shown in console
 ```
 
 As next step, you can design a nice frontend application like [Lisk Explorer](https://explorer.lisk.io/), which is showing users assets data inside of their account page. 

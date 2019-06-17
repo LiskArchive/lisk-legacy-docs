@@ -67,7 +67,7 @@ module.exports = (src, dest, preview) => () => {
       )
       .pipe(buffer())
       .pipe(uglify()),
-    vfs.src('css/site.css', { ...opts, sourcemaps: true }).pipe(postcss(postcssPlugins)),
+    vfs.src('css/site.css', { ...opts, sourcemaps }).pipe(postcss(postcssPlugins)),
     vfs.src('font/*.{ttf,woff*(2)}', opts),
     vfs
       .src('img/**/*.{jpg,ico,png,svg}', opts)

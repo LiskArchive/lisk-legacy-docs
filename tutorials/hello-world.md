@@ -80,6 +80,101 @@ By passing the parameters for the [genesis block](../../lisk-sdk/configuration.m
 
 > If you want to change any of the values for `configDevnet`, check out the [full list of configurations](../../lisk-sdk/configuration.md#list-of-configuration-options) for Lisk SDK and overwrite them like described in [step 7](#7-customize-the-default-configuration)
 
+At this point, you already can start the node and the network, to verify that the setup was successful:
+
+```bash
+node index.js | npx bunyan -o short
+```
+`node index.js` will start the node, and `| npx bunyan -o short` will pretty-print the logs in the console.
+
+If everything is ok, the following logs will be displayed:
+```
+$ node index.js | npx bunyan -o short
+14:01:39.384Z  INFO lisk-framework: Booting the application with Lisk Framework(0.1.0)
+14:01:39.391Z  INFO lisk-framework: Starting the app - devnet-alpha-sdk
+14:01:39.392Z  INFO lisk-framework: Initializing controller
+14:01:39.392Z  INFO lisk-framework: Loading controller
+14:01:39.451Z  INFO lisk-framework: Old PID: 7707
+14:01:39.452Z  INFO lisk-framework: Current PID: 7732
+14:01:39.467Z  INFO lisk-framework: Loading module lisk-framework-chain:0.1.0 with alias "chain"
+14:01:39.613Z  INFO lisk-framework: Event network:bootstrap was subscribed but not registered to the bus yet.
+14:01:39.617Z  INFO lisk-framework: Event network:bootstrap was subscribed but not registered to the bus yet.
+14:01:39.682Z  INFO lisk-framework: Modules ready and launched
+14:01:39.683Z  INFO lisk-framework: Event network:event was subscribed but not registered to the bus yet.
+14:01:39.684Z  INFO lisk-framework: Module ready with alias: chain(lisk-framework-chain:0.1.0)
+14:01:39.684Z  INFO lisk-framework: Loading module lisk-framework-network:0.1.0 with alias "network"
+14:01:39.726Z  INFO lisk-framework: Blocks 1886
+14:01:39.727Z  INFO lisk-framework: Genesis block matched with database
+14:01:39.791Z ERROR lisk-framework: Error occurred while fetching information from 127.0.0.1:5000
+14:01:39.794Z  INFO lisk-framework: Module ready with alias: network(lisk-framework-network:0.1.0)
+14:01:39.795Z  INFO lisk-framework: Loading module lisk-framework-http-api:0.1.0 with alias "http_api"
+14:01:39.796Z  INFO lisk-framework: Module ready with alias: http_api(lisk-framework-http-api:0.1.0)
+14:01:39.797Z  INFO lisk-framework:
+  Bus listening to events [ 'app:ready',
+    'app:state:updated',
+    'chain:bootstrap',
+    'chain:blocks:change',
+    'chain:signature:change',
+    'chain:transactions:change',
+    'chain:rounds:change',
+    'chain:multisignatures:signature:change',
+    'chain:multisignatures:change',
+    'chain:delegates:fork',
+    'chain:loader:sync',
+    'chain:dapps:change',
+    'chain:registeredToBus',
+    'chain:loading:started',
+    'chain:loading:finished',
+    'network:bootstrap',
+    'network:event',
+    'network:registeredToBus',
+    'network:loading:started',
+    'network:loading:finished',
+    'http_api:registeredToBus',
+    'http_api:loading:started',
+    'http_api:loading:finished' ]
+14:01:39.799Z  INFO lisk-framework:
+  Bus ready for actions [ 'app:getComponentConfig',
+    'app:getApplicationState',
+    'app:updateApplicationState',
+    'chain:calculateSupply',
+    'chain:calculateMilestone',
+    'chain:calculateReward',
+    'chain:generateDelegateList',
+    'chain:updateForgingStatus',
+    'chain:postSignature',
+    'chain:getForgingStatusForAllDelegates',
+    'chain:getTransactionsFromPool',
+    'chain:getTransactions',
+    'chain:getSignatures',
+    'chain:postTransaction',
+    'chain:getDelegateBlocksRewards',
+    'chain:getSlotNumber',
+    'chain:calcSlotRound',
+    'chain:getNodeStatus',
+    'chain:blocks',
+    'chain:blocksCommon',
+    'network:request',
+    'network:emit',
+    'network:getNetworkStatus',
+    'network:getPeers',
+    'network:getPeersCountByFilter' ]
+14:01:39.800Z  INFO lisk-framework: App started...
+14:01:39.818Z  INFO lisk-framework: Validating current block with height 1886
+14:01:39.819Z  INFO lisk-framework: Loader->validateBlock Validating block 10258884836986606075 at height 1886
+14:01:40.594Z  INFO lisk-framework: Lisk started: 0.0.0.0:4000
+14:01:40.600Z  INFO lisk-framework: Verify->verifyBlock succeeded for block 10258884836986606075 at height 1886.
+14:01:40.600Z  INFO lisk-framework: Loader->validateBlock Validating block succeed for 10258884836986606075 at height 1886.
+14:01:40.600Z  INFO lisk-framework: Finished validating the chain. You are at height 1886.
+14:01:40.601Z  INFO lisk-framework: Blockchain ready
+14:01:40.602Z  INFO lisk-framework: Loading 101 delegates using encrypted passphrases from config
+14:01:40.618Z  INFO lisk-framework: Forging enabled on account: 8273455169423958419L
+14:01:40.621Z  INFO lisk-framework: Forging enabled on account: 12254605294831056546L
+14:01:40.624Z  INFO lisk-framework: Forging enabled on account: 14018336151296112016L
+14:01:40.627Z  INFO lisk-framework: Forging enabled on account: 2003981962043442425L
+[...]
+```
+
 ## 3. Create a new transaction type
 
 For the Hello World App, we want to create a [custom transaction type](../custom-transactions.md) `HelloTransaction`: 
@@ -239,99 +334,9 @@ To start the network, execute the following command:
 node index.js | npx bunyan -o short
 ```
 
-`node index.js` will start the node, and `| npx bunyan -o short` will pretty-print the logs in the console.
-
 Check the logs, to verify the network has started successfully.
 
 If something went wrong, the process should stop and an error with debug information is displayed.
-
-If everything is ok, you should be able to see the following console logs:
-
-```
-$ node index.js | npx bunyan -o short
-10:11:27.820Z  INFO lisk-framework: Booting the application with Lisk Framework(0.1.0)
-10:11:27.822Z  INFO lisk-framework: Starting the app - hello-world-app
-10:11:27.846Z  INFO lisk-framework: Initializing controller
-10:11:27.847Z  INFO lisk-framework: Loading controller
-10:11:27.919Z  INFO lisk-framework: Old PID: 6505
-10:11:27.920Z  INFO lisk-framework: Current PID: 7735
-10:11:27.924Z  INFO lisk-framework: Loading module lisk-framework-chain:0.1.0 with alias "chain"
-10:11:28.042Z  INFO lisk-framework: Event network:bootstrap was subscribed but not registered to the bus yet.
-10:11:28.045Z  INFO lisk-framework: Event network:bootstrap was subscribed but not registered to the bus yet.
-10:11:28.065Z  INFO lisk-framework: Modules ready and launched
-10:11:28.066Z  INFO lisk-framework: Event network:event was subscribed but not registered to the bus yet.
-10:11:28.066Z  INFO lisk-framework: Module ready with alias: chain(lisk-framework-chain:0.1.0)
-10:11:28.066Z  INFO lisk-framework: Loading module lisk-framework-network:0.1.0 with alias "network"
-10:11:28.079Z  INFO lisk-framework: Blocks 425
-10:11:28.079Z  INFO lisk-framework: Genesis block matched with database
-10:11:28.101Z  INFO lisk-framework: Module ready with alias: network(lisk-framework-network:0.1.0)
-10:11:28.101Z  INFO lisk-framework: Loading module lisk-framework-http-api:0.1.0 with alias "http_api"
-10:11:28.101Z  INFO lisk-framework: Module ready with alias: http_api(lisk-framework-http-api:0.1.0)
-10:11:28.101Z  INFO lisk-framework:
-    Bus listening to events [ 'app:ready',
-      'app:state:updated',
-      'chain:bootstrap',
-      'chain:blocks:change',
-      'chain:signature:change',
-      'chain:transactions:change',
-      'chain:rounds:change',
-      'chain:multisignatures:signature:change',
-      'chain:multisignatures:change',
-      'chain:delegates:fork',
-      'chain:loader:sync',
-      'chain:dapps:change',
-      'chain:registeredToBus',
-      'chain:loading:started',
-      'chain:loading:finished',
-      'network:bootstrap',
-      'network:event',
-      'network:registeredToBus',
-      'network:loading:started',
-      'network:loading:finished',
-      'http_api:registeredToBus',
-      'http_api:loading:started',
-      'http_api:loading:finished' ]
-10:11:28.102Z  INFO lisk-framework:
-    Bus ready for actions [ 'app:getComponentConfig',
-      'app:getApplicationState',
-      'app:updateApplicationState',
-      'chain:calculateSupply',
-      'chain:calculateMilestone',
-      'chain:calculateReward',
-      'chain:generateDelegateList',
-      'chain:updateForgingStatus',
-      'chain:postSignature',
-      'chain:getForgingStatusForAllDelegates',
-      'chain:getTransactionsFromPool',
-      'chain:getTransactions',
-      'chain:getSignatures',
-      'chain:postTransaction',
-      'chain:getDelegateBlocksRewards',
-      'chain:getSlotNumber',
-      'chain:calcSlotRound',
-      'chain:getNodeStatus',
-      'chain:blocks',
-      'chain:blocksCommon',
-      'network:request',
-      'network:emit',
-      'network:getNetworkStatus',
-      'network:getPeers',
-      'network:getPeersCountByFilter' ]
-10:11:28.102Z  INFO lisk-framework: App started...
-10:11:28.116Z  INFO lisk-framework: Validating current block with height 425
-10:11:28.116Z  INFO lisk-framework: Loader->validateBlock Validating block 6793985054296884034 at height 425
-10:11:28.186Z  INFO lisk-framework: Verify->verifyBlock succeeded for block 6793985054296884034 at height 425.
-10:11:28.186Z  INFO lisk-framework: Loader->validateBlock Validating block succeed for 6793985054296884034 at height 425.
-10:11:28.188Z  INFO lisk-framework: Finished validating the chain. You are at height 425.
-10:11:28.191Z  INFO lisk-framework: Blockchain ready
-10:11:28.191Z  INFO lisk-framework: Loading 101 delegates using encrypted passphrases from config
-10:11:28.621Z  INFO lisk-framework: Lisk started: 0.0.0.0:4000
-10:11:28.631Z  INFO lisk-framework: Forging enabled on account: 8273455169423958419L
-10:11:28.634Z  INFO lisk-framework: Forging enabled on account: 12254605294831056546L
-10:11:28.636Z  INFO lisk-framework: Forging enabled on account: 14018336151296112016L
-10:11:28.637Z  INFO lisk-framework: Forging enabled on account: 2003981962043442425L
-[...]
-```
 
 ## 6. Interact with the network
 
@@ -453,7 +458,7 @@ The generated transaction object should look like this:
 }
 ```
 
-Now that we have a sendable transaction object, let's send it to our node and see how it gets processed by analyzing the logs:
+Now that we have a sendable transaction object, let's send it to our node and see how it gets processed by analyzing the logs.
 
 For this, we utilize the API of the node and post the created transaction object to the transaction endpoint of the API.
 
@@ -466,29 +471,6 @@ node print_sendable_hello-world.js | curl -X POST -H "Content-Type: application/
 If the node accepted the transaction, it should respond with: 
 ```
 {"meta":{"status":true},"data":{"message":"Transaction(s) accepted"},"links":{}}
-```
-
-Look at the logs of your node, to verify that the transaction has been added to the transaction pool:
-
-```
-10:14:20.296Z  INFO lisk-framework: Verify->verifyBlock succeeded for block 1142569122764967915 at height 523.
-10:14:20.316Z  INFO lisk-framework: Transaction pool - received size: 0 validated size: 0 verified size: 0 pending size: 0 ready size: 0
-10:14:20.320Z  INFO lisk-framework: Forged new block id: 1142569122764967915 height: 523 round: 6 slot: 9613886 reward: 0
-10:14:25.272Z  INFO lisk-framework: Transaction pool - added transactions to verified queue on action: addTransactions with ID(s): 1199714748623931346
-10:14:25.346Z  INFO lisk-framework: Transaction pool - received size: 0 validated size: 0 verified size: 0 pending size: 0 ready size: 1
-10:14:27.735Z  INFO lisk-framework: Broadcasts released: 1
-10:14:30.354Z  INFO lisk-framework: Broadhash consensus before forging a block: 0 %
-10:14:30.369Z  INFO lisk-framework: Verify->verifyBlock succeeded for block 7665982141323077011 at height 524.
-10:14:30.432Z  INFO lisk-framework: Transaction pool - removed transactions on action: removeConfirmedTransactions with ID(s): 1199714748623931346
-10:14:30.432Z  INFO lisk-framework: Transaction pool - received size: 0 validated size: 0 verified size: 0 pending size: 0 ready size: 0
-10:14:30.434Z  INFO lisk-framework: Forged new block id: 7665982141323077011 height: 524 round: 6 slot: 9613887 reward: 0
-10:14:32.730Z  INFO lisk-framework: Transaction pool - received size: 0 validated size: 0 verified size: 0 pending size: 0 ready size: 0
-10:14:40.447Z  INFO lisk-framework: Broadhash consensus before forging a block: 0 %
-10:14:40.450Z  INFO lisk-framework: Verify->verifyBlock succeeded for block 14503322979811202014 at height 525.
-10:14:40.469Z  INFO lisk-framework: Transaction pool - received size: 0 validated size: 0 verified size: 0 pending size: 0 ready size: 0
-10:14:40.472Z  INFO lisk-framework: Forged new block id: 14503322979811202014 height: 525 round: 6 slot: 9613888 reward: 0
-10:14:50.487Z  INFO lisk-framework: Broadhash consensus before forging a block: 0 %
-10:14:50.489Z  INFO lisk-framework: Verify->verifyBlock succeeded for block 15361727502078138109 at height 526.
 ```
 
 To verify, that the transaction got included in the blockchain as well, query the database of your node, where the blockchain data is stored:

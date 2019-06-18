@@ -53,9 +53,9 @@ Next, let's configure the application, to provide basic information about the ap
 //server/index.js
 const { Application, genesisBlockDevnet, configDevnet } = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
 
-configDevnet.app.label = 'Cashback-blockchain-application';
+configDevnet.app.label = 'cashback-blockchain-application';
 
-const app = new Application(genesisBlockDevnet, {...configDevnet, app: {label: 'Cashback blockchain application'}}); // create the application instance
+const app = new Application(genesisBlockDevnet, configDevnet); // create the application instance
 
 // the code block below starts the application and doesn't need to be changed
 app
@@ -68,11 +68,11 @@ app
 ```
 > *See the complete file on Github: [cashback/server/index.js](https://github.com/LiskHQ/lisk-sdk-test-app/tree/development/cashback/server/index.js).*
 
-On `line 2`, we require the needed dependencies from the `lisk-sdk` package.
+On `line 2` we require the needed dependencies from the `lisk-sdk` package.
 The most important one is the `Application` class, which is used in `line 4` to create the application instance.
 The application instance is used to start the blockchain application at the bottom of `index.js`.
 
-In `line 4` , the application instance gets initialized.
+On `line 4`  the application instance gets initialized.
 By passing the parameters for the [genesis block](../../lisk-sdk/configuration.md) and the [configuration template](https://github.com/LiskHQ/lisk-sdk/blob/development/sdk/src/samples/config_devnet.json), the application is configured with the most basic configurations to start the node.
 
 > If you want to change any of the values for `configDevnet`, check out the [full list of configurations](../../lisk-sdk/configuration.md#list-of-configuration-options) for Lisk SDK and overwrite them like described in [step 7](#7-customize-the-default-configuration)
@@ -88,7 +88,7 @@ If everything is ok, the following logs will be displayed:
 ```
 $ node index.js | npx bunyan -o short
 14:01:39.384Z  INFO lisk-framework: Booting the application with Lisk Framework(0.1.0)
-14:01:39.391Z  INFO lisk-framework: Starting the app - Cashback-blockchain-application
+14:01:39.391Z  INFO lisk-framework: Starting the app - cashback-blockchain-application
 14:01:39.392Z  INFO lisk-framework: Initializing controller
 14:01:39.392Z  INFO lisk-framework: Loading controller
 14:01:39.451Z  INFO lisk-framework: Old PID: 7707
@@ -275,11 +275,11 @@ Add the new transaction type to your application, by registering it to the appli
 const { Application, genesisBlockDevnet, configDevnet} = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
 const CashbackTransaction = require('./cashback_transaction'); // require the newly created transaction type 'CashbackTransaction'
 
-configDevnet.app.label = 'Cashback-blockchain-application';
+configDevnet.app.label = 'cashback-blockchain-application';
 
 const app = new Application(genesisBlockDevnet, configDevnet); // create the application instance
 
-app.registerTransaction(11, CashbackTransaction); // register the 'CashbackTransaction' 
+app.registerTransaction(CashbackTransaction.TYPE, CashbackTransaction); // register the 'CashbackTransaction' 
 
 
 // the code block below starts the application and doesn't need to be changed
@@ -482,11 +482,12 @@ curl -X GET "http://localhost:4000/api/transactions?id=5372254888441494149" -H "
 }
 ```
 
-In this example, the sender gets paid back the transaction fee as cashback:
-The sender was sending 2 LSK to the recipient, and paid a transaction fee of 0.1 LSK.
+In this example, the sender was sending 2 LSK to the recipient, and paid a transaction fee of 0.1 LSK.
 At the same time, the sender gets a cashback of 10% of the transaction amount: 2 LSK * 10% = 0.2 LSK.
 
 __As a result, the sender should get a credit of 0.1 LSK \[= 0.2 LSK (cashback) - 0.1 LSK (tx fee)], and the recipient should get a credit of 2 LSK.__
+
+> Note, that the balance of an account is stored in Beddows. 1 LSK = 100000000(= 10^8) Beddows.
 
 Verify, that the sender account got a credit of 0.1 LSK:
 ```bash
@@ -544,7 +545,7 @@ curl -X GET "http://localhost:4000/api/accounts?address=10881167371402274308L" -
 
 If the balances equal the expected values, it is verified the new custom transaction type `CashbackTransaction` is successfully integrated into the application.
 
-For further interaction with the network, you can run the process in the background by executing:
+For further interaction with the network, it is possible to run the process in the background by executing:
 
 ```bash
 npx pm2 start --name cashback index.js # add the application to pm2 under the name 'cashback'
@@ -577,7 +578,7 @@ To run the script from remote, change the configuration before creating the `App
 const { Application, genesisBlockDevnet, configDevnet} = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
 const CashbackTransaction = require('./cashback_transaction'); // require the newly created transaction type 'CashbackTransaction'
 
-configDevnet.app.label = 'Cashback-blockchain-application';
+configDevnet.app.label = 'cashback-blockchain-application';
 configDevnet.modules.http_api.access.public = true; // make the API accessible from everywhere
 //customConfig.modules.http_api.access.whitelist.push('1.2.3.4'); // example how to make the API accessible for specific IPs: add the host 1.2.3.4 to the whitelist of hosts
 

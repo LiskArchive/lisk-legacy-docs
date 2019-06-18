@@ -57,7 +57,7 @@ Next, let's configure the application, to provide basic information about the ap
 //server/index.js
 const { Application, genesisBlockDevnet, configDevnet } = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
 
-configDevnet.app.label = 'HelloWorld-blockchain-application';
+configDevnet.app.label = 'helloWorld-blockchain-application';
 
 const app = new Application(genesisBlockDevnet, configDevnet); // create the application instance
 
@@ -93,7 +93,7 @@ If everything is ok, the following logs will be displayed:
 ```
 $ node index.js | npx bunyan -o short
 14:01:39.384Z  INFO lisk-framework: Booting the application with Lisk Framework(0.1.0)
-14:01:39.391Z  INFO lisk-framework: Starting the app - HelloWorld-blockchain-application
+14:01:39.391Z  INFO lisk-framework: Starting the app - helloWorld-blockchain-application
 14:01:39.392Z  INFO lisk-framework: Initializing controller
 14:01:39.392Z  INFO lisk-framework: Loading controller
 14:01:39.451Z  INFO lisk-framework: Old PID: 7707
@@ -240,9 +240,9 @@ class HelloTransaction extends BaseTransaction {
     }
     
     /**
-    *applyAsset is where the custom logic of the Hello World app is implemented. 
-    *Here we can store additional information about accounts using the `asset` field. The content of property of "hello" transaction's asset gets saved into the "hello" property of the account's asset.
+    * applyAsset is where the custom logic of the Hello World app is implemented. 
     * applyAsset() and undoAsset() use the information about the sender's account from the `store`.
+    * Here we can store additional information about accounts using the `asset` field. The content of property of "hello" transaction's asset gets saved into the "hello" property of the account's asset.
     */
 	applyAsset(store) {
         const errors = [];
@@ -304,7 +304,7 @@ Add the new transaction type to your application, by registering it to the appli
 const { Application, genesisBlockDevnet, configDevnet} = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
 const HelloTransaction = require('./hello_transaction'); // require the newly created transaction type 'HelloTransaction'
 
-configDevnet.app.label = 'HelloWorld-blockchain-application';
+configDevnet.app.label = 'helloWorld-blockchain-application';
 
 const app = new Application(genesisBlockDevnet, configDevnet); // create the application instance
 
@@ -496,7 +496,7 @@ lisk_dev=> SELECT address, "publicKey", asset from mem_accounts WHERE address = 
  16313739661670634666L | \xc094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f | {"hello": "world"}
 ```
 
-For further interaction with the network, you can run the process in the background by executing:
+For further interaction with the network, it is possible to run the process in the background by executing:
 
 ```bash
 npx pm2 start --name hello index.js # add the application to pm2 under the name 'hello'
@@ -529,7 +529,7 @@ To run the script from remote, change the configuration before creating the `App
 const { Application, genesisBlockDevnet, configDevnet} = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
 const HelloTransaction = require('./hello_transaction'); // require the newly created transaction type 'HelloTransaction'
 
-configDevnet.app.label = 'HelloWorld-blockchain-application';
+configDevnet.app.label = 'helloWorld-blockchain-application';
 configDevnet.modules.http_api.access.public = true; // make the API accessible from everywhere
 //configDevnet.modules.http_api.access.whitelist.push('1.2.3.4'); // example how to make the API accessible for specific IPs: add the host 1.2.3.4 to the whitelist of hosts
 

@@ -8,7 +8,7 @@ The Cashback App implementation goes as following:
 - __Step 6__  shows how to interact with the network from the (blockchain) client-side using a node script.
 - __Step 7__ explains how to override specific config values.
 
-> Check out the __full code example__ of the [Cashback App on Github](https://github.com/LiskHQ/lisk-sdk-test-app/cashback).
+> Check out the __full code example__ of the [Cashback App on Github](https://github.com/LiskHQ/lisk-sdk-examples/tree/development/cashback).
 
 ## 1. Set up Lisk SDK
 
@@ -66,7 +66,7 @@ app
         process.exit(1);
     });        
 ```
-> *See the complete file on Github: [cashback/server/index.js](https://github.com/LiskHQ/lisk-sdk-test-app/tree/development/cashback/server/index.js).*
+> *See the complete file on Github: [cashback/server/index.js](https://github.com/LiskHQ/lisk-sdk-examples/tree/development/cashback/server/index.js).*
 
 On `line 2` we require the needed dependencies from the `lisk-sdk` package.
 The most important one is the `Application` class, which is used in `line 4` to create the application instance.
@@ -291,7 +291,7 @@ app
         process.exit(1);
     });
 ```
-> *See the file on Github: [cashback/server/index.js](https://github.com/LiskHQ/lisk-sdk-test-app/tree/development/cashback/server/index.js).*
+> *See the file on Github: [cashback/server/index.js](https://github.com/LiskHQ/lisk-sdk-examples/tree/development/cashback/server/index.js).*
 
 ## 5. Start the network
 
@@ -595,7 +595,7 @@ app
         process.exit(1);
     });
 ```
-> *See the complete file on Github: [cashback/server/index.js](https://github.com/LiskHQ/lisk-sdk-test-app/tree/development/cashback/server/index.js).*
+> *See the complete file on Github: [cashback/server/index.js](https://github.com/LiskHQ/lisk-sdk-examples/tree/development/cashback/server/index.js).*
 
 > __Optional:__ After first successful verification, you may wan to reduce the default console log level (info) and file log level (debug).<br> 
 > You can do so, by passing a copy of the config object `configDevnet` with customized config for the logger component:

@@ -333,6 +333,15 @@ touch print_sendable_cashback.js
 const createSendableTransaction = require('./create_sendable_transaction_base_trs');
 const CashbackTransaction = require('../server/cashback_transaction');
 
+
+const getTimestamp = () => {
+	const epochTime = "2016-05-24T17:00:00.000Z" //default epoch time
+	// check config file or curl localhost:4000/api/node/constants to verify your epoc time
+	const millisSinceEpoc = Date.now() - Date.parse(epochTime); 
+	const inSeconds = ((millisSinceEpoc) / 1000).toFixed(0);
+	return  parseInt(inSeconds);
+}
+
 let c = createSendableTransaction(CashbackTransaction, { // the desired transaction gets created and signed
 	type: 11, // we want to send a transaction type 11 (= CashbackTransaction)
 	data: null,
@@ -343,7 +352,7 @@ let c = createSendableTransaction(CashbackTransaction, { // the desired transact
  	senderPublicKey: 'c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f', // the senders publickey
  	passphrase: 'wagon stock borrow episode laundry kitten salute link globe zero feed marble', // the senders passphrase, needed to sign the transaction
  	secondPassphrase: null,
- 	timestamp: 2,
+ 	timestamp: getTimestamp(),
 });
 
 console.log(c); // the transaction is displayed as JSON object in the console

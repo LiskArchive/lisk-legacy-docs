@@ -6,7 +6,18 @@
 const { Application, genesisBlockDevnet, configDevnet} = require('lisk-sdk'); // require the lisk-sdk package
 
 const app = new Application(genesisBlockDevnet, configDevnet); // start the node in a fully functional devnet
-const app = new Application(genesisBlockDevnet, {app: {label: 'my-label', minVersion: '0.0.2',version: '2.3.4', protocolVersion: '4.1'},components: {logger: {consoleLogLevel: "info"}}}); // sets the required values for label, protocol and version, overrides consoleLogLevel, uses default values for everything else
+const app = new Application(genesisBlockDevnet, { // sets the required values for label, protocol and version, overrides consoleLogLevel, uses default values for everything else
+    app: {
+        label: 'my-label',
+        minVersion: '0.0.2',
+        version: '2.3.4',
+        protocolVersion: '4.1'
+        },
+    components: {
+        logger: {
+            consoleLogLevel: "info"
+        }
+    }}); 
 ```
 The configuration object `configDevnet` has the structure like shown in the [list of configuration options](#list-of-configuration-options).
 It can be modified accordingly, before passing the config to the `Application` instance:
@@ -14,12 +25,11 @@ It can be modified accordingly, before passing the config to the `Application` i
 ```js
 const { Application, genesisBlockDevnet, configDevnet} = require('lisk-sdk'); // require the lisk-sdk package
 
-let customConfig = configDevnet;
-customConfig.components.storage.database = 'my-custom-db' // change the db name to my-custom-db
-customConfig.modules.http_api.access.public = true; // make the API accessible from everywhere
+configDevnet.components.storage.database = 'my-custom-db' // change the db name to my-custom-db
+configDevnet.modules.http_api.access.public = true; // make the API accessible from everywhere
 
 
-const app = new Application(genesisBlockDevnet, customConfig);
+const app = new Application(genesisBlockDevnet, configDevnet);
 ```
 
 ## List of configuration options

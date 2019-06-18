@@ -485,7 +485,7 @@ curl -X GET "http://localhost:4000/api/transactions?id=5372254888441494149" -H "
 In this example, the sender was sending 2 LSK to the recipient, and paid a transaction fee of 0.1 LSK.
 At the same time, the sender gets a cashback of 10% of the transaction amount: 2 LSK * 10% = 0.2 LSK.
 
-__As a result, the sender should get a credit of 0.1 LSK \[= 0.2 LSK (cashback) - 0.1 LSK (tx fee)], and the recipient should get a credit of 2 LSK.__
+__As a result, the recipient should get a credit of 2 LSK, and the sender s' balance should be reduced by 1.9 LSK (-2 LSK, plus a credit of 0.1 LSK \[= 0.2 LSK (cashback) - 0.1 LSK (tx fee)]).__
 
 > Note, that the balance of an account is stored in Beddows. 1 LSK = 100000000(= 10^8) Beddows.
 

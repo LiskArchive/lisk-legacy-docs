@@ -184,7 +184,7 @@ So e.g. if Alice sends 100 token to Bob as a Cashback transaction, Bob would rec
 > This is because we extend the `CashbackTransaction` from an already existing transaction type `TransferTransaction`.
 > As a result, all required methods are implemented already inside the `TransferTransaction` class, and we only need to overwrite/extend explicitely the methods we want to customize.
 
-Now, let's create a new file `cashback_transaction.js`, which is defining the new transaction type `CashbackTransaction`:
+Now, let's create a new file `cashback_transaction.js` which is defines the new transaction type `CashbackTransaction`:
 
 ```bash
 touch cashback_transaction.js
@@ -309,9 +309,9 @@ To start the network, execute the following command:
 node index.js | npx bunyan -o short
 ```
 
-Check the logs, to verify the network has started successfully.
+Check the logs to verify the network has started successfully.
 
-If an error occurs, the process should stop and the error with debug information will be displayed.
+If an error occurs the process should stop, and the error with debug information will be displayed.
 
 ## 6. Interact with the network
 
@@ -377,9 +377,9 @@ Now that we have a sendable transaction object, let's send it to our node and se
 
 For this, we utilize the http API of the node and post the created transaction object to the transaction endpoint of the API.
 
-Before posting the transaction, let's check the balances of sender and recipient, to verify later that the transaction got applied correctly:
+Before posting the transaction, let's check the balances of sender and recipient, to verify later that the transaction was applied correctly:
 
-Checking the account balance of the sender:
+To check the account balance of the sender:
 ```bash
 curl -X GET "http://localhost:4000/api/accounts?address=16313739661670634666L" -H "accept: application/json"
 ```
@@ -433,7 +433,7 @@ curl -X GET "http://localhost:4000/api/accounts?address=10881167371402274308L" -
 }
 ```
 
-Because the API of every node is only accessible from localhost by default, you need to execute this query on the same server that your node is running on, unless you changed the config to make your API accessible to others or to the public.
+Because the API of every node is only accessible from localhost by default, you need to execute this query on the same server that your node is running on. This can be changed in the config file to make your API accessible to others or to the public.
 
 > Make sure your node is running, before sending the transaction
 
@@ -446,7 +446,7 @@ If the node accepted the transaction, it should respond with:
 {"meta":{"status":true},"data":{"message":"Transaction(s) accepted"},"links":{}}
 ```
 
-To verify, that the transaction got included into a block:
+To verify that the transaction was included in a block:
 
 ```bash
 curl -X GET "http://localhost:4000/api/transactions?id=5372254888441494149" -H "accept: application/json"

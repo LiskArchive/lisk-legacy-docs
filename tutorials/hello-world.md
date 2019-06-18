@@ -240,8 +240,8 @@ class HelloTransaction extends BaseTransaction {
     }
     
     /**
-    * That's where the custom logic of the Hello World app is implemented. 
-    * It shows how to store an additional information about accounts using the `asset` field. The content of property of "hello" transaction's asset gets saved into the "hello" property of the account's asset.
+    *applyAsset is where the custom logic of the Hello World app is implemented. 
+    *Here we can store additional information about accounts using the `asset` field. The content of property of "hello" transaction's asset gets saved into the "hello" property of the account's asset.
     * applyAsset() and undoAsset() use the information about the sender's account from the `store`.
     */
 	applyAsset(store) {

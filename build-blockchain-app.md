@@ -35,7 +35,7 @@ It is also possible to exchange Modules with different ones, or to add new Modul
 
 To view the list of currently available ready-to-use Modules and Components, check out the [list of Modules](../lisk-sdk/lisk-framework/introduction.md#list-of-core-modules) and the [list of Components](../lisk-sdk/lisk-framework/introduction.md#components).
 
-For a full list of all config options and their default values, see the [List of configuration options](configuration.md#list-of-configuration-options) or the file [config_devnet.json](https://github.com/LiskHQ/lisk-sdk/blob/development/sdk/src/samples/config_devnet.json) on Github.
+For a full list of all config options and their default values, see the [List of configuration options](../lisk-sdk/configuration.md#list-of-configuration-options) or the file [config_devnet.json](https://github.com/LiskHQ/lisk-sdk/blob/development/sdk/src/samples/config_devnet.json) on Github.
 
 #### 2.b Register custom transaction types
 Transactions are the main way for users to add data to their blockchain.

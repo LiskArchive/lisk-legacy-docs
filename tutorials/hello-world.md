@@ -78,7 +78,7 @@ The most important one is the `Application` class, which is used in `line 4` to 
 The application instance will start the whole application at the bottom of `index.js`.
 
 In `line 4` , the application instance gets initialized.
-By passing the parameters for the [genesis block](../../lisk-sdk/configuration.md#genesis-block) and the [configuration template](https://github.com/LiskHQ/lisk-sdk/blob/development/sdk/src/samples/config_devnet.json), the application is configured with most basic configurations to start the node.
+By passing the parameters for the [genesis block](../../lisk-sdk/configuration.md#the-genesis-block) and the [configuration template](https://github.com/LiskHQ/lisk-sdk/blob/development/sdk/src/samples/config_devnet.json), the application is configured with most basic configurations to start the node.
 
 > If you want to change any of the values for `configDevnet`, check out the [full list of configurations](../../lisk-sdk/configuration.md#list-of-configuration-options) for Lisk SDK and overwrite them like described in [step 7](#7-customize-the-default-configuration)
 

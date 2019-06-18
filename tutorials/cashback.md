@@ -324,7 +324,7 @@ First, let's reuse the script [create_sendable_transaction_base_trs.js](https://
 We can call `createSendableTransaction()` to print a sendable `CashbackTransaction` object:
 
 ```bash
-cd ../client
+cd ../client # navigate into the client folder
 touch print_sendable_cashback.js
 ```
 
@@ -433,7 +433,7 @@ curl -X GET "http://localhost:4000/api/accounts?address=10881167371402274308L" -
 }
 ```
 
-Because the API of every node is only accessible from localhost by default, you need to execute this query on the same server that your node is running on. This can be changed in the config file to make your API accessible to others or to the public.
+Because the API of every node is only accessible from localhost by default, you need to execute this query on the same server that your node is running on, unless you changed the config to [make your API accessible](#7-customize-the-default-configuration) to others or to the public.
 
 > Make sure your node is running, before sending the transaction
 

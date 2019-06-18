@@ -23,7 +23,7 @@ module.exports = (src, dest, preview) => () => {
   const opts = { base: src, cwd: src }
   const sourcemaps = preview || process.env.SOURCEMAPS === 'true'
   const postcssPlugins = [
-    postcssImport(),
+    postcssImport,
     postcssUrl([
       {
         filter: '**/~typeface-*/files/*',
@@ -38,8 +38,8 @@ module.exports = (src, dest, preview) => () => {
       },
     ]),
     postcssVar({ preserve: preview ? 'preserve-computed' : false }),
-    postcssCalc(),
-    autoprefixer({ browsers: ['last 2 versions'] }),
+    postcssCalc,
+    autoprefixer,
     preview ? () => {} : cssnano({ preset: 'default' }),
   ]
 

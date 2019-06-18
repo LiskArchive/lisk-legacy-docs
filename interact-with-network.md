@@ -35,7 +35,17 @@ One of the most useful packages in this regard is the [@liskhq/lisk-api-client](
 It consists of wallet functionalities like sending transactions and viewing account history, as well as more extended features like delegate voting or registering as a delegate.
 
 ## D. Query the API
-Query the [API](https://lisk.io/documentation/lisk-core/api) manually. Either from a public node, or connect to your own private node to interact with the network.
+To query the [API](https://lisk.io/documentation/lisk-core/api) manually, either from a public node, or connect to your own private node to interact with the network.
+
+> View the full specification of the Lisk API, including example queries at [lisk.io/documentation/lisk-core/api](https://lisk.io/documentation/lisk-core/api)
+
+To execute the query,  use any tool suitable for HTTP API requests.
+
+Popular tools for HTTP requests:
+
+- [Curl](https://curl.haxx.se/): Perform API requests from the command-line.
+- [Postman](https://www.getpostman.com/): user friendly graphical interface for sending API requests.
+- [Swagger UI](https://lisk.io/documentation/lisk-core/api): A Webinterface that can send API requests in addition to providing the complete API specification.
 
 ### Use a public node
 

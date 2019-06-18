@@ -394,7 +394,7 @@ Default log level for the console log stream is `none`.
 
 **Example: Display the console log stream:**
 ```bash
-npm start | npx bunyan  # Pretty-prints console logs with log level equal or higher to the console log level.
+node dist/index.js | npx bunyan  # Pretty-prints console logs with log level equal or higher to the console log level.
 ```
 
 For more information about the Bunyan CLI tool, please check out the official [Bunyan Documentation](http://trentm.com/node-bunyan/bunyan.1.html).

@@ -4,7 +4,7 @@ A simple application which rewards its users for sending tokens.
 
 The Cashback App implementation goes as following:
 
-- __Steps 1-5__ describes the sever-side implementation of the blockchain application.
+- __Steps 1-5__ describe the sever-side implementation of the blockchain application.
 - __Step 6__  shows how to interact with the network from the (blockchain) client-side using a node script.
 - __Step 7__ explains how to override specific config values.
 
@@ -375,7 +375,7 @@ The generated transaction object should look like this:
 
 Now that we have a sendable transaction object, let's send it to our node and see how it gets processed by analyzing the logs.
 
-For this, we utilize the http API of the node and post the created transaction object to the transaction endpoint of the API.
+For this, we utilize the HTTP API of the node and post the created transaction object to the transaction endpoint of the API.
 
 Before posting the transaction, let's check the balances of sender and recipient, to verify later that the transaction was applied correctly:
 

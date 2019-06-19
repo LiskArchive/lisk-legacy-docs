@@ -345,7 +345,7 @@ const getTimestamp = () => {
 let c = createSendableTransaction(CashbackTransaction, { // the desired transaction gets created and signed
 	type: 11, // we want to send a transaction type 11 (= CashbackTransaction)
 	data: null,
-	amount: `${2 * (10 ** 8)}`, // we set the amount to 1 LSK
+	amount: `${2 * (10 ** 8)}`, // we set the amount to 2 LSK
 	fee: `${10 ** 7}`, // we set the fee to 0.1 LSK
  	recipientId: '10881167371402274308L', // recipient address: dummy delegate genesis_100
  	recipientPublicKey: 'addb0e15a44b0fdc6ff291be28d8c98f5551d0cd9218d749e30ddb87c6e31ca9', // public key of the recipient 

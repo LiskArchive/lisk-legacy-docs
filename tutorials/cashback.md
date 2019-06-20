@@ -356,6 +356,7 @@ let c = createSendableTransaction(CashbackTransaction, { // the desired transact
 });
 
 console.log(c); // the transaction is displayed as JSON object in the console
+process.exit(1); // stops the process after the transaction object has been printed
 ```
 > *See the complete file on Github: [hello_world/client/print_sendable_cashback.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/hello_world/client/print_sendable_hello-world.js).*
 

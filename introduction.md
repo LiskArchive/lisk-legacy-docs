@@ -116,22 +116,17 @@ Drop the existing database cluster, and replace it with a cluster with the local
 sudo pg_dropcluster --stop 10 main
 sudo pg_createcluster --locale en_US.UTF-8 --start 10 main
 ```
-Create a new database user called `lisk` and grant it rights to create databases:
+Create a new database user called `lisk` and grant it rights to create databases.
+Then create the database with the `lisk` user as owner.
+In the last step, define the password for the lisk user:
 ```bash
 sudo -u postgres createuser --createdb lisk
+createdb lisk_dev --owner lisk
+psql -U lisk -d lisk_dev -c "alter user lisk with password 'password';"
 ```
 
-Switch to the `lisk` user and create the databases, which shall hold the data of the blockchain:
-```bash
-sudo -u lisk -i
-createdb lisk_dev
-  ```
-
-For the following steps,  log out from the lisk user again with `CTRL+D`, and continue with your user with sudo rights.
-Change `'password'` to a secure password of your choice.
-```bash
-sudo -u postgres psql -d lisk_dev -c "alter user lisk with password 'password';"
-```
+> Change `'password'` to a secure password of your choice.
+> Don't forget to update this password in the [Lisk SDK configuration](configuration.md) later on.
 
 ##### MacOS
 
@@ -139,10 +134,13 @@ sudo -u postgres psql -d lisk_dev -c "alter user lisk with password 'password';"
 brew install postgresql@10
 initdb /usr/local/var/postgres -E utf8 --locale=en_US.UTF-8
 brew services start postgresql@10
-createdb lisk_{network}
+createuser --createdb lisk
+createdb lisk_dev --owner lisk
+psql --username lisk -d lisk_dev -c "alter user lisk with password 'password';"
 ```
-`{network}` is the network you want to connect your Lisk Core node to.
 
+> Change `'password'` to a secure password of your choice.
+> Don't forget to update this password in the [Lisk SDK configuration](configuration.md) later on.
 
 #### Node.js
 

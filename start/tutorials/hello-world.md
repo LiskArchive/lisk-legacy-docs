@@ -26,7 +26,8 @@ dropdb lisk_dev && createdb lisk_dev # start with a fresh database
 ```
 
 As next step, we want to install the `lisk-sdk` package and add it to our projects' dependencies.
-Before installing it, make sure to follow the instructions in the [Lisk SDK - Pre-Install](../../lisk-sdk/introduction.md#pre-installation) section.
+
+> Before installing the Lisk SDK, make sure to follow the instructions in the [Lisk SDK - Pre-Install](../../lisk-sdk/introduction.md#pre-installation) section.
 
 ```bash
 npm install --save lisk-sdk@alpha # install lisk-sdk as dependency for the server side
@@ -421,6 +422,14 @@ Therefore, it will make use of the function `createSendableTransaction()`, which
 const createSendableTransaction = require('./create_sendable_transaction_base_trs');
 const HelloTransaction = require('../server/hello_transaction');
 
+const getTimestamp = () => {
+	const epochTime = "2016-05-24T17:00:00.000Z" //default epoch time
+	// check config file or curl localhost:4000/api/node/constants to verify your epoc time
+	const millisSinceEpoc = Date.now() - Date.parse(epochTime); 
+	const inSeconds = ((millisSinceEpoc) / 1000).toFixed(0);
+	return  parseInt(inSeconds);
+}
+
 let h = createSendableTransaction(HelloTransaction, { // the desired transaction gets created and signed
 	type: 10, // we want to send a transaction type 10 (= HelloTransaction)
 	asset: {
@@ -430,10 +439,11 @@ let h = createSendableTransaction(HelloTransaction, { // the desired transaction
 	recipientId: '10881167371402274308L', // address of dummy delegate genesis_100
 	senderPublicKey: 'c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f', // the senders publicKey
 	passphrase: 'wagon stock borrow episode laundry kitten salute link globe zero feed marble', // the senders passphrase, needed to sign the transaction
-	timestamp: 0,
+	timestamp: getTimestamp(),
 });
 
 console.log(h); // the transaction is displayed as JSON object in the console
+process.exit(1); // stops the process after the transaction object has been printed
 ```
 > *See the complete file on Github: [hello_world/client/print_sendable_hello-world.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/hello_world/client/print_sendable_hello-world.js).*
 

@@ -22,7 +22,8 @@ dropdb lisk_dev && createdb lisk_dev # start with a fresh database
 ```
 
 As next step, we want to install the `lisk-sdk` package and add it to our projects' dependencies.
-Before installing it, make sure to follow the instructions in the [Lisk SDK - Pre-Install](../../lisk-sdk/introduction.md#pre-installation) section.
+
+> Before installing the Lisk SDK, make sure to follow the instructions in the [Lisk SDK - Pre-Install](../../lisk-sdk/introduction.md#pre-installation) section.
 
 ```bash
 npm install --save lisk-sdk@alpha # install lisk-sdk as dependency for the server side
@@ -356,6 +357,7 @@ let c = createSendableTransaction(CashbackTransaction, { // the desired transact
 });
 
 console.log(c); // the transaction is displayed as JSON object in the console
+process.exit(1); // stops the process after the transaction object has been printed
 ```
 > *See the complete file on Github: [hello_world/client/print_sendable_cashback.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/hello_world/client/print_sendable_hello-world.js).*
 

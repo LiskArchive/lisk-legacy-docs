@@ -4,7 +4,7 @@ A simple application which rewards its users for sending tokens.
 
 The Cashback App implementation goes as following:
 
-- __Steps 1-5__ describe the sever-side implementation of the blockchain application.
+- __Steps 1-5__ describe the node-side implementation of the blockchain application.
 - __Step 6__  shows how to interact with the network from the (blockchain) client-side using a node script.
 - __Step 7__ explains how to override specific config values.
 
@@ -18,7 +18,6 @@ First, let's create the root folder for the Cashback App and initialize the proj
 mkdir cashback # create the root folder for the blockchain application
 cd cashback # navigate into the root folder
 npm init # initialize the manifest file of the project
-dropdb lisk_dev && createdb lisk_dev # start with a fresh database
 ```
 
 As next step, we want to install the `lisk-sdk` package and add it to our projects' dependencies.
@@ -26,24 +25,15 @@ As next step, we want to install the `lisk-sdk` package and add it to our projec
 > Before installing the Lisk SDK, make sure to follow the instructions in the [Lisk SDK - Pre-Install](../../lisk-sdk/introduction.md#pre-installation) section.
 
 ```bash
-npm install --save lisk-sdk@alpha # install lisk-sdk as dependency for the server side
+npm install --save lisk-sdk@alpha # install lisk-sdk as dependency for the node server side
 npm install --save @liskhq/validator @liskhq/cryptography # install lisk-elements dependencies for the client side scripts
 ```
 
-Create two folders `client` and `server`, which will hold the corresponding scripts for the blockchain application.
-
-- the `server` folder holds all the code that is needed to start a node and connect it to a network.
-- the `client` folder holds scritps that communicate with the network through the API of the node.
+Create the file `index.js`, which will hold the logic to initialize and start the blockchain application.
 
 ```bash
-mkdir client server # creates the folder inside the root directory of your blockchain application
-cd server # move inside the server folder
-```
-
-Inside the `server` folder, create the index file of your blockchain application:
-
-```bash
-touch index.js
+dropdb lisk_dev && createdb lisk_dev # start with a fresh database
+touch index.js # create the index file
 ```
 
 ## 2. Configure the application
@@ -51,7 +41,7 @@ touch index.js
 Next, let's configure the application, to provide basic information about the application we are going to build:
 
 ```js
-//server/index.js
+//index.js
 const { Application, genesisBlockDevnet, configDevnet } = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
 
 configDevnet.app.label = 'cashback-blockchain-application';
@@ -67,7 +57,7 @@ app
         process.exit(1);
     });        
 ```
-> *See the complete file on Github: [cashback/server/index.js](https://github.com/LiskHQ/lisk-sdk-examples/tree/development/cashback/server/index.js).*
+> *See the complete file on Github: [cashback/index.js](https://github.com/LiskHQ/lisk-sdk-examples/tree/development/cashback/index.js).*
 
 On `line 2` we require the needed dependencies from the `lisk-sdk` package.
 The most important one is the `Application` class, which is used in `line 4` to create the application instance.
@@ -192,7 +182,7 @@ touch cashback_transaction.js
 ```
 
 ```js
-//server/cashback_transaction.js
+//cashback_transaction.js
 const {
 	TransferTransaction,
 	BigNum,
@@ -253,7 +243,7 @@ class CashbackTransaction extends TransferTransaction {
 
 module.exports = CashbackTransaction;
 ``` 
-> *See the file on Github: [cashback/server/cashback_transaction.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/cashback/server/cashback_transaction.js)*
+> *See the file on Github: [cashback/cashback_transaction.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/cashback/cashback_transaction.js)*
 
 ## 4. Register the new transaction type
 
@@ -261,18 +251,16 @@ Right now, your project should have the following file structure:
 
 ```
 cashback
-├── client // currently empty
+├── cashback_transaction.js
+├── index.js
 ├── node_modules
-├── package.json
-└── server
-    ├── cashback_transaction.js
-    ├── index.js
+└──package.json
 ```
 
 Add the new transaction type to your application, by registering it to the application instance:
 
 ```js
-//server/index.js
+//index.js
 const { Application, genesisBlockDevnet, configDevnet} = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
 const CashbackTransaction = require('./cashback_transaction'); // require the newly created transaction type 'CashbackTransaction'
 
@@ -292,7 +280,7 @@ app
         process.exit(1);
     });
 ```
-> *See the file on Github: [cashback/server/index.js](https://github.com/LiskHQ/lisk-sdk-examples/tree/development/cashback/server/index.js).*
+> *See the file on Github: [cashback/index.js](https://github.com/LiskHQ/lisk-sdk-examples/tree/development/cashback/index.js).*
 
 ## 5. Start the network
 
@@ -325,14 +313,15 @@ First, let's reuse the script [create_sendable_transaction_base_trs.js](https://
 We can call `createSendableTransaction()` to print a sendable `CashbackTransaction` object:
 
 ```bash
-cd ../client # navigate into the client folder
+mkdir client # create the folder for the client-side scripts
+cd client # navigate into the client folder
 touch print_sendable_cashback.js
 ```
 
 ```js
 //client/print_sendable_cashback.js
 const createSendableTransaction = require('./create_sendable_transaction_base_trs');
-const CashbackTransaction = require('../server/cashback_transaction');
+const CashbackTransaction = require('../cashback_transaction');
 
 
 const getTimestamp = () => {
@@ -573,11 +562,10 @@ hello_world
 ├── client
 │   ├── create_sendable_transaction_base_trs.js
 │   └── print_sendable_cashback.js
+├── hello_transaction.js
+├── index.js
 ├── node_modules
-├── package.json
-└── server
-    ├── hello_transaction.js
-    ├── index.js
+└── package.json
 ```
 
 To run the script from remote, change the configuration before creating the `Application` instance, to make the API accessible:
@@ -585,7 +573,7 @@ To run the script from remote, change the configuration before creating the `App
 > For more configuration options, check out the [full list of configurations](../../lisk-sdk/configuration.md#list-of-configuration-options) for Lisk SDK
 
 ```js
-//server/index.js
+//index.js
 const { Application, genesisBlockDevnet, configDevnet} = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
 const CashbackTransaction = require('./cashback_transaction'); // require the newly created transaction type 'CashbackTransaction'
 
@@ -606,7 +594,7 @@ app
         process.exit(1);
     });
 ```
-> *See the complete file on Github: [cashback/server/index.js](https://github.com/LiskHQ/lisk-sdk-examples/tree/development/cashback/server/index.js).*
+> *See the complete file on Github: [cashback/index.js](https://github.com/LiskHQ/lisk-sdk-examples/tree/development/cashback/index.js).*
 
 > __Optional:__ After first successful verification, you may wan to reduce the default console log level (info) and file log level (debug).<br> 
 > You can do so, by passing a copy of the config object `configDevnet` with customized config for the logger component:

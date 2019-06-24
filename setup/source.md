@@ -151,9 +151,10 @@ Then create the database with the lisk user as owner.
 In the last step, define the password for the lisk user:
 ```bash
 sudo -u postgres -i createuser --createdb lisk
-sudo -u postgres -i createdb lisk_dev --owner lisk
-sudo -u postgres psql -d lisk_dev -c "alter user lisk with password 'password';"
+sudo -u postgres -i createdb lisk_<NETWORK> --owner lisk
+sudo -u postgres psql -d lisk_<NETWORK> -c "alter user lisk with password 'password';"
 ```
+`<NETWORK>` may be `main` for Mainnet, `test` for Testnet or `dev` for Devnet.
 
 > Change 'password' to a secure password of your choice.
 
@@ -164,9 +165,10 @@ brew install postgresql@10
 initdb /usr/local/var/postgres -E utf8 --locale=en_US.UTF-8
 brew services start postgresql@10
 createuser --createdb lisk
-createdb lisk_dev
-psql -d lisk_dev -c "alter user lisk with password 'password';"
+createdb lisk_<NETWORK>
+psql -d lisk_<NETWORK> -c "alter user lisk with password 'password';"
 ```
+`<NETWORK>` may be `main` for Mainnet, `test` for Testnet or `dev` for Devnet.
 
 > Change 'password' to a secure password of your choice.
 

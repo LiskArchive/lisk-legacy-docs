@@ -10,7 +10,7 @@ Get started with the tutorials and getting started guides:
 - [Getting started: Build a blockchain application](start/build-blockchain-app.md)
 - [Getting started: Interact with the network](start/interact-with-network.md)
 - [Getting started: Maintain a node](start/maintain-node.md)
-- [Tutorials](start/examples.md)
+- [Tutorials](start/tutorials.md)
 - [Custom transactions](start/custom-transactions.md)
 
 See the documentation for each product:

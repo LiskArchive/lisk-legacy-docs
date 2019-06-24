@@ -116,9 +116,9 @@ Drop the existing database cluster, and replace it with a cluster with the local
 sudo pg_dropcluster --stop 10 main
 sudo pg_createcluster --locale en_US.UTF-8 --start 10 main
 ```
-Create a new database user called `lisk` and grant it rights to create databases.
-Then create the database with the `lisk` user as owner.
-In the last step, define the password for the lisk user:
+Next we will create a new database user called `lisk` with create database rights.
+With the `lisk` user as the owner, we will create a database called `lisk_dev`.
+Finally we will set a password for the `lisk` user (see commands below).
 ```bash
 sudo -u postgres createuser --createdb lisk
 createdb lisk_dev --owner lisk

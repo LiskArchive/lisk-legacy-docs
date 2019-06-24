@@ -8,7 +8,7 @@ This custom transaction will extract the "hello" key value from the transaction 
 
 The Hello World implementation goes as following:
 
-- __Steps 1-5__ describe what needs to be implemented on the server-side of the blockchain application.
+- __Steps 1-5__ describe what needs to be implemented on the node-side of the blockchain application.
 - __Step 6__ explains how to interact with the network from the client-side.
 - __Step 7__ explains how to override specific config values.
 
@@ -22,7 +22,6 @@ First, let's create the root folder for the Hello World App and initialize the p
 mkdir hello_world # create the root folder for the blockchain application
 cd hello_world # navigate into the root folder
 npm init # initialize the manifest file of the project
-dropdb lisk_dev && createdb lisk_dev # start with a fresh database
 ```
 
 As next step, we want to install the `lisk-sdk` package and add it to our projects' dependencies.
@@ -30,24 +29,15 @@ As next step, we want to install the `lisk-sdk` package and add it to our projec
 > Before installing the Lisk SDK, make sure to follow the instructions in the [Lisk SDK - Pre-Install](../../lisk-sdk/introduction.md#pre-installation) section.
 
 ```bash
-npm install --save lisk-sdk@alpha # install lisk-sdk as dependency for the server side
+npm install --save lisk-sdk@alpha # install lisk-sdk as dependency for the node server side
 npm install --save @liskhq/validator @liskhq/cryptography # install lisk-elements dependencies for the client side scripts
 ```
 
-Create 2 folders `client` and `server`, which will hold the corresponding scripts for the blockchain application.
-
-- the `server` folder holds all the code that is needed to start a node and connect it to a network.
-- the `client` folder holds scritps that communicate with the network through the API of the node.
+Create the file `index.js`, which will hold the logic to initialize and start the blockchain application.
 
 ```bash
-mkdir client server # create the 2 folder inside the root directory of your blockchain application
-cd server # move inside the server folder
-```
-
-Inside the `server` folder, create the index file of your blockchain application:
-
-```bash
-touch index.js
+dropdb lisk_dev && createdb lisk_dev # start with a fresh database
+touch index.js # create the index file
 ```
 
 ## 2. Configure the application
@@ -55,7 +45,7 @@ touch index.js
 Next, let's configure the application, to provide basic information about the app we are going to build:
 
 ```js
-//server/index.js
+//index.js
 const { Application, genesisBlockDevnet, configDevnet } = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
 
 configDevnet.app.label = 'helloWorld-blockchain-application';
@@ -72,7 +62,7 @@ app
     });
 ```
 
-> *See the complete file on Github: [hello_world/server/index.js](https://github.com/LiskHQ/lisk-sdk-examples/tree/development/hello_world/server/index.js).*
+> *See the complete file on Github: [hello_world/index.js](https://github.com/LiskHQ/lisk-sdk-examples/tree/development/hello_world/index.js).*
 
 In the `line 2`, we require the needed dependencies from the `lisk-sdk` package.
 The most important one is the `Application` class, which is used in `line 4` to create the application instance.
@@ -191,7 +181,7 @@ touch hello_transaction.js
 ```
 
 ```js
-//server/hello_transaction.js
+//hello_transaction.js
 const {
 	BaseTransaction,
 	TransactionError,
@@ -282,7 +272,7 @@ class HelloTransaction extends BaseTransaction {
 module.exports = HelloTransaction;
 ``` 
 
-> *See the file on Github: [hello_world/server/hello_transaction.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/hello_world/server/hello_transaction.js)*
+> *See the file on Github: [hello_world/hello_transaction.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/hello_world/hello_transaction.js)*
 
 ## 4. Register the new transaction type
 
@@ -290,18 +280,16 @@ Right now, your project should have the following file structure:
 
 ```
 hello_world
-├── client // currently empty
+├── hello_transaction.js
+├── index.js
 ├── node_modules
-├── package.json
-└── server
-    ├── hello_transaction.js
-    ├── index.js
+└── package.json
 ```
 
 Add the new transaction type to your application, by registering it to the application instance:
 
 ```js
-//server/index.js
+//index.js
 const { Application, genesisBlockDevnet, configDevnet} = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
 const HelloTransaction = require('./hello_transaction'); // require the newly created transaction type 'HelloTransaction'
 
@@ -321,7 +309,7 @@ app
         process.exit(1);
     });
 ```
-> *See the file on Github: [hello_world/server/index.js](https://github.com/LiskHQ/lisk-sdk-examples/tree/development/hello_world/server/index.js).*
+> *See the file on Github: [hello_world/index.js](https://github.com/LiskHQ/lisk-sdk-examples/tree/development/hello_world/index.js).*
 
 ## 5. Start the network
 
@@ -352,7 +340,8 @@ As first step, create the transaction object.
 First, we create a script [createSendableTransaction](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/hello_world/client/create_sendable_transaction_base_trs.js).
 
 ```bash
-cd ../client # navigate into the client folder
+mkdir client # create the folder for the client-side scripts
+cd client # navigate into the client folder
 touch create_sendable_transaction_base_trs.js
 ```
 
@@ -420,7 +409,7 @@ Therefore, it will make use of the function `createSendableTransaction()`, which
 ```js
 //client/print_sendable_hello-world.js
 const createSendableTransaction = require('./create_sendable_transaction_base_trs');
-const HelloTransaction = require('../server/hello_transaction');
+const HelloTransaction = require('../hello_transaction');
 
 const getTimestamp = () => {
 	const epochTime = "2016-05-24T17:00:00.000Z" //default epoch time
@@ -525,11 +514,10 @@ hello_world
 ├── client
 │   ├── create_sendable_transaction_base_trs.js
 │   └── print_sendable_hello-world.js
+├── hello_transaction.js
+├── index.js
 ├── node_modules
-├── package.json
-└── server
-    ├── hello_transaction.js
-    ├── index.js
+└── package.json
 ```
 
 To run the script from remote, change the configuration before creating the `Application` instance, to make the API accessible:
@@ -537,7 +525,7 @@ To run the script from remote, change the configuration before creating the `App
 > For more configuration options, check out the [full list of configurations](../../lisk-sdk/configuration.md#list-of-configuration-options) for Lisk SDK
 
 ```js
-//server/index.js
+//index.js
 const { Application, genesisBlockDevnet, configDevnet} = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
 const HelloTransaction = require('./hello_transaction'); // require the newly created transaction type 'HelloTransaction'
 
@@ -558,7 +546,7 @@ app
         process.exit(1);
     });
 ```
-> *See the complete file on Github: [hello_world/server/index.js](https://github.com/LiskHQ/lisk-sdk-examples/tree/development/hello_world/server/index.js).*
+> *See the complete file on Github: [hello_world/index.js](https://github.com/LiskHQ/lisk-sdk-examples/tree/development/hello_world/index.js).*
 
 
 > __Optional:__ After first successful verification, you may want to reduce the default console log level (info) and file log level (debug).<br> 

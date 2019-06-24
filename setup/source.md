@@ -138,22 +138,24 @@ sudo apt install postgresql-10
 
 After installation, you should see the Postgres database cluster, by running
 ```bash
-  pg_lsclusters
+pg_lsclusters
 ```
 
 Drop the existing database cluster, and replace it with a cluster with the locale `en_US.UTF-8`:
 ```bash
-  sudo pg_dropcluster --stop 10 main
-  sudo pg_createcluster --locale en_US.UTF-8 --start 10 main
+sudo pg_dropcluster --stop 10 main
+sudo pg_createcluster --locale en_US.UTF-8 --start 10 main
 ```
 Create a new database user called `lisk` and grant it rights to create databases.
 Then create the database with the lisk user as owner.
 In the last step, define the password for the lisk user:
 ```bash
-  sudo -u postgres -i createuser --createdb lisk
-  createdb lisk_dev --owner lisk
-  psql -U lisk -d lisk_dev -c "alter user lisk with password 'password';"
+sudo -u postgres -i createuser --createdb lisk
+sudo -u postgres -i createdb lisk_dev --owner lisk
+sudo -u postgres psql -d lisk_dev -c "alter user lisk with password 'password';"
 ```
+
+> Change 'password' to a secure password of your choice.
 
 #### MacOS
 
@@ -161,9 +163,12 @@ In the last step, define the password for the lisk user:
 brew install postgresql@10
 initdb /usr/local/var/postgres -E utf8 --locale=en_US.UTF-8
 brew services start postgresql@10
-createdb lisk_{network}
+createuser --createdb lisk
+createdb lisk_dev
+psql -d lisk_dev -c "alter user lisk with password 'password';"
 ```
-`{network}` is the network you want to connect your Lisk Core node to.
+
+> Change 'password' to a secure password of your choice.
 
 ### Installing Redis
 

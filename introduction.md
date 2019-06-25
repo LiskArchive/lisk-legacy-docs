@@ -5,32 +5,38 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
 [![Join the chat at https://gitter.im/LiskHQ/lisk](https://badges.gitter.im/LiskHQ/lisk.svg)](https://gitter.im/LiskHQ/lisk?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-## Disclaimer - Mostly Harmless
+## Disclaimer: Mostly Harmless
 
-Please read our disclaimer carefully. The current version of the Lisk SDK is the alpha release of the Lisk SDK.
+Please read our disclaimer carefully. The current version of the SDK is the alpha release of the Lisk SDK.
 We have released the Lisk SDK in its current form in order for us to improve the development experience through community feedback and contributions.
 
-We strictly discourage anyone from using the alpha release of the Lisk SDK for any production-based blockchain applications, i.e. a blockchain operating on a real mainnet.
-Over the course of the alpha phase there will be significant changes in the Lisk protocol and implementation, which will eventually bring the accessibility and reliability to a level which is feasible for production-based blockchain applications.
+We strongly discourage anyone from using the alpha release of the Lisk SDK for any production-based blockchain applications, i.e. a blockchain operating on a real mainnet.
+
+Over the course of the SDK's alpha phase there will be significant changes in the Lisk protocol and implementation, which will eventually bring the accessibility and reliability to a level which is feasible for production-based blockchain applications.
+
 At this time we only recommend the Lisk SDK for proof-of-concept blockchain applications, i.e. a blockchain operating on a fake testnet.
-Be aware that the dummy delegate accounts are insecure, as their secret passphrases are public. And also, that the convenient creation of a new genesis block is not supported by Lisk Alpha SDK.
+
+Be aware that the dummy delegate accounts are insecure, as their secret passphrases are public. In addition, the convenient creation of a new genesis block is not supported by alpha release of the Lisk SDK.
 
 The only application built using the Lisk SDK currently feasible for production usage is [Lisk Core](https://github.com/liskhq/lisk-core), the client of the Lisk network itself.
 
-Please be advised we cannot guarantee blockchains created with the alpha release of the Lisk SDK will remain compatible with our planned (beta/rc) releases.
+Please be advised that we cannot guarantee blockchains created with the alpha release of the Lisk SDK will remain compatible with our planned (beta/rc) releases.
 
-We hope you enjoy building your proof-of-concept blockchain applications using the Lisk SDK, and shall look forward to receiving your feedback and contributions during the alpha phase.
+We hope you enjoy building your proof-of-concept blockchain applications using the Lisk SDK and look forward to receiving your feedback and contributions during the alpha phase.
 
-## What is the Lisk SDK
+## What is the Lisk SDK?
 
-The Lisk SDK aims to provide an easy and reliable software development kit for building blockchain applications which are compatible with the [Lisk Protocol](https://lisk.io/documentation/lisk-protocol).
-The architecture of the Lisk SDK has been designed so that it can be extended to meet the requirements of a wide variety of blockchain application use-cases.
-The codebase is written entirely in JavaScript, which means for a majority of developers, no significant change of tools or mindset is required to get started.
+The Lisk SDK aims to provide an easy and reliable software development kit for building blockchain applications compatible with the [Lisk Protocol](https://lisk.io/documentation/lisk-protocol).
+
+The architecture of the Lisk SDK has been designed so that it can be extended to meet the requirements of a wide variety of blockchain use cases.
+
+The codebase is written entirely in JavaScript, which means for a majority of developers, no significant change of tools is required to get started.
+
 The Lisk SDK makes every effort to allow developers to focus simply and purely on writing the code that matters to their own blockchain application, and nothing more.
 
 ### Architecture Overview
 
-The Lisk SDK operates on the NodeJS runtime and consists primarily of an application framework (Lisk Framework), a collection of libraries providing blockchain application functionalities (Lisk Elements), and a powerful command-line tool (Lisk Commander) which allows developers to manage a Lisk node instance and interact with a Lisk compatible network.
+The Lisk SDK operates on the NodeJS runtime and consists primarily of an application framework ([Lisk Framework](lisk-framework/introduction.md)), a collection of libraries providing blockchain application functionalities ([Lisk Elements](lisk-elements/introduction.md)), and a powerful Command Line Interface ([Lisk Commander](lisk-commander/introduction.md)) which allows developers to manage a Lisk node instance and interact with a Lisk compatible network.
 The diagram below provides a high-level overview of the architecture:
 
 ![Diagram](assets/diagram_sdk.png)

@@ -2,7 +2,7 @@
 
 Welcome!
 
-Welcome! For a smooth and efficient onboarding, we’ve updated our documentation to reflect the most common actions that developers take on our site so that you can easily find the information that is most relevant for you.
+For a smooth and efficient onboarding, we’ve updated our documentation to reflect the most common actions that developers take on our site so that you can easily find the information that is most relevant for you.
 
 [What is Lisk?](https://lisk.io/documentation/lisk-protocol) Our vision at Lisk is to empower individuals to create a more decentralized, efficient and transparent global economy. We welcome you to join us in our mission.
 

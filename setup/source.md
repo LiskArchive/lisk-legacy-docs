@@ -131,7 +131,7 @@ If you run into issues when trying to set up PostgreSQL on your machine, try to 
  
 #### A. Postgres with Docker
 
-This is a simple way to install postgres on your machine.
+Running Postgres inside a Docker container will setup the correct version of Postgres and containerize it away from any existing versions you may have locally on your machine. Chose this setup if you are not familiar with Postgres, or if you run in to issues with a previously installed version of Postgres.
 To perform the command below successfully, [install Docker](docker.md) like described in the Setup page of Lisk Core Docker distribution.
 
 > If you have other versions of PostgreSQL installed on your machine, make sure to stop them before starting the docker container.

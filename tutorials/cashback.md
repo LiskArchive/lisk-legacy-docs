@@ -17,7 +17,7 @@ First, let's create the root folder for the Cashback App and initialize the proj
 ```bash
 mkdir cashback # create the root folder for the blockchain application
 cd cashback # navigate into the root folder
-npm init # initialize the manifest file of the project
+npm init --yes # initialize the manifest file of the project
 ```
 
 As next step, we want to install the `lisk-sdk` package and add it to our projects' dependencies.

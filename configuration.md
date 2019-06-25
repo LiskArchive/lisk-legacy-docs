@@ -37,21 +37,21 @@ The `config.json` file and a description of each parameter.
 {
 	"app": { // Contains general application configurations.
 	    "genesisConfig": {
-	    	"BLOCK_TIME": 10 // Slot time interval in seconds
-	    	"EPOCH_TIME": "2016-05-24T17:00:00.000Z" // Timestamp indicating the initial network start (`Date.toISOString()`).
-	    	"MAX_TRANSACTIONS_PER_BLOCK": 25 // Maximum number of transactions allowed per block.
+	    	"BLOCK_TIME": 10, // Slot time interval in seconds
+	    	"EPOCH_TIME": "2016-05-24T17:00:00.000Z", // Timestamp indicating the initial network start (`Date.toISOString()`).
+	    	"MAX_TRANSACTIONS_PER_BLOCK": 25, // Maximum number of transactions allowed per block.
             "REWARDS": {
 	    		"DISTANCE": 1000, // Distance between each milestone.
 	    		"MILESTONES": [ // Initial 5, and decreasing until 1.
-                    '500000000', // Initial Reward
-                    '400000000', // Milestone 1
-                    '300000000', // Milestone 2
-                    '200000000', // Milestone 3
-                    '100000000', // Milestone 4
+                    "500000000", // Initial Reward
+                    "400000000", // Milestone 1
+                    "300000000", // Milestone 2
+                    "200000000", // Milestone 3
+                    "100000000", // Milestone 4
                 ],
                 "OFFSET": 1451520 // Start rewards at block (n).
             }
-        }
+        },
 		"ipc": {
 			"enabled": true // If true, allows modules to communicate over IPCs (inter-process-channels).
 		}
@@ -66,13 +66,13 @@ The `config.json` file and a description of each parameter.
 			"database": "lisk_dev", // The name of the database to use.
 			"host": "localhost", // The host address of the database.
 			"port": 5432, // The port of the database.
-			"user": 'lisk', // Name of the database user.
-			"password": 'password', // Password of the datbase user.
+			"user": "lisk", // Name of the database user.
+			"password": "password", // Password of the datbase user.
 			"min": 10, // Specifies the minimum amount of database handles.
 			"max": 95, // Specifies the maximum amount of database handles.
 			"poolIdleTimeout": 30000, // This parameter sets how long to hold connection handles open
             "reapIntervalMillis": 1000, // Closes & removes clients which have been idle > 1 second
-            "logEvents": ['error'], // Specify the minimal log level for database logs.
+            "logEvents": ["error"], // Specify the minimal log level for database logs.
 			"logFileName": "logs/lisk_db.log" // Relative path of the database log file.
 		},
 		"cache": { // Contains options for the cache component.
@@ -90,19 +90,19 @@ The `config.json` file and a description of each parameter.
             "trustProxy": false, // For nodes that sit behind a proxy. If true, client IP addresses are understood as the left-most entry in the X-Forwarded-* header.
             "access": { // Contains API access options.
                 "public": false, // If true, the API endpoints of the node are available to public.
-                "whiteList": ['127.0.0.1'], // This parameter allows connections to the API by IP. Defaults to only allow local host.
+                "whiteList": ["127.0.0.1"], // This parameter allows connections to the API by IP. Defaults to only allow local host.
             },
             "ssl": { 
                 "enabled": false, // Enables SSL for HTTP requests - Default is false.
                 "options": {
                     "port": 443, // Port to host the Lisk Wallet on, default is 443 but is recommended to use a port above 1024 with iptables.
-                    "address": '0.0.0.0', // Interface to listen on for the Lisk Wallet.
-                    "key": './ssl/lisk.key', // Required private key to decrypt and verify the SSL Certificate.
-                    "cert": './ssl/lisk.crt', // SSL certificate to use with the Lisk Wallet.
+                    "address": "0.0.0.0", // Interface to listen on for the Lisk Wallet.
+                    "key": "./ssl/lisk.key", // Required private key to decrypt and verify the SSL Certificate.
+                    "cert": "./ssl/lisk.crt", // SSL certificate to use with the Lisk Wallet.
                 },
             },
             "options": {
-                'limits': {
+                "limits": {
                     "max": 0, // Maximum of API conncections.
                     "delayMs": 0, // Minimum delay between API calls in ms.
                     "delayAfter": 0, // Minimum delay after an API call in ms.
@@ -111,13 +111,13 @@ The `config.json` file and a description of each parameter.
                     "serverSetTimeout": 20000, // Time to wait for response from server before timing out.
                 },
                 "cors": {
-                    "origin": '*', // Defines the domains, that the resource can be accessed by in a cross-site manner. Defaults to all domains.
-                    "methods": ['GET', 'POST', 'PUT'], // Defines the allowed methods for CORS.
+                    "origin": "*", // Defines the domains, that the resource can be accessed by in a cross-site manner. Defaults to all domains.
+                    "methods": ["GET", "POST", "PUT"], // Defines the allowed methods for CORS.
                 },
             },
             "forging": {
                 "access": {
-                    "whiteList": ['127.0.0.1'], // This parameter allows connections to the Forging API by IP. Defaults to allow only local connections.
+                    "whiteList": ["127.0.0.1"], // This parameter allows connections to the Forging API by IP. Defaults to allow only local connections.
                 },
             },
 		},
@@ -170,7 +170,7 @@ The `config.json` file and a description of each parameter.
             },
 			"network": { // Contains network options for the node.
 			    "wsPort": 5000, // Websocket port of the node.
-                "address": '0.0.0.0', // Address of the node.
+                "address": "0.0.0.0", // Address of the node.
                 "discoveryInterval": 30000, // Time interval(ms), in that the nodes performs peer discovery.
                 "seedPeers": [ // List of Seed Peers. On first startup, the node will initially connect to the Seed Peers in order to discover the rest of the network.
                 	{
@@ -183,7 +183,7 @@ The `config.json` file and a description of each parameter.
                 ],
                 "ackTimeout": 20000, // When a node tries to make an RPC against a peer (and expects a response), this value determines the maximum amount of time (in milliseconds) that the node will wait to receive a response from the peer. If the peer does not respond in time, then the RPC will fail with an error.
                 "connectTimeout": 5000, // When a node tries to connect to a peer, this value determines the maximum amount of time (in milliseconds) that the node will wait to complete the handshake with the peer. If the peer does not complete the handshake in time, then the connection will be closed.
-                "wsEngine": 'ws', //  Represents the low-level WebSocket engine which the node should use (for advanced users). Possible values are "ws" (default, recommended) and "uws" (more performant, but not compatible with all systems).
+                "wsEngine": "ws", //  Represents the low-level WebSocket engine which the node should use (for advanced users). Possible values are "ws" (default, recommended) and "uws" (more performant, but not compatible with all systems).
 				"wsPort": 5000, // Websocket port, the node communicates over.
 				"list": [ // List of seed nodes, the node will connect to on first startup.
 					{
@@ -207,7 +207,7 @@ Controlling access to a node plays a vital role in security. The following confi
     "enabled": true, // Controls the API's availability. If disabled, no API access is possible.
     "access": { // Contains API access options.
         "public": false, // If true, the API endpoints of the node are available to public.
-        "whiteList": ['127.0.0.1'], // This parameter allows connections to the API by IP. Defaults to only allow local host.
+        "whiteList": ["127.0.0.1"], // This parameter allows connections to the API by IP. Defaults to only allow local host.
     },
 ```
 
@@ -261,7 +261,7 @@ Please re-enter your password: ***
 "http_api": { // Contains options for the API module.
             "forging": {
                 "access": {
-                    "whiteList": ['127.0.0.1', "REPLACE_ME"], // Replace with the IP you will use to access your node
+                    "whiteList": ["127.0.0.1", "REPLACE_ME"], // Replace with the IP you will use to access your node
                 },
             },
 ```

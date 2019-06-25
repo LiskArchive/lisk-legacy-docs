@@ -124,7 +124,44 @@ brew install node@10.15.3
 
 ### PostgreSQL (version 10)
 
-#### Ubuntu
+To install Postgres follow the intructions descibed below, depending on the operating system your machine is running on. 
+If you run into issues when trying to set up PostgreSQL on your machine, try to install it inside of a docker container.
+
+> We recommend using Postgres with Docker for a quick and straight forward setup of Postgres.
+ 
+#### A. Postgres with Docker
+
+This is a simple way to install postgres on your machine.
+To perform the command below successfully, [install Docker](docker.md) like described in the Setup page of Lisk Core Docker distribution.
+
+> If you have other versions of PostgreSQL installed on your machine, make sure to stop them before starting the docker container.
+
+```bash
+docker run --name lisk_core_db -p 5432:5432 -e POSTGRES_USER=lisk -e POSTGRES_PASSWORD=password -e POSTGRES_DB=lisk_<NETWORK> -d postgres:10
+```
+
+This will install PostgreSQL version 10 (`postgres:10`) in a container with name `lisk_dev_db` and binds the port `5432` of the container with the same port of the machine.
+As environment variables we expose `POSTGRES_USER=lisk` to create the lisk user and `POSTGRES_PASSWORD=password` to set the password for the lisk user.
+Finally the environment variable `POSTGRES_DB` creates the database `lisk_dev` witht he `lisk` user as owner.
+
+The above should be enough to set up the database ready to use with Lisk Core.
+To manage the Docker container, use the following commands:
+
+```bash
+docker stop lisk_core_db # stop the container
+docker start lisk_core_db # start the container
+docker restart lisk_core_db # restart the container
+docker rm lisk_core_db # remove the container
+```
+
+In case you want to access Postgres inside the container via CLI, run:
+```bash
+docker exec --tty --interactive lisk_core_db psql -h localhost -U lisk -d postgres
+```
+
+#### B. Postgres system-wide
+
+##### Ubuntu
 
 Firstly, install postgreSQL on your machine:
 ```bash
@@ -158,7 +195,7 @@ sudo -u postgres psql -d lisk_<NETWORK> -c "alter user lisk with password 'passw
 
 > Change 'password' to a secure password of your choice.
 
-#### MacOS
+##### MacOS
 
 ```bash
 brew install postgresql@10

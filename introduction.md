@@ -70,7 +70,8 @@ The following dependencies need to be installed in order to run applications cre
 > To install the required prerequisites, it is necessary to have a user with sudo rights on the server.
 > The `lisk` user itself **does not need** any `sudo` rights to run the node.
 
-To run and manage a node in the future, please create a separate `lisk` user. E.g. execute:
+To run and manage a node in the future, please create a separate `lisk` user.
+E.g. execute:
 
 ##### Ubuntu
 
@@ -174,7 +175,7 @@ brew install postgresql@10
 initdb /usr/local/var/postgres -E utf8 --locale=en_US.UTF-8
 brew services start postgresql@10
 createuser --createdb lisk
-createdb lisk_dev
+createdb lisk_dev --owner lisk
 psql -d lisk_dev -c "alter user lisk with password 'password';"
 ```
 

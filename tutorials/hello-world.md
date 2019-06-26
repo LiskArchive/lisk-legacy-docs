@@ -470,7 +470,7 @@ Because the API of every node is only accessible from localhost by default, you 
 > Make sure your node is running, before sending the transaction
 
 ```bash
-node print_sendable_hello-world.js | curl -X POST -H "Content-Type: application/json" -d @- localhost:4000/api/transactions
+node print_sendable_hello-world.js | tee >(curl -X POST -H "Content-Type: application/json" -d @- localhost:4000/api/transactions) # displays a raw transaction on the console
 ```
 
 If the node accepted the transaction, it should respond with: 

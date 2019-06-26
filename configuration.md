@@ -331,6 +331,9 @@ curl -X PUT \
 
 ## SSL
 
+> We recommend to use a webserver like [NGINX](https://www.nginx.com/) or [Apache](https://httpd.apache.org/) to set up SSL for Lisk Core.
+> If you don't have that opportunity, it's possible to configure Lisk Core to handle SSL connections like described below.
+
 > This step requires a signed certificate (from a CA, such as [Let's Encrypt](https://letsencrypt.org)) or a self-signed certificate.
 > You will need both the private and public keys in a location that is accessible to Lisk.
 

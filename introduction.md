@@ -92,7 +92,7 @@ sudo apt install -y python-minimal build-essential
 
 Ensure that both [XCode](https://developer.apple.com/xcode/) and [Homebrew](https://brew.sh/) are installed.
 
-#### PostgreSQL (version 10)
+#### PostgreSQL
 
 To install Postgres follow the intructions descibed below, depending on the operating system your machine is running on. 
 If you run into issues when trying to set up PostgreSQL on your machine, try to install it inside of a docker container.

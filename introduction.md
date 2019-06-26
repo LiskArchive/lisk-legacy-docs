@@ -172,6 +172,7 @@ sudo -u postgres psql -d lisk_dev -c "alter user lisk with password 'password';"
 
 ```bash
 brew install postgresql@10
+brew link postgresql@10
 initdb /usr/local/var/postgres -E utf8 --locale=en_US.UTF-8
 brew services start postgresql@10
 createuser --createdb lisk

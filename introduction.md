@@ -126,7 +126,7 @@ docker restart lisk_sdk_db # restart the container
 docker rm lisk_sdk_db # remove the container
 ```
 
-In case you want to access Postgres inside the container via CLI, run:
+In case you want to access Postgres with `psql` inside the container, run:
 ```bash
 docker exec --tty --interactive lisk_sdk_db psql -h localhost -U lisk -d postgres
 ```
@@ -170,9 +170,20 @@ sudo -u postgres psql -d lisk_dev -c "alter user lisk with password 'password';"
 
 ###### MacOS
 
+Install Postgres version 10:
 ```bash
 brew install postgresql@10
-brew link postgresql@10
+```
+
+Add it to the systems path:
+```bash
+echo 'export PATH="/usr/local/opt/postgresql@10/bin:$PATH"' >> ~/.bash_profile
+export LDFLAGS="-L/usr/local/opt/postgresql@10/lib"
+export CPPFLAGS="-I/usr/local/opt/postgresql@10/include"
+```
+
+Start Postgres, create the `lisk` user and the database:
+```bash
 initdb /usr/local/var/postgres -E utf8 --locale=en_US.UTF-8
 brew services start postgresql@10
 createuser --createdb lisk

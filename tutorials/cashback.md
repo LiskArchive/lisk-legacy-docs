@@ -403,6 +403,8 @@ For this, we utilize the HTTP API of the node and post the created transaction o
 
 Before posting the transaction, let's check the balances of sender and recipient, to verify later that the transaction was applied correctly:
 
+> Make sure your node is running, before sending API requests to it.
+
 To check the account balance of the sender:
 ```bash
 curl -X GET "http://localhost:4000/api/accounts?address=16313739661670634666L" -H "accept: application/json"

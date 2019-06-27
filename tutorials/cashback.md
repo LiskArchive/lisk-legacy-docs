@@ -385,7 +385,7 @@ The generated transaction object should look like this:
 ```json
 {  
    "id":"5372254888441494149",
-   "amount":"100000000",
+   "amount":"200000000",
    "type":11,
    "timestamp":3,
    "senderPublicKey":"c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f",
@@ -575,9 +575,9 @@ If the balances equal the expected values, it is verified the new custom transac
 For further interaction with the network, it is possible to run the process in the background by executing:
 
 ```bash
-npx pm2 start --name cashback index.js # add the application to pm2 under the name 'cashback'
-npx pm2 stop cashback # stop the cashback app
-npx pm2 start cashback # start the cashback app
+pm2 start --name cashback index.js # add the application to pm2 under the name 'cashback'
+pm2 stop cashback # stop the cashback app
+pm2 start cashback # start the cashback app
 ```
 
 ## 7. Customize the default configuration

@@ -527,9 +527,9 @@ lisk_dev=> SELECT address, "publicKey", asset from mem_accounts WHERE address = 
 For further interaction with the network, it is possible to run the process in the background by executing:
 
 ```bash
-npx pm2 start --name hello index.js # add the application to pm2 under the name 'hello'
-npx pm2 stop hello # stop the hello app
-npx pm2 start hello # start the hello app
+pm2 start --name hello index.js # add the application to pm2 under the name 'hello'
+pm2 stop hello # stop the hello app
+pm2 start hello # start the hello app
 ```
 
 ## 7. Customize the default configuration

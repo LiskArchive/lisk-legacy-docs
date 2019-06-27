@@ -57,7 +57,7 @@ We release new versions of Lisk Core regularly. Documentation on [lisk.io](https
 
 Software Version | Protocol Version | Release date <br> (yy/mm/dd)| Documentation reference
 ---     | ---       | ---         | ---
-[v2.0.0](https://github.com/LiskHQ/lisk-core/releases/tag/v2.0.0) | 1.0 | 19/05/xx | *Current version, live on lisk.io/documentation*
+[v2.0.0](https://github.com/LiskHQ/lisk-core/releases/tag/v2.0.0) | 1.1 | 19/06/25 | *Current version, live on lisk.io/documentation*
 [v1.6.0](https://github.com/LiskHQ/lisk-sdk/releases/tag/v1.6.0) | 1.0 | 19/04/24 | [Lisk Core 1.6 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.6.0/introduction.md)
 [v1.5.1](https://github.com/LiskHQ/lisk-sdk/releases/tag/v1.5.1) | 1.0 | 19/04/10 | [Lisk Core 1.5 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.5.0/introduction.md)
 [v1.4.1](https://github.com/LiskHQ/lisk-sdk/releases/tag/v1.4.1) | 1.0 | 19/02/14 | [Lisk Core 1.4 docs](https://github.com/LiskHQ/lisk-docs/blob/core-1.4.0/introduction.md)

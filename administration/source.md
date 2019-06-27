@@ -22,44 +22,44 @@ This section details how to manage a Source installation of Lisk Core.
 ### Status
 Check the status of the Lisk Core Node.
 ```bash
-npx pm2 status lisk
+pm2 status lisk
 ```
 
 ### Start
 Start Lisk Core.
 ```bash
-npx pm2 start lisk
+pm2 start lisk
 ```
 
 ### Stop
 Stop Lisk Core.
 ```bash
-npx pm2 stop lisk
+pm2 stop lisk
 ```
 
 ### Restart
 Restart Lisk Core.
 ```bash
-npx pm2 restart lisk
+pm2 restart lisk
 ```
 
 ### Delete
-Remove Lisk Core process from npx pm2 list.
+Remove Lisk Core process from pm2 list.
 ```bash
-npx pm2 delete lisk
+pm2 delete lisk
 ```
 
 ### Add
 In case you haven't done this during the Installation process, add your Lisk Core process to pm2 under the name `lisk`.
 ```bash
-npx pm2 start --name lisk dist/index.js -- --network [network]
+pm2 start --name lisk dist/index.js -- --network [network]
 ```
 You can pass `devnet` (default), `alphanet`, `betanet`, `testnet` or `mainnet` for the `[network]` option.
 
 ### Logs
 Display Lisk Core logs in streaming.
 ```bash
-npx pm2 logs
+pm2 logs
 ```
 
 ## Command Line Options
@@ -76,7 +76,7 @@ node dist/index.js -p [port] -a [address] -c [config-path] -n [network]
 ```
 or with pm2, e.g.:
 ```bash
-LISK_NETWORK=[network] LISK_CONFIG_FILE=[config-path] LISK_ADDRESS=[address] LISK_WS_PORT=[port] npx pm2 start lisk
+LISK_NETWORK=[network] LISK_CONFIG_FILE=[config-path] LISK_ADDRESS=[address] LISK_WS_PORT=[port] pm2 start lisk
 ```
 You can pass `devnet` (default), `alphanet`, `betanet`, `testnet` or `mainnet` for the `[network]` option.
 
@@ -171,9 +171,9 @@ To create a snapshot manually, perform the following steps:
 > Its recommended to document the current block height of the snapshot and to include it in the snapshots' filename.
 
 ```bash
-npx pm2 stop lisk # stop Lisk Core node
+pm2 stop lisk # stop Lisk Core node
 createdb --template="lisk_main" lisk_snapshot # copy Lisk Mainnet database to a new database `lisk_snapshot`. During this process, no open connections are allowed to `lisk_main` or it will fail
-npx pm2 start lisk # start Lisk Core node again
+pm2 start lisk # start Lisk Core node again
 psql --dbname=lisk_snapshot --command='TRUNCATE peers, mem_accounts2u_delegates, mem_accounts2u_multisignatures;' # remove redundant data
 psql --dbname=lisk_snapshot --tuples-only --command='SELECT height FROM blocks ORDER BY height DESC LIMIT 1;' | xargs # execute this SQL query to get the last block height of the snapshot
 pg_dump --no-owner lisk_snapshot |gzip -9 > snapshot-lisk_mainnet-<current-block-height>.gz # dump the database and compress it. Replace <current-block-height> with the height that was returned by the SQL query above
@@ -189,21 +189,21 @@ The URL can be substituted for another `blockchain.db.gz` snapshot file if desir
 ### Mainnet
 
 ```bash
-npx pm2 stop lisk # stop Lisk Core node
+pm2 stop lisk # stop Lisk Core node
 dropdb lisk_main # delete Lisk Mainnet database
 wget https://downloads.lisk.io/lisk/main/blockchain.db.gz # download Lisk snapshot
 createdb lisk_main # create fresh Lisk Mainnet database
 gunzip -fcq blockchain.db.gz | psql -d lisk_main # import the downloaded snapshot into the new database
-npx pm2 start lisk # start Lisk Core node again
+pm2 start lisk # start Lisk Core node again
 ```
 
 ### Testnet
 
 ```bash
-npx pm2 stop lisk # stop Lisk Core node
+pm2 stop lisk # stop Lisk Core node
 dropdb lisk_test # delete Lisk Testnet database
 wget https://downloads.lisk.io/lisk/test/blockchain.db.gz # download Lisk snapshot
 createdb lisk_test # create fresh Lisk Testnet database
 gunzip -fcq blockchain.db.gz | psql -d lisk_test # import the downloaded snapshot into the new database
-npx pm2 start lisk # start Lisk Core node again
+pm2 start lisk # start Lisk Core node again
 ```

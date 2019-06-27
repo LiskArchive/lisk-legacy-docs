@@ -7,8 +7,9 @@
   4. [Git](#git)
   5. [Node.js](#nodejs)
      * [Node version manager](#node-version-manager)
-  6. [Postgres](#postgresql-version-10)
-  7. [Redis](#installing-redis)
+  6. [Postgres](#postgresql)
+  7. [PM2 (optional)](#pm2-optional)
+  7. [Redis (optional)](#redis-optional)
 - [Installation](#installation)
   1. [Login as the Lisk user](#login-as-the-lisk-user)
   2. [Installing Lisk from Source](#installing-lisk-from-source)
@@ -60,8 +61,8 @@ Used for compiling dependencies.
 #### Ubuntu
 
 ```bash
-sudo apt-get update
-sudo apt-get install -y build-essential python-minimal
+sudo apt update
+sudo apt install -y build-essential python-minimal
 ```
 
 #### MacOS
@@ -75,7 +76,7 @@ Ensure that both [XCode](https://developer.apple.com/xcode/) and [Homebrew](http
 #### Ubuntu
 
 ```bash
-sudo apt-get install -y git
+sudo apt install -y git
 ```
 
 #### MacOS
@@ -113,7 +114,7 @@ Alternatively, you can install Node.js system-wide via a package manager, like s
 
 ```bash
 curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
-sudo apt-get install -y nodejs
+sudo apt install -y nodejs
 ```
 
 #### MacOS
@@ -122,7 +123,7 @@ sudo apt-get install -y nodejs
 brew install node@10.15.3
 ```
 
-### PostgreSQL (version 10)
+### PostgreSQL
 
 To install Postgres follow the intructions descibed below, depending on the operating system your machine is running on. 
 If you run into issues when trying to set up PostgreSQL on your machine, try to install it inside of a docker container.
@@ -131,8 +132,9 @@ If you run into issues when trying to set up PostgreSQL on your machine, try to 
  
 #### A. Postgres with Docker
 
-Running Postgres inside a Docker container will setup the correct version of Postgres and containerize it away from any existing versions you may have locally on your machine. Chose this setup if you are not familiar with Postgres, or if you run in to issues with a previously installed version of Postgres.
-To perform the command below successfully, [install Docker](docker.md) like described in the Setup page of Lisk Core Docker distribution.
+Running Postgres inside a Docker container will setup the correct version of Postgres and containerize it away from any existing versions you may have locally on your machine.
+Chose this setup if you are not familiar with Postgres, or if you run in to issues with a previously installed version of Postgres.
+To perform the command below successfully, install Docker like described in the Setup page of [Lisk Core Docker distribution](docker.md).
 
 > If you have other versions of PostgreSQL installed on your machine, make sure to stop them before starting the docker container.
 
@@ -194,27 +196,49 @@ sudo -u postgres psql -d lisk_<NETWORK> -c "alter user lisk with password 'passw
 `<NETWORK>` may be `main` for Mainnet, `test` for Testnet or `dev` for Devnet.
 
 > Change 'password' to a secure password of your choice.
+> Don't forget to update this password in the [Lisk SDK configuration](configuration.md) later on.
 
 ##### MacOS
 
+Install Postgres version 10:
 ```bash
 brew install postgresql@10
+```
+
+Add it to the systems path:
+```bash
+echo 'export PATH="/usr/local/opt/postgresql@10/bin:$PATH"' >> ~/.bash_profile
+export LDFLAGS="-L/usr/local/opt/postgresql@10/lib"
+export CPPFLAGS="-I/usr/local/opt/postgresql@10/include"
+```
+
+Start Postgres, create the `lisk` user and the database:
+```bash
 initdb /usr/local/var/postgres -E utf8 --locale=en_US.UTF-8
 brew services start postgresql@10
 createuser --createdb lisk
-createdb lisk_<NETWORK>
+createdb lisk_<NETWORK> --owner lisk
 psql -d lisk_<NETWORK> -c "alter user lisk with password 'password';"
 ```
 `<NETWORK>` may be `main` for Mainnet, `test` for Testnet or `dev` for Devnet.
 
-> Change 'password' to a secure password of your choice.
+> Change `'password'` to a secure password of your choice.
+> Don't forget to update this password in the [Lisk Core configuration](../configuration.md) later on.
 
-### Installing Redis
+### PM2 (optional)
+
+Install [PM2](https://github.com/Unitech/pm2) for managing start/stop of the app process in the background:
+
+```bash
+npm install pm2 -g
+```
+
+### Redis (optional)
 
 #### Ubuntu
 
 ```bash
-sudo apt-get install redis-server
+sudo apt install redis-server
 ```
 
 Start Redis:
@@ -324,7 +348,7 @@ Once the process is verified as running correctly, `CTRL+C` and start the proces
 This will fork the process into the background and automatically recover the process if it fails.
 
 ```bash
-npx pm2 start --name lisk dist/index.js -- --network [network]
+pm2 start --name lisk dist/index.js -- --network [network]
 ```
 Where `[network]` might be either `devnet` (default), `alphanet`, `betanet`, `testnet` or `mainnet`.
 

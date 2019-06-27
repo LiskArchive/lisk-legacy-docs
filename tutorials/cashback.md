@@ -1,6 +1,7 @@
 # Cashback App
 
 A simple application which rewards its users for sending tokens. 
+The cashback reward tokens are minted newly and increase the absolute amount of tokens in the network.
 
 The Cashback App implementation goes as following:
 
@@ -419,7 +420,7 @@ curl -X GET "http://localhost:4000/api/accounts?address=16313739661670634666L" -
     {
       "address": "16313739661670634666L",
       "publicKey": "c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f",
-      "balance": "9999999600000000",
+      "balance": "10000000000000000",
       "secondPublicKey": ""
     }
   ],
@@ -441,7 +442,7 @@ curl -X GET "http://localhost:4000/api/accounts?address=10881167371402274308L" -
     {
       "address": "10881167371402274308L",
       "publicKey": "addb0e15a44b0fdc6ff291be28d8c98f5551d0cd9218d749e30ddb87c6e31ca9",
-      "balance": "1801188117",
+      "balance": "0",
       "secondPublicKey": "",
       "delegate": {
         "username": "genesis_100",
@@ -515,7 +516,7 @@ __As a result, the recipient should get a credit of 2 LSK, and the sender s' bal
 
 > Note, that the balance of an account is stored in Beddows. 1 LSK = 100000000(= 10^8) Beddows.
 
-Verify, that the sender account got a credit of 0.1 LSK:
+Verify, that the sender account balance is reduced by 1.9 LSK:
 ```bash
 curl -X GET "http://localhost:4000/api/accounts?address=16313739661670634666L" -H "accept: application/json"
 ```
@@ -529,7 +530,7 @@ curl -X GET "http://localhost:4000/api/accounts?address=16313739661670634666L" -
     {
       "address": "16313739661670634666L",
       "publicKey": "c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f",
-      "balance": "9999999410000000",
+      "balance": "9999999810000000",
       "secondPublicKey": ""
     }
   ],
@@ -551,7 +552,7 @@ curl -X GET "http://localhost:4000/api/accounts?address=10881167371402274308L" -
     {
       "address": "10881167371402274308L",
       "publicKey": "addb0e15a44b0fdc6ff291be28d8c98f5551d0cd9218d749e30ddb87c6e31ca9",
-      "balance": "2001188117",
+      "balance": "200000000",
       "secondPublicKey": "",
       "delegate": {
         "username": "genesis_100",

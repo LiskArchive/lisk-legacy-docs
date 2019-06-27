@@ -46,6 +46,14 @@ npm install --save lisk-sdk@alpha # install lisk-sdk as dependency for the node 
 npm install --save @liskhq/validator @liskhq/cryptography # install lisk-elements dependencies for the client side scripts
 ```
 
+Make sure to start with a fresh database:
+```sh-session
+psql
+> DROP DATABASE lisk_dev;
+> CREATE DATABASE lisk_dev OWNER lisk;
+> \q
+```
+
 Create the file `index.js`, which will hold the logic to initialize and start the blockchain application.
 
 ```bash

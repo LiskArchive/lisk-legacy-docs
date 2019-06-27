@@ -228,6 +228,14 @@ sudo apt-get install -y nodejs
 brew install node@10.15.3
 ```
 
+#### PM2 (optional)
+
+Install [PM2](https://github.com/Unitech/pm2) for managing start/stop of the app process in the background:
+
+```bash
+npm install pm2 -g
+```
+
 ### Installation
 
 To install the `alpha` version of the NPM package [lisk-sdk](https://www.npmjs.com/package/lisk-sdk), run:

@@ -21,14 +21,34 @@ First, let's create the root folder for the Hello World App and initialize the p
 ```bash
 mkdir hello_world # create the root folder for the blockchain application
 cd hello_world # navigate into the root folder
-npm init # initialize the manifest file of the project
 ```
 
 As next step, we want to install the `lisk-sdk` package and add it to our projects' dependencies.
 
+### Supported Platforms
+
+- Ubuntu 16.04 (LTS) x86_64
+- Ubuntu 18.04 (LTS) x86_64
+- MacOS 10.13 (High Sierra)
+- MacOS 10.14 (Mojave)
+
+### Dependencies
+
+| Dependencies     | Version |
+| ---------------- | ------- |
+| Node.js          | 10.15.3 |
+| PostgreSQL       | 10+     |
+| Redis (optional) | 5+      |
+| Python           | 2       |
+
+
+> If you miss some of the dependencies, please go to [Lisk SDK - Pre-Install](../../lisk-sdk/introduction.md#pre-installation) and follow the pre-installation steps for the SDK.
+
+
 > Before installing the Lisk SDK, make sure to follow the instructions in the [Lisk SDK - Pre-Install](../../lisk-sdk/introduction.md#pre-installation) section.
 
 ```bash
+npm init # initialize the manifest file of the project
 npm install --save lisk-sdk@alpha # install lisk-sdk as dependency for the node server side
 npm install --save @liskhq/validator @liskhq/cryptography # install lisk-elements dependencies for the client side scripts
 ```

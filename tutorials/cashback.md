@@ -57,7 +57,6 @@ psql
 Create the file `index.js`, which will hold the logic to initialize and start the blockchain application.
 
 ```bash
-dropdb lisk_dev && createdb lisk_dev # start with a fresh database
 touch index.js # create the index file
 ```
 

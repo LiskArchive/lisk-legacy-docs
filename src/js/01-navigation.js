@@ -1,11 +1,11 @@
 ;(function () {
   'use strict'
 
-  var navContainer = document.querySelector('.navigation-container')
-  var navToggle = document.querySelector('.navigation-toggle')
+  var navContainer = document.querySelector('.nav-container')
+  var navToggle = document.querySelector('.nav-toggle')
 
   navToggle.addEventListener('click', toggleNavigation)
-  // don't let click events propagate outside of navigation container
+  // don't let click events propagate outside of nav container
   navContainer.addEventListener('click', concealEvent)
 
   var menuPanel = navContainer.querySelector('[data-panel=menu]')
@@ -21,7 +21,7 @@
     navContainer.querySelector('[data-panel=' + activatePanel + ']').classList.toggle('is-active')
   })
 
-  find('.nav-toggle', menuPanel).forEach(function (btn) {
+  find('.nav-item-toggle', menuPanel).forEach(function (btn) {
     var li = btn.parentElement
     btn.addEventListener('click', function () {
       li.classList.toggle('is-active')

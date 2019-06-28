@@ -1,6 +1,7 @@
 # Cashback App
 
 A simple application which rewards its users for sending tokens. 
+The cashback reward tokens are minted newly and increase the absolute amount of tokens in the network.
 
 The Cashback App implementation goes as following:
 
@@ -17,22 +18,46 @@ First, let's create the root folder for the Cashback App and initialize the proj
 ```bash
 mkdir cashback # create the root folder for the blockchain application
 cd cashback # navigate into the root folder
-npm init # initialize the manifest file of the project
 ```
 
 As next step, we want to install the `lisk-sdk` package and add it to our projects' dependencies.
 
-> Before installing the Lisk SDK, make sure to follow the instructions in the [Lisk SDK - Pre-Install](../../lisk-sdk/introduction.md#pre-installation) section.
+### Supported Platforms
+
+- Ubuntu 16.04 (LTS) x86_64
+- Ubuntu 18.04 (LTS) x86_64
+- MacOS 10.13 (High Sierra)
+- MacOS 10.14 (Mojave)
+
+### Dependencies
+
+| Dependencies     | Version |
+| ---------------- | ------- |
+| Node.js          | 10.15.3 |
+| PostgreSQL       | 10+     |
+| Redis (optional) | 5+      |
+| Python           | 2       |
+
+
+> If you miss some of the dependencies, please go to [Lisk SDK - Pre-Install](../../lisk-sdk/introduction.md#pre-installation) and follow the pre-installation steps for the SDK.
 
 ```bash
+npm init # initialize the manifest file of the project
 npm install --save lisk-sdk@alpha # install lisk-sdk as dependency for the node server side
 npm install --save @liskhq/validator @liskhq/cryptography # install lisk-elements dependencies for the client side scripts
+```
+
+Make sure to start with a fresh database:
+```sh-session
+psql
+> DROP DATABASE lisk_dev;
+> CREATE DATABASE lisk_dev OWNER lisk;
+> \q
 ```
 
 Create the file `index.js`, which will hold the logic to initialize and start the blockchain application.
 
 ```bash
-dropdb lisk_dev && createdb lisk_dev # start with a fresh database
 touch index.js # create the index file
 ```
 
@@ -60,10 +85,10 @@ app
 > *See the complete file on Github: [cashback/index.js](https://github.com/LiskHQ/lisk-sdk-examples/tree/development/cashback/index.js).*
 
 On `line 2` we require the needed dependencies from the `lisk-sdk` package.
-The most important one is the `Application` class, which is used in `line 4` to create the application instance.
+The most important one is the `Application` class, which is used in `line 6` to create the application instance.
 The application instance is used to start the blockchain application at the bottom of `index.js`.
 
-On `line 4`  the application instance gets initialized.
+On `line 6`  the application instance gets initialized.
 By passing the parameters for the [genesis block](../../lisk-sdk/configuration.md#the-genesis-block) and the [configuration template](https://github.com/LiskHQ/lisk-sdk/blob/development/sdk/src/samples/config_devnet.json), the application is configured with the most basic configurations to start the node.
 
 > If you want to change any of the values for `configDevnet`, check out the [full list of configurations](../../lisk-sdk/configuration.md#list-of-configuration-options) for Lisk SDK and overwrite them like described in [step 7](#7-customize-the-default-configuration)
@@ -362,7 +387,7 @@ The generated transaction object should look like this:
 ```json
 {  
    "id":"5372254888441494149",
-   "amount":"100000000",
+   "amount":"200000000",
    "type":11,
    "timestamp":3,
    "senderPublicKey":"c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f",
@@ -381,6 +406,8 @@ For this, we utilize the HTTP API of the node and post the created transaction o
 
 Before posting the transaction, let's check the balances of sender and recipient, to verify later that the transaction was applied correctly:
 
+> Make sure your node is running, before sending API requests to it.
+
 To check the account balance of the sender:
 ```bash
 curl -X GET "http://localhost:4000/api/accounts?address=16313739661670634666L" -H "accept: application/json"
@@ -395,7 +422,7 @@ curl -X GET "http://localhost:4000/api/accounts?address=16313739661670634666L" -
     {
       "address": "16313739661670634666L",
       "publicKey": "c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f",
-      "balance": "9999999600000000",
+      "balance": "10000000000000000",
       "secondPublicKey": ""
     }
   ],
@@ -417,7 +444,7 @@ curl -X GET "http://localhost:4000/api/accounts?address=10881167371402274308L" -
     {
       "address": "10881167371402274308L",
       "publicKey": "addb0e15a44b0fdc6ff291be28d8c98f5551d0cd9218d749e30ddb87c6e31ca9",
-      "balance": "1801188117",
+      "balance": "0",
       "secondPublicKey": "",
       "delegate": {
         "username": "genesis_100",
@@ -440,7 +467,7 @@ Because the API of every node is only accessible from localhost by default, you 
 > Make sure your node is running, before sending the transaction
 
 ```bash
-node print_sendable_cashback.js | curl -X POST -H "Content-Type: application/json" -d @- localhost:4000/api/transactions
+node print_sendable_cashback.js | tee >(curl -X POST -H "Content-Type: application/json" -d @- localhost:4000/api/transactions) # displays a raw transaction on the console
 ```
 
 If the node accepted the transaction, it should respond with: 
@@ -491,7 +518,7 @@ __As a result, the recipient should get a credit of 2 LSK, and the sender s' bal
 
 > Note, that the balance of an account is stored in Beddows. 1 LSK = 100000000(= 10^8) Beddows.
 
-Verify, that the sender account got a credit of 0.1 LSK:
+Verify, that the sender account balance is reduced by 1.9 LSK:
 ```bash
 curl -X GET "http://localhost:4000/api/accounts?address=16313739661670634666L" -H "accept: application/json"
 ```
@@ -505,7 +532,7 @@ curl -X GET "http://localhost:4000/api/accounts?address=16313739661670634666L" -
     {
       "address": "16313739661670634666L",
       "publicKey": "c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f",
-      "balance": "9999999410000000",
+      "balance": "9999999810000000",
       "secondPublicKey": ""
     }
   ],
@@ -527,7 +554,7 @@ curl -X GET "http://localhost:4000/api/accounts?address=10881167371402274308L" -
     {
       "address": "10881167371402274308L",
       "publicKey": "addb0e15a44b0fdc6ff291be28d8c98f5551d0cd9218d749e30ddb87c6e31ca9",
-      "balance": "2001188117",
+      "balance": "200000000",
       "secondPublicKey": "",
       "delegate": {
         "username": "genesis_100",
@@ -550,21 +577,23 @@ If the balances equal the expected values, it is verified the new custom transac
 For further interaction with the network, it is possible to run the process in the background by executing:
 
 ```bash
-npx pm2 start --name cashback index.js # add the application to pm2 under the name 'cashback'
-npx pm2 stop cashback # stop the cashback app
-npx pm2 start cashback # start the cashback app
+pm2 start --name cashback index.js # add the application to pm2 under the name 'cashback'
+pm2 stop cashback # stop the cashback app
+pm2 start cashback # start the cashback app
 ```
+
+> PM2 needs to be installed on the system in order to run these commands. See [SDK Pre-Install section](../../lisk-sdk/introduction.md#pre-installation).
 
 ## 7. Customize the default configuration
 
 Your project should have now the following file structure:
 
 ```
-hello_world
+cashback
 ├── client
 │   ├── create_sendable_transaction_base_trs.js
 │   └── print_sendable_cashback.js
-├── hello_transaction.js
+├── cashback_transaction.js
 ├── index.js
 ├── node_modules
 └── package.json

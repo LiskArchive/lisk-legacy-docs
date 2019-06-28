@@ -171,6 +171,8 @@ The difference between the regular `TransferTransaction` and the `CashbackTransa
 
 So e.g. if Alice sends 100 token to Bob as a Cashback transaction, Bob would receive the 100 token and Alice would receive additional 10 tokens as a cashback.
 
+![Business logic of a cashback transaction](../assets/cashback_diagram.png)
+
 > If you compare the methods below with the methods we implemented in the `HelloTransaction`, you will notice, that we implement fewer methods for the `CashbackTransaction`.
 > This is because we extend the `CashbackTransaction` from an already existing transaction type `TransferTransaction`.
 > As a result, all required methods are implemented already inside the `TransferTransaction` class, and we only need to overwrite/extend explicitely the methods we want to customize.

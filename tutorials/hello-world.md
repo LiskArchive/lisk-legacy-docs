@@ -532,6 +532,8 @@ pm2 stop hello # stop the hello app
 pm2 start hello # start the hello app
 ```
 
+> PM2 needs to be installed on the system in order to run these commands. See [SDK Pre-Install section](../../lisk-sdk/introduction.md#pre-installation).
+
 ## 7. Customize the default configuration
 
 Your project should have now the following file structure:

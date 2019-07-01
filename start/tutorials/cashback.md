@@ -375,7 +375,7 @@ let c = createSendableTransaction(CashbackTransaction, { // the desired transact
 console.log(c); // the transaction is displayed as JSON object in the console
 process.exit(1); // stops the process after the transaction object has been printed
 ```
-> *See the complete file on Github: [hello_world/client/print_sendable_cashback.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/hello_world/client/print_sendable_hello-world.js).*
+> *See the complete file on Github: [cashback/client/print_sendable_cashback.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/cashback/client/print_sendable_cashback.js).*
 
 This script will print the transaction in the console, when executed:
 
@@ -614,7 +614,7 @@ configDevnet.modules.http_api.access.public = true; // make the API accessible f
 
 const app = new Application(genesisBlockDevnet, configDevnet); // create the application instance
 
-app.registerTransaction(CashbackTransaction.TYPE, CashbackTransaction); // register the 'HelloTransaction' 
+app.registerTransaction(CashbackTransaction.TYPE, CashbackTransaction); // register the 'CashbackTransaction' 
 
 // the code block below starts the application and doesn't need to be changed
 app

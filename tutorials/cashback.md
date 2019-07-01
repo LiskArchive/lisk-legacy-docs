@@ -42,7 +42,7 @@ As next step, we want to install the `lisk-sdk` package and add it to our projec
 > If you miss some of the dependencies, please go to [Lisk SDK - Pre-Install](../../lisk-sdk/introduction.md#pre-installation) and follow the pre-installation steps for the SDK.
 
 ```bash
-npm init # initialize the manifest file of the project
+npm init --yes # initialize the manifest file of the project
 npm install --save lisk-sdk@alpha # install lisk-sdk as dependency for the node server side
 npm install --save @liskhq/validator @liskhq/cryptography # install lisk-elements dependencies for the client side scripts
 ```
@@ -335,7 +335,7 @@ Now that your network is running, let's try to send a `CashbackTransaction` to o
 
 As first step, create the transaction object.
 
-First, let's reuse the script [create_sendable_transaction_base_trs.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/scripts/create_sendable_transaction_base_trs.js) which we already described in [step 6 of Hello World app](hello-world.md#6-interact-with-the-network).
+First, let's reuse the script [create_sendable_transaction_base_trs.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/hello_world/client/create_sendable_transaction_base_trs.js) which we already described in [step 6 of Hello World app](hello-world.md#6-interact-with-the-network).
 
 We can call `createSendableTransaction()` to print a sendable `CashbackTransaction` object:
 

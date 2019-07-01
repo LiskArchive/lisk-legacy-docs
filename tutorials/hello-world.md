@@ -48,7 +48,7 @@ As next step, we want to install the `lisk-sdk` package and add it to our projec
 > Before installing the Lisk SDK, make sure to follow the instructions in the [Lisk SDK - Pre-Install](../../lisk-sdk/introduction.md#pre-installation) section.
 
 ```bash
-npm init # initialize the manifest file of the project
+npm init --yes # initialize the manifest file of the project
 npm install --save lisk-sdk@alpha # install lisk-sdk as dependency for the node server side
 npm install --save @liskhq/validator @liskhq/cryptography # install lisk-elements dependencies for the client side scripts
 ```

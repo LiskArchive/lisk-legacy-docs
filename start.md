@@ -44,7 +44,7 @@ There are several ways to participate as a developer:
 [Propose ideas to improve the protocol](https://research.lisk.io/)                                | Discuss future changes of the protocol with our research team and community members at [research.lisk.io](https://research.lisk.io/).
 [Hunt for bugs](https://blog.lisk.io/announcing-lisk-bug-bounty-program-5895bdd46ed4)  | We value community contributions to the mission of building and maintaining a secure network. Read the submission guidelines to get started.
 
-## Check our resources
+## Resources
 
 - [General resources](resources.md#resources): all important ressources about Lisk and its products.
 - [Community](resources.md#community): references to all community channels and tools.

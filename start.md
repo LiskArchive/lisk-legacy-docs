@@ -46,5 +46,4 @@ There are several ways to participate as a developer:
 
 ## Resources
 
-- [General resources](resources.md#resources): all important ressources about Lisk and its products.
-- [Community](resources.md#community): references to all community channels and tools.
+We've put together a [list of helpful links](resources.md#resources) that will guide you to the appropriate forum to [get your questions answered](resources.md#community) quickly. 

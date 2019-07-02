@@ -296,9 +296,9 @@ For more detailed explanations, check out the getting started sections for [buil
 
 | How                           | Where                                                                                            |
 | -------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Get questions answered by community members  | [Lisk.chat](http://lisk.chat)                                                |
-| Get questions answered by our developers | [Gitter](https://gitter.im/LiskHQ/lisk)                                      |
+| Introduce yourself to our community  | [Lisk.chat](http://lisk.chat)                                                |
+| Have questions answered by developers | [Gitter](https://gitter.im/LiskHQ/lisk)                                      |
 | Report a bug                      | [Open a new issue on GitHub](https://github.com/LiskHQ/lisk/issues/new)                                  |
 | Report a security issue           | [View Bug Bounty Program](https://blog.lisk.io/announcing-lisk-bug-bounty-program-5895bdd46ed4) |
 | Discuss technical research      | [Research Forum](https://research.lisk.io)                                              |
-| Build with Lisk          | [Create a fork](https://github.com/LiskHQ/lisk/fork)                                           |
+| Build with Lisk          | [Create a fork on GitHub](https://github.com/LiskHQ/lisk/fork)                                           |

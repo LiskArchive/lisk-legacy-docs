@@ -21,6 +21,7 @@ First, let's create the root folder for the Hello World App and initialize the p
 ```bash
 mkdir hello_world # create the root folder for the blockchain application
 cd hello_world # navigate into the root folder
+npm init --yes # initialize the manifest file of the project
 ```
 
 As next step, we want to install the `lisk-sdk` package and add it to our projects' dependencies.

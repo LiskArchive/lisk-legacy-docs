@@ -17,9 +17,9 @@ Action                                                            | Description
 [Interact with the network](interact-with-network.md)             | Interact with the blockchain network through its [API](https://lisk.io/documentation/lisk-core/api) and install useful [tools](interact-with-network.md#a-use-the-command-line) to facilitate the process.
 [Get to know the Lisk Protocol](../lisk-protocol/introduction.md) | Learn the underlying logic and technical concepts behind the Lisk Protocol including its [consensus algorithm](../lisk-protocol/consensus.md), [security](../lisk-protocol/security.md), [blocks](../lisk-protocol/blocks.md), [transactions](../lisk-protocol/transactions.md) and [peer communications](../lisk-protocol/p2p-communication.md).
 
-## Lisk products
+## Developer Tools and User Interfaces
 
-For each product we provide a general introduction, step-by-step guides and detailed specifications.
+For each tool we provide a general introduction, step-by-step guides and detailed specifications.
 
 Tool                                                         | Description
 ------------------------------------------------------------ | --------------------------------------------------
@@ -29,19 +29,19 @@ Tool                                                         | Description
 [Lisk SDK](../lisk-sdk/introduction.md) > [Lisk Commander](../lisk-sdk/lisk-commander/introduction.md) | Lisk Commander is a command line tool which allows you to manage a Lisk node instance and interact with a Lisk compatible network.
 [Lisk Core](../lisk-core/introduction.md)                    | The software needed to run a node on the Lisk Mainchain.
 [Lisk Explorer](https://explorer.lisk.io/)            | Lisk Explorer is a tool that visualizes the vast information from Lisk's blockchain.
-[Lisk Hub](https://lisk.io/hub)                      | Lisk Hub is an all-in-one solution to manage your Lisk ID, access and send LSK tokens, as well as vote for delegates.
-[Lisk Mobile](https://lisk.io/hub)                | Lisk Mobile is the official LSK wallet for smartphones.
+[Lisk Hub](https://lisk.io/hub)                      | Lisk Hub is the official desktop wallet with hardware wallet support that enables you to send LSK tokens, vote for delegates and much more.
+[Lisk Mobile](https://lisk.io/hub)                | Lisk Mobile is the official Lisk wallet for iOS and Android.
 
 ## How to Contribute
 
 Thanks to our developer community, there are over 80 tools built that you can make use of. 
 There are several ways to participate as a developer:
 
- What                                                                                   | Where
+ How                                                                                   | Where
 -------------------------------------------------------------------------------------  | -------------------------------------------------------------------------------------------------------------------
 [Contribute to the codebase](https://github.com/LiskHQ/lisk-sdk)                       | [LiskHQ Github](https://github.com/LiskHQ) is the place to be! Be sure to follow our [Contribution Guidelines](https://github.com/LiskHQ/lisk-sdk/blob/development/docs/CONTRIBUTING.md) before submitting any code.
-[Contribute to the documentation](https://github.com/LiskHQ/lisk-docs/)                | Contribute to the [Lisk Documentation](https://github.com/LiskHQ/lisk-docs/) on Github! Be sure to follow our [Contribution Guidelines](https://github.com/LiskHQ/lisk-docs/blob/master/CONTRIBUTING.md) before submitting any code.
-[Contribute to the protocol](https://research.lisk.io/)                                | Discuss future changes of the protocol with the Science team on [research.lisk.io](https://research.lisk.io/).
+[Suggest edits to documentation](https://github.com/LiskHQ/lisk-docs/)                | Contribute to the [Lisk Documentation](https://github.com/LiskHQ/lisk-docs/) on Github! Be sure to follow our [Contribution Guidelines](https://github.com/LiskHQ/lisk-docs/blob/master/CONTRIBUTING.md) before submitting any code.
+[Propose ideas to improve the protocol](https://research.lisk.io/)                                | Discuss future changes of the protocol with our research team and community members at [research.lisk.io](https://research.lisk.io/).
 [Hunt for bugs](https://blog.lisk.io/announcing-lisk-bug-bounty-program-5895bdd46ed4)  | We value community contributions to the mission of building and maintaining a secure network. Read the submission guidelines to get started.
 
 ## Check our resources

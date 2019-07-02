@@ -17,7 +17,7 @@
 
 ## Pre-Install
 
-This document details the prerequisites to install Lisk Core 1.0.0 from a Source installation using tagged releases on Github.
+This document details the prerequisites to install Lisk Core from a Source installation using tagged releases on Github.
 To complete the installation, some prerequisites need to be fulfilled.  If you have already performed these, please proceed to the [Installation](#installation) chapter.
 
 Firstly, please determine if your platform can install Lisk Core from source.

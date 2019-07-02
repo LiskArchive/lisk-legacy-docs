@@ -21,22 +21,49 @@ First, let's create the root folder for the Hello World App and initialize the p
 ```bash
 mkdir hello_world # create the root folder for the blockchain application
 cd hello_world # navigate into the root folder
-npm init # initialize the manifest file of the project
 ```
 
 As next step, we want to install the `lisk-sdk` package and add it to our projects' dependencies.
 
+### Supported Platforms
+
+- Ubuntu 16.04 (LTS) x86_64
+- Ubuntu 18.04 (LTS) x86_64
+- MacOS 10.13 (High Sierra)
+- MacOS 10.14 (Mojave)
+
+### Dependencies
+
+| Dependencies     | Version |
+| ---------------- | ------- |
+| Node.js          | 10.15.3 |
+| PostgreSQL       | 10+     |
+| Redis (optional) | 5+      |
+| Python           | 2       |
+
+
+> If you miss some of the dependencies, please go to [Lisk SDK - Pre-Install](../../lisk-sdk/introduction.md#pre-installation) and follow the pre-installation steps for the SDK.
+
+
 > Before installing the Lisk SDK, make sure to follow the instructions in the [Lisk SDK - Pre-Install](../../lisk-sdk/introduction.md#pre-installation) section.
 
 ```bash
+npm init --yes # initialize the manifest file of the project
 npm install --save lisk-sdk@alpha # install lisk-sdk as dependency for the node server side
 npm install --save @liskhq/validator @liskhq/cryptography # install lisk-elements dependencies for the client side scripts
+```
+
+Make sure to start with a fresh database:
+```sh-session
+psql
+> DROP DATABASE lisk_dev;
+> CREATE DATABASE lisk_dev OWNER lisk;
+> \q
 ```
 
 Create the file `index.js`, which will hold the logic to initialize and start the blockchain application.
 
 ```bash
-dropdb lisk_dev && createdb lisk_dev # start with a fresh database
 touch index.js # create the index file
 ```
 
@@ -48,7 +75,7 @@ Next, let's configure the application, to provide basic information about the ap
 //index.js
 const { Application, genesisBlockDevnet, configDevnet } = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
 
-configDevnet.app.label = 'helloWorld-blockchain-application';
+configDevnet.app.label = 'helloWorld-blockchain-application'; // change the label of the app
 
 const app = new Application(genesisBlockDevnet, configDevnet); // create the application instance
 
@@ -65,10 +92,10 @@ app
 > *See the complete file on Github: [hello_world/index.js](https://github.com/LiskHQ/lisk-sdk-examples/tree/development/hello_world/index.js).*
 
 In the `line 2`, we require the needed dependencies from the `lisk-sdk` package.
-The most important one is the `Application` class, which is used in `line 4` to create the application instance.
+The most important one is the `Application` class, which is used in `line 6` to create the application instance.
 The application instance will start the whole application at the bottom of `index.js`.
 
-In `line 4` , the application instance gets initialized.
+In `line 6` , the application instance gets initialized.
 By passing the parameters for the [genesis block](../../lisk-sdk/configuration.md#the-genesis-block) and the [configuration template](https://github.com/LiskHQ/lisk-sdk/blob/development/sdk/src/samples/config_devnet.json), the application is configured with most basic configurations to start the node.
 
 > If you want to change any of the values for `configDevnet`, check out the [full list of configurations](../../lisk-sdk/configuration.md#list-of-configuration-options) for Lisk SDK and overwrite them like described in [step 7](#7-customize-the-default-configuration)
@@ -470,7 +497,7 @@ Because the API of every node is only accessible from localhost by default, you 
 > Make sure your node is running, before sending the transaction
 
 ```bash
-node print_sendable_hello-world.js | curl -X POST -H "Content-Type: application/json" -d @- localhost:4000/api/transactions
+node print_sendable_hello-world.js | tee >(curl -X POST -H "Content-Type: application/json" -d @- localhost:4000/api/transactions) # displays a raw transaction on the console
 ```
 
 If the node accepted the transaction, it should respond with: 
@@ -500,10 +527,12 @@ lisk_dev=> SELECT address, "publicKey", asset from mem_accounts WHERE address = 
 For further interaction with the network, it is possible to run the process in the background by executing:
 
 ```bash
-npx pm2 start --name hello index.js # add the application to pm2 under the name 'hello'
-npx pm2 stop hello # stop the hello app
-npx pm2 start hello # start the hello app
+pm2 start --name hello index.js # add the application to pm2 under the name 'hello'
+pm2 stop hello # stop the hello app
+pm2 start hello # start the hello app
 ```
+
+> PM2 needs to be installed on the system in order to run these commands. See [SDK Pre-Install section](../../lisk-sdk/introduction.md#pre-installation).
 
 ## 7. Customize the default configuration
 

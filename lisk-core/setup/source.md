@@ -7,8 +7,9 @@
   4. [Git](#git)
   5. [Node.js](#nodejs)
      * [Node version manager](#node-version-manager)
-  6. [Postgres](#postgresql-version-10)
-  7. [Redis](#installing-redis)
+  6. [Postgres](#postgresql)
+  7. [PM2 (optional)](#pm2-optional)
+  7. [Redis (optional)](#redis-optional)
 - [Installation](#installation)
   1. [Login as the Lisk user](#login-as-the-lisk-user)
   2. [Installing Lisk from Source](#installing-lisk-from-source)
@@ -60,8 +61,8 @@ Used for compiling dependencies.
 #### Ubuntu
 
 ```bash
-sudo apt-get update
-sudo apt-get install -y build-essential python-minimal
+sudo apt update
+sudo apt install -y build-essential python-minimal
 ```
 
 #### MacOS
@@ -75,7 +76,7 @@ Ensure that both [XCode](https://developer.apple.com/xcode/) and [Homebrew](http
 #### Ubuntu
 
 ```bash
-sudo apt-get install -y git
+sudo apt install -y git
 ```
 
 #### MacOS
@@ -113,7 +114,7 @@ Alternatively, you can install Node.js system-wide via a package manager, like s
 
 ```bash
 curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
-sudo apt-get install -y nodejs
+sudo apt install -y nodejs
 ```
 
 #### MacOS
@@ -122,9 +123,47 @@ sudo apt-get install -y nodejs
 brew install node@10.15.3
 ```
 
-### PostgreSQL (version 10)
+### PostgreSQL
 
-#### Ubuntu
+To install Postgres follow the intructions descibed below, depending on the operating system your machine is running on. 
+If you run into issues when trying to set up PostgreSQL on your machine, try to install it inside of a docker container.
+
+> We recommend using Postgres with Docker for a quick and straight forward setup of Postgres.
+ 
+#### A. Postgres with Docker
+
+Running Postgres inside a Docker container will setup the correct version of Postgres and containerize it away from any existing versions you may have locally on your machine.
+Chose this setup if you are not familiar with Postgres, or if you run in to issues with a previously installed version of Postgres.
+To perform the command below successfully, install Docker like described in the Setup page of [Lisk Core Docker distribution](docker.md).
+
+> If you have other versions of PostgreSQL installed on your machine, make sure to stop them before starting the docker container.
+
+```bash
+docker run --name lisk_core_db -p 5432:5432 -e POSTGRES_USER=lisk -e POSTGRES_PASSWORD=password -e POSTGRES_DB=lisk_<NETWORK> -d postgres:10
+```
+
+This will install PostgreSQL version 10 (`postgres:10`) in a container with name `lisk_core_db` and binds the port `5432` of the container with the same port of the machine.
+As environment variables we expose `POSTGRES_USER=lisk` to create the lisk user and `POSTGRES_PASSWORD=password` to set the password for the lisk user.
+Finally the environment variable `POSTGRES_DB` creates the database `lisk_<NETWORK>` with the `lisk` user as owner.
+
+The above should be enough to set up the database ready to use with Lisk Core.
+To manage the Docker container, use the following commands:
+
+```bash
+docker stop lisk_core_db # stop the container
+docker start lisk_core_db # start the container
+docker restart lisk_core_db # restart the container
+docker rm lisk_core_db # remove the container
+```
+
+In case you want to access Postgres inside the container via CLI, run:
+```bash
+docker exec --tty --interactive lisk_core_db psql -h localhost -U lisk -d postgres
+```
+
+#### B. Postgres system-wide
+
+##### Ubuntu
 
 Firstly, install postgreSQL on your machine:
 ```bash
@@ -138,47 +177,68 @@ sudo apt install postgresql-10
 
 After installation, you should see the Postgres database cluster, by running
 ```bash
-  pg_lsclusters
+pg_lsclusters
 ```
 
 Drop the existing database cluster, and replace it with a cluster with the locale `en_US.UTF-8`:
 ```bash
-  sudo pg_dropcluster --stop 10 main
-  sudo pg_createcluster --locale en_US.UTF-8 --start 10 main
+sudo pg_dropcluster --stop 10 main
+sudo pg_createcluster --locale en_US.UTF-8 --start 10 main
 ```
-Create a new database user called `lisk` and grant it rights to create databases:
+Create a new database user called `lisk` and grant it rights to create databases.
+Then create the database with the lisk user as owner.
+In the last step, define the password for the lisk user:
 ```bash
-  sudo -u postgres createuser --createdb lisk
+sudo -u postgres -i createuser --createdb lisk
+sudo -u postgres -i createdb lisk_<NETWORK> --owner lisk
+sudo -u postgres psql -d lisk_<NETWORK> -c "alter user lisk with password 'password';"
 ```
+`<NETWORK>` may be `main` for Mainnet, `test` for Testnet or `dev` for Devnet.
 
-Switch to the `lisk` user and create the databases, where `{network}` is the network you want to connect your Lisk Core node to:
-```bash
-  sudo -u lisk -i
-  createdb lisk_{network}
-  ```
+> Change 'password' to a secure password of your choice.
+> Don't forget to update this password in the [Lisk SDK configuration](configuration.md) later on.
 
-For the following steps,  log out from the lisk user again with `CTRL+D`, and continue with your user with sudo rights.
-Change `'password'` to a secure password of your choice.
-```bash
-  sudo -u postgres psql -d lisk_{network} -c "alter user lisk with password 'password';"
-```
+##### MacOS
 
-#### MacOS
-
+Install Postgres version 10:
 ```bash
 brew install postgresql@10
+```
+
+Add it to the systems path:
+```bash
+echo 'export PATH="/usr/local/opt/postgresql@10/bin:$PATH"' >> ~/.bash_profile
+export LDFLAGS="-L/usr/local/opt/postgresql@10/lib"
+export CPPFLAGS="-I/usr/local/opt/postgresql@10/include"
+```
+
+Start Postgres, create the `lisk` user and the database:
+```bash
 initdb /usr/local/var/postgres -E utf8 --locale=en_US.UTF-8
 brew services start postgresql@10
-createdb lisk_{network}
+createuser --createdb lisk
+createdb lisk_<NETWORK> --owner lisk
+psql -d lisk_<NETWORK> -c "alter user lisk with password 'password';"
 ```
-`{network}` is the network you want to connect your Lisk Core node to.
+`<NETWORK>` may be `main` for Mainnet, `test` for Testnet or `dev` for Devnet.
 
-### Installing Redis
+> Change `'password'` to a secure password of your choice.
+> Don't forget to update this password in the [Lisk Core configuration](../configuration.md) later on.
+
+### PM2 (optional)
+
+Install [PM2](https://github.com/Unitech/pm2) for managing start/stop of the app process in the background:
+
+```bash
+npm install pm2 -g
+```
+
+### Redis (optional)
 
 #### Ubuntu
 
 ```bash
-sudo apt-get install redis-server
+sudo apt install redis-server
 ```
 
 Start Redis:
@@ -288,7 +348,7 @@ Once the process is verified as running correctly, `CTRL+C` and start the proces
 This will fork the process into the background and automatically recover the process if it fails.
 
 ```bash
-npx pm2 start --name lisk dist/index.js -- --network [network]
+pm2 start --name lisk dist/index.js -- --network [network]
 ```
 Where `[network]` might be either `devnet` (default), `alphanet`, `betanet`, `testnet` or `mainnet`.
 

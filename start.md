@@ -32,12 +32,12 @@ Tool                                                         | Description
 [Lisk Hub](https://lisk.io/hub)                      | Lisk Hub is an all-in-one solution to manage your Lisk ID, access and send LSK tokens, as well as vote for delegates.
 [Lisk Mobile](https://lisk.io/hub)                | Lisk Mobile is the official LSK wallet for smartphones.
 
-## Contribute to the project
+## How to Contribute
 
-First off, thanks for taking the time to contribute!
-There are several ways you can participate in the Lisk project:
+Thanks to our developer community, there are over 80 tools built that you can make use of. 
+There are several ways to participate as a developer:
 
- How                                                                                   | Where
+ What                                                                                   | Where
 -------------------------------------------------------------------------------------  | -------------------------------------------------------------------------------------------------------------------
 [Contribute to the codebase](https://github.com/LiskHQ/lisk-sdk)                       | [LiskHQ Github](https://github.com/LiskHQ) is the place to be! Be sure to follow our [Contribution Guidelines](https://github.com/LiskHQ/lisk-sdk/blob/development/docs/CONTRIBUTING.md) before submitting any code.
 [Contribute to the documentation](https://github.com/LiskHQ/lisk-docs/)                | Contribute to the [Lisk Documentation](https://github.com/LiskHQ/lisk-docs/) on Github! Be sure to follow our [Contribution Guidelines](https://github.com/LiskHQ/lisk-docs/blob/master/CONTRIBUTING.md) before submitting any code.
@@ -47,4 +47,4 @@ There are several ways you can participate in the Lisk project:
 ## Check our resources
 
 - [General resources](resources.md#resources): all important ressources about Lisk and its products.
-- [Community](resources.md#community): references to all community channels and resources.
+- [Community](resources.md#community): references to all community channels and tools.

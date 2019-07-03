@@ -26,7 +26,7 @@ __For a complete list of all default transaction types, check out the section [L
 
 Furthermore, the Lisk SDK [tutorials](tutorials.md) include simple code examples of custom transaction types.
 
-## What is the Lifecycle of a transaction?
+## What is the lifecycle of a transaction?
 
 The lifecycle of a general transaction using the Lisk SDK can be summarized in 7 steps:
 
@@ -40,7 +40,7 @@ The lifecycle of a general transaction using the Lisk SDK can be summarized in 7
 
 While implementing a custom transaction, it is necessary to complete some of these steps. Often, a base transaction implements a default behavior. With experience, you may decide to override some of these base transaction methods, resulting in an implementation that is well-tailored and provides the best possible performance for your use case.
 
-## Interface Requirements
+## Interface requirements
 
 ### Required Properties
 

@@ -6,7 +6,7 @@ Blockchain applications communicate within a network to agree upon which data is
 
 The set of blockchain rules is already implemented by Lisk modules and libraries. By reusing them and implementing the well-designed [Lisk SDK Framework](../lisk-sdk/introduction.md), it's easy to compose new case-specific applications.
 
-For more information on blockchain use cases visit Blockchain Business in [Lisk Academy](https://lisk.io/academy/blockchain-business/blockchain-in-business).
+For more information on blockchain use cases, visit Blockchain Business in the [Lisk Academy](https://lisk.io/academy/blockchain-business/blockchain-in-business).
 
 ## What is the Lisk SDK?
 

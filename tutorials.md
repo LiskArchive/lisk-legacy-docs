@@ -1,6 +1,6 @@
 # SDK Tutorials
 
-Here we provide you with a step-by-step walkthrough to simplify the process of developing a blockchain application with the Lisk SDK.
+Get onboarded to the Lisk SDK with step-by-step walkthroughs that simplify the process of developing a blockchain application with the Lisk SDK.
 
 ## What do the tutorials cover?
 

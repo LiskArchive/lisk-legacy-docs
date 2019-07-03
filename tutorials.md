@@ -14,7 +14,7 @@ We introduce you our hello world application built using the alpha SDK. __This t
 
 It is a simple example to showcase how to create a new transaction type by implementing the [`BaseTransaction` interface](custom-transactions.md).
 
-- [Full code example of Hello World app](https://github.com/LiskHQ/lisk-sdk-examples/tree/development/hello_world) on Github.
+- [View the full code example of our Hello World application on GitHub.](https://github.com/LiskHQ/lisk-sdk-examples/tree/development/hello_world)
 - [Hello World Tutorial](tutorials/hello-world.md)
 
 ## Cashback
@@ -25,5 +25,5 @@ Built by extending the balance transfer transaction, in addition to the regular 
 
 __This application tutorial shows you how to create a new custom transaction inherited from a pre-existing transaction type.__
 
-- [A full example Cashback application's codebase ](https://github.com/LiskHQ/lisk-sdk-examples/tree/development/cashback) is available Github.
+- [View the full code example of our Cashback application on GitHub.](https://github.com/LiskHQ/lisk-sdk-examples/tree/development/cashback)
 - [Cashback Tutorial](tutorials/cashback.md)

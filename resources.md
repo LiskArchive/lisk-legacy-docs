@@ -20,7 +20,7 @@
 
 - [Subscribe to the Lisk newsletter](https://mailchi.mp/lisk/newsletter) - For updates straight to your inbox.
 - [Research Forum](https://research.lisk.io/) - Propose and discuss technical improvements to the Lisk Protocol.
-- [Lisk.chat](https://lisk.chat/)
+- [Lisk.chat](https://lisk.chat/) - Get you questions answered quickly by community members.
    - [Announcements](https://lisk.chat/channel/announcements): Important updates from LiskHQ.
    - [Network](https://lisk.chat/channel/network): More technical updates and discussions about Lisk Mainnet and Testnet.
    - [Help Desk](https://lisk.chat/channel/help-desk): The perfect spot for beginners to get questions answered quickly by the community.

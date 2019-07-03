@@ -12,7 +12,7 @@ For more information on blockchain use cases, visit Blockchain Business in the [
 
 The [Lisk SDK](../lisk-sdk/introduction.md) provides a development framework that enables developers to create their own custom blockchain applications with ease.
 
-__The Lisk SDK consists of the following tools:__
+### The Lisk SDK consists of the following tools:
 
 - [Lisk Framework](../lisk-sdk/lisk-framework/introduction.md): Consists of a selection of various Modules and Components which each provide specific functionality or logic for use in blockchain networks.
 - [Lisk Elements](../lisk-sdk/lisk-elements/introduction.md): Collection of NPM packages that provide blockchain- and lisk-specific functionalities.

@@ -21,8 +21,7 @@ Every action that puts data on the blockchain, or gets data from it, is an inter
 
 You can choose from up to 5 ways to interact with an existing network based on what is most convenient for your needs:
 
-### 1. Use the Command-line
-[Lisk Commander](../lisk-sdk/lisk-commander/introduction.md) is the CLI-tool that lets you interact with the network conveniently through the command line.
+- __1. Use the Command-line__ [Lisk Commander](../lisk-sdk/lisk-commander/introduction.md) is the CLI-tool that lets you interact with the network conveniently through the command line.
 
 See a list of all commands and their example responses on the [Commands page](../lisk-sdk/lisk-commander/user-guide/commands.md).
 

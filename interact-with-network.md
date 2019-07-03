@@ -1,7 +1,7 @@
 # Interact with the network
 
 ## What does it mean to interact with the network?
-> Every action that puts data on the blockchain, or gets data from it, is an interaction with the blockchain network. 
+Every action that puts data on the blockchain, or gets data from it, is an interaction with the blockchain network. 
 
 ## Who needs to interact with the network?
 

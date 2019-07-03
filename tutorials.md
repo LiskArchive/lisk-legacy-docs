@@ -10,9 +10,9 @@ Get onboarded to the Lisk SDK with step-by-step walkthroughs that simplify the p
 
 ## Hello World
 
-We introduce you to our hello world application built using the alpha SDK. __This tutorial explains how to create a new transaction type from scratch.__
+Our hello world application was built using the alpha SDK. __This tutorial explains how to create a new transaction type from scratch.__
 
-It is a simple example to showcase how to create a new transaction type by implementing the [`BaseTransaction` interface](custom-transactions.md).
+Hello World is a simple example to showcase how to create a new transaction type by implementing the [`BaseTransaction` interface](custom-transactions.md).
 
 - [View the full code example of our Hello World application on GitHub.](https://github.com/LiskHQ/lisk-sdk-examples/tree/development/hello_world)
 - [Hello World Tutorial](tutorials/hello-world.md)

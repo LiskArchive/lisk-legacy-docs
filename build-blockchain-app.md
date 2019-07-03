@@ -63,4 +63,4 @@ To connect your frontend to your network, we recommend to make use of [Lisk Elem
 
 > Check out the example applications at the [tutorials](tutorials.md), to see concrete examples how to make first interactions with a blockchain application.
 
-See more options in the getting started section [Interact with the network](interact-with-network.md).
+See more options in the ['Interact with the network'](interact-with-network.md) getting started section.

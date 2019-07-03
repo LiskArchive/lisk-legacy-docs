@@ -11,7 +11,7 @@ There are approximately 600 nodes around the world that are maintained by indivi
 If you fall under one of the following groups, we recommend you to set up your own node:
 
 - __Exchanges__ and other services that rely on a stable API interface to the network.
-- __Delegates__ - if you have registered a delegate and would like to actively forge.
+- __Delegates__ who have registered a delegate and would like to actively forge.
 - __Users__ who do not trust external sources and want to be in full control over their node.
 
 ## Why operate a node?
@@ -22,11 +22,11 @@ There are several reasons why you would want to set up a node:
 - Create your own [snapshots](../lisk-core/introduction.md#snapshots) of the blockchain
 - [Forge](../lisk-core/configuration#forging) new blocks (if you are an active [delegate](../lisk-protocol/consensus.md#delegates)).
 
-## How to set up a node
+## How to set up a node?
 
-To set up a node, simply follow the setup guide for your desired distribution, described on the [Lisk Core Introduction](../lisk-core/introduction.md#distributions) page.
+Simply follow the node setup guide for your desired distribution, described on the [Lisk Core Introduction](../lisk-core/introduction.md#distributions) page.
 
-The 3 available distributions of Lisk Core are:
+There are three available distributions of Lisk Core:
 
 ### [Binary](../lisk-core/setup/binary.md)
 The **default** way to setup Lisk Core.

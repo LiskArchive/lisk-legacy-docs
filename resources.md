@@ -2,7 +2,7 @@
 
 ## Developer Resources
 
-- [Lisk Github](https://github.com/LiskHQ) - Source code for all software products of Lisk.
+- [Lisk GitHub](https://github.com/LiskHQ) - Source code for all software products of Lisk.
 - [Lisk npm packages](https://www.npmjs.com/~lisk) - Lists all NPM packages published by LiskHQ.
 - [Community Tools](https://docs.google.com/spreadsheets/d/1EJ2ni5LBBNM43cCFkvQ7lYyAHeGm_cFwOQkfAqd-fQc/edit#gid=0) -  Spreadsheet of 80+ community built tools, wallets and scripts to help make your life easier.
 - [Lisk Gitter](https://gitter.im/LiskHQ/lisk) - Technical discussions for developers.

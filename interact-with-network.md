@@ -1,7 +1,9 @@
 # Interact with the network
 
+
 ## What does it mean to interact with the network?
 Every action that puts data on the blockchain, or gets data from it, is an interaction with the blockchain network. 
+
 
 ## Who needs to interact with the network?
 
@@ -11,6 +13,7 @@ Every action that puts data on the blockchain, or gets data from it, is an inter
 - __Developers__ test and improve the functionality of their blockchain application. For quick interaction we recommend to use [Lisk Commander](#a-use-the-command-line).
 - __Applications__ interact through the API with the network. For convenience, applications would use wrappers like [@liskHQ/lisk-api-client](../lisk-sdk/lisk-elements/packages/api-client.md). Applications might also want to make use of [Lisk Service](https://github.com/LiskHQ/lisk-service) and its extended API.
 - __LSK Token Holders__ mostly interact with the network through Graphical User Interfaces such as wallet applications like [Lisk Hub](https://lisk.io/hub) or Lisk Mobile.
+
 
 ## How to interact with the network?
 

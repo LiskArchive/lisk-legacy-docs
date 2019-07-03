@@ -41,7 +41,7 @@ __Popular tools for HTTP requests:__
 
 #### Use a public node
 
-There are a number of nodes that are available for the public use.
+There are a number of nodes that are available for public use.
 
 LiskHQ for example is running a public testnet node, that is also used to make [live requests](https://lisk.io/documentation/lisk-core/api) while trying out the different API endpoints in the documentation.
 

@@ -2,15 +2,17 @@
 
 ## What are custom transactions?
 
-Transactions are the essential part of blockchain applications created using Lisk's SDK.
+Transactions are an essential part of blockchain applications that are created using the Lisk SDK.
 
 The Lisk SDK provides a class [BaseTransaction](https://github.com/LiskHQ/lisk-sdk/blob/development/elements/lisk-transactions/src/base_transaction.ts) from which developers can inherit and extend from, to create __custom transaction types__.
+
 The application-specific business logic for custom transaction types is defined according to an abstract [interface](#interface) that is common across all transaction types.
 
-All of the default transaction types of the Lisk SDK transactions implement the abstract interface of the base transaction, and therefore the base transaction can be used as a model for custom transactions.
-It's also possible to inherit from one of the default transaction types, in order to extend or modify them.
+All of the default transaction types of the Lisk SDK transactions implement the abstract interface of the base transaction, and therefore the base transaction can be used as a model for custom transactions. It's also possible to inherit one of the default transaction types, in order to extend or modify them.
 
-Each default transaction type implements a different use-case of the Lisk network, i.e:
+## What are the different custom transaction types?
+
+Each default transaction type implements a different use case of the Lisk network, i.e:
 
 0. Balance transfer (type 0),
 1. Second signature registration (type 1)

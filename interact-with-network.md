@@ -7,7 +7,7 @@ Every action that puts data on the blockchain, or gets data from it, is an inter
 
 ## Who or what interacts with the network?
 
-- __1. Developers__ test and improve the functionality of your blockchain application. For quick interaction we recommend to use [Lisk Commander](#a-use-the-command-line).
+- __1. Developers__ can test and improve the functionality of your blockchain application. For quick interaction we recommend to use [Lisk Commander](#a-use-the-command-line).
 - __2. Exchanges__ interact heavily with the network, e.g. by transferring tokens for their customers. Exchanges are recommended to [set up their own node](maintain-node.md) to interact with the network reliably.
 - __3. Delegates__ interact with the network by forging new blocks and adding them to the blockchain. A delegate typically is also a __node operator__.
 - __4. Node operators__ have a general interest in monitoring their node and the network. Their node provides them with a private API that can be used to make different queries or to post transactions to the network. Depending on their preferences, node operators might want to use [Lisk Commander](#a-use-the-command-line), [Lisk Elements](#b-write-scripts-in-javascript) or a graphical interface like [Lisk Hub](#c-use-lisk-hub).

@@ -25,20 +25,17 @@ You can choose from up to 5 ways to interact with an existing network based on w
 
 See a list of all commands and their example responses on the [Commands page](../lisk-sdk/lisk-commander/user-guide/commands.md).
 
-### 2. Write scripts in Javascript
-[Lisk Elements](../lisk-sdk/lisk-elements/introduction.md) is a collection of Javascript libraries that help applications to interact with the network.
+- __2. Write scripts in Javascript__ [Lisk Elements](../lisk-sdk/lisk-elements/introduction.md) is a collection of Javascript libraries that help applications to interact with the network.
 
 On the [Packages page](../lisk-sdk/lisk-elements/packages.md) of Lisk Elements, all available libraries are listed and documented.
 
 One of the most useful packages in this regard is the [@liskhq/lisk-api-client](../lisk-sdk/lisk-elements/packages/api-client.md) as it provides a slick interface to interact with the network in Javascript.
 
-### 3. Use Lisk Hub
-[Lisk Hub](https://lisk.io/hub) is the Graphical User Interface (GUI) to interact with the network.
+- __3. Use Lisk Hub__ [Lisk Hub](https://lisk.io/hub) is the Graphical User Interface (GUI) to interact with the network.
 
 It consists of wallet functionalities like sending transactions and viewing account history, as well as more extended features like delegate voting or registering as a delegate.
 
-### 4. Query the API
-To query the [API](https://lisk.io/documentation/lisk-core/api) manually, either from a public node, or connect to your own private node to interact with the network.
+- __4. Query the API__ - To query the [API](https://lisk.io/documentation/lisk-core/api) manually, either from a public node, or connect to your own private node to interact with the network.
 
 > View the full specification of the Lisk API, including example queries at [lisk.io/documentation/lisk-core/api](https://lisk.io/documentation/lisk-core/api)
 
@@ -65,6 +62,4 @@ When [setting up Lisk Core](maintain-node.md), the API will be private by defaul
 
 To change this, it is possible to define exclusive [whitelists](../lisk-core/configuration#api-access-control), that allow specific addresses to perform API requests on that node.
 
-### 5. Query the extended API
-
-[Lisk Service](https://github.com/LiskHQ/lisk-service) combines various services in the Lisk ecosystem and makes it available through an extended API with a larger selection of endpoints.
+- __5. Query the extended API__ - [Lisk Service](https://github.com/LiskHQ/lisk-service) combines various services in the Lisk ecosystem and makes it available through an extended API with a larger selection of endpoints.

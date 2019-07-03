@@ -1,14 +1,12 @@
 # Lisk Documentation
 
-Welcome!
+To onboard you efficiently, we’ve updated our documentation to reflect the most common actions that developers take on our site. Now you can easily find the information that is most relevant based on what you want to learn.
 
-For a smooth and efficient onboarding, we’ve updated our documentation to reflect the most common actions that developers take on our site so that you can easily find the information that is most relevant for you.
-
-[What is Lisk?](https://lisk.io/documentation/lisk-protocol) Our vision at Lisk is to empower individuals to create a more decentralized, efficient and transparent global economy. We welcome you to join us in our mission.
+[What is Lisk?](https://lisk.io/documentation/lisk-protocol) Our vision at Lisk is to empower individuals to create a more decentralized, efficient and transparent global economy. All of this isn't possible without your help.
 
 ## Getting started
 
-For a quick & easy start, we provide getting started Guides for the most common use cases and actions people want to take:
+What are you here to learn how to do? We've tailored our getting started guides directly to your needs. 
 
 Action                                                            | Description                                                                                                               
  ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ 

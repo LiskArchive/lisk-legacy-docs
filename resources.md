@@ -28,4 +28,4 @@
    - [Projects](https://lisk.chat/channel/projects): Collaborate, organize and grow your ideas in the projects room.
 - [Lisk Twitter](https://twitter.com/LiskHQ) - Follow us on Twitter for daily updates.
 - [Lisk Reddit](https://www.reddit.com/r/Lisk/) - Join our Reddit community to start new discussions with other Lisk enthusiasts.
-- [Lisk Youtube](https://www.youtube.com/channel/UCuqpGfg_bOQ8Ja4pj811PWg) - Video content that outlines our vision, products, updates as well as educational content to learn about blockchain from the Lisk Academy
+- [Lisk Youtube](https://www.youtube.com/channel/UCuqpGfg_bOQ8Ja4pj811PWg) - Video content that outlines our vision, products, updates as well as educational content to learn about blockchain from the Lisk Academy.

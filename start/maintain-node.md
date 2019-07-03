@@ -4,7 +4,7 @@
 
 The Lisk blockchain is a decentralized network that consists of many different servers (or nodes). Node operators need to set up Lisk Core on a server and connect it to the desired network.
 
-There are over 600 nodes around the world that are maintained by individuals. These nodes communicate with the network, e.g. by broadcasting and receiving blocks or transactions from their peers. Lisk nodes are also required to forge/add new blocks to the blockchain. View live network statistics on [Lisk's Blockchain Explorer](https://explorer.lisk.io/networkMonitor)
+There are over 600 nodes around the world that are maintained by individuals. These nodes communicate with the network, e.g. by broadcasting and receiving blocks or transactions from their peers. Lisk nodes are also required to forge/add new blocks to the blockchain. View live network statistics on [Lisk's Blockchain Explorer](https://explorer.lisk.io/networkMonitor).
 
 ## Who should operate a node?
 

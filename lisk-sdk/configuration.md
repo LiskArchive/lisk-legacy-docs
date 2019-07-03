@@ -133,7 +133,6 @@ To change them, override the specific default values with custom ones, when init
             broadcasts: {
                 active: true, // If true, enables broadcasts.
                 broadcastInterval: 5000, // Specifies how often the node will broadcast transaction bundles.
-                broadcastLimit: 25, // How many nodes will be used in a single broadcast.
                 parallelLimit: 20, // Specifies how many parallel threads will be used to broadcast transactions.
                 releaseLimit: 25, // How many transactions can be included in a single bundle.
                 relayLimit: 3, // Specifies how many times a transaction broadcast from the node will be relayed.
@@ -162,6 +161,7 @@ To change them, override the specific default values with custom ones, when init
         network: { // Contains network options for the node.
             wsPort: 5000, // Websocket port of the node.
             address: "0.0.0.0", // Address of the node.
+            emitPeerLimit: 25, // How many nodes will be used in a single broadcast.
             discoveryInterval: 30000, // Time interval(ms), in that the nodes performs peer discovery.
             seedPeers: [ // List of Seed Peers. On first startup, the node will initially connect to the Seed Peers in order to discover the rest of the network.
                 {

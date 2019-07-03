@@ -3,13 +3,14 @@
 ## What is a blockchain application?
 
 Blockchain applications communicate within a network to agree upon which data is valid and therefore should be stored, or whether it should be rejected and bad actors potentially punished.
-The set of blockchain rules is already implemented by Lisk modules and libraries.
-By re-using them and implementing the well-designed [Lisk SDK Framework](../lisk-sdk/introduction.md), it's easy to compose new case-specific applications.
-For more information on use-cases visit Blockchain Business in [Lisk Academy](https://lisk.io/academy/blockchain-business/blockchain-in-business).
 
-## How to build a blockchain application with the Lisk SDK
+The set of blockchain rules is already implemented by Lisk modules and libraries. By re-using them and implementing the well-designed [Lisk SDK Framework](../lisk-sdk/introduction.md), it's easy to compose new case-specific applications.
 
-The [Lisk SDK](../lisk-sdk/introduction.md) provides you with a development framework that enables developers to create their own custom blockchain applications with ease.
+For more information on blockchain use cases visit Blockchain Business in [Lisk Academy](https://lisk.io/academy/blockchain-business/blockchain-in-business).
+
+## What is the Lisk SDK?
+
+The [Lisk SDK](../lisk-sdk/introduction.md) provides a development framework that enables developers to create their own custom blockchain applications with ease.
 
 __The Lisk SDK consists of the following tools:__
 
@@ -17,7 +18,7 @@ __The Lisk SDK consists of the following tools:__
 - [Lisk Elements](../lisk-sdk/lisk-elements/introduction.md): Collection of NPM packages that provide blockchain- and lisk-specific functionalities.
 - [Lisk Commander](../lisk-sdk/lisk-commander/introduction.md): Command line tool to interact with the network and maintain a node.
 
-## Build a blockchain application with the Lisk SDK in 3 steps
+## Build a blockchain application in 3 steps
 
 ### 1. Set up the SDK
 To get started building a blockchain application, [set up the Lisk SDK](../lisk-sdk/introduction.md#setup).

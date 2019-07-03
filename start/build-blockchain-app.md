@@ -11,13 +11,13 @@ For more information on use-cases visit Blockchain Business in [Lisk Academy](ht
 
 The [Lisk SDK](../lisk-sdk/introduction.md) provides you with a development framework that enables developers to create their own custom blockchain applications with ease.
 
-The Lisk SDK consists of the following tools:
+__The Lisk SDK consists of the following tools:__
 
 - [Lisk Framework](../lisk-sdk/lisk-framework/introduction.md): Consists of a selection of various Modules and Components which each provide specific functionality or logic for use in blockchain networks.
 - [Lisk Elements](../lisk-sdk/lisk-elements/introduction.md): Collection of NPM packages that provide blockchain- and lisk-specific functionalities.
 - [Lisk Commander](../lisk-sdk/lisk-commander/introduction.md): Command line tool to interact with the network and maintain a node.
 
-Blockchain applications can be built in 3 steps:
+## Build a blockchain application with the Lisk SDK in 3 steps
 
 ### 1. Set up the SDK
 To get started building a blockchain application, [set up the Lisk SDK](../lisk-sdk/introduction.md#setup).

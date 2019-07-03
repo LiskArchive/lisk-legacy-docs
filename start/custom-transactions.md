@@ -40,7 +40,7 @@ The lifecycle of a general transaction using the Lisk SDK can be summarized in 7
 
 While implementing a custom transaction, it is necessary to complete some of these steps. Often, a base transaction implements a default behavior. With experience, you may decide to override some of these base transaction methods, resulting in an implementation that is well-tailored and provides the best possible performance for your use case.
 
-## BaseTransaction Interface Requirements
+## What are the BaseTransaction interface requirements?
 
 ### Required Properties
 

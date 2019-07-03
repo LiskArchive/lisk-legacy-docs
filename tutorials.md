@@ -8,7 +8,7 @@ Get onboarded to the Lisk SDK with step-by-step walkthroughs that simplify the p
 - How to develop a new transaction type and how to register it with the application.
 - How to create a sendable transaction object of the new type, and broadcast it to the network.
 
-## Hello World
+## Hello World Tutorial
 
 Built using the Alpha SDK, our Hello World application explains how to create a new transaction type from scratch.
 
@@ -18,7 +18,7 @@ Hello World is a simple example to showcase how to create a new transaction type
 - [View the full code example of our Hello World application on GitHub.](https://github.com/LiskHQ/lisk-sdk-examples/tree/development/hello_world)
 
 
-## Cashback
+## Cashback Tutorial
 
 The Cashback application shows you how to create a new custom transaction inherited from a pre-existing transaction type.
 

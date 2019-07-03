@@ -36,7 +36,7 @@ It is also possible to exchange Modules with different ones, or to add new Modul
 
 To view the list of currently available ready-to-use Modules and Components, check out the [list of Modules](../lisk-sdk/lisk-framework/introduction.md#list-of-core-modules) and the [list of Components](../lisk-sdk/lisk-framework/introduction.md#components).
 
-For a full list of all config options and their default values, see the [List of configuration options](../lisk-sdk/configuration.md#list-of-configuration-options) or the file [config_devnet.json](https://github.com/LiskHQ/lisk-sdk/blob/development/sdk/src/samples/config_devnet.json) on Github.
+For a full list of all config options and their default values, see the [List of configuration options](../lisk-sdk/configuration.md#list-of-configuration-options) or the file [config_devnet.json](https://github.com/LiskHQ/lisk-sdk/blob/development/sdk/src/samples/config_devnet.json) on GitHub.
 
 #### B. Register custom transaction types
 Transactions are the main way to add data to your blockchain. The most basic transaction types are part of almost all blockchains, for example a transaction type for creating new accounts on the network, or a transaction type to send tokens from one account to another. You can choose the appropriate transaction types for your application and its use case.
@@ -52,7 +52,9 @@ See the [tutorials](tutorials.md) to see examples of how to create custom transa
 
 ### 3. Interact with the network
 While your network is up and running, interact with the network and the node through the API and use [Lisk Commander](../lisk-sdk/lisk-commander/introduction.md) or [Lisk Elements](../lisk-sdk/lisk-elements/introduction.md) to create sendable transaction objects.
+
 To monitor and explore the network, you may want to set up a monitoring solution like e.g. [Lisk Explorer](https://github.com/LiskHQ/lisk-explorer).
+
 Depending on the level of customization, Lisk Explorer and Lisk Commander may also require customization to prevent other services from failing.
 
 Another simple way to interact with the network is by connecting it to [Lisk Hub](https://github.com/LiskHQ/lisk-hub).

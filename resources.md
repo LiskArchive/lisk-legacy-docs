@@ -11,8 +11,8 @@
 
 - [Help Center](https://lisk.io/help-center) - A searchable database of frequently asked questions.
 - [Lisk Academy](https://lisk.io/academy) - A comprehensive and unbiased educational platform on blockchain technology. 
-- [Lisk Improvement Proposals](https://github.com/LiskHQ/lips) - A collection of proposed improvements to the Lisk protocol.
-- [Roadmap](https://lisk.io/roadmap) - Explore Lisk's development roadmap. 
+- [Lisk Research](https://lisk.io/research) - Learn about the process and the proposed improvements to the Lisk protocol.
+- [Roadmap](https://lisk.io/roadmap) - Explore Lisk's development roadmap towards the production SDK. 
 - [News](https://blog.lisk.io/) - Links to the latest news about Lisk, updated weekly.
 - [Lisk Events](https://lisk.io/events) - Information on upcoming events.
 

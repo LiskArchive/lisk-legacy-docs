@@ -186,3 +186,44 @@ If needed, use the different Explorer tools for further verification, like compa
 From this point, your node should be fully functional.
 
 As next step, check out [Docker Administration](../administration/docker.md) to learn how to manage your Node.
+
+## Post-installation (optional)
+
+### Ubuntu 
+
+You may want to set up a service for Lisk Core, that takes care of restarting it automatically after server restarts:
+
+```
+# /etc/systemd/system/docker-compose-lisk.service
+
+[Unit]
+Description=Docker Compose Application Service
+Requires=docker.service
+After=docker.service
+
+[Service]
+WorkingDirectory=/home/lisk/lisk-core/docker/testnet/
+ExecStart=/usr/local/bin/docker-compose up
+TimeoutStartSec=0
+Restart=on-failure
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+[Install]
+WantedBy=multi-user.target
+```
+
+> **Note for delegates:** You still need to enable forging manually after a restart of Lisk Core.
+
+To enable the service, run:
+
+```bash
+systemctl enable docker-compose-lisk
+```
+
+Check the service by running:
+
+```bash
+systemctl status docker-compose-lisk.service # display the status of the service
+sudo journalctl -u docker-compose-lisk.service # display the logs of the service
+```

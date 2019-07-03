@@ -18,8 +18,8 @@
 
 ## Join the Community
 
-- [Subscribe to the Lisk newsletter](https://mailchi.mp/lisk/newsletter) - Updates straight to your inbox
-- [Lisk Research Forum](https://research.lisk.io/) - Propose and discuss technical improvements to the Lisk Protocol.
+- [Subscribe to the Lisk newsletter](https://mailchi.mp/lisk/newsletter) - For updates straight to your inbox.
+- [Research Forum](https://research.lisk.io/) - Propose and discuss technical improvements to the Lisk Protocol.
 - [Lisk.chat](https://lisk.chat/)
    - [Announcements](https://lisk.chat/channel/announcements): Important updates from LiskHQ.
    - [Network](https://lisk.chat/channel/network): More technical updates and discussions about Lisk Mainnet and Testnet.

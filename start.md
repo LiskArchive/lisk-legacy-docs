@@ -10,10 +10,10 @@ What are you here to learn how to do? We've tailored our getting started guides 
 
 Action                                                            | Description                                                                                                               
  ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ 
-[Build a blockchain application](build-blockchain-app.md)         | - [Alpha SDK step by step guide](build-blockchain-app.md#how-to-build-a-blockchain-application-with-the-lisk-sdk)<br> - [Hello World! & Cashback tutorials](tutorials.md) 
+[Build a blockchain app](build-blockchain-app.md)         | - [Alpha SDK step by step guide](build-blockchain-app.md#how-to-build-a-blockchain-application-with-the-lisk-sdk)<br> - [Hello World and Cashback tutorials](tutorials.md) 
 [Maintain a node](maintain-node.md)                               | - [Deploy a node in less than 5 minutes](maintain-node.md#how-to-set-up-a-node) <br> - Maintain your existing \[[Binary](../lisk-core/administration/binary.md) &#124; [Docker](../lisk-core/administration/docker.md) &#124; [Source](../lisk-core/administration/source.md)\] node
-[Interact with the network](interact-with-network.md)             | - Interact through the [API](https://lisk.io/documentation/lisk-core/api) and install useful [tools](interact-with-network.md#a-use-the-command-line) to facilitate the process.
-[Get to know the protocol](../lisk-protocol/introduction.md) | Learn the underlying logic and technical concepts behind the Lisk Protocol including its [consensus algorithm](../lisk-protocol/consensus.md), [security](../lisk-protocol/security.md), [blocks](../lisk-protocol/blocks.md), [transactions](../lisk-protocol/transactions.md) and [peer communications](../lisk-protocol/p2p-communication.md).
+[Interact with the network](interact-with-network.md)             | - Interact through the [API](https://lisk.io/documentation/lisk-core/api) and install useful [tools](interact-with-network.md#a-use-the-command-line) to facilitate the process
+[Get to know the protocol](../lisk-protocol/introduction.md) | Learn the underlying logic and technical concepts behind the Lisk Protocol including its [consensus algorithm](../lisk-protocol/consensus.md), [security](../lisk-protocol/security.md), [blocks](../lisk-protocol/blocks.md), [transactions](../lisk-protocol/transactions.md) and [peer communications](../lisk-protocol/p2p-communication.md)
 
 ## Developer Tools and User Interfaces
 

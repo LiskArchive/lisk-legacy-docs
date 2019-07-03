@@ -36,7 +36,7 @@ The lifecycle of a general transaction using the Lisk SDK can be summarized in 7
 - __4. In the transaction pool, the transactions are firstly `validated`.__ In this step, only static checks are performed. These include schema validation and signature validation.
 - __5. Validated transactions go to the `prepare` step__ defined in the transaction class, which to limit the I/O database operations, prepares all the information relevant to properly `apply` or `undo` the transaction. The store with the prepared data is a parameter of the mentioned methods.
 - __6. Delegates forge the valid transactions into blocks__ and broadcasting the blocks to the network. Each network node performs the `apply` and `applyAsset` steps after the successful completion of the `validate` step.
-- __7. Shortly after a block is applied, it's possible that a node performs the `undo` step (due to decentralized network conditions). When this happens, the block containing all of the included transactions get reverted in favor of a competing block.
+- __7. Shortly after a block is applied, it's possible that a node performs the `undo` step__ (due to decentralized network conditions). When this happens, the block containing all of the included transactions get reverted in favor of a competing block.
 
 While implementing a custom transaction, it is necessary to complete some of these steps. Often, a base transaction implements a default behavior. With experience, you may decide to override some of these base transaction methods, resulting in an implementation that is well-tailored and provides the best possible performance for your use case.
 

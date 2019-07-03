@@ -10,6 +10,7 @@
   1. [Get configuration and Makefile](#get-configuration-and-makefile)
   2. [Set environment variables](#set-environment-variables)
   3. [Coldstart application](#coldstart-application)  
+- [Post-Install](#post-installation-optional)
 
 ## Pre-install
 

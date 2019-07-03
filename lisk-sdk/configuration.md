@@ -36,7 +36,7 @@ const app = new Application(genesisBlockDevnet, configDevnet);
 
 Here is a complete list of all the available configuration options of the Lisk SDK.
 
-The values below are the __default values__. They will be used automatically when starting the application as described in [start with default values](#start-with-default-values).
+The values below are the __default values__. They will be used automatically when starting the application as described in [Pass and modify default values](#pass-and-modify-default-values).
 To change them, override the specific default values with custom ones, when initializing the application.
 
 ```js

@@ -40,7 +40,7 @@ The lifecycle of a general transaction using the Lisk SDK can be summarized in 7
 
 While implementing a custom transaction, it is necessary to complete some of these steps. Often, a base transaction implements a default behavior. With experience, you may decide to override some of these base transaction methods, resulting in an implementation that is well-tailored and provides the best possible performance for your use case.
 
-## Interface requirements
+## BaseTransaction Interface Requirements
 
 ### Required Properties
 
@@ -78,7 +78,7 @@ Prepare the relevant information about the accounts, which will be accessible in
 applyAsset(store: StateStore): ReadonlyArray<TransactionError>
 ```
 
-The business use-case of a transaction is implemented in `applyAsset` method. Applys all of the necessary changes from the received transaction to the affected account(s) by calling `store.set`. Calls `store.get` to get all of the relevant data. The transaction that you're currently processing is the function's context (ie `this.amount`).
+The business use case of a transaction is implemented in `applyAsset` method. It applies all of the necessary changes from the received transaction to the affected account(s) by calling `store.set`. Calls `store.get` to get all of the relevant data. The transaction that you're currently processing is the function's context (ie `this.amount`).
 Invalidate the transaction by pushing an error into the result array.
 
 #### undoAsset

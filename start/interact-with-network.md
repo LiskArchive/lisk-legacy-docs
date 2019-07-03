@@ -5,7 +5,10 @@
 Every action that puts data on the blockchain, or gets data from it, is an interaction with the blockchain network. 
 
 
-## Who needs to interact with the network?
+## Who or what interacts with the network?
+
+### 1. Exchanges 
+interact heavily with the network, e.g. by transferring tokens for their customers. Exchanges are recommended to [set up their own node](maintain-node.md) to interact with the network reliably.
 
 - __Exchanges__ interact heavily with the network, e.g. by transferring tokens for their customers. Exchanges are recommended to [set up their own node](maintain-node.md) to interact with the network reliably.
 - __Delegates__ interact with the network by forging new blocks and adding them to the blockchain. A delegate typically is also a __node operator__.

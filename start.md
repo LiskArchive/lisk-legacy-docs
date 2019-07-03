@@ -27,7 +27,7 @@ Tool                                                         | Description
 [Lisk SDK](../lisk-sdk/introduction.md) > [Lisk Commander](../lisk-sdk/lisk-commander/introduction.md) | Lisk Commander is a command line tool which allows you to manage a Lisk node instance and interact with a Lisk compatible network.
 [Lisk Core](../lisk-core/introduction.md)                    | The software needed to run a node on the Lisk Mainchain.
 [Lisk Explorer](https://explorer.lisk.io/)            | Lisk Explorer is a tool that visualizes the vast information from Lisk's blockchain.
-[Lisk Hub](https://lisk.io/hub)                      | Lisk Hub is the official desktop wallet with hardware wallet support that enables you to send LSK tokens, vote for delegates and much more.
+[Lisk Hub](https://lisk.io/hub)                      | Lisk Hub is the official desktop wallet that enables you to send LSK tokens, vote for delegates and much more.
 [Lisk Mobile](https://lisk.io/hub)                | Lisk Mobile is the official Lisk wallet for iOS and Android.
 
 ## How to Contribute

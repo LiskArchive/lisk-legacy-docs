@@ -509,19 +509,69 @@ To verify, that the transaction got included in the blockchain as well, query th
 
 > Use as id the id of your transaction object, that gets created by the script `print_sendable_hello-world.js`
 
-```
-psql lisk_dev
-lisk_dev=> SELECT id, "blockId", type, asset, "senderId" from trs WHERE id = '1199714748623931346';
-         id          |       blockId       | type |       asset        |       senderId        
----------------------+---------------------+------+--------------------+-----------------------
- 1199714748623931346 | 7665982141323077011 |   10 | {"hello": "world"} | 16313739661670634666L
+Check, that the transaction got included into a block:
+
+```bash
+curl -X GET "http://localhost:4000/api/transactions?id=1199714748623931346"
 ```
 
+```json
+{
+  "meta": {
+    "offset": 0,
+    "limit": 10,
+    "count": 1
+  },
+  "data": [
+    {
+      "id": "16130949532827670455",
+      "height": 4,
+      "blockId": "4180982596867431855",
+      "type": 10,
+      "timestamp": 98141815,
+      "senderPublicKey": "c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f",
+      "recipientPublicKey": "addb0e15a44b0fdc6ff291be28d8c98f5551d0cd9218d749e30ddb87c6e31ca9",
+      "senderId": "16313739661670634666L",
+      "recipientId": "10881167371402274308L",
+      "amount": "0",
+      "fee": "100000000",
+      "signature": "3cb9b2f2d95ae5037d563ca8de288848b9d1d8e320f3ea0cb3e4c6039595227cfe28067a8084aafe0496fa388db1f005bd3b99b7f6e42aab2adc4b0d75671708",
+      "signatures": [],
+      "asset": {
+        "hello": "world"
+      },
+      "confirmations": 6
+    }
+  ],
+  "links": {}
+}
 ```
-lisk_dev=> SELECT address, "publicKey", asset from mem_accounts WHERE address = '16313739661670634666L';
-        address        |                             publicKey                              |       asset        
------------------------+--------------------------------------------------------------------+--------------------
- 16313739661670634666L | \xc094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f | {"hello": "world"}
+
+Check, that the `hello` property got included into the account:
+
+```bash
+curl -X GET "http://localhost:4000/api/accounts?address=16313739661670634666L"
+```
+
+```json
+{
+  "meta": {
+    "offset": 0,
+    "limit": 10
+  },
+  "data": [
+    {
+      "address": "16313739661670634666L",
+      "publicKey": "c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f",
+      "balance": "9999999900000000",
+      "secondPublicKey": "",
+      "asset": {
+          "hello": "world"
+      }
+    }
+  ],
+  "links": {}
+}
 ```
 
 For further interaction with the network, it is possible to run the process in the background by executing:

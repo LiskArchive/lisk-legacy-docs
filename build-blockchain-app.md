@@ -3,21 +3,22 @@
 ## What is a blockchain application?
 
 Blockchain applications communicate within a network to agree upon which data is valid and therefore should be stored, or whether it should be rejected and bad actors potentially punished.
-The set of blockchain rules is already implemented by Lisk modules and libraries.
-By re-using them and implementing the well-designed [Lisk SDK Framework](../lisk-sdk/introduction.md), it's easy to compose new case-specific applications.
-For more information on use-cases visit Blockchain Business in [Lisk Academy](https://lisk.io/academy/blockchain-business/blockchain-in-business).
 
-## How to build a blockchain application with the Lisk SDK
+The set of blockchain rules is already implemented by Lisk modules and libraries. By reusing them and implementing the well-designed [Lisk SDK Framework](../lisk-sdk/introduction.md), it's easy to compose new case-specific applications.
 
-The [Lisk SDK](../lisk-sdk/introduction.md) provides you with a development framework that enables developers to create their own custom blockchain applications with ease.
+For more information on blockchain use cases, visit Blockchain Business in the [Lisk Academy](https://lisk.io/academy/blockchain-business/blockchain-in-business).
 
-The Lisk SDK consists of the following tools:
+## What is the Lisk SDK?
+
+The [Lisk SDK](../lisk-sdk/introduction.md) provides a development framework that enables developers to create their own custom blockchain applications with ease.
+
+### The Lisk SDK consists of the following packages:
 
 - [Lisk Framework](../lisk-sdk/lisk-framework/introduction.md): Consists of a selection of various Modules and Components which each provide specific functionality or logic for use in blockchain networks.
 - [Lisk Elements](../lisk-sdk/lisk-elements/introduction.md): Collection of NPM packages that provide blockchain- and lisk-specific functionalities.
 - [Lisk Commander](../lisk-sdk/lisk-commander/introduction.md): Command line tool to interact with the network and maintain a node.
 
-Blockchain applications can be built in 3 steps:
+## Build a blockchain application in 3 steps
 
 ### 1. Set up the SDK
 To get started building a blockchain application, [set up the Lisk SDK](../lisk-sdk/introduction.md#setup).
@@ -28,19 +29,17 @@ To get your blockchain application started for the first time, follow the steps 
 
 ### 2. Configure and customize the application
 
-#### 2.a Configure Modules and Components
+#### A. Configure modules and components
 After the first successful start, feel free to [configure](../lisk-sdk/lisk-framework/configuration.md) the [Modules](../lisk-sdk/lisk-framework/introduction.md#modules) and [Components](../lisk-sdk/lisk-framework/introduction.md#components) to suit your specific needs.
 
 It is also possible to exchange Modules with different ones, or to add new Modules to provide additional functionality.
 
 To view the list of currently available ready-to-use Modules and Components, check out the [list of Modules](../lisk-sdk/lisk-framework/introduction.md#list-of-core-modules) and the [list of Components](../lisk-sdk/lisk-framework/introduction.md#components).
 
-For a full list of all config options and their default values, see the [List of configuration options](../lisk-sdk/configuration.md#list-of-configuration-options) or the file [config_devnet.json](https://github.com/LiskHQ/lisk-sdk/blob/development/sdk/src/samples/config_devnet.json) on Github.
+For a full list of all config options and their default values, see the [List of configuration options](../lisk-sdk/configuration.md#list-of-configuration-options) or the file [config_devnet.json](https://github.com/LiskHQ/lisk-sdk/blob/development/sdk/src/samples/config_devnet.json) on GitHub.
 
-#### 2.b Register custom transaction types
-Transactions are the main way for users to add data to their blockchain.
-The most basic transaction types are part of almost all blockchains, for example a transaction type for creating new accounts on the network, or a transaction type to send tokens from one account to another.
-You can choose the appropriate transaction types for your application and its use-case.
+#### B. Register custom transaction types
+Transactions are the main way to add data to your blockchain. The most basic transaction types are part of almost all blockchains, for example a transaction type for creating new accounts on the network, or a transaction type to send tokens from one account to another. You can choose the appropriate transaction types for your application and its use case.
 
 For comparison, please view the [list of all transaction types](../lisk-protocol/transactions.md) which are implemented in the Lisk Protocol.
 
@@ -53,7 +52,9 @@ See the [tutorials](tutorials.md) to see examples of how to create custom transa
 
 ### 3. Interact with the network
 While your network is up and running, interact with the network and the node through the API and use [Lisk Commander](../lisk-sdk/lisk-commander/introduction.md) or [Lisk Elements](../lisk-sdk/lisk-elements/introduction.md) to create sendable transaction objects.
+
 To monitor and explore the network, you may want to set up a monitoring solution like e.g. [Lisk Explorer](https://github.com/LiskHQ/lisk-explorer).
+
 Depending on the level of customization, Lisk Explorer and Lisk Commander may also require customization to prevent other services from failing.
 
 Another simple way to interact with the network is by connecting it to [Lisk Hub](https://github.com/LiskHQ/lisk-hub).
@@ -64,4 +65,4 @@ To connect your frontend to your network, we recommend to make use of [Lisk Elem
 
 > Check out the example applications at the [tutorials](tutorials.md), to see concrete examples how to make first interactions with a blockchain application.
 
-See more options in the getting started section [Interact with the network](interact-with-network.md).
+See more options in the ['Interact with the network'](interact-with-network.md) getting started section.

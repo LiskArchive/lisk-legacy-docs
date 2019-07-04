@@ -3,7 +3,7 @@
 Lisk Elements is a JavaScript library containing several separately-installable npm packages, each covering a distinct region of Lisk-related functionality.
 
 - [Introduction](#lisk-elements-documentation)
-  - [Lisk Elements Version Reference](#versions)
+  - [Lisk Elements version reference](#versions)
   - [Setup](#setup)
     - [Pre-Installation](#pre-installation)
     - [Installation](#installation)
@@ -13,7 +13,7 @@ Lisk Elements is a JavaScript library containing several separately-installable 
   - [Contribute to Codebase](#contribute-to-the-codebase)
 - [Packages](packages.md): Stand-alone packages of Lisk Elements
   - [API Client](packages/api-client.md): An API client for interacting with nodes on the Lisk network.
-  - [Client](packages/client.md):  A default set of Elements for use by clients of the Lisk network
+  - [Client](packages/client.md):  A default set of elements for use by clients of the Lisk network
   - [Constants](packages/constants.md): A set of Lisk-related constants.
   - [Cryptography](packages/cryptography.md): Relevant cryptographic functions.
   - [Passphrase](packages/passphrase.md): Mnemonic passphrase helpers.
@@ -21,7 +21,7 @@ Lisk Elements is a JavaScript library containing several separately-installable 
 
 ## Versions
 
-Documentation on [lisk.io](https://lisk.io/documentation) keeps up to date with version updates. The table below provides an overview about the former releases and documentation versions of Lisk Elements.
+Documentation on [lisk.io](https://lisk.io/documentation) remains up to date with version updates. The table below provides an overview about the former releases and documentation versions of Lisk Elements.
 
 Version | Release date <br> (yy/mm/dd)| Documentation reference
 ---     | ---         | ---
@@ -33,7 +33,7 @@ Version | Release date <br> (yy/mm/dd)| Documentation reference
 ## Setup
   
 #### Supported Platforms
-- Platforms with Node.JS version 8.10 and above.
+- Platforms with Node.js version 8.10 and above.
 
 ### Pre-Installation
 
@@ -59,7 +59,7 @@ npm --version
 
 This section details how to install Lisk Elements for a given distribution.
 
-> As all Packages in Lisk Elements are independent from each other, they can be installed seperately.
+> As all packages in Lisk Elements are independent from each other, they can be installed seperately.
 
 #### Installation via NPM
 
@@ -123,7 +123,7 @@ to this:
 
 ## Contribute to the Codebase
 
-Everyone is invited to contribute to the Lisk Elements project. We welcome and appreciate all contributions. 
+Everyone is invited to contribute to the Lisk Elements codebase. We welcome and appreciate all contributions. 
 
 ### Github
 All necessary information can be found on our [Lisk Elements Github](https://github.com/LiskHQ/lisk-sdk/tree/development/elements/lisk-elements).
@@ -132,4 +132,4 @@ All necessary information can be found on our [Lisk Elements Github](https://git
 Please be sure to read and follow our [Contribution Guidelines](https://github.com/LiskHQ/lisk-sdk/blob/development/docs/CONTRIBUTING.md).
 
 ### Gitter
-If you have any further questions please join our [Gitter](https://gitter.im/LiskHQ/lisk).
+If you have any further questions please join our [Gitter](https://gitter.im/LiskHQ/lisk) channel.

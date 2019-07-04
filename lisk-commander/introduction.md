@@ -1,17 +1,25 @@
 # Lisk Commander Documentation
 
-Lisk Commander is a Command-Line-Interface Tool designed to facilitate delegates, node operators, contributors to the Lisk codebase, developers using Lisk’s infrastructure (and anyone else who’s interested) to make use of Lisk’s functionality from the command line with ease.
+Lisk Commander is a Command Line Interface tool designed to be a low entry point and the most convenient tool for developers who are looking for an efficient way of coding.
+
+**Who is Lisk Commander for?**
+
+- Delegates
+- Node operators
+- Contributors to the Lisk codebase
+- Developers using Lisk’s infrastructure
+- Anyone interested in making use of Lisk’s functionality from the command line with ease
 
 Lisk Commander allows to communicate with a remote or local node and carry out Lisk-related functionality.
 
-This can be for example:
+**What can I do with Lisk Commander?**
 
-- create a transaction
-- decrypt/encrypt passphrases or messages
-- install and manage a Lisk node
-- create accounts
-- get delegates
-- ... many more examples can be found on the [commands](user-guide/commands.md) page.
+- Create a transaction
+- Decrypt/encrypt passphrases or messages
+- Install and manage a node
+- Create accounts
+- Get delegates
+- And many more! [View all commands](user-guide/commands.md)
 
 ## Table of contents
 
@@ -85,7 +93,7 @@ npm update --global lisk-commander
 
 ## Contribute to the Codebase
 
-Everyone is invited to contribute to the Lisk Commander project. We welcome and appreciate all contributions. 
+Everyone is invited to contribute to the Lisk Commander codebase. We welcome and appreciate all contributions. 
 
 ### Github
 All necessary information can be found on our [Lisk Commander Github](https://github.com/LiskHQ/lisk-sdk/tree/development/commander).
@@ -94,4 +102,4 @@ All necessary information can be found on our [Lisk Commander Github](https://gi
 Please be sure to read and follow our [Contribution Guidelines](https://github.com/LiskHQ/lisk-sdk/blob/development/docs/CONTRIBUTING.md).
 
 ### Gitter
-If you have any further questions please join our [Gitter](https://gitter.im/LiskHQ/lisk).
+If you have any further questions please join our [Gitter](https://gitter.im/LiskHQ/lisk) channel.

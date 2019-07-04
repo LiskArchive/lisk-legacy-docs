@@ -1,25 +1,23 @@
 # Lisk Documentation
 
-Welcome!
+To onboard you efficiently, we’ve updated our documentation to reflect the most common actions that developers take on our site. Now you can easily find the information that is most relevant based on what you want to learn.
 
-Welcome! For a smooth and efficient onboarding, we’ve updated our documentation to reflect the most common actions that developers take on our site so that you can easily find the information that is most relevant for you.
-
-[What is Lisk?](https://lisk.io/documentation/lisk-protocol) Our vision at Lisk is to empower individuals to create a more decentralized, efficient and transparent global economy. We welcome you to join us in our mission.
+[What is Lisk?](https://lisk.io/documentation/lisk-protocol) Our vision at Lisk is to empower individuals to create a more decentralized, efficient and transparent global economy. All of this isn't possible without your help.
 
 ## Getting started
 
-For a quick & easy start, we provide getting started Guides for the most common use cases and actions people want to take:
+What are you here to learn how to do? We've tailored our getting started guides directly to your needs. 
 
 Action                                                            | Description                                                                                                               
  ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ 
-[Build a blockchain application](build-blockchain-app.md)         | <PRE>- Alpha SDK [step by step](build-blockchain-app.md#how-to-build-a-blockchain-application-with-the-lisk-sdk)<br>  1) How to [set up the SDK](build-blockchain-app.md#1-setup-the-sdk)<br>  2.a) How to [configure your blockchain app](build-blockchain-app.md#2-configure-and-customize-the-application)<br>  2.b) How to [register custom transaction types](build-blockchain-app.md#2b-register-custom-transaction-types)<br>  3) How to [interact with the network](build-blockchain-app.md#3-interact-with-the-network)<br>- [Tutorials](tutorials.md): Check out the fully explained example applications. <br>- [Why blockchain?](https://lisk.io/academy/blockchain-basics/use-cases)</PRE>
-[Maintain a node](maintain-node.md)                               | <PRE>1. [How to set up a node](maintain-node.md#how-to-set-up-a-node) in 5 minutes<br>2. Maintain your existing \[[Binary](../lisk-core/administration/binary.md)&#124;[Docker](../lisk-core/administration/docker.md)&#124;[Source](../lisk-core/administration/source.md)\] node<br>3. [Benefits of operating a node](maintain-node.md#why-to-set-up-a-node).</PRE>
-[Interact with the network](interact-with-network.md)             | Interact with the blockchain network through its [API](https://lisk.io/documentation/lisk-core/api) and install useful [tools](interact-with-network.md#a-use-the-command-line) to facilitate the process.
-[Get to know the Lisk Protocol](../lisk-protocol/introduction.md) | Learn the underlying logic and technical concepts behind the Lisk Protocol including its [consensus algorithm](../lisk-protocol/consensus.md), [security](../lisk-protocol/security.md), [blocks](../lisk-protocol/blocks.md), [transactions](../lisk-protocol/transactions.md) and [peer communications](../lisk-protocol/p2p-communication.md).
+[Build a blockchain application](build-blockchain-app.md)         | - Follow the [Alpha SDK step by step guide](build-blockchain-app.md#how-to-build-a-blockchain-application-with-the-lisk-sdk)<br> - Check out the [Hello World and Cashback tutorials](tutorials.md) 
+[Maintain a node](maintain-node.md)                               | - [Deploy a node in less than 5 minutes](maintain-node.md#how-to-set-up-a-node) <br> - Maintain your existing \[[Binary](../lisk-core/administration/binary.md) &#124; [Docker](../lisk-core/administration/docker.md) &#124; [Source](../lisk-core/administration/source.md)\] node
+[Interact with the network](interact-with-network.md)             | - Interact through the [API](https://lisk.io/documentation/lisk-core/api) and install useful [tools](interact-with-network.md#a-use-the-command-line) to facilitate the process
+[Get to know the protocol](../lisk-protocol/introduction.md) | Learn the underlying logic and technical concepts behind the Lisk Protocol including its [consensus algorithm](../lisk-protocol/consensus.md), [security](../lisk-protocol/security.md), [blocks](../lisk-protocol/blocks.md), [transactions](../lisk-protocol/transactions.md) and [peer communications](../lisk-protocol/p2p-communication.md)
 
-## Lisk products
+## Developer Tools and User Interfaces
 
-For each product we provide a general introduction, step-by-step guides and detailed specifications.
+For each tool we provide a general introduction, step-by-step guides and detailed specifications.
 
 Tool                                                         | Description
 ------------------------------------------------------------ | --------------------------------------------------
@@ -29,22 +27,21 @@ Tool                                                         | Description
 [Lisk SDK](../lisk-sdk/introduction.md) > [Lisk Commander](../lisk-sdk/lisk-commander/introduction.md) | Lisk Commander is a command line tool which allows you to manage a Lisk node instance and interact with a Lisk compatible network.
 [Lisk Core](../lisk-core/introduction.md)                    | The software needed to run a node on the Lisk Mainchain.
 [Lisk Explorer](https://explorer.lisk.io/)            | Lisk Explorer is a tool that visualizes the vast information from Lisk's blockchain.
-[Lisk Hub](https://lisk.io/hub)                      | Lisk Hub is an all-in-one solution to manage your Lisk ID, access and send LSK tokens, as well as vote for delegates.
-[Lisk Mobile](https://lisk.io/hub)                | Lisk Mobile is the official LSK wallet for smartphones.
+[Lisk Hub](https://lisk.io/hub)                      | Lisk Hub is the official desktop wallet that enables you to send LSK tokens, vote for delegates and much more.
+[Lisk Mobile](https://lisk.io/hub)                | Lisk Mobile is the official Lisk wallet for iOS and Android.
 
-## Contribute to the project
+## How to Contribute
 
-First off, thanks for taking the time to contribute!
-There are several ways you can participate in the Lisk project:
+Thanks to our developer community, there are over 80 tools built that you can make use of. 
+There are several ways to participate as a developer:
 
  How                                                                                   | Where
 -------------------------------------------------------------------------------------  | -------------------------------------------------------------------------------------------------------------------
 [Contribute to the codebase](https://github.com/LiskHQ/lisk-sdk)                       | [LiskHQ Github](https://github.com/LiskHQ) is the place to be! Be sure to follow our [Contribution Guidelines](https://github.com/LiskHQ/lisk-sdk/blob/development/docs/CONTRIBUTING.md) before submitting any code.
-[Contribute to the documentation](https://github.com/LiskHQ/lisk-docs/)                | Contribute to the [Lisk Documentation](https://github.com/LiskHQ/lisk-docs/) on Github! Be sure to follow our [Contribution Guidelines](https://github.com/LiskHQ/lisk-docs/blob/master/CONTRIBUTING.md) before submitting any code.
-[Contribute to the protocol](https://research.lisk.io/)                                | Discuss future changes of the protocol with the Science team on [research.lisk.io](https://research.lisk.io/).
+[Suggest edits to documentation](https://github.com/LiskHQ/lisk-docs/)                | Contribute to the [Lisk Documentation](https://github.com/LiskHQ/lisk-docs/) on Github! Be sure to follow our [Contribution Guidelines](https://github.com/LiskHQ/lisk-docs/blob/master/CONTRIBUTING.md) before submitting any code.
+[Propose ideas to improve the protocol](https://research.lisk.io/)                                | Discuss future changes of the protocol with our research team and community members at [research.lisk.io](https://research.lisk.io/).
 [Hunt for bugs](https://blog.lisk.io/announcing-lisk-bug-bounty-program-5895bdd46ed4)  | We value community contributions to the mission of building and maintaining a secure network. Read the submission guidelines to get started.
 
-## Check our resources
+## Resources
 
-- [General resources](resources.md#resources): all important ressources about Lisk and its products.
-- [Community](resources.md#community): references to all community channels and resources.
+We've put together a [list of helpful links](resources.md#resources) that will guide you to the appropriate forum to [get your questions answered](resources.md#community) quickly. 

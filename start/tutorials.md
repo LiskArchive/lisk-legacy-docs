@@ -1,31 +1,30 @@
-# Lisk Tutorials
+# SDK Tutorials
 
-Welcome to Lisk tutorials!
+Get onboarded to the Lisk SDK with step-by-step walkthroughs that simplify the process of developing a proof of concept blockchain application.
 
-Here we provide you with a detailed step-by-step tutorials that guide you through the process of developing blockchain application with the Lisk SDK.
+## What do the tutorials cover?
 
-All tutorials cover the following steps:
-
-- how to initially set up the Lisk SDK and get the network started.
-- how to develop a new transaction type and how to register it with the application.
-- how to create a sendable transaction object of the new type, and send it to the network.
+- How to initially set up the Lisk SDK and get the network started.
+- How to develop a new transaction type and how to register it with the application.
+- How to create a sendable transaction object of the new type, and broadcast it to the network.
 
 ## Hello World
-A hello world application built using the alpha SDK.
 
-Explains how to create a new transaction type from scratch.
+Built using the Alpha SDK, our Hello World application explains how to create a new transaction type from scratch.
 
-A simple example to showcase how to create a new transaction type by implementing the [`BaseTransaction` interface](custom-transactions.md).
+Hello World is a simple example to showcase how to create a new transaction type by implementing the [`BaseTransaction` interface](custom-transactions.md).
 
-- [Full code example of Hello World app](https://github.com/LiskHQ/lisk-sdk-examples/tree/development/hello_world) on Github.
 - [Hello World Tutorial](tutorials/hello-world.md)
+- [Full code example of Hello World application on GitHub](https://github.com/LiskHQ/lisk-sdk-examples/tree/development/hello_world)
+
 
 ## Cashback
 
-The example of a simple but valid use-case - a cashback transaction.
-Built by extending the balance transfer transaction, in addition to the regular transfer functionality, the cashback transaction also applies an inflationary 10% to senders account.
+The Cashback application shows you how to create a new custom transaction inherited from a pre-existing transaction type.
 
-This example shows you how to create a new custom transaction inheriting from a pre-existing transaction type.
+Built by extending the balance transfer transaction, in addition to the regular transfer functionality, the cashback transaction also applies an inflationary 10% to the senders account.
 
-- [A full example Cashback application's codebase ](https://github.com/LiskHQ/lisk-sdk-examples/tree/development/cashback) is available Github.
+This tutorial is an example of a simple but valid use case - a cashback transaction.
+
 - [Cashback Tutorial](tutorials/cashback.md)
+- [Full code example of Cashback application on GitHub](https://github.com/LiskHQ/lisk-sdk-examples/tree/development/cashback)

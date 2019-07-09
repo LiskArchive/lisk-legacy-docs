@@ -210,11 +210,11 @@ touch hello_transaction.js
 ```js
 //hello_transaction.js
 const {
-	BaseTransaction,
+	transactions,
 	TransactionError,
 } = require('lisk-sdk');
 
-class HelloTransaction extends BaseTransaction {
+class HelloTransaction extends transactions.BaseTransaction {
 
     /**
     * Set the `HelloTransaction` transaction TYPE to `10`.
@@ -364,101 +364,37 @@ Now that the network is started, let's try to send a `HelloTransaction` to our n
 
 As first step, create the transaction object.
 
-First, we create a script [createSendableTransaction](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/hello_world/client/create_sendable_transaction_base_trs.js).
-
 ```bash
 mkdir client # create the folder for the client-side scripts
 cd client # navigate into the client folder
-touch create_sendable_transaction_base_trs.js
+touch print_sendable_hello-world.js # create the file that will hold the code to create the transaction object
 ```
-
-The purpose of this script is to offer a function `createSendableTransaction(Transaction, inputs)` that accepts two parameters: 1) `Transaction`: the *transaction type* and 2) `inputs`: the *corresponding transaction object*.
-
-To view a full code example of this file, please click on the link above.
-We present the most important parts of the script below:
-
-> Go to Github to see the complete code of [create_sendable_transaction_base_trs.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/hello_world/client/create_sendable_transaction_base_trs.js)
-
-```js
-//client/create_sendable_transaction_base_trs.js
-const { validateAddress, validatePublicKey } = require('@liskhq/lisk-validator');
-const { getAddressFromPublicKey } = require('@liskhq/lisk-cryptography');
-
-module.exports = (Transaction, inputs) => {
-    // write some logic to validate the given inputs
-    validateRequiredInputs(inputs);
-    
-    // the relevant parameters of the transaction object are extracted and put into indicative variables
-    const {
-        data,
-        amount,
-        asset,
-        fee,
-        type,
-        recipientId,
-        recipientPublicKey,
-        senderPublicKey,
-        passphrase,
-        secondPassphrase,
-        timestamp,
-    } = inputs;
-    
-    // a new instance of the provided Transaction type is created by passing the transaction parameters
-    const transaction = new Transaction(
-        {
-            asset: data ? { data } : asset,
-            amount,
-            fee,
-            recipientId,
-            senderPublicKey,
-            type,
-            timestamp,
-        }
-    );
-    
-    // next, newly created transaction object needs to be signed by the sender, by utilizing the sign() method of the transaction type. As arguments, the passphrase and , if existent, the secondPassphrase are passed.
-    transaction.sign(passphrase, secondPassphrase);
-    
-    // the signed transaction object is returned in JSON format
-    return asJSON(skipUndefined(transaction.toJSON()));
-}
-```
-> *See the complete file on Github: [hello_world/client/create_sendable_transaction_base_trs.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/hello_world/client/create_sendable_transaction_base_trs.js).*
-
-The second script simply will print a sendable `HelloTransaction` when executed.
-
-```bash
-touch print_sendable_hello-world.js
-```
-
-Therefore, it will make use of the function `createSendableTransaction()`, which we have created above:
 
 ```js
 //client/print_sendable_hello-world.js
-const createSendableTransaction = require('./create_sendable_transaction_base_trs');
 const HelloTransaction = require('../hello_transaction');
+const transactions = require('@liskhq/lisk-transactions');
+const { EPOCH_TIME } = require('@liskhq/lisk-constants');
 
 const getTimestamp = () => {
-	const epochTime = "2016-05-24T17:00:00.000Z" //default epoch time
 	// check config file or curl localhost:4000/api/node/constants to verify your epoc time
-	const millisSinceEpoc = Date.now() - Date.parse(epochTime); 
+	const millisSinceEpoc = Date.now() - Date.parse(EPOCH_TIME); 
 	const inSeconds = ((millisSinceEpoc) / 1000).toFixed(0);
 	return  parseInt(inSeconds);
 }
 
-let h = createSendableTransaction(HelloTransaction, { // the desired transaction gets created and signed
-	type: 10, // we want to send a transaction type 10 (= HelloTransaction)
+let tx = createSendableTransaction(HelloTransaction, { // the desired transaction gets created and signed
 	asset: {
 		hello: 'world', // we save the string 'world' into the 'hello' asset
 	},
-	fee: `${10 ** 8}`, // we set the fee to 1 LSK
+	fee: `${transactions.utils.convertLSKToBeddows('1')}`, // we set the fee to 1 LSK
 	recipientId: '10881167371402274308L', // address of dummy delegate genesis_100
-	senderPublicKey: 'c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f', // the senders publicKey
-	passphrase: 'wagon stock borrow episode laundry kitten salute link globe zero feed marble', // the senders passphrase, needed to sign the transaction
 	timestamp: getTimestamp(),
 });
 
-console.log(h); // the transaction is displayed as JSON object in the console
+tx.sign('wagon stock borrow episode laundry kitten salute link globe zero feed marble');
+
+console.log(tx.stringify()); // the transaction is displayed as JSON object in the console
 process.exit(1); // stops the process after the transaction object has been printed
 ```
 > *See the complete file on Github: [hello_world/client/print_sendable_hello-world.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/hello_world/client/print_sendable_hello-world.js).*

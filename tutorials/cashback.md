@@ -211,12 +211,12 @@ touch cashback_transaction.js
 ```js
 //cashback_transaction.js
 const {
-	TransferTransaction,
+	transactions,
 	BigNum,
 } = require('lisk-sdk');
 
 
-class CashbackTransaction extends TransferTransaction {
+class CashbackTransaction extends transactions.TransferTransaction {
 
     /**
     * Set the Cashback transaction TYPE to `11`.
@@ -335,45 +335,36 @@ Now that your network is running, let's try to send a `CashbackTransaction` to o
 
 As first step, create the transaction object.
 
-First, let's reuse the script [create_sendable_transaction_base_trs.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/hello_world/client/create_sendable_transaction_base_trs.js) which we already described in [step 6 of Hello World app](hello-world.md#6-interact-with-the-network).
-
-We can call `createSendableTransaction()` to print a sendable `CashbackTransaction` object:
-
 ```bash
 mkdir client # create the folder for the client-side scripts
 cd client # navigate into the client folder
-touch print_sendable_cashback.js
+touch print_sendable_cashback.js # create the file that will hold the code to create the transaction object
 ```
 
 ```js
 //client/print_sendable_cashback.js
-const createSendableTransaction = require('./create_sendable_transaction_base_trs');
 const CashbackTransaction = require('../cashback_transaction');
-
+const transactions = require('@liskhq/lisk-transactions');
+const { EPOCH_TIME } = require('@liskhq/lisk-constants');
 
 const getTimestamp = () => {
-	const epochTime = "2016-05-24T17:00:00.000Z" //default epoch time
-	// check config file or curl localhost:4000/api/node/constants to verify your epoc time
-	const millisSinceEpoc = Date.now() - Date.parse(epochTime); 
+    // check config file or curl localhost:4000/api/node/constants to verify your epoc time
+    const millisSinceEpoc = Date.now() - Date.parse(EPOCH_TIME);
 	const inSeconds = ((millisSinceEpoc) / 1000).toFixed(0);
 	return  parseInt(inSeconds);
-}
+};
 
-let c = createSendableTransaction(CashbackTransaction, { // the desired transaction gets created and signed
-	type: 11, // we want to send a transaction type 11 (= CashbackTransaction)
-	data: null,
-	amount: `${2 * (10 ** 8)}`, // we set the amount to 2 LSK
-	fee: `${10 ** 7}`, // we set the fee to 0.1 LSK
- 	recipientId: '10881167371402274308L', // recipient address: dummy delegate genesis_100
- 	recipientPublicKey: 'addb0e15a44b0fdc6ff291be28d8c98f5551d0cd9218d749e30ddb87c6e31ca9', // public key of the recipient 
- 	senderPublicKey: 'c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f', // the senders publickey
- 	passphrase: 'wagon stock borrow episode laundry kitten salute link globe zero feed marble', // the senders passphrase, needed to sign the transaction
- 	secondPassphrase: null,
- 	timestamp: getTimestamp(),
+const tx = new CashbackTransaction({
+    amount: `${transactions.utils.convertLSKToBeddows('2')}`,
+    fee: `${transactions.utils.convertLSKToBeddows('0.1')}`,
+    recipientId: '10881167371402274308L', //delegate genesis_100
+    timestamp: getTimestamp(),
 });
 
-console.log(c); // the transaction is displayed as JSON object in the console
-process.exit(1); // stops the process after the transaction object has been printed
+tx.sign('wagon stock borrow episode laundry kitten salute link globe zero feed marble');
+
+console.log(tx.stringify());
+process.exit(1);
 ```
 > *See the complete file on Github: [cashback/client/print_sendable_cashback.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/cashback/client/print_sendable_cashback.js).*
 

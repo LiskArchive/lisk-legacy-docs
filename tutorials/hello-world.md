@@ -324,7 +324,7 @@ configDevnet.app.label = 'helloWorld-blockchain-application';
 
 const app = new Application(genesisBlockDevnet, configDevnet); // create the application instance
 
-app.registerTransaction(HelloTransaction.TYPE, HelloTransaction); // register the 'HelloTransaction' 
+app.registerTransaction(HelloTransaction); // register the 'HelloTransaction' 
 
 
 // the code block below starts the application and doesn't need to be changed

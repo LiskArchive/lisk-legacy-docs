@@ -295,7 +295,7 @@ configDevnet.app.label = 'cashback-blockchain-application';
 
 const app = new Application(genesisBlockDevnet, configDevnet); // create the application instance
 
-app.registerTransaction(CashbackTransaction.TYPE, CashbackTransaction); // register the 'CashbackTransaction' 
+app.registerTransaction(CashbackTransaction); // register the 'CashbackTransaction' 
 
 
 // the code block below starts the application and doesn't need to be changed

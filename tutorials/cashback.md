@@ -211,7 +211,7 @@ touch cashback_transaction.js
 ```js
 //cashback_transaction.js
 const {
-	transactions,
+	transactions: { TransferTransaction },
 	BigNum,
 } = require('lisk-sdk');
 

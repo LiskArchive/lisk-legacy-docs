@@ -210,7 +210,7 @@ touch hello_transaction.js
 ```js
 //hello_transaction.js
 const {
-	transactions,
+	transactions: { BaseTransaction },
 	TransactionError,
 } = require('lisk-sdk');
 

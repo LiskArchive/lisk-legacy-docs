@@ -216,7 +216,7 @@ const {
 } = require('lisk-sdk');
 
 
-class CashbackTransaction extends transactions.TransferTransaction {
+class CashbackTransaction extends TransferTransaction {
 
     /**
     * Set the Cashback transaction TYPE to `11`.

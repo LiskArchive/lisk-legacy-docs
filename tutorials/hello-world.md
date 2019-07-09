@@ -214,7 +214,7 @@ const {
 	TransactionError,
 } = require('lisk-sdk');
 
-class HelloTransaction extends transactions.BaseTransaction {
+class HelloTransaction extends BaseTransaction {
 
     /**
     * Set the `HelloTransaction` transaction TYPE to `10`.

@@ -383,7 +383,7 @@ const getTimestamp = () => {
 	return  parseInt(inSeconds);
 }
 
-let tx = createSendableTransaction(HelloTransaction, { // the desired transaction gets created and signed
+let tx =  new HelloTransaction({ // the desired transaction gets created and signed
 	asset: {
 		hello: 'world', // we save the string 'world' into the 'hello' asset
 	},

@@ -16,6 +16,8 @@ Every action that puts data on the blockchain, or gets data from it, is an inter
 
 ## How to interact with the network?
 
+![Network Interaction](assets/network_interaction.png)
+
 > The following tools are suited for interacting with the Mainnet and Testnet of Lisk. They can also be used to interact with other blockchain applications that have been developed using the Lisk SDK.
 
 You can choose from up to 4 ways to interact with an existing network based on what is most convenient for your needs:

@@ -20,6 +20,8 @@ The [Lisk SDK](../lisk-sdk/introduction.md) provides a development framework tha
 
 ## Build a blockchain application in 3 steps
 
+![Build a bApp in 3 steps](assets/3-steps.png)
+
 ### 1. Set up the SDK
 To get started building a blockchain application, [set up the Lisk SDK](../lisk-sdk/introduction.md#setup).
 

@@ -20,17 +20,36 @@ Every action that puts data on the blockchain, or gets data from it, is an inter
 
 > The following tools are suited for interacting with the Mainnet and Testnet of Lisk. They can also be used to interact with other blockchain applications that have been developed using the Lisk SDK.
 
-You can choose from up to 4 ways to interact with an existing network based on what is most convenient for your needs:
+You can choose from up to 5 ways to interact with an existing network based on what is most convenient for your needs:
 
-- __A. Write scripts in Javascript__ [Lisk Elements](../lisk-sdk/lisk-elements/introduction.md) is a collection of Javascript libraries that help applications to interact with the network. On the [Packages page](../lisk-sdk/lisk-elements/packages.md) of Lisk Elements, all available libraries are listed and documented. One of the most useful packages in this regard is the [@liskhq/lisk-api-client](../lisk-sdk/lisk-elements/packages/api-client.md) as it provides a slick interface to interact with the network in Javascript.
+### A. Write scripts in Javascript
+[Lisk Elements](../lisk-sdk/lisk-elements/introduction.md) is a collection of Javascript libraries that help applications to interact with the network.
 
-- __B. Use the Command-line__ [Lisk Commander](../lisk-sdk/lisk-commander/introduction.md) is the CLI-tool that lets you interact with the network conveniently through the command line. See a list of all commands and their example responses on the [Commands page](../lisk-sdk/lisk-commander/user-guide/commands.md).
+On the [Packages page](../lisk-sdk/lisk-elements/packages.md) of Lisk Elements, all available libraries are listed and documented.
 
-- __C. Use Lisk Hub__ [Lisk Hub](https://lisk.io/hub) is the Graphical User Interface (GUI) to interact with the network. It consists of wallet functionalities like sending transactions and viewing account history, as well as more extended features like delegate voting or registering as a delegate.
+One of the most useful packages in this regard is the [@liskhq/lisk-api-client](../lisk-sdk/lisk-elements/packages/api-client.md) as it provides a slick interface to interact with the network in Javascript.
 
-- __D. Use Lisk Explorer__ - [Lisk Explorer](https://explorer.lisk.io/)  is a web application that offers tools to explore the network and the data in the blockchain.
+### B. Use the Command-line
+[Lisk Commander](../lisk-sdk/lisk-commander/introduction.md) is the CLI-tool that lets you interact with the network conveniently through the command line. See a list of all commands and their example responses on the [Commands page](../lisk-sdk/lisk-commander/user-guide/commands.md).
 
-- __E. Query the API__ - To query the [API](https://lisk.io/documentation/lisk-core/api) manually, either from a public node, or connect to your own private node to interact with the network.
+### C. Use Lisk Hub
+[Lisk Hub](https://lisk.io/hub) is the Graphical User Interface (GUI) to interact with the network.
+
+It consists of wallet functionalities like sending transactions and viewing account history, as well as more extended features like delegate voting or registering as a delegate.
+
+### D. Lisk Explorer
+
+[Lisk Explorer](https://github.com/LiskHQ/lisk-explorer) is a web application that visualizes the vast information from Lisk's blockchain.
+
+Lisk offers Explorers for the 2 public networks:
+- [Lisk Explorer Mainnet](https://explorer.lisk.io/)
+- [Lisk Explorer Testnet](https://testnet-explorer.lisk.io/)
+
+The source code of Lisk Explorer is open source and can be utilized to set up own Explorers to visualize activity inside the network and to monitor it.
+
+### E. Query the API
+
+Query the [API](https://lisk.io/documentation/lisk-core/api) manually. Either from a public node, or connect to your own private node to interact with the network.
 
 > View the full specification of the Lisk API, including example queries at [lisk.io/documentation/lisk-core/api](https://lisk.io/documentation/lisk-core/api)
 
@@ -55,4 +74,4 @@ LiskHQ for example is running a public testnet node, that is also used to make [
 
 When [setting up Lisk Core](maintain-node.md), the API will be private by default, which means API requests will be only accepted from localhost.
 
-To change this, it is possible to define exclusive [whitelists](../lisk-core/configuration#api-access-control), that allow specific addresses to perform API requests on that node.
+To change this, it is possible to define exclusive [whitelists](../lisk-core/configuration.md#api-access-control), that allow specific addresses to perform API requests on that node.

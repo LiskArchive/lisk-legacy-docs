@@ -11,22 +11,6 @@ The application-specific business logic for custom transaction types is defined 
 All of the default transaction types of the Lisk SDK transactions implement the abstract interface of the base transaction, and therefore the base transaction can be used as a model for custom transactions.
 It's also possible to inherit one of the default transaction types, in order to extend or modify them.
 
-## Default transaction types
-
-> The first 10 transaction types are reserved for the [Lisk protocol](https://lisk.io/documentation/lisk-protocol), don't use them to register custom transactions.
-
-Each default transaction type implements a different use case of the Lisk network, i.e:
-
-1. Balance transfer (type 0)
-2. Second signature registration (type 1)
-3. Delegate registration (type 2)
-4. Delegate vote (type 3)
-5. Multisignature account registration (type 4)
-
-__For a complete list of all default transaction types, check out the section [Lisk Transactions](https://lisk.io/documentation/lisk-protocol/transactions) of the Lisk Protocol.__
-
-Furthermore, the Lisk SDK [tutorials](../start/tutorials.md) include simple code examples of custom transaction types.
-
 ## Register a custom transaction
 
 Add your custom transaction type to your blockchain application by registering it to the application instance:
@@ -106,6 +90,22 @@ To increase your application's performance, you should override the following fu
 
 The BaseTransaction provides the default implementation of the methods revolving around the signatures.
 As your application matures you can provide the custom ways of how your a transaction's signature is derived: `sign`, `getBytes`, `assetToBytes`.
+
+## Default transaction types
+
+> The first 10 transaction types are reserved for the [Lisk protocol](https://lisk.io/documentation/lisk-protocol), don't use them to register custom transactions.
+
+Each default transaction type implements a different use case of the Lisk network, i.e:
+
+1. Balance transfer (type 0)
+2. Second signature registration (type 1)
+3. Delegate registration (type 2)
+4. Delegate vote (type 3)
+5. Multisignature account registration (type 4)
+
+__For a complete list of all default transaction types, check out the section [Lisk Transactions](https://lisk.io/documentation/lisk-protocol/transactions) of the Lisk Protocol.__
+
+Furthermore, the Lisk SDK [tutorials](../start/tutorials.md) include simple code examples of custom transaction types.
 
 ## What is the lifecycle of a transaction?
 

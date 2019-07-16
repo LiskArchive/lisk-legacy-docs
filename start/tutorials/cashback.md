@@ -39,7 +39,7 @@ As next step, we want to install the `lisk-sdk` package and add it to our projec
 | Python           | 2       |
 
 
-> If you miss some of the dependencies, please go to [Lisk SDK - Pre-Install](../../lisk-sdk/introduction.md#pre-installation) and follow the pre-installation steps for the SDK.
+> If you miss some of the dependencies, please go to [Lisk SDK - Pre-Install](../../lisk-sdk/setup.md#pre-installation) and follow the pre-installation steps for the SDK.
 
 ```bash
 npm init --yes # initialize the manifest file of the project
@@ -190,7 +190,7 @@ $ node index.js | npx bunyan -o short
 
 ## 3. Create a new transaction type
 
-Now, we want to create a new [custom transaction type](../custom-transactions.md) `CashbackTransaction`: 
+Now, we want to create a new [custom transaction type](../../lisk-sdk/customize.md) `CashbackTransaction`: 
 It extends the pre-existing transaction type `TransferTransaction`.
 The difference between the regular `TransferTransaction` and the `CashbackTransaction`, is that Cashback transaction type also pays out a 10% bonus reward to its sender.
 
@@ -573,7 +573,7 @@ pm2 stop cashback # stop the cashback app
 pm2 start cashback # start the cashback app
 ```
 
-> PM2 needs to be installed on the system in order to run these commands. See [SDK Pre-Install section](../../lisk-sdk/introduction.md#pre-installation).
+> PM2 needs to be installed on the system in order to run these commands. See [SDK Pre-Install section](../../lisk-sdk/setup.md#pre-installation).
 
 ## 7. Customize the default configuration
 

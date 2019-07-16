@@ -42,7 +42,7 @@ As next step, we want to install the `lisk-sdk` package and add it to our projec
 | Python           | 2       |
 
 
-> If you miss some of the dependencies, please go to [Lisk SDK - Pre-Install](../../lisk-sdk/introduction.md#pre-installation) and follow the pre-installation steps for the SDK.
+> If you miss some of the dependencies, please go to [Lisk SDK - Pre-Install](../../lisk-sdk/setup.md#pre-installation) and follow the pre-installation steps for the SDK.
 
 > Before installing the Lisk SDK, make sure to follow the instructions in the [Lisk SDK - Pre-Install](../../lisk-sdk/introduction.md#pre-installation) section.
 
@@ -517,7 +517,7 @@ pm2 stop hello # stop the hello app
 pm2 start hello # start the hello app
 ```
 
-> PM2 needs to be installed on the system in order to run these commands. See [SDK Pre-Install section](../../lisk-sdk/introduction.md#pre-installation).
+> PM2 needs to be installed on the system in order to run these commands. See [SDK Pre-Install section](../../lisk-sdk/setup.md#pre-installation).
 
 ## 7. Customize the default configuration
 

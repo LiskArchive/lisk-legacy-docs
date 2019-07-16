@@ -41,7 +41,7 @@ Documentation on [lisk.io](https://lisk.io/documentation) keeps up to date with 
 
 Version | Release date <br> (yy/mm/dd)| Documentation reference
 ---     | ---         | ---
-[v2.2.0](https://github.com/LiskHQ/lisk/releases/tag/v2.1.0) | 19/0x/xx | *Current version, live on lisk.io/documentation*
+[v2.2.0](https://www.npmjs.com/package/lisk-commander/v/2.2.0) | 19/06/24 | *Current version, live on lisk.io/documentation*
 [v2.1.0](https://github.com/LiskHQ/lisk-commander/releases/tag/v2.1.0) | 19/01/14 | [Lisk Commander 2.1 docs](https://github.com/LiskHQ/lisk-docs/blob/commander-2.1.0/introduction.md)
 [v2.0.0](https://github.com/LiskHQ/lisk-commander/releases/tag/v2.0.0) | 18/11/14 | [Lisk Commander 2.0 docs](https://github.com/LiskHQ/lisk-docs/blob/commander-2.0.0-1.0.1/introduction.md)
 [v1.0.0](https://github.com/LiskHQ/lisk-commander/releases/tag/v1.0.0) | 18/08/13 | [Lisk Commander 1.0 docs](https://github.com/LiskHQ/lisk-docs/blob/commander-1.0.0/introduction.md)

@@ -44,7 +44,7 @@ The Lisk SDK makes every effort to allow developers to focus simply and purely o
 
 ## Usage 
 
-#### Dependencies
+### Dependencies
 
 Before running Lisk SDK, the following dependencies need to be installed in order to run applications created with the Lisk SDK:
 
@@ -68,6 +68,17 @@ npm install lisk-sdk@alpha
 ```
 
 Lisk SDK is all-in-one package that provides you with tools to create, run and maintain blockchain applications in JavaScript.
+
+In case you only need some specific functionality, it is possible to install only the relevant package, e.g.:
+
+```bash
+npm install lisk-commmander # install Lisk Commander
+npm install lisk-elements # install Lisk Elements
+npm install lisk-transactions # install Lisk Elements Transactions Package
+npm install lisk-cryptography # install Lisk Elements Cryptography Package
+```
+
+> Check out the [full list of Lisk Elements' packages](lisk-elements/packages.md) 
 
 ### Set up new a blockchain application
 

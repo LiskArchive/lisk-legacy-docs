@@ -26,7 +26,7 @@ We hope you enjoy building your proof-of-concept blockchain applications using t
 
 ## What is the Lisk SDK?
 
-The Lisk SDK aims to provide an easy and reliable software development kit for building blockchain applications compatible with the [Lisk Protocol](https://lisk.io/documentation/lisk-protocol).
+The Lisk SDK aims to provide an easy and reliable software development kit for building blockchain applications compatible with the [Lisk Protocol](../lisk-protocol/introduction.md).
 
 The architecture of the Lisk SDK has been designed so that it can be extended to meet the requirements of a wide variety of blockchain use cases.
 
@@ -79,7 +79,7 @@ It is quite simple to have a working blockchain application, mirroring the confi
 
 ```js
 const { Application, genesisBlockDevnet, configDevnet} = require('lisk-sdk'); // require the lisk-sdk package
-  
+
 const app = new Application(genesisBlockDevnet, configDevnet); // create a new application with default genesis block for a local devnet
 
 app.run() // start the application
@@ -87,7 +87,7 @@ app.run() // start the application
    .catch(error => { // code that is executed if the application start fails.
         console.error('Faced error in application', error);
         process.exit(1);
-});               
+});
 ```
 
 Now, save and close `index.js` and try to start your newly created blockchain application by running:

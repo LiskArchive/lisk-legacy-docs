@@ -6,7 +6,7 @@ Transactions are an essential part of blockchain applications that are created u
 
 The Lisk SDK provides a class [BaseTransaction](https://liskhq.github.io/lisk-sdk/classes/_base_transaction_.basetransaction.html) from which developers can inherit and extend from, to create __custom transaction types__.
 
-The application-specific business logic for custom transaction types is defined according to an abstract [interface](#interface) that is common across all transaction types.
+The application-specific business logic for custom transaction types is defined according to an abstract [interface](#the-basetransaction-interface) that is common across all transaction types.
 
 All of the default transaction types of the Lisk SDK transactions implement the abstract interface of the base transaction, and therefore the base transaction can be used as a model for custom transactions.
 It's also possible to inherit one of the default transaction types, in order to extend or modify them.

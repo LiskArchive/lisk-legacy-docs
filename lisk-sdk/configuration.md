@@ -46,6 +46,7 @@ To change them, override the specific default values with custom ones, when init
         version: "", // version of the application (required)
         minVersion: "", // minimal compatible version (required)
         protocolVersion: "", // protocol Version of the application (required)
+        tempPath: "/tmp/lisk", // root path for storing temporary pid and socket file. 
         ipc: { enabled: false}, // If true, allows modules to communicate over IPCs (inter-process-channels).
         genesisConfig: { // Network specific constants
             EPOCH_TIME: new Date(Date.UTC(2016, 4, 24, 17, 0, 0, 0)).toISOString(), // Timestamp indicating the initial network start (`Date.toISOString()`).

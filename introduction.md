@@ -74,8 +74,8 @@ In case you only need some specific functionality, it is possible to install onl
 ```bash
 npm install lisk-commmander # install Lisk Commander
 npm install lisk-elements # install Lisk Elements
-npm install lisk-transactions # install Lisk Elements Transactions Package
-npm install lisk-cryptography # install Lisk Elements Cryptography Package
+npm install @liskhq/lisk-transactions # install Lisk Elements Transactions Package
+npm install @liskhq/lisk-cryptography # install Lisk Elements Cryptography Package
 ```
 
 > Check out the [full list of Lisk Elements' packages](lisk-elements/packages.md) 

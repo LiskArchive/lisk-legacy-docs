@@ -34,6 +34,11 @@ E.g. execute:
 sudo adduser lisk
 ```
 
+##### MacOS
+
+It is not essentially needed to set up a `lisk` user, especially when you are runnign a local instance for development pruposes.
+If you still want to do it, we recommend to create the user using the macOS GUI: https://support.apple.com/en-gb/guide/mac-help/mtusr001/mac
+
 ### Toolchain components
 
 Used for compiling dependencies.

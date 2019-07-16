@@ -1,7 +1,7 @@
 # Hello World App
 
 Welcome to the step-by-step guide of creating the Hello World application with Lisk Alpha SDK.
-A simple App, showcasing a minimal setup of a blockchain application with 1 [custom transaction](../custom-transactions.md) type: the "Hello" transaction.
+A simple App, showcasing a minimal setup of a blockchain application with 1 [custom transaction](../../lisk-sdk/customize.md) type: the "Hello" transaction.
 
 The purpose of Hello World application is to explain how to use and how to implement custom transaction with the Lisk SDK. 
 This custom transaction will extract the "hello" key value from the transaction asset property and save to the senders account.
@@ -43,7 +43,6 @@ As next step, we want to install the `lisk-sdk` package and add it to our projec
 
 
 > If you miss some of the dependencies, please go to [Lisk SDK - Pre-Install](../../lisk-sdk/introduction.md#pre-installation) and follow the pre-installation steps for the SDK.
-
 
 > Before installing the Lisk SDK, make sure to follow the instructions in the [Lisk SDK - Pre-Install](../../lisk-sdk/introduction.md#pre-installation) section.
 
@@ -197,7 +196,7 @@ $ node index.js | npx bunyan -o short
 
 ## 3. Create a new transaction type
 
-For the Hello World App, we want to create a [custom transaction type](../custom-transactions.md) `HelloTransaction`: 
+For the Hello World App, we want to create a [custom transaction type](../../lisk-sdk/customize.md) `HelloTransaction`: 
 If an account has enough balance to process `HelloTransaction` transaction (fee is set to 1 LSK by default), the new "hello" property appears into this account's asset field.
 So after sending a valid `{"type": 10, "senderId": "16313739661670634666L", ... "asset": { "hello": "world" } }` transaction, the sender's account changes from e.g.: `{ address: "16313739661670634666L", ..., asset: null }`, to `{ "address": "16313739661670634666L", ..., "asset": {"hello": "world"}} }`.
 

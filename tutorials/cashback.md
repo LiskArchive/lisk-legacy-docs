@@ -190,7 +190,7 @@ $ node index.js | npx bunyan -o short
 
 ## 3. Create a new transaction type
 
-Now, we want to create a new [custom transaction type](../custom-transactions.md) `CashbackTransaction`: 
+Now, we want to create a new [custom transaction type](../../lisk-sdk/customize.md) `CashbackTransaction`: 
 It extends the pre-existing transaction type `TransferTransaction`.
 The difference between the regular `TransferTransaction` and the `CashbackTransaction`, is that Cashback transaction type also pays out a 10% bonus reward to its sender.
 

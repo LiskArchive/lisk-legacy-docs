@@ -45,7 +45,7 @@ Transactions are the main way to add data to your blockchain. The most basic tra
 
 For comparison, please view the [list of all transaction types](../lisk-protocol/transactions.md) which are implemented in the Lisk Protocol.
 
-To create custom transaction types, utilize the provided `BaseTransaction` interface as described in the section for [custom transactions](custom-transactions.md).
+To create custom transaction types, utilize the provided `BaseTransaction` interface as described in the section for [custom transactions](../lisk-sdk/customize.md).
 
 See the [tutorials](tutorials.md) to see examples of how to create custom transaction types and how to add them to your application:
 

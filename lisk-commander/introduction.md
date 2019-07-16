@@ -14,21 +14,12 @@ Lisk Commander allows to communicate with a remote or local node and carry out L
 
 **What can I do with Lisk Commander?**
 
-<<<<<<< HEAD
-- create a transaction
-- decrypt/encrypt passphrases or messages
-- install and manage a Lisk node
-- create accounts
-- get delegates
-- ... many more examples can be found on the [commands](user-guide/commands.md) page.
-=======
 - Create a transaction
 - Decrypt/encrypt passphrases or messages
 - Install and manage a node
 - Create accounts
 - Get delegates
 - And many more! [View all commands](user-guide/commands.md)
->>>>>>> tmp-sdk
 
 ## Table of contents
 

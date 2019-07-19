@@ -12,7 +12,7 @@
     e.stopPropagation()
   })
 
-  window.addEventListener('click', function () {
+  document.documentElement.addEventListener('click', function () {
     selector.classList.remove('is-active')
   })
 })()

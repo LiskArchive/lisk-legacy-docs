@@ -60,19 +60,20 @@
 
   function showNav (e) {
     if (navToggle.classList.contains('is-active')) return hideNav(e)
-    document.documentElement.classList.add('is-clipped--nav')
+    var html = document.documentElement
+    html.classList.add('is-clipped--nav')
     navToggle.classList.add('is-active')
     navContainer.classList.add('is-active')
-    window.addEventListener('click', hideNav)
+    html.addEventListener('click', hideNav)
     concealEvent(e)
   }
 
   function hideNav (e) {
-    if (e.which === 3 || e.button === 2) return
-    document.documentElement.classList.remove('is-clipped--nav')
+    var html = document.documentElement
+    html.classList.remove('is-clipped--nav')
     navToggle.classList.remove('is-active')
     navContainer.classList.remove('is-active')
-    window.removeEventListener('click', hideNav)
+    html.removeEventListener('click', hideNav)
     concealEvent(e)
   }
 

@@ -357,7 +357,7 @@ For details on how to manage or stop your Lisk node, please have a look in [Admi
 If you are not running Lisk locally, you will need to follow the [Configuration - API](../configuration.md#api-access-control) document to enable access.
 
 That's it!
-You are ready to move on to the [configuration](../configuration.md) documentation if you wish to enable forging or SSL. 
+You are ready to move on to the [configuration](../configuration.md) documentation in case you wish to configure your node further, e.g. if you wish to enable forging. 
 
 ## Post-installation (optional)
 

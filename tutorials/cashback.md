@@ -215,9 +215,8 @@ const {
 	BigNum,
 } = require('lisk-sdk');
 
-
 class CashbackTransaction extends TransferTransaction {
-
+    
     /**
     * Set the Cashback transaction TYPE to `11`.
     * The first 10 types, from `0-9` is reserved for the default Lisk Network functions.
@@ -226,14 +225,22 @@ class CashbackTransaction extends TransferTransaction {
 	static get TYPE () {
 		return 11;
 	}
-
+	
+    /**
+    * Set the `CashbackTransaction` transaction FEE to 0.1 LSK.
+    * Every time a user posts a transaction to the network, the transaction fee is paid to the delegate who includes the transaction into a block that the delegate forges.
+    */
+	static get FEE () {
+        return `${10 ** 7}`;
+    };
+	
     /**
     * The CashbackTransaction adds an inflationary 10% to senders account.
     * Invoked as part of the apply() step of the BaseTransaction and block processing.  
     */
 	applyAsset(store) {
 		super.applyAsset(store);
-
+		
 		const sender = store.account.get(this.senderId);
 		const updatedSenderBalanceAfterBonus = new BigNum(sender.balance).add(
 			new BigNum(this.amount).div(10)
@@ -243,17 +250,17 @@ class CashbackTransaction extends TransferTransaction {
 			balance: updatedSenderBalanceAfterBonus.toString(),
 		};
 		store.account.set(sender.address, updatedSender);
-
+		
 		return [];
 	}
-
+	
     /**
     * Inverse of applyAsset().
     * Undoes the changes made in `applyAsset` step: It sends the transaction amount back to the sender and substracts 10% of the transaction amount from the senders account balance.
     */
 	undoAsset(store) {
 		super.undoAsset(store);
-
+		
 		const sender = store.account.get(this.senderId);
 		const updatedSenderBalanceAfterBonus = new BigNum(sender.balance).sub(
 			new BigNum(this.amount).div(10)
@@ -263,7 +270,7 @@ class CashbackTransaction extends TransferTransaction {
 			balance: updatedSenderBalanceAfterBonus.toString(),
 		};
 		store.account.set(sender.address, updatedSender);
-
+		
 		return [];
 	}
 }
@@ -296,7 +303,6 @@ configDevnet.app.label = 'cashback-blockchain-application';
 const app = new Application(genesisBlockDevnet, configDevnet); // create the application instance
 
 app.registerTransaction(CashbackTransaction); // register the 'CashbackTransaction' 
-
 
 // the code block below starts the application and doesn't need to be changed
 app

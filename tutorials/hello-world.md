@@ -3,7 +3,7 @@
 Welcome to the step-by-step guide of creating the Hello World application with Lisk Alpha SDK.
 A simple App, showcasing a minimal setup of a blockchain application with 1 [custom transaction](../../lisk-sdk/customize.md) type: the "Hello" transaction.
 
-The purpose of Hello World application is to explain how to use and how to implement custom transaction with the Lisk SDK. 
+The purpose of Hello World application is to explain how to use and how to implement custom transactions with the Lisk SDK. 
 This custom transaction will extract the "hello" key value from the transaction asset property and save to the senders account.
 
 The Hello World implementation goes as following:
@@ -25,6 +25,8 @@ cd hello_world # navigate into the root folder
 
 As next step, we want to install the `lisk-sdk` package and add it to our projects' dependencies.
 
+> If you miss some of the dependencies, please go to [Lisk SDK - Pre-Install](../../lisk-sdk/setup.md#pre-installation) and follow the pre-installation steps for the SDK.
+
 ### Supported Platforms
 
 - Ubuntu 16.04 (LTS) x86_64
@@ -41,10 +43,7 @@ As next step, we want to install the `lisk-sdk` package and add it to our projec
 | Redis (optional) | 5+      |
 | Python           | 2       |
 
-
-> If you miss some of the dependencies, please go to [Lisk SDK - Pre-Install](../../lisk-sdk/setup.md#pre-installation) and follow the pre-installation steps for the SDK.
-
-> Before installing the Lisk SDK, make sure to follow the instructions in the [Lisk SDK - Pre-Install](../../lisk-sdk/introduction.md#pre-installation) section.
+> Before installing the Lisk SDK, make sure to follow the instructions in the [Lisk SDK - Pre-Install](../../lisk-sdk/setup.md#pre-installation) section.
 
 ```bash
 npm init --yes # initialize the manifest file of the project
@@ -214,7 +213,7 @@ const {
 } = require('lisk-sdk');
 
 class HelloTransaction extends BaseTransaction {
-
+    
     /**
     * Set the `HelloTransaction` transaction TYPE to `10`.
     * Every time a transaction is received, it gets differentiated by the type.
@@ -223,6 +222,14 @@ class HelloTransaction extends BaseTransaction {
 	static get TYPE () {
 		return 10;
 	}
+	
+    /**
+    * Set the `HelloTransaction` transaction FEE to 1 LSK.
+    * Every time a user posts a transaction to the network, the transaction fee is paid to the delegate who includes the transaction into the block that the delegate forges.
+    */
+	static get FEE () {
+        return `${10 ** 8}`;
+    };
 	
     /**
     * Prepares the necessary data for the `apply` and `undo` step.
@@ -281,7 +288,7 @@ class HelloTransaction extends BaseTransaction {
         }
         return errors; // array of TransactionErrors, returns empty array if no errors are thrown
 	}
-
+	
     /**
     * Inverse of `applyAsset`.
     * Undoes the changes made in applyAsset() step - reverts to the previous value of "hello" property, if not previously set this will be null.
@@ -324,7 +331,6 @@ configDevnet.app.label = 'helloWorld-blockchain-application';
 const app = new Application(genesisBlockDevnet, configDevnet); // create the application instance
 
 app.registerTransaction(HelloTransaction); // register the 'HelloTransaction' 
-
 
 // the code block below starts the application and doesn't need to be changed
 app

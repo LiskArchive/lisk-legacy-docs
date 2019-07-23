@@ -228,7 +228,7 @@ class CashbackTransaction extends TransferTransaction {
 	
     /**
     * Set the `CashbackTransaction` transaction FEE to 0.1 LSK.
-    * Every time a user posts a transaction to the network, the transation fee is paid to the delegate who includes the transaction into a block that the delegate forges.
+    * Every time a user posts a transaction to the network, the transaction fee is paid to the delegate who includes the transaction into a block that the delegate forges.
     */
 	static get FEE () {
         return `${10 ** 7}`;

@@ -225,7 +225,7 @@ class HelloTransaction extends BaseTransaction {
 	
     /**
     * Set the `HelloTransaction` transaction FEE to 1 LSK.
-    * Every time a user posts a transaction to the network, the transation fee is paid to the delegate who includes the transaction into the block that the delegate forges.
+    * Every time a user posts a transaction to the network, the transaction fee is paid to the delegate who includes the transaction into the block that the delegate forges.
     */
 	static get FEE () {
         return `${10 ** 8}`;

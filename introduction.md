@@ -64,7 +64,7 @@ Mind, that you need to create a database before. The default database name is `l
 The installation of Lisk Alpha SDK is straightforward and limited to getting a single NPM package, `lisk-sdk`, to your Node.js project:
 
 ```bash
-npm install lisk-sdk@alpha
+npm install lisk-sdk
 ```
 
 Lisk SDK is all-in-one package that provides you with tools to create, run and maintain blockchain applications in JavaScript.

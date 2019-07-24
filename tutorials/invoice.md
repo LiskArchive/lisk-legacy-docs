@@ -206,13 +206,13 @@ touch transactions/invoice_transaction.js
 ```
 
 ```js
-//invoice_transaction.js
+//transactions/invoice_transaction.js
 const { BaseTransaction, TransactionError } = require('@liskhq/lisk-transactions');
 
 class InvoiceTransaction extends BaseTransaction {
     
     /**
-    * Set the `HelloTransaction` transaction TYPE to `10`.
+    * Set the `InvoiceTransaction` transaction TYPE to `13`.
     * Every time a transaction is received, it gets differentiated by the type.
     * The first 10 types, from 0-9 is reserved for the default Lisk Network functions. 
     */
@@ -220,10 +220,17 @@ class InvoiceTransaction extends BaseTransaction {
 		return 13;
 	}
 
+    /**
+    * Set the `InvoiceTransaction` transaction FEE to 1 LSK.
+    * Every time a user posts a transaction to the network, the transaction fee is paid to the delegate who includes the transaction into the block that the delegate forges.
+    */
 	static get FEE () {
 		return `${10 ** 8}`;
 	}
 
+    /**
+    * Prepares the necessary data for the `apply` and `undo` step.
+    */
 	async prepare(store) {
 		await store.account.cache([
 			{
@@ -232,6 +239,9 @@ class InvoiceTransaction extends BaseTransaction {
 		]);
 	}
 
+    /**
+    * Validation of the values of the transaction parameters, defined by the `InvoiceTransaction` transaction signer.
+    */
 	validateAsset() {
 		const errors = [];
 		if (!this.asset.client || typeof this.asset.client !== 'string') {
@@ -270,6 +280,13 @@ class InvoiceTransaction extends BaseTransaction {
 		return errors;
 	}
 
+    /**
+    * applyAsset() is where the custom logic of the InvoiceTransaction is implemented. 
+    * applyAsset() and undoAsset() use the information about the sender's account from the `store`.
+    * Here we can store additional information about accounts using the `asset` field.
+    * If it's the first invoice, the account is sending, two new properties `invoiceCount` and `invoicesSent` are added to the account assets.
+    * If at least one other invoice has already been sent by this account, it would increment `invoiceCount` and add the Transaction ID of the InvoiceTransaction to the `invoicesSent` list.
+    */
 	applyAsset(store) {
 		const sender = store.account.get(this.senderId);
 
@@ -280,6 +297,10 @@ class InvoiceTransaction extends BaseTransaction {
 		return [];
 	}
 
+    /**
+    * Inverse of `applyAsset`.
+    * Undoes the changes made in applyAsset() step.
+    */
 	undoAsset(store) {
 		const sender = store.account.get(this.senderId);
 
@@ -302,4 +323,88 @@ module.exports = InvoiceTransaction;
 
 ```bash
 touch transactions/payment_transaction.js
+```
+
+```js
+//transactions/payment_transaction.js
+const { TransferTransaction, TransactionError } = require('@liskhq/lisk-transactions');
+
+class PaymentTransaction extends TransferTransaction {
+    
+    /**
+    * Set the `PaymentTransaction` transaction TYPE to `14`.
+    * Every time a transaction is received, it gets differentiated by the type.
+    * The first 10 types, from 0-9 is reserved for the default Lisk Network functions. 
+    */
+	static get TYPE () {
+		return 14;
+	}
+
+    /**
+    * Prepares the necessary data for the `apply` and `undo` step.
+    */
+	async prepare(store) {
+		await super.prepare(store);
+		await store.transaction.cache([
+			{
+				id: this.asset.data,
+			},
+		]);
+	 }
+
+    /**
+    * applyAsset() is where the custom logic of the PaymentTransaction is implemented. 
+    * applyAsset() and undoAsset() use the information about the sender's account from the `store`.
+    * 
+    * If it's the first invoice, the account is sending, two new properties `invoiceCount` and `invoicesSent` are added to the account assets.
+    * If at least one other invoice has already been sent by this account, it would increment `invoiceCount` and add the Transaction ID of the InvoiceTransaction to the `invoicesSent` list.
+    */
+	applyAsset(store) {
+		super.applyAsset(store);
+		const errors = [];
+		const transaction = store.transaction.find(
+			transaction => transaction.id === this.asset.data
+		); // Find related invoice in transactions for invoiceID
+		
+		if (transaction) {
+			if (this.amount.lt(transaction.asset.requestedAmount)) {
+				errors.push(
+					new TransactionError(
+						'Paid amount is lower than amount stated on invoice',
+						this.id,
+						'.amount',
+						transaction.requestedAmount,
+						'Expected amount to be equal or greated than `requestedAmount`',
+					)
+				);
+			}
+		} else {
+			errors.push(
+				new TransactionError(
+					'Invoice does not exist for ID',
+					this.id,
+					'.asset.invoiceID',
+					this.asset.data,
+					'Existing invoiceID registered as invoice transaction',
+				)
+			);
+		}
+		
+		return errors;
+	}
+
+    /**
+    * Inverse of `applyAsset`.
+    * No rollback needed as there is only validation happening in applyAsset().
+    * Higher level function will rollback the attempted payment (send back tokens).
+    */
+	undoAsset(store) {
+		super.undoAsset(store); 
+	
+		return [];
+	}
+
+}
+
+module.exports = PaymentTransaction;
 ```

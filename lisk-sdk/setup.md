@@ -198,8 +198,8 @@ npm install pm2 -g
 
 ## Installation
 
-To install the `alpha` version of the NPM package [lisk-sdk](https://www.npmjs.com/package/lisk-sdk), run:
+To install the NPM package [lisk-sdk](https://www.npmjs.com/package/lisk-sdk), run:
 
 ```bash
-npm install --save lisk-sdk@alpha # add --save flag to save it to package.json
+npm install --save lisk-sdk # add --save flag to save it to package.json
 ```

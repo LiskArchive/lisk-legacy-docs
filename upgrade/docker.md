@@ -2,7 +2,7 @@
 
 ## Upgrade minor versions
 
-To upgrade a Lisk installation using Docker Compose you simply need to expose the new version number in `ENV_LISK_VERSION`.
+To upgrade a Lisk installation using Docker Compose you simply need to export the new version number in `ENV_LISK_VERSION`.
 
 Example: Upgrade from Lisk Core 1.5 to 1.6 by executing:
 
@@ -17,7 +17,7 @@ To upgrade the Lisk installation run `docker-compose up -d`.
 
 For major version upgrades, additional changes in `docker-compose.yml` can happen.
 
-In this case, Lisk Core provides an updated version of `docker-compose.yml` in the [Lisk Core repository](https://github.com/LiskHQ/lisk-core) on Github, inside the `docker` folder: `https://github.com/LiskHQ/lisk-core/tree/<CURRENT_VERSION/docker`
+In this case, Lisk Core provides an updated version of `docker-compose.yml` in the [Lisk Core repository](https://github.com/LiskHQ/lisk-core) on Github, inside the `docker` folder: `https://github.com/LiskHQ/lisk-core/tree/<CURRENT_VERSION>/docker`
 
 (Where `<CURRENT_VERSION>` is the [version tag](https://github.com/LiskHQ/lisk-core/tags) of the version you want to upgrade to.)
 

@@ -55,7 +55,7 @@ npm install --save @liskhq/validator @liskhq/cryptography # install lisk-element
 ```
 
 Make sure to start with a fresh database:
-```sh-session
+```bash
 psql
 > DROP DATABASE lisk_dev;
 > CREATE DATABASE lisk_dev OWNER lisk;
@@ -354,10 +354,10 @@ class PaymentTransaction extends TransferTransaction {
 
     /**
     * applyAsset() is where the custom logic of the PaymentTransaction is implemented. 
-    * applyAsset() and undoAsset() use the information about the sender's account from the `store`.
     * 
-    * If it's the first invoice, the account is sending, two new properties `invoiceCount` and `invoicesSent` are added to the account assets.
-    * If at least one other invoice has already been sent by this account, it would increment `invoiceCount` and add the Transaction ID of the InvoiceTransaction to the `invoicesSent` list.
+    * The database is searched for the existance of an InvoiceTransaction with the ID that is set in the `asset.data` field of the PaymentTransaction.
+    * If the transaction is found, the `requestedAmount` in the `asset` field is compared to the PaymentTransaction amount.
+    * If the transaction amount is equal or higher than the `requestedAmount` in the corresponding InvoiceTransaction, the PaymentTransaction gets accepted.
     */
 	applyAsset(store) {
 		super.applyAsset(store);
@@ -396,7 +396,7 @@ class PaymentTransaction extends TransferTransaction {
     /**
     * Inverse of `applyAsset`.
     * No rollback needed as there is only validation happening in applyAsset().
-    * Higher level function will rollback the attempted payment (send back tokens).
+    * The implementation of sending the tokens back to the sender is already implemented in the TransferTransaction class.
     */
 	undoAsset(store) {
 		super.undoAsset(store); 

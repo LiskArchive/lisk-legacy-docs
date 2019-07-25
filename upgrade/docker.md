@@ -15,7 +15,7 @@ To upgrade the Lisk installation run `docker-compose up -d`.
 
 ## Upgrade major versions
 
-For major version upgrades, additional changes in `docker-compose.yml` can happen.
+For major version upgrades, there can be additional changes in `docker-compose.yml`.
 
 In this case, Lisk Core provides an updated version of `docker-compose.yml` in the [Lisk Core repository](https://github.com/LiskHQ/lisk-core) on Github, inside the `docker` folder: `https://github.com/LiskHQ/lisk-core/tree/<CURRENT_VERSION>/docker`
 

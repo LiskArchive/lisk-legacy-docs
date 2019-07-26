@@ -44,7 +44,7 @@ As next step, we want to install the `lisk-sdk` package and add it to our projec
 ```bash
 npm init --yes # initialize the manifest file of the project
 npm install --save lisk-sdk # install lisk-sdk as dependency for the node server side
-npm install --save @liskhq/validator @liskhq/cryptography # install lisk-elements dependencies for the client side scripts
+npm install --save @liskhq/lisk-validator @liskhq/lisk-cryptography @liskhq/lisk-transactions @liskhq/lisk-constants # install lisk-elements dependencies for the client side scripts
 ```
 
 Make sure to start with a fresh database:
@@ -409,6 +409,7 @@ To check the account balance of the sender:
 ```bash
 curl -X GET "http://localhost:4000/api/accounts?address=16313739661670634666L" -H "accept: application/json"
 ```
+
 ```json
 {
   "meta": {
@@ -431,6 +432,7 @@ Checking the account balance of the recipient:
 ```bash
 curl -X GET "http://localhost:4000/api/accounts?address=10881167371402274308L" -H "accept: application/json"
 ```
+
 ```json
 {
   "meta": {

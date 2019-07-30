@@ -74,7 +74,7 @@ Next, let's configure the application, to provide basic information about the ap
 const { Application, genesisBlockDevnet, configDevnet } = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
 
 configDevnet.app.label = 'helloWorld-blockchain-app'; // change the label of the app
-//configDevnet.components.storage.user = '<username>'; // In case you gave a different user than 'lisk' access to the database lisk_dev, you need to update the username in the config
+//configDevnet.components.storage.user = '<username>'; // If you gave a different user than 'lisk' access to the database lisk_dev, you need to update the username in the config
 configDevnet.components.storage.password = '<password>'; // replace the <password> with the password for your database user
 
 const app = new Application(genesisBlockDevnet, configDevnet); // create the application instance

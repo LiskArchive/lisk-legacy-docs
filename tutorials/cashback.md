@@ -478,7 +478,7 @@ If the node accepted the transaction, it should respond with:
 
 To verify that the transaction was included in a block:
 
-> Use as `id` the id of your transaction object, that is posted to the node in the former step
+> Use as `id` the id of your transaction object, that is posted to the node in the previous step
 
 ```bash
 curl -X GET "http://localhost:4000/api/transactions?id=5372254888441494149" -H "accept: application/json"
@@ -612,7 +612,7 @@ const CashbackTransaction = require('./cashback_transaction'); // require the ne
 
 configDevnet.app.label = 'cashback-blockchain-app';
 configDevnet.modules.http_api.access.public = true; // make the API accessible from everywhere
-//configDevnet.modules.http_api.access.whitelist.push('1.2.3.4'); // example how to make the API accessible for specific IPs: add the host 1.2.3.4 to the whitelist of hosts
+//configDevnet.modules.http_api.access.whitelist.push('1.2.3.4'); // example how to make the API accessible for specific IP addresses: add 1.2.3.4 IP address as whitelisted
 
 const app = new Application(genesisBlockDevnet, configDevnet); // create the application instance
 

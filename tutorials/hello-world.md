@@ -450,7 +450,7 @@ To verify, that the transaction got included in the blockchain as well, query th
 
 Check, that the transaction got included into a block:
 
-> Use as `id` the id of your transaction object, that is posted to the node in the former step
+> Use as `id` the id of your transaction object, that is posted to the node in the previous step
 
 ```bash
 curl -X GET "http://localhost:4000/api/transactions?id=16130949532827670455"

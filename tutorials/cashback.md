@@ -69,7 +69,7 @@ Next, let's configure the application, to provide basic information about the ap
 //index.js
 const { Application, genesisBlockDevnet, configDevnet } = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
 
-configDevnet.app.label = 'cashback-blockchain-application';
+configDevnet.app.label = 'cashback-blockchain-app';
 //configDevnet.components.storage.user = '<username>'; // In case you gave a different user than 'lisk' access to the database lisk_dev, you need to update the username in the config
 configDevnet.components.storage.password = '<password>'; // replace the <password> with the password for your database user
 
@@ -106,7 +106,7 @@ If everything is ok, the following logs will be displayed:
 ```
 $ node index.js | npx bunyan -o short
 14:01:39.384Z  INFO lisk-framework: Booting the application with Lisk Framework(0.1.0)
-14:01:39.391Z  INFO lisk-framework: Starting the app - cashback-blockchain-application
+14:01:39.391Z  INFO lisk-framework: Starting the app - cashback-blockchain-app
 14:01:39.392Z  INFO lisk-framework: Initializing controller
 14:01:39.392Z  INFO lisk-framework: Loading controller
 14:01:39.451Z  INFO lisk-framework: Old PID: 7707
@@ -300,7 +300,7 @@ Add the new transaction type to your application, by registering it to the appli
 const { Application, genesisBlockDevnet, configDevnet} = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
 const CashbackTransaction = require('./cashback_transaction'); // require the newly created transaction type 'CashbackTransaction'
 
-configDevnet.app.label = 'cashback-blockchain-application';
+configDevnet.app.label = 'cashback-blockchain-app';
 
 const app = new Application(genesisBlockDevnet, configDevnet); // create the application instance
 
@@ -610,7 +610,7 @@ To run the script from remote, change the configuration before creating the `App
 const { Application, genesisBlockDevnet, configDevnet} = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
 const CashbackTransaction = require('./cashback_transaction'); // require the newly created transaction type 'CashbackTransaction'
 
-configDevnet.app.label = 'cashback-blockchain-application';
+configDevnet.app.label = 'cashback-blockchain-app';
 configDevnet.modules.http_api.access.public = true; // make the API accessible from everywhere
 //configDevnet.modules.http_api.access.whitelist.push('1.2.3.4'); // example how to make the API accessible for specific IPs: add the host 1.2.3.4 to the whitelist of hosts
 

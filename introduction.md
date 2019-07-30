@@ -151,11 +151,11 @@ This is where the custom logic for your blockchain application lives.
 Add your custom transaction type to your blockchain application by registering it to the application instance:
 
 ```js
-const { Application, genesisBlockDevnet } = require('lisk-sdk');
+const { Application, genesisBlockDevnet, configDevnet } = require('lisk-sdk');
 
 const MyTransaction = require('./my_transaction');
 
-const app = new Application(genesisBlockDevnet);
+const app = new Application(genesisBlockDevnet, configDevnet);
 
 app.registerTransaction(MyTransaction); // register the custom transaction
 

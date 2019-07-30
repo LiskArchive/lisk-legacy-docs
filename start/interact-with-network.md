@@ -6,12 +6,11 @@ Every action that puts data on the blockchain, or gets data from it, is an inter
 
 ## Who or what interacts with the network?
 
-- __1. Developers__ will want to test and improve the functionality of blockchain applications. For quick interaction we recommend to use [Lisk Commander](#a-use-the-command-line).
-- __2. Exchanges__ interact heavily with the network, e.g. by transferring tokens for their customers. We highly recommend exchanges to [set up  a node](maintain-node.md) to interact with the network reliably.
-- __3. Delegates__ interact with the network by forging new blocks and adding them to the blockchain. A delegate is also typically a __node operator__.
-- __4. Node operators__ have a general interest in monitoring their node and the network. Their node provides them with a private API that can be used to make different queries or to post transactions to the network. Depending on their preferences, node operators might want to use [Lisk Commander](#a-use-the-command-line), [Lisk Elements](#b-write-scripts-in-javascript) or a graphical interface like [Lisk Hub](#c-use-lisk-hub).
-- __5. Applications__ interact through the API with the network. For convenience, applications would use wrappers like [@liskHQ/lisk-api-client](../lisk-sdk/lisk-elements/packages/api-client.md). 
-- __6. LSK Token Holders__ mostly interact with the network through Graphical User Interfaces such as wallet applications like [Lisk Hub](https://lisk.io/hub) or Lisk Mobile.
+- __1. Exchanges__ interact heavily with the network, e.g. by transferring tokens for their customers. We highly recommend exchanges to [set up  a node](maintain-node.md) to interact with the network reliably.
+- __2. Delegates__ interact with the network by forging new blocks and adding them to the blockchain. A delegate is also typically a __node operator__.
+- __3. Node operators and developers__ have a general interest in monitoring their node and the network. Their node provides them with a private API that can be used to make different queries or to post transactions to the network. Depending on their preferences, node operators might want to use [Lisk Commander](#a-use-the-command-line), [Lisk Elements](#b-write-scripts-in-javascript) or a graphical interface like [Lisk Hub](#c-use-lisk-hub).
+- __4. Applications__ interact through the API with the network. For convenience, applications would use wrappers like [@liskHQ/lisk-api-client](../lisk-sdk/lisk-elements/packages/api-client.md). 
+- __5. LSK Token Holders__ mostly interact with the network through Graphical User Interfaces such as wallet applications like [Lisk Hub](https://lisk.io/hub) or Lisk Mobile.
 
 
 ## How to interact with the network?

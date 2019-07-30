@@ -21,6 +21,7 @@ First, let's create the root folder for the Hello World App and initialize the p
 ```bash
 mkdir hello_world # create the root folder for the blockchain application
 cd hello_world # navigate into the root folder
+npm init --yes # initialize the manifest file of the project
 ```
 
 As next step, we want to install the `lisk-sdk` package and add it to our projects' dependencies.
@@ -46,7 +47,6 @@ As next step, we want to install the `lisk-sdk` package and add it to our projec
 > Before installing the Lisk SDK, make sure to follow the instructions in the [Lisk SDK - Pre-Install](../../lisk-sdk/setup.md#pre-installation) section.
 
 ```bash
-npm init --yes # initialize the manifest file of the project
 npm install --save lisk-sdk # install lisk-sdk as dependency for the node server side
 npm install --save @liskhq/lisk-validator @liskhq/lisk-cryptography @liskhq/lisk-transactions @liskhq/lisk-constants # install lisk-elements dependencies for the client side scripts
 ```
@@ -74,6 +74,8 @@ Next, let's configure the application, to provide basic information about the ap
 const { Application, genesisBlockDevnet, configDevnet } = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
 
 configDevnet.app.label = 'helloWorld-blockchain-app'; // change the label of the app
+//configDevnet.components.storage.user = '<username>'; // In case you gave a different user than 'lisk' access to the database lisk_dev, you need to update the username in the config
+configDevnet.components.storage.password = '<password>'; // replace the <password> with the password for your database user
 
 const app = new Application(genesisBlockDevnet, configDevnet); // create the application instance
 
@@ -271,8 +273,6 @@ class HelloTransaction extends BaseTransaction {
 	applyAsset(store) {
         const errors = [];
         const sender = store.account.get(this.senderId);
-        const newObj = { ...sender, asset: { hello: this.asset.hello } };
-        store.account.set(sender.address, newObj);
         if (sender.asset && sender.asset.hello) {
             errors.push(
                 new TransactionError(
@@ -438,7 +438,7 @@ Because the API of every node is only accessible from localhost by default, you 
 > Make sure your node is running, before sending the transaction
 
 ```bash
-node print_sendable_hello-world.js | tee >(curl -X POST -H "Content-Type: application/json" -d @- localhost:4000/api/transactions) # displays a raw transaction on the console
+node print_sendable_hello-world.js | tee >(curl -X POST -H "Content-Type: application/json" -d @- localhost:4000/api/transactions) # posts the tx object to the node and displays it on the console
 ```
 
 If the node accepted the transaction, it should respond with: 
@@ -448,12 +448,12 @@ If the node accepted the transaction, it should respond with:
 
 To verify, that the transaction got included in the blockchain as well, query the database of your node, where the blockchain data is stored:
 
-> Use as id the id of your transaction object, that gets created by the script `print_sendable_hello-world.js`
-
 Check, that the transaction got included into a block:
 
+> Use as `id` the id of your transaction object, that is posted to the node in the former step
+
 ```bash
-curl -X GET "http://localhost:4000/api/transactions?id=1199714748623931346"
+curl -X GET "http://localhost:4000/api/transactions?id=16130949532827670455"
 ```
 
 ```json
@@ -532,7 +532,6 @@ Your project should have now the following file structure:
 ```
 hello_world
 ├── client
-│   ├── create_sendable_transaction_base_trs.js
 │   └── print_sendable_hello-world.js
 ├── hello_transaction.js
 ├── index.js
@@ -566,8 +565,6 @@ app
         process.exit(1);
     });
 ```
-> *See the complete file on Github: [hello_world/index.js](https://github.com/LiskHQ/lisk-sdk-examples/tree/development/hello_world/index.js).*
-
 
 > __Optional:__ After first successful verification, you may want to reduce the default console log level (info) and file log level (debug).<br> 
 > You can do so, by passing a copy of the config object `configDevnet` with customized config for the logger component:

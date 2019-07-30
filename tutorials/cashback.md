@@ -18,6 +18,7 @@ First, let's create the root folder for the Cashback App and initialize the proj
 ```bash
 mkdir cashback # create the root folder for the blockchain application
 cd cashback # navigate into the root folder
+npm init --yes # initialize the manifest file of the project
 ```
 
 As next step, we want to install the `lisk-sdk` package and add it to our projects' dependencies.
@@ -42,7 +43,6 @@ As next step, we want to install the `lisk-sdk` package and add it to our projec
 > If you miss some of the dependencies, please go to [Lisk SDK - Pre-Install](../../lisk-sdk/setup.md#pre-installation) and follow the pre-installation steps for the SDK.
 
 ```bash
-npm init --yes # initialize the manifest file of the project
 npm install --save lisk-sdk # install lisk-sdk as dependency for the node server side
 npm install --save @liskhq/lisk-validator @liskhq/lisk-cryptography @liskhq/lisk-transactions @liskhq/lisk-constants # install lisk-elements dependencies for the client side scripts
 ```
@@ -70,6 +70,8 @@ Next, let's configure the application, to provide basic information about the ap
 const { Application, genesisBlockDevnet, configDevnet } = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
 
 configDevnet.app.label = 'cashback-blockchain-application';
+//configDevnet.components.storage.user = '<username>'; // In case you gave a different user than 'lisk' access to the database lisk_dev, you need to update the username in the config
+configDevnet.components.storage.password = '<password>'; // replace the <password> with the password for your database user
 
 const app = new Application(genesisBlockDevnet, configDevnet); // create the application instance
 
@@ -466,7 +468,7 @@ Because the API of every node is only accessible from localhost by default, you 
 > Make sure your node is running, before sending the transaction
 
 ```bash
-node print_sendable_cashback.js | tee >(curl -X POST -H "Content-Type: application/json" -d @- localhost:4000/api/transactions) # displays a raw transaction on the console
+node print_sendable_cashback.js | tee >(curl -X POST -H "Content-Type: application/json" -d @- localhost:4000/api/transactions) # posts the tx object to the node and displays it on the console
 ```
 
 If the node accepted the transaction, it should respond with: 
@@ -475,6 +477,8 @@ If the node accepted the transaction, it should respond with:
 ```
 
 To verify that the transaction was included in a block:
+
+> Use as `id` the id of your transaction object, that is posted to the node in the former step
 
 ```bash
 curl -X GET "http://localhost:4000/api/transactions?id=5372254888441494149" -H "accept: application/json"
@@ -590,7 +594,6 @@ Your project should have now the following file structure:
 ```
 cashback
 ├── client
-│   ├── create_sendable_transaction_base_trs.js
 │   └── print_sendable_cashback.js
 ├── cashback_transaction.js
 ├── index.js
@@ -609,7 +612,7 @@ const CashbackTransaction = require('./cashback_transaction'); // require the ne
 
 configDevnet.app.label = 'cashback-blockchain-application';
 configDevnet.modules.http_api.access.public = true; // make the API accessible from everywhere
-//customConfig.modules.http_api.access.whitelist.push('1.2.3.4'); // example how to make the API accessible for specific IPs: add the host 1.2.3.4 to the whitelist of hosts
+//configDevnet.modules.http_api.access.whitelist.push('1.2.3.4'); // example how to make the API accessible for specific IPs: add the host 1.2.3.4 to the whitelist of hosts
 
 const app = new Application(genesisBlockDevnet, configDevnet); // create the application instance
 
@@ -624,7 +627,6 @@ app
         process.exit(1);
     });
 ```
-> *See the complete file on Github: [cashback/index.js](https://github.com/LiskHQ/lisk-sdk-examples/tree/development/cashback/index.js).*
 
 > __Optional:__ After first successful verification, you may wan to reduce the default console log level (info) and file log level (debug).<br> 
 > You can do so, by passing a copy of the config object `configDevnet` with customized config for the logger component:

@@ -628,7 +628,7 @@ app
     });
 ```
 
-> __Optional:__ After first successful verification, you may wan to reduce the default console log level (info) and file log level (debug).<br> 
+> __Optional:__ After first successful verification, you may want to reduce the default console log level (info) and file log level (debug).<br> 
 > You can do so, by passing a copy of the config object `configDevnet` with customized config for the logger component:
 
 ```js

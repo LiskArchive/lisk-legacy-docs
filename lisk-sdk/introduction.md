@@ -58,6 +58,8 @@ Before running Lisk SDK, the following dependencies need to be installed in orde
 You can find further details on installing these dependencies in our [pre-installation setup guide](setup.md).
 
 Mind, that you need to create a database before. The default database name is `lisk_dev`, so for the development purposes, a command `createdb lisk_dev` will set you up.
+The default database user and password are `lisk` and `password`, they can be both changed in the [configuration](configuration.md) of Lisk SDK.
+
 
 ### Installation
 
@@ -82,7 +84,12 @@ npm install @liskhq/lisk-cryptography # install Lisk Elements Cryptography Packa
 
 ### Set up new a blockchain application
 
-To start, create the project structure of your blockchain application. There are no special requirements here, you can create the basic Node.js project folder structure with `npm init`.
+To start, create the project structure of your blockchain application. Then install the [Lisk SDK dependencies](setup.md) and the Lisk SDK afterwards.
+
+```bash
+npm init
+npm install --save lisk-sdk # make sure you installed the dependencies of lisk-sdk beforehand
+```
 
 To create a blockchain application, you need to provide an entry point of your application (like `index.js`) and set-up your network by using the modules of Lisk SDK.
 
@@ -122,6 +129,9 @@ You can also define your blockchain application parameters such as `BLOCK_TIME`,
 const app = new Application(genesisBlockDevnet, {
     app: {
         label: 'my-blockchain-application',
+        minVersion: '0.0.2',
+        version: '2.3.4',
+        protocolVersion: '4.1',
         genesisConfig: {
             EPOCH_TIME: new Date(Date.UTC(2016, 4, 24, 17, 0, 0, 0)).toISOString(),
             BLOCK_TIME: 10,

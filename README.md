@@ -4,15 +4,22 @@
 
 Welcome to the Lisk Documentation repository!
 
+Get started with the tutorials and getting started guides:
+
+- [Documentation Start](start/start.md)
+- [Getting started: Build a blockchain application](start/build-blockchain-app.md)
+- [Getting started: Interact with the network](start/interact-with-network.md)
+- [Getting started: Maintain a node](start/maintain-node.md)
+- [Tutorials](start/tutorials.md)
+- [Custom transactions](start/custom-transactions.md)
+
 See the documentation for each product:
 
-- [Lisk Protocol](https://github.com/LiskHQ/lisk-docs/blob/master/lisk-protocol/introduction.md)
-- [Lisk Core](https://github.com/LiskHQ/lisk-docs/blob/master/lisk-core/introduction.md)
-- [Lisk Elements](https://github.com/LiskHQ/lisk-docs/blob/master/lisk-elements/introduction.md)
-- [Lisk Commander](https://github.com/LiskHQ/lisk-docs/blob/master/lisk-commander/introduction.md)
-- [Lisk Explorer](https://github.com/LiskHQ/lisk-docs/blob/master/lisk-explorer/introduction.md)
-- [Lisk Hub](https://github.com/LiskHQ/lisk-docs/blob/master/lisk-hub/introduction.md)
-- [Lisk Mobile](https://github.com/LiskHQ/lisk-docs/blob/master/lisk-mobile/intro.md)
+- [Lisk SDK](lisk-sdk/introduction.md)
+- [Lisk SDK](lisk-sdk/introduction.md) > [Lisk Framework](lisk-sdk/lisk-framework/introduction.md) 
+- [Lisk SDK](lisk-sdk/introduction.md) > [Lisk Elements](lisk-sdk/lisk-elements/introduction.md)   
+- [Lisk SDK](lisk-sdk/introduction.md) > [Lisk Commander](lisk-sdk/lisk-commander/introduction.md) 
+- [Lisk Core](lisk-core/introduction.md)                    
 
 ## View previous versions of the documentation
 
@@ -32,9 +39,6 @@ core-1.3.0
 elements-2.1.0
 commander-2.0.0
 ```
-
-> If changes are made to the documentation in between two product versions, a new tag will be created for it and a documentation version will be appended to the tag.
-> Example: `commander-2.0.0-1.0.1`
 
 ## Contribute to Lisk Documentation
 

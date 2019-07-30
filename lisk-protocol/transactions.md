@@ -137,7 +137,6 @@ The JSON object that will be broadcast to the network follows the format below:
     "asset": {
         "delegate": {
             "username": The chosen username
-            "publicKey": The public key of the delegate (the sender)
         }
     }
     ...

@@ -10,6 +10,7 @@
   1. [Get configuration and Makefile](#get-configuration-and-makefile)
   2. [Set environment variables](#set-environment-variables)
   3. [Coldstart application](#coldstart-application)  
+- [Post-Install](#post-installation-optional)
 
 ## Pre-install
 
@@ -76,12 +77,12 @@ sudo usermod -aG docker lisk   # add the user to docker group
 
 ### Get configuration and Makefile
 
-Clone the [Lisk Repository](https://github.com/LiskHQ/lisk). 
+Clone the [Lisk Repository](https://github.com/LiskHQ/lisk-core). 
 
 ```bash
-su - lisk                                    # switch to lisk user
-git clone git@github.com:LiskHQ/lisk-sdk.git # clone the repository
-cd lisk/docker                               # navigate into docker directory
+sudo -u lisk -i                                    # switch to lisk user
+git clone https://github.com/LiskHQ/lisk-core.git  # clone the repository
+cd lisk-core/docker                                # navigate into docker directory
 ```
 
 It contains a directory `docker` with the following files:
@@ -118,16 +119,18 @@ Where `{network}` stands for the Lisk network you want to connect to.
 
 #### Option 1: Makefile
 
-We recommend to use the Makefile:
-
-```bash
-make  # will run `docker-compose up` for you
-```
-
+We recommend using the Makefile.
 Makefile provides a convenient way to [sync your node from snapshot](../administration/docker.md#sync-from-snapshot):
 
 ```bash
-make coldstart  # will download and restore a blockchain snapshot for you
+make coldstart  # will download and restore from a recent blockchain snapshot for you
+```
+
+> **Note:** If you want to synchronize your node starting form the genesis block, it might take a significant amount of time until your local node will be fully syncronized with the blockchain network.
+> We recommend to use "make coldstart" in case you want/need your node ready to use quickly.
+
+```bash
+make  # will sync from genesis block on first startup
 ```
 
 #### Option 2: docker-compose
@@ -138,4 +141,90 @@ docker-compose ps    # see the status of Lisk Core
 docker-compose logs  # see logs
 ```
 
+### Verify
+
+As final step, verify your node is connected and in sync with the network, e.g. by asking about your nodes' status by using the API:
+
+```bash
+docker-compose exec lisk curl http://localhost:<PORT>/api/node/status --header "accept: application/json"
+```
+
+Where `<PORT>` is the network specific `httpPort` of your node.
+
+The result should look like this:
+
+```json
+{
+  "meta": {},
+  "data": {
+    "broadhash": "ca930994bc1a6a92a47afb7310e3d9903f5e98ce56a6c5fdf444ba34f24c1543",
+    "consensus": 94,
+    "currentTime": 1558358294074,
+    "secondsSinceEpoch": 94249094,
+    "height": 8306047,
+    "loaded": true,
+    "networkHeight": 8306047,
+    "syncing": false,
+    "transactions": {
+      "confirmed": 928836,
+      "unconfirmed": 0,
+      "unprocessed": 0,
+      "unsigned": 0,
+      "total": 928836
+    }
+  },
+  "links": {}
+}
+```
+
+When your node is synced, the values of `networkHeight` and `height` should be (nearly) equal.
+
+To fully verify that your node is in sync with the network, go to the [Lisk Explorer(Mainnet)](https://explorer.lisk.io/) or [Lisk Explorer(Testnet)](https://testnet-explorer.lisk.io/) and compare the Network height in the explorer with the height of your node. 
+Again, they should be (nearly) equal.
+
+If needed, use the different Explorer tools for further verification, like comparing the last forged blocks on the chain.
+
+From this point, your node should be fully functional.
+
 As next step, check out [Docker Administration](../administration/docker.md) to learn how to manage your Node.
+
+## Post-installation (optional)
+
+### Ubuntu 
+
+You may want to set up a service for Lisk Core, that takes care of restarting it automatically after server restarts:
+
+```
+# /etc/systemd/system/docker-compose-lisk.service
+
+[Unit]
+Description=Docker Compose Application Service
+Requires=docker.service
+After=docker.service
+
+[Service]
+WorkingDirectory=/home/lisk/lisk-core/docker/testnet/
+ExecStart=/usr/local/bin/docker-compose up
+TimeoutStartSec=0
+Restart=on-failure
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+[Install]
+WantedBy=multi-user.target
+```
+
+> **Note for delegates:** You still need to enable forging manually after a restart of Lisk Core.
+
+To enable the service, run:
+
+```bash
+systemctl enable docker-compose-lisk
+```
+
+Check the service by running:
+
+```bash
+systemctl status docker-compose-lisk.service # display the status of the service
+sudo journalctl -u docker-compose-lisk.service # display the logs of the service
+```

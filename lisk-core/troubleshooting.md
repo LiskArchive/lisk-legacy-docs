@@ -63,7 +63,7 @@ Edit [`config.json`](configuration.md) and replace the value "lisk" in `db.user`
 ### Nothing shown in the console after starting Lisk Core (Source)
 
 #### Problem: 
-After installing from Source and starting Lisk Core with `npm start`, no are logs visible in the console.
+After installing from Source and starting Lisk Core with `node dist/index.js`, no are logs visible in the console.
 This is, in fact, an expected behavior, as the default console logging value in the config is `none`, which means no logs are shown in the console after starting the process.
 
 #### Solution: 

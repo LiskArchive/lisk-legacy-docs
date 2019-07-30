@@ -88,7 +88,7 @@ To start, create the project structure of your blockchain application. Then inst
 
 ```bash
 npm init
-npm install lisk-sdk # make sure you installed the dependencies of lisk-sdk beforehand
+npm install --save lisk-sdk # make sure you installed the dependencies of lisk-sdk beforehand
 ```
 
 To create a blockchain application, you need to provide an entry point of your application (like `index.js`) and set-up your network by using the modules of Lisk SDK.

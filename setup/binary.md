@@ -39,15 +39,15 @@ To complete the installation some prerequisites need to be fulfilled.  If you ha
 
 ### Ports
 
->__Mandatory:__ Always open the __Websocket__ port of your desired network, to enable communication with other peer nodes.<br>
-> __Optional:__ Open the corresponding HTTP port for your network, to make your nodes' [API](https://lisk.io/documentation/lisk-core/api) reachable.<br>
+>__Mandatory:__ Always open the __WebSocket__ port of your desired network, to enable communication with other peer nodes.<br>
+> __Optional:__ Open the corresponding HTTP port for your network, to make your node's [API](https://lisk.io/documentation/lisk-core/api) reachable.<br>
 > For more info, see the diagram on the [Interact with network](../../start/interact-with-network.md) page.
 
 To connect to the desired network with Lisk Core, please ensure that the corresponding ports are open:
 
 > Lisk Core installed by lisk Commander currently uses the default ports, incremented by +2. If you want to change it back to the [default ports](#open-the-necessary-ports) ports, just change the [config](../configuration.md) of your Lisk Core, once it's installed.
 
-| Network | HTTP           | Websocket   |
+| Network | HTTP           | WebSocket   |
 | --------|----------------|-------------|
 | Mainnet | 8002           | 8003        |
 | Testnet | 7002           | 7003        |
@@ -107,19 +107,19 @@ To complete the installation some prerequisites need to be fulfilled. If you hav
 
 ### Open the necessary ports
 
->__Mandatory:__ Always open the __Websocket__ port of your desired network, to enable communication with other peer nodes.<br>
-> __Optional:__ Open the corresponding HTTP port for your network, to make your nodes' [API](https://lisk.io/documentation/lisk-core/api) reachable.<br>
+>__Mandatory:__ Always open the __WebSocket__ port of your desired network, to enable communication with other peer nodes.<br>
+> __Optional:__ Open the corresponding HTTP port for your network, to make your node's [API](https://lisk.io/documentation/lisk-core/api) reachable.<br>
 > For more info, see the diagram on the [Interact with network](../../start/interact-with-network.md) page.
 
 To connect to the desired network with Lisk Core, please ensure that the corresponding ports are open:
 
-| Network | HTTP           | Websocket   |
+| Network | HTTP           | WebSocket   |
 | --------|----------------|-------------|
 | Mainnet | 8000           | 8001        |
 | Testnet | 7000           | 7001        |
 | Devnet  | 4000           | 5000        |
 
-These are the default ports for connecting with the network. They can be [altered](../configuration.md) later in the [`config.json`](https://github.com/LiskHQ/lisk-core/blob/master/config/mainnet/config.json#L21).
+These are the default ports for connecting with the network. They can be [altered](../configuration.md) later in the [`config.json`](https://github.com/LiskHQ/lisk-core/blob/master/config/mainnet/config.json#L21) file.
 
 ### Install dependencies
 

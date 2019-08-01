@@ -40,7 +40,7 @@ We assume that you have already installed Lisk Core and are familiar with the ap
 - Revisit the [setup](introduction.md#lisk-core-distributions) steps before continuing.
 - Verify that the following ports are open, depending on the network:
 
-| Network | HTTP | Websocket |
+| Network | HTTP | WebSocket |
 | -----------|-------------|-------------|
 | Mainnet | 8000         | 8001        |
 | Testnet   | 7000         | 7001        |

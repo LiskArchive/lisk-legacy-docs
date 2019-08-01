@@ -28,18 +28,21 @@ Firstly, please determine if your platform can install Lisk Core from source.
 - MacOS 10.13 (High Sierra)
 - MacOS 10.14 (Mojave)
 
-### Open necessary ports
+### Open the necessary ports
+
+>__Mandatory:__ Always open the __WebSocket__ port of your desired network, to enable communication with other peer nodes.<br>
+> __Optional:__ Open the corresponding HTTP port for your network, to make your nodes' [API](https://lisk.io/documentation/lisk-core/api) reachable.<br>
+> For more info, see the diagram on the [Interact with network](../../start/interact-with-network.md) page.
 
 To connect to the desired network with Lisk Core, please ensure that the corresponding ports are open:
 
-| Network | httpPort(HTTP) | wsPort(TCP) |
-| -----------|-------------|-------------|
-| Mainnet    | 8000        | 8001        |
-| Testnet    | 7000        | 7001        |
-| Betanet    | 5000        | 5001        |
-| Devnet     | 4000        | 5000        |
+| Network | HTTP           | WebSocket   |
+| --------|----------------|-------------|
+| Mainnet | 8000           | 8001        |
+| Testnet | 7000           | 7001        |
+| Devnet  | 4000           | 5000        |
 
-These are the default ports for connecting with the network, they can be altered later in `config.json`. 
+These are the default ports for connecting with the network. They can be [altered](../configuration.md) later in the [`config.json`](https://github.com/LiskHQ/lisk-core/blob/master/config/mainnet/config.json#L21) file.
 
 ### Create a new user
 

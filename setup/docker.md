@@ -46,15 +46,18 @@ Install `make` using your package manager. For example, use `apt-get` if running
 sudo apt-get install make
 ```
 
-### Open necessary ports
+### Open the necessary ports
+
+>__Mandatory:__ Always open the __Websocket__ port of your desired network, to enable communication with other peer nodes.<br>
+> __Optional:__ Open the corresponding HTTP port for your network, to make your nodes' [API](https://lisk.io/documentation/lisk-core/api) reachable.<br>
+> For more info, see the diagram on the [Interact with network](../../start/interact-with-network.md) page.
 
 To connect to the desired network with Lisk Core, please ensure that the corresponding ports are open:
 
-| Network | httpPort(HTTP) | wsPort(TCP) |
+| Network | HTTP           | Websocket   |
 | --------|----------------|-------------|
 | Mainnet | 8000           | 8001        |
 | Testnet | 7000           | 7001        |
-| Betanet | 5000           | 5001        |
 | Devnet  | 4000           | 5000        |
 
 These are the default ports for connecting with the network, these can be altered later in `.env`.

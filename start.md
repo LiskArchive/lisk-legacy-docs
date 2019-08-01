@@ -32,7 +32,7 @@ Tool                                                         | Description
 
 ## How to Contribute
 
-Thanks to our developer community, there are over 80 tools built that you can make use of. 
+Thanks to our developer community, there are [over 80 tools](https://docs.google.com/spreadsheets/d/1EJ2ni5LBBNM43cCFkvQ7lYyAHeGm_cFwOQkfAqd-fQc/edit#gid=0) built that you can make use of. 
 There are several ways to participate as a developer:
 
  How                                                                                   | Where

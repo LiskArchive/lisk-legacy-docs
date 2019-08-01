@@ -56,15 +56,39 @@ Ensure that both [XCode](https://developer.apple.com/xcode/) and [Homebrew](http
 ### PostgreSQL
 
 To install Postgres follow the intructions descibed below, depending on the operating system your machine is running on. 
+
+Two different ways of installing Docker on your system are described below.
 If you run into issues when trying to set up PostgreSQL on your machine, try to install it inside of a docker container.
 
 > We recommend using Postgres with Docker for a quick and straight forward setup of Postgres.
  
-#### A. Postgres with Docker
+#### Option A. Postgres with Docker
 
 Running Postgres inside a Docker container will setup the correct version of Postgres and containerize it away from any existing versions you may have locally on your machine.
 Choose this setup if you are not familiar with Postgres, or if you run in to issues with a previously installed version of Postgres.
-To perform the command below successfully, install Docker like described in the [Setup page of Lisk Core Docker distribution](../lisk-core/setup/docker.md).
+
+##### Install Docker
+To perform the command below successfully, install Docker first:
+
+__Supported Platforms:__
+Please refer to https://docs.docker.com/engine/installation/#desktop
+
+##### Mac OS X
+
+Please refer to https://docs.docker.com/docker-for-mac/install/. 
+Please note that Docker for Mac already includes Docker Compose. 
+Install `make` using [XCode](https://developer.apple.com/xcode/features/) 
+
+##### Windows
+
+Please refer to https://docs.docker.com/docker-for-windows/install/
+Please note that Docker for Windows includes Docker Compose.
+
+##### Linux
+
+Please refer to https://docs.docker.com/engine/installation/#server
+
+##### Start the Docker container
 
 > If you have other versions of PostgreSQL installed on your machine, make sure to stop them before starting the docker container.
 
@@ -72,7 +96,7 @@ To perform the command below successfully, install Docker like described in the 
 docker run --name lisk_sdk_db -p 5432:5432 -e POSTGRES_USER=lisk -e POSTGRES_PASSWORD=password -e POSTGRES_DB=lisk_dev -d postgres:10
 ```
 
-This will install PostgreSQL version 10 (`postgres:10`) in a container with name `lisk_core_db` and binds the port `5432` of the container with the same port of the machine.
+This will install PostgreSQL version 10 (`postgres:10`) in a container with name `lisk_sdk_db` and binds the port `5432` of the container with the same port of the machine.
 As environment variables we expose `POSTGRES_USER=lisk` to create the lisk user and `POSTGRES_PASSWORD=password` to set the password for the lisk user.
 Finally the environment variable `POSTGRES_DB` creates the database `lisk_dev` with the `lisk` user as owner.
 
@@ -91,7 +115,9 @@ In case you want to access Postgres with `psql` inside the container, run:
 docker exec --tty --interactive lisk_sdk_db psql -h localhost -U lisk -d postgres
 ```
 
-#### B. Postgres system-wide
+#### Option B. Postgres system-wide
+
+An alternative way to install Postgres on the system without Docker.
 
 ##### Ubuntu
 

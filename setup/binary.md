@@ -53,7 +53,7 @@ To connect to the desired network with Lisk Core, please ensure that the corresp
 | Testnet | 7002           | 7003        |
 | Devnet  | 4002           | 5002        |
 
-These are the default ports for connecting with the network. They can be [altered](../configuration.md) later in the [`config.json`](https://github.com/LiskHQ/lisk-core/blob/master/config/mainnet/config.json#L21).
+These are the default ports for connecting with the network. They can be [altered](../configuration.md) later in the [`config.json`](https://github.com/LiskHQ/lisk-core/blob/master/config/mainnet/config.json#L21) file.
 
 ### Install Lisk Commander
 

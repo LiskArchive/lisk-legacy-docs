@@ -54,7 +54,6 @@ Version | Release date <br> (yy/mm/dd)| Documentation reference
 
 Lisk Commander requires [Node.js](https://nodejs.org/) as the underlying engine for code execution.
 
-
 #### Install Node
 
 Node.js is supported on most operating systems. Follow the instructions for your operating system on the [Node.js downloads page](https://nodejs.org/en/download/). 
@@ -101,5 +100,5 @@ All necessary information can be found on our [Lisk Commander Github](https://gi
 ### Contribution Guidelines
 Please be sure to read and follow our [Contribution Guidelines](https://github.com/LiskHQ/lisk-sdk/blob/development/docs/CONTRIBUTING.md).
 
-### Gitter
-If you have any further questions please join our [Gitter](https://gitter.im/LiskHQ/lisk) channel.
+### Discord
+If you have any further questions please join our [Lisk Discord](https://discord.gg/GA9DZmt) channel.

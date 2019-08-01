@@ -2,9 +2,6 @@
 
 # Lisk SDK
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
-[![Join the chat at https://gitter.im/LiskHQ/lisk](https://badges.gitter.im/LiskHQ/lisk.svg)](https://gitter.im/LiskHQ/lisk?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
 ## Disclaimer: Mostly Harmless
 
 Please read our disclaimer carefully. The current version of the SDK is the alpha release of the Lisk SDK.
@@ -182,8 +179,7 @@ The diagram below provides a high-level overview of the architecture:
 
 | How                           | Where                                                                                            |
 | -------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Introduce yourself to our community  | [Lisk.chat](http://lisk.chat)                                                |
-| Have questions answered by developers | [Gitter](https://gitter.im/LiskHQ/lisk)                                      |
+| Introduce yourself to our community  | [Lisk Discord](https://discord.gg/GA9DZmt)                                                  |
 | Report a bug                      | [Open a new issue on GitHub](https://github.com/LiskHQ/lisk/issues/new)                                  |
 | Report a security issue           | [View Bug Bounty Program](https://blog.lisk.io/announcing-lisk-bug-bounty-program-5895bdd46ed4) |
 | Discuss technical research      | [Research Forum](https://research.lisk.io)                                              |

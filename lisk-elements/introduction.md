@@ -131,5 +131,5 @@ All necessary information can be found on our [Lisk Elements Github](https://git
 ### Contribution Guidelines
 Please be sure to read and follow our [Contribution Guidelines](https://github.com/LiskHQ/lisk-sdk/blob/development/docs/CONTRIBUTING.md).
 
-### Gitter
-If you have any further questions please join our [Gitter](https://gitter.im/LiskHQ/lisk) channel.
+### Discord
+If you have any further questions please join our [Lisk Discord](https://discord.gg/GA9DZmt) channel.

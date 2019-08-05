@@ -79,11 +79,6 @@ Please refer to https://docs.docker.com/docker-for-mac/install/.
 Please note that Docker for Mac already includes Docker Compose. 
 Install `make` using [XCode](https://developer.apple.com/xcode/features/) 
 
-##### Windows
-
-Please refer to https://docs.docker.com/docker-for-windows/install/
-Please note that Docker for Windows includes Docker Compose.
-
 ##### Linux
 
 Please refer to https://docs.docker.com/engine/installation/#server

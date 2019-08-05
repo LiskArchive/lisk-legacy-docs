@@ -2,9 +2,9 @@
 
 # Lisk SDK
 
-## Disclaimer: Mostly Harmless
+## Mostly Harmless
 
-Please read our disclaimer carefully. The current version of the SDK is the alpha release of the Lisk SDK.
+Please read this carefully. The current version of the SDK is the alpha release of the Lisk SDK.
 We have released the Lisk SDK in its current form in order for us to improve the development experience through community feedback and contributions.
 
 We strongly discourage anyone from using the alpha release of the Lisk SDK for any production-based blockchain applications, i.e. a blockchain operating on a real mainnet.
@@ -184,3 +184,8 @@ The diagram below provides a high-level overview of the architecture:
 | Report a security issue           | [View Bug Bounty Program](https://blog.lisk.io/announcing-lisk-bug-bounty-program-5895bdd46ed4) |
 | Discuss technical research      | [Research Forum](https://research.lisk.io)                                              |
 | Build with Lisk          | [Create a fork on GitHub](https://github.com/LiskHQ/lisk/fork)                                           |
+
+## Legal disclaimer: 
+
+By using the Alpha release of the Lisk SDK, you acknowledge and agree that you have an adequate understanding of the risks associated with the use of the Alpha release of the Lisk SDK and that it is provided on an “as is” and “as available” basis, without any representations or warranties of any kind.
+To the fullest extent permitted by law, in no event shall the Lisk Foundation or other parties involved in the development of the Alpha release of the Lisk SDK have any liability whatsoever to any person for any direct or indirect loss, liability, cost, claim, expense or damage of any kind, whether in contract or in tort, including negligence, or otherwise, arising out of or related to the use of all or part of the Alpha release of the Lisk SDK.

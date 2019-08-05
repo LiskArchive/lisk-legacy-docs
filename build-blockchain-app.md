@@ -32,7 +32,7 @@ To get your blockchain application started for the first time, follow the steps 
 ### 2. Configure and customize the application
 
 #### A. Configure modules and components
-After the first successful start, feel free to [configure](../lisk-sdk/lisk-framework/configuration.md) the [Modules](../lisk-sdk/lisk-framework/introduction.md#modules) and [Components](../lisk-sdk/lisk-framework/introduction.md#components) to suit your specific needs.
+After the first successful start, feel free to [configure](../lisk-sdk/configuration.md) the [Modules](../lisk-sdk/lisk-framework/introduction.md#modules) and [Components](../lisk-sdk/lisk-framework/introduction.md#components) to suit your specific needs.
 
 It is also possible to exchange Modules with different ones, or to add new Modules to provide additional functionality.
 
@@ -41,7 +41,9 @@ To view the list of currently available ready-to-use Modules and Components, che
 For a full list of all config options and their default values, see the [List of configuration options](../lisk-sdk/configuration.md#list-of-configuration-options) or the file [config_devnet.json](https://github.com/LiskHQ/lisk-sdk/blob/development/sdk/src/samples/config_devnet.json) on GitHub.
 
 #### B. Register custom transaction types
-Transactions are the main way to add data to your blockchain. The most basic transaction types are part of almost all blockchains, for example a transaction type for creating new accounts on the network, or a transaction type to send tokens from one account to another. You can choose the appropriate transaction types for your application and its use case.
+Transactions are the main way to add data to your blockchain.
+The most basic transaction type, which is part of most blockchains, is for example a transfer-transaction type to send tokens from one account to another.
+You can choose the appropriate transaction types for your application and its use case.
 
 For comparison, please view the [list of all transaction types](../lisk-protocol/transactions.md) which are implemented in the Lisk Protocol.
 

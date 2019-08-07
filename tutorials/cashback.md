@@ -372,7 +372,7 @@ const tx = new CashbackTransaction({
 tx.sign('wagon stock borrow episode laundry kitten salute link globe zero feed marble');
 
 console.log(tx.stringify());
-process.exit(1);
+process.exit(0);
 ```
 > *See the complete file on Github: [cashback/client/print_sendable_cashback.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/cashback/client/print_sendable_cashback.js).*
 

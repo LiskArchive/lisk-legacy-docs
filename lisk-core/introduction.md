@@ -172,5 +172,5 @@ All necessary information can be found on our [Lisk Core Github](https://github.
 ### Contribution Guidelines
 Please be sure to read and follow our [Contribution Guidelines](https://github.com/LiskHQ/lisk-core/blob/master/docs/CONTRIBUTING.md).
 
-### Gitter
-If you have any further questions please join our [Gitter](https://gitter.im/LiskHQ/lisk).
+### Discord
+If you have any further questions please join our [Lisk Discord](https://discord.gg/GA9DZmt) channel.

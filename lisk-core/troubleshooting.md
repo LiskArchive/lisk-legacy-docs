@@ -93,4 +93,4 @@ We further explain the chosen naming to avoid confusion:
 - **Passphrase** is always referring to your 12-word long mnemonic passphrase that was created at the same time as your Lisk ID. You should always keep this secure and private! For communication with the API, the passphrase is not passed in plaintext. Instead, the password is passed so you use it to encrypt your passphrase and the encrypted passphrase is stored in your [config](configuration.md).
 - **Password** is always referring to the secret word/s you use to encrypt your passphrase symmetrically like described in the [Forging section](configuration.md#forging).
 
-Should you have any further queries please reach out to one of the team or the Lisk community on [Lisk Chat](https://lisk.chat/home)
+Should you have any further queries please reach out to one of the team or the Lisk community on [Lisk Discord](https://discord.gg/GA9DZmt)

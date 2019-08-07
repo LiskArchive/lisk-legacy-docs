@@ -400,7 +400,7 @@ let tx =  new HelloTransaction({ // the desired transaction gets created and sig
 tx.sign('wagon stock borrow episode laundry kitten salute link globe zero feed marble');
 
 console.log(tx.stringify()); // the transaction is displayed as JSON object in the console
-process.exit(1); // stops the process after the transaction object has been printed
+process.exit(0); // stops the process after the transaction object has been printed
 ```
 > *See the complete file on Github: [hello_world/client/print_sendable_hello-world.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/hello_world/client/print_sendable_hello-world.js).*
 

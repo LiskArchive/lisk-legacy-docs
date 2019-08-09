@@ -370,7 +370,7 @@ app
 ```
 > *See the file on Github: [hello_world/index.js](https://github.com/LiskHQ/lisk-sdk-examples/tree/development/hello_world/index.js).*
 
-After adding the 2 new lines to your `hello_transaction.js` file, save and close it.
+After adding the 2 new lines to your `index.js` file, save and close it.
 
 ## 5. Start the network
 

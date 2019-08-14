@@ -51,7 +51,7 @@ npm install --save lisk-sdk # install lisk-sdk as dependency for the node side
 npm install --save @liskhq/lisk-validator @liskhq/lisk-cryptography @liskhq/lisk-transactions @liskhq/lisk-constants # install lisk-elements dependencies for the client side scripts
 ```
 
-> Mind, that you need to create a database before.
+> If you haven't already, you need to create a database before.
 > The default database name is `lisk_dev`, so for the development purposes, a command `createdb lisk_dev` will set you up.
 > The default database user and password are `lisk` and `password`, they can be both changed in the configuration of Lisk SDK.
 
@@ -90,7 +90,7 @@ To do this, open the file `index.js` that was created with the command above, an
 //index.js
 const { Application, genesisBlockDevnet, configDevnet } = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
 
-configDevnet.app.label = 'helloWorld-blockchain-app'; // change the label of the app
+configDevnet.app.label = 'hello-world-blockchain-app'; // change the label of the app
 //configDevnet.components.storage.user = '<username>'; // If you gave a different user than 'lisk' access to the database lisk_dev, you need to update the username in the config
 configDevnet.components.storage.password = 'password'; // replace password with the password for your database user
 
@@ -351,7 +351,7 @@ Add the new transaction type to your application, by registering it to the appli
 const { Application, genesisBlockDevnet, configDevnet} = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
 const HelloTransaction = require('./hello_transaction'); // require the newly created transaction type 'HelloTransaction'
 
-configDevnet.app.label = 'helloWorld-blockchain-app'; // change the label of the app
+configDevnet.app.label = 'hello-world-blockchain-app'; // change the label of the app
 //configDevnet.components.storage.user = '<username>'; // If you gave a different user than 'lisk' access to the database lisk_dev, you need to update the username in the config
 configDevnet.components.storage.password = 'password'; // replace password with the password for your database user
 
@@ -584,7 +584,7 @@ To run the script from remote, change the configuration before creating the `App
 const { Application, genesisBlockDevnet, configDevnet} = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
 const HelloTransaction = require('./hello_transaction'); // require the newly created transaction type 'HelloTransaction'
 
-configDevnet.app.label = 'helloWorld-blockchain-app'; // change the label of the app
+configDevnet.app.label = 'hello-world-blockchain-app'; // change the label of the app
 //configDevnet.components.storage.user = '<username>'; // If you gave a different user than 'lisk' access to the database lisk_dev, you need to update the username in the config
 configDevnet.components.storage.password = 'password'; // replace password with the password for your database user
 

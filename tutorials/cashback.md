@@ -47,7 +47,7 @@ npm install --save lisk-sdk # install lisk-sdk as dependency for the node server
 npm install --save @liskhq/lisk-validator @liskhq/lisk-cryptography @liskhq/lisk-transactions @liskhq/lisk-constants # install lisk-elements dependencies for the client side scripts
 ```
 
-> Mind, that you need to create a database before.
+> If you haven't already, you need to create a database before you start.
 > The default database name is lisk_dev, so for the development purposes, a command createdb lisk_dev will set you up.
 > The default database user and password are lisk and password, they can be both changed in the configuration of Lisk SDK.
 

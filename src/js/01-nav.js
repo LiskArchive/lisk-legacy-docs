@@ -86,7 +86,7 @@
     var rect = panel.getBoundingClientRect()
     var effectiveHeight = rect.height
     var navStyle = window.getComputedStyle(nav)
-    if (navStyle.position === 'sticky') effectiveHeight -= (rect.top - parseFloat(navStyle.top))
+    if (navStyle.position === 'sticky') effectiveHeight -= rect.top - parseFloat(navStyle.top)
     panel.scrollTop = Math.max(0, (el.getBoundingClientRect().height - effectiveHeight) * 0.5 + el.offsetTop)
   }
 

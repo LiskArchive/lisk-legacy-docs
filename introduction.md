@@ -9,7 +9,6 @@ Lisk Elements is a JavaScript library containing several separately-installable 
     - [Installation](#installation)
   - [Upgrade](#upgrade)
     - [via NPM](#upgrade-lisk-elements-via-npm)
-    - [via CDN](#upgrade-lisk-elements-via-cdn)
   - [Contribute to Codebase](#contribute-to-the-codebase)
 - [Packages](packages.md): Stand-alone packages of Lisk Elements
   - [API Client](packages/api-client.md): An API client for interacting with nodes on the Lisk network.
@@ -100,11 +99,7 @@ To include other packages of Lisk Elements, replace `lisk-client` with any of th
 
 # Upgrade
 
-If you already have Lisk Elements installed and wish to upgrade your installation, you can follow the instructions below for your specific distribution.
-
-## Upgrade Lisk Elements via NPM
-
-To update your global installation to the latest version of Lisk Elements, simply run the following command:
+To update your installation to the latest version of Lisk Elements, simply run the following command:
 
 ```bash
 npm update --save lisk-elements

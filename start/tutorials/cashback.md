@@ -47,31 +47,46 @@ npm install --save lisk-sdk # install lisk-sdk as dependency for the node server
 npm install --save @liskhq/lisk-validator @liskhq/lisk-cryptography @liskhq/lisk-transactions @liskhq/lisk-constants # install lisk-elements dependencies for the client side scripts
 ```
 
-Make sure to start with a fresh database:
+> If you haven't already, you need to create a database before you start.
+> The default database name is lisk_dev, so for the development purposes, a command createdb lisk_dev will set you up.
+> The default database user and password are lisk and password, they can be both changed in the configuration of Lisk SDK.
+
+Make sure to start with a fresh database.
+
+For the system-wide Postgres installation:
 ```bash
 psql
-> DROP DATABASE lisk_dev;
-> CREATE DATABASE lisk_dev OWNER lisk;
-> \q
+```
+
+If you have installed [Postgres with Docker](../../lisk-sdk/setup.md#option-a-postgres-with-docker), you need to run the following command, to access Postgres:
+```bash
+docker exec --tty --interactive lisk_sdk_db psql -h localhost -U lisk -d postgres
+```
+
+After connecting to your Postgres shell, you can drop and recreate the database.
+```bash
+ DROP DATABASE lisk_dev;
+ CREATE DATABASE lisk_dev OWNER lisk;
+ \q
 ```
 
 Create the file `index.js`, which will hold the logic to initialize and start the blockchain application.
-
 ```bash
 touch index.js # create the index file
 ```
 
 ## 2. Configure the application
 
-Next, let's configure the application, to provide basic information about the application we are going to build:
+Next, let's configure the application, to provide basic information about the application we are going to build.
 
+To do this, open the file `index.js` that was created with the command above, and insert the following code:
 ```js
 //index.js
 const { Application, genesisBlockDevnet, configDevnet } = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
 
 configDevnet.app.label = 'cashback-blockchain-app';
 //configDevnet.components.storage.user = '<username>'; // In case you gave a different user than 'lisk' access to the database lisk_dev, you need to update the username in the config
-configDevnet.components.storage.password = '<password>'; // replace the <password> with the password for your database user
+configDevnet.components.storage.password = 'password'; // replace password with the password for your database user
 
 const app = new Application(genesisBlockDevnet, configDevnet); // create the application instance
 
@@ -95,6 +110,7 @@ By passing the parameters for the [genesis block](../../lisk-sdk/configuration.m
 
 > If you want to change any of the values for `configDevnet`, check out the [full list of configurations](../../lisk-sdk/configuration.md#list-of-configuration-options) for Lisk SDK and overwrite them like described in [step 7](#7-customize-the-default-configuration)
 
+After adding the code block above, you can save and close `index.js`.
 At this point, you already can start the node and the network, to verify that the setup was successful:
 
 ```bash
@@ -189,6 +205,7 @@ $ node index.js | npx bunyan -o short
 14:01:40.627Z  INFO lisk-framework: Forging enabled on account: 2003981962043442425L
 [...]
 ```
+To stop the blockchain process, press `CTRL + C`.
 
 ## 3. Create a new transaction type
 
@@ -210,6 +227,7 @@ Now, let's create a new file `cashback_transaction.js` which is defines the new 
 touch cashback_transaction.js
 ```
 
+To do this, open the file `cashback_transaction.js` that was created with the command above, and insert the following code:
 ```js
 //cashback_transaction.js
 const {
@@ -281,6 +299,8 @@ module.exports = CashbackTransaction;
 ``` 
 > *See the file on Github: [cashback/cashback_transaction.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/cashback/cashback_transaction.js)*
 
+After adding the code block above, save and close `cashback_transaction.js`.
+
 ## 4. Register the new transaction type
 
 Right now, your project should have the following file structure:
@@ -293,14 +313,18 @@ cashback
 └──package.json
 ```
 
-Add the new transaction type to your application, by registering it to the application instance:
+Add the new transaction type to your application, by registering it to the application instance inside of `index.js`.
+
+> You only need to add 2 new lines (line 3 and 11) to your existing `index.js`, to register the new transaction type.
 
 ```js
 //index.js
 const { Application, genesisBlockDevnet, configDevnet} = require('lisk-sdk'); // require application class, the default genesis block and the default config for the application
 const CashbackTransaction = require('./cashback_transaction'); // require the newly created transaction type 'CashbackTransaction'
 
-configDevnet.app.label = 'cashback-blockchain-app';
+configDevnet.app.label = 'cashback-blockchain-app'; // change the label of the app
+//configDevnet.components.storage.user = '<username>'; // If you gave a different user than 'lisk' access to the database lisk_dev, you need to update the username in the config
+configDevnet.components.storage.password = 'password'; // replace password with the password for your database user
 
 const app = new Application(genesisBlockDevnet, configDevnet); // create the application instance
 
@@ -316,6 +340,8 @@ app
     });
 ```
 > *See the file on Github: [cashback/index.js](https://github.com/LiskHQ/lisk-sdk-examples/tree/development/cashback/index.js).*
+
+After adding the 2 new lines to your `index.js` file, save and close it.
 
 ## 5. Start the network
 
@@ -341,14 +367,18 @@ If an error occurs the process should stop, and the error with debug information
 
 Now that your network is running, let's try to send a `CashbackTransaction` to our node to see if it gets accepted.
 
-As first step, create the transaction object.
+> As your blockchain process is running in your current console window, you need to open a new window to proceed with the tutorial.
+> Make sure to navigate into the root folder of your blockchain application in the new console window.
 
+In the new terminal window, create the transaction object.
 ```bash
-mkdir client # create the folder for the client-side scripts
+cd hello-world # make sure to be in the root folder of the Cashback application.
+mkdir client # create the folder for the client-side scripts inside the cashback folder
 cd client # navigate into the client folder
 touch print_sendable_cashback.js # create the file that will hold the code to create the transaction object
 ```
 
+Open the file `print_sendable_cashback.js` that was created with the command above, and insert the following code:
 ```js
 //client/print_sendable_cashback.js
 const CashbackTransaction = require('../cashback_transaction');
@@ -582,6 +612,7 @@ If the balances equal the expected values, it is verified the new custom transac
 For further interaction with the network, it is possible to run the process in the background by executing:
 
 ```bash
+cd cashback # navigate into the root folder of the Cashback application.
 pm2 start --name cashback index.js # add the application to pm2 under the name 'cashback'
 pm2 stop cashback # stop the cashback app
 pm2 start cashback # start the cashback app
@@ -613,6 +644,9 @@ const { Application, genesisBlockDevnet, configDevnet} = require('lisk-sdk'); //
 const CashbackTransaction = require('./cashback_transaction'); // require the newly created transaction type 'CashbackTransaction'
 
 configDevnet.app.label = 'cashback-blockchain-app';
+//configDevnet.components.storage.user = '<username>'; // If you gave a different user than 'lisk' access to the database lisk_dev, you need to update the username in the config
+configDevnet.components.storage.password = 'password'; // replace password with the password for your database user
+
 configDevnet.modules.http_api.access.public = true; // make the API accessible from everywhere
 //configDevnet.modules.http_api.access.whitelist.push('1.2.3.4'); // example how to make the API accessible for specific IP addresses: add 1.2.3.4 IP address as whitelisted
 

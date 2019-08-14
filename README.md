@@ -11,7 +11,7 @@ Get started with the tutorials and getting started guides:
 - [Getting started: Interact with the network](start/interact-with-network.md)
 - [Getting started: Maintain a node](start/maintain-node.md)
 - [Tutorials](start/tutorials.md)
-- [Custom transactions](start/custom-transactions.md)
+- [Custom transactions](lisk-sdk/customize.md)
 
 See the documentation for each product:
 
@@ -46,4 +46,4 @@ There are several ways to help improve the documentation:
 
 - [Create issues](https://github.com/LiskHQ/lisk-docs/issues): If mistakes are spotted, or you miss certain information.
 - [Commit Pull Requests](https://github.com/LiskHQ/lisk-docs/pulls): Before committing any PRs, please have a look at our [Contribution Guidelines](CONTRIBUTING.md).
-- [Give Feedback on Lisk.chat](https://lisk.chat/channel/network): We will read it. Just ping `@tschakki` in your message.
+- [Give Feedback on Lisk Discord](https://discord.gg/uc4whxj)

@@ -439,10 +439,10 @@ process.exit(0); // stops the process after the transaction object has been prin
 ```
 > *See the complete file on Github: [hello_world/client/print_sendable_hello-world.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/hello_world/client/print_sendable_hello-world.js).*
 
-This script will print the transaction in the console, when executed:
+This script will print the transaction in the console, when executed (Python's json.tool is used to prettify the output):
 
 ```bash
-node print_sendable_hello-world.js
+node print_sendable_hello-world.js | python -m json.tool
 ```
 
 The generated transaction object should look like this:
@@ -488,7 +488,7 @@ Check, that the transaction got included into a block:
 > Use as `id` the id of your transaction object, that is posted to the node in the previous step
 
 ```bash
-curl -X GET "http://localhost:4000/api/transactions?id=16130949532827670455"
+curl -X GET "http://localhost:4000/api/transactions?id=16130949532827670455" | python -m json.tool
 ```
 
 ```json
@@ -526,7 +526,7 @@ curl -X GET "http://localhost:4000/api/transactions?id=16130949532827670455"
 Check, that the `hello` property got included into the account:
 
 ```bash
-curl -X GET "http://localhost:4000/api/accounts?address=16313739661670634666L"
+curl -X GET "http://localhost:4000/api/accounts?address=16313739661670634666L" | python -m json.tool
 ```
 
 ```json

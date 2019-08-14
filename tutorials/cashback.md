@@ -376,11 +376,12 @@ process.exit(0);
 ```
 > *See the complete file on Github: [cashback/client/print_sendable_cashback.js](https://github.com/LiskHQ/lisk-sdk-examples/blob/development/cashback/client/print_sendable_cashback.js).*
 
-This script will print the transaction in the console, when executed:
+This script will print the transaction in the console, when executed (Python's json.tool is used to prettify the output):
 
 ```bash
-node print_sendable_cashback.js
+node print_sendable_cashback.js | python -m json.tool
 ```
+
 
 The generated transaction object should look like this:
 ```json
@@ -409,8 +410,9 @@ Before posting the transaction, let's check the balances of sender and recipient
 
 To check the account balance of the sender:
 ```bash
-curl -X GET "http://localhost:4000/api/accounts?address=16313739661670634666L" -H "accept: application/json"
+curl -X GET "http://localhost:4000/api/accounts?address=16313739661670634666L" -H "accept: application/json" | python -m json.tool
 ```
+
 
 ```json
 {
@@ -432,7 +434,7 @@ curl -X GET "http://localhost:4000/api/accounts?address=16313739661670634666L" -
 
 Checking the account balance of the recipient:
 ```bash
-curl -X GET "http://localhost:4000/api/accounts?address=10881167371402274308L" -H "accept: application/json"
+curl -X GET "http://localhost:4000/api/accounts?address=10881167371402274308L" -H "accept: application/json" | python -m json.tool
 ```
 
 ```json
@@ -481,7 +483,7 @@ To verify that the transaction was included in a block:
 > Use as `id` the id of your transaction object, that is posted to the node in the previous step
 
 ```bash
-curl -X GET "http://localhost:4000/api/transactions?id=5372254888441494149" -H "accept: application/json"
+curl -X GET "http://localhost:4000/api/transactions?id=5372254888441494149" -H "accept: application/json" | python -m json.tool
 ```
 
 ```json
@@ -523,7 +525,7 @@ __As a result, the recipient should get a credit of 2 LSK, and the sender s' bal
 
 Verify, that the sender account balance is reduced by 1.9 LSK:
 ```bash
-curl -X GET "http://localhost:4000/api/accounts?address=16313739661670634666L" -H "accept: application/json"
+curl -X GET "http://localhost:4000/api/accounts?address=16313739661670634666L" -H "accept: application/json" | python -m json.tool
 ```
 ```json
 {
@@ -545,7 +547,7 @@ curl -X GET "http://localhost:4000/api/accounts?address=16313739661670634666L" -
 
 Verify, that the recipient account got the credit of 2 LSK:
 ```bash
-curl -X GET "http://localhost:4000/api/accounts?address=10881167371402274308L" -H "accept: application/json"
+curl -X GET "http://localhost:4000/api/accounts?address=10881167371402274308L" -H "accept: application/json" | python -m json.tool
 ```
 ```json
 {

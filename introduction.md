@@ -25,7 +25,9 @@ Documentation on [lisk.io](https://lisk.io/documentation) keeps up to date with 
 
 Version | Release date <br> (yy/mm/dd)| Documentation reference
 ---     | ---         | ---
-[v2.1.0](https://github.com/LiskHQ/lisk/releases/tag/v2.1.0) | 19/01/xx | *Current version, live on lisk.io/documentation*
+[v2.3.0](https://www.npmjs.com/package/lisk-elements/v/2.3.0) | 19/08/02 | *Current version, live on lisk.io/documentation*
+[v2.2.0](https://www.npmjs.com/package/lisk-elements/v/2.2.0) | 19/07/24 | [Lisk Elements 2.2 docs](https://github.com/LiskHQ/lisk-docs/tree/dev-elements-2.1.0)
+[v2.1.0](https://www.npmjs.com/package/lisk-elements/v/2.1.0) | 19/06/24 | [Lisk Elements 2.1 docs](https://github.com/LiskHQ/lisk-docs/tree/dev-elements-2.1.0)
 [v2.0.0](https://github.com/LiskHQ/lisk-elements/releases/tag/v2.0.0) | 19/01/07 | [Lisk Elements 2.0 docs](https://github.com/LiskHQ/lisk-docs/blob/elements-2.0.0/introduction.md)
 [v1.1.3](https://github.com/LiskHQ/lisk-elements/releases/tag/v1.1.3) | 18/11/22 | [Lisk Elements 1.1 docs](https://github.com/LiskHQ/lisk-docs/blob/elements-1.1.0-1.0.1/introduction.md)
 [v1.0.0](https://github.com/LiskHQ/lisk-elements/releases/tag/v1.0.0) | 18/08/06 | [Lisk Elements 1.0 docs](https://github.com/LiskHQ/lisk-docs/blob/elements-1.0.0-1.0.1/introduction.md)
@@ -86,12 +88,12 @@ Include the following script using the following HTML. The `lisk` variable will 
 
 **Client library**
 ```html
-<script src="https://js.lisk.io/lisk-client-2.1.0.js"></script>
+<script src="https://js.lisk.io/lisk-client-2.1.1.js"></script>
 ```
 
 Or minified:
 ```html
-<script src="https://js.lisk.io/lisk-client-2.1.0.min.js"></script>
+<script src="https://js.lisk.io/lisk-client-2.1.1.min.js"></script>
 ```
 
 To include other packages of Lisk Elements, replace `lisk-client` with any of the [packages](packages.md) of Lisk Elements.
@@ -106,19 +108,6 @@ To update your global installation to the latest version of Lisk Elements, simpl
 
 ```bash
 npm update --save lisk-elements
-```
-
-## Upgrade Lisk Elements via CDN
-
-When a new release is available, simply update the version number accordingly. For example, if you want to upgrade from v2.0.0 (minified) to v2.1.0 (minified), change this line:
-
-```html
-<script src="https://js.lisk.io/lisk-elements-2.0.0.min.js"></script>
-```
-
-to this:
-```html
-<script src="https://js.lisk.io/lisk-elements-2.1.0.min.js"></script>
 ```
 
 ## Contribute to the Codebase

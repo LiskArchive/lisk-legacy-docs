@@ -1,4 +1,6 @@
 ;(function () {
+  'use strict'
+
   var hljs = require('highlight.js/lib/highlight')
   hljs.registerLanguage('apache', require('highlight.js/lib/languages/apache'))
   hljs.registerLanguage('asciidoc', require('highlight.js/lib/languages/asciidoc'))

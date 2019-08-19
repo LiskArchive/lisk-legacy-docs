@@ -122,12 +122,6 @@ sudo apt-get install -y nodejs
 brew install node@10.15.3
 ```
 
-#### MacOS
-
-```bash
-brew install node@10.15.3
-```
-
 ### PostgreSQL
 
 To install Postgres follow the intructions descibed below, depending on the operating system your machine is running on. 

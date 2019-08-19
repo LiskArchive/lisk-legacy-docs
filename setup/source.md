@@ -65,7 +65,7 @@ Used for compiling dependencies.
 
 ```bash
 sudo apt update
-sudo apt install -y curl build-essential python-minimal
+sudo apt install -y libtool automake autoconf curl build-essential python-minimal
 ```
 
 #### MacOS

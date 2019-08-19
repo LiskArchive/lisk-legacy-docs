@@ -65,7 +65,7 @@ Used for compiling dependencies.
 
 ```bash
 sudo apt update
-sudo apt install -y build-essential python-minimal
+sudo apt install -y curl build-essential python-minimal
 ```
 
 #### MacOS
@@ -91,36 +91,32 @@ brew install git
 ### Node.js
 
 [Node.js](https://nodejs.org/) serves as the underlying engine for code execution.
+There are several different ways and version managers to install Node.JS on your system.
+We recommend one of the following two:
 
-#### Node version manager
+#### Option A: Node Version Manager
 
 We recommend using a Node version manager such as [NVM](https://github.com/creationix/nvm).
 NVM is a bash script that enables you to manage multiple active Node.js versions.
 
-1. Login as `lisk` user, that has been created in the first step:
-```bash
-sudo -u lisk -i
-```
-2. Install nvm following these [instructions](https://github.com/creationix/nvm#installation)
-3. Install the correct version of Node.js using nvm:
+1. Install nvm following these [instructions](https://github.com/creationix/nvm#install--update-script)
+3. Install the correct version of Node.js using NVM:
 ```bash
 nvm install 10.15.3
 ```
 
-For the following steps, log out from the `lisk` user again with `CTRL+D`, and continue with your user with sudo rights.
+#### Option B: Node.js package
 
-#### Node.js Package
+If you do not want to use NVM or other package managers, you can install the Node package globally on your system alternatively:
 
-Alternatively, you can install Node.js system-wide via a package manager, like so:
-
-#### Ubuntu
+##### Ubuntu
 
 ```bash
 curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
-sudo apt install -y nodejs
+sudo apt-get install -y nodejs
 ```
 
-#### MacOS
+##### MacOS
 
 ```bash
 brew install node@10.15.3

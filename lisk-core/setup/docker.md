@@ -43,7 +43,7 @@ To install Docker Compose, please refer to https://docs.docker.com/compose/insta
 Install `make` using your package manager. For example, use `apt-get` if running Ubuntu:
 
 ```bash
-sudo apt-get install make
+sudo apt-get install curl make
 ```
 
 ### Open the necessary ports

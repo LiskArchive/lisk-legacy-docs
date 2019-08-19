@@ -53,22 +53,18 @@ npm install --save @liskhq/lisk-validator @liskhq/lisk-cryptography @liskhq/lisk
 
 Make sure to start with a fresh database.
 
-For the system-wide Postgres installation:
+For the **system-wide Postgres** installation:
 ```bash
-psql
+psql -c "DROP DATABASE lisk_dev"
+psql -c "CREATE DATABASE lisk_dev OWNER lisk"
 ```
 
-If you have installed [Postgres with Docker](../../lisk-sdk/setup.md#option-a-postgres-with-docker), you need to run the following command, to access Postgres:
+If you have installed [Postgres with Docker](../../lisk-sdk/setup.md#option-a-postgres-with-docker), you need to run the following commands:
 ```bash
-docker exec --tty --interactive lisk_sdk_db psql -h localhost -U lisk -d postgres
+docker exec -ti lisk_sdk_db psql -h localhost -U lisk -d postgres -c "DROP DATABASE lisk_dev"
+docker exec -ti lisk_sdk_db psql -h localhost -U lisk -d postgres -c "CREATE DATABASE lisk_dev OWNER lisk"
 ```
 
-After connecting to your Postgres shell, you can drop and recreate the database.
-```bash
- DROP DATABASE lisk_dev;
- CREATE DATABASE lisk_dev OWNER lisk;
- \q
-```
 
 Create the file `index.js`, which will hold the logic to initialize and start the blockchain application.
 ```bash

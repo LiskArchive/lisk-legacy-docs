@@ -12,9 +12,10 @@ function relativize (to, ctx) {
     from = ctx.data.root.page.url
   }
   if (!to) return '#'
-  if (!from || to.charAt() === '#') return to
-  let hash = ''
   const hashIdx = to.indexOf('#')
+  if (!hashIdx) return to
+  if (!from) return (ctx.data.root.site.path || '') + to
+  let hash = ''
   if (~hashIdx) {
     hash = to.substr(hashIdx)
     to = to.substr(0, hashIdx)

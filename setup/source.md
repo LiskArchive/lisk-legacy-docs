@@ -72,6 +72,10 @@ sudo apt install -y libtool automake autoconf curl build-essential python-minima
 
 Ensure that both [XCode](https://developer.apple.com/xcode/) and [Homebrew](https://brew.sh/) are installed.
 
+```bash
+brew install autoconf automake libtool
+```
+
 ### Git 
 
 [Git](https://github.com/git/git) is used for cloning and updating Lisk.

@@ -43,6 +43,8 @@ Custom Modules can be plugged into Lisk Core and may offer new features/capabili
 They extend the existing instance with a specific (and circumscribed) set of features.
 
 ```js
+const BaseModule = require('lisk-framework/src/modules/base_module')
+
 // Exported as main file to javascript package
 export default class MyModule extends BaseModule {
     /**

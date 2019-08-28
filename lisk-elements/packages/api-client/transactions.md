@@ -31,17 +31,17 @@ client.transactions.get({ id: '222675625422353767' })
 
 ### `broadcast`
 
-Submits a signed transaction object for processing by the transaction pool.
+Submits a signed transaction JSON for processing by the transaction pool.
 
 #### Syntax
 
 ```js
-broadcast(transaction)
+broadcast(transactionJSON)
 ```
 
 #### Parameters
 
-`transaction`: See details in the [Core API documentation](/lisk-core/user-guide/api/1-0/1-0.json).
+`transaction`: The JSON representation of the transaction ; ie. returned by `Transaction.toJSON()`;
 
 #### Return value
 

@@ -23,7 +23,6 @@ Documentation on [lisk.io](https://lisk.io/documentation) remains up to date wit
 
 Version | Release date <br> (yy/mm/dd)| Documentation reference
 ---     | ---         | ---
-
 [v2.3.0](https://www.npmjs.com/package/lisk-elements/v/2.3.0) | 19/08/02 | *Current version, live on lisk.io/documentation*
 [v2.2.0](https://www.npmjs.com/package/lisk-elements/v/2.2.0) | 19/07/24 | [Lisk Elements 2.2 docs](https://github.com/LiskHQ/lisk-docs/tree/dev-elements-2.1.0)
 [v2.1.0](https://www.npmjs.com/package/lisk-elements/v/2.1.0) | 19/06/24 | [Lisk Elements 2.1 docs](https://github.com/LiskHQ/lisk-docs/tree/dev-elements-2.1.0)

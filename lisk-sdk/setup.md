@@ -46,12 +46,16 @@ Used for compiling dependencies.
 ##### Ubuntu
 
 ```bash
-sudo apt install -y curl python-minimal build-essential
+sudo apt install -y libtool automake autoconf curl python-minimal build-essential
 ```
 
 ##### MacOS
 
 Ensure that both [XCode](https://developer.apple.com/xcode/) and [Homebrew](https://brew.sh/) are installed.
+
+```bash
+brew install autoconf automake libtool
+```
 
 ### PostgreSQL
 

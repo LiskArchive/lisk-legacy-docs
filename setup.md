@@ -53,6 +53,10 @@ sudo apt install -y libtool automake autoconf curl python-minimal build-essentia
 
 Ensure that both [XCode](https://developer.apple.com/xcode/) and [Homebrew](https://brew.sh/) are installed.
 
+```bash
+brew install autoconf automake libtool
+```
+
 ### PostgreSQL
 
 To install Postgres follow the intructions descibed below, depending on the operating system your machine is running on. 

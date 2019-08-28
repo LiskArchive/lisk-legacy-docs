@@ -65,12 +65,16 @@ Used for compiling dependencies.
 
 ```bash
 sudo apt update
-sudo apt install -y curl build-essential python-minimal
+sudo apt install -y libtool automake autoconf curl build-essential python-minimal
 ```
 
 #### MacOS
 
 Ensure that both [XCode](https://developer.apple.com/xcode/) and [Homebrew](https://brew.sh/) are installed.
+
+```bash
+brew install autoconf automake libtool
+```
 
 ### Git 
 

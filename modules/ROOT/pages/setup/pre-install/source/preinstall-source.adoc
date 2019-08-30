@@ -1,0 +1,334 @@
+== Lisk Core Source Pre-Install
+
+[width="100%",cols="50%,50%",options="header",]
+|===
+|Info |Note
+|image:../../../modules/ROOT/assets/info-icon.png[info
+note,title="Info Note"] |Lisk Core 1.1 has been released to Testnet. If
+you wish to connect to Testnet, please refer to
+https://github.com/LiskHQ/lisk-docs/blob/core-1.1.0/introduction.md[Lisk
+Core 1.1.0 documentation].
+|===
+
+This document details the prerequisites to install Lisk Core 1.0.0 from
+a Source installation using tagged releases on Github. To complete the
+installation there are prerequisites that need to be fulfilled. If you
+have already performed these, please proceed to the
+link:/lisk-core/setup/install/source/install-source.md[Installation]
+page.
+
+=== Steps:
+
+[arabic]
+. link:#open-necessary-ports[Open necessary ports]
+. link:#create-a-new-user[Create a new user]
+. link:#tool-chain-components[Install Tool chain components]
+. link:#git[Git Installation]
+. link:#node-js[Node.js Installation]
+[arabic]
+.. link:#recommended-install-a-version-manager-such-as-nvmhttps--githubcom-creationix-nvm[Recommended:
+Install NVM]
+.. link:#recommended-pm2-https--githubcom-unitech-pm2[Recommended:
+Install PM2]
+. link:#postgresql-version-96[Postgres Installation]
+. link:#installing-redis[Redis Installation]
+
+Firstly, please determine if your platform can install Lisk Core from
+source.
+
+==== Supported Platforms
+
+* Ubuntu 14.04 (LTS) x86_64
+* Ubuntu 16.04 (LTS) x86_64
+* MacOS 10.12 (Sierra)
+* MacOS 10.13 (High Sierra)
+
+=== 1. Open necessary ports
+
+In order to connect to the desired network with Lisk Core , please
+ensure that the corresponding ports are open:
+
+[cols=",,",options="header",]
+|===
+|Network |httpPort(HTTP) |wsPort(TCP)
+|Mainnet |8000 |8001
+|Testnet |7000 |7001
+|Betanet |5000 |5001
+|Devnet |4000 |5000
+|===
+
+These are the default ports for connecting with the network, they can be
+altered later in `+config.json+`.
+
+=== 2. Create a new user
+
+In order to install the required prerequisites, it is necessary to have
+a user with sudo rights on the server. In order to run and manage a Lisk
+Core node in the future, please create a separate `Lisk' user like so:
+
+==== Ubuntu
+
+[width="100%",cols="50%,50%",options="header",]
+|===
+|Info |Note
+|image:../../../modules/ROOT/assets/info-icon.png[info
+note,title="Info Note"] |The `+lisk+` user itself *does not need* any
+`+sudo+` rights to run Lisk Core.
+|===
+
+[source,shell]
+----
+sudo adduser lisk
+----
+
+=== 3. Tool chain components
+
+Used for compiling dependencies.
+
+==== Ubuntu
+
+[source,shell]
+----
+sudo apt-get update
+sudo apt-get install -y python build-essential curl automake autoconf libtool ntp
+----
+
+==== MacOS
+
+Ensure that both https://developer.apple.com/xcode/[XCode] and
+https://brew.sh/[Homebrew] are installed.
+
+Update homebrew and install dependencies:
+
+[source,shell]
+----
+brew update
+brew doctor
+brew install curl automake autoconf libtool
+----
+
+=== 4. Git
+
+https://github.com/git/git[Git] is used for cloning and updating Lisk.
+
+==== Ubuntu
+
+[source,shell]
+----
+sudo apt-get install -y git
+----
+
+==== MacOS
+
+[source,shell]
+----
+brew install git
+----
+
+=== 5. Node.js
+
+https://nodejs.org/[Node.js] serves as the underlying engine for code
+execution.
+
+Install System wide via package manager, like so:
+
+==== Ubuntu
+
+[source,shell]
+----
+curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
+sudo apt-get install -y nodejs
+----
+
+==== MacOS
+
+[source,shell]
+----
+brew install node@6.14.1
+----
+
+==== 5a. _(Recommended)_ Install a version manager such as nvm (https://github.com/creationix/nvm)
+
+[arabic]
+. Login as lisk user, that has been created in the first step:
+
+[source,shell]
+----
+su - lisk
+----
+
+[arabic, start=2]
+. Install nvm following these
+https://github.com/creationix/nvm#installation[instructions]
+. Install the correct version of Node.js using nvm:
+
+[source,shell]
+----
+nvm install 6.14.1
+----
+
+For the following steps, logout from the `lisk' user again with
+`+CTRL+D+`, and continue with your user with sudo rights.
+
+==== 5b. _(Recommended)_ PM2 (https://github.com/Unitech/pm2)
+
+PM2 manages the node process for Lisk
+
+[source,shell]
+----
+sudo npm install -g pm2
+----
+
+=== 6. PostgreSQL (version 9.6)
+
+==== Ubuntu
+
+Firstly, download and run the postgres install script:
+
+[source,shell]
+----
+curl -sL "https://downloads.lisk.io/scripts/setup_postgresql.Linux" | bash -
+----
+
+After installation, you should see the postgres database cluster, by
+running
+
+[source,shell]
+----
+  pg_lsclusters
+----
+
+Drop the existing database cluster, and replace it with a cluster with
+the locale `+en_US.UTF-8+`:
+
+[source,shell]
+----
+  sudo pg_dropcluster --stop 9.6 main
+  sudo pg_createcluster --locale en_US.UTF-8 --start 9.6 main
+----
+
+Create a new database user called `+lisk+` and grant it rights to create
+databases:
+
+[source,shell]
+----
+  sudo -u postgres createuser --createdb lisk
+----
+
+Switch to the lisk user and create the databases:
+
+[source,shell]
+----
+  su - lisk
+  createdb lisk_test
+  createdb lisk_main
+----
+
+For the following steps, logout from the lisk user again with
+`+CTRL+D+`, and continue with your user with sudo rights. Change
+`+'password'+` to a secure password of your choice.
+
+[source,shell]
+----
+  sudo -u postgres psql -d lisk_test -c "alter user lisk with password 'password';"
+  sudo -u postgres psql -d lisk_main -c "alter user lisk with password 'password';"
+----
+
+==== MacOS
+
+[source,shell]
+----
+brew install postgresql@9.6
+initdb /usr/local/var/postgres -E utf8 --locale=en_US.UTF-8
+brew services start postgresql@9.6
+createdb lisk_test
+createdb lisk_main
+----
+
+=== 7. Installing Redis
+
+==== Ubuntu
+
+[source,shell]
+----
+sudo apt-get install redis-server
+----
+
+Start redis:
+
+[source,shell]
+----
+sudo service redis-server start
+----
+
+Stop redis:
+
+[source,shell]
+----
+sudo service redis-server stop
+----
+
+==== MacOS
+
+[source,shell]
+----
+brew install redis
+----
+
+Start redis:
+
+[source,shell]
+----
+brew services start redis
+----
+
+Stop redis:
+
+[source,shell]
+----
+brew services stop redis
+----
+
+[width="100%",cols="50%,50%",options="header",]
+|===
+|Info |Note
+|image:../../../modules/ROOT/assets/info-icon.png[info
+note,title="Info Note"] |Lisk does not run on the redis default port of
+`+6379+`. Instead it is configured to run on port: `+6380+`. Due to
+this, in order to run Lisk, you have one of two options:
+|===
+
+[arabic]
+. *Change the Lisk configuration*
+
+In the next installation phase, remember to update the Redis port
+configuration in both `+config.json+` and `+test/data/config.json+`.
+
+[arabic, start=2]
+. *Change the Redis launch configuration*
+
+Update the launch configuration file on your system. Note that there are
+a number of ways to do this.
+
+The following is one example:
+
+[arabic]
+. Stop redis-server
+. Edit the file `+redis.conf+` and change: `+port 6379+` to
+`+port 6380+`
+* Ubuntu/Debian: `+/etc/redis/redis.conf+`
+* MacOS: `+/usr/local/etc/redis.conf+`
+. Start redis-server
+
+Now confirm that redis is running on `+port 6380+`:
+
+[source,shell]
+----
+redis-cli -p 6380
+ping
+----
+
+And you should get the result `+PONG+`.
+
+If you have finished all above steps successfully, your system is ready
+for installation of Lisk Core.

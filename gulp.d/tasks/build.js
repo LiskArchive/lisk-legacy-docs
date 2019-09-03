@@ -19,6 +19,8 @@ const postcssVar = require('postcss-custom-properties')
 const uglify = require('gulp-uglify')
 const vfs = require('vinyl-fs')
 
+imagemin.noop = (buffer) => Promise.resolve(buffer)
+
 module.exports = (src, dest, preview) => () => {
   const opts = { base: src, cwd: src }
   const sourcemaps = preview || process.env.SOURCEMAPS === 'true'
@@ -75,9 +77,9 @@ module.exports = (src, dest, preview) => () => {
       .src('img/**/*.{gif,ico,jpg,png,svg}', opts)
       .pipe(
         imagemin([
-          imagemin.gifsicle(),
-          imagemin.jpegtran(),
-          imagemin.optipng(),
+          imagemin.gifsicle() || imagemin.noop,
+          imagemin.jpegtran() || imagemin.noop,
+          imagemin.optipng() || imagemin.noop,
           imagemin.svgo({ plugins: [{ removeViewBox: false }] }),
         ])
       ),

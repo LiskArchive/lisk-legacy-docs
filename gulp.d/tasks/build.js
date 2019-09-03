@@ -72,7 +72,7 @@ module.exports = (src, dest, preview) => () => {
     vfs.src('css/site.css', { ...opts, sourcemaps }).pipe(postcss(postcssPlugins)),
     vfs.src('font/*.{ttf,woff*(2)}', opts),
     vfs
-      .src('img/**/*.{jpg,ico,png,svg}', opts)
+      .src('img/**/*.{gif,ico,jpg,png,svg}', opts)
       .pipe(
         imagemin([
           imagemin.gifsicle(),

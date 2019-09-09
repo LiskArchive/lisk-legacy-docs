@@ -125,7 +125,7 @@ The `+config.json+` file and a description of each parameter.
                     "headersTimeout": 5000, // Indicating the minimum amount of time an idle connection has to be kept opened (in seconds).
                     "serverSetTimeout": 20000, // Time to wait for response from server before timing out.
                 },
-                "cors": { 
+                "cors": {
                     "origin": "*", // Defines the domains, that the resource can be accessed by in a cross-site manner. Defaults to all domains.
                     "methods": ["GET", "POST", "PUT"], // Defines the allowed methods for CORS.
                 },
@@ -184,27 +184,35 @@ The `+config.json+` file and a description of each parameter.
             },
             "network": { // Contains network options for the node.
                 "wsPort": 5000, // Websocket port of the node.
-                "address": "0.0.0.0", // Address of the node.
-                "emitPeerLimit": 25, // How many nodes will be used in a single broadcast.
-                "discoveryInterval": 30000, // Time interval(ms), in that the nodes performs peer discovery.
-                "seedPeers": [ // List of Seed Peers. On first startup, the node will initially connect to the Seed Peers in order to discover the rest of the network.
+                "address": "0.0.0.0", // The host IP which the P2P server should listen on for inbound connections. This value is passed directly to the underlying Node.js server.listen function documented here: https://nodejs.org/api/net.html#net_server_listen_port_host_backlog_callback
+                "seedPeers": [ // A list of peers to use as seeds when starting the node for the first time. Should be an array of objects in the form: [{ip: '123.123.123.123', wsPort: 7000}, {ip: '111.111.111.111', wsPort: 8000}]
                     {
-                    "ip": "1.2.3.4", // IP or address of the Seed Peer.
-                    "wsPort": 4000 // Port of the Seed Peer.
+                        "ip": "1.2.3.4", // IP or address of the Seed Peer.
+                        "wsPort": 4000 // Port of the Seed Peer.
                     }
                 ],
-                "blacklistedPeers": [ // List of peers to exclude from communicating with.
-                    "9.8.7.6:4000" // IP or address of the blacklisted peer.
+                "blacklistedPeers": [ // A list of peers to blacklist. Should be an array of objects in the form: [{ip: '123.123.123.123'}, {ip: '111.111.111.111'}]
+                    {"ip": "9.8.7.6"} // IP or address of the blacklisted peer.
                 ],
+                "fixedPeers": [ // A list of peers to stay constantly connected to. Should be an array of objects in the form: [{ip: '123.123.123.123'}, {ip: '111.111.111.111'}]
+                    {"ip": "11.22.33.44"} // IP or address of the blacklisted peer.
+                ],
+                "whitelistedPeers": [ // A list of peers which should never be banned. Should be an array of objects in the form: [{ip: '123.123.123.123'}, {ip: '111.111.111.111'}]
+                    {"ip": "66.77.88.99"} // IP or address of the blacklisted peer.
+                ],
+                "discoveryInterval": 30000, // Time interval(ms), in that the nodes performs peer discovery.
+                "maxInboundConnections": 20, // The maximum number of inbound peers/connections which the node should have. Should be an integer. Peers which initiate the connection to the node will be added to the node’s inbound list.
+                "maxOutboundConnections": 20, // The maximum number of outbound peers/connections which the node should have. Should be an integer. The node will keep trying to connect to new peers until it reaches maxOutboundConnections.
+                "peerBanTime": 86400, // The number of milliseconds to ban a peer for if its reputation score falls bellow 0.
+                "populatorInterval": 10000, // How frequently (in milliseconds) to check and repopulate the outbound list (since peers can drop out over time).
+                "emitPeerLimit": 25, // When broadcasting a message such as a block or transaction to peers, this number determines how many peers to send it to at a time.
+                "peerDiscoveryResponseLength": 1000, // This number indicates the number of peer info which the node will send back to a peer when that peer requests the node’s peer list.
+                "maxPeerDiscoveryResponseLength": 1000, // This number indicates the maximum number of peer info which we are prepared to receive from a single peer to populate our peer directory with during discovery.
+                "maxPeerInfoSize": 20480, // The maximum size in bytes (integer) of a single peer info object. A peer info object has a flexible schema and can contain custom properties/data about the node.
+                "wsMaxPayload": 3048576, // The maximum size in bytes (integer) of any kind of message from a peer. If the peer tries to send a message greater than this value, they will be immediately disconnected.
                 "ackTimeout": 20000, // When a node tries to make an RPC against a peer (and expects a response), this value determines the maximum amount of time (in milliseconds) that the node will wait to receive a response from the peer. If the peer does not respond in time, then the RPC will fail with an error.
                 "connectTimeout": 5000, // When a node tries to connect to a peer, this value determines the maximum amount of time (in milliseconds) that the node will wait to complete the handshake with the peer. If the peer does not complete the handshake in time, then the connection will be closed.
                 "wsEngine": "ws", //  Represents the low-level WebSocket engine which the node should use (for advanced users). Possible values are "ws" (default, recommended) and "uws" (more performant, but not compatible with all systems).
-                "list": [ // List of seed nodes, the node will connect to on first startup.
-                    {
-                    "ip": "127.0.0.1", // IP of the seed node.
-                    "wsPort": 5000 // Websocket port of the seed node.
-                    }
-                ]
             }
         }
     }
@@ -290,7 +298,7 @@ password you want to use for encryption.
                 "encryptedPassphrase": "iterations=1&salt=476d4299531718af8c88156aab0bb7d6&cipherText=663dde611776d87029ec188dc616d96d813ecabcef62ed0ad05ffe30528f5462c8d499db943ba2ded55c3b7c506815d8db1c2d4c35121e1d27e740dc41f6c405ce8ab8e3120b23f546d8b35823a30639&iv=1a83940b72adc57ec060a648&tag=b5b1e6c6e225c428a4473735bc8f1fc9&version=1",
                 "publicKey": "9d3058175acab969f41ad9b86f7a2926c74258670fe56b37c429c01fca9f2f0f"
             }
-        ], 
+        ],
     },
 
 "http_api": { // Contains options for the API module.
@@ -315,7 +323,7 @@ delegate:
 curl \
   http://127.0.0.1:7000/api/node/status/forging \
   -H 'cache-control: no-cache' \
-  -H 'content-type: application/json' 
+  -H 'content-type: application/json'
 ----
 
 The result should be something like this:
@@ -541,7 +549,7 @@ Example values:
 
 [source,bash]
 ----
-/path/to/lisk/logs/mainnet/*.log { 
+/path/to/lisk/logs/mainnet/*.log {
         daily                   # daily rotation
         rotate 5                # keep the 5 most recent logs
         maxage 14               # remove logs that are older than 14 days

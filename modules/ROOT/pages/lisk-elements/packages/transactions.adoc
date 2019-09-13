@@ -1,120 +1,111 @@
-== Lisk Elements Transactions
+= Lisk Elements Transactions
+Mona Bärenfänger <mona@lightcurve.io>
+:toc:
 
-The Lisk Elements transactions module provides functions for creating
-transactions of every type, plus a set of utility functions.
+The Lisk Elements transactions module provides functions for creating transactions of every type, plus a set of utility functions.
 
-* link:#installation[Installation]
-* link:#upgrade[Upgrade]
-* link:#constants[Constants]
-* link:#methods-for-creating-transactions[Methods for creating
-transactions]
-** link:#type-0-transfer[Type 0: transfer]
-** link:#type-1-registersecondpassphrase[Type 1: register second
-passphrase]
-** link:#type-2-registerdelegate[Type 2: register delegate]
-** link:#type-3-castvotes[Type 3: cast votes]
-** link:#type-4-registermultisignature[Type 4: registerMultisignature]
-* link:#methods-for-creating-signature-objects[Methods for creating
-signature objects]
-** link:#createSignatureObject[createSignatureObject]
-* link:#utility-methods[Utility Methods]
-** link:#convertBeddowsToLSK[convertBeddowsToLSK]
-** link:#convertLSKToBeddows[convertLSKToBeddows]
-** link:#getTransactionBytes[getTransactionBytes]
-** link:#getTransactionId[getTransactionId]
-** link:#multiSignTransaction[multiSignTransaction]
-** link:#signTransaction[signTransaction]
-** link:#validateAddress[validateAddress]
-** link:#validateKeysgroup[validateKeysgroup]
-** link:#validatePublicKey[validatePublicKey]
-** link:#validatePublicKeys[validatePublicKeys]
-** link:#verifyTransaction[verifyTransaction]
-
-=== Installation
+== Installation
 
 [source,bash]
 ----
 $ npm install --save @liskhq/lisk-transactions
 ----
 
-=== Upgrade
+== Upgrade
 
 [source,bash]
 ----
 npm update --save @liskhq/lisk-transactions
 ----
 
-=== Constants
+== Constants
 
-Transactions-specific constants are available via the `+transaction+`
-key, and include relevant fees and byte allocations for transaction
-components.
+Transactions-specific constants are available via the `transaction` key, and include relevant fees and byte allocations for transaction components.
 
-==== Usage
+=== Usage
 
 [source,js]
 ----
 import * as transactions from '@liskhq/lisk-transactions';
 
-transactions.constants.FIXED_POINT; // Number to use when converting between the smallest possible denomination and 1 LSK.
+transactions.constants.FIXED_POINT; <1>
 
-transactions.constants.TRANSFER_FEE; // Fee required for a transfer (type 0) transaction.
-transactions.constants.SIGNATURE_FEE; // Fee required for a register second passphrase (type 1) transaction.
-transactions.constants.DELEGATE_FEE; // Fee required for a register delegate (type 2) transaction.
-transactions.constants.VOTE_FEE; // Fee required for a cast votes (type 3) transaction.
-transactions.constants.MULTISIGNATURE_FEE; // Fee required per group member (plus one) for a register multisignature account (type 4) transaction.
+transactions.constants.TRANSFER_FEE; <2>
+transactions.constants.SIGNATURE_FEE; <3>
+transactions.constants.DELEGATE_FEE; <4>
+transactions.constants.VOTE_FEE; <5>
+transactions.constants.MULTISIGNATURE_FEE; <6>
 
-transactions.constants.MULTISIGNATURE_MAX_LIFETIME; // Maximum lifetime in transaction pool of a multi-signature transaction in hours.
-transactions.constants.MULTISIGNATURE_MIN_LIFETIME; // Minimum lifetime in transaction pool of a multi-signature transaction in hours.
-transactions.constants.MULTISIGNATURE_MAX_KEYSGROUP; // Maximum number of public keys that can be part of a multi-signature group.
-transactions.constants.MULTISIGNATURE_MIN_KEYSGROUP; // Minimum number of public keys that can be part of a multi-signature group.
+transactions.constants.MULTISIGNATURE_MAX_LIFETIME; <7>
+transactions.constants.MULTISIGNATURE_MIN_LIFETIME; <8>
+transactions.constants.MULTISIGNATURE_MAX_KEYSGROUP; <9>
+transactions.constants.MULTISIGNATURE_MIN_KEYSGROUP; <10>
 
-transactions.constants.USERNAME_MAX_LENGTH; // Maximum number of characters a username can consist of.
-transactions.constants.BYTESIZES; // Object containing the number of bytes to allocate for each component of a transaction.
+transactions.constants.USERNAME_MAX_LENGTH; <11>
+transactions.constants.BYTESIZES; <12>
 
-transactions.constants.EPOCH_TIME; // Date from which timestamps are calculated.
-transactions.constants.EPOCH_TIME_MILLISECONDS; // EPOCH_TIME as milliseconds since Unix Epoch.
-transactions.constants.EPOCH_TIME_SECONDS; // EPOCH_TIME as seconds since Unix Epoch.
+transactions.constants.EPOCH_TIME; <13>
+transactions.constants.EPOCH_TIME_MILLISECONDS; <14>
+transactions.constants.EPOCH_TIME_SECONDS; <15>
 
-transactions.constants.MAX_ADDRESS_NUMBER; // Maximum valid number which can form an address when suffixed with an 'L'.
-transactions.constants.MAX_TRANSACTION_AMOUNT; // Maximum valid amount for a transaction. Maximum value for PostgreSQL bigint.
-transactions.constants.MAX_TRANSACTION_ID; // Maximum valid number for transaction IDs.
+transactions.constants.MAX_ADDRESS_NUMBER; <16>
+transactions.constants.MAX_TRANSACTION_AMOUNT; <17>
+transactions.constants.MAX_TRANSACTION_ID; <18>
 ----
 
-=== Methods for creating transactions
+<1> Number to use when converting between the smallest possible denomination and 1 LSK.
+<2> Fee required for a transfer (type 0) transaction.
+<3> Fee required for a register second passphrase (type 1) transaction.
+<4> Fee required for a register delegate (type 2) transaction.
+<5> Fee required for a cast votes (type 3) transaction.
+<6> Fee required per group member (plus one) for a register multisignature account (type 4) transaction.
+<7> Maximum lifetime in transaction pool of a multi-signature transaction in hours.
+<8> Minimum lifetime in transaction pool of a multi-signature transaction in hours.
+<9> Maximum number of public keys that can be part of a multi-signature group.
+<10> Minimum number of public keys that can be part of a multi-signature group.
+<11> Maximum number of characters a username can consist of.
+<12> Object containing the number of bytes to allocate for each component of a transaction.
+<13> Date from which timestamps are calculated.
+<14> EPOCH_TIME as milliseconds since Unix Epoch.
+<15> EPOCH_TIME as seconds since Unix Epoch.
+<16> Maximum valid number which can form an address when suffixed with an 'L'.
+<17> Maximum valid amount for a transaction. Maximum value for PostgreSQL bigint.
+<18> Maximum valid number for transaction IDs.
 
-==== Type 0: `+transfer+`
+== Methods for creating transactions
+
+=== Type 0: `transfer`
 
 Creates a transfer (type 0) transaction.
 
-===== Syntax
+==== Syntax
 
 [source,js]
 ----
 transfer(options)
 ----
 
-===== Parameters
+==== Parameters
 
-`+options+`: Options to be used when creating the transaction: -
-`+amount+`: The amount to transfer (as a `+string+` in Beddows, the
-lowest denomination possible). - `+recipientId+`: The address of the
-recipient. Either `+recipientId+` or `+recipientPublicKey+` must be
-provided. - `+recipientPublicKey+`: The public key of the recipient.
-Either `+recipientId+` or `+recipientPublicKey+` must be provided. -
-`+data+`: Optional data to include in the transaction asset. (Must be a
-UTF8-encoded string of maximum 64 characters.) - `+passphrase+`:
-Optional passphrase to use to sign the transaction. If not provided at
-creation the transaction can be signed later. - `+secondPassphrase+`:
-Optional second passphrase to use to sign the transaction if the account
-has registered a second passphrase. If not provided at creation the
-transaction can be signed with the second passphrase later.
+`options`: Options to be used when creating the transaction:
 
-===== Return value
+* `amount`: The amount to transfer (as a `string` in Beddows, the lowest denomination possible).
+* `recipientId`: The address of the recipient.
+Either `recipientId` or `recipientPublicKey` must be provided.
+* `recipientPublicKey`: The public key of the recipient.
+Either `recipientId` or `recipientPublicKey` must be provided.
+* `data`: Optional data to include in the transaction asset.
+(Must be a UTF8-encoded string of maximum 64 characters.)
+* `passphrase`: Optional passphrase to use to sign the transaction.
+If not provided at creation the transaction can be signed later.
+* `secondPassphrase`: Optional second passphrase to use to sign the transaction if the account has registered a second passphrase.
+If not provided at creation the transaction can be signed with the second passphrase later.
 
-`+object+`: The created transaction object.
+==== Return value
 
-===== Examples
+`object`: The created transaction object.
+
+==== Examples
 
 [source,js]
 ----
@@ -155,29 +146,29 @@ transactions.transfer({
  } */
 ----
 
-==== Type 1: `+registerSecondPassphrase+`
+=== Type 1: `registerSecondPassphrase`
 
 Creates a register second passphrase (type 1) transaction.
 
-===== Syntax
+==== Syntax
 
 [source,js]
 ----
 registerSecondPassphrase(options)
 ----
 
-===== Parameters
+==== Parameters
 
-`+options+`: Options to be used when creating the transaction: -
-`+secondPassphrase+`: The second passphrase to register. -
-`+passphrase+`: Optional passphrase to use to sign the transaction. If
-not provided at creation the transaction can be signed later.
+`options`: Options to be used when creating the transaction:
+- `secondPassphrase`: The second passphrase to register.
+- `passphrase`: Optional passphrase to use to sign the transaction.
+If not provided at creation the transaction can be signed later.
 
-===== Return value
+==== Return value
 
-`+object+`: The created transaction object.
+`object`: The created transaction object.
 
-===== Examples
+==== Examples
 
 [source,js]
 ----
@@ -219,32 +210,32 @@ transactions.registerSecondPassphrase({
  } */
 ----
 
-==== Type 2: `+registerDelegate+`
+=== Type 2: `registerDelegate`
 
 Creates a register delegate (type 2) transaction.
 
-===== Syntax
+==== Syntax
 
 [source,js]
 ----
 registerDelegate(options)
 ----
 
-===== Parameters
+==== Parameters
 
-`+options+`: Options to be used when creating the transaction: -
-`+username+`: The delegate username to register. - `+passphrase+`:
-Optional passphrase to use to sign the transaction. If not provided at
-creation the transaction can be signed later. - `+secondPassphrase+`:
-Optional second passphrase to use to sign the transaction if the account
-has registered a second passphrase. If not provided at creation the
-transaction can be signed with the second passphrase later.
+`options`: Options to be used when creating the transaction:
 
-===== Return value
+* `username`: The delegate username to register.
+* `passphrase`: Optional passphrase to use to sign the transaction.
+If not provided at creation the transaction can be signed later.
+* `secondPassphrase`: Optional second passphrase to use to sign the transaction if the account has registered a second passphrase.
+If not provided at creation the transaction can be signed with the second passphrase later.
 
-`+object+`: The created transaction object.
+==== Return value
 
-===== Examples
+`object`: The created transaction object.
+
+==== Examples
 
 [source,js]
 ----
@@ -286,34 +277,33 @@ transactions.registerDelegate({
  } */
 ----
 
-==== Type 3: `+castVotes+`
+=== Type 3: `castVotes`
 
 Creates a cast votes (type 3) transaction.
 
-===== Syntax
+==== Syntax
 
 [source,js]
 ----
 castVotes(options)
 ----
 
-===== Parameters
+==== Parameters
 
-`+options+`: Options to be used when creating the transaction: -
-`+votes+`: The public keys of the delegates to vote for. - `+unvotes+`:
-The public keys of the delegates from whom you want to remove your vote.
-- `+passphrase+`: Optional passphrase to use to sign the transaction. If
-not provided at creation the transaction can be signed later. -
-`+secondPassphrase+`: Optional second passphrase to use to sign the
-transaction if the account has registered a second passphrase. If not
-provided at creation the transaction can be signed with the second
-passphrase later.
+`options`: Options to be used when creating the transaction:
 
-===== Return value
+* `votes`: The public keys of the delegates to vote for.
+* `unvotes`: The public keys of the delegates from whom you want to remove your vote.
+* `passphrase`: Optional passphrase to use to sign the transaction.
+If not provided at creation the transaction can be signed later.
+* `secondPassphrase`: Optional second passphrase to use to sign the transaction if the account has registered a second passphrase.
+If not provided at creation the transaction can be signed with the second passphrase later.
 
-`+object+`: The created transaction object.
+==== Return value
 
-===== Examples
+`object`: The created transaction object.
+
+==== Examples
 
 [source,js]
 ----
@@ -360,36 +350,34 @@ transactions.castVotes({
  } */
 ----
 
-==== Type 4: `+registerMultisignature+`
+=== Type 4: `registerMultisignature`
 
 Creates a register multisignature account (type 4) transaction.
 
-===== Syntax
+==== Syntax
 
 [source,js]
 ----
 registerMultisignature(options)
 ----
 
-===== Parameters
+==== Parameters
 
-`+options+`: Options to be used when creating the transaction: -
-`+keysgroup+`: An array of public keys which should form part of the
-multisignature group. - `+lifetime+`: The time to wait for enough
-signatures before a transaction becomes invalid. - `+minimum+`: The
-minimum number of signatures required to authorise a transaction. -
-`+passphrase+`: Optional passphrase to use to sign the transaction. If
-not provided at creation the transaction can be signed later. -
-`+secondPassphrase+`: Optional second passphrase to use to sign the
-transaction if the account has registered a second passphrase. If not
-provided at creation the transaction can be signed with the second
-passphrase later.
+`options`: Options to be used when creating the transaction:
 
-===== Return value
+- `keysgroup`: An array of public keys which should form part of the multisignature group.
+- `lifetime`: The time to wait for enough signatures before a transaction becomes invalid.
+- `minimum`: The minimum number of signatures required to authorise a transaction.
+- `passphrase`: Optional passphrase to use to sign the transaction.
+If not provided at creation the transaction can be signed later.
+- `secondPassphrase`: Optional second passphrase to use to sign the transaction if the account has registered a second passphrase.
+If not provided at creation the transaction can be signed with the second passphrase later.
 
-`+object+`: The created transaction object.
+==== Return value
 
-===== Examples
+`object`: The created transaction object.
+
+==== Examples
 
 [source,js]
 ----
@@ -455,33 +443,31 @@ transactions.registerMultisignature({
  } */
 ----
 
-=== Methods for creating signature objects
+== Methods for creating signature objects
 
-==== createSignatureObject
+=== createSignatureObject
 
-Creates a signature object for a transaction from a multisignature
-account.
+Creates a signature object for a transaction from a multisignature account.
 
-===== Syntax
+==== Syntax
 
 [source,js]
 ----
 createSignatureObject(transaction, passphrase)
 ----
 
-===== Parameters
+==== Parameters
 
-`+transaction+`: The multisignature transaction to sign.
+`transaction`: The multisignature transaction to sign.
 
-`+passphrase+`: Passphrase to use to sign the transaction.
+`passphrase`: Passphrase to use to sign the transaction.
 
-===== Return value
+==== Return value
 
-`+object+`: The signature object which can be broadcast to the network.
-Contains `+transactionId+`, `+publicKey+` and `+signature+` hex
-`+string+`s.
+`object`: The signature object which can be broadcast to the network.
+Contains `transactionId`, `publicKey` and `signature` hex ``string``s.
 
-===== Examples
+==== Examples
 
 [source,js]
 ----
@@ -504,82 +490,80 @@ transactions.createSignatureObject({
 } */
 ----
 
-=== Utility methods
+== Utility methods
 
-==== convertBeddowsToLSK
+=== convertBeddowsToLSK
 
-Converts amounts in Beddows (the smallest denomination) to amounts in
-whole LSK.
+Converts amounts in Beddows (the smallest denomination) to amounts in whole LSK.
 
-===== Syntax
+==== Syntax
 
 [source,js]
 ----
 convertBeddowsToLSK(amount)
 ----
 
-===== Parameters
+==== Parameters
 
-`+amount+`: `+string+` decimal representation of amount to be converted.
+`amount`: `string` decimal representation of amount to be converted.
 
-===== Return value
+==== Return value
 
-`+string+`: Amount in LSK.
+`string`: Amount in LSK.
 
-===== Examples
+==== Examples
 
 [source,js]
 ----
 transactions.utils.convertBeddowsToLSK('100000'); // '0.001'
 ----
 
-==== convertLSKToBeddows
+=== convertLSKToBeddows
 
-Converts amounts in whole LSK to amounts in Beddows (the smallest
-denomination).
+Converts amounts in whole LSK to amounts in Beddows (the smallest denomination).
 
-===== Syntax
+==== Syntax
 
 [source,js]
 ----
 convertLSKToBeddows(amount)
 ----
 
-===== Parameters
+==== Parameters
 
-`+amount+`: `+string+` decimal representation of amount to be converted.
+`amount`: `string` decimal representation of amount to be converted.
 
-===== Return value
+==== Return value
 
-`+string+`: Amount in Beddows.
+`string`: Amount in Beddows.
 
-===== Examples
+==== Examples
 
 [source,js]
 ----
 transactions.utils.convertLSKToBeddows('0.001'); // '100000'
 ----
 
-==== getTransactionBytes
+=== getTransactionBytes
 
 Returns a byte array representation of a transaction object.
 
-===== Syntax
+==== Syntax
 
 [source,js]
 ----
 getTransactionBytes(transaction)
 ----
 
-===== Parameters
+==== Parameters
 
-`+transaction+`: `+object+` representation of a transaction.
+`transaction`: `object` representation of a transaction.
 
-===== Return value
+==== Return value
 
-`+buffer+`: Byte array representation of the transaction
+`buffer`: Byte array representation of the transaction
 
-===== Examples
+==== Examples
 
 [source,js]
 ----
@@ -597,26 +581,26 @@ transactions.utils.getTransactionBytes({
 }); // <Buffer 00 b8 7f e8 03 0b 68 c5 d7 45 d4 79 98 76 8a 14 b9 2b 22 1d ed 22 92 e2 1b 62 84 6f 8f 96 8f db cd 9b 52 ae 4d 00 00 00 00 00 00 00 7b 64 00 00 00 00 ... >
 ----
 
-==== getTransactionId
+=== getTransactionId
 
 Returns a transaction ID for a transaction.
 
-===== Syntax
+==== Syntax
 
 [source,js]
 ----
 getTransactionId(transaction)
 ----
 
-===== Parameters
+==== Parameters
 
-`+transaction+`: The transaction whose ID is required.
+`transaction`: The transaction whose ID is required.
 
-===== Return value
+==== Return value
 
-`+string+`: The transaction ID.
+`string`: The transaction ID.
 
-===== Examples
+==== Examples
 
 [source,js]
 ----
@@ -633,28 +617,28 @@ transactions.utils.getTransactionId({
 }); // '7601088739759476607'
 ----
 
-==== multiSignTransaction
+=== multiSignTransaction
 
 Signs a transaction from a multisignature account using a passphrase.
 
-===== Syntax
+==== Syntax
 
 [source,js]
 ----
 multiSignTransaction(transaction, passphrase)
 ----
 
-===== Parameters
+==== Parameters
 
-`+transaction+`: The multisignature transaction to sign.
+`transaction`: The multisignature transaction to sign.
 
-`+passphrase+`: The passphrase to use to sign the transaction.
+`passphrase`: The passphrase to use to sign the transaction.
 
-===== Return value
+==== Return value
 
-`+string+`: The signature.
+`string`: The signature.
 
-===== Examples
+==== Examples
 
 [source,js]
 ----
@@ -674,28 +658,28 @@ transactions.utils.multiSignTransaction(
 ); // '27072c5eb4861792280bf3fc09f3bc7b0f81694cfd728cb810bf9fc4b18127d2885cf5235aa8e01d632092030e62f94b9b53394297cdd6a79b180f5e169dc80b'
 ----
 
-==== signTransaction
+=== signTransaction
 
 Signs a transaction using a passphrase.
 
-===== Syntax
+==== Syntax
 
 [source,js]
 ----
 signTransaction(transaction, passphrase)
 ----
 
-===== Parameters
+==== Parameters
 
-`+transaction+`: The transaction to sign.
+`transaction`: The transaction to sign.
 
-`+passphrase+`: The passphrase to use to sign the transaction.
+`passphrase`: The passphrase to use to sign the transaction.
 
-===== Return value
+==== Return value
 
-`+string+`: The signature.
+`string`: The signature.
 
-===== Examples
+==== Examples
 
 [source,js]
 ----
@@ -714,109 +698,105 @@ transactions.utils.signTransaction(
 ); // '27072c5eb4861792280bf3fc09f3bc7b0f81694cfd728cb810bf9fc4b18127d2885cf5235aa8e01d632092030e62f94b9b53394297cdd6a79b180f5e169dc80b'
 ----
 
-==== validateAddress
+=== validateAddress
 
 Validates a Lisk address.
 
-===== Syntax
+==== Syntax
 
 [source,js]
 ----
 validateAddress(address)
 ----
 
-===== Parameters
+==== Parameters
 
-`+address+`: The Lisk address to validate.
+`address`: The Lisk address to validate.
 
-===== Return value
+==== Return value
 
-`+boolean+`: `+true+` if the address is valid, otherwise an error will
+`boolean`: `true` if the address is valid, otherwise an error will
 be thrown.
 
-===== Examples
+==== Examples
 
 [source,js]
 ----
 transactions.utils.validateAddress('12981844261447786907L'); // true
 ----
 
-==== validateKeysgroup
+=== validateKeysgroup
 
 Validates a keysgroup for a multisignature account.
 
-===== Syntax
+==== Syntax
 
 [source,js]
 ----
 validateKeysgroup(keysgroup)
 ----
 
-===== Parameters
+==== Parameters
 
-`+keysgroup+`: The keysgroup to validate.
+`keysgroup`: The keysgroup to validate.
 
-===== Return value
+==== Return value
 
-`+boolean+`: `+true+` if the keysgroup is an array of public keys which
-are all valid and which contains no duplicates and which is of a valid
-length. Otherwise an error will be thrown.
+`boolean`: `true` if the keysgroup is an array of public keys which are all valid and which contains no duplicates and which is of a valid length. Otherwise an error will be thrown.
 
-===== Examples
+==== Examples
 
 [source,js]
 ----
 transactions.utils.validateKeysgroup([]); // Throws 'Expected between 1 and 16 public keys in the keysgroup.'
 ----
 
-==== validatePublicKey
+=== validatePublicKey
 
 Validates a public key.
 
-===== Syntax
+==== Syntax
 
 [source,js]
 ----
 validatePublicKey(publicKey)
 ----
 
-===== Parameters
+==== Parameters
 
-`+publicKey+`: The public key to validate.
+`publicKey`: The public key to validate.
 
-===== Return value
+==== Return value
 
-`+boolean+`: `+true+` if the public key is valid, otherwise an error
-will be thrown.
+`boolean`: `true` if the public key is valid, otherwise an error will be thrown.
 
-===== Examples
+==== Examples
 
 [source,js]
 ----
 transactions.utils.validatePublicKey('0b68c5d745d47998768a14b92b221ded2292e21b62846f8f968fdbcd9b52ae4d'); // true
 ----
 
-==== validatePublicKeys
+=== validatePublicKeys
 
 Validates an array of public keys.
 
-===== Syntax
+==== Syntax
 
 [source,js]
 ----
 validatePublicKeys(publicKeys)
 ----
 
-===== Parameters
+==== Parameters
 
-`+publicKeys+`: The public keys to validate.
+`publicKeys`: The public keys to validate.
 
-===== Return value
+==== Return value
 
-`+boolean+`: `+true+` if the public keys are all valid and there are no
-duplicates, otherwise an error will be thrown.
+`boolean`: `true` if the public keys are all valid and there are no duplicates, otherwise an error will be thrown.
 
-===== Examples
+==== Examples
 
 [source,js]
 ----
@@ -826,22 +806,22 @@ transactions.utils.validatePublicKeys([
 ]); // Throws 'Error: Duplicated public key: 0b68c5d745d47998768a14b92b221ded2292e21b62846f8f968fdbcd9b52ae4d.'
 ----
 
-==== `+validateTransaction+`
+=== `validateTransaction`
 
 Checks whether the input transaction object has valid schema or not.
 
-===== Syntax
+==== Syntax
 
 [source,js]
 ----
 validateTransaction(transaction)
 ----
 
-===== Parameters
+==== Parameters
 
-`+transaction+`: The transaction to validate.
+`transaction`: The transaction to validate.
 
-===== Return value
+==== Return value
 
 ....
 {
@@ -853,10 +833,9 @@ validateTransaction(transaction)
 }
 ....
 
-where `+boolean+`: `+true+` if the transaction object (without
-signature) is valid, `+false+` if not.
+where `boolean`: `true` if the transaction object (without signature) is valid, `false` if not.
 
-===== Examples
+==== Examples
 
 [source,js]
 ----
@@ -872,30 +851,28 @@ transactions.utils.validateTransaction({
 }); // true
 ----
 
-==== verifyTransaction
+=== verifyTransaction
 
-Verifies the signature (and optionally the second signature) for a
-passphrase.
+Verifies the signature (and optionally the second signature) for a passphrase.
 
-===== Syntax
+==== Syntax
 
 [source,js]
 ----
 verifyTransaction(transaction, [secondPublicKey])
 ----
 
-===== Parameters
+==== Parameters
 
-`+transaction+`: The transaction to verify.
+`transaction`: The transaction to verify.
 
-`+secondPublicKey+`: The second public key to check if the transaction
-has a second signature which should be verified.
+`secondPublicKey`: The second public key to check if the transaction has a second signature which should be verified.
 
-===== Return value
+==== Return value
 
-`+boolean+`: `+true+` if the signature is valid, `+false+` if not.
+`boolean`: `true` if the signature is valid, `false` if not.
 
-===== Examples
+==== Examples
 
 [source,js]
 ----

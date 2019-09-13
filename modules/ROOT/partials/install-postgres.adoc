@@ -1,0 +1,154 @@
+=== PostgreSQL
+
+To install Postgres follow the intructions descibed below, depending on the operating system your machine is running on.
+
+Two different ways of installing Docker on your system are described below.
+If you run into issues when trying to set up PostgreSQL on your machine, try to install it inside of a docker container.
+
+TIP: We recommend using Postgres with Docker for a quick and straight forward setup of Postgres.
+
+[tabs]
+====
+Postgres with Docker::
++
+--
+Running Postgres inside a Docker container will setup the correct version of Postgres and containerize it away from any existing versions you may have locally on your machine.
+Choose this setup if you are not familiar with Postgres, or if you run in to issues with a previously installed version of Postgres.
+
+*Install Docker*
+
+To perform the command below successfully, install Docker first:
+
+*Supported Platforms:* Please refer to https://docs.docker.com/engine/installation/#desktop
+
+*Mac OS X*
+
+Please refer to https://docs.docker.com/docker-for-mac/install/.
+Please note that Docker for Mac already includes Docker Compose.
+Install `make` using https://developer.apple.com/xcode/features/[XCode]
+
+*Linux*
+
+Please refer to https://docs.docker.com/engine/installation/#server
+
+*Start the Docker container*
+
+IMPORTANT: If you have other versions of PostgreSQL installed on your machine, make sure to stop them before starting the docker container.
+
+[source,bash]
+----
+docker run --name lisk_core_db -p 5432:5432 -e POSTGRES_USER=lisk -e POSTGRES_PASSWORD=password -e POSTGRES_DB=lisk_<NETWORK> -d postgres:10
+----
+
+This will install PostgreSQL version 10 (`postgres:10`) in a container with name `lisk_core_db` and binds the port `5432` of the container with the same port of the machine.
+As environment variables we expose `POSTGRES_USER=lisk` to create the lisk user and `POSTGRES_PASSWORD=password` to set the password for the lisk user.
+Finally the environment variable `POSTGRES_DB` creates the database `lisk_<NETWORK>` with the `lisk` user as owner.
+
+The above should be enough to set up the database ready to use with Lisk Core.
+To manage the Docker container, use the following commands:
+
+[source,bash]
+----
+docker stop lisk_core_db <1>
+docker start lisk_core_db <2>
+docker restart lisk_core_db <3>
+docker rm lisk_core_db <4>
+----
+
+<1> stop the container
+<2> start the container
+<3> restart the container
+<4> remove the container
+
+In case you want to access Postgres inside the container via CLI, run:
+
+[source,bash]
+----
+docker exec --tty --interactive lisk_core_db psql -h localhost -U lisk -d postgres
+----
+--
+Postgres system wide::
++
+--
+NOTE: See intructions for MacOS below.
+
+*Ubuntu*
+
+Firstly, install postgreSQL on your machine:
+
+[source,bash]
+----
+sudo apt-get purge -y postgres* <1>
+sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+sudo apt install wget ca-certificates
+wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+sudo apt update
+sudo apt install postgresql-10
+----
+
+<1> remove all already installed postgres versions
+
+After installation, you should see the Postgres database cluster, by running
+
+[source,bash]
+----
+pg_lsclusters
+----
+
+Drop the existing database cluster, and replace it with a cluster with the locale `en_US.UTF-8`:
+
+[source,bash]
+----
+sudo pg_dropcluster --stop 10 main
+sudo pg_createcluster --locale en_US.UTF-8 --start 10 main
+----
+
+Create a new database user called `lisk` and grant it rights to create databases.
+Then create the database with the lisk user as owner.
+In the last step, define the password for the lisk user:
+
+[source,bash]
+----
+sudo -u postgres -i createuser --createdb lisk
+sudo -u postgres -i createdb lisk_<NETWORK> --owner lisk
+sudo -u postgres psql -d lisk_<NETWORK> -c "alter user lisk with password 'password';"
+----
+
+`<NETWORK>` may be `main` for Mainnet, `test` for Testnet or `dev` for Devnet.
+
+IMPORTANT: Change `password` to a secure password of your choice. Don’t forget to update this password in the xref:configuration.adoc[Lisk Core configuration] later on.
+
+*MacOS*
+
+Install Postgres version 10:
+
+[source,bash]
+----
+brew install postgresql@10
+----
+
+Add it to the systems path:
+
+[source,bash]
+----
+echo 'export PATH="/usr/local/opt/postgresql@10/bin:$PATH"' >> ~/.bash_profile
+export LDFLAGS="-L/usr/local/opt/postgresql@10/lib"
+export CPPFLAGS="-I/usr/local/opt/postgresql@10/include"
+----
+
+Start Postgres, create the `lisk` user and the database:
+
+[source,bash]
+----
+initdb /usr/local/var/postgres -E utf8 --locale=en_US.UTF-8
+brew services start postgresql@10
+createuser --createdb lisk
+createdb lisk_<NETWORK> --owner lisk
+psql -d lisk_<NETWORK> -c "alter user lisk with password 'password';"
+----
+
+`<NETWORK>` may be `main` for Mainnet, `test` for Testnet or `dev` for Devnet.
+
+IMPORTANT: Change `password` to a secure password of your choice. Don’t forget to update this password in the xref:configuration.adoc[Lisk Core configuration] later on.
+--
+====

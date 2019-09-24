@@ -4,11 +4,156 @@ Mona Bärenfänger <mona@lightcurve.io>
 :source-highlighter: coderay
 :v_sdk: master
 
-== Structure
+[IMPORTANT]
+====
+If you are using the Docker distribution, Lisk Core is configured slightly different.
+Go to the xref:administration/docker.adoc#_configuration[Docker Administration] page, to find out more about the docker-specific configuration of Lisk Core.
+====
+
+== Command Line Options
+
+There are plenty of options available that you can use to override configuration on runtime while starting Lisk Core.
+
+How to overwrite config options from the Command Line:
+
+[tabs]
+====
+Pass options as ENV variables (recommended)::
++
+--
+[source,bash]
+----
+LISK_NETWORK=[network] LISK_CONFIG_FILE=[config-path] LISK_ADDRESS=[address] LISK_WS_PORT=[port] pm2 start lisk
+----
+--
+Pass options as flags (deprecated)::
++
+--
+[source,bash]
+----
+node dist/index.js -p [port] -a [address] -c [config-path] -n [network]
+----
+--
+====
+
+You can pass `devnet` (default), `alphanet`, `betanet`, `testnet` or `mainnet` for the `[network]` option.
+
+TIP: All `ENV` variables restricted with operating system constraint of `ENV` variable maximum length.
+
+[NOTE]
+====
+Comma-separated lists will replace the original config values.
+E.g. If you specify `LISK_PEERS`, original `peers.list` specific to the network will be replaced completely.
+====
+
+Each of these options can be appended on the command line.
+
+[options="header",cols="4,^2,~"]
+|===
+|Command line Option |ENV Variable |Description
+
+| `--network` +
+ `-n`
+| `LISK_NETWORK`
+| Which configurations set to use, associated to lisk networks.
+Any of this option can be used `devnet`, `alphanet`, `betanet`, `testnet` and `mainnet`.
+Default value is `devnet`.
+
+| `--config` +
+`-c`
+| `LISK_CONFIG_FILE`
+|Path the custom configuration file, which will override values of `config/default/config.json`.
+
+| `--port` +
+`-p`
+| `LISK_WS_PORT`
+| TCP port for P2P layer
+
+| `--http-port` +
+`-h`
+| `LISK_HTTP_PORT`
+| TCP port for HTTP API
+
+| `--address` +
+`-a`
+| `LISK_ADDRESS`
+| Listening host name or ip
+
+| `--log` +
+`-l`
+| `LISK_FILE_LOG_LEVEL`
+| Log level for file output
+
+| | `LISK_CONSOLE_LOG_LEVEL`
+| Log level for console output
+
+| | `LISK_CACHE_ENABLED`
+| Enable or disable cache. Must be set to true/false
+
+| `--database` +
+`-d`
+| `LISK_DB_NAME`
+| PostgreSQL database name to connect to
+
+| | `LISK_DB_HOST`
+| PostgreSQL database host name
+
+| | `LISK_DB_PORT`
+| PostgreSQL database port
+
+| | `LISK_DB_USER`
+| PostgreSQL database username to connect to
+
+| | `LISK_DB_PASSWORD`
+| PostgreSQL database password to connect to
+
+| `--redis` +
+`-r`
+| `LISK_REDIS_HOST`
+| Redis host name
+
+| | `LISK_REDIS_PORT`
+| Redis port
+
+| | `LISK_REDIS_DB_NAME`
+| Redis database name to connect to
+
+| | `LISK_REDIS_DB_PASSWORD`
+| Redis database password to connect to
+
+| `--peers` +
+`-p`
+| `LISK_PEERS`
+| Comma separated list of peers to connect to in the format `192.168.99.100:5000,172.169.99.77:5000`
+
+| | `LISK_API_PUBLIC`
+| Enable or disable public access of http API. Must be set to true/false
+
+| | `LISK_API_WHITELIST`
+| Comma separated list of IPs to enable API access. Format `192.168.99.100,172.169.99.77`
+
+| | `LISK_FORGING_DELEGATES`
+| Comma separated list of delegates to load in the format `publicKey\|encryptedPassphrase,publicKey2\|encryptedPassphrase2`
+
+| | `LISK_FORGING_WHITELIST`
+| Comma separated list of IPs to enable access to forging endpoints. Format `192.168.99.100,172.169.99.77`
+
+| `--rebuild` +
+`-b`
+| | Rebuilds certain database tables on basis of the local blockchain data.
+Must be followed by an integer, that specifies the last delegate round that should be part of the rebuild.
+If 0 is specified, all rounds are rebuilt.
+
+| | `LISK_CHILD_PROCESS_MODULES`
+| Comma separated list of modules, that shall be loaded in a separate process.
+To enable inter process communication, set `ipc.enabled` to `true` inside the `config.json` file.
+|===
+
+== Network-specific config files
 
 The root folder for all configurations is `config/`.
 The *default* network is `devnet`.
-If you want to connect to another network, specify the `network` when starting Lisk Core, as described in xref:administration/source.adoc#_command_line_options[Source Administration].
+If you want to connect to another network, specify the `network` when starting Lisk Core, as described in <<_command_line_options,Source Administration>>.
 You can find *network specific configurations* under `config/<network>/config.json`, where `<network>` can be any of these values:
 
 * `devnet`
@@ -21,20 +166,75 @@ You can find *network specific configurations* under `config/<network>/config.js
 ====
 Don’t override any value in files mentioned above if you need custom configuration.
 The changes will be overwritten everytime you upgrade Lisk Core.
-To use a custom configuration use environment variables or create your own `.json` file and pass it as xref:administration/source.adoc#_command_line_options[command line option].
+To use a custom configuration use environment variables or create your own `.json` file and pass it as <<_command_line_options,command line option>>.
 ====
+
+== Custom config file
+
+To use a custom config, create a ``.json``-file which is following the structure described in the <<_structure, Config Structure>> section.
+
+You only need to include the values you want to update, for all other options, the predefined values will be used, like described in <<_config_load_order, Config load order>> section.
+
+[NOTE]
+====
+*Binary* and *Commander* distributions both provide a config.json, which can be customized as desired.
+
+For *Source* distributions, the config file needs to be created seperately and needs to be passed like described below.
+====
+
+[tabs]
+=====
+Binary::
++
+--
+The binary script provides a custom `config.json` which is stored in the root folder of your Lisk Core installation by default.
+
+So e.g. you have installed Lisk Core for Mainnet under `~/lisk-main`, the config is stored directly in `~/lisk-main/config.json`
+
+The config.json will be used automatically when reloading your node with:
+
+[source, bash]
+----
+bash lisk.sh reload
+----
+--
+Commander::
++
+--
+Lisk Commander provides a custom `config.json` which is stored in the root folder of your Lisk Core instance by default.
+
+So e.g. you have installed Lisk Core for Mainnet under `~/.lisk/instances/lisk-mainnet`, the config is stored directly in `~/.lisk/instances/lisk-main/config.json`
+
+The config.json will be used automatically when reloading your node with:
+--
+Source::
++
+--
+[source,bash]
+----
+pm2 stop lisk <1>
+LISK_CONFIG_FILE=<CONFIG_PATH> pm2 start lisk <2>
+----
+<1> Stop Lisk Core in case it is running.
+<2> Replace `<CONFIG_PATH>` with the path to your custom config file.
+--
+=====
+
+== Config load order
 
 Configurations will be loaded in the following order, each one will override the previous one:
 
 . Default configuration values of modules and components of the xref:{v_sdk}@lisk-sdk::lisk-framework/index.adoc[Lisk Framework]
-. Network specific configuration file
-. A xref:administration/source.adoc#_command_line_options[custom configuration file] (if specified by the user)
-. xref:administration/source.adoc#_command_line_options[Command line configurations], specified as command-line flags or `ENV` variables.
+. <<_network_specific_config_files, Network specific configuration file>>
+. A <<_command_line_options,custom configuration file>> (if specified by the user)
+. <<_command_line_options,Command line configurations>>, specified as command-line flags or `ENV` variables.
 
 For development purposes, use `devnet` as the network option.
 Other networks are specific to public Lisk networks.
 
 The `config.json` file and a description of each configurable parameter.
+
+== Structure
 
 include::partial$configuration.adoc[]
 
@@ -45,13 +245,17 @@ The following configurable flags are available to control the access to your nod
 
 [source%linenums,js]
 ----
-
-"http_api": { <1>
-    "enabled": true, <2>
-    "access": { <3>
+{
+  "modules": {
+    "http_api": { <1>
+      "enabled": true, <2>
+      "access": { <3>
         "public": false, <4>
         "whiteList": ["127.0.0.1"], <5>
-    },
+      },
+    }
+  }
+}
 ----
 
 <1> Contains options for the API module.

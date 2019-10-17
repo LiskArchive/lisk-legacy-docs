@@ -208,24 +208,22 @@ Install Postgres version 10:
 brew install postgresql@10
 ```
 
-Add it to the systems path:
+Execute the following to have PostgreSQL commands (e.g. `psql`) in your PATH:
 ```bash
 echo 'export PATH="/usr/local/opt/postgresql@10/bin:$PATH"' >> ~/.bash_profile
-export LDFLAGS="-L/usr/local/opt/postgresql@10/lib"
-export CPPFLAGS="-I/usr/local/opt/postgresql@10/include"
+source ~/.bash_profile
 ```
 
 Start Postgres, create the `lisk` user and the database:
 ```bash
-initdb /usr/local/var/postgres -E utf8 --locale=en_US.UTF-8
-brew services start postgresql@10
-createuser --createdb lisk
-createdb lisk_<NETWORK> --owner lisk
-psql -d lisk_<NETWORK> -c "alter user lisk with password 'password';"
+pg_ctl -D /usr/local/var/postgresql@10 start
+createuser lisk
+createdb --owner=lisk isk_<NETWORK>
+psql --dbname=lisk_test --command="ALTER USER lisk WITH PASSWORD 'password';"
 ```
 `<NETWORK>` may be `main` for Mainnet, `test` for Testnet or `dev` for Devnet.
 
-> Change `'password'` to a secure password of your choice.
+> Change `password` to a secure password of your choice.
 > Don't forget to update this password in the [Lisk Core configuration](../configuration.md) later on.
 
 ### PM2 (optional)

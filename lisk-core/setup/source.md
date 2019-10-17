@@ -218,8 +218,8 @@ Start Postgres, create the `lisk` user and the database:
 ```bash
 pg_ctl -D /usr/local/var/postgresql@10 start
 createuser lisk
-createdb --owner=lisk isk_<NETWORK>
-psql --dbname=lisk_test --command="ALTER USER lisk WITH PASSWORD 'password';"
+createdb --owner=lisk lisk_<NETWORK>
+psql --dbname=lisk_<NETWORK> --command="ALTER USER lisk WITH PASSWORD 'password';"
 ```
 `<NETWORK>` may be `main` for Mainnet, `test` for Testnet or `dev` for Devnet.
 

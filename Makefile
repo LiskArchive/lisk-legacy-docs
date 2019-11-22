@@ -7,4 +7,4 @@ all: ui antora
 ui:
 	cd antora && git pull origin antora && npm ci && gulp bundle
 antora: ui
-	antora site.yml
+	antora site.yml --fetch

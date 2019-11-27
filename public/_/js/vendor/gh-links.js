@@ -1,0 +1,1 @@
+!function(){"use strict";var o=document.querySelector(".edit-this-page").childNodes[0].href;console.log("EditURL : "),console.dir(o);var e=o.replace("/blob/","/contributors-list/");document.querySelector(".contributors-of-page").childNodes[0].href=e,console.log("Contributors : "),console.dir(e)}();

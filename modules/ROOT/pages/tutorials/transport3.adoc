@@ -1,19 +1,21 @@
 = Transport Tutorial Part 3: Next steps
-:toc: preamble
+:toc:
 :imagesdir: ../../assets/images
 :experimental:
 :v_core: master
+:sectnums: 3
+:sectnumlevels: 3
 
-== 3.1 Make it portable
+== Make it portable
 
-Currently the packet is not really portable, because it is connected via USB to your machine in order to get power.
+Currently the packet is not really portable, because it is connected via USB to the computer in order to get power.
 
-To make it portable, all you need is a portable power source, like a battery, that provides the Raspberry Pi with enough power to track the packet for at least a few hours.
+To make it portable, all that is needed is a portable power source, like a battery, that provides the Raspberry Pi with enough power to track the packet for at least a few hours.
 
 The second thing that needs to be done is making the tracking script start automatically after the boot process of the Pi.
 
-`pm2` provides an easy way to let your script start automatically after boot.
-On your Raspberry Pi, install `pm2` globally:
+`pm2` provides an easy way to let the script start automatically after boot.
+On the Raspberry Pi, install `pm2` globally:
 
 [source, bash]
 ----
@@ -21,10 +23,10 @@ npm install pm2 -g
 pm2 startup
 ----
 
-This should print a fitting command for you in the terminal.
+This should print a fitting command in the terminal.
 Copy it and paste it in the temrinal again to complete the setup of the `pm2` startup script.
 
-Start your tracking script with `pm2`:
+Start the tracking script with `pm2`:
 
 .Run this inside the `light_alarm` folder on the Raspberry Pi
 [source, bash]
@@ -38,10 +40,10 @@ pm2 start --name lightAlarm index.js
 pm2 save
 ----
 
-Now log out from your Raspberry Pi, disconnect it from your machine, and connect it to a portable energy source, like a power bank.
+Now log out from the Raspberry Pi, disconnect it from the computer, and connect it to a portable energy source, like a power bank.
 After 1-2 minutes of booting, the tracking script will start running and it will check the light sensor every second.
 
-== 3.2 Connect more nodes
+== Connect more nodes
 
 During development it is necessary and convenient to have a rather centralized network with only one node connected.
 
@@ -69,20 +71,20 @@ It's also convenient to have the genesis delegates actively forging on the seed 
 
 TIP: The exposed `configDevnet` object is a good template for the config of a seed node, as it includes already all 101 genesis delegates credentials and automatically enables forging for all of them.
 
-=== B) Create a new config suited for your node application
+=== B) Create a new config suited for the node application
 
-Exchange the `configDevnet` object that we passed to our node during development with your own customized version.
+Exchange the `configDevnet` object that we passed to our node during development with an own customized version.
 
 [TIP]
 ====
-It's recommended to create a config object with all the options that you want different from the default config options.
+It's recommended to create a config object with all the options that shall be different to the default config options.
 To check the default config options, go to the xref:configuration.adoc[configuration page] or check it out directly in the code: +
 `lisk-framework/src/modules/MODULE_NAME/defaults/config.js`. +
 Same goes for the components: +
 `lisk-framework/src/components/COMPONENT_NAME/defaults/config.js`.
 ====
 
-Most of the configurations can stay the same to what is defined in the default config options, but there is one option that you should update: **The seed node(s)**.
+Most of the configurations can stay the same to what is defined in the default config options, but there is one option that should be updated: **The seed node(s)**.
 
 So to add `1.2.3.4` as a seed node, add an object (or several objects) with the 2 properties `ip` and `wsPort` to the `seedPeers` list:
 
@@ -95,14 +97,14 @@ configDevnet.modules.network.seedPeers = [{ ip: '1.2.3.4', wsPort: 5000}]
 ====
 By default, the forging delegates list is empty. +
 This is intended, because the genesis delegates are only needed to set up a working dev environment.
-Later, you want the `delegates` list to be empty, so users can fill their own credentials there, in case they want to activate forging on their node.
+Later it's best if the `delegates` list is empty, so users can fill their own credentials there, in case they want to activate forging on their node.
 
-If you wish, e.g. for a proof of concept, to provide already activated forging delegates inside the config, use the devnet genesis delegates in https://github.com/LiskHQ/lisk-sdk/blob/development/sdk/src/samples/config_devnet.json[configDevnet] or create your own genesis delegates and add them to the config.
+If it is desired, e.g. for a proof of concept, to provide already activated forging delegates inside the config, use the devnet genesis delegates in https://github.com/LiskHQ/lisk-sdk/blob/development/sdk/src/samples/config_devnet.json[configDevnet] or create own genesis delegates and add them to the config.
 ====
 
-=== C) Publish application
+=== C) Publish the application
 
-Add the code for your customized `node` application (including the custom transaction types) to a public code repository on e.g. https://github.com/[Github] or https://about.gitlab.com/[Gitlab].
+Add the code for the customized `node` application (including the custom transaction types) to a public code repository on e.g. https://github.com/[Github] or https://about.gitlab.com/[Gitlab].
 
 This gives everyone the opportunity to download the application and deploy it on a server in order to connect with the network.
 
@@ -111,6 +113,7 @@ The code should include at least the following files:
 * `index.js` :  The code that initializes and starts the node application
 * `package.json` : A project file that lists all needed dependencies (this should include `lisk-sdk` as dependency)
 * `transactions/` : A folder with all required custom transaction types
+* `README` : A Readme which describes the most important steps to setup the node
 
 === D) Connect nodes and verify
 
@@ -152,7 +155,7 @@ image:forging_node.png[Forging node logs]
 ====
 Sometimes there can be errors when broadcasting transactions between nodes.
 This is no need to worry!
-The node will start the sync process soon again, and most times it is successfull on the next try.
+The node will start the sync process soon again, and most times it is successful on the next try.
 ====
 
 image:common-sync-issue.png[Common sync issue]
@@ -167,18 +170,47 @@ Like shown in the logs, the blocks at height 284, 285 and 286 are discarded.
 Then, the node realizes it is not in sync with the other nodes and starts the sync process, indicated by the logs `Starting sync`.
 During the sync process the missing blocks are received from the peers and added to the database of the node.
 
-== 3.3 Replace dummy delegates with real ones
+== Replace dummy delegates with real ones
 
-Exchange the dummy delegates with real delegates.
+During development of the Lisk Transport application we had one node with enabled forging for all 101 genesis delegates.
+
+After releasing a first version the blockchain application, it is needed that real delegates take the forging slots of the genesis delegates.
+The network will become stable and decentralized for the first time, when at least 51 real delegates are actively forging in the network.
+
+To join the network as a new delegate:
+
+. xref:lisk-commander/user-guide/commands.html#_create_account[Create an own, private account on the network]
+. xref:lisk-commander/user-guide/commands.html#_delegate_registration_transaction[Register a delegate]
+. Set up a node: Follow the steps in the `README` of the app (Or see the Lisk tutorials, as this process is always basically the same)
+. xref:{v_core}@lisk-core::configuration.html#_enabledisable_forging[Enable forging for the newly created delegate on the node]
+. People get convinced to vote for a delegate in the network, e.g. if the delegate is:
+** helpful
+** reachable
+** trustable
+** accountable
+** offering useful services or tools
 
 image:3-nodes.png[3 nodes diagram]
 
-== 3.4 Write unit tests for custom transactions
+[NOTE]
+====
+It depends on the distribution of vote power, who to convince.
+
+If a delegate joins the network on a very early stage, she will probably replace one of the genesis delegates.
+The genesis delegates are voted in by the genesis account, which holds all the tokens on the initial network start.
+The genesis account votes with this tokens for the genesis delegates, in order to stabilize the network during the development.
+
+So when replacing a genesis delegate, the new delegate will need to convince the person who controls the genesis account of the network, which will be most likely the app developer.
+
+Later, when the majority of the existing tokens is distributed among the different private accounts, the new delegate needs to gain the trust of the community in order to be voted into a forging position.
+====
+
+== Write unit tests for custom transactions
 
 How to test `undoAsset` functions
 
-== 3.5 Task: Add more sensors
+== Task: Add more sensors
 
 Connect more sensors to secure the travel of the packet, e.g. implement a `TemperatureAlarm` or `HumidityAlarm` analog to the `LightAlarm` transaction type.
 
-== 3.6 Task: Add other improvements like GPS tracking or estimated travel times
+== Task: Add other improvements like GPS tracking or estimated travel times

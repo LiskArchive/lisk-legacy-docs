@@ -1,10 +1,14 @@
 = Transport Tutorial Part 3: Next steps
-:toc:
+:toc: preamble
+:toc-title: Part 3 includes:
+
 :imagesdir: ../../assets/images
 :experimental:
 :v_core: master
 :sectnums: 3
 :sectnumlevels: 3
+
+In part 3, the next possible steps after the initial development of the app are described.
 
 == Make it portable
 
@@ -195,7 +199,7 @@ image:3-nodes.png[3 nodes diagram]
 
 [NOTE]
 ====
-It depends on the distribution of vote power, who to convince.
+How to replace a genesis delegate
 
 If a delegate joins the network on a very early stage, she will probably replace one of the genesis delegates.
 The genesis delegates are voted in by the genesis account, which holds all the tokens on the initial network start.
@@ -206,9 +210,107 @@ So when replacing a genesis delegate, the new delegate will need to convince the
 Later, when the majority of the existing tokens is distributed among the different private accounts, the new delegate needs to gain the trust of the community in order to be voted into a forging position.
 ====
 
-== Write unit tests for custom transactions
+== Write tests for custom transactions
 
-How to test `undoAsset` functions
+The more complex the logic inside the custom transaction types, the more comlicated it gets to verify, that the custom transaction logic is working as expected.
+
+Therefore, it is recommended to write **unit tests**, that verify the logic of the transaction type.
+
+Especially for verifying the code of the `undoAsset()` function, it is convenient to write unit tests.
+This is because the code in the `undoAsset` function is only executed, if the node discoveres itself on a fork with the main chain.
+This means, the node added some blocks that are different to the blocks on the main chain to the blockchain.
+In order to sync again with the main chain, the local node will need to undo the transactions in the last blocks by executing the `undoAsset()` function of each trasnaction inside of the blocks that need to be discarded.
+
+To test, if the transaction is undone correclty, write a unit test like so:
+
+.Example: Unit test for the undoAsset() function of the RegisterPacketTransaction
+[source, js]
+----
+const RegisterPacketTransaction = require('../register-packet');
+const transactions = require('@liskhq/lisk-transactions');
+const { when } = require('jest-when');
+
+const dateToLiskEpochTimestamp = date => (
+    Math.floor(new Date(date).getTime() / 1000) - Math.floor(new Date(Date.UTC(2016, 4, 24, 17, 0, 0, 0)).getTime() / 1000)
+);
+
+describe('RegisterPacket Transaction', () => {
+    let storeStub;
+    beforeEach(() => {
+        storeStub = {
+            account: {
+                get: jest.fn(),
+                set: jest.fn(),
+            },
+        };
+    });
+
+    test('it should undo the state for register packet correctly', async () => {
+        // Arrange
+        const senderId = 'senderXYZ';
+        const asset = {
+            security: transactions.utils.convertLSKToBeddows('10'),
+            minTrust: 0,
+            postage: transactions.utils.convertLSKToBeddows('10'),
+            packetId: 'not important',
+        };
+
+        const mockedPacketAccount = {
+            address: 'xyz123',
+        };
+        const mockedSenderAccount = {
+            address: 'abc123',
+            balance: '10000000000', // 100 LSK
+        };
+
+        when(storeStub.account.get)
+            .calledWith(asset.packetId)
+            .mockReturnValue(mockedPacketAccount);
+
+        when(storeStub.account.get)
+            .calledWith(senderId)
+            .mockReturnValue(mockedSenderAccount);
+
+        // Act
+        const tx = new RegisterPacketTransaction({
+            senderId,
+            asset,
+            recipientId: 'xyzL',
+            timestamp: dateToLiskEpochTimestamp(new Date()),
+        });
+        tx.undoAsset(storeStub);
+
+        // Assert
+        expect(storeStub.account.set).toHaveBeenNthCalledWith(
+            1,
+            mockedPacketAccount.address,
+            {
+                address: mockedPacketAccount.address,
+                balance: 0,
+                asset: null,
+            }
+        );
+
+        expect(storeStub.account.set).toHaveBeenNthCalledWith(
+            2,
+            mockedSenderAccount.address,
+            {
+                address: mockedSenderAccount.address,
+                balance: new transactions.utils.BigNum(mockedSenderAccount.balance).add(
+                    new transactions.utils.BigNum(asset.postage)
+                ).toString()
+            }
+        );
+    });
+});
+----
+
+What else needs to be tested?::
+Is writing unit tests is really enough to ensure the functionality of a custom transaction type?
+You may wonder if it is required to write additional functional and integration tests.
+The correct reading and writing of the data to the database is already part of the Lisk SDK software testing and therefore it is not needed to test it again for your new custom transaction type.
+Therefore unit tests are generally enough to test the functionality of your custom transaction type.
+
 
 == Task: Add more sensors
 

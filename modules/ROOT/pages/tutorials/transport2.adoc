@@ -310,8 +310,7 @@ class StartTransportTransaction extends BaseTransaction {
             const carrierBalance = new utils.BigNum(carrier.balance);
             const packetSecurity = new utils.BigNum(packet.asset.security);
             /* Check if the carrier has the minimal trust required for accepting the package.
-               Also, we check if the carrier his balance is larger than the required security
-               as we need to lock this security from the carrier's account balance. */
+               In addition, the carriers balance is checked to see if it is larger than the required security balance, as it is necessary to lock this security inside the account. */
             if (packet.asset.minTrust <= carrierTrust && carrierBalance.gte(packetSecurity)) {
                 /**
                  * Update the Carrier account:
@@ -319,8 +318,8 @@ class StartTransportTransaction extends BaseTransaction {
                  * - Remove the security from balance
                  * - initialize carriertrust, if not present already
                  */
-                /* Next, we lock the defined security (number of LSK tokens) in the asset field
-                   under the property `lockedSecurity` and deducted this security from his `carrierBalance`. */
+                /* Next,the defined security is locked, (number of LSK tokens) in the asset field
+                   under the property `lockedSecurity` and this security is deducted from the `carrierBalance`. */
                 const carrierBalanceWithoutSecurity = carrierBalance.sub(packetSecurity);
                 const carrierTrust = carrier.asset.trust ? carrier.asset.trust : 0;
                 const updatedCarrier = /* Insert the updated carrier account here*/
@@ -364,8 +363,8 @@ class StartTransportTransaction extends BaseTransaction {
         const carrierBalanceWithSecurity = new utils.BigNum(carrier.balance).add(
             new utils.BigNum(packet.assset.security)
         );
-        /* For the `undoAsset` function, we need to revert the steps of `applyAsset` again.
-           This means we need to remove the locked balance in the `asset` field and add this
+        /* For the `undoAsset` function, it is necessary to revert the steps of `applyAsset` again.
+           Hence, it is necessary to remove the locked balance in the `asset` field and add this
            number again to the `balance` of the carrier's account. */
         const updatedCarrier = {
             ...carrier,
@@ -373,8 +372,8 @@ class StartTransportTransaction extends BaseTransaction {
         };
         store.account.set(carrier.address, updatedCarrier);
         /* --- Revert packet account --- */
-        /* For the packet account, we need to undo some items as well.
-           First of all, we need to set the `deliveryStatus` again to `pending`.
+        /* For the packet account, it is also necessary to undo certain items.
+           Now set the `deliveryStatus` again to `pending`.
            The `carrier` value need sto be nullified as well. */
         const updatedData = {
             asset: {
@@ -395,34 +394,33 @@ class StartTransportTransaction extends BaseTransaction {
 module.exports = StartTransportTransaction;
 ----
 
-=== Task: Lock Funds
-Locking funds is actually very straightforward.
-First, you deduct the number of tokens you want to lock from the account's balance.
+=== Task: Lock Funds.
+To lock the funds, simply deduct the number of tokens lock from the account's balance.
 
 [source,js]
 ----
 const carrierBalanceWithoutSecurity = carrierBalance.sub(packetSecurity);
 ----
 
-Next, you store the deducted number of tokens in a custom property in the `asset` field.
-This ensures, we can later know how much tokens we had locked as a security.
+Next, store the deducted number of tokens in a custom property in the `asset` field.
+This provides the ability to keep track of the amount of tokens locked as security.
 
 https://github.com/LiskHQ/lisk-sdk-examples/blob/development/transport/transactions/start-transport.js#L53[Insert your own code here]:
 Create an updated object for the carrier account, that substracts the `security` from the carriers balance, and adds a new property `lockedSecurity` to the `asset` field of the carriers account.
-The `lockedSecurity` should equal exactly the amount, that you deducted from the carriers `balance`.
+The `lockedSecurity` should exactly equal the amount deducted from the carriers `balance`.
 
 NOTE: To unlock locked tokens remove or nullify the custom property in the `asset` field and add the number of tokens again to the account's `balance`.
 
-**Important: To verify your implementation, compare it with the https://github.com/LiskHQ/lisk-sdk-examples/blob/development/transport/transactions/solutions/start-transport.js[solution].**
+**Important: To verify the implementation, please compare it with the https://github.com/LiskHQ/lisk-sdk-examples/blob/development/transport/transactions/solutions/start-transport.js[solution].**
 
 === Explanation: `prepare()`
 The prepare function here is caching both the carrier account through the `senderId` and the packet account through the `recipientId`.
 
-_Why can we cache two accounts at the same time?_
-Notice that the cache function accepts an array which allows to pass in multiple query objects.
-When we pass in an array to the cache function, it will try to find a result for each query object.
+_Why is it possible to cache two accounts at the same time?_
+Please notice that the cache function accepts an array which allows it to pass in multiple query objects.
+When a pass in an array to the cache function is made, it will try to find a result for each query object.
 
-It is also possible to pass in just one query object without surrounding array.
+It is also possible to pass in just one query object without a surrounding array.
 In this case, only objects that exactly match this query object will be cached.
 
 [source,js]
@@ -439,33 +437,33 @@ async prepare(store) {
     }
 ----
 
-You can find a more detailed explanation in the custom transactions deep dive article which you can find on https://lisk.io/blog/tutorial/custom-transactions-statestore-basetransaction-transfer-transaction#6658[our blog].
+A further in depth explanation in the custom transactions deep dive article can be found on https://lisk.io/blog/tutorial/custom-transactions-statestore-basetransaction-transfer-transaction#6658[our blog].
 The link opens the section `B/ Combining Filters`.
 
 == 2.2 Finish the Transport
 
-The last custom transaction type we need to implement is the `FinishTransportTransaction`, which will complete the transport of the packet.
+The last custom transaction type here is to implement is the `FinishTransportTransaction`, which will complete the transport of the packet.
 
 When reaching the recipient of the packet, the carrier passes the packet to the recipient.
 The recipient needs to sign the `FinishTransportTransaction`, that verifies that the packet has been passed on to the recipient.
 
-When sending the transaction, the recipient needs to specify:
+When sending the transaction, the recipient needs to specify the following:
 
-* `packetID`: The ID of the packet that the recipient received
-* `status`: The status of the transport, which has 2 options: `"success"` or `"fail"`
+* `packetID`: The ID of the packet that the recipient received.
+* `status`: The status of the transport, which has 2 options: `"success"` or `"fail"`.
 
-This transaction will:
+This transaction will perform the following:
 
 * If `status="success"`
-** Send `postage` to carrier account
-** Unlock `security` in carrier account
-** Increase `trust` of carrier +1
-** Set packet `status` to `success`
+** Send `postage` to the carrier's account.
+** Unlock `security` in the carrier's account.
+** Increase `trust` of the carrier +1.
+** Set packet `status` to `success`.
 * If `status="fail"`
-** Send `postage` to sender account
-** Add `security` to the sender account, and nullify `lockedSecurity` from the account fo the carrier.
-** Decrease `trust` of carrier by -1
-** Set packet `status` to `fail`
+** Send `postage` to the sender's account.
+** Add `security` to the sender's account, and nullify `lockedSecurity` from the account for the carrier.
+** Decrease `trust` of the carrier by -1.
+** Set packet `status` to `fail`.
 
 Click here to see the https://github.com/LiskHQ/lisk-sdk-examples/blob/development/transport/transactions/finish-transport.js[full code for FinishTransportTransaction]
 
@@ -479,7 +477,7 @@ applyAsset(store) {
     let sender = store.account.get(packet.asset.sender);
     // if the transaction has been signed by the packet recipient
     if (this.asset.senderId === packet.carrier) {
-        // if the packet status isn't "ongoing" and not "alarm"
+        // if the packet status is not "ongoing" and not "alarm"
         if (packet.asset.status !==  "ongoing" && packet.asset.status !== "alarm") {
             errors.push(
                 new TransactionError(
@@ -491,7 +489,7 @@ applyAsset(store) {
             );
             return errors;
         }
-        // if the transport was a SUCCESS
+        // if the transport was SUCCESSFUL
         if (this.asset.status === "success") {
             /**
              * Update the Carrier account:
@@ -553,20 +551,20 @@ applyAsset(store) {
 
 === Explanation: Caching data based on data from the db
 
-Sometimes it might be needed to cache accounts or other data from the database, depending on other data that is stored in the database.
+It may be required to cache accounts or other data from the database, depending on other data that is stored in the database.
 
-To achieve this:
+To achieve this, the points listed below must be followed:
 
-. cache the data with `store.account.cache`
-. save the data as a constant with `store.account.get`
-. You can now use the newly created constand to cache the rest of the data, like shown in the code snippet below.
+. cache the data with `store.account.cache`.
+. save the data as a constant with `store.account.get`.
+. It is now possible to use the newly created constant to cache the rest of the data, as shown in the code snippet below:
 
 .`prepare()` function of `finish-transport.js`
 [source,js]
 ----
 async prepare(store) {
     /**
-     * Get packet account
+     * Get packet account.
      */
     await store.account.cache([
         {
@@ -574,7 +572,7 @@ async prepare(store) {
         }
     ]);
     /**
-     * Get sender and recipient accounts of the packet
+     * Get sender and recipient accounts of the packet.
      */
     const pckt = store.account.get(this.recipientId);
     await store.account.cache([
@@ -591,24 +589,24 @@ async prepare(store) {
 === Task: Implement the logic in `applyAsset()` for a successful transport
 https://github.com/LiskHQ/lisk-sdk-examples/blob/development/transport/transactions/finish-transport.js#L83[Write your own logic or the case of a successful transport of the packet here.]
 
-When the recipient receives the packet from the carrier, the recipient would sign and send the `FinishTransportTransaction`.
-If the recipient consideres the transport successfull, the carrier should be rewarded accordngly, and the packet status should be updated to `success`.
+When the recipient receives the packet from the carrier, the recipient has to sign and send the `FinishTransportTransaction`.
+If the recipient considers the transport successful, then the carrier should be rewarded accordingly and the packet status will be updated to `success`.
 
-TIP: Find more information about what exactly to do in the code comments of `finish-transport.js`
+TIP: More information can be found in the code comments of `finish-transport.js`
 
-**Important: To verify your implementation of `applyAsset()`, compare it with the https://github.com/LiskHQ/lisk-sdk-examples/blob/development/transport/transactions/solutions/finish-transport.js[solution].**
+**Important: To verify your implementation of `applyAsset()`, please compare it with the https://github.com/LiskHQ/lisk-sdk-examples/blob/development/transport/transactions/solutions/finish-transport.js[solution].**
 
 == 2.3 Test out the full workflow with the client app
 
-=== Check for status in the `lightAlarmTransaction`
+=== Check the status in the `lightAlarmTransaction`
 
-Now that we implemented the whole workflow with different statuses for the packet, we actually only want to send an alarm, if the status of the packet is `ongoing` or `alarm`.
+At this point the entire workflow should be implemented with different packet statuses. If the the packet is currently `ongoing`  or `alarm`, then to send an alarm follow the instructions described below:
 
-Insert the snippet below in the `applyAsset()` function of https://github.com/LiskHQ/lisk-sdk-examples/blob/development/transport/transactions/light-alarm.js#L39[light-alarm.js], before the code that applies the changes to the database accounts.
+Insert the code snippet listed below in the `applyAsset()` function of https://github.com/LiskHQ/lisk-sdk-examples/blob/development/transport/transactions/light-alarm.js#L39[light-alarm.js], before the code that applies the changes to the database accounts.
 
 If the status isn't `ongoing` or `alarm` it will create a new `TransactionError`, push it to the `errors` list, and return it.
 
-IMPORTANT: You have to insert this snippet twice: Once in `transaction/light-alarm.js` on your local machine, and in the `light-alarm.js` on your raspberry pi.h
+IMPORTANT: This snippet must be inserted twice: Once in `transaction/light-alarm.js` on the local machine, and also in the `light-alarm.js` on the raspberry pi.h
 
 [source,js]
 ----
@@ -630,7 +628,7 @@ if (packet.asset.status !== 'ongoing' && packet.asset.status !== 'alarm') {
 
 === Register all transaction types with the node app
 
-If you haven't done yet, uncomment now all the custom transactions, to register them with the node application.
+Please follow the required steps listed below to uncomment all of the custom transactions, in order to register them with the node application:
 
 [source, js]
 ----
@@ -661,18 +659,18 @@ app
 
 === Try it out in the client app
 
-Start or restart the `node`, `client` and `iot` application, like you did in xref:tutorials/transport1.adoc#_1_3_the_client_application[Step 1.3 in Part 1] of the workshop.
+Now try to start or re-start the `node`, `client` and `iot` application, exactly as performed earlier in xref:tutorials/transport1.adoc#_1_3_the_client_application[Step 1.3 in Part 1] of this tutorial.
 
-Go to http://localhost:3000 to access the client app through your web browser.
+Go to http://localhost:3000 to access the client app through the web browser.
 
 [TIP]
 ====
-You find prepared account credentials for sender, recipient and carrier in `client/accounts.json`.
+The prepared account credentials for the sender, recipient and carrier can be found in `client/accounts.json`.
 
-These credentials are already prefilled for you in the different forms in the client app.
+These credentials are already pre-filled in the different forms in the client app.
 ====
 
-.The accounts of the different actors in Lisk Transport
+.The different actors in Lisk Transport can be seen below:
 [source,json]
 ----
 {
@@ -706,20 +704,20 @@ image:1-initialize.png[Initialize packet account]
 
 ==== Register the packet
 
-First, head to the http://localhost:3000/post-register-packet[Register Packet] page and fill out the form to register your packet in the network.
+Firstly, open the http://localhost:3000/post-register-packet[Register Packet] page and complete the form in order to register your packet in the network.
 
-IMPORTANT: Use as packet ID the address of the packet credentials that you created in the previous step.
+IMPORTANT: Use the address of the packet credentials as the packet ID that was created in the previous step.
 
-TIP: Set `minTrust` to `0`, because you don't have any carrier in the system yet, that has more than `0` trustpoints.
+TIP: Set `minTrust` to `0`, as there is no carrier present in the system yet that has more than `0` trustpoints.
 
-.Sender posts the `RegisterPacket` transaction to register the packet on the network
+.Sender posts the `RegisterPacket` transaction to register the packet on the network.
 image:2-register.png[register packet]
 
 .Check the `Packet & Carrier` page to see if the packet status is now "pending"
 image:3-pending.png[packet pending]
 
-If you open the packet at this point, the light alarm transaction should fail, because the packet has the wrong `status`.
-It should display the following error:
+If the packet is now opened at this point, then the light alarm transaction should fail as the packet should have the wrong `status`.
+It should display the following error listed below:
 
 [source, js]
 ----
@@ -737,14 +735,13 @@ It should display the following error:
 
 ==== Fund the carrier account
 
-Before the transport of the packet starts, we first need to transfer some tokens to the carrier account, which doesn't have any tokens initially.
-This is necessary, because the carrier needs to lock the `security` in the carriers account, in order to start the transport.
+Before the packet transport starts, it is necessary to transfer some tokens into the empty carrier account. This is required as the carrier needs to lock the `security` in the carriers account, in order to start the transport.
 
-To do this, go to the http://localhost:3000/faucet[Faucet page] and enter the carrier address(`6795425954908428407L`) and the amount of tokens that shall be transferred to this account.
+To perform this task, go to the http://localhost:3000/faucet[Faucet page] and enter the carrier address(`6795425954908428407L`), followed by the amount of tokens to be transferred to this account.
 
-Just make sure, it's enough so the carrier can afford to lock the `security` of the packet, that was defined in the step before, where you registered the packet in the network.
+Please ensure that enough tokens are transferred so that the carrier can afford to lock the `security` of the packet, that was defined in the previous step whereby the packet was registered in the network.
 
-TIP: You can check on the `Accounts` page, if the carrier received the tokens successfully.
+TIP: This can be checked on the `Accounts` page, to see if the carrier received the tokens successfully.
 
 image:4-faucet.png[Fund carrier]
 

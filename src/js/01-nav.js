@@ -2,11 +2,16 @@
   'use strict'
 
   var navContainer = document.querySelector('.nav-container')
+  var tocContainer = document.querySelector('.article-aside')
   var navToggle = document.querySelector('.nav-toggle')
+  var tocToggle = document.querySelector('.toc-toggle')
+
 
   navToggle.addEventListener('click', showNav)
+  tocToggle.addEventListener('click', toggleToc)
   // NOTE don't let click events propagate outside of nav container
   navContainer.addEventListener('click', concealEvent)
+  tocContainer.addEventListener('click', concealEvent)
 
   var menuPanel = navContainer.querySelector('[data-panel=menu]')
   if (!menuPanel) return
@@ -68,6 +73,16 @@
     concealEvent(e)
   }
 
+  function toggleToc (e) {
+    if (tocToggle.classList.contains('is-active')) return closeToc(e);
+    document.documentElement.classList.add('is-clipped--toc');
+    tocToggle.classList.add('is-active');
+    tocContainer.classList.add('is-active');
+    window.addEventListener('click', closeToc);
+    // don't let this event get picked up by window click listener
+    concealEvent(e);
+  }
+
   function hideNav (e) {
     var html = document.documentElement
     html.classList.remove('is-clipped--nav')
@@ -75,6 +90,16 @@
     navContainer.classList.remove('is-active')
     html.removeEventListener('click', hideNav)
     concealEvent(e)
+  }
+
+  function closeToc (e) {
+    if (e.which === 3 || e.button === 2) return;
+    document.documentElement.classList.remove('is-clipped--toc');
+    tocToggle.classList.remove('is-active');
+    tocContainer.classList.remove('is-active');
+    window.removeEventListener('click', closeToc);
+    // don't let this event get picked up by window click listener
+    concealEvent(e);
   }
 
   // NOTE don't let event get picked up by window click listener

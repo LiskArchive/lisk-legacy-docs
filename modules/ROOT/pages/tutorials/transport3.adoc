@@ -94,7 +94,13 @@ So to add `1.2.3.4` as a seed node, add an object (or several objects) with the 
 
 [source, js]
 ----
-configDevnet.modules.network.seedPeers = [{ ip: '1.2.3.4', wsPort: 5000}]
+const app = new Application(genesisBlockDevnet, {
+    modules: {
+        network: {
+            seedPeers: [{ ip: '1.2.3.4', wsPort: 5000}]
+        }
+    }
+});
 ----
 
 [NOTE]
@@ -114,9 +120,9 @@ This gives everyone the opportunity to download the application and deploy it on
 
 The code should include at least the following files:
 
-* `index.js` :  The code that initializes and starts the node application
-* `package.json` : A project file that lists all needed dependencies (this should include `lisk-sdk` as dependency)
-* `transactions/` : A folder with all required custom transaction types
+* https://github.com/LiskHQ/lisk-sdk-examples/blob/development/transport/node/index.js[index.js] :  The code that initializes and starts the node application
+* https://github.com/LiskHQ/lisk-sdk-examples/blob/development/transport/node/package.json[package.json]: A project file that lists all needed dependencies (this should include `lisk-sdk` as dependency)
+* https://github.com/LiskHQ/lisk-sdk-examples/tree/development/transport/transactions[transactions/]: A folder with all required custom transaction types
 * `README` : A Readme which describes the most important steps to setup the node
 
 === Connect nodes and verify
@@ -129,24 +135,28 @@ The seed node is therefore the only node right now that can forge new blocks, be
 
 TIP: How to replace the genesis delegates with real delegates is covered in the next section <<_3_replace_dummy_delegates_with_real_ones, Replace dummy delegates with real ones>>.
 
-To set up the node, just install the published application on a new server.
+To set up the node, install the node application on a new server.
+Just follow the instructions of the README, that was created in the step before.
 
 IMPORTANT: Don't forget to open the corresponding xref:configuration.adoc#_ports[ports] for HTTP and WS communication!
+
+Once a new node is set up, update the API endpoint in the https://github.com/LiskHQ/lisk-sdk-examples/blob/development/transport/client/app.js#L14[client] app, to target the new node:
 
 .Snippet of client/app.js
 [source,js]
 ----
 // Constants
 const API_BASEURL = 'http://134.209.234.204:4000'; <1>
-const PORT = 3000;
 ----
 
 <1> Add here the correct IP and port to the newly added node.
 
+If the client app has the API endpoint of the new node, It will receive the transactions from the `client`, visible in the logs (if log level is at least `info`).
+
 .Logs of newly added node
 image:synching_node.png[Synching non forging node]
 
-In the logs above we can see, the seed node was already 3 blocks ahead when we first started the second node.
+The logs above show, the seed node was already 3 blocks ahead when we first started the second node.
 It first synchronizes the missing blocks up to the current height and then broadcasts the received transactions from the client app to the seed node, where delegates can add the transactions to blocks and forge them.
 
 These new blocks are broadcasted again to the new node, and the client app can display the data based on the API calls that it sends to the new node.
@@ -160,7 +170,6 @@ image:forging_node.png[Forging node logs]
 Sometimes there can be errors when broadcasting transactions between nodes.
 This is no need to worry!
 The node will start the sync process soon again, and most times it is successful on the next try.
-====
 
 image:common-sync-issue.png[Common sync issue]
 
@@ -173,6 +182,7 @@ The node can resolve these issues at most times on its own by starting a new syn
 Like shown in the logs, the blocks at height 284, 285 and 286 are discarded.
 Then, the node realizes it is not in sync with the other nodes and starts the sync process, indicated by the logs `Starting sync`.
 During the sync process the missing blocks are received from the peers and added to the database of the node.
+====
 
 == Replace dummy delegates with real ones
 
@@ -187,10 +197,8 @@ To join the network as a new delegate:
 . xref:lisk-commander/user-guide/commands.adoc#_delegate_registration_transaction[Register a delegate]
 . Set up a node: Follow the steps in the `README` of the app (Or see the Lisk tutorials, as this process is always basically the same)
 . xref:{v_core}@lisk-core::configuration.adoc#_enabledisable_forging[Enable forging for the newly created delegate on the node]
-. People get convinced to vote for a delegate in the network, e.g. if the delegate is:
+. Convince voters: People get convinced to vote for a delegate in the network, e.g. if the delegate is:
 ** helpful
-** reachable
-** trustable
 ** accountable
 ** sharing rewards
 ** offering useful services or tools
@@ -214,7 +222,7 @@ Later, when the majority of the existing tokens is distributed among the differe
 
 The more complex the logic inside the custom transaction types, the more comlicated it gets to verify, that the custom transaction logic is working as expected.
 
-Therefore, it is recommended to write **unit tests**, that verify the logic of the transaction type.
+Therefore it is recommended to write **unit tests**, that verify the logic of the transaction type.
 
 Especially for verifying the code of the `undoAsset()` function, it is convenient to write unit tests.
 This is because the code in the `undoAsset` function is only executed, if the node discovers itself on a fork with the main chain.
@@ -308,15 +316,17 @@ describe('RegisterPacket Transaction', () => {
 ----
 
 What else needs to be tested?::
-Is writing unit tests really enough to ensure the functionality of a custom transaction type?
-You may wonder if it is required to write additional functional and integration tests.
-The correct reading and writing of the data to the database is already part of the Lisk SDK software testing and therefore it is not needed to test it again for your new custom transaction type.
-Therefore unit tests are generally sufficient to test the functionality of your custom transaction type.
+Is writing unit tests really enough to ensure the functionality of a custom transaction type? +
+**Short answer: Unit tests are sufficient.** +
+**Explanation:** You may wonder if it is required to write additional functional and integration tests.
+Be aware, that the correct reading and writing of the data to the database is already part of the Lisk SDK software testing and therefore it is not needed to test it again for your new custom transaction type.
+Therefore unit tests are generally sufficient to test the functionality of a custom transaction type.
 
-== Task: Add more sensors
+== Task: Add more alarms
 
 Connect more sensors to secure the travel of the packet, e.g. implement a `TemperatureAlarm` or `HumidityAlarm` analog to the `LightAlarm` transaction type.
 
-== Task: Add more features
 
-Add more improvements like GPS tracking or estimated travel times
+== Task: Add GPS
+
+Let the network now the current location of the packet by transmitting the GPS location in a certain time interval.

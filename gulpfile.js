@@ -26,6 +26,24 @@ const cleanTask = createTask({
   call: task.remove(['build', 'public']),
 })
 
+const lintCssTask = createTask({
+  name: 'lint:css',
+  desc: 'Lint the CSS source files using stylelint (standard config)',
+  call: task.lintCss(glob.css),
+})
+
+const lintJsTask = createTask({
+  name: 'lint:js',
+  desc: 'Lint the JavaScript source files using eslint (JavaScript Standard Style)',
+  call: task.lintJs(glob.js),
+})
+
+const lintTask = createTask({
+  name: 'lint',
+  desc: 'Lint the CSS and JavaScript source files',
+  call: parallel(lintCssTask, lintJsTask),
+})
+
 const formatTask = createTask({
   name: 'format',
   desc: 'Format the JavaScript source files using prettify (JavaScript Standard Style)',
@@ -40,7 +58,7 @@ const buildTask = createTask({
 
 const bundleBuildTask = createTask({
   name: 'bundle:build',
-  call: series(cleanTask, buildTask),
+  call: series(cleanTask, lintTask, buildTask),
 })
 
 const bundlePackTask = createTask({
@@ -51,7 +69,7 @@ const bundlePackTask = createTask({
 
 const bundleTask = createTask({
   name: 'bundle',
-  desc: 'Clean, build, and bundle the UI for publishing',
+  desc: 'Clean, lint, build, and bundle the UI for publishing',
   call: series(bundleBuildTask, bundlePackTask),
 })
 
@@ -86,6 +104,7 @@ const previewTask = createTask({
 module.exports = exportTasks(
   bundleTask,
   cleanTask,
+  lintTask,
   formatTask,
   buildTask,
   bundleTask,

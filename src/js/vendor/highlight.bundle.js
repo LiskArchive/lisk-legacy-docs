@@ -1,4 +1,6 @@
 ;(function () {
+  'use strict'
+
   var hljs = require('highlight.js/lib/highlight')
   hljs.registerLanguage('apache', require('highlight.js/lib/languages/apache'))
   hljs.registerLanguage('asciidoc', require('highlight.js/lib/languages/asciidoc'))
@@ -9,6 +11,8 @@
   hljs.registerLanguage('css', require('highlight.js/lib/languages/css'))
   hljs.registerLanguage('diff', require('highlight.js/lib/languages/diff'))
   hljs.registerLanguage('dockerfile', require('highlight.js/lib/languages/dockerfile'))
+
+  hljs.registerLanguage('go', require('highlight.js/lib/languages/go'))
   hljs.registerLanguage('groovy', require('highlight.js/lib/languages/groovy'))
   hljs.registerLanguage('haskell', require('highlight.js/lib/languages/haskell'))
   hljs.registerLanguage('http', require('highlight.js/lib/languages/http'))
@@ -33,5 +37,5 @@
   hljs.registerLanguage('swift', require('highlight.js/lib/languages/swift'))
   hljs.registerLanguage('xml', require('highlight.js/lib/languages/xml'))
   hljs.registerLanguage('yaml', require('highlight.js/lib/languages/yaml'))
-  hljs.initHighlightingOnLoad()
+  hljs.initHighlighting()
 })()

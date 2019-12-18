@@ -44,6 +44,8 @@ module.exports = (src, previewSrc, previewDest, sink = () => map(), layouts = {}
             uiModel.uiRootPath = path.join(siteRootPath, '_')
             if (file.stem === '404') {
               uiModel.page = { layout: '404', title: 'Page Not Found' }
+            } else if (file.stem === 'swagger') {
+              uiModel.page = { layout: 'swagger', title: 'Swagger docs' }
             } else {
               const doc = asciidoctor.load(file.contents, { safe: 'safe', attributes: ASCIIDOC_ATTRIBUTES })
               uiModel.page.attributes = Object.entries(doc.getAttributes())

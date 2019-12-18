@@ -26,11 +26,11 @@ const cleanTask = createTask({
   call: task.remove(['build', 'public']),
 })
 
-const lintCssTask = createTask({
+/*const lintCssTask = createTask({
   name: 'lint:css',
   desc: 'Lint the CSS source files using stylelint (standard config)',
   call: task.lintCss(glob.css),
-})
+})*/
 
 const lintJsTask = createTask({
   name: 'lint:js',
@@ -41,7 +41,7 @@ const lintJsTask = createTask({
 const lintTask = createTask({
   name: 'lint',
   desc: 'Lint the CSS and JavaScript source files',
-  call: parallel(lintCssTask, lintJsTask),
+  call: parallel(lintJsTask),
 })
 
 const formatTask = createTask({

@@ -1,0 +1,30 @@
+= 5. Network
+
+Lisk nodes connect to each other in a random way, thereby forming an unstructured P2P network, where information is exchanged using a gossip-based protocol. +
+In this way, nodes can synchronize their local copies of the blockchain by broadcasting blocks and new transactions to be stored in the transaction pool.
+
+=== Lisk P2P architecture
+
+Connections in the https://github.com/LiskHQ/lips/blob/master/proposals/lip-0004.md[*Lisk P2P]* are established as _websockets_ [https://en.wikipedia.org/wiki/WebSocket[1]] using the _SocketCluster_ framework [https://socketcluster.io/#!/[2]]. Each node keeps a list of known peers and their IP addresses and initializes up to 20 outgoing connections to randomly selected peers, while accepting up to 100 incoming connections.
+
+When an outgoing connection is dropped, the node starts a new connection with another peer. Furthermore, to keep the network dynamic, approximately every 5 minutes one outgoing connection is dropped and replaced with a new one.
+
+On top of SocketCluster, lies the _Lisk RPC and Events_ layer, which manages interactions between nodes using Remote Procedural Calls [https://en.wikipedia.org/wiki/Remote_procedure_call[3]].
+
+Finally, the _Lisk application_ layer gives a high level interface to interact with the blockchain.
+
+=== Block Propagation
+
+Nodes propagate newly received blocks in order to keep the network synchronized and to achieve https://docs.google.com/document/d/1MCIQVFWD9DXqIq4vt0u2ct8l5cEHtYy9bntvLpFnnho/edit#heading=h.blsa9bg5la9[consensus]. +
+When a new block is received, it is first validated. If it is valid and it has not been forwarded before, the full block is sent to 16 randomly chosen peers. Furthermore, nodes announce that a new block has been received by sending part of the block header to the rest of the connected peers, which can request the full block in case they did not receive it yet.
+
+=== Transaction Propagation
+
+Transactions are propagated through the network in a way similar to blocks. Every 5 seconds, a bundle of 25 https://drive.google.com/a/lightcurve.io/open?id=1sCGxXm2HTaXjiezThr_LqAdpls6wPgh9R4YoLrFGas8[transaction IDs] are selected from the transaction pool and sent to all connected peers. Those peers check if they already have the corresponding transactions and can request any missing one from the node and include them in their transaction pool.
+
+=== Transaction Pool
+
+The transaction pool collects transactions that are waiting to be included in a block. When forging a new block, a delegate selects a set of transactions from the pool and includes them in the https://drive.google.com/a/lightcurve.io/open?id=1Eidrm7AMvp2Hq6SEXkZhuYiw9LimMUQmYDyZZ-LFZak[block payload]. Conversely, when a new block is received, transactions included in the block are removed from the transaction pool.
+
+
+

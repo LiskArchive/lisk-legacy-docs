@@ -1,217 +1,346 @@
 = Transport Tutorial Part 3: Next steps
-:toc:
+:toc: preamble
+:toc-title: Part 3 includes:
+
 :imagesdir: ../../assets/images
 :experimental:
 :v_core: master
 :sectnums: 3
 :sectnumlevels: 3
 
+In part 3, the next possible steps after the initial development of the app are described.
+
 == Make it portable
 
-Currently the packet is not really portable, because it is connected via USB to the computer in order to get power.
+Currently the packet is not actually portable, as it requires a power source which is established by a USB connection to the computer.
 
-To make it portable, all that is needed is a portable power source, like a battery, that provides the Raspberry Pi with enough power to track the packet for at least a few hours.
+Firstly, to ensure portability can be achieved an independent power source is required, such as a battery that can provide the Raspberry Pi with adequate power, to enable the packet to be tracked.
 
-The second thing that needs to be done is making the tracking script start automatically after the boot process of the Pi.
+Secondly, it is necessary for the tracking script to be automatically enabled after the the Raspberry Pi boot process has been executed.
 
-`pm2` provides an easy way to let the script start automatically after boot.
-On the Raspberry Pi, install `pm2` globally:
+This can easily be achieved on the Raspberry Pi by installing `pm2` globally as shown below:
 
-[source, bash]
+[source,bash]
 ----
 npm install pm2 -g
 pm2 startup
 ----
 
-This should print a fitting command in the terminal.
-Copy it and paste it in the temrinal again to complete the setup of the `pm2` startup script.
+This should print the applicable command in the terminal window.
+Copy it and paste it in the terminal again to complete the setup of the `pm2` startup script.
 
-Start the tracking script with `pm2`:
+Start the tracking script with `pm2`.
 
-.Run this inside the `light_alarm` folder on the Raspberry Pi
-[source, bash]
+.Run the following command inside the `light_alarm` folder on the Raspberry Pi.
+[source,bash]
 ----
 pm2 start --name lightAlarm index.js
 ----
 
-.Add the tracking script to the list of processes, that will be started autmatically when the raspberry pi is started.
-[source, bash]
+.Add the tracking script to the list of processes, that will be started automatically when the Raspberry pi is started.
+[source,bash]
 ----
 pm2 save
 ----
 
-Now log out from the Raspberry Pi, disconnect it from the computer, and connect it to a portable energy source, like a power bank.
-After 1-2 minutes of booting, the tracking script will start running and it will check the light sensor every second.
+After this has been performed, log out from the Raspberry Pi, disconnect it from the computer, and connect it to an external portable power source.
+After the boot process has completed, (approximately 1-2 minutes), then the tracking script will start running, which in turn will check the light sensor every second.
 
 == Connect more nodes
 
-During development it is necessary and convenient to have a rather centralized network with only one node connected.
+During development it is both necessary and convenient to have a rather centralized network with only one node connected.
 
-Once the development has reached the point of proof of concept or a usable product, it's time to add more nodes to the network, and to give other people the opportunity to join the newly created blockchain network.
+Once the development has reached the point of concept or a usable product stage, it will be necessary to add more nodes to the network, and hence offer other potential users the opportunity to join the newly created blockchain network.
 
-This is how the setup should look like after finishing xref:tutorials/transport2.adoc[Part 2: A simple supply chain tracking system]:
+This is how the setup should look like after completing part 2. xref:tutorials/transport2.adoc[Part 2: A simple supply chain tracking system]:
 
 image:1-node.png[One node diagram]
 
-We want to add one more node to the network, that communicates between the seed node and the Iot and the client app.
+The next step is to add one more node to the network that communicates between the seed node, the IoT and the client app as shown below:
 
 image:2-nodes.png[More nodes diagram]
 
-To do so:
+=== Set up an additional seed node
 
-=== A) Set up at least one seed node
+When setting up a new node, each new node will firstly connect to the seed nodes when booting for the first time.
+Starting from the seed node, a new node will discover the rest of the network by requesting their peer list; followed by the peer lists of the newly discovered peers and so on.
 
-Set up one or multiple seed node(s).
-Every new node will connect to the seed nodes at first, when booting for the first time.
-Starting from the seed node, a new node will discover the rest of the network by requesting their peer list and then the peer lists of the newly discovered peers and so on.
+The seed node is a node that is specified in the config of the node application under `modules.network.seedPeers` and this should remain connected to the network.
 
-The seed node is a node that is specified in the config of the node application under `modules.network.seedPeers` and that should always stay connected to the network.
+Furthermore, it is also convenient to have the genesis delegates actively forging on the seed node, in case the network does not yet have enough real delegates who can take the forging spots.
 
-It's also convenient to have the genesis delegates actively forging on the seed node, in case the network hasn't yet enough real delegates who can take the forging spots.
+TIP: The exposed `configDevnet` object is a good template for the config of a seed node, as it already includes the credentials from all of the 101 genesis delegates and automatically enables forging for all of them.
 
-TIP: The exposed `configDevnet` object is a good template for the config of a seed node, as it includes already all 101 genesis delegates credentials and automatically enables forging for all of them.
+=== Create a new config suited for the node application
 
-=== B) Create a new config suited for the node application
-
-Exchange the `configDevnet` object that we passed to our node during development with an own customized version.
+Exchange the `configDevnet` object that was passed to the node during the development with the customized version.
 
 [TIP]
 ====
-It's recommended to create a config object with all the options that shall be different to the default config options.
-To check the default config options, go to the xref:configuration.adoc[configuration page] or check it out directly in the code: +
+It's recommended to create a config object with all the options that are different to the default config options.
+To check the default config options, go to the xref:configuration.adoc[configuration page] or check it directly in the code listed below: +
 `lisk-framework/src/modules/MODULE_NAME/defaults/config.js`. +
-Same goes for the components: +
+The same for the components as shown below: +
 `lisk-framework/src/components/COMPONENT_NAME/defaults/config.js`.
 ====
 
-Most of the configurations can stay the same to what is defined in the default config options, but there is one option that should be updated: **The seed node(s)**.
+Most of the configurations can stay the same to what is defined in the default config options.
+However, please note that there is one option that should be updated: **The seed node(s)**.
 
-So to add `1.2.3.4` as a seed node, add an object (or several objects) with the 2 properties `ip` and `wsPort` to the `seedPeers` list:
+So to add `1.2.3.4` as a seed node, add an object (or several objects) with the 2 properties `ip` and `wsPort` to the `seedPeers` list as displayed below:
 
-[source, js]
+[source,js]
 ----
-configDevnet.modules.network.seedPeers = [{ ip: '1.2.3.4', wsPort: 5000}]
+const app = new Application(genesisBlockDevnet, {
+    modules: {
+        network: {
+            seedPeers: [{ ip: '1.2.3.4', wsPort: 5000}]
+        }
+    }
+});
 ----
 
 [NOTE]
 ====
 By default, the forging delegates list is empty. +
-This is intended, because the genesis delegates are only needed to set up a working dev environment.
-Later it's best if the `delegates` list is empty, so users can fill their own credentials there, in case they want to activate forging on their node.
+This is intended, as the genesis delegates are only needed to set up a working dev environment.
+Subsequently it is recommended that the `delegates` list is empty, so that the users can input their own credentials in the case whereby they wish to activate forging on their node.
 
-If it is desired, e.g. for a proof of concept, to provide already activated forging delegates inside the config, use the devnet genesis delegates in https://github.com/LiskHQ/lisk-sdk/blob/development/sdk/src/samples/config_devnet.json[configDevnet] or create own genesis delegates and add them to the config.
+For example, for a proof of concept, in order to provide the already activated forging delegates inside the config; please use the devnet genesis delegates in https://github.com/LiskHQ/lisk-sdk/blob/development/sdk/src/samples/config_devnet.json[configDevnet] or create your own genesis delegates and add them to the config.
 ====
 
-=== C) Publish the application
+=== Publish the application
 
-Add the code for the customized `node` application (including the custom transaction types) to a public code repository on e.g. https://github.com/[Github] or https://about.gitlab.com/[Gitlab].
+Add the code for the customized `node` application (including the custom transaction types), to a public code repository.
+For example, on  https://github.com/[Github] or https://about.gitlab.com/[Gitlab].
 
-This gives everyone the opportunity to download the application and deploy it on a server in order to connect with the network.
+This provides everyone the opportunity to download the application and deploy it on a server in order to connect with the network.
 
-The code should include at least the following files:
+The code should include at least the following files listed below:
 
-* `index.js` :  The code that initializes and starts the node application
-* `package.json` : A project file that lists all needed dependencies (this should include `lisk-sdk` as dependency)
-* `transactions/` : A folder with all required custom transaction types
-* `README` : A Readme which describes the most important steps to setup the node
+* https://github.com/LiskHQ/lisk-sdk-examples/blob/development/transport/node/index.js[index.js] : The code that initializes and starts the node application.
+* https://github.com/LiskHQ/lisk-sdk-examples/blob/development/transport/node/package.json[package.json]: A project file that lists all needed dependencies, (this should include `lisk-sdk` as a dependency).
+* https://github.com/LiskHQ/lisk-sdk-examples/tree/development/transport/transactions[transactions/]: A folder containing all required custom transaction types.
+* `README` : A Readme file which describes the most important steps to setup the node.
 
-=== D) Connect nodes and verify
+=== Connect nodes and verify
 
-Let's now add a second node to the network.
+Add a second node to the network.
 
-This new node will not have any forging activated.
-It will be only here to talk via API with the `client` app, and over the websocket connection to the seed node.
-The seed node is therefore the only node right now that can forge new blocks, because all genesis delegates are actively forging on it.
+This new node will not have any forging activated, it is only required to talk via the API with the `client` app, and over the websocket connection to the seed node.
+Therefore, at present the seed node is the only node at this point that can forge new blocks.
+This is due to the fact that all the genesis delegates are actively forging on it.
 
-TIP: How to replace the genesis delegates with real delegates is covered in the next section <<_3_replace_dummy_delegates_with_real_ones, Replace dummy delegates with real ones>>.
+TIP: How to replace the genesis delegates with real delegates is covered in the next section <<replace-delegates, Replace dummy delegates with real ones>>.
 
-To set up the node, just install the published application on a new server.
+To set up the node, install the node application on a new server.
+Just follow the instructions of the README, that was created in the step before.
 
-IMPORTANT: Don't forget to open the corresponding xref:configuration.adoc#_ports[ports] for HTTP and WS communication!
+IMPORTANT: Do not forget to open the corresponding xref:configuration.adoc#_ports[ports] for HTTP and WS communication!
+
+Once a new node is set up, update the API endpoint in the https://github.com/LiskHQ/lisk-sdk-examples/blob/development/transport/client/app.js#L14[client] app, to target the new node:
 
 .Snippet of client/app.js
 [source,js]
 ----
 // Constants
 const API_BASEURL = 'http://134.209.234.204:4000'; <1>
-const PORT = 3000;
 ----
 
-<1> Add here the correct IP and port to the newly added node.
+<1> Add the correct IP and port here to the newly added node.
+
+If the client app has the API endpoint of the new node, it will receive transactions from the client.
+The transactions will be visible in the logs (if log level is at least `info`).
 
 .Logs of newly added node
 image:synching_node.png[Synching non forging node]
 
-In the logs above we can see, the seed node was already 3 blocks ahead when we first started the second node.
-It first synchronizes the missing blocks up to the current height and then broadcasts the received transactions from the client app to the seed node, where delegates can add the transactions to blocks and forge them.
+In the logs shown above it can be seen that the seed node was already 3 blocks ahead when the second node was started.
+It first synchronizes the missing blocks up to the current height and then broadcasts the received transactions from the client app to the seed node, whereby the delegates can then add the transactions to blocks and forge them.
 
 These new blocks are broadcasted again to the new node, and the client app can display the data based on the API calls that it sends to the new node.
 
-.Log of the seed node with the forging genesis delegates
+.Log of the seed node with the forging genesis delegates:
 image:forging_node.png[Forging node logs]
 
 [NOTE]
-.Broadcast errors can happen
+.Please be aware that broadcast errors can occur.
 ====
-Sometimes there can be errors when broadcasting transactions between nodes.
-This is no need to worry!
-The node will start the sync process soon again, and most times it is successful on the next try.
-====
+Sometimes errors occur when broadcasting transactions between the nodes.
+There is no cause for concern here, as the node will re-start the sync process again; and in the majority of cases it is successful on the next attempt.
 
 image:common-sync-issue.png[Common sync issue]
 
 In the above image the block at height 284 is not accepted because of an invalid block timestamp.
-As a result, also the following blocks are discarded by the node as well.
+As a result, also the following blocks are also discarded by the node.
 
-Hick ups like this can happen in the network.
-The node can resolve these issues at most times on its own by starting a new sync process, where it requests the missing blocks from one of its' peer nodes.
+Anomalies like this can occur within the network.
+The node can usually resolve these issues on its own by starting a new sync process, whereby it requests the missing blocks from one of its' peer nodes.
 
-Like shown in the logs, the blocks at height 284, 285 and 286 are discarded.
-Then, the node realizes it is not in sync with the other nodes and starts the sync process, indicated by the logs `Starting sync`.
+As shown in the logs above, the blocks at height 284, 285 and 286 are displayed as discarded.
+At this point the node realizes it is not in sync with the other nodes and starts the sync process.
+This can also be seen in the above logs, `Starting sync`.
 During the sync process the missing blocks are received from the peers and added to the database of the node.
+====
 
+[#replace-delegates]
 == Replace dummy delegates with real ones
 
-During development of the Lisk Transport application we had one node with enabled forging for all 101 genesis delegates.
+During development of the Lisk Transport application, one node was enabled for forging for all 101 genesis delegates.
 
-After releasing a first version the blockchain application, it is needed that real delegates take the forging slots of the genesis delegates.
-The network will become stable and decentralized for the first time, when at least 51 real delegates are actively forging in the network.
+After the release of the first version of the blockchain application, it is necessary that real delegates take the forging slots of the genesis delegates.
+The network will become stable and decentralized for the first time when at least 51 real delegates are actively forging in the network.
 
-To join the network as a new delegate:
+To join the network as a new delegate, follow the steps listed below:
 
-. xref:lisk-commander/user-guide/commands.adoc#_create_account[Create an own, private account on the network]
-. xref:lisk-commander/user-guide/commands.adoc#_delegate_registration_transaction[Register a delegate]
-. Set up a node: Follow the steps in the `README` of the app (Or see the Lisk tutorials, as this process is always basically the same)
+. Create an own, private account on the network
+.. xref:lisk-commander/user-guide/commands.adoc#_create_account[Generate the account credentials]
+.. Send some funds(at least enough to register as a delegate) to the newly generated address, to initialize your account in the network.
+. Register a delegate
+.. xref:lisk-commander/user-guide/commands.adoc#_delegate_registration_transaction[Generate the delegate registration object].
+.. Broadcast the delegate registration to the network:
++
+[source,bash]
+----
+export SECRET_PASSPHRASE=123456 <1>
+lisk transaction:create:delegate lightcurve -p=env:SECRET_PASSPHRASE | tee >(curl -X POST -H "Content-Type: application/json" -d @- 1.2.3.4:4000/api/transactions) <2>
+----
+<1> Replace `123456` with the secret passphrase.
+<2> Replace `1.2.3.4` with the IP of a node with a public API.
++
+. Set up a node: Follow the steps in the `README` file of the app, (Alternatively read the Lisk tutorials, as this process is basically identical).
 . xref:{v_core}@lisk-core::configuration.adoc#_enabledisable_forging[Enable forging for the newly created delegate on the node]
-. People get convinced to vote for a delegate in the network, e.g. if the delegate is:
-** helpful
-** reachable
-** trustable
-** accountable
-** sharing rewards
-** offering useful services or tools
+. People become convinced to vote for a delegate in the network, if the delegate has the following attributes:
+** Is helpful
+** Is accountable
+** Is sharing rewards
+** Is offering useful services or tools
 
 image:3-nodes.png[3 nodes diagram]
 
 [NOTE]
 ====
-It depends on the distribution of vote power, who to convince.
+How to replace a genesis delegate
 
-If a delegate joins the network on a very early stage, she will probably replace one of the genesis delegates.
-The genesis delegates are voted in by the genesis account, which holds all the tokens on the initial network start.
-The genesis account votes with this tokens for the genesis delegates, in order to stabilize the network during the development.
+If a delegate joins the network on a very early stage, he or she will probably replace one of the genesis delegates.
+The genesis delegates are voted in by the genesis account which holds all the tokens on the initial network start.
+The genesis account votes with these tokens for the genesis delegates, in order to stabilize the network during the development.
 
-So when replacing a genesis delegate, the new delegate will need to convince the person who controls the genesis account of the network, which will be most likely the app developer.
+Therefore, when replacing a genesis delegate, the new delegate will need to convince the person who controls the genesis account of the network; which will be most likely the app developer.
 
-Later, when the majority of the existing tokens is distributed among the different private accounts, the new delegate needs to gain the trust of the community in order to be voted into a forging position.
+Later, when the majority of the existing tokens are distributed among the different private accounts, the new delegate needs to gain the trust of the community in order to be voted into a forging position.
 ====
 
-== Write unit tests for custom transactions
+== Write tests for custom transactions
 
-How to test `undoAsset` functions
+The more complex the logic inside the custom transaction types, the more comlicated it gets to verify, that the custom transaction logic is working as expected.
 
-== Task: Add more sensors
+Therefore it is recommended to write **unit tests**, that verify the logic of the transaction type.
 
-Connect more sensors to secure the travel of the packet, e.g. implement a `TemperatureAlarm` or `HumidityAlarm` analog to the `LightAlarm` transaction type.
+Especially for verifying the code of the `undoAsset()` function, it is convenient to write unit tests.
+This is because the code in the `undoAsset` function is only executed, if the node discovers itself on a fork with the main chain.
 
-== Task: Add other improvements like GPS tracking or estimated travel times
+[TIP]
+====
+To be on a fork means, the node added some different blocks to the chain than its peers.
+In order to sync again with the network, it has to remove the blocks that are different and undo the transactions inside these blocks.
+To undo the transaction, the `undoAsset()` function will be called of each transaction inside of the blocks that need to be discarded.
+====
+
+To test if the transaction is undone correctly, write a unit test like so:
+
+.Example: Unit test for the undoAsset() function of the RegisterPacketTransaction
+[source,js]
+----
+const RegisterPacketTransaction = require('../register-packet');
+const transactions = require('@liskhq/lisk-transactions');
+const { when } = require('jest-when');
+
+const dateToLiskEpochTimestamp = date => (
+    Math.floor(new Date(date).getTime() / 1000) - Math.floor(new Date(Date.UTC(2016, 4, 24, 17, 0, 0, 0)).getTime() / 1000)
+);
+
+describe('RegisterPacket Transaction', () => {
+    let storeStub;
+    beforeEach(() => {
+        storeStub = {
+            account: {
+                get: jest.fn(),
+                set: jest.fn(),
+            },
+        };
+    });
+
+    test('it should undo the state for register packet correctly', async () => {
+        // Arrange
+        const senderId = 'senderXYZ';
+        const asset = {
+            security: transactions.utils.convertLSKToBeddows('10'),
+            minTrust: 0,
+            postage: transactions.utils.convertLSKToBeddows('10'),
+            packetId: 'not important',
+        };
+
+        const mockedPacketAccount = {
+            address: 'xyz123',
+        };
+        const mockedSenderAccount = {
+            address: 'abc123',
+            balance: '10000000000', // 100 LSK
+        };
+
+        when(storeStub.account.get)
+            .calledWith(asset.packetId)
+            .mockReturnValue(mockedPacketAccount);
+
+        when(storeStub.account.get)
+            .calledWith(senderId)
+            .mockReturnValue(mockedSenderAccount);
+
+        // Act
+        const tx = new RegisterPacketTransaction({
+            senderId,
+            asset,
+            recipientId: 'xyzL',
+            timestamp: dateToLiskEpochTimestamp(new Date()),
+        });
+        tx.undoAsset(storeStub);
+
+        // Assert
+        expect(storeStub.account.set).toHaveBeenNthCalledWith(
+            1,
+            mockedPacketAccount.address,
+            {
+                address: mockedPacketAccount.address,
+                balance: 0,
+                asset: null,
+            }
+        );
+
+        expect(storeStub.account.set).toHaveBeenNthCalledWith(
+            2,
+            mockedSenderAccount.address,
+            {
+                address: mockedSenderAccount.address,
+                balance: new transactions.utils.BigNum(mockedSenderAccount.balance).add(
+                    new transactions.utils.BigNum(asset.postage)
+                ).toString()
+            }
+        );
+    });
+});
+----
+
+What else needs to be tested?::
+Is writing unit tests really enough to ensure the functionality of a custom transaction type? +
+**Short answer: Unit tests are sufficient.** +
+**Explanation:** You may wonder if it is required to write additional functional and integration tests.
+Be aware, that the correct reading and writing of the data to the database is already part of the Lisk SDK software testing and therefore it is not needed to test it again for your new custom transaction type.
+Therefore unit tests are generally sufficient to test the functionality of a custom transaction type.
+
+== Further improvements
+
+Connect more sensors to secure the travel of the packet.
+For example, implement a `TemperatureAlarm` or `HumidityAlarm`  to the `LightAlarm` transaction type.
+
+Or let the network know the current location of the packet by transmitting the GPS location in a certain time interval.

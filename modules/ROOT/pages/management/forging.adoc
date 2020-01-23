@@ -1,0 +1,147 @@
+= Forging
+Mona Bärenfänger <mona@lightcurve.io>
+:toc:
+:v_sdk: master
+
+To enable your node to forge, firstly it is required to insert some encrypted data into the config file under the `chain.forging.delegates` array.
+To encrypt your passphrase, it is recommended to use one of the following alternatives listed below:
+
+* xref:{v_sdk}@lisk-sdk::lisk-commander/user-guide/commands.adoc[Lisk Commander] via `encrypt passphrase` command.
+* xref:{v_sdk}@lisk-sdk::lisk-elements/packages/cryptography.adoc[Cryptography module of Lisk Elements]
+
+The first alternative with the Lisk Commander is described in detail below.
+Please ensure the Lisk Commander is installed in a secure environment.
+Upon completion, please follow these commands to generate the encrypted passphrase:
+
+[source,bash]
+----
+$ lisk
+lisk passphrase:encrypt --output-public-key
+Please enter your secret passphrase: *****
+Please re-enter your secret passphrase: *****
+Please enter your password: ***
+Please re-enter your password: ***
+{
+        "encryptedPassphrase": "iterations=1000000&cipherText=30a3c8&iv=b0d7322bf24e0dfe08462f4f&salt=aa7e26c9f4317b61b4f45b5c6909f941&tag=a2e0eadaf1f11a10b342965bc3bafc68&version=1",
+        "publicKey": "a4465fd76c16fcc458448076372abf1912cc5b150663a64dffefe550f96feadd"
+}
+----
+
+. Type in your passphrase followed by the password required for encryption.
+. This will result in the creation of an `encryptedPassphrase` key-value pair.
+. Create the JSON object and add it to your `config.json` under `chain.forging.delegates` as can be seen below:
+
+[source,js,linenums]
+----
+{
+  "modules": {
+    "chain": { <1>
+      "forging": { <2>
+        "force": false, <3>
+        "delegates": [ <4>
+            {
+                "encryptedPassphrase": "iterations=1&salt=476d4299531718af8c88156aab0bb7d6&cipherText=663dde611776d87029ec188dc616d96d813ecabcef62ed0ad05ffe30528f5462c8d499db943ba2ded55c3b7c506815d8db1c2d4c35121e1d27e740dc41f6c405ce8ab8e3120b23f546d8b35823a30639&iv=1a83940b72adc57ec060a648&tag=b5b1e6c6e225c428a4473735bc8f1fc9&version=1",
+                "publicKey": "9d3058175acab969f41ad9b86f7a2926c74258670fe56b37c429c01fca9f2f0f"
+            }
+        ],
+      },
+    },
+    "http_api": { <5>
+      "forging": {
+        "access": {
+          "whiteList": ["127.0.0.1", "REPLACE_ME"], <6>
+        },
+      },
+    }
+  }
+}
+----
+
+<1> Contains options for the chain module.
+<2> Contains forging options for delegates.
+<3> Forces forging to be 'on'.
+This is only used on local development networks.
+<4> The list of delegates who are allowed to forge on this node.
+To successfully enable forging for a delegate, the public key and the encrypted passphrase need to be deposited here as a JSON object.
+<5> Contains options for the API module.
+<6> Replace with the IP which will be used to access your node
+
+[arabic,start=4]
+. Reload your Lisk Core process to make the changes in the config effective.
+For example, for Binary install, run the following command: `bash lisk.sh reload`
+
+== Check Forging
+
+Use the following `curl` command to verify the forging status of your delegate as shown below:
+
+[source,bash]
+----
+curl \
+  http://127.0.0.1:7000/api/node/status/forging \
+  -H 'cache-control: no-cache' \
+  -H 'content-type: application/json'
+----
+
+The result should appear as shown below in the following code snippet:
+
+[source,json,linenums]
+----
+{
+  "meta": {},
+  "data": [
+    {
+      "forging": true,
+      "publicKey": "9bc945f92141d5e11e97274c275d127dc7656dda5c8fcbf1df7d44827a732664"
+    }
+  ],
+  "links": {}
+}
+----
+
+== Enable/Disable Forging
+
+IMPORTANT: Remember that after restarting your Lisk node, it is necessary to re-enable forging again.
+
+[TIP]
+====
+The endpoint to perform this action is *idempotent*.
+
+This means that the results are identical, regardless of how many times the query is executed.
+====
+
+If your Lisk Node is running on a local machine, it is possible to enable forging through the API client, without any further interruption.
+
+Use the following curl command to *enable the forging* for your delegate as shown below:
+
+[source,bash]
+----
+curl -X PUT \
+  http://127.0.0.1:7000/api/node/status/forging \
+  -H 'cache-control: no-cache' \
+  -H 'content-type: application/json' \
+  -d '{
+          "publicKey": "YYYYYYYYY",
+          "password": "XXX",
+          "forging": true
+      }'
+----
+
+Use the following curl command to *disable the forging* for your delegate as shown below:
+
+[source,bash]
+----
+curl -X PUT \
+  http://127.0.0.1:7000/api/node/status/forging \
+  -H 'cache-control: no-cache' \
+  -H 'content-type: application/json' \
+  -d '{
+          "publicKey": "YYYYYYYYY",
+          "password": "XXX",
+          "forging": false
+      }'
+----
+
+* `publicKey` is the key for the delegate which is required to be enabled/disabled.
+* `password` is the password used to encrypt your passphrase in `config.json`
+* `forging` is the boolean value to enable or disable the forging.
+* The HTTP Port can be different based on your configuration, therefore it is recommended to check the `httpPort` in your `config.json`

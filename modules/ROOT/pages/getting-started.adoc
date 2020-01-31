@@ -1,0 +1,178 @@
+= How to build a blockchain application in 3 steps
+Mona Bärenfänger <mona@lightcurve.io>
+:toc:
+:v_core: master
+
+:url_github_desktop: https://github.com/LiskHQ/lisk-desktop
+:url_github_explorer: https://github.com/LiskHQ/lisk-explorer
+:url_github_swaggerui: https://github.com/swagger-api/swagger-ui
+:url_lisk_testnet_api_spec: https://testnet.lisk.io/api/spec
+
+:url_commander: reference/lisk-commander/index.adoc
+:url_core_api: {v_core}@lisk-core::reference/api.adoc
+:url_core_network: {v_core}@lisk-core::getting-started/interact-with-network.adoc
+:url_customize: basic-guides/customize.adoc
+:url_elements: reference/lisk-elements/index.adoc
+:url_elements_api: reference/lisk-elements/packages/api-client.adoc
+:url_elements_packages: reference/lisk-elements/packages.adoc
+:url_guides_config: basic-guides/configuration.adoc
+:url_setup: setup.adoc
+:url_tutorials: tutorials/index.adoc
+:url_tutorials_hello: tutorials/hello-world.adoc
+:url_tutorials_transport: tutorials/transport.adoc
+
+image:3-steps.png[3 steps to build a blockchain application]
+
+[sidebar]
+****
+We are constantly working on new proof of concept applications that show the features, capabilities and current limitations of the Lisk SDK.
+
+TIP: For proven examples of how to build blockchain applications, please see the xref:{url_tutorials}[Tutorials] page.
+Detailed step-by-step guides can be found here to assist with building the example applications.
+
+* Please see the xref:{url_tutorials_hello}[Hello World tutorial]
+* Please see the xref:{url_tutorials_transport}[Supply Chain tutorial]
+****
+
+== Lisk SDK Setup
+
+To create the project structure of your blockchain application, firstly install the xref:{url_setup}[Lisk SDK dependencies] followed by the Lisk SDK afterwards as shown below:
+
+[source,bash]
+----
+npm init <1>
+npm install lisk-sdk <2>
+----
+
+<1> Initialize the project by creating a `package.json` file.
+<2> Install the `lisk-sdk` package as dependency of your project.
+Ensure the installed dependencies of the Lisk SDK are completed beforehand.
+
+To create a blockchain application, it is necessary to provide an entry point of your application, (for example, `index.js`) and then set-up your network by using the modules of Lisk SDK.
+
+It is quite simple to have a working blockchain application, mirroring the configuration of the existing Lisk network.
+This can be achieved by copying the following three lines of code shown below to your `index.js`:
+
+[source,js]
+----
+const { Application, genesisBlockDevnet, configDevnet} = require('lisk-sdk'); <1>
+
+const app = new Application(genesisBlockDevnet, configDevnet); <2>
+
+app.run() <3>
+   .then(() => app.logger.info('App started...')) <4>
+   .catch(error => { <5>
+        console.error('Faced error in application', error);
+        process.exit(0);
+});
+----
+
+<1> Require the `lisk-sdk` package.
+<2> Create a new application with default genesis block for a local devnet.
+<3> Start the application.
+<4> Code that is executed after the successful start of the application.
+<5> Code that is executed if the application start fails.
+
+Now, save and close `index.js` and try to start your newly created blockchain application by running the following command:
+
+[source,bash]
+----
+node index.js | npx bunyan -o short
+----
+
+NOTE: `node index.js` will start the node, and `| npx bunyan -o short` will pretty-print the logs in the console.
+
+This should start the application with the pre-defined default configurations, which will connect your application to a local devnet.
+From this point it is possible to start to xref:{url_guides_config}[configure] and customize the application further.
+
+TIP: For more detailed explanations, please see the xref:{url_tutorials}[example applications], which describe the process of creating blockchain applications step-by-step.
+
+== Configure your blockchain parameters
+
+It is also possible to define your blockchain application parameters such as `BLOCK_TIME`, `EPOCH_TIME`, `MAX_TRANSACTIONS_PER_BLOCK` and more, with an optional configurations object.
+
+[source,js]
+----
+const app = new Application(genesisBlockDevnet, {
+    app: {
+        label: 'my-blockchain-application',
+        minVersion: '0.0.2',
+        version: '2.3.4',
+        protocolVersion: '4.1',
+        genesisConfig: {
+            EPOCH_TIME: new Date(Date.UTC(2016, 4, 24, 17, 0, 0, 0)).toISOString(),
+            BLOCK_TIME: 10,
+            MAX_TRANSACTIONS_PER_BLOCK: 25,
+        },
+        ...
+});
+----
+
+See the xref:configuration.adoc[complete list of configuration options].
+
+== Register a custom transaction
+
+It is possible to xref:{url_customize}[define your own transaction types] with Lisk SDK.
+This is where the custom logic for your blockchain application resides.
+
+Add the custom transaction type to the blockchain application by registering it to the application instance as shown below:
+
+[source,js]
+----
+const { Application, genesisBlockDevnet, configDevnet } = require('lisk-sdk');
+
+const MyTransaction = require('./my_transaction'); <1>
+
+const app = new Application(genesisBlockDevnet, configDevnet);
+
+app.registerTransaction(MyTransaction); <2>
+
+app
+    .run()
+    .then(() => app.logger.info('App started...'))
+    .catch(error => {
+        console.error('Faced error in application', error);
+        process.exit(0);
+    });
+----
+
+<1> Require the custom transaction.
+<2> Register the custom transaction with the application.
+
+TIP: For information on creating your own custom transaction, please see the xref:{url_customize}[customize] page or xref:{url_tutorials}[follow the tutorials].
+
+== How to interact with the network
+
+While your network is up and running, interact with it by using the nodes API.
+Use xref:{url_commander}[Lisk Commander] or xref:{url_elements}[Lisk Elements] to create sendable transaction objects.
+
+To monitor and explore the network, a monitoring solution like {url_github_explorer}[Lisk Explorer] can be set up.
+
+NOTE: Depending on the level of customization, Lisk Explorer and Lisk Commander may also require customization to prevent other services from failing.
+
+Another simple way to interact with the network is by connecting it to {url_github_desktop}[Lisk Desktop].
+Lisk Desktop provides a simple and user-friendly interface to create and manage accounts on the network, and furthermore to interact with the network by sending different types of transactions.
+
+Once your blockchain is finished and it is possible to send the transactions (and custom transactions), it is possible to create a front-end to allow users to interact and use your blockchain application.
+To connect your front-end to your network, it is recommended to make use of the xref:{url_elements_packages}[Lisk Elements’ packages] such as the xref:{url_elements_api}[lisk-api-client].
+
+TIP: Please see the example applications in the xref:{url_tutorials}[tutorials], whereby proven examples of how to make first interactions with a blockchain application can be found.
+
+See more options on the xref:{url_core_network}[Interact with the network] page.
+
+=== Exploring the API
+
+[NOTE]
+====
+The available API endpoints for Lisk SDK node applications are currently identical to the endpoints of the Lisk Core API.
+Please see the complete API reference for Lisk Core xref:{url_core_api}[here].
+====
+
+The module `http_api` of the Lisk Framework describes all API endpoints using swagger.
+
+The API definition file is exported by a node under the path: `localhost:3000/api/spec` (exchange `localhost` with the IP of the node you wish to explore).
+An example of the definition file of a public Lisk Core Testnet node can be seen here: {url_lisk_testnet_api_spec}
+
+This API definition can be pasted into the {url_github_swaggerui}[swagger-ui] front-end to render an interactive API specification of that particular node.
+
+TIP: It is possible to send requests and receive live responses from the node using Swagger UI.

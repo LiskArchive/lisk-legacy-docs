@@ -3,6 +3,9 @@ Mona Bärenfänger <mona@lightcurve.io>
 :description: The Lisk Customization page explains what are custom transactions, how to create custom transaction types and how to register them with the blockchain application.
 :toc:
 :url_github_base_transaction: https://github.com/LiskHQ/lisk-sdk/blob/development/elements/lisk-transactions/src/base_transaction.ts
+:url_github_sdk_entities_account: https://github.com/LiskHQ/lisk-sdk/blob/development/framework/src/components/storage/entities/account.js
+:url_github_sdk_entities_tx: https://github.com/LiskHQ/lisk-sdk/blob/development/framework/src/components/storage/entities/transaction.js
+
 :url_tutorials: tutorials/index.adoc
 
 
@@ -74,6 +77,8 @@ These are all listed below:
 prepare(store: StateStorePrepare): Promise<void>
 ----
 
+In `prepare()` the data from the database is filtered and cached, that is needed in the `applyAsset` and `undoAsset` functions later.
+
 ==== validateAsset
 
 [source,js]
@@ -115,6 +120,159 @@ To increase your application’s performance, the following functions should be 
 
 The BaseTransaction provides the default implementation of the methods revolving around the signatures.
 As your application matures it is possible to implement custom methods of how your transaction’s signature is derived: `sign`, `getBytes`, `assetToBytes`.
+
+== The Store
+
+The `store` is available inside the `prepare()`, `applyAsset()` and `undoAsset()` methods and provides methods to get and set the data from the database.
+
+=== Cache
+
+.How to cache data from the database
+[source,js]
+----
+async prepare(store) {
+    await store.account.cache([
+        {
+            address: this.senderId,
+        },
+    ]);
+}
+----
+
+=== Filters
+
+Depending on the datatype, there are different filters that can be applied, when caching accounts or transactions from the database.
+
+The following table gives an overview, which filters are available, depending on the datatype of the filtered data.
+
+[cols=",,",options="header",]
+|===
+|Filter Type |Filter Suffixes |Description
+|BOOLEAN |_eql | returns entries that match the value
+| |_ne | returns entries that do not match the value
+|TEXT |_eql | returns entries that match the value
+| |_ne | returns entries that do not match the value
+| |_in | returns entries that match any of values from the list
+| |_like | returns entries that match the pattern
+|NUMBER |_eql | returns entries that match the value
+| |_ne | returns entries that do not match the value
+| |_gt | returns entries greater than the value
+| |_gte | returns entries greater than or equal to the value
+| |_lt | returns entries less than the value
+| |_lte | returns entries less than or equal to the value
+| |_in | returns entries that match any of values from the list
+
+|===
+
+.Caches all accounts in the list
+[source,js]
+----
+async prepare(store) {
+    await store.account.cache({
+	    address_in: [
+        	"16152155423726476379L",
+		    "12087516173140285171L"
+        ],
+    });
+}
+----
+
+.Caches recipient and sender accounts
+[source,js]
+----
+async prepare(store) {
+    await store.account.cache([
+        {
+            address: this.recipientId,
+        },
+        {
+            address: this.senderId,
+        }
+    ]);
+}
+----
+
+.Caches accounts based on data from the db
+[source,js]
+----
+async prepare(store) {
+    /**
+     * Get packet account.
+     */
+    await store.account.cache([
+        {
+            address: this.recipientId,
+        }
+    ]);
+    /**
+     * Get sender and recipient accounts of the packet.
+     */
+    const pckt = store.account.get(this.recipientId);
+    await store.account.cache([
+        {
+            address: pckt.asset.carrier,
+        },
+        {
+            address: pckt.asset.sender,
+        },
+    ]);
+}
+----
+
+==== Transactions
+
+* {url_github_sdk_entities_tx}[Filter for transactions]
+
+==== Accounts
+
+* {url_github_sdk_entities_account}[Filter for accounts]
+
+Two very handy filters for the accounts are `asset_contains` and `asset_exists`:
+
+.Caches all accounts that contain "foo" in their asset
+[source,js]
+----
+async prepare(store) {
+    await store.account.cache([
+        {
+            asset_contains: "foo",
+        },
+    ]);
+}
+----
+
+.Caches all accounts that contain the asset key "bar"
+[source,js]
+----
+async prepare(store) {
+    await store.account.cache([
+        {
+            asset_exists: "bar",
+        },
+    ]);
+}
+----
+
+=== Getter
+
+* get(key) — Retrieve a single element from the store. The key here accepts an address.
+* getOrDefault(key) — Get account object from store or create default account if it doesn’t exist.
+* find(fn) — Accepts a lambda expression for finding the data that matches the expression.
+
+.Gets the account of the sender
+[source,js]
+----
+const sender = store.account.get(this.senderId);
+----
+
+=== Setter
+
+* set(key, updatedObject) — Allows updating an account in the database (account is only read-write store).
+
+[source,js]
+----
+store.account.set(sender.address, newObj);
+----
 
 == Default transaction types
 

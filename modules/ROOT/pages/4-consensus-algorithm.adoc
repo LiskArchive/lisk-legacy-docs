@@ -2,12 +2,12 @@
 
 This section describes two important parts of the Lisk protocol which together are referred to as consensus algorithm.
 
-The first part describes the protocol for deciding who is allowed to add a new block to the blockchain. 
+The first part describes the protocol for deciding who is allowed to add a new block to the blockchain.
 Lisk uses *Delegated Proof-of-Stake*, which means that every Lisk holder can vote for delegates, and depending on these votes certain delegates are allowed to add blocks to the blockchain in a certain order.
 Delegates are simply normal Lisk accounts, which performed a link:2-transactions.adoc#delegate-registration[Delegate Registration Transaction].
 
-The second part of this section explains the *Lisk-BFT* consensus protocol. 
-This protocol determines how delegates choose the chain to which they add a new block, and when a block (and all included transactions) is irrevocably deemed part of the blockchain. 
+The second part of this section explains the *Lisk-BFT* consensus protocol.
+This protocol determines how delegates choose the chain to which they add a new block, and when a block (and all included transactions) is irrevocably deemed part of the blockchain.
 In addition, the security guarantees of the consensus protocol are also covered here.
 
 
@@ -16,17 +16,17 @@ In addition, the security guarantees of the consensus protocol are also covered 
 
 === Delegates, Voting and Delegate Weight
 
-A *delegate* is an account which performed a link:2-transactions.adoc#delegate-registration[Delegate Registration Transaction]. 
+A *delegate* is an account which performed a link:2-transactions.adoc#delegate-registration[Delegate Registration Transaction].
 An account can vote for any delegate using a link:2-transactions.adoc#vote[Vote Transaction].
-A vote that a delegate account casts for themselves is further called a [#index-self-vote-1]#*self-vote*#. 
-Depending on the votes cast, every delegate has an associated [#index-delegate_weight]#*delegate weight*#, which is an indicator for the support for this delegate in the network. 
+A vote that a delegate account casts for themselves is further called a [#index-self-vote-1]#*self-vote*#.
+Depending on the votes cast, every delegate has an associated [#index-delegate_weight]#*delegate weight*#, which is an indicator for the support for this delegate in the network.
 Formally, the delegate weight is defined as the following:
 
 ----
 minimum { 10 * selfVotes , totalVotes },
 ----
 
-where `selfVotes` is the amount of Beddows the delegate voted for themselves, and `totalVotes` is the sum of all vote amounts (including self-votes) in Beddows for that specific delegate. 
+where `selfVotes` is the amount the delegate voted for themselves, and `totalVotes` is the sum of all vote amounts (including self-votes) for that specific delegate.
 This definition implies that the self-votes are always at least 10 % of the delegate weight and thus delegates always have substantial skin in the game.
 
 TODO: Maybe diagram showing computation of delegate weight?
@@ -34,82 +34,81 @@ TODO: Maybe diagram showing computation of delegate weight?
 === Forging Delegate Selection
 
 Blocks in the Lisk protocol are grouped together into batches of 103 consecutive blocks, which are referred to as a [#index-round-1]#*round*#.
-Every round has a [#index-forger_list-1]#*forger list*#, which is an ordered list of 103 delegates that are allowed to forge a block in that round. 
-Starting with the first delegate on the forger list, every delegate has a 10 second block slot window in which they can forge a block and broadcast it to the network. 
-If every delegate on the list manages to forge a block in their block slot building on the block by the previous delegate, a round lasts 1030 seconds (around 17 minutes). 
-It can happen that a delegate [#index-misses_the_block_slot-1]#*misses the block slot*#, meaning that there is no block added to the chain by the delegate in their designated block slot. 
-Consequently, the end of the forger list is reached before 103 blocks are added to the chain. 
+Every round has a [#index-forger_list-1]#*forger list*#, which is an ordered list of 103 delegates that are allowed to forge a block in that round.
+Starting with the first delegate on the forger list, every delegate has a 10 second block slot window in which they can forge a block and broadcast it to the network.
+If every delegate on the list manages to forge a block in their block slot building on the block by the previous delegate, a round lasts 1030 seconds (around 17 minutes).
+It can happen that a delegate [#index-misses_the_block_slot-1]#*misses the block slot*#, meaning that there is no block added to the chain by the delegate in their designated block slot.
+Consequently, the end of the forger list is reached before 103 blocks are added to the chain.
 In this case, block slots are assigned again from the beginning of the forger list until 103 blocks are forged.
 
 TODO: Diagram showing delegate selection (2 rounds delay ….)
 
-The forger list is computed taking into account the delegate weights and some random values submitted by delegates as part of their block. 
-The top 101 delegates by delegate weight are called [#index-active_delegate-1]#*active delegates*#, whereas all other delegates with a delegate weight of at least 10^11^ are referred to as [#index-standby_delegate-1]#*standby delegates*#. 
+The forger list is computed taking into account the delegate weights and some random values submitted by delegates as part of their block.
+The top 101 delegates by delegate weight are called [#index-active_delegate-1]#*active delegates*#, whereas all other delegates with a delegate weight of at least 10^11^ are referred to as [#index-standby_delegate-1]#*standby delegates*#.
 Specifically, the forger list for a round is generated as follows:
 
 . Compute two values `randomSeed1` and `randomSeed2` from the values provided by the delegates in the `seedReveal` property of the block headers of the previous 3 rounds.
 . Add the 101 active delegates to the forger list. Additionally, use a random selection proportional to delegate weight to choose 2 distinct delegates. The random selection is done using `randomSeed1` and `randomSeed2`, respectively. For the active delegates as well as the standby delegate selection, the delegate weights from two rounds ago are used.
 . Shuffle the forger list using `randomSeed2`.
 
-The random selection of two standby delegates and commit-reveal scheme that the `seedReveal` values provided by the delegates in the block header must follow are described in detail in https://github.com/LiskHQ/lips/blob/master/proposals/lip-0022.md[LIP 0022].
+The random selection of two standby delegates and the commit-reveal scheme that the `seedReveal` values provided by the delegates in the block header must follow are described in detail in https://github.com/LiskHQ/lips/blob/master/proposals/lip-0022.md[LIP 0022].
 
 
 === Banning of Unproductive Delegates
 
-As a fail-safe mechanism, a delegate that does not forge blocks for an extended period of time is banned. 
-This is to avoid the situation where a delegate who is not running a node leads to frequent missed block slots. 
+As a fail-safe mechanism, a delegate that does not forge blocks for an extended period of time is banned.
+This is to avoid the situation where a delegate who is not running a node leads to frequent missed block slots.
 More specifically, a delegate is banned in case they miss 50 consecutive blocks, and the height of the last block they forged differs by more than 260,000 from the current height of the chain (the block is 30 days old).
-As soon as a delegate is banned, they are excluded from being added to the forger list. 
+As soon as a delegate is banned, they are excluded from being added to the forger list.
 The ban is permanent, but the delegate account holder can move their funds to a different account and register a new delegate.
 
 
 == Lisk-BFT
 
-The Lisk-BFT protocol is formally defined in the related research paper "A lightweight BFT consensus protocol for blockchains" (link:https://arxiv.org/abs/1903.11434[arXiv]). 
+The Lisk-BFT protocol is formally defined in the related research paper "A lightweight BFT consensus protocol for blockchains" (link:https://arxiv.org/abs/1903.11434[arXiv]).
 This section provides a high-level overview of the Lisk-BFT protocol and its security guarantees.
 
 === Consensus Votes on Blocks and Fork Choice Rule
 
-The Lisk-BFT protocol uses special [#index-consensus_votes]#*consensus votes*# that the forging delegates cast for blocks. 
-These consensus votes are necessary because there can be multiple valid chains and, in particular, multiple valid blocks at the same height due to network delays, for instance. 
-In this case, the delegates and nodes in the network need a protocol to agree on one of the chains. 
-The consensus votes are used to indicate what a forging delegate believes to be the correct block at a given height. 
+The Lisk-BFT protocol uses special [#index-consensus_votes]#*consensus votes*# that the forging delegates cast for blocks.
+These consensus votes are necessary because there can be multiple valid chains and, in particular, multiple valid blocks at the same height due to network delays, for instance.
+In this case, the delegates and nodes in the network need a protocol to agree on one of the chains.
+The consensus votes are used to indicate what a forging delegate believes to be the correct block at a given height.
 They are completely unrelated to the votes used to determine the forging delegates.
 
-There are two types of consensus votes, the first is called a [#index-prevote-1]#*prevote*#, and the second is called a [#index-precommit-1]#*precommit*#. 
-Only the 101 current active delegates can cast these consensus votes for a block and therefore the number of prevotes or precommits for a block ranges from 0 to 101. 
-The consensus votes are not sent explicitly, but are implied by the `maxHeightPreviouslyForged` property that delegates need to include in the blocks they forge. 
+There are two types of consensus votes, the first is called a [#index-prevote-1]#*prevote*#, and the second is called a [#index-precommit-1]#*precommit*#.
+Only the 101 current active delegates can cast these consensus votes for a block and therefore the number of prevotes or precommits for a block ranges from 0 to 101.
+The consensus votes are not sent explicitly, but are implied by the `maxHeightPreviouslyForged` property that delegates need to include in the blocks they forge.
 For this property, delegates are supposed to provide the largest height of any block they previously forged and thereby disclose if they previously forged on a different chain.
 
-The [#index-fork_choice_rule-1]#*fork choice rule*# defines to which chain a delegate is supposed to add a block in case there are multiple chains. 
-In the Lisk-BFT protocol delegates choose the chain where the block at the tip of the chain has the largest `maxHeightPrevoted` value (and largest `height` value in case of a tie). 
+The [#index-fork_choice_rule-1]#*fork choice rule*# defines to which chain a delegate is supposed to add a block in case there are multiple chains.
+In the Lisk-BFT protocol delegates choose the chain where the block at the tip of the chain has the largest `maxHeightPrevoted` value (and largest `height` value in case of a tie).
 The `maxHeightPrevoted` property of a block has to be equal to the largest height of an [#index-ancestor_block-1]#*ancestor block*# with at least 68 prevotes (an ancestor block is a predecessor block in the chain).
 
 
 === Finality and Security Guarantees
 
-As soon as one block has at least 68 precommits, the block and all its ancestor blocks are considered [#index-final-1]#*final*#. 
-This means they are irrevocably deemed part of the blockchain and never reverted. 
+As soon as one block has at least 68 precommits, the block and all its ancestor blocks are considered [#index-final-1]#*final*#.
+This means they are irrevocably deemed part of the blockchain and never reverted.
 Two blocks are called [#index-conflicting-1]#*conflicting*# if they are part of different chains, i.e., none is an ancestor block of the other.
-The most important security property for a consensus algorithm is to guarantee that two conflicting blocks are never considered final, as otherwise a blockchain can be subject to double-spending attacks, for instance. 
+The most important security property for a consensus algorithm is to guarantee that two conflicting blocks are never considered final, as otherwise a blockchain can be subject to double-spending attacks, for instance.
 For the case of a static set of 101 active delegates (i.e., the active delegates are not changing from round to round), the Lisk-BFT protocol provides the following security guarantees:
 
 * If at most 33 active delegates are [#index-Byzantine-1]#*Byzantine*# (malicious), and all other active delegates obey the rules of the Lisk-BFT protocol, two conflicting blocks are never finalized.
 * If the active delegates obey the rules of the Lisk-BFT protocol and at most 33 active delegates stop forging or casting consensus votes, new blocks can always be finalized.
 * A violation of the Lisk-BFT protocol by a delegate can be detected and the respective delegate can be punished, as outlined in the next section.
 
-In case the set of active delegates changes over time, the security guarantees are only slightly weaker. 
+In case the set of active delegates changes over time, the security guarantees are only slightly weaker.
 For details, please refer to the Lisk-BFT research paper (link:https://arxiv.org/abs/1903.11434[arXiv]).
 
 
 === Punishment of Lisk-BFT Protocol Violations
 
-If a delegate casts contradictory consensus votes due to an incorrect `maxHeightPreviouslyForged` in the block header or violates the fork choice rule, there must be two signed blocks by that delegate which are proof of the protocol violation. 
-The signed block headers can be included by anyone as part of a link:2-transactions.adoc#pom[Proof-of-Misbehavior Transaction] and submitted to the network. 
-Once this transaction is included in the blockchain, the delegate that violated the Lisk-BFT consensus protocol and forged the two blocks provided in the Proof-of-Misbehavior Transaction is punished by setting the delegate weight to 0 for the next 780,000 blocks (approximately 3 month). 
-Additionally, the unlocking period for self-votes is increased from 260,000 blocks to 780,000 blocks (from approximately 1 month to 3 months) for the respective delegate. 
-This affects any vote amount that is used for self-voting or is still in the unlocking period at the inclusion height of the Proof-of-Misbehavior. 
-Similarly, for all accounts voting for the punished delegate, the unlocking period for the votes for the punished delegate is increased from 2,000 blocks to 260,000 blocks (from approximately 5 hours to 1 month). 
-Again, this affects any amount used by the account to vote for the punished delegate or amounts that were used for voting for the punished delegate, but were still in the unlocking period at the inclusion height of the Proof-of-Misbehavior. 
+If a delegate casts contradictory consensus votes due to an incorrect `maxHeightPreviouslyForged` in the block header or violates the fork choice rule, there must be two signed blocks by that delegate which are proof of the protocol violation.
+The signed block headers can be included by anyone as part of a link:2-transactions.adoc#pom[Proof-of-Misbehavior Transaction] and submitted to the network.
+Once this transaction is included in the blockchain, the delegate that violated the Lisk-BFT consensus protocol and forged the two blocks provided in the Proof-of-Misbehavior Transaction is punished by setting the delegate weight to 0 for the next 780,000 blocks (approximately 3 month).
+Additionally, the unlocking period for self-votes is increased from 260,000 blocks to 780,000 blocks (from approximately 1 month to 3 months) for the respective delegate.
+This affects any vote amount that is used for self-voting or is still in the unlocking period at the inclusion height of the Proof-of-Misbehavior.
+Similarly, for all accounts voting for the punished delegate, the unlocking period for the votes for the punished delegate is increased from 2,000 blocks to 260,000 blocks (from approximately 5 hours to 1 month).
+Again, this affects any amount used by the account to vote for the punished delegate or amounts that were used for voting for the punished delegate, but were still in the unlocking period at the inclusion height of the Proof-of-Misbehavior.
 This means that both the delegate as well as the accounts voting for that delegate are punished by their tokens being locked for an extended amount of time.
-

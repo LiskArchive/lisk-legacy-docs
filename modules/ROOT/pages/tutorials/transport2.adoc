@@ -97,7 +97,7 @@ class RegisterPacketTransaction extends BaseTransaction {
                 address: this.asset.packetId,
             },
             {
-                address: this.senderId,
+                senderPublicKey: this.senderPublicKey,
             }
         ]);
     }
@@ -310,10 +310,10 @@ class StartTransportTransaction extends BaseTransaction {
     async prepare(store) {
         await store.account.cache([
             {
-                address: this.recipientId,
+                address: this.asset.recipientId,
             },
             {
-                address: this.senderId,
+                senderPublicKey: this.senderPublicKey,
             }
         ]);
     }
@@ -327,9 +327,9 @@ class StartTransportTransaction extends BaseTransaction {
 
     applyAsset(store) {
         const errors = [];
-        const packet = store.account.get(this.recipientId);
+        const packet = store.account.get(this.asset.recipientId);
         if (packet.asset.status === "pending"){
-            const carrier = store.account.get(this.senderId);
+            const carrier = store.account.get(this.senderPublicKey);
             // If the carrier has the trust to transport the packet
             const carrierTrust = carrier.asset.trust ? carrier.asset.trust : 0;
             const carrierBalance = new utils.BigNum(carrier.balance);
@@ -382,8 +382,8 @@ class StartTransportTransaction extends BaseTransaction {
 
     undoAsset(store) {
         const errors = [];
-        const packet = store.account.get(this.recipientId);
-        const carrier = store.account.get(this.senderId);
+        const packet = store.account.get(this.asset.recipientId);
+        const carrier = store.account.get(this.senderPublicKey);
         /* --- Revert carrier account --- */
         const carrierBalanceWithSecurity = new utils.BigNum(carrier.balance).add(
             new utils.BigNum(packet.assset.security)
@@ -498,7 +498,7 @@ Click here to see the {url_github_transport_finish}[full code for FinishTranspor
 ----
 applyAsset(store) {
     const errors = [];
-    let packet = store.account.get(this.recipientId);
+    let packet = store.account.get(this.asset.recipientId);
     let carrier = store.account.get(packet.asset.carrier);
     let sender = store.account.get(packet.asset.sender);
     // if the transaction has been signed by the packet recipient
@@ -594,13 +594,13 @@ async prepare(store) {
      */
     await store.account.cache([
         {
-            address: this.recipientId,
+            address: this.asset.recipientId,
         }
     ]);
     /**
      * Get sender and recipient accounts of the packet.
      */
-    const pckt = store.account.get(this.recipientId);
+    const pckt = store.account.get(this.asset.recipientId);
     await store.account.cache([
         {
             address: pckt.asset.carrier,

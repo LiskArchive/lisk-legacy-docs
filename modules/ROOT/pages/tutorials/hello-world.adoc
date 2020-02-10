@@ -284,7 +284,7 @@ Next, create and open the file `hello_transaction.js` and insert the following c
 ----
 const {
     BaseTransaction,
-    TransactionError,
+    TransactionError
 } = require('@liskhq/lisk-transactions');
 
 class HelloTransaction extends BaseTransaction {
@@ -295,7 +295,7 @@ class HelloTransaction extends BaseTransaction {
     * The first 10 types, from 0-9 is reserved for the default Lisk Network functions.
     */
     static get TYPE () {
-        return 10;
+        return 20;
     }
 
     /**
@@ -303,49 +303,50 @@ class HelloTransaction extends BaseTransaction {
     * Every time a user posts a transaction to the network, the transaction fee is paid to the delegate who includes the transaction into the block that the delegate forges.
     */
     static get FEE () {
-        return `${10 ** 8}`;
+        // return `${10 ** 8}`; // (= 1 LSK)
+        return `0`;
     };
 
     /**
     * Prepares the necessary data for the `apply` and `undo` step.
     * The "hello" property will be added only to sender's account, therefore it is the only resource required in the `applyAsset` and `undoAsset` steps.
     */
-    async prepare(store) {
-        await store.account.cache([
-            {
-                senderPublicKey: this.senderPublicKey,
-            },
-        ]);
-    }
+	async prepare(store) {
+		await store.account.cache([
+			{
+				address: this.senderId,
+			},
+		]);
+	}
 
     /**
     * Validation of the value of the "hello" property, defined by the `HelloTransaction` transaction signer.
     * The implementation below checks that the value of the "hello" property needs to be a string, which is not longer than 64 characters.
     */
-    validateAsset() {
-        const errors = [];
-        if (!this.asset.hello || typeof this.asset.hello !== 'string' || this.asset.hello.length > 64) {
-            errors.push(
-                new TransactionError(
-                    'Invalid "asset.hello" defined on transaction',
-                    this.id,
-                    '.asset.hello',
-                    this.asset.hello,
-                    'A string value no longer than 64 characters',
-                )
-            );
-        }
-        return errors;
-    }
+	validateAsset() {
+		const errors = [];
+		if (!this.asset.hello || typeof this.asset.hello !== 'string' || this.asset.hello.length > 64) {
+			errors.push(
+				new TransactionError(
+					'Invalid "asset.hello" defined on transaction',
+					this.id,
+					'.asset.hello',
+					this.asset.hello,
+					'A string value no longer than 64 characters',
+				)
+			);
+		}
+		return errors;
+	}
 
     /**
     * applyAsset is where the custom logic of the Hello World app is implemented.
     * applyAsset() and undoAsset() uses the information about the sender's account from the `store`.
     * Here it is possible to store additional information regarding the accounts using the `asset` field. The content property of "hello" transaction's asset is saved into the "hello" property of the account's asset.
     */
-    applyAsset(store) {
+	applyAsset(store) {
         const errors = [];
-        const sender = store.account.get(this.senderPublicKey);
+        const sender = store.account.get(this.senderId);
         if (sender.asset && sender.asset.hello) {
             errors.push(
                 new TransactionError(
@@ -359,20 +360,19 @@ class HelloTransaction extends BaseTransaction {
             const newObj = { ...sender, asset: { hello: this.asset.hello } };
             store.account.set(sender.address, newObj);
         }
-        return errors; // array of TransactionErrors, returns empty array if no errors are thrown.
-    }
+        return errors; // array of TransactionErrors, returns empty array if no errors are thrown
+	}
 
     /**
     * Inverse of `applyAsset`.
     * Undoes the changes made in applyAsset() step - reverts to the previous value of "hello" property, if not previously set this will be null.
     */
-    undoAsset(store) {
-        const sender = store.account.get(this.senderPublicKey);
-        const oldObj = { ...sender, asset: null };
-        store.account.set(sender.address, oldObj);
-        return [];
-    }
-
+	undoAsset(store) {
+		const sender = store.account.get(this.senderId);
+		const oldObj = { ...sender, asset: null };
+		store.account.set(sender.address, oldObj);
+		return [];
+	}
 }
 
 module.exports = HelloTransaction;
@@ -495,6 +495,12 @@ Open the file `print_sendable_hello-world.js` and insert the following code:
 const HelloTransaction = require('../hello_transaction');
 const transactions = require('@liskhq/lisk-transactions');
 const { EPOCH_TIME } = require('@liskhq/lisk-constants');
+const {getNetworkIdentifier} = require('@liskhq/lisk-cryptography');
+
+const networkIdentifier = getNetworkIdentifier(
+    "23ce0366ef0a14a91e5fd4b1591fc880ffbef9d988ff8bebf8f3666b0c09597d",
+    "Lisk",
+);
 
 const getTimestamp = () => {
     // check config file or curl localhost:4000/api/node/constants to verify your epoc time
@@ -503,30 +509,27 @@ const getTimestamp = () => {
     return  parseInt(inSeconds);
 }
 
-let tx =  new HelloTransaction({ <1>
+const tx = new HelloTransaction({ <1>
     asset: {
         hello: 'world', <2>
-        recipientId: '10881167371402274308L', <3>
-
     },
-    networkIdentifier: 'a59352e01fa66bd4fa270af5d47a8f827c56b36b2d80528b04e1e8ba03134de9', <4>
+    networkIdentifier: networkIdentifier, <3>
     timestamp: getTimestamp(),
 });
 
 tx.sign('wagon stock borrow episode laundry kitten salute link globe zero feed marble');
 
-console.log(tx.stringify()); <5>
-process.exit(0); <6>
+console.log(tx.stringify()); <4>
+process.exit(0); <5>
 ----
 
 TIP: Please see the complete file on Github: {url_github_hello_client}[hello_world/client/print_sendable_hello-world.js].
 
 <1> The desired transaction is created and signed.
 <2> The string 'world' is saved into the 'hello' asset.
-<3> Address of dummy delegate genesis_100.
-<4> The network identifier for the devnet.
-<5> The transaction is displayed as JSON object in the console.
-<6> Stops the process after the transaction object has been printed.
+<3> The network identifier for the devnet.
+<4> The transaction is displayed as JSON object in the console.
+<5> Stops the process after the transaction object has been printed.
 
 The following script will print the transaction in the console.
 (When it is executed the Python’s json.tool is used to prettify the output):
@@ -542,17 +545,17 @@ The generated transaction object should appear as shown below:
 [source,json]
 ----
 {
-   "id":"1199714748623931346",
-   "type":10,
-   "timestamp":0,
-   "senderPublicKey":"c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f",
-   "signature":"e6da5923ee9b769bd5624612af536ca4348d5b32c4552a05161a356e472b8708487022fd4e9787a1b7e548a98c64341f52f2b8b12a39d4115f820b8f01064003",
-   "signatures":[],
-   "asset":{
-      "hello":"world",
-      "recipientId":"10881167371402274308L",
-
-   }
+    "id": "4938773042131394737",
+    "type": 20,
+    "timestamp": 117236669,
+    "senderPublicKey": "c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f",
+    "senderId": "16313739661670634666L",
+    "fee": "100000000",
+    "signature": "93af2e20b6e9d9ad1331b91abfaee5d7e1bfabd5d534ea8a13f0424e2c4fb5014b4f75e6c0dcb94508dc783d5e4c783e179839529abb122e0b3da0e5064fb000",
+    "signatures": [],
+    "asset": {
+        "hello": "world"
+    }
 }
 ----
 
@@ -593,30 +596,30 @@ curl -X GET "http://localhost:4000/api/transactions?id=16130949532827670455" | p
 [source,json]
 ----
 {
-  "meta": {
-    "offset": 0,
-    "limit": 10,
-    "count": 1
-  },
-  "data": [
-    {
-      "id": "16130949532827670455",
-      "height": 4,
-      "blockId": "4180982596867431855",
-      "type": 10,
-      "timestamp": 98141815,
-      "senderPublicKey": "c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f",
-      "fee": "100000000",
-      "signature": "3cb9b2f2d95ae5037d563ca8de288848b9d1d8e320f3ea0cb3e4c6039595227cfe28067a8084aafe0496fa388db1f005bd3b99b7f6e42aab2adc4b0d75671708",
-      "signatures": [],
-      "asset": {
-        "hello": "world",
-        "recipientId": "10881167371402274308L",
-      },
-      "confirmations": 6
-    }
-  ],
-  "links": {}
+    "meta": {
+        "offset": 0,
+        "limit": 10,
+        "count": 1
+    },
+    "data": [
+        {
+            "id": "4451299608301318677",
+            "height": 172,
+            "blockId": "3960807905201919734",
+            "type": 20,
+            "timestamp": 117236872,
+            "senderPublicKey": "c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f",
+            "senderId": "16313739661670634666L",
+            "fee": "0",
+            "signature": "5efc776c38b8f1d260e90900d6ba0bc1dfa926e67bb8fa8ab654165eb34e6bff0198570a4acf96c5a39e917a71d972c5b67148302c21eaccee90171e89337102",
+            "signatures": [],
+            "asset": {
+                "hello": "world"
+            },
+            "confirmations": 86
+        }
+    ],
+    "links": {}
 }
 ----
 

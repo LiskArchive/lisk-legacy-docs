@@ -4,6 +4,20 @@ Mona Bärenfänger <mona@lightcurve.io>
 
 This guide explains, how to create a transaction object of a specific transaction type, and how to broadcadt it to the network.
 
+Ensure, that Node.JS is the latest LTS (version 12 or higher) and create a Node.JS project by creating a `package.json` file inside of your current folder.
+
+.Install dependencies
+[source,bash]
+----
+node --version
+# v12.15.0
+npm init --yes
+npm i @liskhq/lisk-transactions
+npm i @liskhq/lisk-constants
+npm i @liskhq/lisk-cryptography
+npm i @liskhq/lisk-api-client
+----
+
 [[create]]
 == Create the transaction object
 
@@ -12,9 +26,6 @@ This guide explains, how to create a transaction object of a specific transactio
 Default transaction::
 +
 --
-
-Ensure, that Node.JS is the latest LTS (version 12 or higher) and create a Node.JS project by creating a `package.json` file inside of your current folder.
-
 .Install dependencies
 [source,bash]
 ----
@@ -74,7 +85,6 @@ Custom Transaction::
 [source,js]
 ----
 const HelloTransaction = require('../hello_transaction');
-const { EPOCH_TIME } = require('@liskhq/lisk-constants');
 const {getNetworkIdentifier} = require('@liskhq/lisk-cryptography');
 
 const networkIdentifier = getNetworkIdentifier(
@@ -82,25 +92,32 @@ const networkIdentifier = getNetworkIdentifier(
     "Lisk",
 );
 
-const getTimestamp = () => {
-    // check config file or curl localhost:4000/api/node/constants to verify your epoc time
-    const millisSinceEpoc = Date.now() - Date.parse(EPOCH_TIME);
-    const inSeconds = ((millisSinceEpoc) / 1000).toFixed(0);
-    return  parseInt(inSeconds);
-}
-
 const tx = new HelloTransaction({ <1>
     asset: {
         hello: 'world', <2>
     },
     networkIdentifier: networkIdentifier, <3>
-    timestamp: getTimestamp(),
 });
 
 tx.sign('wagon stock borrow episode laundry kitten salute link globe zero feed marble');
 
 console.log(tx.stringify()); <4>
 process.exit(0); <5>
+----
+
+[source,json]
+----
+{
+  "type": 20,
+  "timestamp": 0,
+  "senderPublicKey": "",
+  "senderId": "",
+  "fee": "0",
+  "signatures": [],
+  "asset": {
+    "hello": "world"
+  }
+}
 ----
 --
 =====
@@ -147,9 +164,7 @@ console.log(tx.stringify());
    "senderId":"11237980039345381032L",
    "fee":"10000000",
    "signature":"49d5824b9008b2005a554d984dedf8986b8bb54328dc5bf4c6a61fcdca6115a5ac0e17b5ec4c24bdaaae4f3be2cf808f514d2b74c506c6df9fcfcfad1caaa702",
-   "signatures":[
-
-   ],
+   "signatures":[],
    "asset":{
       "amount":"1",
       "recipientId":"1L"
@@ -165,7 +180,6 @@ Custom Transaction::
 [source,js]
 ----
 const HelloTransaction = require('../hello_transaction');
-const { EPOCH_TIME } = require('@liskhq/lisk-constants');
 const {getNetworkIdentifier} = require('@liskhq/lisk-cryptography');
 
 const networkIdentifier = getNetworkIdentifier(
@@ -173,25 +187,35 @@ const networkIdentifier = getNetworkIdentifier(
     "Lisk",
 );
 
-const getTimestamp = () => {
-    // check config file or curl localhost:4000/api/node/constants to verify your epoc time
-    const millisSinceEpoc = Date.now() - Date.parse(EPOCH_TIME);
-    const inSeconds = ((millisSinceEpoc) / 1000).toFixed(0);
-    return  parseInt(inSeconds);
-}
-
 const tx = new HelloTransaction({ <1>
     asset: {
         hello: 'world', <2>
     },
     networkIdentifier: networkIdentifier, <3>
-    timestamp: getTimestamp(),
 });
 
 tx.sign('wagon stock borrow episode laundry kitten salute link globe zero feed marble');
 
 console.log(tx.stringify()); <4>
 process.exit(0); <5>
+----
+
+.Example output
+[source,json]
+----
+{
+  "id": "11559016465370069697",
+  "type": 20,
+  "timestamp": 0,
+  "senderPublicKey": "c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f",
+  "senderId": "16313739661670634666L",
+  "fee": "0",
+  "signature": "7524e854fe7da042606e4893e61e2515ec1956f70231422973fa9369d345eded998e5a9ba90902e51cb0ac8fdce88fca645fb44e7085fe7ed7f1b29499ae570c",
+  "signatures": [],
+  "asset": {
+    "hello": "world"
+  }
+}
 ----
 --
 =====
@@ -207,48 +231,62 @@ Default transaction::
 [source,js]
 ----
 const transactions = require('@liskhq/lisk-transactions'); <1>
-const { EPOCH_TIME } = require('@liskhq/lisk-constants');
 const {getNetworkIdentifier} = require('@liskhq/lisk-cryptography');
+const { APIClient } = require('@liskhq/lisk-api-client');
 
+// Constants
+const API_BASEURL = 'http://localhost:4000';
 const networkIdentifier = getNetworkIdentifier(
-    "23ce0366ef0a14a91e5fd4b1591fc880ffbef9d988ff8bebf8f3666b0c09597d", <2>
-    "Lisk", <3>
+    "23ce0366ef0a14a91e5fd4b1591fc880ffbef9d988ff8bebf8f3666b0c09597d",
+    "Lisk",
 );
 
-const getTimestamp = () => {
-    // check config file or curl localhost:4000/api/node/constants to verify your epoc time
-    const millisSinceEpoc = Date.now() - Date.parse(EPOCH_TIME);
-    const inSeconds = ((millisSinceEpoc) / 1000).toFixed(0);
-    return  parseInt(inSeconds);
-}
+// Initialize
+const api = new APIClient([API_BASEURL]);
 
 let tx = new transactions.TransferTransaction({
         asset: {
             amount: '1',
-            recipientId: packetCredentials.address,
+            recipientId: '1L',
         },
         networkIdentifier: networkIdentifier,
     });
 
-    tx.sign('creek own stem final gate scrub live shallow stage host concert they'); // Genesis account with address: 11237980039345381032L
-    res.render('initialize', { packetCredentials });
+tx.sign('creek own stem final gate scrub live shallow stage host concert they');
 
-    api.transactions.broadcast(tx.toJSON()).then(res => {
-        console.log("++++++++++++++++ API Response +++++++++++++++++");
-        console.log(res.data);
-        console.log("++++++++++++++++ Credentials +++++++++++++++++");
-        console.dir(packetCredentials);
-        console.log("++++++++++++++++ Transaction Payload +++++++++++++++++");
-        console.log(tx.stringify());
-        console.log("++++++++++++++++ End Script +++++++++++++++++");
-    }).catch(err => {
-        console.log(JSON.stringify(err.errors, null, 2));
-    });
-
-console.log(tx.stringify()); <4>
-process.exit(0); <5>
+api.transactions.broadcast(tx.toJSON()).then(res => {
+    console.log("++++++++++++++++ API Response +++++++++++++++++");
+    console.log(res.data);
+    console.log("++++++++++++++++ Transaction Payload +++++++++++++++++");
+    console.log(tx.stringify());
+    console.log("++++++++++++++++ End Script +++++++++++++++++");
+}).catch(err => {
+    console.log(JSON.stringify(err.errors, null, 2));
+});
 ----
 
+.Example output
+[source,json]
+----
+++++++++++++++++ API Response +++++++++++++++++
+{ message: 'Transaction(s) accepted' }
+++++++++++++++++ Transaction Payload +++++++++++++++++
+{
+  "id": "14444765956109766257",
+  "type": 8,
+  "timestamp": 0,
+  "senderPublicKey": "5c554d43301786aec29a09b13b485176e81d1532347a351aeafe018c199fd7ca",
+  "senderId": "11237980039345381032L",
+  "fee": "10000000",
+  "signature": "49d5824b9008b2005a554d984dedf8986b8bb54328dc5bf4c6a61fcdca6115a5ac0e17b5ec4c24bdaaae4f3be2cf808f514d2b74c506c6df9fcfcfad1caaa702",
+  "signatures": [],
+  "asset": {
+    "amount": "1",
+    "recipientId": "1L"
+  }
+}
+++++++++++++++++ End Script +++++++++++++++++
+----
 --
 Custom Transaction::
 +
@@ -256,42 +294,74 @@ Custom Transaction::
 .Create custom tx object with Lisk Elements
 [source,js]
 ----
-const HelloTransaction = require('../hello_transaction');
-const { EPOCH_TIME } = require('@liskhq/lisk-constants');
+const HelloTransaction = require('./hello');
 const {getNetworkIdentifier} = require('@liskhq/lisk-cryptography');
+const { APIClient } = require('@liskhq/lisk-api-client');
 
+// Constants
+const API_BASEURL = 'http://localhost:4000';
 const networkIdentifier = getNetworkIdentifier(
     "23ce0366ef0a14a91e5fd4b1591fc880ffbef9d988ff8bebf8f3666b0c09597d",
     "Lisk",
 );
 
-const getTimestamp = () => {
-    // check config file or curl localhost:4000/api/node/constants to verify your epoc time
-    const millisSinceEpoc = Date.now() - Date.parse(EPOCH_TIME);
-    const inSeconds = ((millisSinceEpoc) / 1000).toFixed(0);
-    return  parseInt(inSeconds);
-}
+// Initialize
+const api = new APIClient([API_BASEURL]);
 
-const tx = new HelloTransaction({ <1>
+const tx = new HelloTransaction({
     asset: {
-        hello: 'world', <2>
+        hello: 'world',
     },
-    networkIdentifier: networkIdentifier, <3>
-    timestamp: getTimestamp(),
+    networkIdentifier: networkIdentifier,
 });
 
 tx.sign('wagon stock borrow episode laundry kitten salute link globe zero feed marble');
 
-console.log(tx.stringify()); <4>
-process.exit(0); <5>
+api.transactions.broadcast(tx.toJSON()).then(res => {
+    console.log("++++++++++++++++ API Response +++++++++++++++++");
+    console.log(res.data);
+    console.log("++++++++++++++++ Transaction Payload +++++++++++++++++");
+    console.log(tx.stringify());
+    console.log("++++++++++++++++ End Script +++++++++++++++++");
+}).catch(err => {
+    console.log(JSON.stringify(err.errors, null, 2));
+});
+----
+
+.Example output
+[source,json]
+----
+++++++++++++++++ API Response +++++++++++++++++
+{ message: 'Transaction(s) accepted' }
+++++++++++++++++ Transaction Payload +++++++++++++++++
+{
+  "id": "2039423469691006779",
+  "type": 20,
+  "timestamp": 0,
+  "senderPublicKey": "5c554d43301786aec29a09b13b485176e81d1532347a351aeafe018c199fd7ca",
+  "senderId": "11237980039345381032L",
+  "fee": "0",
+  "signature": "532c3297451bc7f14fe7b80b38d55b4cc9527b1d13a6f353fa7f13b8af973e69d47f87d4108e5768e0a9e0e6a426de6ae0751005dd126f04fa34f97882bfc509",
+  "signatures": [],
+  "asset": {
+    "hello": "world"
+  }
+}
+++++++++++++++++ End Script +++++++++++++++++
 ----
 --
 =====
 
-== What happen to the transaction now?
+== What happens to the transaction after a node received it?
 
-The transaction will be validated by the node, and added to the transaction pool, if valid.
-The node will also inform it's peer nodes about the new transaction, so all of them will valide the transaction and add it to their transaction pool.
-If the transaction is added to the transaction pool of a forging node, the transaction will be included in one of the next new blocks.
-Once the transaction is included into a block, it becomes part of the blockchain.
-To be sure, the transaction is final, it is recommended to wait around XXXX blocks.
+The transaction will be **validated** by the node, and added to the transaction pool, if valid.
+To validate the transaction, it will execute the logic defined in the `validateAsset()` method.
+
+The node will also **inform it's peer nodes** about the new transaction, and all of them will validate the transaction and add it to their transaction pool as well.
+If the transaction is added to the transaction pool of a forging node, the transaction will be included in one of the next new blocks, if it is not included already by another forger.
+
+**Once the transaction is included into a block, it becomes part of the blockchain.**
+
+By including a transaction into a block, the node executes the logic defined in the `applyAsset()` method of the transaction.
+
+**To be sure that the transaction is final, it is recommended to wait around XXXX blocks.**

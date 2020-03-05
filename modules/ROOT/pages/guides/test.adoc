@@ -1,6 +1,7 @@
 = Testing
 Mona Bärenfänger <mona@lightcurve.io>
 :url_unit_tests: https://en.wikipedia.org/wiki/Unit_testing
+:source-linenums-option:
 
 :url_tutorials_transport_3: tutorials/transport2.adoc#register_packet
 
@@ -13,12 +14,44 @@ This is due to the fact that the code in the `undoAsset` function is only execut
 
 [NOTE]
 ====
-To be on a fork means that the node added some different blocks to the chain than its peers.
+To be on a **fork** means that the node added some different blocks to the chain than its peers.
 In order to sync again with the network, it has to remove the blocks that are different, and undo the transactions inside these blocks.
 To undo the transaction, the `undoAsset()` function will be called for each transaction inside of the blocks that need to be discarded.
 ====
 
 To test if the transaction is undone correctly, write a unit test as shown in the following snippet for the `undoAsset()` method of the xref:{url_tutorials_transport_3}[supply chain tutorial: RegisterPacketTransaction]
+
+The `undoAsset()` method of the `RegisterPacketTransaction`:
+
+[source,js]
+----
+undoAsset(store) {
+    const errors = [];
+
+    /* --- Revert sender account --- */
+    const sender = store.account.get(this.senderId);
+    const senderBalanceWithPostage = new utils.BigNum(sender.balance).add(
+        new utils.BigNum(this.asset.postage)
+    );
+    const updatedSender = {
+        ...sender,
+        balance: senderBalanceWithPostage.toString()
+    };
+    store.account.set(sender.address, updatedSender);
+
+    /* --- Revert packet account --- */
+    const packet = store.account.get(this.asset.packetId);
+    const originalPacketAccount = { ...packet, balance: 0, asset: null };
+    store.account.set(packet.address, originalPacketAccount);
+
+    return errors;
+}
+----
+
+* Line `6-12`: The postage is added back to the senders' account balance.
+* Line `13`: The sender account with the updated balance is saved in the database.
+* Line `16-17`: The postage is removed from the packet account balance
+* Line `18`: The packet account with the updated balance is saved in the database.
 
 .Example: Unit test for the undoAsset() function of the RegisterPacketTransaction
 [source,js]

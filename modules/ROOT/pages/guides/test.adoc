@@ -81,7 +81,7 @@ describe('RegisterPacket Transaction', () => {
 
     test('it should undo the state for register packet correctly', async () => { <2>
         // Arrange
-        const senderId = 'senderXYZ';
+        const senderId = '16313739661670634666L';
         const senderPublicKey = 'c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f';
         const asset = {
             security: transactions.utils.convertLSKToBeddows('10'),
@@ -118,22 +118,22 @@ describe('RegisterPacket Transaction', () => {
         // Assert
         expect(storeStub.account.set).toHaveBeenNthCalledWith( <7>
             1,
-            mockedPacketAccount.address,
-            {
-                address: mockedPacketAccount.address,
-                balance: 0,
-                asset: null,
-            }
-        );
-
-        expect(storeStub.account.set).toHaveBeenNthCalledWith(
-            2,
             mockedSenderAccount.address,
             {
                 address: mockedSenderAccount.address,
                 balance: new transactions.utils.BigNum(mockedSenderAccount.balance).add(
                     new transactions.utils.BigNum(asset.postage)
                 ).toString()
+            }
+        );
+
+        expect(storeStub.account.set).toHaveBeenNthCalledWith(
+            2,
+            mockedPacketAccount.address,
+            {
+                address: mockedPacketAccount.address,
+                balance: 0,
+                asset: null,
             }
         );
     });
@@ -149,7 +149,22 @@ This allows replace the call with a custom return value.
 <6> The `undoAsset()` function of the transaction is called, and the previousely defined `storeStub` is passed to the `undoAsset()` function.
 <7> Here start actually the tests.
 
-In the first test, we want to verify if the `const asset = { … }`, which stores the packet data, got nullified.
+The first test verifies that the sender account got reimbursed for the postage he paid.
+Therefore, we check if `storeStub.account.set()` got called with the right parameters:
+[source,js]
+----
+address: mockedSenderAccount.address,
+----
+and
+[source,js]
+----
+balance: new transactions.utils.BigNum(mockedSenderAccount.balance).add(
+    new transactions.utils.BigNum(asset.postage)
+).toString()
+----
+If the function got called with the expected parameters, we know that the sender account got restored correctly.
+
+In the second test, we want to verify if the `const asset = { … }`, which stores the packet data, got nullified.
 Secondly we want to verify, that the postage is removed from the packet balance.
 Therefore, we first check if `storeStub.account.set()` got called with the right parameters:
 
@@ -168,21 +183,6 @@ and
 ----
 If the function got called with the expected parameters, we know that the packet account was undone correctly.
 
-The second test verifies that the sender account got reimbursed for the postage he paid.
-Therefore, we check if `storeStub.account.set()` got called with the right parameters:
-[source,js]
-----
-address: mockedSenderAccount.address,
-----
-and
-[source,js]
-----
-balance: new transactions.utils.BigNum(mockedSenderAccount.balance).add(
-    new transactions.utils.BigNum(asset.postage)
-).toString()
-----
-If the function got called with the expected parameters, we know that the sender account got restored correctly.
-
 == Run the test script
 
 To run the test from the command-line, install {url_jest}[jest]:
@@ -198,10 +198,27 @@ Now, run the test:
 ----
 jest register-packet.test.js
 ----
+It should print the test results.
+For example:
+....
+ PASS  register-packet.test.js
+  RegisterPacket Transaction
+    ✓ it should undo the state for register packet correctly (13ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        2.017s
+Ran all test suites matching /register-packet.test.js/i.
+....
+
+In the example above, all expectations were met and the test passed.
 
 == What else needs to be tested?
-Is writing unit tests really enough to ensure the functionality of a custom transaction type? +
-**Short answer: The unit tests are sufficient.** +
+Is writing unit tests really enough to ensure the functionality of a custom transaction type?
+
+**Short answer: The unit tests are sufficient.**
+
 **Explanation:** You may wonder if it is required to write additional functional and integration tests.
 Be aware, that the correct reading and writing of the data to the database is already part of the Lisk SDK software testing and therefore it is not needed to test it again for your new custom transaction type.
 Therefore unit tests are generally sufficient to test the functionality of a custom transaction type.

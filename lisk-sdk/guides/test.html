@@ -347,6 +347,8 @@
   </div>
 <article class="doc">
 <h1 class="page">Testing</h1>
+<div id="preamble">
+<div class="sectionbody">
 <div class="paragraph">
 <p>The more complex the logic inside the custom transaction types, the more complicated it becomes to verify that the custom transaction logic is working as expected.</p>
 </div>
@@ -374,17 +376,31 @@ To undo the transaction, the <code>undoAsset()</code> function will be called fo
 </table>
 </div>
 <div class="paragraph">
-<p>To test if the transaction is undone correctly, write a unit test as shown in the following snippet for the <code>undoAsset()</code> method of the <a href="../tutorials/transport2.html#register_packet" class="page">supply chain tutorial: RegisterPacketTransaction</a></p>
+<p>To explain how to write unit tests for custom transactions, we will use the example of the <code>undoAsset()</code> method of the <a href="../tutorials/transport2.html#register_packet" class="page">supply chain tutorial: RegisterPacketTransaction</a>.
+You can use it as template to write unit tests for your own custom transactions.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+To test the complete logic of a custom transaction, it is required to write unit tests for all methods that are implemented in the custom transactions: <code>validateAsset()</code>, <code>applyAsset()</code> and <code>undoAsset</code>.
+</td>
+</tr>
+</table>
 </div>
 <div class="paragraph">
-<p>The <code>undoAsset()</code> method of the <code>RegisterPacketTransaction</code>:</p>
+<p>First, let&#8217;s look at the <code>undoAsset()</code> function of the <a href="https://github.com/LiskHQ/lisk-sdk-examples/blob/development/transport/transactions/solutions/register-packet.js#L144">RegisterPacketTransaction</a>.</p>
 </div>
 <div class="listingblock">
+<div class="title">Snippet of undoAsset(), File: transactions/solutions/register-packet.js</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">undoAsset(store) {
     const errors = [];
 
-    /* --- Revert sender account --- */
+    /* The postage is added back to the senders' account balance. */
     const sender = store.account.get(this.senderId);
     const senderBalanceWithPostage = new utils.BigNum(sender.balance).add(
         new utils.BigNum(this.asset.postage)
@@ -395,7 +411,7 @@ To undo the transaction, the <code>undoAsset()</code> function will be called fo
     };
     store.account.set(sender.address, updatedSender);
 
-    /* --- Revert packet account --- */
+    /* The postage is removed from the packet account balance, and packet data in the asset is nullified */
     const packet = store.account.get(this.asset.packetId);
     const originalPacketAccount = { ...packet, balance: 0, asset: null };
     store.account.set(packet.address, originalPacketAccount);
@@ -404,26 +420,13 @@ To undo the transaction, the <code>undoAsset()</code> function will be called fo
 }</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p>Line <code>6-12</code>: The postage is added back to the senders' account balance.</p>
-</li>
-<li>
-<p>Line <code>13</code>: The sender account with the updated balance is saved in the database.</p>
-</li>
-<li>
-<p>Line <code>16-17</code>: The postage is removed from the packet account balance</p>
-</li>
-<li>
-<p>Line <code>18</code>: The packet account with the updated balance is saved in the database.</p>
-</li>
-</ul>
+<div class="paragraph">
+<p>To test, that the <code>undoAsset()</code> function is working as expected, write a <a href="https://github.com/LiskHQ/lisk-sdk-examples/blob/development/transport/transactions/test/register-packet.test.js">unit test</a>:</p>
 </div>
 <div class="listingblock">
-<div class="title">Example: Unit test for the undoAsset() function of the RegisterPacketTransaction</div>
+<div class="title">File: transactions/tests/register-packet.test.js</div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const RegisterPacketTransaction = require('../register-packet');
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const RegisterPacketTransaction = require('../solutions/register-packet');
 const transactions = require('@liskhq/lisk-transactions');
 const { when } = require('jest-when');
 
@@ -466,14 +469,14 @@ describe('RegisterPacket Transaction', () =&gt; {
             .mockReturnValue(mockedSenderAccount);
 
         // Act
-        const tx = new RegisterPacketTransaction({
+        const tx = new RegisterPacketTransaction({ <i class="conum" data-value="5"></i><b>(5)</b>
             senderId,
             asset,
         });
-        tx.undoAsset(storeStub);
+        tx.undoAsset(storeStub); <i class="conum" data-value="6"></i><b>(6)</b>
 
         // Assert
-        expect(storeStub.account.set).toHaveBeenNthCalledWith(
+        expect(storeStub.account.set).toHaveBeenNthCalledWith( <i class="conum" data-value="7"></i><b>(7)</b>
             1,
             mockedPacketAccount.address,
             {
@@ -506,42 +509,105 @@ This allows replace the call with a custom return value.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>Now start the test, add a short and precise description of what the test is about.
-<div class="literalblock">
+<td>Now start the test, add a short and precise description of what the test is about.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>When <code>storeStub.account.get</code> is called with <code>asset.senderId</code>, we replace the return value with the <code>mockedSenderAccount</code>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>When <code>storeStub.account.get</code> is called with <code>asset.packetId</code>, we replace the return value with the <code>mockedPacketAccount</code>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>A new transaction is created.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td>The <code>undoAsset()</code> function of the transaction is called, and the previousely defined <code>storeStub</code> is passed to the <code>undoAsset()</code> function.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="7"></i><b>7</b></td>
+<td>Here starts actually the first test.
+We want to verify if the <code>const asset = { … }</code>, which stores the packet data, got nullified.
+Secondly we want to verify, that the postage is removed from the packet balance.
+Therefore, we first check if <code>storeStub.account.set()</code> got called with the right parameters:
+<div class="listingblock">
 <div class="content">
-<pre> which we do a bit down in the first test with the when(storeStub.account.get)…
-So, if that functions gets called with asset.packetId for example, we return the mockedPacketAccount
-So, we have all the mocks in place now</pre>
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">mockedPacketAccount.address,</code></pre>
 </div>
+</div>
+<div class="paragraph">
+<p>and</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">{
+      address: mockedPacketAccount.address,
+      balance: 0,
+      asset: null,
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the function got called with the expected parameters, we know that the packet account was undone correctly.</p>
+</div></td>
+</tr>
+<tr>
+<td><i class="conum" data-value="8"></i><b>8</b></td>
+<td>The second test verifies that the sender account got reimbursed for the postage he paid.
+Therefore, we check if <code>storeStub.account.set()</code> got called with the right parameters:
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">address: mockedSenderAccount.address,</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>and</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">balance: new transactions.utils.BigNum(mockedSenderAccount.balance).add(
+    new transactions.utils.BigNum(asset.postage)
+).toString()</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the function got called with the expected parameters, we know that the sender account got restored correctly.</p>
 </div></td>
 </tr>
 </table>
 </div>
 <div class="paragraph">
-<p>From the // Act section, we create a new transaction and call the undoAsset on this function, passing it the storeStub</p>
+<p>To run the test from the command-line, install <a href="https://jestjs.io/docs/en/getting-started">jest</a>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">npm install jest --global</code></pre>
+</div>
 </div>
 <div class="paragraph">
-<p>Lastly, in the // Assert part we want to verify if the const asset = { … } got returned to its original state.
-Therefore, we first check if the set function on the account store got called with the right parameters and returned the undo state:
-{
-      address: mockedPacketAccount.address,
-      balance: 0,
-      asset: null,
-}
-So, this means the undo function executed correctly
-The second expect statement verifies if the sender account got reimbursed for the postage he paid</p>
+<p>Now, run the test:</p>
 </div>
-<div class="dlist">
-<dl>
-<dt class="hdlist1">What else needs to be tested?</dt>
-<dd>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">jest register-packet.test.js</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_else_needs_to_be_tested"><a class="anchor" href="#_what_else_needs_to_be_tested"></a>What else needs to be tested?</h2>
+<div class="sectionbody">
+<div class="paragraph">
 <p>Is writing unit tests really enough to ensure the functionality of a custom transaction type?<br>
 <strong>Short answer: The unit tests are sufficient.</strong><br>
 <strong>Explanation:</strong> You may wonder if it is required to write additional functional and integration tests.
 Be aware, that the correct reading and writing of the data to the database is already part of the Lisk SDK software testing and therefore it is not needed to test it again for your new custom transaction type.
 Therefore unit tests are generally sufficient to test the functionality of a custom transaction type.</p>
-</dd>
-</dl>
+</div>
+</div>
 </div>
     <div class="bottom-links">
     <div>

@@ -2,6 +2,9 @@
 Mona Bärenfänger <mona@lightcurve.io>
 :source-linenums-option:
 :highlightjs-theme: solarized_dark
+:url_github_transport_register_packet: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/transport/transactions/solutions/register-packet.js#L144
+:url_github_transport_test_register: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/transport/transactions/test/register-packet.test.js
+:url_jest: https://jestjs.io/docs/en/getting-started
 :url_unit_tests: https://en.wikipedia.org/wiki/Unit_testing
 :url_wiki_stubs: https://en.wikipedia.org/wiki/Test_stub
 
@@ -21,16 +24,20 @@ In order to sync again with the network, it has to remove the blocks that are di
 To undo the transaction, the `undoAsset()` function will be called for each transaction inside of the blocks that need to be discarded.
 ====
 
-To test if the transaction is undone correctly, write a unit test as shown in the following snippet for the `undoAsset()` method of the xref:{url_tutorials_transport_3}[supply chain tutorial: RegisterPacketTransaction]
+To explain how to write unit tests for custom transactions, we will use the example of the `undoAsset()` method of the xref:{url_tutorials_transport_3}[supply chain tutorial: RegisterPacketTransaction].
+You can use it as template to write unit tests for your own custom transactions.
 
-The `undoAsset()` method of the `RegisterPacketTransaction`:
+NOTE: To test the complete logic of a custom transaction, it is required to write unit tests for all methods that are implemented in the custom transactions: `validateAsset()`, `applyAsset()` and `undoAsset`.
 
+First, let's look at the `undoAsset()` function of the {url_github_transport_register_packet}[RegisterPacketTransaction].
+
+.Snippet of undoAsset(), File: transactions/solutions/register-packet.js
 [source,js]
 ----
 undoAsset(store) {
     const errors = [];
 
-    /* --- Revert sender account --- */
+    /* The postage is added back to the senders' account balance. */
     const sender = store.account.get(this.senderId);
     const senderBalanceWithPostage = new utils.BigNum(sender.balance).add(
         new utils.BigNum(this.asset.postage)
@@ -41,7 +48,7 @@ undoAsset(store) {
     };
     store.account.set(sender.address, updatedSender);
 
-    /* --- Revert packet account --- */
+    /* The postage is removed from the packet account balance, and packet data in the asset is nullified */
     const packet = store.account.get(this.asset.packetId);
     const originalPacketAccount = { ...packet, balance: 0, asset: null };
     store.account.set(packet.address, originalPacketAccount);
@@ -50,15 +57,12 @@ undoAsset(store) {
 }
 ----
 
-* Line `6-12`: The postage is added back to the senders' account balance.
-* Line `13`: The sender account with the updated balance is saved in the database.
-* Line `16-17`: The postage is removed from the packet account balance
-* Line `18`: The packet account with the updated balance is saved in the database.
+To test, that the `undoAsset()` function is working as expected, write a {url_github_transport_test_register}[unit test]:
 
-.Example: Unit test for the undoAsset() function of the RegisterPacketTransaction
+.File: transactions/tests/register-packet.test.js
 [source,js]
 ----
-const RegisterPacketTransaction = require('../register-packet');
+const RegisterPacketTransaction = require('../solutions/register-packet');
 const transactions = require('@liskhq/lisk-transactions');
 const { when } = require('jest-when');
 
@@ -101,14 +105,14 @@ describe('RegisterPacket Transaction', () => {
             .mockReturnValue(mockedSenderAccount);
 
         // Act
-        const tx = new RegisterPacketTransaction({
+        const tx = new RegisterPacketTransaction({ <5>
             senderId,
             asset,
         });
-        tx.undoAsset(storeStub);
+        tx.undoAsset(storeStub); <6>
 
         // Assert
-        expect(storeStub.account.set).toHaveBeenNthCalledWith(
+        expect(storeStub.account.set).toHaveBeenNthCalledWith( <7>
             1,
             mockedPacketAccount.address,
             {
@@ -135,24 +139,62 @@ describe('RegisterPacket Transaction', () => {
 <1> The `get()` and `set()` functions of the `stateStore` are mocked by creating {url_wiki_stubs}[stubs] in the `beforeEach()` function.
 This allows replace the call with a custom return value.
 <2> Now start the test, add a short and precise description of what the test is about.
-
- which we do a bit down in the first test with the when(storeStub.account.get)…
-So, if that functions gets called with asset.packetId for example, we return the mockedPacketAccount
-So, we have all the mocks in place now
-
-From the // Act section, we create a new transaction and call the undoAsset on this function, passing it the storeStub
-
-Lastly, in the // Assert part we want to verify if the const asset = { … } got returned to its original state.
-Therefore, we first check if the set function on the account store got called with the right parameters and returned the undo state:
+<3> When `storeStub.account.get` is called with `asset.senderId`, we replace the return value with the `mockedSenderAccount`.
+<4> When `storeStub.account.get` is called with `asset.packetId`, we replace the return value with the `mockedPacketAccount`.
+<5> A new transaction is created.
+<6> The `undoAsset()` function of the transaction is called, and the previousely defined `storeStub` is passed to the `undoAsset()` function.
+<7> Here starts actually the first test.
+We want to verify if the `const asset = { … }`, which stores the packet data, got nullified.
+Secondly we want to verify, that the postage is removed from the packet balance.
+Therefore, we first check if `storeStub.account.set()` got called with the right parameters:
++
+[source,js]
+----
+mockedPacketAccount.address,
+----
+and
++
+[source,js]
+----
 {
       address: mockedPacketAccount.address,
       balance: 0,
       asset: null,
 }
-So, this means the undo function executed correctly
-The second expect statement verifies if the sender account got reimbursed for the postage he paid
+----
+If the function got called with the expected parameters, we know that the packet account was undone correctly.
+<8> The second test verifies that the sender account got reimbursed for the postage he paid.
+Therefore, we check if `storeStub.account.set()` got called with the right parameters:
++
+[source,js]
+----
+address: mockedSenderAccount.address,
+----
+and
++
+[source,js]
+----
+balance: new transactions.utils.BigNum(mockedSenderAccount.balance).add(
+    new transactions.utils.BigNum(asset.postage)
+).toString()
+----
+If the function got called with the expected parameters, we know that the sender account got restored correctly.
 
-What else needs to be tested?::
+To run the test from the command-line, install {url_jest}[jest]:
+
+[source,bash]
+----
+npm install jest --global
+----
+
+Now, run the test:
+
+[source,bash]
+----
+jest register-packet.test.js
+----
+
+== What else needs to be tested?
 Is writing unit tests really enough to ensure the functionality of a custom transaction type? +
 **Short answer: The unit tests are sufficient.** +
 **Explanation:** You may wonder if it is required to write additional functional and integration tests.

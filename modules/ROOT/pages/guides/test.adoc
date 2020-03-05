@@ -1,7 +1,9 @@
 = Testing
 Mona Bärenfänger <mona@lightcurve.io>
-:url_unit_tests: https://en.wikipedia.org/wiki/Unit_testing
 :source-linenums-option:
+:highlightjs-theme: solarized_dark
+:url_unit_tests: https://en.wikipedia.org/wiki/Unit_testing
+:url_wiki_stubs: https://en.wikipedia.org/wiki/Test_stub
 
 :url_tutorials_transport_3: tutorials/transport2.adoc#register_packet
 
@@ -63,7 +65,7 @@ const { when } = require('jest-when');
 describe('RegisterPacket Transaction', () => {
     let storeStub;
     beforeEach(() => {
-        storeStub = {
+        storeStub = { <1>
             account: {
                 get: jest.fn(),
                 set: jest.fn(),
@@ -71,7 +73,7 @@ describe('RegisterPacket Transaction', () => {
         };
     });
 
-    test('it should undo the state for register packet correctly', async () => {
+    test('it should undo the state for register packet correctly', async () => { <2>
         // Arrange
         const senderId = 'senderXYZ';
         const asset = {
@@ -90,11 +92,11 @@ describe('RegisterPacket Transaction', () => {
             balance: '10000000000', // 100 LSK
         };
 
-        when(storeStub.account.get)
+        when(storeStub.account.get) <3>
             .calledWith(asset.packetId)
             .mockReturnValue(mockedPacketAccount);
 
-        when(storeStub.account.get)
+        when(storeStub.account.get) <4>
             .calledWith(senderId)
             .mockReturnValue(mockedSenderAccount);
 
@@ -129,6 +131,26 @@ describe('RegisterPacket Transaction', () => {
     });
 });
 ----
+
+<1> The `get()` and `set()` functions of the `stateStore` are mocked by creating {url_wiki_stubs}[stubs] in the `beforeEach()` function.
+This allows replace the call with a custom return value.
+<2> Now start the test, add a short and precise description of what the test is about.
+
+ which we do a bit down in the first test with the when(storeStub.account.get)…
+So, if that functions gets called with asset.packetId for example, we return the mockedPacketAccount
+So, we have all the mocks in place now
+
+From the // Act section, we create a new transaction and call the undoAsset on this function, passing it the storeStub
+
+Lastly, in the // Assert part we want to verify if the const asset = { … } got returned to its original state.
+Therefore, we first check if the set function on the account store got called with the right parameters and returned the undo state:
+{
+      address: mockedPacketAccount.address,
+      balance: 0,
+      asset: null,
+}
+So, this means the undo function executed correctly
+The second expect statement verifies if the sender account got reimbursed for the postage he paid
 
 What else needs to be tested?::
 Is writing unit tests really enough to ensure the functionality of a custom transaction type? +

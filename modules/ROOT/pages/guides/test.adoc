@@ -57,7 +57,7 @@ undoAsset(store) {
 }
 ----
 
-To test, that the `undoAsset()` function is working as expected, write a {url_github_transport_test_register}[unit test]:
+To test, that the `undoAsset()` function is working as expected, write a unit test {url_github_transport_test_register}[register-packet.test.js]:
 
 .File: transactions/tests/register-packet.test.js
 [source,js]
@@ -80,6 +80,7 @@ describe('RegisterPacket Transaction', () => {
     test('it should undo the state for register packet correctly', async () => { <2>
         // Arrange
         const senderId = 'senderXYZ';
+        const senderPublicKey = 'c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f';
         const asset = {
             security: transactions.utils.convertLSKToBeddows('10'),
             minTrust: 0,
@@ -107,6 +108,7 @@ describe('RegisterPacket Transaction', () => {
         // Act
         const tx = new RegisterPacketTransaction({ <5>
             senderId,
+            senderPublicKey,
             asset,
         });
         tx.undoAsset(storeStub); <6>
@@ -122,7 +124,7 @@ describe('RegisterPacket Transaction', () => {
             }
         );
 
-        expect(storeStub.account.set).toHaveBeenNthCalledWith(
+        expect(storeStub.account.set).toHaveBeenNthCalledWith( <8>
             2,
             mockedSenderAccount.address,
             {
@@ -147,13 +149,11 @@ This allows replace the call with a custom return value.
 We want to verify if the `const asset = { … }`, which stores the packet data, got nullified.
 Secondly we want to verify, that the postage is removed from the packet balance.
 Therefore, we first check if `storeStub.account.set()` got called with the right parameters:
-+
 [source,js]
 ----
 mockedPacketAccount.address,
 ----
 and
-+
 [source,js]
 ----
 {
@@ -163,15 +163,14 @@ and
 }
 ----
 If the function got called with the expected parameters, we know that the packet account was undone correctly.
+
 <8> The second test verifies that the sender account got reimbursed for the postage he paid.
 Therefore, we check if `storeStub.account.set()` got called with the right parameters:
-+
 [source,js]
 ----
 address: mockedSenderAccount.address,
 ----
 and
-+
 [source,js]
 ----
 balance: new transactions.utils.BigNum(mockedSenderAccount.balance).add(

@@ -6,23 +6,24 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_curl: https://curl.haxx.se/
 
 :url_guides_config: guides/configuration.adoc
+:url_reference_api: reference/api.adoc
 :url_reference_api_account_get: reference/api.adoc#_getaccounts
 :url_reference_api_tx_get: reference/api.adoc#_gettransactions
 :url_reference_api_blocks_get: reference/api.adoc#_getblocks
 :url_reference_commander: reference/lisk-commander/index.adoc
-:url_reference_elements: reference/lisk-elements/packages/api-client.adoc
+:url_reference_elements_apiclient: reference/lisk-elements/packages/api-client.adoc
 
 This guides describes how to interact with a blockchain network powered by the Lisk SDK.
 
 To interact with the blockchain, communicate with the API of a node, that is connected to the network.
 
-NOTE: Use a node with a public API, or deploy your own node and {url_guides_config}[whitelist] your IP to make API requests.
+NOTE: Use a node with a public API, or deploy your own node and xref:{url_guides_config}[whitelist] your IP to make API requests.
 
 == Common interactions
 
 Some examples for most common interactions are listed here.
 
-For javascript developers, it is most convenient to use the xref:{url_reference_elements}[@liskhq/lisk-api-client].
+For javascript developers, it is most convenient to use the xref:{url_reference_elements_apiclient}[@liskhq/lisk-api-client].
 
 First install it with npm:
 
@@ -54,6 +55,7 @@ It is also possible to do the API requests directly from the command line with p
 
 === Get a transaction
 
+.Syntax
 [source,js]
 ----
 api.transactions.get(options)
@@ -64,6 +66,11 @@ Where `options` can be any of the params described in the xref:{url_reference_ap
 .Get transaction by ID
 [source,js]
 ----
+const { APIClient } = require('@liskhq/lisk-api-client');
+
+const API_BASEURL = "http://localhost:4000";
+const api = new APIClient([API_BASEURL]);
+
 api.transactions.get({ id: '222675625422353767' })
     .then(res => {
         console.log(res.data);
@@ -73,6 +80,11 @@ api.transactions.get({ id: '222675625422353767' })
 .Get transaction by recipient ID
 [source,js]
 ----
+const { APIClient } = require('@liskhq/lisk-api-client');
+
+const API_BASEURL = "http://localhost:4000";
+const api = new APIClient([API_BASEURL]);
+
 api.transactions.get({ recipientId: '123L' })
     .then(res => {
         console.log(res.data);
@@ -81,6 +93,7 @@ api.transactions.get({ recipientId: '123L' })
 
 === Get a block
 
+.Syntax
 [source,js]
 ----
 api.blocks.get(options)
@@ -91,6 +104,11 @@ Where `options` can be any of the params described in the xref:{url_reference_ap
 .Get block by height
 [source,js]
 ----
+const { APIClient } = require('@liskhq/lisk-api-client');
+
+const API_BASEURL = "http://localhost:4000";
+const api = new APIClient([API_BASEURL]);
+
 api.blocks.get({ height: '123456' })
     .then(res => {
         console.log(res.data);
@@ -99,7 +117,7 @@ api.blocks.get({ height: '123456' })
 
 === Get Accounts
 
-
+.Syntax
 [source,js]
 ----
 api.accounts.get(options)
@@ -110,6 +128,11 @@ Where `options` can be any of the params described in the xref:{url_reference_ap
 .Get all accounts
 [source,js]
 ----
+const { APIClient } = require('@liskhq/lisk-api-client');
+
+const API_BASEURL = "http://localhost:4000";
+const api = new APIClient([API_BASEURL]);
+
 let offset = 0;
 let accounts = [];
 const accountsArray = [];
@@ -175,7 +198,7 @@ console.log(credentials);
 You might have noticed that for creating a new account, we actually did not send any API request to the network.
 That means there is no record yet about his account on the blockchain.
 
-For this account to become part of the blockchain, it is needed to transfer at least 1 token to the newly created account.
+For this account to become part of the blockchain, it is needed to <<send_tokens,transfer at least 1 token>> to the newly created account.
 
 This balance transfer will create a new record for the account on the blockchain.
 ====
@@ -186,14 +209,55 @@ This initialization will bind your public key to the address, and ensure the acc
 
 TIP: An account can be initialized by any transaction type: transfer, delegate registration, or other transaction types, as long as it is signed byb the newly created account.
 
-.Initializing an account by sending a `registerDelegate` transaction
+.Example: Initializing an account by sending a `registerDelegate` transaction
 [source,js]
 ----
+const { APIClient } = require('@liskhq/lisk-api-client');
 const transactions = require('@liskhq/lisk-transactions');
+
+const API_BASEURL = "http://localhost:4000";
+const api = new APIClient([API_BASEURL]);
 
 let tx = new transactions.registerDelegate({
     networkIdentifier: '7158c297294a540bc9ac6e474529c3da38d03ece056e3fa2d98141e6ec54132d',
     username:'foo'
+});
+
+tx.sign('creek own stem final gate scrub live shallow stage host concert they'); <1>
+
+api.transactions.broadcast(tx.toJSON()).then(res => {
+    console.log("++++++++++++++++ API Response +++++++++++++++++");
+    console.log(res.data);
+    console.log("++++++++++++++++ Transaction Payload +++++++++++++++++");
+    console.log(tx.stringify());
+    console.log("++++++++++++++++ End Script +++++++++++++++++");
+}).catch(err => {
+    console.log(JSON.stringify(err.errors, null, 2));
+});
+----
+
+<1> Replace the passphrase with the passphrase of the newly created account
+
+If the API responds with a success message, the transaction was broadcasted successfully.
+
+[[send_tokens]]
+=== Send tokens
+
+.Send tokens
+[source,js]
+----
+const { APIClient } = require('@liskhq/lisk-api-client');
+const transactions = require('@liskhq/lisk-transactions');
+
+const API_BASEURL = "http://localhost:4000";
+const api = new APIClient([API_BASEURL]);
+
+let tx = new transactions.TransferTransaction({
+    asset: {
+        amount: '1',
+        recipientId: packetCredentials.address,
+    },
+    networkIdentifier: networkIdentifier,
 });
 
 tx.sign('creek own stem final gate scrub live shallow stage host concert they');
@@ -209,13 +273,8 @@ api.transactions.broadcast(tx.toJSON()).then(res => {
 });
 ----
 
-=== Enable forging
+== Further interactions
 
-.Enable forging
-[source,js]
-----
-----
+For a complete reference of all available requests and options, check the xref:{url_reference_api}[Lisk SDK API specification].
 
-== More actions
-
-See the lisk-api-client and the Lisk SDK API specification.
+Click here to see the complete xref:{url_reference_elements_apiclient}[reference of the Lisk API client].

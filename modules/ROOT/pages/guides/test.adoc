@@ -1,0 +1,224 @@
+= Test a transaction
+Mona Bärenfänger <mona@lightcurve.io>
+:source-linenums-option:
+:highlightjs-theme: solarized_dark
+:url_github_transport_register_packet: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/transport/transactions/solutions/register-packet.js#L144
+:url_github_transport_test_register: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/transport/transactions/test/register-packet.test.js
+:url_jest: https://jestjs.io/docs/en/getting-started
+:url_unit_tests: https://en.wikipedia.org/wiki/Unit_testing
+:url_wiki_stubs: https://en.wikipedia.org/wiki/Test_stub
+
+:url_tutorials_transport_3: tutorials/transport2.adoc#register_packet
+
+The more complex the logic inside the custom transaction types, the more complicated it becomes to verify that the custom transaction logic is working as expected.
+
+Therefore it is recommended to write {url_unit_tests}[unit tests], that verify the logic of the transaction type.
+
+Especially for verifying the code of the `undoAsset()` function, it is convenient to write unit tests.
+This is due to the fact that the code in the `undoAsset()` function is only executed if the node discovers itself on a fork with the main chain.
+
+[NOTE]
+====
+To be on a **fork** means that the node added some different blocks to the chain than its peers.
+In order to sync again with the network, it has to remove the blocks that are different, and undo the transactions inside these blocks.
+To undo the transaction, the `undoAsset()` function will be called for each transaction inside of the blocks that need to be reverted.
+====
+
+To explain how to write unit tests for custom transactions, we will use the example of the `undoAsset()` method of the xref:{url_tutorials_transport_3}[supply chain tutorial: RegisterPacketTransaction].
+You can use it as template to write unit tests for your own custom transactions.
+
+NOTE: To test the complete logic of a custom transaction, it is required to write unit tests for all methods that are implemented in the custom transactions: `validateAsset()`, `applyAsset()` and `undoAsset()`.
+
+== Write a test script
+
+First, let's look at the `undoAsset()` function of the {url_github_transport_register_packet}[RegisterPacketTransaction].
+
+.Snippet of undoAsset(), File: transactions/solutions/register-packet.js
+[source,js]
+----
+undoAsset(store) {
+    const errors = [];
+
+    /* The postage is added back to the senders' account balance. */
+    const sender = store.account.get(this.senderId);
+    const senderBalanceWithPostage = new utils.BigNum(sender.balance).add(
+        new utils.BigNum(this.asset.postage)
+    );
+    const updatedSender = {
+        ...sender,
+        balance: senderBalanceWithPostage.toString()
+    };
+    store.account.set(sender.address, updatedSender);
+
+    /* The postage is removed from the packet account balance, and packet data in the asset is nullified */
+    const packet = store.account.get(this.asset.packetId);
+    const originalPacketAccount = { ...packet, balance: 0, asset: null };
+    store.account.set(packet.address, originalPacketAccount);
+
+    return errors;
+}
+----
+
+To test, that the `undoAsset()` function is working as expected, write a unit test with {url_jest}[jest]: {url_github_transport_test_register}[register-packet.test.js]:
+
+.File: transactions/tests/register-packet.test.js
+[source,js]
+----
+const RegisterPacketTransaction = require('../solutions/register-packet');
+const transactions = require('@liskhq/lisk-transactions');
+const { when } = require('jest-when');
+
+describe('RegisterPacket Transaction', () => {
+    let storeStub;
+    beforeEach(() => {
+        storeStub = { <1>
+            account: {
+                get: jest.fn(),
+                set: jest.fn(),
+            },
+        };
+    });
+
+    test('it should undo the state for register packet correctly', async () => { <2>
+        // Arrange
+        const senderId = '16313739661670634666L';
+        const senderPublicKey = 'c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f';
+        const asset = {
+            security: transactions.utils.convertLSKToBeddows('10'),
+            minTrust: 0,
+            postage: transactions.utils.convertLSKToBeddows('10'),
+            packetId: 'not important',
+            recipientId: 'xyzL',
+        };
+
+        const mockedPacketAccount = {
+            address: 'xyz123',
+        };
+        const mockedSenderAccount = {
+            address: 'abc123',
+            balance: '10000000000', // 100 LSK
+        };
+
+        when(storeStub.account.get) <3>
+            .calledWith(asset.packetId)
+            .mockReturnValue(mockedPacketAccount);
+
+        when(storeStub.account.get) <4>
+            .calledWith(senderId)
+            .mockReturnValue(mockedSenderAccount);
+
+        // Act
+        const tx = new RegisterPacketTransaction({ <5>
+            senderId,
+            senderPublicKey,
+            asset,
+        });
+        tx.undoAsset(storeStub); <6>
+
+        // Assert
+        expect(storeStub.account.set).toHaveBeenNthCalledWith( <7>
+            1,
+            mockedSenderAccount.address,
+            {
+                address: mockedSenderAccount.address,
+                balance: new transactions.utils.BigNum(mockedSenderAccount.balance).add(
+                    new transactions.utils.BigNum(asset.postage)
+                ).toString()
+            }
+        );
+
+        expect(storeStub.account.set).toHaveBeenNthCalledWith(
+            2,
+            mockedPacketAccount.address,
+            {
+                address: mockedPacketAccount.address,
+                balance: 0,
+                asset: null,
+            }
+        );
+    });
+});
+----
+
+<1> The `get()` and `set()` functions of the `stateStore` are mocked by creating {url_wiki_stubs}[stubs] in the `beforeEach()` function.
+This allows replace the call with a custom return value.
+<2> Now start the test, add a short and precise description of what the test is about.
+<3> When `storeStub.account.get` is called with `asset.senderId`, we replace the return value with the `mockedSenderAccount`.
+<4> When `storeStub.account.get` is called with `asset.packetId`, we replace the return value with the `mockedPacketAccount`.
+<5> A new transaction is created.
+<6> The `undoAsset()` function of the transaction is called, and the previousely defined `storeStub` is passed to the `undoAsset()` function.
+<7> The actual tests start here.
+
+The first expectation verifies that the sender account got reimbursed for the postage he paid.
+Therefore, we check if `storeStub.account.set()` got called with the right parameters:
+[source,js]
+----
+address: mockedSenderAccount.address,
+----
+and
+[source,js]
+----
+balance: new transactions.utils.BigNum(mockedSenderAccount.balance).add(
+    new transactions.utils.BigNum(asset.postage)
+).toString()
+----
+If the function got called with the expected parameters, we know that the sender account got restored correctly.
+
+In the second expectation, we want to verify if the `const asset = { … }`, which stores the packet data, got nullified.
+Secondly we want to verify, that the postage is removed from the packet balance.
+Therefore, we first check if `storeStub.account.set()` got called with the right parameters:
+
+[source,js]
+----
+mockedPacketAccount.address,
+----
+and
+[source,js]
+----
+{
+      address: mockedPacketAccount.address,
+      balance: 0,
+      asset: null,
+}
+----
+If the function got called with the expected parameters, we know that the packet account was undone correctly.
+
+== Run the test script
+
+To run the test from the command-line, install {url_jest}[jest]:
+
+[source,bash]
+----
+npm install jest --global
+----
+
+Now, run the test:
+
+[source,bash]
+----
+jest register-packet.test.js
+----
+It should print the test results.
+For example:
+....
+ PASS  register-packet.test.js
+  RegisterPacket Transaction
+    ✓ it should undo the state for register packet correctly (13ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        2.017s
+Ran all test suites matching /register-packet.test.js/i.
+....
+
+In the example above, all expectations were met and the test passed.
+
+== What else needs to be tested?
+Is writing unit tests really enough to ensure the functionality of a custom transaction type?
+
+**Short answer: The unit tests are sufficient.**
+
+**Explanation:** You may wonder if it is required to write additional functional and integration tests.
+Be aware, that the correct reading and writing of the data to the database is already part of the Lisk SDK software testing and therefore it is not needed to test it again for your new custom transaction type.
+Therefore unit tests are generally sufficient to test the functionality of a custom transaction type.

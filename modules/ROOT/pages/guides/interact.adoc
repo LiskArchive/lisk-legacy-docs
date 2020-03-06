@@ -1,0 +1,221 @@
+= Interact with the network
+Mona Bärenfänger <mona@lightcurve.io>
+:toc:
+:sectnums:
+:sectnumlevels: 2
+:url_curl: https://curl.haxx.se/
+
+:url_guides_config: guides/configuration.adoc
+:url_reference_api_account_get: reference/api.adoc#_getaccounts
+:url_reference_api_tx_get: reference/api.adoc#_gettransactions
+:url_reference_api_blocks_get: reference/api.adoc#_getblocks
+:url_reference_commander: reference/lisk-commander/index.adoc
+:url_reference_elements: reference/lisk-elements/packages/api-client.adoc
+
+This guides describes how to interact with a blockchain network powered by the Lisk SDK.
+
+To interact with the blockchain, communicate with the API of a node, that is connected to the network.
+
+NOTE: Use a node with a public API, or deploy your own node and {url_guides_config}[whitelist] your IP to make API requests.
+
+== Common interactions
+
+Some examples for most common interactions are listed here.
+
+For javascript developers, it is most convenient to use the xref:{url_reference_elements}[@liskhq/lisk-api-client].
+
+First install it with npm:
+
+.In the terminal
+[source,bash]
+----
+npm i @liskhq/lisk-api-client
+----
+
+Then require it as dependency and create the API client:
+
+.In a javascript file
+[source,js]
+----
+const { APIClient } = require('@liskhq/lisk-api-client');
+
+const API_BASEURL = "http://localhost:4000"; <1>
+const api = new APIClient([API_BASEURL]);
+----
+
+<1> Replace `http://localhost:4000` with the address of the node, you want to send the API request to.
+
+[TIP]
+====
+It is of course possible to write an API client based on other languages than javascript and typescript.
+
+It is also possible to do the API requests directly from the command line with programs like {url_curl}[curl] or xref:{url_reference_commander}[Lisk Commander].
+====
+
+=== Get a transaction
+
+[source,js]
+----
+api.transactions.get(options)
+----
+
+Where `options` can be any of the params described in the xref:{url_reference_api_tx_get}[API specification: GET /transactions]
+
+.Get transaction by ID
+[source,js]
+----
+api.transactions.get({ id: '222675625422353767' })
+    .then(res => {
+        console.log(res.data);
+    })
+----
+
+.Get transaction by recipient ID
+[source,js]
+----
+api.transactions.get({ recipientId: '123L' })
+    .then(res => {
+        console.log(res.data);
+    });
+----
+
+=== Get a block
+
+[source,js]
+----
+api.blocks.get(options)
+----
+
+Where `options` can be any of the params described in the xref:{url_reference_api_blocks_get}[API specification: GET /blocks]
+
+.Get block by height
+[source,js]
+----
+api.blocks.get({ height: '123456' })
+    .then(res => {
+        console.log(res.data);
+    });
+----
+
+=== Get Accounts
+
+
+[source,js]
+----
+api.accounts.get(options)
+----
+
+Where `options` can be any of the params described in the xref:{url_reference_api_account_get}[API specification: GET /accounts]
+
+.Get all accounts
+[source,js]
+----
+let offset = 0;
+let accounts = [];
+const accountsArray = [];
+
+do {
+    const retrievedAccounts = await api.accounts.get({ limit: 100, offset });
+    accounts = retrievedAccounts.data;
+    accountsArray.push(...accounts);
+
+    if (accounts.length === 100) {
+        offset += 100;
+    }
+} while (accounts.length === 100);
+----
+
+=== Create a new account
+
+First it is needed to generate a mnemonic passphrase, which will be the 12 word passphrase that belongs to the new account.
+
+This passphrase is then used to generate a public/private key pair that is now associates to the account, too.
+
+Last but not least an `address` is generated, also referred to as the "account ID".
+
+While all these properties belong now to this specific account, it is important to notice what information is public, and what needs to be kept private.
+
+.Private properties
+* `passphrase`: The 12 word mnemonic passphrase, keep this pruvate and safe!
+If gets lost, the access to the funds of this account is lost as well.
+* `privateKey`: The cryptographic representation of the human-readable `passphrase`.
+
+.Public properties
+* `address`: The public address of this account.
+Example: 12345L
+* `publicKey`: The cryptographic representation of the human-readable `address`.
+
+.Create new account credentials
+[source,js]
+----
+const cryptography = require('@liskhq/lisk-cryptography');
+const { Mnemonic } = require('@liskhq/lisk-passphrase');
+
+const createCredentials = () => {
+    const passphrase = Mnemonic.generateMnemonic();
+    const keys = cryptography.getPrivateAndPublicKeyFromPassphrase(
+        passphrase
+    );
+    const credentials = {
+        address: cryptography.getAddressFromPublicKey(keys.publicKey),
+        passphrase: passphrase,
+        publicKey: keys.publicKey,
+        privateKey: keys.privateKey
+    };
+    return credentials;
+};
+
+const credentials = createCredentials();
+
+console.log(credentials);
+----
+
+[NOTE]
+====
+You might have noticed that for creating a new account, we actually did not send any API request to the network.
+That means there is no record yet about his account on the blockchain.
+
+For this account to become part of the blockchain, it is needed to transfer at least 1 token to the newly created account.
+
+This balance transfer will create a new record for the account on the blockchain.
+====
+
+To ensure that no other user can generate the same address from a different passphrase (what can happen), it is needed to initialize the new account, by sending an outgoing transaction.
+
+This initialization will bind your public key to the address, and ensure the account cannot be hijacked later on.
+
+TIP: An account can be initialized by any transaction type: transfer, delegate registration, or other transaction types, as long as it is signed byb the newly created account.
+
+.Initializing an account by sending a `registerDelegate` transaction
+[source,js]
+----
+const transactions = require('@liskhq/lisk-transactions');
+
+let tx = new transactions.registerDelegate({
+    networkIdentifier: '7158c297294a540bc9ac6e474529c3da38d03ece056e3fa2d98141e6ec54132d',
+    username:'foo'
+});
+
+tx.sign('creek own stem final gate scrub live shallow stage host concert they');
+
+api.transactions.broadcast(tx.toJSON()).then(res => {
+    console.log("++++++++++++++++ API Response +++++++++++++++++");
+    console.log(res.data);
+    console.log("++++++++++++++++ Transaction Payload +++++++++++++++++");
+    console.log(tx.stringify());
+    console.log("++++++++++++++++ End Script +++++++++++++++++");
+}).catch(err => {
+    console.log(JSON.stringify(err.errors, null, 2));
+});
+----
+
+=== Enable forging
+
+.Enable forging
+[source,js]
+----
+----
+
+== More actions
+
+See the lisk-api-client and the Lisk SDK API specification.

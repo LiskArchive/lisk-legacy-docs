@@ -29,6 +29,22 @@ NOTE: This guide uses {url_pug}[Pug](aka Jade) to create a frontend application.
 
 image:hello-new_account.png[]
 
+.client/views/create.pug
+[source,jade]
+----
+extends index.pug
+
+block content
+    h2 Create a new account
+
+    p
+        | Refresh page to get new Credentials
+
+    pre
+        code(class='language-json')= JSON.stringify(packetCredentials, null, 2)
+----
+
+.client/app.js
 [source,js]
 ----
 app.get('/create', async(req, res) => {
@@ -51,92 +67,439 @@ app.get('/create', async(req, res) => {
 });
 ----
 
+== Faucet
+
+image:hello-faucet.png[]
+
+.client/views/faucet.pug
 [source,jade]
 ----
 extends index.pug
 
 block content
-    h2 Create a new account
-
+    h2 Faucet
     p
-        | Refresh page to get new Credentials
+        | Send funds to account from Genesis
 
-    pre
-        code(class='language-json')= JSON.stringify(packetCredentials, null, 2)
+    form(method='POST' action='/faucet')
+        div.form-group
+            label(for='address') Address:
+            input.form-control(type='text', placeholder='address' name='address' id='address')
+        div.form-group
+            label(for='amount') Amount (LSK):
+            input#amount.form-control(type='text', placeholder='200' name='amount')
+        button.btn.btn-warning(type='submit') Fund
 ----
 
-== Faucet
-
-image:hello-faucet.png[]
-
+.client/app.js
 [source,js]
 ----
+app.post('/faucet', function (req, res) {
+    const address = req.body.address;
+    const amount = req.body.amount;
+
+    const fundTransaction = new transactions.TransferTransaction({
+        asset: {
+            recipientId: address,
+            amount: transactions.utils.convertLSKToBeddows(amount),
+        },
+        networkIdentifier: networkIdentifier,
+        timestamp: dateToLiskEpochTimestamp(new Date()),
+    });
+
+    //The TransferTransaction is signed by the Genesis account
+    fundTransaction.sign(accounts.genesis.passphrase);
+    api.transactions.broadcast(fundTransaction.toJSON()).then(response => {
+        res.app.locals.payload = {
+            res: response.data,
+            tx: fundTransaction.toJSON(),
+        };
+        console.log("++++++++++++++++ API Response +++++++++++++++++");
+        console.log(response.data);
+        console.log("++++++++++++++++ Transaction Payload +++++++++++++++++");
+        console.log(fundTransaction.stringify());
+        console.log("++++++++++++++++ End Script +++++++++++++++++");
+        res.redirect('/payload');
+    }).catch(err => {
+        console.log(JSON.stringify(err.errors, null, 2));
+        res.app.locals.payload = {
+            res: err,
+            tx: fundTransaction.toJSON(),
+        };
+        res.redirect('/payload');
+    });
+});
 ----
 
 == Send default transaction
 
 image:hello-transfer.png[]
 
+.client/views/transfer.pug
+[source,jade]
+----
+extends index.pug
+
+block content
+    h2 Transfer tokens
+    p
+        | Send funds from one account to another.
+
+    form(method='POST' action='/faucet')
+        div.form-group
+            label(for='address') Address:
+            input.form-control(type='text', placeholder='address' name='address' id='address')
+        div.form-group
+            label(for='amount') Amount (LSK):
+            input#amount.form-control(type='text', placeholder='200' name='amount')
+        div.form-group
+            label(for='passphrase') Passphrase:
+            input#passphrase.form-control(type='text', placeholder='coach pupil shock error defense outdoor tube love action exist search idea' name='passphrase')
+        button.btn.btn-warning(type='submit') Send
+----
+
+.client/app.js
 [source,js]
 ----
+app.post('/transfer', function (req, res) {
+    const address = req.body.address;
+    const amount = req.body.amount;
+
+    const transferTransaction = new transactions.TransferTransaction({
+        asset: {
+            recipientId: address,
+            amount: transactions.utils.convertLSKToBeddows(amount),
+        },
+        networkIdentifier: networkIdentifier,
+        timestamp: dateToLiskEpochTimestamp(new Date()),
+    });
+
+    //The TransferTransaction is signed by the Genesis account
+    transferTransaction.sign(req.body.passphrase);
+    api.transactions.broadcast(transferTransaction.toJSON()).then(response => {
+        res.app.locals.payload = {
+            res: response.data,
+            tx: transferTransaction.toJSON(),
+        };
+        console.log("++++++++++++++++ API Response +++++++++++++++++");
+        console.log(response.data);
+        console.log("++++++++++++++++ Transaction Payload +++++++++++++++++");
+        console.log(transferTransaction.stringify());
+        console.log("++++++++++++++++ End Script +++++++++++++++++");
+        res.redirect('/payload');
+    }).catch(err => {
+        console.log(JSON.stringify(err.errors, null, 2));
+        res.app.locals.payload = {
+            res: err,
+            tx: transferTransaction.toJSON(),
+        };
+        res.redirect('/payload');
+    });
+});
 ----
 
 == Send custom transaction
 
 image:hello-hello.png[]
 
+.client/views/post-hello.pug
+[source,jade]
+----
+extends index.pug
+
+block content
+    h2 Create new Hello
+
+    form(method='POST' action='/post-hello')
+        div.form-group
+            label(for='hello') Hello value:
+            input#recipient.form-control(type='text', placeholder='Your personal hello statement' name='hello')
+        div.form-group
+            label(for='passphrase') Passphrase:
+            input#recipient.form-control(type='text', placeholder='coach pupil shock error defense outdoor tube love action exist search idea' name='passphrase')
+        button.btn.btn-warning(type='submit') Send
+----
+
+.client/app.js
 [source,js]
 ----
+app.post('/post-hello', function (req, res) {
+    const helloString = req.body.hello;
+    const passphrase = req.body.passphrase;
+
+    const helloTransaction = new HelloTransaction({
+        asset: {
+            hello: helloString,
+        },
+        networkIdentifier: networkIdentifier,
+        timestamp: dateToLiskEpochTimestamp(new Date()),
+    });
+
+    helloTransaction.sign(passphrase);
+
+    api.transactions.broadcast(helloTransaction.toJSON()).then(response => {
+        res.app.locals.payload = {
+            res: response.data,
+            tx: helloTransaction.toJSON(),
+        };
+        console.log("++++++++++++++++ API Response +++++++++++++++++");
+        console.log(response.data);
+        console.log("++++++++++++++++ Transaction Payload +++++++++++++++++");
+        console.log(helloTransaction.stringify());
+        console.log("++++++++++++++++ End Script +++++++++++++++++");
+        res.redirect('/payload');
+    }).catch(err => {
+        console.log(JSON.stringify(err.errors, null, 2));
+        res.app.locals.payload = {
+            res: err,
+            tx: helloTransaction.toJSON(),
+        };
+        res.redirect('/payload');
+    });
+});;
 ----
 
 == Get all blocks
 
 image:hello-blocks.png[]
 
-[source,js]
+.client/views/blocks.pug
+[source,jade]
 ----
 ----
 
+.client/app.js
 [source,js]
 ----
+app.get('/blocks', async(req, res) => {
+    let offset = 0;
+    let blocks = [];
+    const blocksArray = [];
+
+    do {
+        const retrievedBlocks = await api.blocks.get({ limit: 100, offset });
+        blocks = retrievedBlocks.data;
+        blocksArray.push(...blocks);
+
+        if (blocks.length === 100) {
+            offset += 100;
+        }
+    } while (blocks.length === 100);
+
+
+    res.render('blocks', { blocks: blocksArray });
+});
 ----
 
 == Get all transactions
 
 image:hello-transactions.png[]
 
+.client/views/transactions.pug
+[source,jade]
+----
+----
+
+.client/app.js
 [source,js]
 ----
+app.get('/transactions', async(req, res) => {
+    let offset = 0;
+    let txs = [];
+    const transactionsArray = [];
+
+    do {
+        const retrievedTransactions = await api.transactions.get({ limit: 100, offset });
+        txs = retrievedTransactions.data;
+        transactionsArray.push(...txs);
+
+        if (txs.length === 100) {
+            offset += 100;
+        }
+    } while (txs.length === 100);
+
+    // Sort desc
+    transactionsArray.sort((a, b) => {
+        if (a.timestamp > b.timestamp) return -1;
+
+        if (a.timestamp < b.timestamp) return 1;
+
+        if (a.timestamp === b.timestamp) return 0;
+    });
+
+    res.render('transactions', { transactions: transactionsArray });
+});
 ----
 
 == Get transactions by type
 
 image:hello-hello_transactions.png[]
 
+.client/views/hello-transactions.pug
+[source,jade]
+----
+extends index.pug
+
+block content
+    h2 Transactions
+
+    pre
+        table.table.table-striped
+            thead
+                tr
+                    th(scope='col') ID
+                    th(scope='col') Height
+                    th(scope='col') Data
+
+            tbody
+                each tx in transactions
+                    tr
+                        td= tx.id
+                        td= tx.height
+                        td= JSON.stringify(tx, null, 2)
+----
+
+.client/app.js
 [source,js]
 ----
+app.get('/hello-transactions', async(req, res) => {
+    const { data: transactions } = await api.transactions.get({ type: HelloTransaction.TYPE });
+
+    // Sort desc
+    transactions.sort((a, b) => {
+        if (a.timestamp > b.timestamp) return -1;
+
+        if (a.timestamp < b.timestamp) return 1;
+
+        if (a.timestamp === b.timestamp) return 0;
+    });
+
+    res.render('hello-transactions', { transactions });
+});
 ----
 
 == Get all account
 
-image:hello-new_account.png[]
+image:hello-accounts.png[]
 
+.client/views/accounts.pug
+[source,jade]
+----
+extends index.pug
+
+block content
+    h2 Accounts
+
+    pre
+        table.table.table-striped
+            thead
+                tr
+                    th(scope='col') Index
+                    th(scope='col') Address
+                    th(scope='col') Balance
+                    th(scope='col') Data
+
+            tbody
+                each account, index in accounts
+                    tr
+                        td= index
+                        td= account.address
+                        td= account.balance
+                        td= JSON.stringify(account, null, 2)
+
+----
+
+.client/app.js
 [source,js]
 ----
+app.get('/accounts', async(req, res) => {
+    let offset = 0;
+    let accounts = [];
+    const accountsArray = [];
+
+    do {
+        const retrievedAccounts = await api.accounts.get({ limit: 100, offset });
+        accounts = retrievedAccounts.data;
+        accountsArray.push(...accounts);
+
+        if (accounts.length === 100) {
+            offset += 100;
+        }
+    } while (accounts.length === 100);
+
+
+    res.render('accounts', { accounts: accountsArray });
+});
 ----
 
 == Detail page for accounts
 
 image:hello-accounts_detail.png[]
 
+.client/app.js
 [source,js]
 ----
+app.get('/accounts/:address', async(req, res) => {
+    const { data: accounts } = await api.accounts.get({ address: req.params.address });
+    res.render('accounts', { accounts });
+});
 ----
 
 == Get accounts based on asset data
 
 image:hello-hello_accounts.png[]
 
+.client/views/create.pug
+[source,jade]
+----
+extends index.pug
+
+block content
+    h2 Hello Accounts
+
+    pre
+        table.table
+            thead
+                tr
+                    th(scope='col') Address
+                    th(scope='col') Balance
+                    th(scope='col') Hello
+
+            tbody
+                each account in accounts
+                    tr
+                        td= account.address
+                        td= account.balance
+                        td
+                            pre= JSON.stringify(account.asset.hello, null, 2)
+----
+
+.client/app.js
 [source,js]
 ----
+app.get('/hello-accounts', async(req, res) => {
+    let offset = 0;
+    let accounts = [];
+    let accountsArray = [];
+
+    do {
+        const retrievedAccounts = await api.accounts.get({ limit: 100, offset });
+        accounts = retrievedAccounts.data;
+        accountsArray.push(...accounts);
+
+        if (accounts.length === 100) {
+            offset += 100;
+        }
+    } while (accounts.length === 100);
+
+    let assetAccounts = [];
+    for (var i = 0; i < accountsArray.length; i++) {
+        let accountAsset = accountsArray[i].asset;
+        if (accountAsset && Object.keys(accountAsset).indexOf("hello") > -1){
+            assetAccounts.push(accountsArray[i]);
+        }
+    }
+
+    res.render('hello-accounts', { accounts: assetAccounts });
+});
 ----

@@ -1,0 +1,240 @@
+= Launch the application
+Mona Bärenfänger <mona@lightcurve.io>
+:description:
+:sectnums:
+:toc:
+:imagesdir: ../../assets/images
+:v_core: master
+:experimental:
+
+== Introduction
+
+This guide describes
+
+=== Components of a blockchain application
+
+==== Node application
+
+The node application is the application that needs to be installed on a server in order to connect to a particular blockchain network.
+
+The node application serves as database backend for services of the client application and it communicates with it via API requests.
+
+A node application consists of at least the following files:
+
+* https://github.com/LiskHQ/lisk-sdk-examples/blob/development/hello_world/index.js[index.js] :  The code that initializes and starts the node application.
+* https://github.com/LiskHQ/lisk-sdk-examples/blob/development/hello_world/package.json[package.json]: A project file that lists all needed dependencies, (this should include `lisk-sdk` as a dependency).
+* https://github.com/LiskHQ/lisk-sdk-examples/tree/development/hello_world/hello_transaction.js[transactions]: A folder containing all required custom transaction types.
+* `README` : A Readme file which describes the most important steps to setup the node.
+
+==== Client application(s)
+
+The client application communicates via API requests with one or multiple nodes in the network, in order to provide its services.
+
+The development and publishing of the client application is similar to a regular web application.
+
+There can also be several client applications, working together by comunicating with the network.
+For example there can be an additional application that connects a particular IoT device to the blockchain.
+
+=== Launching the blockchain application
+
+During development it is both necessary and convenient to have a rather centralized network with only one node connected.
+
+Once the development has reached a proof of concept or a usable product stage, it will be necessary to add more nodes to the network, and hence offer other potential users the opportunity to join the newly created blockchain network.
+
+This is how the setup looks during development:
+
+image:launch-seed_node.png[One node diagram]
+
+The next step is to create one <<seed_node, seed node>> and to add one client node to the network that communicates with the seed node:
+
+image:launch-2_nodes.png[More nodes diagram]
+
+As shown in the diagram, the plan is to connect a second node with public API, which has forging disabled.
+
+With a setup like this, the client application communicates through the HTTP API with the new node.
+The seed node communicates at the same time with the new node via WebSockets.
+This way the seed node gets informed each time a new transaction is sent to the network.
+
+TIP: This is a good way to test out, if the WebSocket connection between the seed node and the new node is established.
+
+[[seed_node]]
+== Seed node
+
+=== What is a seed node?
+
+The seed node is a node that is specified in the config of the node application under `modules.network.seedPeers`.
+Beside this, the seed node is a normal node like the others.
+
+Newly connected nodes will use the seed peerts in their config as a start point to discover the rest of the network.
+This is why it must be ensured, that the seed nodes are always reachable and connected to the network.
+
+=== How to set up a seed node
+
+When setting up a new node, each new node will firstly connect to the seed nodes when booting for the first time.
+Starting from the seed node, a new node will discover the rest of the network by requesting their peer list; followed by the peer lists of the newly discovered peers and so on.
+
+Furthermore, it is also convenient to have the genesis delegates actively forging on the seed node, in case the network does not yet have enough real delegates who can take the forging spots.
+
+[TIP]
+====
+The exposed `configDevnet` object is a good template for the config of a seed node, as it already includes the credentials from all of the 101 genesis delegates and automatically enables forging for all of them.
+//@TODO
+//Check out the xref:{}[Best practices: seed nodes] section for further recommendations how to configure a seed node.
+====
+
+== Create new config
+
+Exchange the `configDevnet` object that was passed to the node during the development with the customized version.
+
+[TIP]
+====
+It's recommended to create a config object with all the options that are different to the default config options.
+To check the default config options, go to the xref:configuration.adoc[configuration page] or check it directly in the code.
+Default options for modules: +
+`framework/src/modules/MODULE_NAME/defaults/config.js`. +
+Default options for components: +
+`framework/src/components/COMPONENT_NAME/defaults/config.js`.
+====
+
+Most of the configurations can stay the same to what is defined in the default config options.
+However, please note that there is one option that should be updated: **The seed node(s)**.
+
+So to add `1.2.3.4` as a seed node, add an object (or several objects) with the 2 properties `ip` and `wsPort` to the `seedPeers` list as displayed below:
+
+[source,js]
+----
+const app = new Application(genesisBlockDevnet, {
+    modules: {
+        network: {
+            seedPeers: [{ ip: '1.2.3.4', wsPort: 5000}]
+        }
+    }
+});
+----
+
+[NOTE]
+====
+By default, the forging delegates list in the config is empty. +
+This is intended, as the genesis delegates are only needed to set up a working dev environment.
+Subsequently it is recommended that the `delegates` list is empty, so that the users can input their own credentials in the case whereby they wish to activate forging on their node.
+For example, for a proof of concept, in order to provide the already activated forging delegates inside the config; please use the devnet genesis delegates in https://github.com/LiskHQ/lisk-sdk/blob/development/sdk/src/samples/config_devnet.json[configDevnet] or create your own genesis delegates and add them to the config.
+====
+
+== Publish the node application
+
+=== Publish source code
+
+Add the code for the customized `node` application (including the custom transaction types), to a public code repository.
+For example, on  https://github.com/[Github] or https://about.gitlab.com/[Gitlab].
+
+This provides everyone the opportunity to download the application and deploy it on a server in order to connect with the network.
+
+//TODO: The following files should be included in the distribution
+
+=== Create distribution
+
+== Add nodes
+
+Add a second node to the network.
+
+This new node will not have any forging activated, it is only required to talk via the API with the `client` app, and over the websocket connection to the seed node.
+Therefore, at present the seed node is the only node at this point that can forge new blocks.
+This is due to the fact that all the genesis delegates are actively forging on it.
+
+TIP: How to replace the genesis delegates with real delegates is covered in the next section <<replace-delegates, Replace dummy delegates with real ones>>.
+
+To set up the node, install the node application on a new server.
+Just follow the instructions of the README, that was created in the step before.
+
+IMPORTANT: Do not forget to open the corresponding xref:configuration.adoc#_ports[ports] for HTTP and WS communication!
+
+Once a new node is set up, update the API endpoint in the https://github.com/LiskHQ/lisk-sdk-examples/blob/development/transport/client/app.js#L14[client] app, to target the new node:
+
+.Snippet of client/app.js
+[source,js]
+----
+// Constants
+const API_BASEURL = 'http://134.209.234.204:4000'; <1>
+----
+
+<1> Add the correct IP and port here to the newly added node.
+
+If the client app has the API endpoint of the new node, it will receive transactions from the client.
+The transactions will be visible in the logs (if log level is at least `info`).
+
+.Logs of newly added node
+image:synching_node.png[Synching non forging node]
+
+In the logs shown above it can be seen that the seed node was already 3 blocks ahead when the second node was started.
+It first synchronizes the missing blocks up to the current height and then broadcasts the received transactions from the client app to the seed node, whereby the delegates can then add the transactions to blocks and forge them.
+
+These new blocks are broadcasted again to the new node, and the client app can display the data based on the API calls that it sends to the new node.
+
+.Log of the seed node with the forging genesis delegates:
+image:forging_node.png[Forging node logs]
+
+[NOTE]
+.Please be aware that broadcast errors can occur.
+====
+Sometimes errors occur when broadcasting transactions between the nodes.
+There is no cause for concern here, as the node will re-start the sync process again; and in the majority of cases it is successful on the next attempt.
+image:common-sync-issue.png[Common sync issue]
+In the above image the block at height 284 is not accepted because of an invalid block timestamp.
+As a result, also the following blocks are also discarded by the node.
+Anomalies like this can occur within the network.
+The node can usually resolve these issues on its own by starting a new sync process, whereby it requests the missing blocks from one of its' peer nodes.
+As shown in the logs above, the blocks at height 284, 285 and 286 are displayed as discarded.
+At this point the node realizes it is not in sync with the other nodes and starts the sync process.
+This can also be seen in the above logs, `Starting sync`.
+During the sync process the missing blocks are received from the peers and added to the database of the node.
+====
+
+== Explore the network
+
+// TODO: Use Lisk Desktop / Explorer to explore the new blockchain network.
+
+[#replace-delegates]
+== Replace dummy delegates with real ones
+
+During development of the blockchain application, one node was enabled for forging for all 101 genesis delegates.
+
+After the release of the first version of the blockchain application, it is necessary that real delegates take the forging slots of the genesis delegates.
+
+NOTE: The network will become stable and decentralized for the first time when at least 51 real delegates are actively forging in the network.
+
+To join the network as a new delegate, follow the steps listed below:
+
+. Create an own, private account on the network
+.. xref:lisk-commander/user-guide/commands.adoc#_create_account[Generate the account credentials]
+.. Send some funds(at least enough to register as a delegate) to the newly generated address.
+. Register a delegate
+.. xref:lisk-commander/user-guide/commands.adoc#_delegate_registration_transaction[Generate the delegate registration object].
+.. Broadcast the delegate registration to the network:
++
+[source,bash]
+----
+export SECRET_PASSPHRASE=123456 <1>
+lisk transaction:create:delegate lightcurve -p=env:SECRET_PASSPHRASE | tee >(curl -X POST -H "Content-Type: application/json" -d @- 1.2.3.4:4000/api/transactions) <2>
+----
+<1> Replace `123456` with the secret passphrase.
+<2> Replace `1.2.3.4` with the IP of a node with a public API.
++
+. Set up a node: Follow the steps in the `README` file of the app, (alternatively read the Lisk tutorials, as this process is basically identical).
+. xref:{v_core}@lisk-core::configuration.adoc#_enabledisable_forging[Enable forging for the newly created delegate on the node]
+. People become convinced to vote for a delegate in the network, if the delegate has the following attributes:
+** Is helpful
+** Is accountable
+** Is sharing rewards
+** Is offering useful services or tools
+
+image:3-nodes.png[3 nodes diagram]
+
+[NOTE]
+====
+How to replace a genesis delegate
+If a delegate joins the network on a very early stage, he or she will probably replace one of the genesis delegates.
+The genesis delegates are voted in by the genesis account which holds all the tokens on the initial network start.
+The genesis account votes with these tokens for the genesis delegates, in order to stabilize the network during the development.
+Therefore, when replacing a genesis delegate, the new delegate will need to convince the person who controls the genesis account of the network; which will be most likely the app developer.
+Later, when the majority of the existing tokens are distributed among the different private accounts, the new delegate needs to gain the trust of the community in order to be voted into a forging position.
+====

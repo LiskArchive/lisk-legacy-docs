@@ -3,14 +3,16 @@ Mona Bärenfänger <mona@lightcurve.io>
 :toc:
 :imagesdir: ../../assets/images
 :url_angular: https://angular.io/
-:url_express: https://expressjs.com/
-:url_express_routing: https://expressjs.com/en/guide/routing.html
 :url_github_hello: https://github.com/LiskHQ/lisk-sdk-examples/tree/development/hello_world
 :url_github_sdk: https://github.com/LiskHQ/lisk-sdk
 :url_github_sdk_examples: https://github.com/LiskHQ/lisk-sdk-examples
-:url_pug: https://pugjs.org/
+:url_medium_functional_vs_class: https://medium.com/@Zwenza/functional-vs-class-components-in-react-231e3fbd7108
 :url_react: https://reactjs.org/
+:url_react_app: https://create-react-app.dev/docs/getting-started/
+:url_react_routing: https://create-react-app.dev/docs/adding-a-router
 :url_vue: https://vuejs.org/
+
+:url_setup: setup.adoc
 
 
 This guide describes how to create a frontend or client app that interacts with a Lisk blockchain network.
@@ -27,7 +29,7 @@ Some popular frameworks for developing apps are for example:
 * {url_react}[React]
 * {url_vue}[Vue]
 
-NOTE: This guide uses {url_pug}[Pug](aka Jade) to create a frontend application.
+NOTE: This guide builds a frontend based on the {url_react_app}[Create React App] guide to create a frontend application.
 
 == Create project structure
 
@@ -35,215 +37,269 @@ TIP: See the full code example of {url_github_hello}[Hello World at GitHub].
 
 .Structure of the Hello World app
 ....
+$ tree -I 'node_modules|client/node_modules|react-client/node_modules'
 .
 ├── README.md
-├── client
-│   ├── accounts.json
-│   ├── app.js
+├── index.js
+├── package-lock.json
+├── package.json
+├── react-client
+│   ├── README.md
 │   ├── package-lock.json
 │   ├── package.json
-│   ├── print_sendable_hello-world.js
 │   ├── public
-│   │   ├── basiercircle-bold.woff
-│   │   ├── basiercircle-regular.woff
-│   │   ├── basiercircle-semibold.woff
-│   │   ├── favicon-32x32.png
-│   │   └── lisk-logo-light.svg
-│   └── views
-│       ├── accounts.pug
-│       ├── blocks.pug
-│       ├── create.pug
-│       ├── css
-│       │   ├── base.css
-│       │   └── header.css
-│       ├── faucet.pug
-│       ├── hello-accounts.pug
-│       ├── hello-transactions.pug
-│       ├── index.pug
-│       ├── payload.pug
-│       ├── post-hello.pug
-│       ├── transactions.pug
-│       └── transfer.pug
-├── hello_transaction.js
-├── index.js
-├── logs
-│   ├── devnet
-│   │   ├── lisk.log
-│   │   └── lisk_db.log
-│   └── lisk_db.log
-├── package-lock.json
-└── package.json
+│   │   ├── favicon.ico
+│   │   ├── index.html
+│   │   ├── logo192.png
+│   │   ├── logo512.png
+│   │   ├── manifest.json
+│   │   └── robots.txt
+│   ├── src
+│   │   ├── App.css
+│   │   ├── accounts.json
+│   │   ├── api.js
+│   │   ├── assets
+│   │   ├── components
+│   │   │   ├── Accounts.js
+│   │   │   ├── App.js
+│   │   │   ├── Blocks.js
+│   │   │   ├── Faucet.js
+│   │   │   ├── Hello.js
+│   │   │   ├── HelloAccounts.js
+│   │   │   ├── HelloTransactions.js
+│   │   │   ├── NewAccount.js
+│   │   │   ├── Transactions.js
+│   │   │   └── Transfer.js
+│   │   ├── index.css
+│   │   ├── index.js
+│   │   └── logo.svg
+│   └── yarn.lock
+└── transactions
+    ├── hello_transaction.js
+    ├── index.js
+    └── package.json
 ....
 
-=== Node project
+=== Install dependencies
 
-Clone the {url_github_sdk_examples}[lisk-sdk-examples on GitHub] and navigate into `hello_world/client` folder.
+Clone the {url_github_sdk_examples}[lisk-sdk-examples on GitHub] and navigate into `hello_world` folder.
 
-Or create a new client app manually.
-Note, that this client app is relying on a node with a reachable API, so it might be needed to adjust `API_BASEURL`.
-In order to process custom transactions, it is needed to require these transaction in the client app as well.
+First make sure, you have all xref:{url_setup}[Lisk SDK dependencies] installed, and have a fresh database `lisk_dev`.
 
+Next, install all dependencies for the `hello_world` app and the `react-client` application.
+
+.Install dependencies
 [source,bash]
 ----
-mkdir client
-cd client
-npm init --yes
-npm i @liskhq/lisk-transactions @liskhq/lisk-cryptography @liskhq/lisk-passphrase @liskhq/lisk-api-client body-parser express pug
-mkdir views
-mkdir views/css
-mkdir public
+pwd
+# ~/lisk-sdk-examples/hello_world
+npm i
+cd react-client
+npm i
 ----
 
-=== Views
+=== React App
 
-All `.pug` files are stored inside of the `views/` folder.
-They create the different HTML views for the pages of the client app.
+The react App starts from
 
-The main view in the Hello client app is `index.pug`. All <<pages, other views>> are only partials and extend from the `index.pug` view.
-
-[[index_pug]]
-.views/index.pug
-[source,jade]
+[[indexjs]]
+.index.js
+[source,hljs]
 ----
-doctype html
-html(lang="en")
-    head
-        title Hello Lisk
-        link(href='favicon-32x32.png', rel='icon', type='image/png')
-        link(href='https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css', rel='stylesheet')
-        link(href='https://cdnjs.cloudflare.com/ajax/libs/prism/1.17.1/themes/prism.min.css', rel='stylesheet')
-        script(src='https://code.jquery.com/jquery-3.3.1.slim.min.js')
-        script(src='https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js')
-        script(src='https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js')
-        script(src='https://cdnjs.cloudflare.com/ajax/libs/prism/1.17.1/components/prism-core.min.js')
-        script(src='https://cdnjs.cloudflare.com/ajax/libs/prism/1.17.1/plugins/autoloader/prism-autoloader.min.js')
-        style
-            include css/base.css
-            include css/header.css
+import React from 'react';
+import ReactDOM from 'react-dom';
+import 'bootstrap/dist/css/bootstrap.css';
+import './index.css';
+import App from './components/App';
+import * as serviceWorker from './serviceWorker';
 
-        body
-        block menu
-            header.header
-                nav.navbar
-                    div.navbar-content
-                        div.navbar-brand
-                            a(href='/').lisk-logo
-                            span.nav-brand__name-area
-                                strong.nav-brand__name-area__title Hello
-                        div#topbar-nav.navbar-menu
-                            div.navbar-end
-                                a(href='/create').navbar-item Create Credentials
-                                a(href='/faucet').navbar-item Faucet
-                                a(href='/post-hello').navbar-item Send Hello
-                                a(href='/transfer').navbar-item Send Transfer
-                                a.divider-vertical
-                                a(href='/accounts').navbar-item Accounts
-                                a(href='/hello-accounts').navbar-item Hello Accounts
-                                a(href='/blocks').navbar-item Blocks
-                                a(href='/transactions').navbar-item Transactions
-                                a(href='/hello-transactions').navbar-item Hello Tx
 
-        .container
-            block content
-                .jumbotron
-                    h1 Hello Lisk!
-                    p.lead
-                        | A basic frontend for blockchain application uilt with the Lisk SDK.
+ReactDOM.render(<App />, document.getElementById('root'));
+
+// If you want your app to work offline and load faster, you can change
+// unregister() to register() below. Note this comes with some pitfalls.
+// Learn more about service workers: https://bit.ly/CRA-PWA
+serviceWorker.unregister();
+
 ----
 
-This will create the following start page for the app:
+[[indexhtml]]
+.public/index.html
+[source,html]
+----
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta
+      name="description"
+      content="Web site created using create-react-app"
+    />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <!--
+      manifest.json provides metadata used when your web app is installed on a
+      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
+    -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <!--
+      Notice the use of %PUBLIC_URL% in the tags above.
+      It will be replaced with the URL of the `public` folder during the build.
+      Only files inside the `public` folder can be referenced from the HTML.
+
+      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
+      work correctly both with client-side routing and a non-root public URL.
+      Learn how to configure a non-root public URL by running `npm run build`.
+    -->
+    <title>React App</title>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+    <!--
+      This HTML file is a template.
+      If you open it directly in the browser, you will see an empty page.
+
+      You can add webfonts, meta tags, or analytics to this file.
+      The build step will place the bundled scripts into the <body> tag.
+
+      To begin the development, run `npm start` or `yarn start`.
+      To create a production bundle, use `npm run build` or `yarn build`.
+    -->
+  </body>
+</html>
+----
+
+The main component is `App.js`. It imports <<pages, all other components>> and defines.
+
+[[appjs]]
+.components/App.js
+[source,hljs]
+----
+import React from "react";
+import {
+    BrowserRouter as Router,
+    Switch,
+    Route,
+    Link
+} from "react-router-dom";
+import NewAccount from './NewAccount';
+import Accounts from './Accounts';
+import HelloAccounts from './HelloAccounts';
+import Faucet from './Faucet';
+import SendTransfer from './Transfer';
+import SendHello from './Hello';
+import Transactions from './Transactions';
+import HelloTransactions from './HelloTransactions';
+import Blocks from './Blocks';
+
+// The pages of this site are rendered dynamically
+// in the browser (not server rendered).
+
+export default function App() {
+    return (
+        <Router>
+            <div>
+                <ul>
+                    <li><Link to="/">Home</Link></li>
+                    <hr />
+                    <h3> Interact </h3>
+                    <li><Link to="/new-account">New Account</Link></li>
+                    <li><Link to="/faucet">Faucet</Link></li>
+                    <li><Link to="/send-transfer">Send tokens</Link></li>
+                    <li><Link to="/send-hello">Send Hello</Link></li>
+                    <hr />
+                    <h3> Explore </h3>
+                    <li><Link to="/accounts">Accounts</Link></li>
+                    <li><Link to="/hello-accounts">Hello accounts</Link></li>
+                    <li><Link to="/transactions">Transactions</Link></li>
+                    <li><Link to="/hello-transactions">Hello transactions</Link></li>
+                    <li><Link to="/blocks">Blocks</Link></li>
+                </ul>
+
+                <hr />
+
+                {/*
+                  A <Switch> looks through all its children <Route>
+                  elements and renders the first one whose path
+                  matches the current URL. Use a <Switch> any time
+                  you have multiple routes, but you want only one
+                  of them to render at a time
+                */}
+                <Switch>
+                    <Route exact path="/">
+                        <Home />
+                    </Route>
+                    <Route path="/new-account">
+                        <NewAccount />
+                    </Route>
+                    <Route path="/faucet">
+                        <Faucet />
+                    </Route>
+                    <Route path="/send-transfer">
+                        <SendTransfer />
+                    </Route>
+                    <Route path="/send-hello">
+                        <SendHello />
+                    </Route>
+                    <Route path="/accounts">
+                        <Accounts />
+                    </Route>
+                    <Route path="/hello-accounts">
+                        <HelloAccounts />
+                    </Route>
+                    <Route path="/blocks">
+                        <Blocks />
+                    </Route>
+                    <Route path="/transactions">
+                        <Transactions />
+                    </Route>
+                    <Route path="/hello-transactions">
+                        <HelloTransactions />
+                    </Route>
+                </Switch>
+            </div>
+        </Router>
+    );
+}
+
+/* Functional components */
+
+function Home() {
+    return (
+        <div>
+            <h2>Hello Lisk!</h2>
+            <p>A simple frontend for blockchain applications built with the Lisk SDK.</p>
+        </div>
+    );
+}
+----
+
+The `Home` compomnent, which is defined as function at the bottom of `App.js`, is rendered as start page:
 
 image:hello-index.png[]
 
-=== JavaScript
+[TIP]
+====
+It is both possible to define components as functions or as classes.
 
-Create a file that will contain the JavaScript code for the client.
-We call it `app.js` in this example.
+Although classes give more flexibility, functional components can be convenient, for example because less code is needed to write them.
+For reference, see also {url_medium_functional_vs_class}[Functional vs Class-Components in React].
+====
 
-In the first lines of `app.js`, all necessary dependencies are required.
+=== API client
 
-Next, the Lisk API client and the {url_express}[Express] server are initialized and configured.
-
-Next, the {url_express_routing}[route] for the index page is defined.
-
-The routes for the other views are defined <<pages, in the next section>>.
-They all need to be added to the `/* Routes */` section.
-
-.app.js
-[source,js]
+.react-client/src/api.js
+[soucre,js]
 ----
-const express = require('express');
-const bodyParser = require('body-parser');
-const accounts = require('./accounts.json');
-const { APIClient } = require('@liskhq/lisk-api-client');
-const HelloTransaction = require('../hello_transaction');
-const transactions = require('@liskhq/lisk-transactions');
-const cryptography = require('@liskhq/lisk-cryptography');
-const { Mnemonic } = require('@liskhq/lisk-passphrase');
+import { APIClient } from '@liskhq/lisk-api-client';
 
-const networkIdentifier = cryptography.getNetworkIdentifier(
-    "23ce0366ef0a14a91e5fd4b1591fc880ffbef9d988ff8bebf8f3666b0c09597d",
-    "Lisk",
-);
-
-// Constants
 const API_BASEURL = 'http://localhost:4000';
-const PORT = 3000;
 
-// Initialize
-const app = express();
-const api = new APIClient([API_BASEURL]);
-
-app.locals.payload = {
-    tx: null,
-    res: null,
-};
-
-// Configure Express
-app.set('view engine', 'pug');
-app.use(express.static('public'));
-
-// parse application/json
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-
-/* Utils */
-const dateToLiskEpochTimestamp = date => (
-    Math.floor(new Date(date).getTime() / 1000) - Math.floor(new Date(Date.UTC(2016, 4, 24, 17, 0, 0, 0)).getTime() / 1000)
-);
-
-/* Routes */
-app.get('/', (req, res) => {
-    res.render('index');
-});
-
-/* Start */
-app.listen(PORT, () => console.info(`Explorer app listening on port ${PORT}!`));
+export const api = new APIClient([API_BASEURL]);
 ----
-
-=== Styles
-
-Create an intuitive and beautiful design for the app.
-
-There are 2 different ways to include CSS styles in the client:
-
-NOTE: The "Hello Lisk" client app uses CDN and local CSS styles in combination
-
-==== CDN
-
-To start quickly, it is possible to include external CSS via a CDN(= Content Delivery Network).
-
-<<index_pug, The CDN styles are required in `views/index.pug`>>.
-
-==== CSS files
-
-Alternatively or additionally to the CDN, it is possible to require local CSS files.
-
-Include styles by adding `.css` files inside the `views/css` directory.
-
-Then, require the `.css` files in the <<index_pug, pug index file>>.
-
-TIP: To prevent unforeseen changes or complete loss of styles due to changes in the CDN, it is recommended to use local CSS files.
 
 [[pages]]
 == Create pages
@@ -254,180 +310,234 @@ Implement the logic and structure of the different pages of the client app.
 
 image:hello-new_account.png[]
 
-.client/views/create.pug
-[source,jade]
+.react-client/src/components/NewAccount.pug
+[source,hljs]
 ----
-extends index.pug
+import React, { Component } from 'react';
+import * as cryptography from '@liskhq/lisk-cryptography';
+import { Mnemonic } from '@liskhq/lisk-passphrase';
 
-block content
-    h2 Create a new account
-
-    p
-        | Refresh page to get new Credentials
-
-    pre
-        code(class='language-json')= JSON.stringify(packetCredentials, null, 2)
-----
-
-.client/app.js
-[source,js]
-----
-app.get('/create', async(req, res) => {
-    const getPacketCredentials = () => {
-        const passphrase = Mnemonic.generateMnemonic();
-        const keys = cryptography.getPrivateAndPublicKeyFromPassphrase(
-            passphrase
-        );
-        const credentials = {
-            address: cryptography.getAddressFromPublicKey(keys.publicKey),
-            passphrase: passphrase,
-            publicKey: keys.publicKey,
-            privateKey: keys.privateKey
-        };
-        return credentials;
+const newCredentials = () => {
+    const passphrase = Mnemonic.generateMnemonic();
+    const keys = cryptography.getPrivateAndPublicKeyFromPassphrase(
+        passphrase
+    );
+    const credentials = {
+        address: cryptography.getAddressFromPublicKey(keys.publicKey),
+        passphrase: passphrase,
+        publicKey: keys.publicKey,
+        privateKey: keys.privateKey
     };
+    return credentials;
+};
 
-    const packetCredentials = getPacketCredentials();
-    res.render('create', { packetCredentials });
-});
+class NewAccount extends Component {
+
+    constructor(props) {
+        super(props);
+
+        this.state = { credentials: newCredentials() };
+    }
+
+    render() {
+        return (
+            <div>
+                <h2>Create new account</h2>
+                <p>Refresh page to get new credentials.</p>
+                <pre>{JSON.stringify(this.state.credentials, null, 2)}</pre>
+            </div>
+        );
+    }
+}
+export default NewAccount;
 ----
 
 === Faucet
 
 image:hello-faucet.png[]
 
-.client/views/faucet.pug
-[source,jade]
+.react-client/src/components/Faucet.js
+[source,hljs]
 ----
-extends index.pug
+import React, { Component } from 'react';
+import { api } from '../api.js';
+import accounts from '../accounts.json';
+import{ TransferTransaction, utils } from '@liskhq/lisk-transactions';
+import * as cryptography from '@liskhq/lisk-cryptography';
 
-block content
-    h2 Faucet
-    p
-        | Send funds to account from Genesis
+const networkIdentifier = cryptography.getNetworkIdentifier(
+    "23ce0366ef0a14a91e5fd4b1591fc880ffbef9d988ff8bebf8f3666b0c09597d",
+    "Lisk",
+);
 
-    form(method='POST' action='/faucet')
-        div.form-group
-            label(for='address') Address:
-            input.form-control(type='text', placeholder='address' name='address' id='address')
-        div.form-group
-            label(for='amount') Amount (LSK):
-            input#amount.form-control(type='text', placeholder='200' name='amount')
-        button.btn.btn-warning(type='submit') Fund
-----
+class Faucet extends Component {
 
-.client/app.js
-[source,js]
-----
-app.post('/faucet', function (req, res) {
-    const address = req.body.address;
-    const amount = req.body.amount;
+    constructor(props) {
+        super(props);
 
-    const fundTransaction = new transactions.TransferTransaction({
-        asset: {
-            recipientId: address,
-            amount: transactions.utils.convertLSKToBeddows(amount),
-        },
-        networkIdentifier: networkIdentifier,
-        timestamp: dateToLiskEpochTimestamp(new Date()),
-    });
-
-    //The TransferTransaction is signed by the Genesis account
-    fundTransaction.sign(accounts.genesis.passphrase);
-    api.transactions.broadcast(fundTransaction.toJSON()).then(response => {
-        res.app.locals.payload = {
-            res: response.data,
-            tx: fundTransaction.toJSON(),
+        this.state = {
+            address: '',
+            amount: '',
+            response: { meta: { status: false }},
+            transaction: {},
         };
-        console.log("++++++++++++++++ API Response +++++++++++++++++");
-        console.log(response.data);
-        console.log("++++++++++++++++ Transaction Payload +++++++++++++++++");
-        console.log(fundTransaction.stringify());
-        console.log("++++++++++++++++ End Script +++++++++++++++++");
-        res.redirect('/payload');
-    }).catch(err => {
-        console.log(JSON.stringify(err.errors, null, 2));
-        res.app.locals.payload = {
-            res: err,
-            tx: fundTransaction.toJSON(),
-        };
-        res.redirect('/payload');
-    });
-});
+    }
+
+    handleChange = (event) => {
+        let nam = event.target.name;
+        let val = event.target.value;
+        this.setState({[nam]: val});
+    };
+
+    handleSubmit = (event) => {
+        event.preventDefault();
+
+        const fundTransaction = new TransferTransaction({
+            asset: {
+                recipientId: this.state.address,
+                amount: utils.convertLSKToBeddows(this.state.amount),
+            },
+            networkIdentifier: networkIdentifier,
+            timestamp: utils.getTimeFromBlockchainEpoch(new Date()),
+        });
+
+        //The TransferTransaction is signed by the Genesis account
+        fundTransaction.sign(accounts.genesis.passphrase);
+        api.transactions.broadcast(fundTransaction.toJSON()).then(response => {
+            this.setState({response:response});
+            this.setState({transaction:fundTransaction});
+        }).catch(err => {
+            console.log(JSON.stringify(err.errors, null, 2));
+        });
+    }
+
+    render() {
+        return (
+            <div>
+                <h2>Faucet</h2>
+                <p>The faucet transfers tokens from the genesis account to another.</p>
+                <form onSubmit={this.handleSubmit}>
+                    <label>
+                        Address:
+                        <input type="text" id="address" name="address" onChange={this.handleChange} />
+                    </label>
+                    <label>
+                        Amount (1 = 10^8 tokens):
+                        <input type="text" id="amount" name="amount" onChange={this.handleChange} />
+                    </label>
+                    <input type="submit" value="Submit" />
+                </form>
+                {this.state.response.meta.status &&
+                    <div>
+                        <pre>Transaction: {JSON.stringify(this.state.transaction, null, 2)}</pre>
+                        <p>Response: {JSON.stringify(this.state.response, null, 2)}</p>
+                    </div>
+                }
+            </div>
+        );
+    }
+}
+export default Faucet;
 ----
 
 === Send default transaction
 
 image:hello-transfer.png[]
 
-.client/views/transfer.pug
-[source,jade]
+.react-client/src/components/Transfer.js
+[source,hljs]
 ----
-extends index.pug
+import React, { Component } from 'react';
+import { api } from '../api.js';
+import{ TransferTransaction, utils } from '@liskhq/lisk-transactions';
+import * as cryptography from '@liskhq/lisk-cryptography';
 
-block content
-    h2 Transfer tokens
-    p
-        | Send funds from one account to another.
+const networkIdentifier = cryptography.getNetworkIdentifier(
+    "23ce0366ef0a14a91e5fd4b1591fc880ffbef9d988ff8bebf8f3666b0c09597d",
+    "Lisk",
+);
 
-    form(method='POST' action='/transfer')
-        div.form-group
-            label(for='address') Address:
-            input.form-control(type='text', placeholder='address' name='address' id='address')
-        div.form-group
-            label(for='amount') Amount (LSK):
-            input#amount.form-control(type='text', placeholder='200' name='amount')
-        div.form-group
-            label(for='passphrase') Passphrase:
-            input#passphrase.form-control(type='text', placeholder='coach pupil shock error defense outdoor tube love action exist search idea' name='passphrase')
-        button.btn.btn-warning(type='submit') Send
-----
+class Transfer extends Component {
 
-.client/app.js
-[source,js]
-----
-app.post('/transfer', function (req, res) {
-    const address = req.body.address;
-    const amount = req.body.amount;
+    constructor(props) {
+        super(props);
 
-    const transferTransaction = new transactions.TransferTransaction({
-        asset: {
-            recipientId: address,
-            amount: transactions.utils.convertLSKToBeddows(amount),
-        },
-        networkIdentifier: networkIdentifier,
-        timestamp: dateToLiskEpochTimestamp(new Date()),
-    });
-
-    transferTransaction.sign(req.body.passphrase);
-    api.transactions.broadcast(transferTransaction.toJSON()).then(response => {
-        res.app.locals.payload = {
-            res: response.data,
-            tx: transferTransaction.toJSON(),
+        this.state = {
+            address: '',
+            amount: '',
+            passphrase: '',
+            response: { meta: { status: false }},
+            transaction: {},
         };
-        console.log("++++++++++++++++ API Response +++++++++++++++++");
-        console.log(response.data);
-        console.log("++++++++++++++++ Transaction Payload +++++++++++++++++");
-        console.log(transferTransaction.stringify());
-        console.log("++++++++++++++++ End Script +++++++++++++++++");
-        res.redirect('/payload');
-    }).catch(err => {
-        console.log(JSON.stringify(err.errors, null, 2));
-        res.app.locals.payload = {
-            res: err,
-            tx: transferTransaction.toJSON(),
-        };
-        res.redirect('/payload');
-    });
-});
+    }
+
+    handleChange = (event) => {
+        let nam = event.target.name;
+        let val = event.target.value;
+        this.setState({[nam]: val});
+    };
+
+    handleSubmit = (event) => {
+        event.preventDefault();
+
+        const transferTransaction = new TransferTransaction({
+            asset: {
+                recipientId: this.state.address,
+                amount: utils.convertLSKToBeddows(this.state.amount),
+            },
+            networkIdentifier: networkIdentifier,
+            //timestamp: dateToLiskEpochTimestamp(new Date()),
+            timestamp: utils.getTimeFromBlockchainEpoch(new Date()),
+        });
+
+        transferTransaction.sign(this.state.passphrase);
+        api.transactions.broadcast(transferTransaction.toJSON()).then(response => {
+            this.setState({response:response});
+            this.setState({transaction:transferTransaction});
+        }).catch(err => {
+            console.log(JSON.stringify(err.errors, null, 2));
+        });
+    }
+
+    render() {
+        return (
+            <div>
+                <h2>Transfer</h2>
+                <p>Send tokens from one account to another.</p>
+                <form onSubmit={this.handleSubmit}>
+                    <label>
+                        Recipient:
+                        <input type="text" id="address" name="address" onChange={this.handleChange} />
+                    </label>
+                    <label>
+                        Amount (1 = 10^8 tokens):
+                        <input type="text" id="amount" name="amount" onChange={this.handleChange} />
+                    </label>
+                    <label>
+                        Passphrase:
+                        <input type="text" id="passphrase" name="passphrase" onChange={this.handleChange} />
+                    </label>
+                    <input type="submit" value="Submit" />
+                </form>
+                {this.state.response.meta.status &&
+                <div>
+                    <pre>Transaction: {JSON.stringify(this.state.transaction, null, 2)}</pre>
+                    <p>Response: {JSON.stringify(this.state.response, null, 2)}</p>
+                </div>
+                }
+            </div>
+        );
+    }
+}
+export default Transfer;
 ----
 
 === Send custom transaction
 
 image:hello-hello.png[]
 
-.client/views/post-hello.pug
-[source,jade]
+.react-client/src/components/Hello.js
+[source,hljs]
 ----
 extends index.pug
 
@@ -444,50 +554,11 @@ block content
         button.btn.btn-warning(type='submit') Send
 ----
 
-.client/app.js
-[source,js]
-----
-app.post('/post-hello', function (req, res) {
-    const helloString = req.body.hello;
-    const passphrase = req.body.passphrase;
-
-    const helloTransaction = new HelloTransaction({
-        asset: {
-            hello: helloString,
-        },
-        networkIdentifier: networkIdentifier,
-        timestamp: dateToLiskEpochTimestamp(new Date()),
-    });
-
-    helloTransaction.sign(passphrase);
-
-    api.transactions.broadcast(helloTransaction.toJSON()).then(response => {
-        res.app.locals.payload = {
-            res: response.data,
-            tx: helloTransaction.toJSON(),
-        };
-        console.log("++++++++++++++++ API Response +++++++++++++++++");
-        console.log(response.data);
-        console.log("++++++++++++++++ Transaction Payload +++++++++++++++++");
-        console.log(helloTransaction.stringify());
-        console.log("++++++++++++++++ End Script +++++++++++++++++");
-        res.redirect('/payload');
-    }).catch(err => {
-        console.log(JSON.stringify(err.errors, null, 2));
-        res.app.locals.payload = {
-            res: err,
-            tx: helloTransaction.toJSON(),
-        };
-        res.redirect('/payload');
-    });
-});;
-----
-
 === Get all blocks
 
 image:hello-blocks.png[]
 
-.client/views/blocks.pug
+.react-client/src/components/Blocks.pug
 [source,jade]
 ----
 extends index.pug
@@ -511,35 +582,12 @@ block content
                         td= JSON.stringify(block, null, 2)
 ----
 
-.client/app.js
-[source,js]
-----
-app.get('/blocks', async(req, res) => {
-    let offset = 0;
-    let blocks = [];
-    const blocksArray = [];
-
-    do {
-        const retrievedBlocks = await api.blocks.get({ limit: 100, offset });
-        blocks = retrievedBlocks.data;
-        blocksArray.push(...blocks);
-
-        if (blocks.length === 100) {
-            offset += 100;
-        }
-    } while (blocks.length === 100);
-
-
-    res.render('blocks', { blocks: blocksArray });
-});
-----
-
 === Get all transactions
 
 image:hello-transactions.png[]
 
-.client/views/transactions.pug
-[source,jade]
+.react-client/src/components/Transactions.pug
+[source,hljs]
 ----
 extends index.pug
 
@@ -560,45 +608,14 @@ block content
                         td= tx.id
                         td= tx.height
                         td= JSON.stringify(tx, null, 2)
-----
-
-.client/app.js
-[source,js]
-----
-app.get('/transactions', async(req, res) => {
-    let offset = 0;
-    let txs = [];
-    const transactionsArray = [];
-
-    do {
-        const retrievedTransactions = await api.transactions.get({ limit: 100, offset });
-        txs = retrievedTransactions.data;
-        transactionsArray.push(...txs);
-
-        if (txs.length === 100) {
-            offset += 100;
-        }
-    } while (txs.length === 100);
-
-    // Sort desc
-    transactionsArray.sort((a, b) => {
-        if (a.timestamp > b.timestamp) return -1;
-
-        if (a.timestamp < b.timestamp) return 1;
-
-        if (a.timestamp === b.timestamp) return 0;
-    });
-
-    res.render('transactions', { transactions: transactionsArray });
-});
 ----
 
 === Get transactions by type
 
 image:hello-hello_transactions.png[]
 
-.client/views/hello-transactions.pug
-[source,jade]
+.react-client/src/components/HelloTransactions.js
+[source,hljs]
 ----
 extends index.pug
 
@@ -621,31 +638,12 @@ block content
                         td= JSON.stringify(tx, null, 2)
 ----
 
-.client/app.js
-[source,js]
-----
-app.get('/hello-transactions', async(req, res) => {
-    const { data: transactions } = await api.transactions.get({ type: HelloTransaction.TYPE });
-
-    // Sort desc
-    transactions.sort((a, b) => {
-        if (a.timestamp > b.timestamp) return -1;
-
-        if (a.timestamp < b.timestamp) return 1;
-
-        if (a.timestamp === b.timestamp) return 0;
-    });
-
-    res.render('hello-transactions', { transactions });
-});
-----
-
 === Get all account
 
 image:hello-accounts.png[]
 
-.client/views/accounts.pug
-[source,jade]
+.react-client/src/components/Accounts.js
+[source,hljs]
 ----
 extends index.pug
 
@@ -668,51 +666,14 @@ block content
                         td= account.address
                         td= account.balance
                         td= JSON.stringify(account, null, 2)
-
-----
-
-.client/app.js
-[source,js]
-----
-app.get('/accounts', async(req, res) => {
-    let offset = 0;
-    let accounts = [];
-    const accountsArray = [];
-
-    do {
-        const retrievedAccounts = await api.accounts.get({ limit: 100, offset });
-        accounts = retrievedAccounts.data;
-        accountsArray.push(...accounts);
-
-        if (accounts.length === 100) {
-            offset += 100;
-        }
-    } while (accounts.length === 100);
-
-
-    res.render('accounts', { accounts: accountsArray });
-});
-----
-
-==== Detail page for accounts
-
-image:hello-accounts_detail.png[]
-
-.client/app.js
-[source,js]
-----
-app.get('/accounts/:address', async(req, res) => {
-    const { data: accounts } = await api.accounts.get({ address: req.params.address });
-    res.render('accounts', { accounts });
-});
 ----
 
 === Get accounts based on asset data
 
 image:hello-hello_accounts.png[]
 
-.client/views/create.pug
-[source,jade]
+.react-client/src/components/HelloAccounts.js
+[source,hljs]
 ----
 extends index.pug
 
@@ -736,47 +697,25 @@ block content
                             pre= JSON.stringify(account.asset.hello, null, 2)
 ----
 
-.client/app.js
-[source,js]
-----
-app.get('/hello-accounts', async(req, res) => {
-    let offset = 0;
-    let accounts = [];
-    let accountsArray = [];
-
-    do {
-        const retrievedAccounts = await api.accounts.get({ limit: 100, offset });
-        accounts = retrievedAccounts.data;
-        accountsArray.push(...accounts);
-
-        if (accounts.length === 100) {
-            offset += 100;
-        }
-    } while (accounts.length === 100);
-
-    let assetAccounts = [];
-    for (var i = 0; i < accountsArray.length; i++) {
-        let accountAsset = accountsArray[i].asset;
-        if (accountAsset && Object.keys(accountAsset).indexOf("hello") > -1){
-            assetAccounts.push(accountsArray[i]);
-        }
-    }
-
-    res.render('hello-accounts', { accounts: assetAccounts });
-});
-----
-
-== Start the app
+== Preview in Browser
 
 To start the web server, run:
 
 [source,bash]
 ----
-node app.js
-# Explorer app listening on port 3000!
+yarn start
+# Compiled successfully!
+#
+#  You can now view react-client in the browser.
+#
+#    Local:            http://localhost:3000
+#    On Your Network:  http://192.168.178.34:3000
+#
+#  Note that the development build is not optimized.
+#  To create a production build, use yarn build.
 ----
 
-Now call http://localhost:3000 to view the client app in the browser.
+Now call `http://localhost:3000` to view the client app in the browser.
 
 With all of the above, you should now have a basic frontend for the Hello world application, that allows users to
 

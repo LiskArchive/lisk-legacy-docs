@@ -100,10 +100,10 @@ npm i
 
 === React App
 
-The react App starts from
+The react App starts from `index.js` and renders the <<appjs, App component>> inside of the body tag of <<indexhtml,index.html>>.
 
 [[indexjs]]
-.index.js
+.react-client/src/index.js
 [source,hljs]
 ----
 import React from 'react';
@@ -124,7 +124,7 @@ serviceWorker.unregister();
 ----
 
 [[indexhtml]]
-.public/index.html
+.react-client/src/public/index.html
 [source,html]
 ----
 <!DOCTYPE html>
@@ -172,10 +172,11 @@ serviceWorker.unregister();
 </html>
 ----
 
-The main component is `App.js`. It imports <<pages, all other components>> and defines.
+The main component is `App.js`.
+It imports <<pages, all other components>> and defines the {url_react_routing}[Routes] for the components.
 
 [[appjs]]
-.components/App.js
+.react-client/src/components/App.js
 [source,hljs]
 ----
 import React from "react";
@@ -291,6 +292,9 @@ For reference, see also {url_medium_functional_vs_class}[Functional vs Class-Com
 
 === API client
 
+It is recommended to define the API client in a single file, and import it where needed.
+If the API url changes in the future, it is only needed to update the `API_BASEURL`.
+
 .react-client/src/api.js
 [source,js]
 ----
@@ -301,6 +305,8 @@ const API_BASEURL = 'http://localhost:4000';
 export const api = new APIClient([API_BASEURL]);
 ----
 
+We will import the API client in the necessary components below.
+
 [[pages]]
 == Create pages
 
@@ -308,10 +314,12 @@ Implement the logic and structure of the different pages of the client app.
 
 === New account
 
+This page generates the credentials for a new account in the network.
+
 image:hello-new_account.png[]
 
 .react-client/src/components/NewAccount.pug
-[source,hljs]
+[source,jsx]
 ----
 import React, { Component } from 'react';
 import * as cryptography from '@liskhq/lisk-cryptography';
@@ -354,10 +362,16 @@ export default NewAccount;
 
 === Faucet
 
+A faucet is usually connected to a well funded account in the network, that is used as source to send funds to accounts in order to get started.
+It is therefore primary useful for Devnets or Testnets.
+
+In this example, we use the genesis account in the faucet.
+To keep it simple, we do not set any restrictions for the maximum amount and the frequency of requesting new tokens.
+
 image:hello-faucet.png[]
 
 .react-client/src/components/Faucet.js
-[source,hljs]
+[source,jsx]
 ----
 import React, { Component } from 'react';
 import { api } from '../api.js';
@@ -442,10 +456,14 @@ export default Faucet;
 
 === Send default transaction
 
+How to send a default transaction from a web page.
+
+In this example, we send a transfer transaction.
+
 image:hello-transfer.png[]
 
 .react-client/src/components/Transfer.js
-[source,hljs]
+[source,jsx]
 ----
 import React, { Component } from 'react';
 import { api } from '../api.js';
@@ -532,12 +550,16 @@ class Transfer extends Component {
 export default Transfer;
 ----
 
-=== Send custom transaction
+=== Send custom transactions
+
+How to send a custom transaction from a web page.
+
+In this example, we send the hello transaction.
 
 image:hello-hello.png[]
 
 .react-client/src/components/Hello.js
-[source,hljs]
+[source,jsx]
 ----
 import React, { Component } from 'react';
 import {
@@ -620,148 +642,14 @@ class Hello extends Component {
 export default Hello;
 ----
 
-=== Get all blocks
-
-image:hello-blocks.png[]
-
-.react-client/src/components/Blocks.js
-[source,hljs]
-----
-import React, { Component } from 'react';
-import { api } from '../api.js';
-
-class Blocks extends Component {
-
-    constructor(props) {
-        super(props);
-
-        this.state = { data: [] };
-    }
-
-    async componentDidMount() {
-        let offset = 0;
-        let blocks = [];
-        const blocksArray = [];
-
-        do {
-            const retrievedBlocks = await api.blocks.get({ limit: 100, offset });
-            blocks = retrievedBlocks.data;
-            blocksArray.push(...blocks);
-
-            if (blocks.length === 100) {
-                offset += 100;
-            }
-        } while (blocks.length === 100);
-
-        this.setState({ data: blocksArray });
-    }
-
-    render() {
-        return (
-            <div>
-                <h2>All Blocks</h2>
-                <pre>{JSON.stringify(this.state.data, null, 2)}</pre>
-            </div>
-        );
-    }
-}
-export default Blocks;
-----
-
-=== Get all transactions
-
-image:hello-transactions.png[]
-
-.react-client/src/components/Transactions.pug
-[source,hljs]
-----
-import React, { Component } from 'react';
-import { api } from '../api.js';
-
-class Transactions extends Component {
-
-    constructor(props) {
-        super(props);
-
-        this.state = { data: [] };
-    }
-
-    async componentDidMount() {
-        let offset = 0;
-        let transactions = [];
-        const transactionsArray = [];
-
-        do {
-            const retrievedTransactions = await api.transactions.get({ limit: 100, offset });
-            transactions = retrievedTransactions.data;
-            transactionsArray.push(...transactions);
-
-            if (transactions.length === 100) {
-                offset += 100;
-            }
-        } while (transactions.length === 100);
-
-        this.setState({ data: transactionsArray });
-    }
-
-    render() {
-        return (
-            <div>
-                <h2>All Transactions</h2>
-                <pre>{JSON.stringify(this.state.data, null, 2)}</pre>
-            </div>
-        );
-    }
-}
-export default Transactions;
-----
-
-=== Get transactions by type
-
-image:hello-hello_transactions.png[]
-
-.react-client/src/components/HelloTransactions.js
-[source,hljs]
-----
-import React, { Component } from 'react';
-import { api } from '../api.js';
-//import HelloTransaction from '../transactions/hello_transaction';
-import {
-    HelloTransaction,
-} from 'lisk-hello-transactions';
-
-class HelloTransactions extends Component {
-
-    constructor(props) {
-        super(props);
-
-        this.state = { data: [] };
-    }
-
-    async componentDidMount() {
-        const transactions  = await api.transactions.get({ type: HelloTransaction.TYPE });
-
-        this.setState({ data: transactions });
-    }
-
-    render() {
-        return (
-            <div>
-                <h2>All Hello Transactions</h2>
-                <pre>{JSON.stringify(this.state.data, null, 2)}</pre>
-            </div>
-        );
-    }
-}
-export default HelloTransactions;
-----
-
 === Get all accounts
+
+How to display all acounts on a web page.
 
 image:hello-accounts.png[]
 
 .react-client/src/components/Accounts.js
-[source,hljs]
+[source,jsx]
 ----
 import React, { Component } from 'react';
 import { api } from '../api.js';
@@ -806,10 +694,14 @@ export default Accounts;
 
 === Get accounts based on asset data
 
+How to display all accounts on a web page.
+
+In this example the accounts are filtered after existence of the `asset.hello` property of on account.
+
 image:hello-hello_accounts.png[]
 
 .react-client/src/components/HelloAccounts.js
-[source,hljs]
+[source,jsx]
 ----
 import React, { Component } from 'react';
 import { api } from '../api.js';
@@ -858,6 +750,150 @@ class HelloAccounts extends Component {
     }
 }
 export default HelloAccounts;
+----
+
+=== Get all transactions
+
+How to display all transactions on a web page.
+
+image:hello-transactions.png[]
+
+.react-client/src/components/Transactions.pug
+[source,jsx]
+----
+import React, { Component } from 'react';
+import { api } from '../api.js';
+
+class Transactions extends Component {
+
+    constructor(props) {
+        super(props);
+
+        this.state = { data: [] };
+    }
+
+    async componentDidMount() {
+        let offset = 0;
+        let transactions = [];
+        const transactionsArray = [];
+
+        do {
+            const retrievedTransactions = await api.transactions.get({ limit: 100, offset });
+            transactions = retrievedTransactions.data;
+            transactionsArray.push(...transactions);
+
+            if (transactions.length === 100) {
+                offset += 100;
+            }
+        } while (transactions.length === 100);
+
+        this.setState({ data: transactionsArray });
+    }
+
+    render() {
+        return (
+            <div>
+                <h2>All Transactions</h2>
+                <pre>{JSON.stringify(this.state.data, null, 2)}</pre>
+            </div>
+        );
+    }
+}
+export default Transactions;
+----
+
+=== Get transactions by type
+
+How to display all transactions of a particular type on a web page.
+
+In this example, we filter for hello transactions.
+
+image:hello-hello_transactions.png[]
+
+.react-client/src/components/HelloTransactions.js
+[source,jsx]
+----
+import React, { Component } from 'react';
+import { api } from '../api.js';
+//import HelloTransaction from '../transactions/hello_transaction';
+import {
+    HelloTransaction,
+} from 'lisk-hello-transactions';
+
+class HelloTransactions extends Component {
+
+    constructor(props) {
+        super(props);
+
+        this.state = { data: [] };
+    }
+
+    async componentDidMount() {
+        const transactions  = await api.transactions.get({ type: HelloTransaction.TYPE });
+
+        this.setState({ data: transactions });
+    }
+
+    render() {
+        return (
+            <div>
+                <h2>All Hello Transactions</h2>
+                <pre>{JSON.stringify(this.state.data, null, 2)}</pre>
+            </div>
+        );
+    }
+}
+export default HelloTransactions;
+----
+
+=== Get all blocks
+
+How to display all blocks on a web page.
+
+image:hello-blocks.png[]
+
+.react-client/src/components/Blocks.js
+[source,jsx]
+----
+import React, { Component } from 'react';
+import { api } from '../api.js';
+
+class Blocks extends Component {
+
+    constructor(props) {
+        super(props);
+
+        this.state = { data: [] };
+    }
+
+    async componentDidMount() {
+        let offset = 0;
+        let blocks = [];
+        const blocksArray = [];
+
+        do {
+            const retrievedBlocks = await api.blocks.get({ limit: 100, offset });
+            blocks = retrievedBlocks.data;
+            blocksArray.push(...blocks);
+
+            if (blocks.length === 100) {
+                offset += 100;
+            }
+        } while (blocks.length === 100);
+
+        this.setState({ data: blocksArray });
+    }
+
+    render() {
+        return (
+            <div>
+                <h2>All Blocks</h2>
+                <pre>{JSON.stringify(this.state.data, null, 2)}</pre>
+            </div>
+        );
+    }
+}
+export default Blocks;
 ----
 
 == Preview in Browser

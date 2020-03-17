@@ -539,47 +539,133 @@ image:hello-hello.png[]
 .react-client/src/components/Hello.js
 [source,hljs]
 ----
-extends index.pug
+import React, { Component } from 'react';
+import {
+    HelloTransaction,
+} from 'lisk-hello-transactions';
+import { api } from '../api.js';
+import * as cryptography from '@liskhq/lisk-cryptography';
+import {utils} from "@liskhq/lisk-transactions";
 
-block content
-    h2 Create new Hello
+const networkIdentifier = cryptography.getNetworkIdentifier(
+    "23ce0366ef0a14a91e5fd4b1591fc880ffbef9d988ff8bebf8f3666b0c09597d",
+    "Lisk",
+);
 
-    form(method='POST' action='/post-hello')
-        div.form-group
-            label(for='hello') Hello value:
-            input#recipient.form-control(type='text', placeholder='Your personal hello statement' name='hello')
-        div.form-group
-            label(for='passphrase') Passphrase:
-            input#recipient.form-control(type='text', placeholder='coach pupil shock error defense outdoor tube love action exist search idea' name='passphrase')
-        button.btn.btn-warning(type='submit') Send
+class Hello extends Component {
+
+    constructor(props) {
+        super(props);
+
+        this.state = {
+            hello: '',
+            passphrase: '',
+            response: { meta: { status: false }},
+            transaction: {},
+        };
+    }
+
+    handleChange = (event) => {
+        let nam = event.target.name;
+        let val = event.target.value;
+        this.setState({[nam]: val});
+    };
+
+    handleSubmit = (event) => {
+        event.preventDefault();
+
+        const helloTransaction = new HelloTransaction({
+            asset: {
+                hello: this.state.hello,
+            },
+            networkIdentifier: networkIdentifier,
+            timestamp: utils.getTimeFromBlockchainEpoch(new Date()),
+        });
+
+        helloTransaction.sign(this.state.passphrase);
+        api.transactions.broadcast(helloTransaction.toJSON()).then(response => {
+            this.setState({response:response});
+            this.setState({transaction:helloTransaction});
+        }).catch(err => {
+            console.log(JSON.stringify(err, null, 2));
+        });
+    }
+
+    render() {
+        return (
+            <div>
+                <h2>Hello</h2>
+                <p>Send a Hello transaction.</p>
+                <form onSubmit={this.handleSubmit}>
+                    <label>
+                        Hello message:
+                        <input type="text" id="hello" name="hello" onChange={this.handleChange} />
+                    </label>
+                    <label>
+                        Passphrase:
+                        <input type="text" id="passphrase" name="passphrase" onChange={this.handleChange} />
+                    </label>
+                    <input type="submit" value="Submit" />
+                </form>
+                {this.state.response.meta.status &&
+                <div>
+                    <pre>Transaction: {JSON.stringify(this.state.transaction, null, 2)}</pre>
+                    <p>Response: {JSON.stringify(this.state.response, null, 2)}</p>
+                </div>
+                }
+            </div>
+        );
+    }
+}
+export default Hello;
 ----
 
 === Get all blocks
 
 image:hello-blocks.png[]
 
-.react-client/src/components/Blocks.pug
-[source,jade]
+.react-client/src/components/Blocks.js
+[source,hljs]
 ----
-extends index.pug
+import React, { Component } from 'react';
+import { api } from '../api.js';
 
-block content
-    h2 Blocks
+class Blocks extends Component {
 
-    pre
-        table.table.table-striped
-            thead
-                tr
-                    th(scope='col') ID
-                    th(scope='col') Height
-                    th(scope='col') Data
+    constructor(props) {
+        super(props);
 
-            tbody
-                each block in blocks
-                    tr
-                        td= block.id
-                        td= block.height
-                        td= JSON.stringify(block, null, 2)
+        this.state = { data: [] };
+    }
+
+    async componentDidMount() {
+        let offset = 0;
+        let blocks = [];
+        const blocksArray = [];
+
+        do {
+            const retrievedBlocks = await api.blocks.get({ limit: 100, offset });
+            blocks = retrievedBlocks.data;
+            blocksArray.push(...blocks);
+
+            if (blocks.length === 100) {
+                offset += 100;
+            }
+        } while (blocks.length === 100);
+
+        this.setState({ data: blocksArray });
+    }
+
+    render() {
+        return (
+            <div>
+                <h2>All Blocks</h2>
+                <pre>{JSON.stringify(this.state.data, null, 2)}</pre>
+            </div>
+        );
+    }
+}
+export default Blocks;
 ----
 
 === Get all transactions
@@ -589,25 +675,45 @@ image:hello-transactions.png[]
 .react-client/src/components/Transactions.pug
 [source,hljs]
 ----
-extends index.pug
+import React, { Component } from 'react';
+import { api } from '../api.js';
 
-block content
-    h2 Transactions
+class Transactions extends Component {
 
-    pre
-        table.table.table-striped
-            thead
-                tr
-                    th(scope='col') ID
-                    th(scope='col') Height
-                    th(scope='col') Data
+    constructor(props) {
+        super(props);
 
-            tbody
-                each tx in transactions
-                    tr
-                        td= tx.id
-                        td= tx.height
-                        td= JSON.stringify(tx, null, 2)
+        this.state = { data: [] };
+    }
+
+    async componentDidMount() {
+        let offset = 0;
+        let transactions = [];
+        const transactionsArray = [];
+
+        do {
+            const retrievedTransactions = await api.transactions.get({ limit: 100, offset });
+            transactions = retrievedTransactions.data;
+            transactionsArray.push(...transactions);
+
+            if (transactions.length === 100) {
+                offset += 100;
+            }
+        } while (transactions.length === 100);
+
+        this.setState({ data: transactionsArray });
+    }
+
+    render() {
+        return (
+            <div>
+                <h2>All Transactions</h2>
+                <pre>{JSON.stringify(this.state.data, null, 2)}</pre>
+            </div>
+        );
+    }
+}
+export default Transactions;
 ----
 
 === Get transactions by type
@@ -617,55 +723,85 @@ image:hello-hello_transactions.png[]
 .react-client/src/components/HelloTransactions.js
 [source,hljs]
 ----
-extends index.pug
+import React, { Component } from 'react';
+import { api } from '../api.js';
+//import HelloTransaction from '../transactions/hello_transaction';
+import {
+    HelloTransaction,
+} from 'lisk-hello-transactions';
 
-block content
-    h2 Transactions
+class HelloTransactions extends Component {
 
-    pre
-        table.table.table-striped
-            thead
-                tr
-                    th(scope='col') ID
-                    th(scope='col') Height
-                    th(scope='col') Data
+    constructor(props) {
+        super(props);
 
-            tbody
-                each tx in transactions
-                    tr
-                        td= tx.id
-                        td= tx.height
-                        td= JSON.stringify(tx, null, 2)
+        this.state = { data: [] };
+    }
+
+    async componentDidMount() {
+        const transactions  = await api.transactions.get({ type: HelloTransaction.TYPE });
+
+        this.setState({ data: transactions });
+    }
+
+    render() {
+        return (
+            <div>
+                <h2>All Hello Transactions</h2>
+                <pre>{JSON.stringify(this.state.data, null, 2)}</pre>
+            </div>
+        );
+    }
+}
+export default HelloTransactions;
 ----
 
-=== Get all account
+=== Get all accounts
 
 image:hello-accounts.png[]
 
 .react-client/src/components/Accounts.js
 [source,hljs]
 ----
-extends index.pug
+import React, { Component } from 'react';
+import { api } from '../api.js';
 
-block content
-    h2 Accounts
+class Accounts extends Component {
 
-    pre
-        table.table.table-striped
-            thead
-                tr
-                    th(scope='col') Index
-                    th(scope='col') Address
-                    th(scope='col') Balance
-                    th(scope='col') Data
+    constructor(props) {
+        super(props);
 
-            tbody
-                each account, index in accounts
-                    tr
-                        td= index
-                        td= account.address
-                        td= account.balance
-                        td= JSON.stringify(account, null, 2)
+        this.state = { data: [] };
+    }
+
+    async componentDidMount() {
+        let offset = 0;
+        let accounts = [];
+        const accountsArray = [];
+
+        do {
+            const retrievedAccounts = await api.accounts.get({ limit: 100, offset });
+            accounts = retrievedAccounts.data;
+            accountsArray.push(...accounts);
+
+            if (accounts.length === 100) {
+                offset += 100;
+            }
+        } while (accounts.length === 100);
+
+        this.setState({ data: accountsArray });
+    }
+
+    render() {
+        return (
+            <div>
+                <h2>All accounts</h2>
+                <pre>{JSON.stringify(this.state.data, null, 2)}</pre>
+            </div>
+        );
+    }
+}
+export default Accounts;
 ----
 
 === Get accounts based on asset data
@@ -675,26 +811,53 @@ image:hello-hello_accounts.png[]
 .react-client/src/components/HelloAccounts.js
 [source,hljs]
 ----
-extends index.pug
+import React, { Component } from 'react';
+import { api } from '../api.js';
 
-block content
-    h2 Hello Accounts
+class HelloAccounts extends Component {
 
-    pre
-        table.table
-            thead
-                tr
-                    th(scope='col') Address
-                    th(scope='col') Balance
-                    th(scope='col') Hello
+    constructor(props) {
+        super(props);
 
-            tbody
-                each account in accounts
-                    tr
-                        td= account.address
-                        td= account.balance
-                        td
-                            pre= JSON.stringify(account.asset.hello, null, 2)
+        this.state = { data: [] };
+    }
+
+    async componentDidMount() {
+        let offset = 0;
+        let accounts = [];
+        let accountsArray = [];
+
+        do {
+            const retrievedAccounts = await api.accounts.get({ limit: 100, offset });
+            accounts = retrievedAccounts.data;
+            accountsArray.push(...accounts);
+
+            if (accounts.length === 100) {
+                offset += 100;
+            }
+        } while (accounts.length === 100);
+
+        let assetAccounts = [];
+        for (var i = 0; i < accountsArray.length; i++) {
+            let accountAsset = accountsArray[i].asset;
+            if (accountAsset && Object.keys(accountAsset).indexOf("hello") > -1){
+                assetAccounts.push(accountsArray[i]);
+            }
+        }
+
+        this.setState({ data: assetAccounts });
+    }
+
+    render() {
+        return (
+            <div>
+                <h2>All Hello accounts</h2>
+                <pre>{JSON.stringify(this.state.data, null, 2)}</pre>
+            </div>
+        );
+    }
+}
+export default HelloAccounts;
 ----
 
 == Preview in Browser

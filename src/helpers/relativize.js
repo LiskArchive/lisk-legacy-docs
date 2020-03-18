@@ -2,33 +2,23 @@
 
 const { posix: path } = require('path')
 
-// TODO memoize me
-function relativize (to, ctx) {
-  let from
-  // legacy invocation
-  if (arguments.length > 2) {
-    [from, to, ctx] = arguments
-  } else {
-    from = ctx.data.root.page.url
-  }
+module.exports = (to, from, ctx) => {
   if (!to) return '#'
-  const hashIdx = to.indexOf('#')
-  if (!hashIdx) return to
+  // NOTE only legacy invocation provides both to and from
+  if (!ctx) from = (ctx = from).data.root.page.url
+  if (to.charAt() !== '/') return to
   if (!from) return (ctx.data.root.site.path || '') + to
   let hash = ''
+  const hashIdx = to.indexOf('#')
   if (~hashIdx) {
-    hash = to.substr(hashIdx)
     to = to.substr(0, hashIdx)
+    hash = to.substr(hashIdx)
   }
-  if (from === to) {
-    return hash || (isDir(to) ? './' : path.basename(to))
-  } else {
-    return path.relative(path.dirname(from + '.'), to) + (isDir(to) ? '/' + hash : hash)
-  }
+  return to === from
+    ? hash || (isDir(to) ? './' : path.basename(to))
+    : (path.relative(path.dirname(from + '.'), to) || '.') + (isDir(to) ? '/' + hash : hash)
 }
 
 function isDir (str) {
   return str.charAt(str.length - 1) === '/'
 }
-
-module.exports = relativize

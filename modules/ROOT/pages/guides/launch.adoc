@@ -14,10 +14,11 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_github_hello_transaction: https://github.com/LiskHQ/lisk-sdk-examples/tree/development/hello_world/transactions
 :url_github_sdk_configDevnet: https://github.com/LiskHQ/lisk-sdk/blob/development/sdk/src/samples/config_devnet.json
 :url_gitlab: https://about.gitlab.com/
+:url_lisk_community: https://lisk.io/community
 
 :url_commander_commands_createaccount: reference/lisk-commander/user-guide/commands.adoc#_create_account
 :url_comander_commands_registerdelegate: reference/lisk-commander/user-guide/commands.adoc#_delegate_registration_transaction
-:url_reference_config: reference/configuration.adoc
+:url_reference_config: reference/config.adoc
 :url_setup_ports: setup.adoc#ports
 :url_core_management_forging: {v_core}@lisk-core::management/forging.adoc
 
@@ -104,8 +105,24 @@ This new genesis block should create new genesis accounts, and the created passp
 The current version of the Lisk SDK does not support to create own genesis blocks, yet.
 This feature will be added in future releases.
 
-In case you still want to create a new genesis block with the current release, check out the {url_github_corbifex}[Genesis block generator by Corbifex].
+In case you still want to create a new genesis block with the current release, check out the {url_lisk_community}[community] tools, for example the {url_github_corbifex}[Genesis block generator by Corbifex].
 ====
+
+[[seed_node]]
+== Set up a seed node
+
+When setting up a new node, each new node will firstly connect to the seed nodes when booting for the first time.
+Starting from the seed node, a new node will discover the rest of the network by requesting their peer list; followed by the peer lists of the newly discovered peers and so on.
+
+=== Seed node config
+
+It is convenient to have the genesis delegates actively forging on the seed node, in case the network does not yet have enough real delegates who can take the forging spots.
+
+CAUTION: It's recommended to keep the config of the seed nodes to yourself, especially if it contains the `defaultpassword` to decrypt the passphrases of the genesis delegates.
+
+Include the data of the new genesis delegates in the config(see xref:{url_core_management_forging}[enable forging]), that were created in the <<genesis_block, genesis block>>.
+
+//TODO: Check out the xref:{}[Best practices: seed nodes] section for further recommendations how to configure a seed node.
 
 == Create a config
 
@@ -143,24 +160,8 @@ const app = new Application(genesisBlockDevnet, myConfig);
 ====
 By default, the forging delegates list in the config is empty.
 Only the exposed `configDevnet` object includes forging data for all 101 genesis delegates.
-The user who will later deploy the node on a server can then add the credentials to the config, to enable forging for a particular delegate on this node.
+The user who will later deploy the node on a server can then add the credentials to the config, to xref:{url_core_management_forging}[enable forging] for a particular delegate on this node.
 ====
-
-[[seed_node]]
-== Set up a seed node
-
-When setting up a new node, each new node will firstly connect to the seed nodes when booting for the first time.
-Starting from the seed node, a new node will discover the rest of the network by requesting their peer list; followed by the peer lists of the newly discovered peers and so on.
-
-=== Seed node config
-
-It is convenient to have the genesis delegates actively forging on the seed node, in case the network does not yet have enough real delegates who can take the forging spots.
-
-CAUTION: It's recommended to keep the config of the seed nodes to yourself, especially if it contains the `defaultpassword` to decrypt the passphrases of the genesis delegates.
-
-Include the data of the new genesis delegates in the config(see xref:{url_core_management_forging}[enable forging]), that were created in the <<genesis_block, genesis block>>.
-
-//TODO: Check out the xref:{}[Best practices: seed nodes] section for further recommendations how to configure a seed node.
 
 == Publish source code
 
@@ -185,7 +186,7 @@ The client node is talking via the API with the `client` app, and over the WebSo
 Therefore, the seed node is the only node at this point that can forge new blocks.
 This is due to the fact that all the genesis delegates are actively forging on it.
 
-TIP: How to replace the genesis delegates with real delegates is covered in the next section <<more_nodes, Replace dummy delegates with real ones>>.
+TIP: How to replace the genesis delegates with real delegates is covered in the next section <<more_nodes, Add more nodes>>.
 
 To set up the node, install the node application on a new server.
 Just follow the instructions of the `README` file, that was created in the step before.
@@ -203,10 +204,10 @@ const API_BASEURL = 'http://localhost:4000'; <1>
 
 <1> Add the correct IP and port here to the newly added node.
 
-If the client app has the API endpoint of the new node, it will receive transactions from the client.
-The transactions will be visible in the logs (if log level is at least `info`).
+Now, the new client node will receive transactions from the client app and vice versa.
+The received transactions are visible in the logs of the lcient node (if log level is at least `info`).
 
-.Logs of newly added node
+.Logs of newly added client node
 image:synching_node.png[Synching non forging node]
 
 In the logs shown above it can be seen that the seed node was already 3 blocks ahead when the second node was started.
@@ -218,7 +219,7 @@ These new blocks are broadcasted again to the new node, and the client app can d
 image:forging_node.png[Forging node logs]
 
 [NOTE]
-.Please be aware that broadcast errors can occur.
+.Please be aware that broadcast hickups can occur.
 ====
 Sometimes errors occur when broadcasting transactions between the nodes.
 There is no cause for concern here, as the node will re-start the sync process again; and in the majority of cases it is successful on the next attempt.

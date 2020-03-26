@@ -74,12 +74,14 @@ module.exports = (src, dest, preview) => () => {
     vfs
       .src('img/**/*.{gif,ico,jpg,png,svg}', opts)
       .pipe(
-        imagemin([
-          imagemin.gifsicle(),
-          imagemin.jpegtran(),
-          imagemin.optipng(),
-          imagemin.svgo({ plugins: [{ removeViewBox: false }] }),
-        ].reduce((accum, it) => it ? accum.concat(it) : accum, []))
+        imagemin(
+          [
+            imagemin.gifsicle(),
+            imagemin.jpegtran(),
+            imagemin.optipng(),
+            imagemin.svgo({ plugins: [{ removeViewBox: false }] }),
+          ].reduce((accum, it) => (it ? accum.concat(it) : accum), [])
+        )
       ),
     vfs.src('helpers/*.js', opts),
     vfs.src('layouts/*.hbs', opts),

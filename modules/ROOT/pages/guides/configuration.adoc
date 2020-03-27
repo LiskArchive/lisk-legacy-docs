@@ -8,97 +8,84 @@ Mona Bärenfänger <mona@lightcurve.io>
 
 :url_reference_config: reference/config.adoc
 
-[[modify_default_values]]
-== Modify default values
-If you wish to modify the default values, the following paragraph explains how to perform this, and also provides a devnet configuration example.
-A devnet configuration can be thought of as a local network on your machine, whereby it is possible to safely experiment with the Lisk SDK.
-The following configuration example shown here is a pre-configured default configuration to set up an instance.
+The `Application` instance, which is exported by the Lisk SDK, is configured to run with the <<config_options, default config options>> that are defined in the Lisk Framework.
 
+To configure the application, pass a config object as parameter when creating a new `Application` instance.
 
-NOTE: To view the pre-defined default configuration values, please see the xref:{url_reference_config}[list of configuration options].
+During local development of the application it is recommended to import and use the `configDevnet` object from the Lisk SDK.
+Together with the `genesisBlockDevnet` it sets up a local development environment with 101 forging genesis delegates.
 
-=== Overwrite specific values
-
-.Example of how to override the default config values:
-[source,js]
-----
-const { Application, genesisBlockDevnet} = require('lisk-sdk'); <1>
-
-const app = new Application(genesisBlockDevnet, {
-    app: {
-        label: 'my-label' <2>
-    },
-    components: {
-        logger: {
-            consoleLogLevel: "info" <3>
-        }
-    }});
-----
-
-<1> Require the lisk-sdk package.
-<2> How to override the default Label of the application.
-<3> How to set the consoleLogLevel to `info`.
-
-=== Use the devnet example config
-
-TIP: Click here to view the {url_github_config_devnet}[configDevnet file on Github].
-
-.Import the example config from lisk-sdk:
+.Contents of index.js
 [source,js]
 ----
 const { Application, genesisBlockDevnet, configDevnet} = require('lisk-sdk'); <1>
+const HelloTransaction = require('./hello_transaction');
 
-const app = new Application(genesisBlockDevnet, configDevnet); <2>
+configDevnet.app.label = 'hello-world-app'; <2>
+//configDevnet.components.storage.user = 'lisk';
+//configDevnet.components.storage.password = 'password';
+
+const app = new Application(genesisBlockDevnet, configDevnet); <3>
+app.registerTransaction(HelloTransaction);
+
+app
+    .run()
+    .then(() => app.logger.info('App started...'))
+    .catch(error => {
+        console.error('Faced error in application', error);
+        process.exit(0);
+    });
 ----
 
-<1> Require the lisk-sdk package.
-<2> Passes the config json `configDevnet` as config object for the new application instance.
-This will start the node with a fully functioning Devnet.
+<1> Imports the `configDevnet` object.
+<2> Optionally override certain options in `configDevnet`.
+<3> Create the application instance and pass the `genesisBlockDevnet` as genesis block and `configDevnet` as config.
 
-=== Overwrite the devnet example config
-
-This can be used when the default behaviour for a local devnet is required to be changed. For example, if it is required for a block to be forged every 10 minutes instead of every 10 seconds (the default value), then this can be used to achieve this.
-The configuration object `configDevnet` possesses the structure as shown in the xref:{url_reference_config}[list of configuration options].
-It can be modified accordingly, before passing the config to the `Application` instance as shown below:
-
-.Example how to override the example config object:
-[source,js]
-----
-const { Application, genesisBlockDevnet, configDevnet} = require('lisk-sdk'); <1>
-
-configDevnet.components.storage.database = 'my-custom-db' <2>
-configDevnet.modules.http_api.access.public = true; <3>
-
-
-const app = new Application(genesisBlockDevnet, configDevnet);
-----
-
-<1> Require the lisk-sdk package.
-<2> Example how to change the db name to my-custom-db.
-<3> How to make the API accessible from everywhere.
+TIP: To view the pre-defined default configuration values, please see the xref:{url_reference_config}[list of configuration options].
 
 [[config_options]]
-== List of configuration options
+== Configuration options
 
-In the above section we have just learned how to modify a configuration option. If you wish to know which other options can be modified, a complete list can be found here: xref:{url_reference_config}[All available configuration options of the Lisk SDK].
+The default configuration options are located in:
+
+* `framework/src/modules/<module-name>/defaults/config.js` for each module.
+* `framework/src/components/<component-name>/defaults/config.js` for each component.
+
+Each config.js file consists of 2 parts:
+
+. JSON-schema specification for all available config options.
+. Default values for the available config options for this specific module.
+
+TIP: Go to the xref:{url_reference_config}[configuration reference], to get a complete list of all available config options.
+
+[CAUTION]
+====
+Please do not change the default values in these files directly as they will be overwritten when software updates are performed.
+Instead of changing the default values, define the custom configuration options inside your blockchain application.
+====
 
 === Constants
 
-Inside `app.genesisConfig` specific constants for the blockchain application are set.
+Inside `configDevnet.app.genesisConfig` specific constants for the blockchain application are set.
+These constants allow to quickly adjust basic properties of the blockchain, for example time that elapses until a new block is forged, the network epoch time, or the block rewards.
 
-In the alpha version of the Lisk SDK, not all available constants are configurable by the user.
-In future versions of the Lisk SDK, more constants will become configurable.
+In the alpha version of the Lisk SDK, not all available constants are configurable by the user, yet.
+In future versions, more constants will become configurable.
 
 TIP: To see a full list of all constants and their predefined values, please see the file {url_github_constants_schema}.
 
 [[genesis_block]]
-== The Genesis block
+== The genesis block
 
 The genesis block describes the very first block in the blockchain.
 It defines the initial state of the blockchain on start of the network.
 
 The genesis block is not forged by a delegate, such as all of the other blocks which come after the genesis block.
 Instead it is defined by the blockchain application developer, when creating the `Application` instance of the blockchain app, (see section <<modify_default_values,Modify default values>>).
+
+=== The devnet genesis block
+
+The Lisk SDK exposes a object `genesisBlockDevnet` holds all important information to spin up a local devnet.
 
 TIP: Go to Github, to see the full file {url_github_genesis_block}[genesis_block_devnet.json]
 

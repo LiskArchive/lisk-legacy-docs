@@ -1,6 +1,8 @@
 ;(function () {
   'use strict'
 
+  var SECT_CLASS_RX = /^sect(\d)$/
+
   var navContainer = document.querySelector('.nav-container')
   var navToggle = document.querySelector('.nav-toggle')
 
@@ -13,6 +15,7 @@
   var nav = navContainer.querySelector('.nav')
 
   var currentPageItem = menuPanel.querySelector('.is-current-page')
+  var originalPageItem = currentPageItem
   if (currentPageItem) {
     activateCurrentPath(currentPageItem)
     scrollItemToMidpoint(menuPanel, currentPageItem.querySelector('.nav-link'))
@@ -41,6 +44,49 @@
   menuPanel.addEventListener('mousedown', function (e) {
     if (e.detail > 1) e.preventDefault()
   })
+
+  function onHashChange () {
+    var navLink
+    var hash = window.location.hash
+    if (hash) {
+      if (hash.indexOf('%')) hash = decodeURIComponent(hash)
+      navLink = menuPanel.querySelector('.nav-link[href="' + hash + '"]')
+      if (!navLink) {
+        var targetNode = document.getElementById(hash.slice(1))
+        if (targetNode) {
+          var current = targetNode
+          var ceiling = document.querySelector('article.doc')
+          while ((current = current.parentNode) && current !== ceiling) {
+            var id = current.id
+            // NOTE: look for section heading
+            if (!id && (id = current.className.match(SECT_CLASS_RX))) id = (current.firstElementChild || {}).id
+            if (id && (navLink = menuPanel.querySelector('.nav-link[href="#' + id + '"]'))) break
+          }
+        }
+      }
+    }
+    var navItem
+    if (navLink) {
+      navItem = navLink.parentNode
+    } else if (originalPageItem) {
+      navLink = (navItem = originalPageItem).querySelector('.nav-link')
+    } else {
+      return
+    }
+    if (navItem === currentPageItem) return
+    find(menuPanel, '.nav-item.is-active').forEach(function (el) {
+      el.classList.remove('is-active', 'is-current-path', 'is-current-page')
+    })
+    navItem.classList.add('is-current-page')
+    currentPageItem = navItem
+    activateCurrentPath(navItem)
+    scrollItemToMidpoint(menuPanel, navLink)
+  }
+
+  if (menuPanel.querySelector('.nav-link[href^="#"]')) {
+    if (window.location.hash) onHashChange()
+    window.addEventListener('hashchange', onHashChange)
+  }
 
   function activateCurrentPath (navItem) {
     var ancestorClasses
@@ -95,13 +141,8 @@
   }
 
   function findNextElement (from, selector) {
-    var el
-    if ('nextElementSibling' in from) {
-      el = from.nextElementSibling
-    } else {
-      el = from
-      while ((el = el.nextSibling) && el.nodeType !== 1);
-    }
-    return el && selector ? el[el.matches ? 'matches' : 'msMatchesSelector'](selector) && el : el
+    var el = from.nextElementSibling
+    if (!el) return
+    return selector ? el[el.matches ? 'matches' : 'msMatchesSelector'](selector) && el : el
   }
 })()

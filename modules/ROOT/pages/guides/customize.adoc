@@ -8,31 +8,131 @@ Mona Bärenfänger <mona@lightcurve.io>
 
 :url_tutorials: tutorials/index.adoc
 
+== Custom transaction types
 
-== Custom transactions
+Transactions are an essential part of blockchain applications that are created using the Lisk SDK, because they define the set of actions that can be performed by users in the network.
+Each transaction belongs to a specific *transaction type* that is registered in the network.
 
-Transactions are an essential part of blockchain applications that are created using the Lisk SDK.
+The Lisk SDK provides a <<interface,BaseTransaction interface>> from which developers can extend from, to create *custom transaction types*.
 
-The Lisk SDK provides a class <<interface,BaseTransaction>> from which developers can inherit and extend from, to create *custom transaction types*.
-
-The application-specific business logic for custom transaction types is defined according to an abstract interface that is common across all transaction types.
-
-All of the default transaction types of the Lisk SDK transactions implement the abstract interface of the base transaction, and therefore the base transaction can be used as a model for custom transactions.
 It is also possible to inherit one of the default transaction types, in order to extend or modify them.
+
+[[hello_transaction]]
+== Example of a custom transaction: The `HelloTransaction`
+
+.Contents of hello_transaction.js
+[source,js]
+----
+const {
+    BaseTransaction,
+    TransactionError
+} = require('@liskhq/lisk-transactions');
+
+class HelloTransaction extends BaseTransaction {
+
+    /**
+    * Set the `HelloTransaction` transaction TYPE to `20`.
+    * Every time a transaction is received, it is differentiated by the type.
+    */
+    static get TYPE () {
+        return 20;
+    }
+
+    /**
+    * Set the `HelloTransaction` transaction FEE to 1 LSK.
+    * Every time a user posts a transaction to the network, the transaction fee is paid to the delegate who includes the transaction into the block that the delegate forges.
+    */
+    static get FEE () {
+        return `${10 ** 8}`; // (= 1 LSK)
+    };
+
+    /**
+    * Prepares the necessary data for the `apply` and `undo` step.
+    * The "hello" property will be added only to sender's account, therefore it is the only resource required in the `applyAsset` and `undoAsset` steps.
+    */
+	async prepare(store) {
+		await store.account.cache([
+			{
+				address: this.senderId,
+			},
+		]);
+	}
+
+    /**
+    * Validation of the value of the "hello" property, defined by the `HelloTransaction` transaction signer.
+    * The implementation below checks that the value of the "hello" property needs to be a string, which is not longer than 64 characters.
+    */
+	validateAsset() {
+		const errors = [];
+		if (!this.asset.hello || typeof this.asset.hello !== 'string' || this.asset.hello.length > 64) {
+			errors.push(
+				new TransactionError(
+					'Invalid "asset.hello" defined on transaction',
+					this.id,
+					'.asset.hello',
+					this.asset.hello,
+					'A string value no longer than 64 characters',
+				)
+			);
+		}
+		return errors;
+	}
+
+    /**
+    * applyAsset is where the custom logic of the Hello World app is implemented.
+    * applyAsset() and undoAsset() uses the information about the sender's account from the `store`.
+    * Here it is possible to store additional information regarding the accounts using the `asset` field. The content property of "hello" transaction's asset is saved into the "hello" property of the account's asset.
+    */
+	applyAsset(store) {
+        const errors = [];
+        const sender = store.account.get(this.senderId);
+        if (sender.asset && sender.asset.hello) {
+            errors.push(
+                new TransactionError(
+                    'You cannot send a hello transaction multiple times',
+                    this.id,
+                    '.asset.hello',
+                    this.amount.toString()
+                )
+            );
+        } else {
+            const newObj = { ...sender, asset: { hello: this.asset.hello } };
+            store.account.set(sender.address, newObj);
+        }
+        return errors; // array of TransactionErrors, returns empty array if no errors are thrown
+	}
+
+    /**
+    * Inverse of `applyAsset`.
+    * Undoes the changes made in applyAsset() step - reverts to the previous value of "hello" property, if not previously set this will be null.
+    */
+	undoAsset(store) {
+		const sender = store.account.get(this.senderId);
+		const oldObj = { ...sender, asset: null };
+		store.account.set(sender.address, oldObj);
+		return [];
+	}
+}
+
+module.exports = HelloTransaction;
+----
 
 == Register a custom transaction
 
-Add your custom transaction type to your blockchain application by registering it to the application instance as shown below:
+Add a custom transaction type to a blockchain application by registering it to the application instance as shown below:
 
+.Contents of index.js
 [source,js]
 ----
-const { Application, genesisBlockDevnet } = require('lisk-sdk');
+const { Application, genesisBlockDevnet, configDevnet} = require('lisk-sdk');
+const HelloTransaction = require('./hello_transaction'); <1>
 
-const MyTransaction = require('./my_transaction');
+configDevnet.app.label = 'hello-world-blockchain-app';
+//configDevnet.components.storage.user = 'lisk';
+//configDevnet.components.storage.password = 'password';
 
-const app = new Application(genesisBlockDevnet);
-
-app.registerTransaction(MyTransaction); <1>
+const app = new Application(genesisBlockDevnet, configDevnet);
+app.registerTransaction(HelloTransaction); <2>
 
 app
     .run()
@@ -42,18 +142,34 @@ app
         process.exit(1);
     });
 ----
-<1> Register the custom transaction.
+<1> Imports the custom transaction type.
+<2> Registers the custom transaction type with the application.
 
-For information on creating your own custom transaction, please xref:{url_tutorials}[follow the tutorials].
+TIP: For more information on creating your own custom transaction types, please xref:{url_tutorials}[follow the tutorials].
+
+[[default_transactions]]
+== Default transaction types
+
+[IMPORTANT]
+====
+Transaction types 0-12 are reserved for the Lisk protocol.
+Do not use these to register custom transactions.
+====
+
+Each default transaction type implements a different use case of the Lisk network.
+
+TIP: For a complete list of all default transaction types, please see the section Lisk transactions of the Lisk Protocol.
 
 [[interface]]
 == The BaseTransaction interface
 
-The BaseTransaction class is the interface that all other Transaction Types need to inherit from, in order to be compatible with the Lisk SDK.
+The BaseTransaction class is the interface that all other transaction types, including the <<default_transactions,default transaction types>>, need to inherit from, in order to be compatible with the Lisk SDK.
 
-TIP: {url_github_base_transaction}[See the original file on Github].
+TIP: {url_github_base_transaction}[See the BaseTransaction on Github].
 
 === Required Properties
+
+The following properties and methods need to be implemented by a custom transaction type, when extending from the `BaseTransaction`:
 
 ==== TYPE
 
@@ -64,11 +180,7 @@ The type is a unique identifier for your custom transaction within your own bloc
 static TYPE: number
 ----
 
-
 === Required Methods
-
-All of the abstract methods and properties on the base transaction’s interface are required to be implemented.
-These are all listed below:
 
 ==== prepare
 
@@ -290,17 +402,6 @@ A setter allows changes to be made to the overall StateStore, e.g. updating and 
 ----
 store.account.set(sender.address, newObj);
 ----
-
-== Default transaction types
-
-IMPORTANT: Transaction types 0-12 are reserved for the Lisk protocol.
-Do not use these to register custom transactions.
-
-Each default transaction type implements a different use case of the Lisk network.
-
-TIP: For a complete list of all default transaction types, please see the section Lisk Transactions of the Lisk Protocol.
-
-
 
 == What is the lifecycle of a transaction?
 

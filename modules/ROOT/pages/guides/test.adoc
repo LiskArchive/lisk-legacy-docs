@@ -2,15 +2,16 @@
 Mona Bärenfänger <mona@lightcurve.io>
 :source-linenums-option:
 :highlightjs-theme: solarized_dark
-:url_github_transport_register_packet: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/transport/transactions/solutions/register-packet.js#L144
-:url_github_transport_test_register: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/transport/transactions/test/register-packet.test.js
+:url_github_hello_world: https://github.com/LiskHQ/lisk-sdk-examples/tree/development/hello_world
+:url_github_hello_world_tx: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/hello_world/transactions/hello_transaction.js#L53
+:url_github_hello_world_tx_test: https://github.com/LiskHQ/lisk-sdk-examples/blob/test-for-hello-world/hello_world/transactions/test/hello_transaction.test.js
 :url_jest: https://jestjs.io/docs/en/getting-started
 :url_unit_tests: https://en.wikipedia.org/wiki/Unit_testing
 :url_wiki_stubs: https://en.wikipedia.org/wiki/Test_stub
 
 :url_tutorials_transport_3: tutorials/transport2.adoc#register_packet
 
-The more complex the logic inside the custom transaction types, the more complicated it becomes to verify that the custom transaction logic is working as expected.
+When the logic inside the custom transaction types becomes more complex, it becomes complicated to verify that the custom transaction logic is working as expected.
 
 Therefore it is recommended to write {url_unit_tests}[unit tests], that verify the logic of the transaction type.
 
@@ -24,51 +25,48 @@ In order to sync again with the network, it has to remove the blocks that are di
 To undo the transaction, the `undoAsset()` function will be called for each transaction inside of the blocks that need to be reverted.
 ====
 
-To explain how to write unit tests for custom transactions, we will use the example of the `undoAsset()` method of the xref:{url_tutorials_transport_3}[supply chain tutorial: RegisterPacketTransaction].
-You can use it as template to write unit tests for your own custom transactions.
+In order to explain how to write unit tests for custom transactions, the `applyAsset()` method of the {url_github_hello_world}[hello world app] is used here as example.
+It can be used as a template to write unit tests for your own custom transactions.
 
 NOTE: To test the complete logic of a custom transaction, it is required to write unit tests for all methods that are implemented in the custom transactions: `validateAsset()`, `applyAsset()` and `undoAsset()`.
 
 == Write a test script
 
-First, let's look at the `undoAsset()` function of the {url_github_transport_register_packet}[RegisterPacketTransaction].
+First, let's look at the `applyAsset()` function of the {url_github_hello_world_tx}[HelloTransaction].
 
-.Snippet of undoAsset(), File: transactions/solutions/register-packet.js
+.Snippet of undoAsset(), File: hello_world/transactions/hello_transaction.js
 [source,js]
 ----
-undoAsset(store) {
+applyAsset(store) {
     const errors = [];
-
-    /* The postage is added back to the senders' account balance. */
     const sender = store.account.get(this.senderId);
-    const senderBalanceWithPostage = new utils.BigNum(sender.balance).add(
-        new utils.BigNum(this.asset.postage)
-    );
-    const updatedSender = {
-        ...sender,
-        balance: senderBalanceWithPostage.toString()
-    };
-    store.account.set(sender.address, updatedSender);
-
-    /* The postage is removed from the packet account balance, and packet data in the asset is nullified */
-    const packet = store.account.get(this.asset.packetId);
-    const originalPacketAccount = { ...packet, balance: 0, asset: null };
-    store.account.set(packet.address, originalPacketAccount);
-
+    if (sender.asset && sender.asset.hello) {
+        errors.push(
+            new TransactionError(
+                'You cannot send a hello transaction multiple times',
+                sender.asset.hello,
+                '.asset.hello',
+                this.asset.hello
+            )
+        );
+    } else {
+        const newObj = { ...sender, asset: { hello: this.asset.hello } };
+        store.account.set(sender.address, newObj);
+    }
     return errors;
 }
 ----
 
-To test, that the `undoAsset()` function is working as expected, write a unit test with {url_jest}[jest]: {url_github_transport_test_register}[register-packet.test.js]:
+To test that the `applyAsset()` function is working as expected, write a unit test with {url_jest}[jest]: {url_github_transport_test_register}[hello_transaction.test.js]:
 
 .File: transactions/tests/register-packet.test.js
 [source,js]
 ----
-const RegisterPacketTransaction = require('../solutions/register-packet');
-const transactions = require('@liskhq/lisk-transactions');
+const HelloTransaction = require('../hello_transaction');
+const {TransactionError, utils} = require('@liskhq/lisk-transactions');
 const { when } = require('jest-when');
 
-describe('RegisterPacket Transaction', () => {
+describe('Hello Transaction', () => {
     let storeStub;
     beforeEach(() => {
         storeStub = { <1>
@@ -79,109 +77,126 @@ describe('RegisterPacket Transaction', () => {
         };
     });
 
-    test('it should undo the state for register packet correctly', async () => { <2>
+    it('should save the hello string in the senders account assets', async () => { <2>
         // Arrange
-        const senderId = '16313739661670634666L';
-        const senderPublicKey = 'c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f';
         const asset = {
-            security: transactions.utils.convertLSKToBeddows('10'),
-            minTrust: 0,
-            postage: transactions.utils.convertLSKToBeddows('10'),
-            packetId: 'not important',
-            recipientId: 'xyzL',
+            hello: "my hello message",
         };
 
-        const mockedPacketAccount = {
-            address: 'xyz123',
-        };
+        const senderId = '16313739661670634666L';
+        const senderPublicKey = 'c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f';
         const mockedSenderAccount = {
-            address: 'abc123',
-            balance: '10000000000', // 100 LSK
+            address: '16313739661670634666L',
+            publicKey: 'c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f',
+            asset: {},
         };
 
         when(storeStub.account.get) <3>
-            .calledWith(asset.packetId)
-            .mockReturnValue(mockedPacketAccount);
-
-        when(storeStub.account.get) <4>
             .calledWith(senderId)
             .mockReturnValue(mockedSenderAccount);
 
         // Act
-        const tx = new RegisterPacketTransaction({ <5>
-            senderId,
+        const tx = new HelloTransaction({ <4>
             senderPublicKey,
             asset,
+            timestamp: utils.getTimeFromBlockchainEpoch(new Date()),
         });
-        tx.undoAsset(storeStub); <6>
+        tx.applyAsset(storeStub); <5>
 
         // Assert
-        expect(storeStub.account.set).toHaveBeenNthCalledWith( <7>
-            1,
+        expect(storeStub.account.set).toHaveBeenCalledWith( <6>
             mockedSenderAccount.address,
             {
                 address: mockedSenderAccount.address,
-                balance: new transactions.utils.BigNum(mockedSenderAccount.balance).add(
-                    new transactions.utils.BigNum(asset.postage)
-                ).toString()
+                publicKey: 'c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f',
+                asset,
             }
+        );
+    });
+
+    it('should reject the transaction, if the sender already has a hello string in their account.', async () => {
+        // Arrange
+        const asset = {
+            hello: "my hello message",
+        };
+        const senderId = '16313739661670634666L';
+        const senderPublicKey = 'c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f';
+        const mockedSenderAccount = {
+                address: '16313739661670634666L',
+                publicKey: 'c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f',
+                asset: {
+                    hello: "Hello world!"
+                }
+            };
+        const errors = [];
+        errors.push(
+            new TransactionError(
+                'You cannot send a hello transaction multiple times',
+                mockedSenderAccount.asset.hello,
+                '.asset.hello',
+                asset.hello
+            )
         );
 
-        expect(storeStub.account.set).toHaveBeenNthCalledWith(
-            2,
-            mockedPacketAccount.address,
-            {
-                address: mockedPacketAccount.address,
-                balance: 0,
-                asset: null,
-            }
-        );
+        when(storeStub.account.get)
+            .calledWith(senderId)
+            .mockReturnValue(mockedSenderAccount);
+
+        // Act
+        const tx = new HelloTransaction({
+            senderPublicKey,
+            asset,
+            timestamp: utils.getTimeFromBlockchainEpoch(new Date()),
+        });
+
+        // Assert
+        expect(tx.applyAsset(storeStub)).toMatchObject(errors);
     });
 });
 ----
 
 <1> The `get()` and `set()` functions of the `stateStore` are mocked by creating {url_wiki_stubs}[stubs] in the `beforeEach()` function.
-This allows replace the call with a custom return value.
-<2> Now start the test, add a short and precise description of what the test is about.
-<3> When `storeStub.account.get` is called with `asset.senderId`, we replace the return value with the `mockedSenderAccount`.
-<4> When `storeStub.account.get` is called with `asset.packetId`, we replace the return value with the `mockedPacketAccount`.
-<5> A new transaction is created.
-<6> The `undoAsset()` function of the transaction is called, and the previousely defined `storeStub` is passed to the `undoAsset()` function.
-<7> The actual tests start here.
+Stubbing provides the opportunity to replace the call of a function with a custom return value.
+<2> Now the first test can begin, with a short and precise description of the actual test itself.
+<3> When `storeStub.account.get` is called with `asset.senderId`,the return value is replaced with the `mockedSenderAccount`.
+<4> A new transaction is created.
+<5> The `applyAsset()` function of the transaction is called, and the previousely defined `storeStub` is passed to the `applyAsset()` function.
+<6> The test passes if the function `storeStub.account.set()` is called with the expected parameters.
 
-The first expectation verifies that the sender account got reimbursed for the postage he paid.
-Therefore, we check if `storeStub.account.set()` got called with the right parameters:
+The first test verifies that the hello string is saved in the senders account assets.
+Therefore, a check is performed to ensure that the `storeStub.account.set()` was called with the correct parameters:
+
+.Sender address
 [source,js]
 ----
-address: mockedSenderAccount.address,
+mockedSenderAccount.address,
 ----
+
 and
-[source,js]
-----
-balance: new transactions.utils.BigNum(mockedSenderAccount.balance).add(
-    new transactions.utils.BigNum(asset.postage)
-).toString()
-----
-If the function got called with the expected parameters, we know that the sender account got restored correctly.
-
-In the second expectation, we want to verify if the `const asset = { … }`, which stores the packet data, got nullified.
-Secondly we want to verify, that the postage is removed from the packet balance.
-Therefore, we first check if `storeStub.account.set()` got called with the right parameters:
-
-[source,js]
-----
-mockedPacketAccount.address,
-----
-and
+.Updated sender account
 [source,js]
 ----
 {
-      address: mockedPacketAccount.address,
-      balance: 0,
-      asset: null,
+    address: mockedSenderAccount.address,
+    publicKey: 'c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f',
+    asset,
 }
 ----
-If the function got called with the expected parameters, we know that the packet account was undone correctly.
+If the function was called with the expected parameters, then this proves that the sender account was updated correctly.
+
+In the second test it is necessary to verify that the transaction is rejected, in the case whereby the sender already has a hello string in their account.
+Therefore, it is necessary to check if the expected `TransactionError` is returned when the `applyAsset()` is executed.
+
+.Expected transaction error
+[source,js]
+----
+new TransactionError(
+    'You cannot send a hello transaction multiple times',
+    mockedSenderAccount.asset.hello,
+    '.asset.hello',
+    asset.hello
+)
+----
 
 == Run the test script
 
@@ -196,20 +211,21 @@ Now, run the test:
 
 [source,bash]
 ----
-jest register-packet.test.js
+jest hello_transaction.test.js
 ----
 It should print the test results.
 For example:
 ....
- PASS  register-packet.test.js
-  RegisterPacket Transaction
-    ✓ it should undo the state for register packet correctly (13ms)
+PASS  ./hello_transaction.test.js
+  Hello Transaction
+    ✓ should save the hello string in the senders account assets (10ms)
+    ✓ should reject the transaction, if the sender has already a hello string in their account. (1ms)
 
 Test Suites: 1 passed, 1 total
-Tests:       1 passed, 1 total
+Tests:       2 passed, 2 total
 Snapshots:   0 total
-Time:        2.017s
-Ran all test suites matching /register-packet.test.js/i.
+Time:        2.132s
+Ran all test suites matching /hello_transaction.test.js/i.
 ....
 
 In the example above, all expectations were met and the test passed.

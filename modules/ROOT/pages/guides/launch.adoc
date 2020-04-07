@@ -20,6 +20,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 
 :url_commander_commands_createaccount: reference/lisk-commander/commands.adoc#_create_account
 :url_comander_commands_registerdelegate: reference/lisk-commander/commands.adoc#_delegate_registration_transaction
+:url_guides_config: guides/configuration.adoc#intro
 :url_guides_forging: guides/forging.adoc
 :url_reference_config: reference/config.adoc
 :url_setup_ports: setup.adoc#ports
@@ -31,20 +32,28 @@ After following this guide it will enable other users to join the network, and w
 
 
 [[nodes]]
-=== Node roles
+=== Nodes
+
 The network will consist of many different nodes that store the blockchain, create new blocks, and update each other about events in the network.
+
+Nodes are servers that are connected to a blockchain network.
+These servers have a <<node_app,node application>> installed that handles all communication with other nodes in the network.
+
+After receiving a new event and performing the default validations, a node will pass on the information to a set of peer nodes in its peer list.
+
+=== Node roles
 
 Nodes can have different roles in the network as described below:
 
 Seed nodes::
-The seed node is a node that is specified in the config of the node application under `modules.network.seedPeers`.
+The seed node is a node that is specified in the xref:{url_reference_config}[config] of the node application under `modules.network.seedPeers`.
 Apart from this, the seed node is considered a normal node, and exhibits the same properties as all of the other nodes.
 +
 Newly connected nodes will use the seed peers in their config as a start point to discover the rest of the network.
 Hence, this is the reason why the seed nodes must always be both reachable and connected to the network.
 
 Forging nodes::
-As the name suggests, forging nodes are nodes that have forging enabled for a delegate in the network.
+As the name suggests, forging nodes are nodes that have xref:{url_guides_forging}[forging enabled] for a delegate in the network.
 In order to actively forge, the delegate has to be present in the top 101 delegate list.
 
 API nodes::
@@ -53,13 +62,15 @@ They are used by client applications to interact with the blockchain network.
 
 === Components of a blockchain application
 
+[[node_app]]
 ==== Node application
 
-The node application is the application that needs to be installed on a server in order to run a <<nodes, node>> on a particular blockchain network.
+The {url_github_hello_index}[node application] is the application that needs to be installed on a server in order to run a <<nodes, node>> on a particular blockchain network.
 
+[[client_app]]
 ==== Client application(s)
 
-The client application communicates via API requests with one or multiple nodes in the network, in order to provide its services.
+The {url_github_hello_client}[client application] communicates via API requests with one or multiple nodes in the network, in order to provide its services.
 
 The development and publishing of the client application is similar to a regular web application.
 
@@ -79,7 +90,7 @@ This is how the setup looks during development:
 
 image:launch-seed_node.png[One node diagram]
 
-The next step is to create one <<seed_node, seed node>> and to add one API node to the network that communicates with the seed node:
+The next step is to create a <<genesis_block, genesis block>> and one <<seed_node, seed node>> and to add one API node to the network that communicates with the seed node:
 
 image:launch-2_nodes.png[Two nodes diagram]
 
@@ -116,6 +127,8 @@ In the case whereby it is required to create a new genesis block with the curren
 When setting up a new node, each new node will initially connect to the seed nodes when booting for the first time.
 Starting from the seed node, a new node will discover the rest of the network by requesting their peer list. This is then followed by the peer lists of the newly discovered peers and so on.
 
+To define a node as a seed node, simply add it to the config as described in section <<config,create a configuration object>>.
+
 === Seed node config
 
 It is convenient to have the genesis delegates actively forging on the seed node, in case the network does not yet have enough real delegates who can take the forging spots.
@@ -126,7 +139,8 @@ Include the data of the new genesis delegates in the config(see xref:{url_guides
 
 //TODO: Please see the xref:{}[Best practices: seed nodes] section for further recommendations how to configure a seed node.
 
-== Create a config
+[[config]]
+== Create a configuration object
 
 Exchange the `configDevnet` object that was passed to the node during the development with the customized version.
 
@@ -148,12 +162,12 @@ For example to add `1.2.3.4:5000` as a seed node, add an object with the 2 prope
 [source,js]
 ----
 const myConfig = {
-                     modules: {
-                         network: {
-                             seedPeers: [{ ip: '1.2.3.4', wsPort: 5000}]
-                         }
-                     }
-                 };
+     modules: {
+         network: {
+             seedPeers: [{ ip: '1.2.3.4', wsPort: 5000}]
+         }
+     }
+ };
 
 const app = new Application(genesisBlockDevnet, myConfig);
 ----
@@ -184,9 +198,10 @@ The client application should be distributed in a separate project, and may cont
 == Add an API node
 
 This new node will not have any forging activated.
-The API node is communicating via the API with the `client` app, and over the WebSocket connection to the seed node.
-Therefore, the seed node is the only node at this point that can forge new blocks.
-This is due to the fact that all the genesis delegates are actively forging on it.
+The API node is communicating via the API with the `client` app, and over the WebSocket connection to other peer nodes.
+
+In this example, the only other node in the network is the seed node.
+Therefore, the seed node is the only node at this point that can forge new blocks, because all the genesis delegates are actively forging on it.
 
 TIP: How to replace the genesis delegates with real delegates is covered in the next section <<more_nodes, Add more nodes>>.
 
@@ -195,7 +210,10 @@ Just follow the instructions of the `README` file, that was created in the previ
 
 IMPORTANT: Do not forget to open the corresponding xref:{url_setup_ports}[ports] for HTTP and WS communication!
 
-Once a new node is set up, update the API endpoint in the {url_github_hello_client}[client] app, to target the new node:
+By default, the API access of a node is disabled.
+So after successful setup of the node, it is required to xref:{url_guides_config}[whitelist specific clients] in the config, or to make the xref:{url_guides_config}[API access public] for everyone alternatively.
+
+Once a new node is set up, update the API endpoint in the <<client_app,client app>>, to target the new node:
 
 .Snippet of client/app.js
 [source,js]
@@ -266,7 +284,7 @@ lisk transaction:create:delegate lightcurve -p=env:SECRET_PASSPHRASE | tee >(cur
 <1> Replace `123456` with the secret passphrase.
 <2> Replace `1.2.3.4` with the IP of a node with a reachable API.
 +
-. Set up a node: Follow the steps in the `README` file of the app, (alternatively read the Lisk tutorials, as this process is basically identical).
+. Set up a <<node_app,node>>: Follow the steps in the `README` file of the app, (alternatively read the Lisk tutorials, as this process is basically identical).
 . xref:{url_guides_forging}[Enable forging for the newly created delegate on the node]
 . People become convinced to vote for a delegate in the network, if the delegate has the following attributes:
 ** Is helpful.

@@ -51,29 +51,53 @@
   })
 
   function onScroll () {
-    var activeFragment
     var scrolledBy = window.pageYOffset
     var buffer = getStyleValueAsInt(document.documentElement, 'fontSize')
+    var targetPosition = article.offsetTop
     if (scrolledBy && window.innerHeight + scrolledBy + 2 >= document.documentElement.scrollHeight) {
-      activeFragment = '#' + headings[headings.length - 1].id
-    } else {
-      var targetPosition = article.offsetTop
-      headings.some(function (heading) {
-        var headingTop = heading.getBoundingClientRect().top + getStyleValueAsInt(heading, 'paddingTop')
-        if (targetPosition < headingTop - buffer) return true
-        activeFragment = '#' + heading.id
-      })
-    }
-    if (activeFragment) {
-      if (activeFragment !== lastActiveFragment) {
-        if (lastActiveFragment) links[lastActiveFragment].classList.remove('is-active')
-        var activeLink = links[activeFragment]
-        activeLink.classList.add('is-active')
-        if (list.scrollHeight > list.offsetHeight) {
-          list.scrollTop = Math.max(0, activeLink.offsetTop + activeLink.offsetHeight - list.offsetHeight)
-        }
-        lastActiveFragment = activeFragment
+      if (lastActiveFragment) {
+        if (!Array.isArray(lastActiveFragment)) lastActiveFragment = [lastActiveFragment]
+      } else {
+        lastActiveFragment = []
       }
+      var activeFragments = []
+      var lastIdx = headings.length - 1
+      headings.forEach(function (heading, idx) {
+        var fragment = '#' + heading.id
+        if (idx === lastIdx ||
+            heading.getBoundingClientRect().top + getStyleValueAsInt(heading, 'paddingTop') >= targetPosition) {
+          activeFragments.push(fragment)
+          if (lastActiveFragment.indexOf(fragment) < 0) links[fragment].classList.add('is-active')
+        } else if (~lastActiveFragment.indexOf(fragment)) {
+          links[lastActiveFragment.shift()].classList.remove('is-active')
+        }
+      })
+      list.scrollTop = list.scrollHeight - list.offsetHeight
+      lastActiveFragment = activeFragments.length > 1 ? activeFragments : activeFragments[0]
+      return
+    }
+    if (Array.isArray(lastActiveFragment)) {
+      lastActiveFragment.forEach(function (fragment) {
+        links[fragment].classList.remove('is-active')
+      })
+      lastActiveFragment = undefined
+    }
+    var activeFragment
+    headings.some(function (heading) {
+      if (targetPosition < heading.getBoundingClientRect().top + getStyleValueAsInt(heading, 'paddingTop') - buffer) {
+        return true
+      }
+      activeFragment = '#' + heading.id
+    })
+    if (activeFragment) {
+      if (activeFragment === lastActiveFragment) return
+      if (lastActiveFragment) links[lastActiveFragment].classList.remove('is-active')
+      var activeLink = links[activeFragment]
+      activeLink.classList.add('is-active')
+      if (list.scrollHeight > list.offsetHeight) {
+        list.scrollTop = Math.max(0, activeLink.offsetTop + activeLink.offsetHeight - list.offsetHeight)
+      }
+      lastActiveFragment = activeFragment
     } else if (lastActiveFragment) {
       links[lastActiveFragment].classList.remove('is-active')
       lastActiveFragment = undefined

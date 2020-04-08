@@ -30,10 +30,7 @@
   }, document.createElement('ul'))
 
   var menu = sidebar.querySelector('.toc-menu')
-  if (!menu) {
-    menu = document.createElement('div')
-    menu.className = 'toc-menu'
-  }
+  if (!menu) (menu = document.createElement('div')).className = 'toc-menu'
 
   var title = document.createElement('h3')
   title.textContent = sidebar.dataset.title || 'Contents'
@@ -69,9 +66,7 @@
     }
     if (activeFragment) {
       if (activeFragment !== lastActiveFragment) {
-        if (lastActiveFragment) {
-          links[lastActiveFragment].classList.remove('is-active')
-        }
+        if (lastActiveFragment) links[lastActiveFragment].classList.remove('is-active')
         var activeLink = links[activeFragment]
         activeLink.classList.add('is-active')
         if (list.scrollHeight > list.offsetHeight) {

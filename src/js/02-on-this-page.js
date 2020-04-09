@@ -55,17 +55,13 @@
     var buffer = getStyleValueAsInt(document.documentElement, 'fontSize') * 1.15
     var targetPosition = article.offsetTop
     if (scrolledBy && window.innerHeight + scrolledBy + 2 >= document.documentElement.scrollHeight) {
-      if (lastActiveFragment) {
-        if (!Array.isArray(lastActiveFragment)) lastActiveFragment = [lastActiveFragment]
-      } else {
-        lastActiveFragment = []
-      }
+      lastActiveFragment = Array.isArray(lastActiveFragment) ? lastActiveFragment : Array(lastActiveFragment || 0)
       var activeFragments = []
       var lastIdx = headings.length - 1
       headings.forEach(function (heading, idx) {
         var fragment = '#' + heading.id
         if (idx === lastIdx ||
-            heading.getBoundingClientRect().top + getStyleValueAsInt(heading, 'paddingTop') >= targetPosition) {
+            heading.getBoundingClientRect().top + getStyleValueAsInt(heading, 'paddingTop') > targetPosition) {
           activeFragments.push(fragment)
           if (lastActiveFragment.indexOf(fragment) < 0) links[fragment].classList.add('is-active')
         } else if (~lastActiveFragment.indexOf(fragment)) {
@@ -84,7 +80,7 @@
     }
     var activeFragment
     headings.some(function (heading) {
-      if (targetPosition < heading.getBoundingClientRect().top + getStyleValueAsInt(heading, 'paddingTop') - buffer) {
+      if (heading.getBoundingClientRect().top + getStyleValueAsInt(heading, 'paddingTop') - buffer > targetPosition) {
         return true
       }
       activeFragment = '#' + heading.id

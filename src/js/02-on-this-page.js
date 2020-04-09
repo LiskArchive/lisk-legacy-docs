@@ -52,7 +52,7 @@
 
   function onScroll () {
     var scrolledBy = window.pageYOffset
-    var buffer = getStyleValueAsInt(document.documentElement, 'fontSize')
+    var buffer = getStyleValueAsInt(document.documentElement, 'fontSize') * 1.15
     var targetPosition = article.offsetTop
     if (scrolledBy && window.innerHeight + scrolledBy + 2 >= document.documentElement.scrollHeight) {
       if (lastActiveFragment) {

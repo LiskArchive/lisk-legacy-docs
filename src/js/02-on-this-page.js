@@ -52,18 +52,15 @@
 
   function onScroll () {
     var scrolledBy = window.pageYOffset
-    var buffer = getStyleValueAsInt(document.documentElement, 'fontSize') * 1.15
-    var targetPosition = article.offsetTop
+    var buffer = getNumericStyleVal(document.documentElement, 'fontSize') * 1.15
+    var ceil = article.offsetTop
     if (scrolledBy && window.innerHeight + scrolledBy + 2 >= document.documentElement.scrollHeight) {
       lastActiveFragment = Array.isArray(lastActiveFragment) ? lastActiveFragment : Array(lastActiveFragment || 0)
       var activeFragments = []
       var lastIdx = headings.length - 1
       headings.forEach(function (heading, idx) {
         var fragment = '#' + heading.id
-        if (
-          idx === lastIdx ||
-          heading.getBoundingClientRect().top + getStyleValueAsInt(heading, 'paddingTop') > targetPosition
-        ) {
+        if (idx === lastIdx || heading.getBoundingClientRect().top + getNumericStyleVal(heading, 'paddingTop') > ceil) {
           activeFragments.push(fragment)
           if (lastActiveFragment.indexOf(fragment) < 0) links[fragment].classList.add('is-active')
         } else if (~lastActiveFragment.indexOf(fragment)) {
@@ -82,9 +79,7 @@
     }
     var activeFragment
     headings.some(function (heading) {
-      if (heading.getBoundingClientRect().top + getStyleValueAsInt(heading, 'paddingTop') - buffer > targetPosition) {
-        return true
-      }
+      if (heading.getBoundingClientRect().top + getNumericStyleVal(heading, 'paddingTop') - buffer > ceil) return true
       activeFragment = '#' + heading.id
     })
     if (activeFragment) {
@@ -110,7 +105,7 @@
     return [].slice.call(collection)
   }
 
-  function getStyleValueAsInt (el, prop) {
-    return parseInt(window.getComputedStyle(el)[prop])
+  function getNumericStyleVal (el, prop) {
+    return parseFloat(window.getComputedStyle(el)[prop])
   }
 })()

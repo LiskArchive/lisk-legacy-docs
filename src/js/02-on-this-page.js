@@ -60,8 +60,10 @@
       var lastIdx = headings.length - 1
       headings.forEach(function (heading, idx) {
         var fragment = '#' + heading.id
-        if (idx === lastIdx ||
-            heading.getBoundingClientRect().top + getStyleValueAsInt(heading, 'paddingTop') > targetPosition) {
+        if (
+          idx === lastIdx ||
+          heading.getBoundingClientRect().top + getStyleValueAsInt(heading, 'paddingTop') > targetPosition
+        ) {
           activeFragments.push(fragment)
           if (lastActiveFragment.indexOf(fragment) < 0) links[fragment].classList.add('is-active')
         } else if (~lastActiveFragment.indexOf(fragment)) {

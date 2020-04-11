@@ -3,16 +3,15 @@
 
   var sidebar = document.querySelector('aside.toc.sidebar')
   if (!sidebar) return
-  if (document.querySelector('body.-toc')) return sidebar.parentNode.removeChild(sidebar) && undefined
+  if (document.querySelector('body.-toc')) return void sidebar.parentNode.removeChild(sidebar)
   var levels = parseInt(sidebar.dataset.levels || 2)
   if (levels < 0) return
+
   var article = document.querySelector('article.doc')
   var headings
   var headingSelector = []
-  for (var l = 0; l <= levels; l++) headingSelector.push(l ? '.sect' + l + ' > h' + (l + 1) + '[id]' : 'h1[id].sect0')
-  if (!(headings = find(headingSelector.join(', '), article)).length) {
-    return sidebar.parentNode.removeChild(sidebar) && undefined
-  }
+  for (var l = 0; l <= levels; l++) headingSelector.push(l ? '.sect' + l + '>h' + (l + 1) + '[id]' : 'h1[id].sect0')
+  if (!(headings = find(headingSelector.join(','), article)).length) return void sidebar.parentNode.removeChild(sidebar)
 
   var lastActiveFragment
   var links = {}

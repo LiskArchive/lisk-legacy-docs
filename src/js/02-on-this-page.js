@@ -16,10 +16,8 @@
   var lastActiveFragment
   var links = {}
   var list = headings.reduce(function (accum, heading) {
-    var link = toArray(heading.childNodes).reduce(function (target, child) {
-      if (child.nodeName !== 'A') target.appendChild(child.cloneNode(true))
-      return target
-    }, document.createElement('a'))
+    var link = document.createElement('a')
+    link.textContent = heading.textContent
     links[(link.href = '#' + heading.id)] = link
     var listItem = document.createElement('li')
     listItem.dataset.level = parseInt(heading.nodeName.slice(1)) - 1
@@ -97,11 +95,7 @@
   }
 
   function find (selector, from) {
-    return toArray((from || document).querySelectorAll(selector))
-  }
-
-  function toArray (collection) {
-    return [].slice.call(collection)
+    return [].slice.call((from || document).querySelectorAll(selector))
   }
 
   function getNumericStyleVal (el, prop) {

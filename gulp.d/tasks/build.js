@@ -24,6 +24,15 @@ module.exports = (src, dest, preview) => () => {
   const sourcemaps = preview || process.env.SOURCEMAPS === 'true'
   const postcssPlugins = [
     postcssImport,
+    (root, { messages, opts: { file } }) =>
+      Promise.all(
+        messages
+          .reduce((accum, { file: depPath, type }) => (type === 'dependency' ? accum.concat(depPath) : accum), [])
+          .map((importedPath) => fs.stat(importedPath).then(({ mtime }) => mtime))
+      ).then((mtimes) => {
+        const newestMtime = mtimes.reduce((max, curr) => (!max || curr > max ? curr : max))
+        if (newestMtime > file.stat.mtime) file.stat.mtimeMs = +(file.stat.mtime = newestMtime)
+      }),
     postcssUrl([
       {
         filter: '**/~typeface-*/files/*',
@@ -47,6 +56,7 @@ module.exports = (src, dest, preview) => () => {
     vfs
       .src('js/+([0-9])-*.js', { ...opts, sourcemaps })
       .pipe(uglify())
+      // NOTE concat already uses stat from newest combined file
       .pipe(concat('js/site.js')),
     vfs
       .src('js/vendor/*.js', { ...opts, read: false })
@@ -54,11 +64,22 @@ module.exports = (src, dest, preview) => () => {
         // see https://gulpjs.org/recipes/browserify-multiple-destination.html
         map((file, enc, next) => {
           if (file.relative.endsWith('.bundle.js')) {
-            file.contents = browserify(file.relative, { basedir: src, detectGlobals: false })
+            const mtimePromises = []
+            const bundlePath = file.path
+            browserify(file.relative, { basedir: src, detectGlobals: false })
               .plugin('browser-pack-flat/plugin')
-              .bundle()
-            file.path = file.path.slice(0, file.path.length - 10) + '.js'
-            next(null, file)
+              .on('file', (bundledPath) => {
+                if (bundledPath !== bundlePath) mtimePromises.push(fs.stat(bundledPath).then(({ mtime }) => mtime))
+              })
+              .bundle((bundleError, bundleBuffer) =>
+                Promise.all(mtimePromises).then((mtimes) => {
+                  const newestMtime = mtimes.reduce((max, curr) => (!max || curr > max ? curr : max))
+                  if (newestMtime > file.stat.mtime) file.stat.mtimeMs = +(file.stat.mtime = newestMtime)
+                  file.contents = bundleBuffer
+                  file.path = file.path.slice(0, file.path.length - 10) + '.js'
+                  next(bundleError, file)
+                })
+              )
           } else {
             fs.readFile(file.path, 'UTF-8').then((contents) => {
               file.contents = Buffer.from(contents)
@@ -69,7 +90,9 @@ module.exports = (src, dest, preview) => () => {
       )
       .pipe(buffer())
       .pipe(uglify()),
-    vfs.src('css/site.css', { ...opts, sourcemaps }).pipe(postcss(postcssPlugins)),
+    vfs
+      .src('css/site.css', { ...opts, sourcemaps })
+      .pipe(postcss((file) => ({ plugins: postcssPlugins, options: { file } }))),
     vfs.src('font/*.{ttf,woff*(2)}', opts),
     vfs
       .src('img/**/*.{gif,ico,jpg,png,svg}', opts)

@@ -94,7 +94,8 @@ function compileLayouts (src) {
   return vfs.src('layouts/*.hbs', { base: src, cwd: src }).pipe(
     map(
       (file, enc, next) => {
-        layouts.set(file.stem, handlebars.compile(file.contents.toString(), { preventIndent: true }))
+        const srcName = path.join(src, file.relative)
+        layouts.set(file.stem, handlebars.compile(file.contents.toString(), { preventIndent: true, srcName }))
         next()
       },
       function (done) {

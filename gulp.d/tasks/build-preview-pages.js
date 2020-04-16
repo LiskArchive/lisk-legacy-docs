@@ -11,12 +11,7 @@ const requireFromString = require('require-from-string')
 const vfs = require('vinyl-fs')
 const yaml = require('js-yaml')
 
-const ASCIIDOC_ATTRIBUTES = {
-  experimental: '',
-  icons: 'font',
-  sectanchors: '',
-  'source-highlighter': 'highlight.js',
-}
+const ASCIIDOC_ATTRIBUTES = { experimental: '', icons: 'font', sectanchors: '', 'source-highlighter': 'highlight.js' }
 
 module.exports = (src, previewSrc, previewDest, sink = () => map()) => (done) =>
   Promise.all([
@@ -123,8 +118,9 @@ function resolvePageURL (spec, context = {}) {
 
 function transformHandlebarsError ({ message, stack }, layout) {
   const m = stack.match(/^ *at Object\.ret \[as (.+?)\]/m)
-  const err = new Error(`${message} in UI template src/${m ? 'partials/' + m[1] : 'layouts/' + layout}.hbs`)
-  err.stack = [err.toString()].concat(stack.substr(`Error: ${message}\n`.length)).join('\n')
+  const templatePath = `src/${m ? 'partials/' + m[1] : 'layouts/' + layout}.hbs`
+  const err = new Error(`${message}${~message.indexOf('\n') ? '\n^ ' : ' '}in UI template ${templatePath}`)
+  err.stack = [err.toString()].concat(stack.substr(message.length + 8)).join('\n')
   return err
 }
 

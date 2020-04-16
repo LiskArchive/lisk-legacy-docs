@@ -18,20 +18,15 @@ const ASCIIDOC_ATTRIBUTES = {
   'source-highlighter': 'highlight.js',
 }
 
-module.exports = (src, previewSrc, previewDest, sink = () => map(), layouts = {}) => () =>
+module.exports = (src, previewSrc, previewDest, sink = () => map()) => () =>
   Promise.all([
     loadSampleUiModel(previewSrc),
     toPromise(
-      merge(
-        compileLayouts(src, layouts),
-        registerPartials(src),
-        registerHelpers(src),
-        copyImages(previewSrc, previewDest)
-      )
+      merge(compileLayouts(src), registerPartials(src), registerHelpers(src), copyImages(previewSrc, previewDest))
     ),
   ])
-    .then(([baseUiModel]) => ({ ...baseUiModel, env: process.env }))
-    .then((baseUiModel) =>
+    .then(([baseUiModel, { layouts }]) => [{ ...baseUiModel, env: process.env }, layouts])
+    .then(([baseUiModel, layouts]) =>
       vfs
         .src('**/*.adoc', { base: previewSrc, cwd: previewSrc })
         .pipe(
@@ -57,7 +52,7 @@ module.exports = (src, previewSrc, previewDest, sink = () => map(), layouts = {}
               uiModel.page.contents = Buffer.from(doc.convert())
             }
             file.extname = '.html'
-            file.contents = Buffer.from(layouts[uiModel.page.layout](uiModel))
+            file.contents = Buffer.from(layouts.get(uiModel.page.layout)(uiModel))
             next(null, file)
           })
         )
@@ -89,17 +84,27 @@ function registerHelpers (src) {
   )
 }
 
-function compileLayouts (src, layouts) {
+function compileLayouts (src) {
+  const layouts = new Map()
   return vfs.src('layouts/*.hbs', { base: src, cwd: src }).pipe(
-    map((file, enc, next) => {
-      layouts[file.stem] = handlebars.compile(file.contents.toString(), { preventIndent: true })
-      next()
-    })
+    map(
+      (file, enc, next) => {
+        layouts.set(file.stem, handlebars.compile(file.contents.toString(), { preventIndent: true }))
+        next()
+      },
+      function (done) {
+        this.push({ layouts })
+        done()
+      }
+    )
   )
 }
 
 function copyImages (src, dest) {
-  return vfs.src('**/*.{png,svg}', { base: src, cwd: src }).pipe(vfs.dest(dest))
+  return vfs
+    .src('**/*.{png,svg}', { base: src, cwd: src })
+    .pipe(vfs.dest(dest))
+    .pipe(map((file, enc, next) => next()))
 }
 
 function resolvePage (spec, context = {}) {
@@ -111,5 +116,10 @@ function resolvePageURL (spec, context = {}) {
 }
 
 function toPromise (stream) {
-  return new Promise((resolve, reject) => stream.on('error', reject).on('finish', resolve))
+  return new Promise((resolve, reject, data = {}) =>
+    stream
+      .on('error', reject)
+      .on('data', (chunk) => chunk.constructor === Object && Object.assign(data, chunk))
+      .on('finish', () => resolve(data))
+  )
 }

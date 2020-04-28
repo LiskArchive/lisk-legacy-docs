@@ -1,0 +1,85 @@
+= Accounts
+:description: This documentation gives an overview of the Lisk protocol, the set of rules followed by a blockchain created with the Lisk SDK using the default configuration.
+:imagesdir: ../assets/images
+:page-no-previous: true
+
+:url_accounts: accounts.adoc
+:url_appendix_user_friendly_address: appendix.adoc#user-friendly-address
+:url_blocks_forgers: blocks.adoc#block-forgers
+:url_consensus_dpos: consensus-algorithm.adoc#lisk-delegated-proof-of-stake
+:url_transactions_balance_transfer: transactions.adoc#balance-transfer
+:url_transactions_multisignature: transactions.adoc#multisignature
+:url_transactions_nonce: transactions.adoc#nonce
+:url_transactions_unlock: transactions.adoc#unlock-vote
+:url_transactions_vote: transactions.adoc#vote
+
+A Lisk account consists of a unique identifier called address, an amount of tokens referred to as balance, and possibly some additional properties used in other parts of the Lisk protocol.
+
+The account state is not stored as part of the blockchain, however it can be computed by executing all transactions contained in previous blocks.
+Verification of the validity of a transaction requires the state of the referenced accounts.
+
+== Account properties
+
+This section lists the properties stored in a Lisk account.
+
+image:unif_diagrams/Account.png[accountJSON]
+
+// image:InfographicsV1/Infographic1.png[accountJSON2]
+
+[[address]]
+=== `address`
+
+The address is the main identifier of the account.
+For example, it is used to identify the recipient when transferring the balance between users.
+The address is calculated as the first 20 bytes of the SHA-256 of the public key.
+
+For the front end, a xref:{url_appendix_user_friendly_address}[user-friendly address format] is provided, whereby each address starts with the prefix “_lsk_" and a checksum is appended to signal accidental typing mistakes.
+
+=== `balance`
+
+The balance is an integer value indicating how many tokens are stored in the account and available to be used.
+The total number of tokens owned by an account is the sum of the balance and the tokens locked into <<votes,`votes`>> and <<unlocking,`unlocking`>>.
+The balance can be sent from one account to another using a xref:{url_transactions_balance_transfer}[balance transfer transaction].
+
+=== `publicKey`
+
+The public key is used to verify the validity of signatures created by the account using its corresponding private key.
+Furthermore, the <<address,address is generated from the public key>>.
+The public key is set only when the first transaction originating from the account is included into the blockchain.
+
+=== `keys`
+
+By default, a transaction issued by an account has to be signed with the private key corresponding to the original public key that generated the account address.
+However, this default configuration can be changed, and issuing a transaction can require signatures by multiple different private keys (and not necessarily the default one).
+The corresponding public keys are stored in the `keys` property.
+These public keys can be either [#index-mandatory-1]#mandatory# or [#index-optional-1]#optional#: All mandatory keys have to sign the transaction, and the total number of signatures (mandatory plus optional) has to be equal to `numberOfSignatures` (also stored in `keys`).
+Users can update the `keys` property with a xref:{url_transactions_multisignature}[multisignature registration transaction], specifying the mandatory and optional keys and the number of required signatures.
+
+=== `nonce`
+
+This property stores the current xref:{url_transactions_nonce}[*`nonce`*] of the account.
+Starting from zero, each transaction sent from the account increases the `nonce` value by one.
+Hence the current `nonce` corresponds to the number of transactions sent from the account.
+
+=== `asset`
+
+The account asset contains all extra information that is specific to a transaction or to the blockchain the account belongs to.
+
+The following properties are part of an account asset in the default Lisk protocol.
+
+==== `delegate`
+
+Accounts registered as delegates store extra information related to xref:{url_blocks_forgers}[block forging] in this property, such as the delegate's username or the number of consecutive missed blocks.
+
+[[votes]]
+==== `votes`
+
+In xref:{url_consensus_dpos}[Lisk Delegated Proof-of-Stake], users xref:{url_transactions_vote}[vote] for accounts that are registered as delegate accounts.
+Votes issued by a user are stored in their account as a list of tuples, each with the voted-delegate address and the amount of voted tokens (in beddows).
+Tokens used for voting are [#index-locked-1]#locked#, and cannot be used (or moved from the account) before they have been [#index-unlocked-1]#unlocked#.
+
+[[unlocking]]
+==== `unlocking`
+
+Tokens used to vote for a delegate are frozen, and have to be unlocked to make them available again. Similarly to the `votes` property, this property stores the voted-delegate's address and the amount, but also the block in which the votes have been removed from the delegate.
+After the appropriate waiting time, the user can then unlock the tokens with an xref:{url_transactions_unlock}[unlock transaction].

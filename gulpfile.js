@@ -73,7 +73,7 @@ const bundlePackTask = createTask({
     destDir,
     buildDir,
     bundleName,
-    (bundlePath) => !process.env.CI && log(`Antora option: --ui-bundle-url ${bundlePath}`)
+    (bundlePath) => !process.env.CI && log(`Antora option: --ui-bundle-url=${bundlePath}`)
   ),
 })
 

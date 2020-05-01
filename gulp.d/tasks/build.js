@@ -24,7 +24,7 @@ module.exports = (src, dest, preview) => () => {
   const sourcemaps = preview || process.env.SOURCEMAPS === 'true'
   const postcssPlugins = [
     postcssImport,
-    (root, { messages, opts: { file } }) =>
+    (css, { messages, opts: { file } }) =>
       Promise.all(
         messages
           .reduce((accum, { file: depPath, type }) => (type === 'dependency' ? accum.concat(depPath) : accum), [])
@@ -49,7 +49,9 @@ module.exports = (src, dest, preview) => () => {
     postcssVar({ preserve: preview }),
     preview ? postcssCalc : () => {},
     autoprefixer,
-    preview ? () => {} : cssnano({ preset: 'default' }),
+    preview
+      ? () => {}
+      : (css, result) => cssnano({ preset: 'default' })(css, result).then(() => postcssPseudoElementFixer(css, result)),
   ]
 
   return merge(
@@ -110,4 +112,10 @@ module.exports = (src, dest, preview) => () => {
     vfs.src('layouts/*.hbs', opts),
     vfs.src('partials/*.hbs', opts)
   ).pipe(vfs.dest(dest, { sourcemaps: sourcemaps && '.' }))
+}
+
+function postcssPseudoElementFixer (css, result) {
+  css.walkRules(/(?:^|[^:]):(?:before|after)/, (rule) => {
+    rule.selector = rule.selectors.map((it) => it.replace(/(^|[^:]):(before|after)$/, '$1::$2')).join(',')
+  })
 }

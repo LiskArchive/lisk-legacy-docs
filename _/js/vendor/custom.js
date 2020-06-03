@@ -1,1 +1,1 @@
-!function(){"use strict";document.querySelector(".nav-list>li:not(.single-page)").classList.add("is-active")}();
+!function(){"use strict";document.document.querySelectorAll(".nav-list>li:not(.single-page)")[1].classList.add("is-active")}();

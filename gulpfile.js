@@ -3,6 +3,7 @@
 const { parallel, series, watch } = require('gulp')
 const createTask = require('./gulp.d/lib/create-task')
 const exportTasks = require('./gulp.d/lib/export-tasks')
+const log = require('fancy-log')
 
 const bundleName = 'ui'
 const buildDir = 'build'
@@ -53,7 +54,11 @@ const formatTask = createTask({
 const buildTask = createTask({
   name: 'build',
   desc: 'Build and stage the UI assets for bundling',
-  call: task.build(srcDir, destDir, process.argv.slice(2).some((name) => name.startsWith('preview'))),
+  call: task.build(
+    srcDir,
+    destDir,
+    process.argv.slice(2).some((name) => name.startsWith('preview'))
+  ),
 })
 
 const bundleBuildTask = createTask({
@@ -64,7 +69,12 @@ const bundleBuildTask = createTask({
 const bundlePackTask = createTask({
   name: 'bundle:pack',
   desc: 'Create a bundle of the staged UI assets for publishing',
-  call: task.pack(destDir, buildDir, bundleName),
+  call: task.pack(
+    destDir,
+    buildDir,
+    bundleName,
+    (bundlePath) => !process.env.CI && log(`Antora option: --ui-bundle-url=${bundlePath}`)
+  ),
 })
 
 const bundleTask = createTask({

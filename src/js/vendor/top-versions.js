@@ -1,10 +1,10 @@
 ;(function () {
   'use strict'
 
-  var toggle = document.querySelector('.toolbar-versions .version-menu-toggle')
+  var toggle = document.querySelector('.top-versions .version-menu-toggle')
   if (!toggle) return
 
-  var selector = document.querySelector('.toolbar-versions')
+  var selector = document.querySelector('.top-versions')
 
   toggle.addEventListener('click', function (e) {
     selector.classList.toggle('is-active')

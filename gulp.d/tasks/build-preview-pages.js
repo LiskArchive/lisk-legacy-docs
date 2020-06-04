@@ -11,27 +11,17 @@ const requireFromString = require('require-from-string')
 const vfs = require('vinyl-fs')
 const yaml = require('js-yaml')
 
-const ASCIIDOC_ATTRIBUTES = {
-  experimental: '',
-  icons: 'font',
-  sectanchors: '',
-  'source-highlighter': 'highlight.js',
-}
+const ASCIIDOC_ATTRIBUTES = { experimental: '', icons: 'font', sectanchors: '', 'source-highlighter': 'highlight.js' }
 
-module.exports = (src, previewSrc, previewDest, sink = () => map(), layouts = {}) => () =>
+module.exports = (src, previewSrc, previewDest, sink = () => map()) => (done) =>
   Promise.all([
     loadSampleUiModel(previewSrc),
     toPromise(
-      merge(
-        compileLayouts(src, layouts),
-        registerPartials(src),
-        registerHelpers(src),
-        copyImages(previewSrc, previewDest)
-      )
+      merge(compileLayouts(src), registerPartials(src), registerHelpers(src), copyImages(previewSrc, previewDest))
     ),
   ])
-    .then(([baseUiModel]) => ({ ...baseUiModel, env: process.env }))
-    .then((baseUiModel) =>
+    .then(([baseUiModel, { layouts }]) => [{ ...baseUiModel, env: process.env }, layouts])
+    .then(([baseUiModel, layouts]) =>
       vfs
         .src('**/*.adoc', { base: previewSrc, cwd: previewSrc })
         .pipe(
@@ -59,11 +49,16 @@ module.exports = (src, previewSrc, previewDest, sink = () => map(), layouts = {}
               uiModel.page.contents = Buffer.from(doc.convert())
             }
             file.extname = '.html'
-            file.contents = Buffer.from(layouts[uiModel.page.layout](uiModel))
-            next(null, file)
+            try {
+              file.contents = Buffer.from(layouts.get(uiModel.page.layout)(uiModel))
+              next(null, file)
+            } catch (e) {
+              next(transformHandlebarsError(e, uiModel.page.layout))
+            }
           })
         )
         .pipe(vfs.dest(previewDest))
+        .on('error', (e) => done)
         .pipe(sink())
     )
 
@@ -91,17 +86,28 @@ function registerHelpers (src) {
   )
 }
 
-function compileLayouts (src, layouts) {
+function compileLayouts (src) {
+  const layouts = new Map()
   return vfs.src('layouts/*.hbs', { base: src, cwd: src }).pipe(
-    map((file, enc, next) => {
-      layouts[file.stem] = handlebars.compile(file.contents.toString(), { preventIndent: true })
-      next()
-    })
+    map(
+      (file, enc, next) => {
+        const srcName = path.join(src, file.relative)
+        layouts.set(file.stem, handlebars.compile(file.contents.toString(), { preventIndent: true, srcName }))
+        next()
+      },
+      function (done) {
+        this.push({ layouts })
+        done()
+      }
+    )
   )
 }
 
 function copyImages (src, dest) {
-  return vfs.src('**/*.{png,svg}', { base: src, cwd: src }).pipe(vfs.dest(dest))
+  return vfs
+    .src('**/*.{png,svg}', { base: src, cwd: src })
+    .pipe(vfs.dest(dest))
+    .pipe(map((file, enc, next) => next()))
 }
 
 function resolvePage (spec, context = {}) {
@@ -112,6 +118,19 @@ function resolvePageURL (spec, context = {}) {
   if (spec) return '/' + (spec = spec.split(':').pop()).slice(0, spec.lastIndexOf('.')) + '.html'
 }
 
+function transformHandlebarsError ({ message, stack }, layout) {
+  const m = stack.match(/^ *at Object\.ret \[as (.+?)\]/m)
+  const templatePath = `src/${m ? 'partials/' + m[1] : 'layouts/' + layout}.hbs`
+  const err = new Error(`${message}${~message.indexOf('\n') ? '\n^ ' : ' '}in UI template ${templatePath}`)
+  err.stack = [err.toString()].concat(stack.substr(message.length + 8)).join('\n')
+  return err
+}
+
 function toPromise (stream) {
-  return new Promise((resolve, reject) => stream.on('error', reject).on('finish', resolve))
+  return new Promise((resolve, reject, data = {}) =>
+    stream
+      .on('error', reject)
+      .on('data', (chunk) => chunk.constructor === Object && Object.assign(data, chunk))
+      .on('finish', () => resolve(data))
+  )
 }

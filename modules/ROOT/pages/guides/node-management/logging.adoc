@@ -1,0 +1,122 @@
+= Activate logging
+Mona Bärenfänger <mona@lightcurve.io>
+:description: This page explains the log levels and associated messages which can be used for monitoring or debugging a node.
+:toc:
+:v_core: master
+:url_bunyan: https://github.com/trentm/node-bunyan
+:url_bunyan_docs: http://trentm.com/node-bunyan/bunyan.1.html
+:url_monitoring_logs: {v_core}@lisk-core::monitoring.adoc#log_monitoring
+
+For monitoring or debugging your node, Lisk SDK tracks all activities that occur within the node by creating applicable log messages.
+
+These log messages are grouped in different log levels.
+Hence, this makes it easy to define the level of the log details.
+
+{url_bunyan}[Bunyan^] is used for the logging library, as this allows simple and fast JSON logging for Node.js services.
+
+== Log levels
+
+[width="100%",cols="8%,92%",options="header",]
+|===
+|Log Level |Description
+|None |No events are logged.
+
+|Fatal(60) |The node is going to stop or become unusable.
+This requires the operator to investigate the problem.
+
+|Error(50) |Fatal for a particular request, however the node continues servicing other requests.
+This also requires the operator to investigate the problem, although it does not necessarily require immediate attention.
+
+|Warn(40) |A warning indication that should be investigated eventually.
+
+|Info(30) |Detail on a regular operation.
+
+|Debug(20) |Anything else, i.e. too verbose to be included in `info` level.
+
+|Trace(10) |Logging from external libraries used by your node, or otherwise very detailed application logging.
+|===
+
+== Logging destinations
+
+There are two possible output sources for the logs: The `*file log stream*` and the `*console log stream*`.
+Each output source can be configured independently inside of `config.json` under the options for the `logger` component.
+
+=== Console log stream
+
+The console log level displays the logs directly to the console from where the Lisk SDK process is started.
+This is useful for quick debugging or verifying that Lisk SDK starts correctly.
+The default log level for the console log stream is `none`.
+
+*An example command displaying the console log stream can be seen below:*
+
+[source,bash]
+----
+node dist/index.js | npx bunyan  <1>
+----
+
+<1> Pretty-prints console logs with log level equal or higher to the console log level.
+
+For more information regarding the Bunyan CLI tool, please refer to the official {url_bunyan_docs}[Bunyan documentation^].
+
+[[file_log_stream]]
+=== File log stream
+
+All logs that have equal or higher log levels than the in `config.json` specified file log level are saved in a `.log`-file for further analysis.
+By default, the generated log files are saved inside of the `logs` folder of Lisk SDK.
+The default log level for the file log stream is `info`.
+
+The file log stream can be used to xref:{url_monitoring_logs}[monitor the node via logs].
+
+[[logrotation]]
+== Logrotation
+
+It is recommended to set up some form of log rotation for the log files of Lisk SDK.
+If log rotation is not initiated, then the log files may grow very large over time (depending on the specified file log level), and hence will eventually exceed the server's disk space limits.
+
+For example, Ubuntu systems  provide a service called `logrotate` specifically for this purpose.
+Please ensure Logrotate is installed on your system as shown below:
+
+[source,bash]
+----
+logrotate --version
+----
+
+Now go to the logrotate config directory and create a new logrotate file for Lisk SDK as shown below:
+
+[source,bash]
+----
+cd /etc/logrotate.d
+touch lisk
+----
+
+Inside this file, define the parameters for the log rotation.
+
+Example values can be seen below:
+
+[source,bash]
+----
+/path/to/lisk/logs/mainnet/*.log {
+        daily                   <1>
+        rotate 5                <2>
+        maxage 14               <3>
+        compress                <4>
+        delaycompress           <5>
+        missingok               <6>
+        notifempty              <7>
+}
+----
+
+<1> Daily rotation.
+<2> Keeps the last 5 most recent logs.
+<3> Removes logs that are older than 14 days.
+<4> Compresses old log files.
+<5> Compresses the data after it has been moved.
+<6> If no log file is present, then it is ignored.
+<7> Does not rotate empty log files.
+
+After customizing and saving the config to fit your requirements, it is recommended to test it by performing a dry run using the following command listed below:
+
+[source,bash]
+----
+sudo logrotate /etc/logrotate.conf --debug
+----

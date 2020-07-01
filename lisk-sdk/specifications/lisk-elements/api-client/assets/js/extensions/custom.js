@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', function () {
     console.log(link);
     var linkArray = link.split('/');
     linkArray.slice
-    let newArray = linkArray.slice(0, 6);
+    let newArray = linkArray.slice(0, 7);
     var newLink = newArray.join('/');
     console.log("+++++++++++NEW LINK++++++++++++");
     console.log(newLink);

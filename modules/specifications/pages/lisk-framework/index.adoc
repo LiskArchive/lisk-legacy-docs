@@ -1,1 +1,339 @@
-= Lisk Framework reference
+= Lisk Framework
+Mona Bärenfänger <mona@lightcurve.io>
+:description: The Lisk Framework overview provides a high-level synopsis of the Lisk Framework architecture, including its modules and components, how they communicate, and also how to change the default configuration.
+:toc: preamble
+:imagesdir: ../../../assets/images
+:v_core: 3.0.0
+:page-no-next: true
+:page-previous: /lisk-sdk/reference/lisk-elements/index.html
+:page-previous-title: Lisk Elements
+
+:url_github_lip05: https://github.com/LiskHQ/lips/blob/master/proposals/lip-0005.md
+:url_github_lip11: https://github.com/LiskHQ/lips/blob/master/proposals/lip-0011.md
+
+:url_reference_config: reference/config.adoc
+:url_core_reference_config: {v_core}@lisk-core::reference/config.adoc
+:url_guides_config: guides/app-development/configuration.adoc
+
+image:banner_framework.png[Logo]
+
+== What is the Lisk Framework?
+
+The Lisk Framework is an application framework responsible for establishing and maintaining the interactions between the modules of a Lisk blockchain application.
+
+The Lisk Framework aims to provide a consistent and intuitive interface between each module and component.
+Currently the Lisk framework contains `chain`, `api` and `network` modules.
+
+=== Architecture overview
+
+The architecture of the Lisk Framework follows the research documented in {url_github_lip05}[LIP0005^].
+The diagram shown below provides a high-level overview of the architecture:
+
+image:diagram_framework.png[Logo]
+
+[[modules]]
+=== Modules
+
+The modules are individual building blocks for Lisk Core.
+
+==== Core modules
+
+The core modules are shipped along with the Lisk Core distribution itself.
+These modules constitute the minimum requirements to run a functional Lisk Core instance.
+
+===== List of core modules
+
+* *Chain module:* This handle all events and actions that are related to the blockchain system.
+* *API module:* This provides HTTP API endpoints, that enable users and other programs to interact with the Lisk blockchain through the API.
+* *Network module:* This handles the peer-to-peer communication of nodes in the network.
+
+==== Custom modules
+
+NOTE: The implementation of each module is the responsibility of the user, however it must be inherited from the `BaseModule` to implement its methods.
+
+Custom modules can be plugged into the Lisk Core and may offer new features/capabilities for the application, and replace Core modules functionalities where necessary.
+They extend the existing instance with a specific, (and circumscribed) set of features.
+
+[source,js]
+----
+const BaseModule = require('lisk-framework/src/modules/base_module')
+
+// Exported as main file to javascript package
+export default class MyModule extends BaseModule {
+    /**
+    * @param {Object} options - An object of module options
+    */
+    constructor(options) { <1>
+     super(options);
+    }
+
+    /**
+    * @return {string} alias - Return the module alias as string.
+    * */
+    static get alias(){ return 'moduleAlias'; }, <2>
+
+    /**
+    * @return {Object} info - JSON object referring the version, module name and module author.
+    */
+    static get info(){ <3>
+        return {
+            author: '',
+            version: '',
+            name: '',
+            };
+    },
+
+    /**
+    * @param {Channel} channel - An instance of a communication channel.
+    * @return {Promise<void>}
+    */
+    async load(channel) {}, <4>
+
+
+    /**
+     * @return {Object} defaults - JSON object with default options for the module.
+     */
+    get defaults() { return {}; }, <5>
+
+    /**
+     * @return {Array} events - String Array of events.
+     */
+    get events() { return []; }, <6>
+
+    /**
+     * @return {Object} actions - Contains all available action names as key, and the corresponding function as value.
+     */
+    get actions() { <7>
+        return {
+            action1: action => {},
+        }
+    },
+
+    /**
+     * @return {Promise<void>}
+     */
+    async unload() {}, <8>
+};
+----
+
+<1> Constructor of the module.
+<2> Required.
+A unique module identifier, that can be accessed throughout the system.
+If a module is already registered with the same alias, it will throw an error.
+<3> Required.
+Package meta information.
+<4> Required.
+Method which will be invoked by the controller to load the module.
+Ensure all loading logic is completed during the life cycle of load.
+The controller emits an event, `lisk:ready` which can be used to perform certain activities, which may be required to be performed when all the other modules are loaded.
+<5> Supported configurations for the module with default values.
+<6> List of valid events which this module wants to register with the controller.
+Each event name will be prefixed by a module alias, e.g. moduleName:event1. Listing an event means to register the event in the application.
+Any module can subscribe or publish that event in the application.
+<7> Object of valid actions which this module wants to register with the controller.
+Each action name will be prefixed by a module alias, e.g. moduleName:action1. The source module can define the action whilst the others can invoke that action.
+<8> Method to be invoked by the controller to perform the cleanup.
+
+==== Module communication
+
+Modules communicate with each other through event-based <<channels,channels>>.
+Modules running in different processes communicate with each other over IPC channels.
+
+By default, modules will run in the same process as the controller, which loads the module.
+To load a module in a child process, ensure the `ipc` is enabled in the xref:{url_reference_config}[config] and xref:{url_core_reference_config}[set the environment variable] `LISK_CHILD_PROCESS_MODULES` with the module alias.
+
+TIP: If the respective module is using a high amount of CPU power, loading a module in a child process can prevent CPU usage bottlenecks.
+
+Multiple modules can be defined by using commas, as shown below: `LISK_CHILD_PROCESS_MODULES=httpApi,chain`.
+
+==== Module life cycle
+
+The <<_controller,controller>> will load/unload each module one after another.
+The life cycle of a module consists of the following events in the right order as shown below:
+
+*Loading*
+
+* `channel.moduleAlias:registeredToBus`
+* `channel.moduleAlias:loading:started`
+* `channel.moduleAlias:loading:finished`
+
+[[channels]]
+=== Channels
+
+[tabs]
+====
+InMemory channel::
++
+--
+Communicates with modules which reside in the same process as the <<controller, controller>>.
+
+By default, modules will load in the same process as the controller.
+--
+Child process channel::
++
+--
+Communicates with modules which do not reside in the same process as the Controller.
+
+The following methods described below are available for every module to use:
+--
+====
+
+==== subscribe
+
+This is used to subscribe to events occurring on the controller.
+
+[source,js]
+----
+channel.subscribe("moduleAlias:someEvent", eventObject => {});
+----
+
+This function accepts two arguments.
+The first is the event name prefixed with the name of the relevant module.
+The second argument is a callback which accepts one argument, which will be an instance of an <<event_object,event object>>.
+
+==== publish
+
+This is used to publish events to the controller, which will be delivered to all events subscribers.
+
+[source,js]
+----
+channel.publish('myModule:myContext:myEvent', eventObject);
+----
+
+This function accepts two arguments.
+The first one is the event name prefixed with the name of the relevant module.
+The second argument is the data object to be passed along the event.
+
+==== invoke
+
+This is used to invoke an action for a module.
+
+[source,js]
+----
+result = await channel.invoke('moduleAlias:someEvent', actionObject);
+----
+
+This function accepts two arguments.
+The first one is the event name prefixed with the name of the relevant module.
+The second argument is the data object to be passed along the action.
+
+[[event_object]]
+==== Event objects
+
+An event object is a simple JavaScript object with the following attributes:
+
+[options="header",]
+|===
+|Property |Type |Description
+
+|name |string |The name of the event which is triggered.
+
+|module |string |The name of the target module for which event was triggered.
+
+|data |mixed |The data which was sent while publishing the event.
+|===
+
+==== Action objects
+
+An action object is a simple javascript object with the following attributes:
+
+[width="100%",cols="11%,7%,82%",options="header",]
+|===
+|Property |Type |Description
+
+|name |string |Name of the action which is invoked.
+
+|module |string |The name of the target module for which action was invoked.
+
+|source |string |The name of source module which invoked that action.
+
+|params |mixed |The data which was associated with the invocation for the action.
+|===
+
+[[controller]]
+=== Controller
+
+The controller is responsible for initialization the communication bus and any other dependencies required to load the modules.
+If any module is configured to load as a child process, then this is performed by the controller.
+The controller defines a set of events, that each component can subscribe to.
+
+The following events and actions are available for all enabled modules, and are simultaneously accessible by all enabled modules.
+
+==== Events
+
+[NOTE]
+====
+Each module can also define its own custom events or actions and will register that list with the controller at the time of initialization.
+The controller contains a complete list of events, which may occur in the modules of Lisk Core at any given time.
+====
+
+[width="100%",cols="11%,89%",options="header",]
+|===
+|Event |Description
+
+|moduleAlias:registeredToBus
+|Triggered when the module has completed registering its events and actions with the controller.
+Hence, when this event is triggered, this ensures the controller has whitelisted its requested events and actions.
+
+|moduleAlias:loading:started |Triggered just before the controller calls the module’s `+load+` method.
+
+|moduleAlias:loading:error |Triggered if any error occurred during the call of the module’s `load` method.
+
+|moduleAlias:loading:finished |Triggered just after the module’s `load` method has completed execution.
+
+|moduleAlias:unloading:started |Triggered just before the controller calls the module’s `unload` method.
+
+|moduleAlias:unloading:error |Triggered if any error occurred during the call of module’s `unload` method.
+
+|moduleAlias:unloading:finished |Triggered just after the module’s `unload` method has completed execution.
+
+|lisk:ready |Triggered when the controller has finished initializing the modules, and each module has been successfully loaded.
+|===
+
+==== Actions
+
+[width="100%",cols="21%,79%",options="header",]
+|===
+|Action |Description
+
+|lisk:getComponentConfig |A controller action to get the configuration of any component defined in the controller space.
+|===
+
+=== Components
+
+Components are shared objects within the <<controller,controller>> layer which any <<modules,module>> can utilize.
+Components can use <<channels,channels>> if required for implementation behavior.
+The following components below are currently available:
+
+==== Cache
+
+This component provides basic caching capabilities, which are generic enough for any module to use if required.
+
+==== Logger
+
+Logger is responsible for all application-level logging activity.
+The logger component can be passed to any module, whereby it can be extended by adding module-specific behaviour.
+
+==== Storage
+
+The storage component is responsible for all database activity in the system.
+It exposes an interface with specific features for getting or setting particular database entities, and also a raw handler to the database object, so that any module can be extended for its own use.
+
+Further details about the storage component can be found in the dedicated {url_github_lip11}[LIP 11^].
+
+== Configuration of the Lisk Framework
+
+Configuration options are located in
+* `framework/src/modules/<module-name>/defaults/config.js` for each module
+* `framework/src/components/<component-name>/defaults/config.js` for each component.
+
+Each `config.js` file consists of the following 2 parts:
+
+. JSON-schema specification for all available config options.
+. Default values for the available config options for this specific module.
+
+[WARNING]
+====
+Please do not change the default values in these files directly as they will be overwritten when software updates are performed.
+Instead of changing the default values, define the xref:{url_guides_config}[custom configuration options] inside your blockchain application.
+====

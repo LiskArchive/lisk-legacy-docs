@@ -1,0 +1,3 @@
+var typedoc = typedoc || {};
+            typedoc.search = typedoc.search || {};
+            typedoc.search.data = {"kinds":{"32":"Variable"},"rows":[{"id":0,"kind":32,"name":"APIClient","url":"index.html#apiclient","classes":"tsd-kind-variable"},{"id":1,"kind":32,"name":"constants","url":"index.html#constants","classes":"tsd-kind-variable"},{"id":2,"kind":32,"name":"cryptography","url":"index.html#cryptography","classes":"tsd-kind-variable"},{"id":3,"kind":32,"name":"passphrase","url":"index.html#passphrase","classes":"tsd-kind-variable"},{"id":4,"kind":32,"name":"transactions","url":"index.html#transactions","classes":"tsd-kind-variable"},{"id":5,"kind":32,"name":"transaction","url":"index.html#transaction","classes":"tsd-kind-variable"}]};

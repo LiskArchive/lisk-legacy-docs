@@ -10,150 +10,202 @@ Mona Bärenfänger <mona@lightcurve.io>
 
 How to configure Lisk Service.
 
+== Show current configuration
+
+To show the current configuration of Lisk Service, execute the following command:
+
+[source,bash]
+----
+make print-config
+----
+
+.Result for the default config, which will connect Lisk Service to the Lisk Mainnet
+[source,yaml]
+----
+networks:
+  core_network: {}
+  services_network: {}
+services:
+  core:
+    depends_on:
+    - postgres_core
+    - redis_common
+    - redis_core
+    environment:
+      ENV_LISK_DB_DATABASE: lisk
+      ENV_LISK_DB_PASSWORD: password
+      ENV_LISK_DB_USER: lisk
+      GEOIP_JSON: https://geoip.lisk.io/json
+      LISK_CORE_HTTP: https://mainnet.lisk.io
+      LISK_CORE_WS: wss://mainnet.lisk.io
+      LISK_STATIC: https://static-data.lisk.io
+      SERVICE_BROKER: redis://redis_common:6379/0
+      SERVICE_CORE_POSTGRES: postgres://lisk:password@postgres_core:5432/lisk
+      SERVICE_CORE_REDIS: redis://redis_core:6379/0
+      SERVICE_LOG_CONSOLE: "false"
+      SERVICE_LOG_FILE: "false"
+      SERVICE_LOG_GELF: "false"
+      SERVICE_LOG_LEVEL: debug
+      SERVICE_LOG_STDOUT: "true"
+    image: lisk/service_core
+    networks:
+      core_network: {}
+      services_network: {}
+    restart: always
+  gateway:
+    depends_on:
+    - core
+    environment:
+      HOST: 0.0.0.0
+      PORT: '9901'
+      SERVICE_BROKER: redis://redis_common:6379/0
+      SERVICE_LOG_CONSOLE: "false"
+      SERVICE_LOG_FILE: "false"
+      SERVICE_LOG_GELF: "false"
+      SERVICE_LOG_LEVEL: debug
+      SERVICE_LOG_STDOUT: "true"
+    healthcheck:
+      test: curl --fail http://gateway:9901/api/v1/transactions
+    image: lisk/service_gateway
+    networks:
+      services_network: {}
+    ports:
+    - 127.0.0.1:9901:9901/tcp
+    restart: always
+  postgres_core:
+    image: postgres:10-alpine
+    networks:
+      core_network: {}
+    restart: always
+    volumes:
+    - postgres_core_vol:/var/lib/postgresql/data:rw
+  redis_common:
+    command: redis-server /etc/redis/redis.conf
+    healthcheck:
+      test: redis-cli ping
+    image: redis:5-alpine
+    networks:
+      services_network: {}
+    restart: always
+    volumes:
+    - /Users/mona/git/lisk-service/docker/redis/redis.volatile.conf:/etc/redis/redis.conf:ro
+  redis_core:
+    command: redis-server /etc/redis/redis.conf
+    healthcheck:
+      test: redis-cli ping
+    image: redis:5-alpine
+    networks:
+      core_network: {}
+    restart: always
+    volumes:
+    - /Users/mona/git/lisk-service/docker/redis/redis.persistent.conf:/etc/redis/redis.conf:ro
+version: '3.0'
+volumes:
+  postgres_core_vol: {}
+----
+
 [[default_configs]]
 == Default configurations
 
-Lisk Service provides different ready-to-use configuration files, which are located in the `env/` folder in the root directory of Lisk Service.
+Lisk Service provides different ready-to-use configuration files, which are located in the `docker/` folder of Lisk Service.
 
-.lisk-service/env/
+.lisk-service/docker/
 ----
-├── betanet.env
-├── export_env
-├── local.env
-├── mainnet.env
-└── testnet.env
+├── custom.env
+├── docker-compose.betanet.yml
+├── docker-compose.custom.yml
+├── docker-compose.devnet.yml
+├── docker-compose.mainnet.yml
+└── docker-compose.testnet.yml
 ----
 
-To connect to any of the networks displayed in the snippet above, simply copy all its contents and paste them into the `.env` file in the `docker/` folder.
+To connect to any of the networks displayed in the snippet above, simply change line 9 in the `Makefile` file:
 
-=== Mainnet
-
-.lisk-service/env/mainnet.env
+.Example: How to update the `Makefile`, to connect to the Betanet with Lisk Service
 [source,bash]
 ----
-## Lisk Service configuration
-# Service broker
-SERVICE_BROKER=redis://localhost:6379/0
 
-# Lisk Service Gateway
-PORT=9901
-HOST=0.0.0.0
-SERVICE_GATEWAY_REDIS=redis://localhost:6379/2
+.PHONY: clean coldstart mrproper up
+all: up
 
-# Lisk Service Core
-SERVICE_CORE_REDIS=redis://localhost:6379/1
-SERVICE_CORE_POSTGRES=postgres://lisk:password@localhost:5432/lisk
-ENV_LISK_DB_DATABASE=lisk
-ENV_LISK_DB_USER=lisk
-ENV_LISK_DB_PASSWORD=password
-
-# Lisk Service log config
-SERVICE_LOG_CONSOLE=false
-SERVICE_LOG_FILE=false
-SERVICE_LOG_GELF=false
-SERVICE_LOG_LEVEL=debug
-SERVICE_LOG_STDOUT=true
-
-## External services
-# Lisk ecosystem configuration
-LISK_CORE_HTTP=https://mainnet.lisk.io
-LISK_CORE_WS=wss://mainnet.lisk.io
-LISK_STATIC=https://static-data.lisk.io
-
-# Lisk Service geolocation backend
-GEOIP_JSON=https://geoip.lisk.io/json
+compose := docker-compose \
+	-f docker-compose.yml \
+	-f lisk_service/docker-compose.core.yml \
+	-f lisk_service/docker-compose.gateway.yml \
+	-f lisk_service/docker-compose.gateway-ports.yml \
+	-f docker-compose.betanet.yml <1>
 ----
 
-=== Testnet
+<1> Update this line from `-f docker-compose.mainnet.yml` to `-f docker-compose.NETWORK.yml`, where `NETWORK` can be either:
+* `betanet`
+* `custom`
+* `devnet`
+* `mainnet`
+* `testnet`
 
-.lisk-service/env/testnet.env
+After updating the `Makefile` like described above, start Lisk Service again:
+
 [source,bash]
 ----
-LISK_CORE_HTTP=https://testnet.lisk.io
-LISK_CORE_WS=wss://testnet.lisk.io
-LISK_STATIC=https://static-data.lisk.io
-
-SERVICE_BROKER=redis://localhost:6379/0
-SERVICE_CORE_POSTGRES=postgres://lisk:password@localhost:5432/lisk
-SERVICE_CORE_REDIS=redis://localhost:6379/1
-SERVICE_GATEWAY_REDIS=redis://localhost:6379/2
-
-SERVICE_LOG_CONSOLE=false
-SERVICE_LOG_FILE=./logs/app.log
-SERVICE_LOG_GELF=localhost:12201/udp
-SERVICE_LOG_LEVEL=info
-SERVICE_LOG_STDOUT=true
-
-GEOIP_JSON=https://geoip.lisk.io/json
-
+make up
 ----
 
-=== Betanet
-
-.lisk-service/env/betanet.env
-[source,bash]
-----
-LISK_CORE_HTTP=https://betanet.lisk.io
-LISK_CORE_WS=wss://betanet.lisk.io
-LISK_STATIC=https://static-data.lisk.io
-
-SERVICE_BROKER=redis://localhost:6379/0
-SERVICE_CORE_POSTGRES=postgres://lisk:password@localhost:5432/lisk
-SERVICE_CORE_REDIS=redis://localhost:6379/1
-SERVICE_GATEWAY_REDIS=redis://localhost:6379/2
-
-SERVICE_LOG_CONSOLE=false
-SERVICE_LOG_FILE=./logs/app.log
-SERVICE_LOG_GELF=localhost:12201/udp
-SERVICE_LOG_LEVEL=info
-SERVICE_LOG_STDOUT=true
-
-GEOIP_JSON=https://geoip.lisk.io/json
-----
-
-=== Devnet
-
-.lisk-service/env/local.env
-[source,bash]
-----
-LISK_CORE_HTTP=http://localhost:4000
-LISK_CORE_WS=ws://localhost:4000
-LISK_STATIC=https://static-data.lisk.io
-
-SERVICE_BROKER=redis://localhost:6379/0
-SERVICE_CORE_POSTGRES=postgres://lisk:password@localhost:5432/lisk
-SERVICE_CORE_REDIS=redis://localhost:6379/1
-SERVICE_GATEWAY_REDIS=redis://localhost:6379/2
-
-SERVICE_LOG_CONSOLE=false
-SERVICE_LOG_FILE=./logs/app.log
-SERVICE_LOG_GELF=localhost:12201/udp
-SERVICE_LOG_LEVEL=info
-SERVICE_LOG_STDOUT=true
-
-GEOIP_JSON=https://geoip.lisk.io/json
-----
+Lisk Service should now be connected to the desired network.
 
 == Custom configuration
+:sectnums:
 
-To manually change certain config options in Lisk Service, it is possible to either define them in the `.env` file, or alternatively, to export them via the command-line.
+=== The custom.env file
 
-=== .env file
+First, open the file `docker/custom.env`  .
 
-In addition to just copy-pasting the <<default_configs,preconfigured configuration files>>, it is of course also possible to adjust the `.env` file to suit your requirements.
+You will see the following contents:
 
-See a reference of <<config_options, all available config options>> below.
-
-=== Set environment variables
-
-Another option to configure Lisk Service is to export the environment variables directly in the command-line.
-
-.Example: Update the database password
 [source,bash]
 ----
-export ENV_LISK_DB_PASSWORD=myCustomPassword
+## Lisk Service custom configuration
+
+# Lisk Core node
+LISK_CORE_HTTP=https://mainnet.lisk.io
+LISK_CORE_WS=wss://mainnet.lisk.io
 ----
 
+The two existing options `LISK_CORE_HTTP` and `LISK_CORE_WS` are examples, how to set config options in this file.
+
+To see a list of the most important options, check out the <<config_options>>.
+
+To check see the complete list of all available config options of Lisk Service, go to the xref:reference/config[configuration reference].
+
+=== Update the Makefile
+
+.How to update the `Makefile`, to use a custom configuration
+[source,bash]
+----
+
+.PHONY: clean coldstart mrproper up
+all: up
+
+compose := docker-compose \
+	-f docker-compose.yml \
+	-f lisk_service/docker-compose.core.yml \
+	-f lisk_service/docker-compose.gateway.yml \
+	-f lisk_service/docker-compose.gateway-ports.yml \
+	-f docker-compose.custom.yml <1>
+----
+
+<1> Update this line from `-f docker-compose.mainnet.yml` to `-f docker-compose.custom.yml`.
+
+=== Start Lisk Service
+
+All left to do is to start Lisk Service again:
+
+.In the `lisk-service` root folder
+[source,bash]
+----
+make up
+----
+
+:!sectnums:
 [[config_options]]
 == Main configuration options
 
@@ -161,7 +213,7 @@ A summary of the most important config options of Lisk Service.
 
 Check out the xref:{url_references_config}[configuration reference] for a complete list of the available configuration options.
 
-[cols="1,2,2,1", options="header"]
+[cols="1,2,2,2", options="header"]
 .Main configuration options for Lisk Service
 |===
 |Category |Option |Example |Description

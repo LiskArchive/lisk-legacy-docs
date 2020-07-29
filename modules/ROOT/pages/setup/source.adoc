@@ -74,55 +74,18 @@ brew install node@12.15.0
 === PostgreSQL
 
 To install Postgres follow the instructions.
-Two alternative installation methods are explained below.
+
+[NOTE]
+====
+During this step it is possible to change your port if you wish to have more Postgres instances in the future.
+Remember to adjust the environment variable `POSTGRES_PORT` accordingly in the xref:configuration.adoc[configuration].
+====
 
 [tabs]
 ====
-Postgres with Docker::
+Ubuntu::
 +
 --
-Running Postgres inside a Docker container will setup the correct version of Postgres and containerize it away from any existing versions that may exist locally on your machine.
-Choose this setup if you are unfamiliar with Postgres, or if other issues occur with a previously installed version of Postgres.
-To successfully perform the command shown below, install Docker as described in the Setup page of the xref:{url_docker_setup][Lisk Core Docker image].
-
-WARNING: If other versions of PostgreSQL are currently installed on your machine, please ensure they are stopped before starting the Docker container.
-
-[source,bash]
-----
-docker run --name lisk_service_db -p 5432:5432 -e POSTGRES_USER=lisk -e POSTGRES_PASSWORD=password -e POSTGRES_DB=lisk -d postgres:10
-----
-
-This will install PostgreSQL version 10 (`postgres:10`) in a container with name `lisk_service_db` and binds the port `5432` of the container with the same port of the machine.
-As environment variables `POSTGRES_USER=lisk` is exposed in order to create the Lisk user, and `POSTGRES_PASSWORD=password` is used to set the password for the `lisk` user.
-Finally the environment variable `POSTGRES_DB` creates the database `lisk` with the `lisk` user as the owner.
-
-The above commands should be enough to set up the database ready to use with Lisk Service.
-To manage the Docker container, use the following commands displayed below:
-
-[source,bash]
-----
-docker stop lisk_service_db <1>
-docker start lisk_service_db <2>
-docker restart lisk_service_db <3>
-docker rm lisk_service_db <4>
-----
-
-<1> Stop the container.
-<2> Start the container.
-<3> Restart the container.
-<4> Remove the container.
-
-In order to access Postgres inside the container via the CLI, execute the following command displayed below:
-
-[source,bash]
-----
-docker exec --tty --interactive lisk_core_db psql -h localhost -U lisk -d postgres
-----
---
-Postgres system wide::
-+
---
-*Ubuntu*
 
 Firstly, install PostgreSQL on your machine as shown in the following commands listed below:
 
@@ -130,7 +93,6 @@ Firstly, install PostgreSQL on your machine as shown in the following commands l
 ----
 sudo apt-get purge -y postgres* <1>
 sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
-sudo apt install wget ca-certificates
 wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
 sudo apt update
 sudo apt install postgresql-10
@@ -154,14 +116,46 @@ sudo pg_createcluster --locale en_US.UTF-8 --start 10 main
 ----
 
 Create a new database user called `lisk` and grant it rights to create databases.
-Then create the database with the `lisk` user as owner.
+Then create the database `lisk` with the `lisk` user as owner.
 Finally, define the password for the `lisk` user:
 
 [source,bash]
 ----
 sudo -u postgres -i createuser --createdb lisk
 sudo -u postgres -i createdb lisk --owner lisk
-sudo -u postgres psql -d lisk_<NETWORK> -c "alter user lisk with password 'password';"
+sudo -u postgres psql -d lisk -c "alter user lisk with password 'password';"
+----
+
+IMPORTANT: Please change the `password` to a secure password of your choice.
+In addition, do not forget to update this password in the xref:{url_config}[Lisk Service configuration] afterwards.
+--
+MacOS::
++
+--
+[[postgres_macos]]
+To install the PostgreSQL version 10 execute the following command below:
+
+[source,bash]
+----
+brew install postgresql@10
+----
+
+The next step is to execute the following commands in order to have the PostgreSQL commands (e.g. `psql`), in your PATH:
+
+[source,bash]
+----
+echo 'export PATH="/usr/local/opt/postgresql@10/bin:$PATH"' >> ~/.bash_profile
+source ~/.bash_profile
+----
+
+Start the PostgreSQL, and create the `lisk` user and the database by executing the following commands below:
+
+[source,bash]
+----
+pg_ctl -D /usr/local/var/postgresql@10 start
+createuser lisk
+createdb --owner=lisk lisk
+psql --dbname=lisk --command="ALTER USER lisk WITH PASSWORD 'password';"
 ----
 
 IMPORTANT: Please change the `password` to a secure password of your choice.
@@ -172,6 +166,12 @@ In addition, do not forget to update this password in the xref:{url_config}[Lisk
 === Redis
 
 {url_redis}[Redis] is used for caching parsed exchange data.
+
+[NOTE]
+====
+During this step it is possible to change your port if you wish to have more Redis instances in the future.
+Remember to adjust the environment variable `REDIS_PORT` accordingly in the xref:configuration.adoc[configuration].
+====
 
 [source, bash]
 ----

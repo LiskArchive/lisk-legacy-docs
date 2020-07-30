@@ -8,8 +8,115 @@ Mona Bärenfänger <mona@lightcurve.io>
 :page-next: /lisk-service/management/source.html
 :page-next-title: PM2 commands
 
+:url_pm2: https://pm2.keymetrics.io/
+:url_pm2_ecosystem_file: https://pm2.keymetrics.io/docs/usage/application-declaration/
+
+:url_management_pm2: management/source.adoc
 :url_references_config: references/configuration.adoc
 
-The file `ecosystem.config.js` contains a sample configuration.
-Ensure it reflects your local environment.
-All configuration parameters are described in the xref:{url_references_config}[Configuration reference].
+== The ecosystem config files
+
+The {url_pm2_ecosystem_file}[ecosystem file^] allows to configure behavior, options, environment variables, logs files with {url_pm2}[PM2^] of each application.
+
+.Starts Lisk Service with the specified configuration
+[source,bash]
+----
+pm2 start ecosystem.mainnet.config.js
+----
+
+=== Default configurations
+
+There are 2 default ecosystem files in the root folder of `lisk-service`:
+
+* `ecosystem.mainnet.config.js` contains a configuration to connect to the Lisk Mainnet (default).
+* `ecosystem.testnet.config.js` contains a configuration to connect to the Lisk Testnet.
+
+.Contents of `ecosystem.mainnet.config.js`
+[source,javascript]
+----
+module.exports = {
+	apps: [
+		{
+			name: 'lisk-service-gateway',
+			script: 'app.js',
+			cwd: './services/gateway',
+			pid_file: './pids/service_gateway.pid',
+			out_file: './logs/service_gateway.log',
+			error_file: './logs/service_gateway.err',
+			log_date_format: 'YYYY-MM-DD HH:mm:ss SSS',
+			watch: false,
+			kill_timeout: 10000,
+			max_memory_restart: '512M',
+			instances: 1,
+			autorestart: true,
+			env: {
+				PORT: '9901',
+				SERVICE_BROKER: 'redis://localhost:6379/0',
+			},
+		},
+		{
+			name: 'lisk-service-core',
+			script: 'app.js',
+			cwd: './services/core',
+			pid_file: './pids/service_core.pid',
+			out_file: './logs/service_core.log',
+			error_file: './logs/service_core.err',
+			log_date_format: 'YYYY-MM-DD HH:mm:ss SSS',
+			watch: false,
+			kill_timeout: 10000,
+			max_memory_restart: '512M',
+			instances: 1,
+			autorestart: true,
+			env: {
+				SERVICE_BROKER: 'redis://localhost:6379/0',
+				LISK_CORE_HTTP: 'https://mainnet.lisk.io',
+				LISK_CORE_WS: 'wss://mainnet.lisk.io',
+				SERVICE_CORE_REDIS: 'redis://localhost:6379/1',
+				SERVICE_CORE_POSTGRES: 'postgres://lisk:password@localhost:5432/lisk',
+				LISK_STATIC: 'https://static-data.lisk.io',
+				GEOIP_JSON: 'https://geoip.lisk.io/json',
+			},
+		},
+	],
+};
+----
+
+=== Custom configuration
+
+To create a custom configuration, a good start is to copy one of the default configuration.
+
+[source,bash]
+----
+cp ecosystem.mainnet.config.js ecosystem.custom.config.js <1>
+----
+
+<1> Copies the file `ecosystem.mainnet.config.js` and renames it to `ecosystem.custom.config.js`.
+
+Now it is possible to open the new file `ecosystem.custom.config.js` and adjust as desired.
+
+Lisk Service can be configured in various ways by setting environment variables.
+
+TIP: All available configuration options are described in the xref:{url_references_config}[Configuration reference].
+
+To start Lisk Service with the custom ecosystem file, execute the following command:
+
+[source,bash]
+----
+pm2 start ecosystem.custom.config.js
+----
+
+Finally, if you want to use `npm start` and `npm stop` to start and stop Lisk Service with the custom configuration, dont forget to update the scripts in `package.json`:
+
+[source,json]
+----
+{
+  //[...]
+  "scripts": {
+    "start": "pm2 start ecosystem.custom.config.js",
+    "stop": "pm2 delete ecosystem.custom.config.js",
+  //[...]
+  }
+}
+----
+
+More commands how to manage Lisk Service with PM2 are described on the xref:{url_management_pm2}[PM2 commands] page.

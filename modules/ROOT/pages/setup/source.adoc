@@ -42,7 +42,7 @@ In Ubuntu and its derivatives APT is the base package management application. Ma
 apt update
 ----
 --
-MacOS::
+macOS::
 +
 --
 Install https://brew.sh/[Brew] by following the https://brew.sh/[latest instructions].
@@ -71,7 +71,7 @@ Install the `build-essential` package alongside with several development tools.
 sudo apt-get install -y build-essential git make
 ----
 --
-MacOS::
+macOS::
 +
 --
 xcode-select --install
@@ -130,9 +130,9 @@ curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
 sudo apt-get install -y nodejs
 ----
 
-*MacOS*
+*macOS*
 
-For MacOS, please execute the following command below:
+For macOS, please execute the following command below:
 
 [source,bash]
 ----
@@ -149,6 +149,117 @@ To install Postgres follow the instructions.
 ====
 During this step it is possible to change your port if you wish to have more Postgres instances in the future.
 Remember to adjust the environment variable `POSTGRES_PORT` accordingly in the xref:{url_config}[configuration].
+====
+
+[tabs]
+====
+PostgresSQL with Docker::
++
+--
+**Docker Setup**
+
+include::partial$docker-setup.adoc[]
+
+**Installation**
+CAUTION: If you have other versions of PostgreSQL installed on your machine, ensure they are stopped before starting the Docker container.
+
+[source,bash]
+----
+cd docker/postgres
+make up # to start PostgreSQL
+----
+
+The command above will install PostgreSQL version 10 (`postgres:10`) .
+
+The above commands should be enough to set up the database ready to use with Lisk Core.
+
+To stop the Docker container again, execute the following commands below:
+
+[source,bash]
+----
+make down # to stop PostgreSQL
+----
+--
+PostgresSQL system wide::
++
+--
+NOTE: See instructions for macOS below.
+
+*Ubuntu*
+
+Firstly, install PostgreSQL on your machine as shown in the following commands listed below:
+
+[source,bash]
+----
+sudo apt-get purge -y postgres* <1>
+sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+sudo apt update
+sudo apt install postgresql-10
+----
+
+<1> Remove all previously installed postgres versions.
+
+After the installation is completed it should be possible to see the Postgres database cluster by running the following commands listed below:
+
+[source,bash]
+----
+pg_lsclusters
+----
+
+Drop the existing database cluster, and replace it with a cluster with the locale `en_US.UTF-8`:
+
+[source,bash]
+----
+sudo pg_dropcluster --stop 10 main
+sudo pg_createcluster --locale en_US.UTF-8 --start 10 main
+----
+
+Create a new database user called `lisk` and grant it rights to create databases.
+Then create the database `lisk` with the `lisk` user as owner.
+Finally, define the password for the `lisk` user:
+
+[source,bash]
+----
+sudo -u postgres -i createuser --createdb lisk
+sudo -u postgres -i createdb lisk --owner lisk
+sudo -u postgres psql -d lisk -c "alter user lisk with password 'password';"
+----
+
+IMPORTANT: Please change the `password` to a secure password of your choice.
+In addition, do not forget to update this password in the xref:{url_config}[Lisk Service configuration] afterwards.
+
+*macOS*
+
+[[postgres_macos]]
+To install the PostgreSQL version 10 execute the following command below:
+
+[source,bash]
+----
+brew install postgresql@10
+----
+
+The next step is to execute the following commands in order to have the PostgreSQL commands (e.g. `psql`), in your PATH:
+
+[source,bash]
+----
+echo 'export PATH="/usr/local/opt/postgresql@10/bin:$PATH"' >> ~/.bash_profile
+source ~/.bash_profile
+----
+
+Start the PostgreSQL, and create the `lisk` user and the database by executing the following commands below:
+
+[source,bash]
+----
+pg_ctl -D /usr/local/var/postgresql@10 start
+createuser lisk
+createdb --owner=lisk lisk
+psql --dbname=lisk --command="ALTER USER lisk WITH PASSWORD 'password';"
+----
+
+IMPORTANT: Please change the `password` to a secure password of your choice.
+In addition, do not forget to update this password in the xref:{url_config}[Lisk Service configuration] afterwards.
+--
 ====
 
 [tabs]
@@ -199,7 +310,7 @@ sudo -u postgres psql -d lisk -c "alter user lisk with password 'password';"
 IMPORTANT: Please change the `password` to a secure password of your choice.
 In addition, do not forget to update this password in the xref:{url_config}[Lisk Service configuration] afterwards.
 --
-MacOS::
+macOS::
 +
 --
 [[postgres_macos]]
@@ -247,7 +358,7 @@ Ubuntu::
 sudo apt-get install redis-server
 ----
 --
-MacOS::
+macOS::
 +
 --
 [source, bash]

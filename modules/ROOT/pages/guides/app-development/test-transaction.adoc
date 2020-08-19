@@ -38,9 +38,9 @@ First, let's look at the `applyAsset()` function of the {url_github_hello_world_
 .Snippet of undoAsset(), File: hello_world/transactions/hello_transaction.js
 [source,js]
 ----
-applyAsset(store) {
+async applyAsset(store) {
     const errors = [];
-    const sender = store.account.get(this.senderId);
+    const sender = await store.account.get(this.senderId);
     if (sender.asset && sender.asset.hello) {
         errors.push(
             new TransactionError(
@@ -51,8 +51,8 @@ applyAsset(store) {
             )
         );
     } else {
-        const newObj = { ...sender, asset: { hello: this.asset.hello } };
-        store.account.set(sender.address, newObj);
+        sender.asset = { hello: this.asset.hello };
+        store.account.set(sender.address, sender);
     }
     return errors;
 }
@@ -60,11 +60,11 @@ applyAsset(store) {
 
 To test that the `applyAsset()` function is working as expected, write a unit test with {url_jest}[jest^]: {url_github_hello_world_tx_test}[hello_transaction.test.js^]:
 
-.File: transactions/tests/register-packet.test.js
+.File: transactions/tests/hello_transaction.test.js
 [source,js]
 ----
 const HelloTransaction = require('../hello_transaction');
-const {TransactionError, utils} = require('@liskhq/lisk-transactions');
+const { TransactionError } = require('@liskhq/lisk-transactions');
 const { when } = require('jest-when');
 
 describe('Hello Transaction', () => {
@@ -81,7 +81,7 @@ describe('Hello Transaction', () => {
     it('should save the hello string in the senders account assets', async () => { <2>
         // Arrange
         const asset = {
-            hello: "my hello message",
+            hello: 'my hello message',
         };
 
         const senderId = '16313739661670634666L';
@@ -100,22 +100,22 @@ describe('Hello Transaction', () => {
         const tx = new HelloTransaction({ <4>
             senderPublicKey,
             asset,
-            timestamp: utils.getTimeFromBlockchainEpoch(new Date()),
         });
-        tx.applyAsset(storeStub); <5>
+        await tx.applyAsset(storeStub); <5>
 
         // Assert
         expect(storeStub.account.set).toHaveBeenCalledWith( <6>
             mockedSenderAccount.address,
             {
                 address: mockedSenderAccount.address,
-                publicKey: 'c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f',
+                publicKey: mockedSenderAccount.publicKey,
                 asset,
             }
         );
+
     });
 
-    it('should reject the transaction, if the sender already has a hello string in their account.', async () => {
+    it('should reject the transaction, if the sender has already a hello string in their account.', async () => {
         // Arrange
         const asset = {
             hello: "my hello message",
@@ -147,11 +147,12 @@ describe('Hello Transaction', () => {
         const tx = new HelloTransaction({
             senderPublicKey,
             asset,
-            timestamp: utils.getTimeFromBlockchainEpoch(new Date()),
         });
 
+        const result = await tx.applyAsset(storeStub);
+
         // Assert
-        expect(tx.applyAsset(storeStub)).toMatchObject(errors);
+        expect(result).toMatchObject(errors);
     });
 });
 ----

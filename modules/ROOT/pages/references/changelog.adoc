@@ -8,11 +8,13 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_bigint: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt
 :url_github_devnet_genesis_payload: https://github.com/LiskHQ/lisk-sdk/blob/{v_sdk}/sdk/src/samples/genesis_block_devnet.json#L11
 :url_github_devnet_genesis_comid: https://github.com/LiskHQ/lisk-sdk/blob/{v_sdk}/sdk/src/samples/genesis_block_devnet.json#L9
+:url_github_lip15: https://github.com/LiskHQ/lips/blob/master/proposals/lip-0015.md
 :url_github_lip25: https://github.com/LiskHQ/lips/blob/master/proposals/lip-0025.md
 
 :url_config_reference: references/config.adoc
+:url_guides_tx_store: guides/app-development/custom-transactions.adoc#store
 
-== BigInt instead of BigNum
+== BigInt replaces BigNum
 
 In v4.0.0 xref:{url_bigint}[BigInt] is used to handle large numbers, like account balances and transfer amounts.
 
@@ -50,21 +52,64 @@ applyAsset(store) {
 --
 =====
 
-== Don't mutate account objects
+== Accounts from store are classes
+
+The accounts that are returned from the xref:{url_guides_tx_store}[store] in transactions are now returned as classes instead of pure objects.
+
+Because of this, it is recommended to mutate the received account class directly.
+
+[tabs]
+=====
+v4.x::
++
+--
+[source,js]
+----
+async applyAsset(store) {
+        const sender = await store.account.get(this.senderId);
+        sender.asset = { hello: this.asset.hello };
+        store.account.set(sender.address, sender);
+        // [...]
+}
+----
+--
+v3.x::
++
+--
+[source,js]
+----
+applyAsset(store) {
+        const sender = store.account.get(this.senderId);
+        const newObj = { ...sender, asset: { hello: this.asset.hello } };
+        store.account.set(sender.address, newObj);
+        // [...]
+}
+----
+--
+=====
 
 == Dynamic fees
 
 No static `FEE` property needs to be defined in a custom transaction anymore.
 
-The fee is now a required property for every transaction to be accepted byb a node.
+The fee is now a required parameter for every transaction to be accepted by a node.
 
 The specified fee must always be equal or higher to the defined minimum fee per bytes of the corresponding transaction type.
 
+
+
 == Nonce replaces the timestamp in transactions
+
+The timestamp that was a required property previousely have been replaced by the nonce.
+
+Every account in the network has a individual nonce, which is a number that increments +1 each time the respective account sends a transaction to the network.
+
+Nonces prevent transaction replays and enable users to invalidate transactions, in case of need.
+For more information about the reasoning bbehind this change, check out {url_github_lip15}[LIP 15: Enable transaction invalidation by using nonces instead of timestamps^].
 
 == Accounts must have a minimum balance
 
-{url_github_lip25}[LIP25^] introduces a new constant `minBbalance`, which is defining a minimum balance for all accounts in the network.
+{url_github_lip25}[LIP 25: Introduce minimum balance requirement for accounts^] introduces a new constant `minBbalance`, which is defining a minimum balance for all accounts in the network.
 
 If the minimum balance for accounts is set to a reasonable value, it prevents the network from certain spam attacks, like creating a lot of new accounts with basically no balance.
 

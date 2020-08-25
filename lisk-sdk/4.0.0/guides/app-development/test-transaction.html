@@ -121,11 +121,14 @@
   <li class="nav-item is-current-page single-page" data-depth="3">
     <a class="nav-link" href="test-transaction.html">Test a transaction</a>
   </li>
-  <li class="nav-item single-page" data-depth="3">
+  <li class="nav-item" data-depth="3">
+    <button class="nav-item-toggle"></button>
     <a class="nav-link" href="interact-with-api.html">Interact with the API</a>
-  </li>
-  <li class="nav-item single-page" data-depth="3">
+<ul class="nav-list">
+  <li class="nav-item single-page" data-depth="4">
     <a class="nav-link" href="broadcast.html">Broadcast a transaction</a>
+  </li>
+</ul>
   </li>
   <li class="nav-item single-page" data-depth="3">
     <a class="nav-link" href="frontend.html">Connect a frontend</a>
@@ -424,9 +427,9 @@ To test the complete logic of a custom transaction, it is required to write unit
 <div class="listingblock">
 <div class="title">Snippet of undoAsset(), File: hello_world/transactions/hello_transaction.js</div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">applyAsset(store) {
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">async applyAsset(store) {
     const errors = [];
-    const sender = store.account.get(this.senderId);
+    const sender = await store.account.get(this.senderId);
     if (sender.asset &amp;&amp; sender.asset.hello) {
         errors.push(
             new TransactionError(
@@ -437,8 +440,8 @@ To test the complete logic of a custom transaction, it is required to write unit
             )
         );
     } else {
-        const newObj = { ...sender, asset: { hello: this.asset.hello } };
-        store.account.set(sender.address, newObj);
+        sender.asset = { hello: this.asset.hello };
+        store.account.set(sender.address, sender);
     }
     return errors;
 }</code></pre>
@@ -448,10 +451,10 @@ To test the complete logic of a custom transaction, it is required to write unit
 <p>To test that the <code>applyAsset()</code> function is working as expected, write a unit test with <a href="https://jestjs.io/docs/en/getting-started" target="_blank" rel="noopener">jest</a>: <a href="https://github.com/LiskHQ/lisk-sdk-examples/blob/test-for-hello-world/hello_world/transactions/test/hello_transaction.test.js" target="_blank" rel="noopener">hello_transaction.test.js</a>:</p>
 </div>
 <div class="listingblock">
-<div class="title">File: transactions/tests/register-packet.test.js</div>
+<div class="title">File: transactions/tests/hello_transaction.test.js</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const HelloTransaction = require('../hello_transaction');
-const {TransactionError, utils} = require('@liskhq/lisk-transactions');
+const { TransactionError } = require('@liskhq/lisk-transactions');
 const { when } = require('jest-when');
 
 describe('Hello Transaction', () =&gt; {
@@ -468,7 +471,7 @@ describe('Hello Transaction', () =&gt; {
     it('should save the hello string in the senders account assets', async () =&gt; { <i class="conum" data-value="2"></i><b>(2)</b>
         // Arrange
         const asset = {
-            hello: "my hello message",
+            hello: 'my hello message',
         };
 
         const senderId = '16313739661670634666L';
@@ -487,19 +490,19 @@ describe('Hello Transaction', () =&gt; {
         const tx = new HelloTransaction({ <i class="conum" data-value="4"></i><b>(4)</b>
             senderPublicKey,
             asset,
-            timestamp: utils.getTimeFromBlockchainEpoch(new Date()),
         });
-        tx.applyAsset(storeStub); <i class="conum" data-value="5"></i><b>(5)</b>
+        await tx.applyAsset(storeStub); <i class="conum" data-value="5"></i><b>(5)</b>
 
         // Assert
         expect(storeStub.account.set).toHaveBeenCalledWith( <i class="conum" data-value="6"></i><b>(6)</b>
             mockedSenderAccount.address,
             {
                 address: mockedSenderAccount.address,
-                publicKey: 'c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f',
+                publicKey: mockedSenderAccount.publicKey,
                 asset,
             }
         );
+
     });
 
     it('should reject the transaction, if the sender already has a hello string in their account.', async () =&gt; {
@@ -534,11 +537,12 @@ describe('Hello Transaction', () =&gt; {
         const tx = new HelloTransaction({
             senderPublicKey,
             asset,
-            timestamp: utils.getTimeFromBlockchainEpoch(new Date()),
         });
 
+        const result = await tx.applyAsset(storeStub);
+
         // Assert
-        expect(tx.applyAsset(storeStub)).toMatchObject(errors);
+        expect(result).toMatchObject(errors);
     });
 });</code></pre>
 </div>

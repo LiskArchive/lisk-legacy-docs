@@ -500,8 +500,7 @@ If a carrier has a lower trust than the minimal required trust level, it is not 
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const {
     BaseTransaction,
-    TransactionError,
-    utils
+    TransactionError
 } = require('@liskhq/lisk-transactions');
 
 /**
@@ -513,26 +512,19 @@ class RegisterPacketTransaction extends BaseTransaction {
         return 20;
     }
 
-    static get FEE () {
-        return '0';
-    };
-
-    /* Prepare function stores both sender and packet account in the cache so it is possible to
-       modify the accounts during the `applyAsset` and `undoAsset` steps. */
     async prepare(store) {
         await store.account.cache([
             {
                 address: this.asset.packetId,
             },
             {
-                senderPublicKey: this.senderPublicKey,
+                address: this.senderId,
             }
         ]);
     }
 
-    /* Static checks for presence and correct datatypes of transaction parameters in
-       asset field like `minTrust`, `security`, `postage`, etc. */
     validateAsset() {
+        // Static checks for presence of `packetId`, `postage`, `security`, and `minTrust`.
         const errors = [];
         if (!this.asset.packetId || typeof this.asset.packetId !== 'string') {
             errors.push(
@@ -580,31 +572,22 @@ class RegisterPacketTransaction extends BaseTransaction {
         return errors;
     }
 
-    applyAsset(store) {
+    async applyAsset(store) {
         const errors = [];
-        /* Retrieve packet account from key-value store. */
-        const packet = store.account.get(this.asset.packetId);
-        /* Check if packet account already has a status assigned.
-           If yes, then this means the package is already registered so an error is thrown. */
+        const packet = await store.account.get(this.asset.packetId);
+
         if (!packet.asset.status) {
             /* --- Modify sender account --- */
             /**
              * Update the sender account:
              * - Deduct the postage from senders' account balance
              */
-            const sender = store.account.get(this.senderId);
-            /* Deduct the defined postage from the sender's account balance. */
-            const senderBalancePostageDeducted = new utils.BigNum(sender.balance).sub(
-                new utils.BigNum(this.asset.postage)
-            );
-            /* Save the updated sender account with the new balance into the key-value store. */
-            const updatedSender = {
-                ...sender,
-                balance: senderBalancePostageDeducted.toString(),
-            };
-            store.account.set(sender.address, updatedSender);
+            const sender = await store.account.get(this.senderId);
+            sender.balance = BigInt(sender.balance) - BigInt(this.asset.postage);
 
-             /* --- Modify packet account --- */
+            store.account.set(sender.address, sender);
+
+            /* --- Modify packet account --- */
             /**
              * Update the packet account:
              * - Add the postage to the packet account balance
@@ -617,27 +600,18 @@ class RegisterPacketTransaction extends BaseTransaction {
              *   - minTrust: Minimal trust that is needed to be carrier for the packet
              *   - status: Status of the transport (pending|ongoing|success|fail)
              */
-            /* Add the postage now to the packet's account balance. */
-            const packetBalanceWithPostage = new utils.BigNum(packet.balance).add(
-                new utils.BigNum(this.asset.postage)
-            );
+            packet.balance = packet.balance + BigInt(this.asset.postage);
 
-            const updatedPacketAccount = {
-                ...packet,
-                ...{
-                    balance: packetBalanceWithPostage.toString(),
-                    asset: {
-                        recipient: this.asset.recipientId,
-                        sender: this.senderId,
-                        security: this.asset.security,
-                        postage: this.asset.postage,
-                        minTrust: this.asset.minTrust,
-                        status: 'pending',
-                        carrier: null
-                    }
-                }
+            packet.asset = {
+                recipient: this.asset.recipientId,
+                sender: this.senderId,
+                security: this.asset.security,
+                postage: this.asset.postage,
+                minTrust: this.asset.minTrust.toString(),
+                status: 'pending',
+                carrier: null
             };
-            store.account.set(packet.address, updatedPacketAccount);
+            store.account.set(packet.address, packet);
         } else {
             errors.push(
                 new TransactionError(
@@ -649,27 +623,20 @@ class RegisterPacketTransaction extends BaseTransaction {
         return errors;
     }
 
-    undoAsset(store) {
+    async undoAsset(store) {
         const errors = [];
 
-        /* UndoAsset function tells the blockchain how to rollback changes made in the applyAsset function.
-           The original balance for both the sender and package account is restored.
-           In addtion, the `asset` field for the package account to `null` is reset, as it did not hold any previous data.*/
-        /* --- Revert sender account --- */                                         <i class="conum" data-value="8"></i><b>(8)</b>
-        const sender = store.account.get(this.senderId);
-        const senderBalanceWithPostage = new utils.BigNum(sender.balance).add(
-            new utils.BigNum(this.asset.postage)
-        );
-        const updatedSender = {
-            ...sender,
-            balance: senderBalanceWithPostage.toString()
-        };
-        store.account.set(sender.address, updatedSender);
+        /* --- Revert sender account --- */
+        const sender = await store.account.get(this.senderId);
+        sender.balance = sender.balance + BigInt(this.asset.postage);
+
+        store.account.set(sender.address, sender);
 
         /* --- Revert packet account --- */
-        const packet = store.account.get(this.asset.packetId);
-        /* something is missing here */
-        store.account.set(packet.address, originalPacketAccount);
+        const packet = await store.account.get(this.asset.packetId);
+        packet.balance = BigInt("0");
+        packet.asset = null;
+        store.account.set(packet.address, packet);
 
         return errors;
     }
@@ -746,8 +713,7 @@ This security cannot be accessed by the carrier, unless the transport has been f
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const {
     BaseTransaction,
-    TransactionError,
-    utils
+    TransactionError
 } = require('@liskhq/lisk-transactions');
 
 class StartTransportTransaction extends BaseTransaction {
@@ -756,54 +722,40 @@ class StartTransportTransaction extends BaseTransaction {
         return 21;
     }
 
-    static get FEE () {
-        return '0';
-    };
-
-    /* The `senderId`, which is the carrier account and
-       the `recipientId` are both cached, which is the packet account in the `prepare` function. */
     async prepare(store) {
         await store.account.cache([
             {
                 address: this.asset.recipientId,
             },
             {
-                senderPublicKey: this.senderPublicKey,
+                address: this.senderId,
             }
         ]);
     }
 
-    /* No static validation is required, as there is no data being sent in the `asset` field. */
     validateAsset() {
         const errors = [];
 
         return errors;
     }
 
-    applyAsset(store) {
+    async applyAsset(store) {
         const errors = [];
-        const packet = store.account.get(this.asset.recipientId);
+        const packet = await store.account.get(this.asset.recipientId);
         if (packet.asset.status === "pending"){
-            const carrier = store.account.get(this.senderPublicKey);
+            const carrier = await store.account.get(this.senderId);
             // If the carrier has the trust to transport the packet
-            const carrierTrust = carrier.asset.trust ? carrier.asset.trust : 0;
-            const carrierBalance = new utils.BigNum(carrier.balance);
-            const packetSecurity = new utils.BigNum(packet.asset.security);
-            /* Check if the carrier has the minimal trust required for accepting the package.
-               In addition, the carriers balance is checked to see if it is larger than the required security balance, as it is necessary to lock this security inside the account. */
-            if (packet.asset.minTrust &lt;= carrierTrust &amp;&amp; carrierBalance.gte(packetSecurity)) {
+            const carrierTrust = carrier.asset.trust ? carrier.asset.trust : '0';
+            if (BigInt(packet.asset.minTrust) &lt;= BigInt(carrierTrust) &amp;&amp; carrier.balance &gt;= BigInt(packet.asset.security)) {
                 /**
                  * Update the Carrier account:
                  * - Lock security inside the account
                  * - Remove the security from balance
                  * - initialize carriertrust, if not present already
                  */
-                /* Next,the defined security is locked, (number of LSK tokens) in the asset field
-                   under the property `lockedSecurity` and this security is deducted from the `carrierBalance`. */
-                const carrierBalanceWithoutSecurity = carrierBalance.sub(packetSecurity);
-                const carrierTrust = carrier.asset.trust ? carrier.asset.trust : 0;
-                const updatedCarrier = /* Insert the updated carrier account here*/
-                store.account.set(carrier.address, updatedCarrier);
+                carrier.balance = { /* Write your code here */ };
+                carrier.asset = { /* Write your code here */ };
+                store.account.set(carrier.address, carrier);
                 /**
                  * Update the Packet account:
                  * - Set status to "ongoing"
@@ -819,7 +771,7 @@ class StartTransportTransaction extends BaseTransaction {
                         packet.asset.minTrust,
                         carrier.asset.trust,
                         packet.asset.security,
-                        carrier.balance
+                        carrier.balance.toString()
                     )
                 );
             }
@@ -835,37 +787,20 @@ class StartTransportTransaction extends BaseTransaction {
         return errors;
     }
 
-    undoAsset(store) {
+    async undoAsset(store) {
         const errors = [];
-        const packet = store.account.get(this.asset.recipientId);
-        const carrier = store.account.get(this.senderPublicKey);
+        const packet = await store.account.get(this.asset.packetId);
+        const carrier = await store.account.get(this.senderId);
         /* --- Revert carrier account --- */
-        const carrierBalanceWithSecurity = new utils.BigNum(carrier.balance).add(
-            new utils.BigNum(packet.assset.security)
-        );
-        /* For the `undoAsset` function, it is necessary to revert the steps of `applyAsset` again.
-           Hence, it is necessary to remove the locked balance in the `asset` field and add this
-           number again to the `balance` of the carrier's account. */
-        const updatedCarrier = {
-            ...carrier,
-            balance: carrierBalanceWithSecurity.toString()
-        };
-        store.account.set(carrier.address, updatedCarrier);
+        carrier.balance = carrier.balance + BigInt(packet.asset.security);
+
+        store.account.set(carrier.address, carrier);
         /* --- Revert packet account --- */
-        /* For the packet account, it is also necessary to undo certain items.
-           Now set the `deliveryStatus` again to `pending`.
-           The `carrier` value need sto be nullified as well. */
-        const updatedData = {
-            asset: {
-                deliveryStatus: "pending",
-                carrier: null
-            }
+        packet.asset = {
+            deliveryStatus: "pending",
+            carrier: null
         };
-        const newObj = {
-            ...packet,
-            ...updatedData
-        };
-        store.account.set(packet.address, newObj);
+        store.account.set(packet.address, packet);
         return errors;
     }
 
@@ -881,7 +816,7 @@ module.exports = StartTransportTransaction;</code></pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const carrierBalanceWithoutSecurity = carrierBalance.sub(packetSecurity);</code></pre>
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const carrierBalanceWithoutSecurity = carrierBalance - packetSecurity;</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -1017,14 +952,14 @@ The recipient needs to sign the <code>FinishTransportTransaction</code>, that ve
 <div class="listingblock">
 <div class="title">Code for <code>applyAsset()</code> of <code>finish-transport.js</code></div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">applyAsset(store) {
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">async applyAsset(store) {
     const errors = [];
-    let packet = store.account.get(this.asset.recipientId);
-    let carrier = store.account.get(packet.asset.carrier);
-    let sender = store.account.get(packet.asset.sender);
+    let packet = await store.account.get(this.asset.packetId);
+    let carrier = await store.account.get(packet.asset.carrier);
+    let sender = await store.account.get(packet.asset.sender);
     // if the transaction has been signed by the packet recipient
-    if (this.asset.senderId === packet.carrier) {
-        // if the packet status is not "ongoing" and not "alarm"
+    if (this.senderId === packet.asset.recipient) {
+        // if the packet status isn't "ongoing" or "alarm"
         if (packet.asset.status !==  "ongoing" &amp;&amp; packet.asset.status !== "alarm") {
             errors.push(
                 new TransactionError(
@@ -1036,31 +971,44 @@ The recipient needs to sign the <code>FinishTransportTransaction</code>, that ve
             );
             return errors;
         }
-        // if the transport was SUCCESSFUL
-        if (this.asset.status === "success") {
+        // if the transport was a success
+        if ( this.asset.status === "success") {
             /**
              * Update the Carrier account:
              * - Unlock security
              * - Add postage &amp; security to balance
              * - Earn 1 trustpoint
              */
-            /* Write your own code here*/
+            carrier.balance = carrier.balance + BigInt(packet.asset.security) + BigInt(packet.asset.postage);
+            const trustInc = carrier.asset.trust ? BigInt(carrier.asset.trust) + BigInt(1) : BigInt(1);
+
+            carrier.asset = {
+                ...carrier.asset,
+                trust: trustInc.toString(),
+                lockedSecurity: null
+            };
+
+            store.account.set(carrier.address, carrier);
             /**
              * Update the Packet account:
              * - Remove postage from balance
              * - Change status to "success"
              */
-            /* Write your own code here */
+            packet.balance = BigInt(0);
+            packet.asset = {
+                ...packet.asset,
+                status: 'success'
+            }
+
+            store.account.set(packet.address, packet);
             return errors;
         }
-        // if the transport FAILED
+        // if the transport failed
         /**
          * Update the Sender account:
          * - Add postage and security to balance
          */
-        const senderBalanceWithSecurityAndPostage = new utils.BigNum(sender.balance).add(new utils.BigNum(packet.asset.security)).add(new utils.BigNum(packet.asset.postage));
-
-        sender.balance = senderBalanceWithSecurityAndPostage.toString();
+        sender.balance = sender.balance + BigInt(packet.asset.security) + BigInt(packet.asset.postage);
 
         store.account.set(sender.address, sender);
         /**
@@ -1068,8 +1016,12 @@ The recipient needs to sign the <code>FinishTransportTransaction</code>, that ve
          * - Reduce trust by 1
          * - Set lockedSecurity to 0
          */
-        carrier.asset.trust = carrier.asset.trust ? --carrier.asset.trust : -1;
-        carrier.asset.lockedSecurity = null;
+        const trustDec = carrier.asset.trust ? BigInt(carrier.asset.trust) - BigInt(1) : BigInt(-1);
+        carrier.asset = {
+            ...carrier.asset,
+            trust: trustDec.toString(),
+            lockedSecurity: null
+        };
 
         store.account.set(carrier.address, carrier);
         /**
@@ -1077,8 +1029,11 @@ The recipient needs to sign the <code>FinishTransportTransaction</code>, that ve
          * - set status to "fail"
          * - Remove postage from balance
          */
-        packet.balance = '0';
-        packet.asset.status = 'fail';
+        packet.balance = BigInt('0');
+        packet.asset = {
+            ...packet.asset,
+            status: 'fail'
+        };
 
         store.account.set(packet.address, packet);
 
@@ -1122,17 +1077,17 @@ The recipient needs to sign the <code>FinishTransportTransaction</code>, that ve
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">async prepare(store) {
     /**
-     * Get packet account.
+     * Get packet account
      */
     await store.account.cache([
         {
-            address: this.asset.recipientId,
+            address: this.asset.packetId,
         }
     ]);
     /**
-     * Get sender and recipient accounts of the packet.
+     * Get sender and recipient accounts of the packet
      */
-    const pckt = store.account.get(this.asset.recipientId);
+    const pckt = await store.account.get(this.asset.packetId);
     await store.account.cache([
         {
             address: pckt.asset.carrier,
@@ -1231,7 +1186,7 @@ const StartTransportTransaction = require('../transactions/start-transport');
 const FinishTransportTransaction = require('../transactions/finish-transport');
 const LightAlarmTransaction = require('../transactions/light-alarm');
 
-configDevnet.app.label = 'lisk-transport';
+configDevnet.label = 'lisk-transport';
 configDevnet.modules.http_api.access.public = true;
 
 const app = new Application(genesisBlockDevnet, configDevnet);
@@ -1280,22 +1235,20 @@ app
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
   "carrier": {
-    "address": "6795425954908428407L",
-    "passphrase": "coach pupil shock error defense outdoor tube love action exist search idea",
-    "encryptedPassphrase": "iterations=1&amp;salt=4ba0d3869948e39a7f9a096679674655&amp;cipherText=f0a1f0009ded34c79a0af40f12fcf35071a88de0778abea2a1f07861386a4b5c6b13f308f1ebf1af9098b66ed77cb22fc8bd872fa71ff71f3dbed1194928b7e447cb4089359a8be64093f9c1c8a3dca8&amp;iv=e0f1fb7574873142c672a565&amp;tag=ad56e67c5115e9a211c3907c400b9458&amp;version=1",
-    "publicKey": "7b97ac4819515de345570181642d975590154e434f86ece578c91bbfa2e4e1e7",
-    "privateKey": "c7723897eaaf4462dc0b914af2b1e4905e42a548866e0ddfb09efdfdd4d2df507b97ac4819515de345570181642d975590154e434f86ece578c91bbfa2e4e1e7"
+    "passphrase": "endless focus guilt bronze hold economy bulk parent soon tower cement venue",
+    "privateKey": "a30c9e2b10599702b985d18fee55721b56691877cd2c70bbdc1911818dabc9b9508a965871253595b36e2f8dc27bff6e67b39bdd466531be9c6f8c401253979c",
+    "publicKey": "508a965871253595b36e2f8dc27bff6e67b39bdd466531be9c6f8c401253979c",
+    "address": "8531579280410192796L"
   },
   "recipient": {
-    "name": "delegate_100",
-    "address": "11012441063093501636",
-    "passphrase": "dream theory eternal recall valid clever mind sell doctor empower bread cage",
-    "encryptedPassphrase": "iterations=10&amp;cipherText=b009292f88ea0f9f5b5aec47a6168b328989a37e7567aea697b8011b3d7fb63a07d7d8553c1a52740fd14453d84f560fda384bf1c105b5c274720d7cb6f3dbf6a9ed9f967cdc7e57f274083c&amp;iv=ec7e5ebe2c226fcd8209fc06&amp;salt=0478b7883713866370ae927af7525ed2&amp;tag=29aa766741bf5b4bbcfeaf3cd33ad237&amp;version=1",
-    "publicKey": "d8685de16147583d1b9f2e06eb43c6af9ba03844df30e20f3cda0b681c14fb05"
+    "passphrase": "mushroom edit regular pencil ten casino wine north vague bachelor swim piece",
+    "privateKey": "a0b281d0449f9c2977f5fa40114c1c7e1550ff3c785bcdb1ac25f64a1c627154a9a3c363a71a3089566352127cf0e6f79d3834e1d67b4132b98d35afd3b85375",
+    "publicKey": "a9a3c363a71a3089566352127cf0e6f79d3834e1d67b4132b98d35afd3b85375",
+    "address": "7700165370820050502L"
   },
   "sender": {
-    "address": "11237980039345381032L",
-    "passphrase": "creek own stem final gate scrub live shallow stage host concert they"
+    "address": "5059876081639179984L",
+    "passphrase": "peanut hundred pen hawk invite exclude brain chunk gadget wait wrong ready"
   }
 }</code></pre>
 </div>
@@ -1482,19 +1435,6 @@ Check if the transport has been successful or if it has failed, then verify the 
 </td>
 <td class="content">
 Time to celebrate! \o/
-</td>
-</tr>
-</table>
-</div>
-<div class="admonitionblock tip">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-tip" title="Tip"></i>
-</td>
-<td class="content">
-Move on to <a href="part4.html" class="page">section 3: Next steps</a>.
-This contains additional useful information and further help.
 </td>
 </tr>
 </table>

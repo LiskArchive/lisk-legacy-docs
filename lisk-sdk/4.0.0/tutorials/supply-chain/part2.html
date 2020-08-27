@@ -497,8 +497,7 @@ If something unexpected is detected by the IoT app, it will create a transaction
 │   ├── accounts.json
 │   ├── app.js
 │   ├── package.json
-│   ├── scripts
-│   └── views
+│   └── views/
 ├── iot                                             <i class="conum" data-value="2"></i><b>(2)</b>
 │   ├── README.md
 │   ├── lisk_rpi_ldr_and_temperature_sensors_wiring.png
@@ -569,12 +568,6 @@ class LightAlarmTransaction extends BaseTransaction {
         return 23;
     }
 
-    /* The transaction `fee`. This needs to be paid by the sender when posting the transaction to the network.
-       It is set to `0`, so the packet does not need any funds to send an alarm transaction. */
-    static get FEE () {
-        return '0';
-    };
-
     /* Data from the packet account is cached from the databse. */
     async prepare(store) {
         await store.account.cache([
@@ -595,17 +588,22 @@ class LightAlarmTransaction extends BaseTransaction {
         return errors;
     }
 
-    applyAsset(store) {
+    async applyAsset(store) {
         /* Insert the logic for applyAsset() here */
     }
 
-    undoAsset(store) {
+    async undoAsset(store) {
         const errors = [];
-        const packet = store.account.get(this.senderPublicKey);
+        const packet = await store.account.get(this.senderPublicKey);
 
         /* --- Revert packet status --- */
         packet.asset.status = null;
         packet.asset.alarms.light.pop();
+        const tmpAlarms = packet.asset.alarms;
+        packet.asset = {
+            status: null,
+            alarms : tmpAlarms
+        };
 
         store.account.set(packet.address, packet);
         return errors;
@@ -721,24 +719,29 @@ An example showing the implementation of <code>applyAsset</code> for the <code>L
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">/*Inside of `applyAsset`, it is possible to utilise the cached data from the `prepare` function,
  * which is stored inside of the `store` parameter.*/
-applyAsset(store) {
+async applyAsset(store) {
     const errors = [];
 
     /* With `store.account.get(ADDRESS)` the account data of the packet account can be seen.
      * `this.senderId` is specified as an address, due to the fact that the light alarm is always signed and sent by the packet itself. */
-    const packet = store.account.get(this.senderId);
+    const packet = await store.account.get(this.senderId);
 
     /**
      * Update the Packet account:
      * - set packet status to "alarm"
      * - add current timestamp to light alarms list
      */
-    packet.asset.status = 'alarm';
-    packet.asset.alarms = packet.asset.alarms ? packet.asset.alarms : {};
-    packet.asset.alarms.light = packet.asset.alarms.light ? packet.asset.alarms.light : [];
-    packet.asset.alarms.light.push(this.timestamp);
+    const alarms = packet.asset.alarms ? packet.asset.alarms : {};
+    alarms.light = packet.asset.alarms.light ? packet.asset.alarms.light : [];
+    alarms.light.push(this.asset.timestamp);
 
-    /* When all changes have been made they are applied to the database by executing `store.account.set(ADDRESS, DATA)`; */
+    packet.asset = {
+        ...packet.asset,
+        status: 'alarm',
+        alarms: alarms
+
+    };
+
     store.account.set(packet.address, packet);
 
     /* Unlike in `validateAsset`, the `store` parameter is present here.
@@ -761,7 +764,7 @@ Without this step the nodes will not have the logic to validate a <code>LightAla
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { Application, genesisBlockDevnet, configDevnet } = require('lisk-sdk');
 const LightAlarmTransaction = require('../transactions/light-alarm');           <i class="conum" data-value="1"></i><b>(1)</b>
 
-configDevnet.app.label = 'lisk-transport';
+configDevnet.label = 'lisk-transport';
 
 const app = new Application(genesisBlockDevnet, configDevnet);
 
@@ -877,7 +880,7 @@ Request timeout for icmp_seq 84
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">mkdir light_alarm #Create a folder to hold the tracking script.
 cd light_alarm
 npm init --yes #Creates the `package.json` file.
-npm i @liskhq/lisk-transactions @liskhq/lisk-api-client @liskhq/lisk-constants rpi-pins #Install dependencies.</code></pre>
+npm i @liskhq/lisk-transactions @liskhq/lisk-api-client @liskhq/lisk-cryptography rpi-pins #Install dependencies.</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -934,17 +937,12 @@ const LightAlarmTransaction = require('./light-alarm');
 const { APIClient } = require('@liskhq/lisk-api-client');
 const {getNetworkIdentifier} = require('@liskhq/lisk-cryptography');
 const networkIdentifier = getNetworkIdentifier(
-    "23ce0366ef0a14a91e5fd4b1591fc880ffbef9d988ff8bebf8f3666b0c09597d",
+    "19074b69c97e6f6b86969bb62d4f15b888898b499777bda56a3a2ee642a7f20a",
     "Lisk",
 );
 
 // Replace `localhost` with the IP of the required node to reach for the API requests.
 const api = new APIClient(['http://localhost:4000']);
-
-// Check config file or visit localhost:4000/api/node/constants to verify your epoc time, (OK when using /transport/node/index.js).
-const dateToLiskEpochTimestamp = date =&gt; (
-    Math.floor(new Date(date).getTime() / 1000) - Math.floor(new Date(Date.UTC(2016, 4, 24, 17, 0, 0, 0)).getTime() / 1000)
-);
 
 const packetCredentials = { /* Insert the credentials of the packet here in step 1.3 */ }
 
@@ -952,16 +950,21 @@ const packetCredentials = { /* Insert the credentials of the packet here in step
 setInterval(() =&gt; {
 	let state = GPIO.read(4);
     if(state === 0) {
-        console.log('Package has been opened! Send lisk transaction!');
+        console.log('Package has been opened! Send alarm transaction!');
 
         // Uncomment the below code in step 1.3 of the workshop
         /*
-        let tx = new LightAlarmTransaction({
-            networkIdentifier: networkIdentifier,
-            timestamp: dateToLiskEpochTimestamp(new Date())
+        api.accounts.get({address: packetCredentials.address}).then(response1 =&gt; {
+
+        let tx =  new LightAlarmTransaction({
+            asset: {
+                timestamp: new Date().getTime() / 1000
+            },
+            fee: transactions.utils.convertLSKToBeddows('0.01'),
+            nonce: response1.data[0].nonce
         });
 
-        tx.sign(packetCredentials.networkIdentifier, packetCredentials.passphrase);
+        tx.sign(networkIdentifier, packetCredentials.passphrase);
 
         api.transactions.broadcast(tx.toJSON()).then(res =&gt; {
             console.log("++++++++++++++++ API Response +++++++++++++++++");
@@ -1077,8 +1080,10 @@ If not, start the blockchain by navigating to the <code>node/</code> folder and 
 <p>Navigate to the <code>Initialize</code> page (web app running at <a href="http://localhost:3000" class="bare">http://localhost:3000</a>), to create a new packet account.
 Every time the page is refreshed, new packet credentials are created and initialized on the network.</p>
 </div>
-<div class="paragraph">
-<p><span class="image"><img src="../../_images/initialize-step1.png" alt="Initialization of the packet account"></span></p>
+<div class="imageblock">
+<div class="content">
+<img src="../../_images/initialize-step1.png" alt="Initialization of the packet account">
+</div>
 </div>
 <div class="paragraph">
 <p>Copy the object with the credentials and paste it as <code>packetCredentials</code> in your <a href="#step1_2_2">tracking script</a> on the Raspberry Pi.
@@ -1166,25 +1171,13 @@ At this point nothing should be visible on the page yet.</p>
 <div class="paragraph">
 <p><strong>If timestamps are visible and have been added to <code>asset.alarms.light</code> of the packet account, then <code>part 1</code> of the workshop has succesfully been completed! \o/ </strong></p>
 </div>
-<div class="paragraph">
-<p><span class="image"><img src="../../_images/packet-carrier-step1.png" alt="packet account"></span></p>
+<div class="imageblock">
+<div class="content">
+<img src="../../_images/packet-carrier-step1.png" alt="packet account">
 </div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
+</div>
 <div class="paragraph">
 <p>Now it is possible to detect a packet manipulation, and save the corresponding timestamp on the blockchain.</p>
-</div>
-<div class="paragraph">
-<p><a href="part3.html" class="page">Click here to continue with part 2: Create a simple supply chain system</a></p>
-</div>
-</td>
-</tr>
-</table>
 </div>
 </div>
 </div>

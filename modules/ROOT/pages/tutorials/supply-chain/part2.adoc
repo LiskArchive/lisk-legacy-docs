@@ -10,7 +10,6 @@
 
 :url_customize_interface: guides/app-development/custom-transactions.adoc#interface
 :url_tutorials_hello_step3: tutorials/hello-world.adoc#step3
-:url_transport_2: tutorials/supply-chain/part3.adoc
 
 The goal of Part 1 is to implement a simple application that tracks sensor measurements on the blockchain.
 Therefore once the IoT application is started, it will immediately send an `LightAlarmTransaction` to the network, whenever the sensor detects light.
@@ -41,8 +40,6 @@ to this:
 ----
 const LightAlarmTransaction = require('../transactions/solutions/light-alarm');
 ----
-
-
 ====
 
 ****
@@ -78,8 +75,7 @@ The basic file structure can be seen below: (contents of `lisk-sdk-examples/tran
 │   ├── accounts.json
 │   ├── app.js
 │   ├── package.json
-│   ├── scripts
-│   └── views
+│   └── views/
 ├── iot                                             <2>
 │   ├── README.md
 │   ├── lisk_rpi_ldr_and_temperature_sensors_wiring.png
@@ -131,12 +127,6 @@ class LightAlarmTransaction extends BaseTransaction {
         return 23;
     }
 
-    /* The transaction `fee`. This needs to be paid by the sender when posting the transaction to the network.
-       It is set to `0`, so the packet does not need any funds to send an alarm transaction. */
-    static get FEE () {
-        return '0';
-    };
-
     /* Data from the packet account is cached from the databse. */
     async prepare(store) {
         await store.account.cache([
@@ -157,17 +147,22 @@ class LightAlarmTransaction extends BaseTransaction {
         return errors;
     }
 
-    applyAsset(store) {
+    async applyAsset(store) {
         /* Insert the logic for applyAsset() here */
     }
 
-    undoAsset(store) {
+    async undoAsset(store) {
         const errors = [];
-        const packet = store.account.get(this.senderPublicKey);
+        const packet = await store.account.get(this.senderPublicKey);
 
         /* --- Revert packet status --- */
         packet.asset.status = null;
         packet.asset.alarms.light.pop();
+        const tmpAlarms = packet.asset.alarms;
+        packet.asset = {
+            status: null,
+            alarms : tmpAlarms
+        };
 
         store.account.set(packet.address, packet);
         return errors;
@@ -225,24 +220,29 @@ Copy the snippet below and replace the `applyAsset` function in `light-alarm.js`
 ----
 /*Inside of `applyAsset`, it is possible to utilise the cached data from the `prepare` function,
  * which is stored inside of the `store` parameter.*/
-applyAsset(store) {
+async applyAsset(store) {
     const errors = [];
 
     /* With `store.account.get(ADDRESS)` the account data of the packet account can be seen.
      * `this.senderId` is specified as an address, due to the fact that the light alarm is always signed and sent by the packet itself. */
-    const packet = store.account.get(this.senderId);
+    const packet = await store.account.get(this.senderId);
 
     /**
      * Update the Packet account:
      * - set packet status to "alarm"
      * - add current timestamp to light alarms list
      */
-    packet.asset.status = 'alarm';
-    packet.asset.alarms = packet.asset.alarms ? packet.asset.alarms : {};
-    packet.asset.alarms.light = packet.asset.alarms.light ? packet.asset.alarms.light : [];
-    packet.asset.alarms.light.push(this.timestamp);
+    const alarms = packet.asset.alarms ? packet.asset.alarms : {};
+    alarms.light = packet.asset.alarms.light ? packet.asset.alarms.light : [];
+    alarms.light.push(this.asset.timestamp);
 
-    /* When all changes have been made they are applied to the database by executing `store.account.set(ADDRESS, DATA)`; */
+    packet.asset = {
+        ...packet.asset,
+        status: 'alarm',
+        alarms: alarms
+
+    };
+
     store.account.set(packet.address, packet);
 
     /* Unlike in `validateAsset`, the `store` parameter is present here.
@@ -263,7 +263,7 @@ Without this step the nodes will not have the logic to validate a `LightAlarmTra
 const { Application, genesisBlockDevnet, configDevnet } = require('lisk-sdk');
 const LightAlarmTransaction = require('../transactions/light-alarm');           <1>
 
-configDevnet.app.label = 'lisk-transport';
+configDevnet.label = 'lisk-transport';
 
 const app = new Application(genesisBlockDevnet, configDevnet);
 
@@ -344,7 +344,7 @@ Execute the commands listed below in order to create the tracking script:
 mkdir light_alarm #Create a folder to hold the tracking script.
 cd light_alarm
 npm init --yes #Creates the `package.json` file.
-npm i @liskhq/lisk-transactions @liskhq/lisk-api-client @liskhq/lisk-constants rpi-pins #Install dependencies.
+npm i @liskhq/lisk-transactions @liskhq/lisk-api-client @liskhq/lisk-cryptography rpi-pins #Install dependencies.
 ----
 
 Now, create a new file called `light-alarm.js`.
@@ -393,17 +393,12 @@ const LightAlarmTransaction = require('./light-alarm');
 const { APIClient } = require('@liskhq/lisk-api-client');
 const {getNetworkIdentifier} = require('@liskhq/lisk-cryptography');
 const networkIdentifier = getNetworkIdentifier(
-    "23ce0366ef0a14a91e5fd4b1591fc880ffbef9d988ff8bebf8f3666b0c09597d",
+    "19074b69c97e6f6b86969bb62d4f15b888898b499777bda56a3a2ee642a7f20a",
     "Lisk",
 );
 
 // Replace `localhost` with the IP of the required node to reach for the API requests.
 const api = new APIClient(['http://localhost:4000']);
-
-// Check config file or visit localhost:4000/api/node/constants to verify your epoc time, (OK when using /transport/node/index.js).
-const dateToLiskEpochTimestamp = date => (
-    Math.floor(new Date(date).getTime() / 1000) - Math.floor(new Date(Date.UTC(2016, 4, 24, 17, 0, 0, 0)).getTime() / 1000)
-);
 
 const packetCredentials = { /* Insert the credentials of the packet here in step 1.3 */ }
 
@@ -411,16 +406,21 @@ const packetCredentials = { /* Insert the credentials of the packet here in step
 setInterval(() => {
 	let state = GPIO.read(4);
     if(state === 0) {
-        console.log('Package has been opened! Send lisk transaction!');
+        console.log('Package has been opened! Send alarm transaction!');
 
         // Uncomment the below code in step 1.3 of the workshop
         /*
-        let tx = new LightAlarmTransaction({
-            networkIdentifier: networkIdentifier,
-            timestamp: dateToLiskEpochTimestamp(new Date())
+        api.accounts.get({address: packetCredentials.address}).then(response1 => {
+
+        let tx =  new LightAlarmTransaction({
+            asset: {
+                timestamp: new Date().getTime() / 1000
+            },
+            fee: transactions.utils.convertLSKToBeddows('0.01'),
+            nonce: response1.data[0].nonce
         });
 
-        tx.sign(packetCredentials.networkIdentifier, packetCredentials.passphrase);
+        tx.sign(networkIdentifier, packetCredentials.passphrase);
 
         api.transactions.broadcast(tx.toJSON()).then(res => {
             console.log("++++++++++++++++ API Response +++++++++++++++++");
@@ -508,7 +508,7 @@ node index.js | npx bunyan -o short
 Navigate to the `Initialize` page (web app running at http://localhost:3000), to create a new packet account.
 Every time the page is refreshed, new packet credentials are created and initialized on the network.
 
-image:initialize-step1.png[Initialization of the packet account]
+image::initialize-step1.png[Initialization of the packet account]
 
 Copy the object with the credentials and paste it as `packetCredentials` in your <<step1_2_2, tracking script>> on the Raspberry Pi.
 It has to be pasted in the `index.js` file on the Raspberry Pi at the following line of code shown below:
@@ -571,11 +571,6 @@ At this point nothing should be visible on the page yet.
 
 **If timestamps are visible and have been added to `asset.alarms.light` of the packet account, then `part 1` of the workshop has succesfully been completed! \o/ **
 
-image:packet-carrier-step1.png[packet account]
+image::packet-carrier-step1.png[packet account]
 
-[NOTE]
-====
 Now it is possible to detect a packet manipulation, and save the corresponding timestamp on the blockchain.
-
-xref:{url_transport_2}[Click here to continue with part 2: Create a simple supply chain system]
-====

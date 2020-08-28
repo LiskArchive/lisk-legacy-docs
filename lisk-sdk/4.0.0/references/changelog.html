@@ -431,10 +431,86 @@
 <div class="sect2">
 <h3 id="_update_multisignature_transaction"><a class="anchor" href="#_update_multisignature_transaction"></a>Update: Multisignature transaction</h3>
 <div class="paragraph">
-<p>The registration of a multisignature account has changed as displayed in the code snippet below.</p>
+<p>The registration of a multisignature account has significantly in SDK 4.0.</p>
 </div>
 <div class="paragraph">
-<p>For more detailed information about the introduced changes please refer to <a href="https://github.com/LiskHQ/lips/blob/master/proposals/lip-0017.md" target="_blank" rel="noopener">LIP 17: Make multisignature accounts more flexible, prevent spamming, and prevent signature mutability</a>.</p>
+<p>Besides all mandatory properties of a transaction (type, senderPublicKey, etc.), the registration transaction needs the following:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>The <code>asset</code> property needs to contain the property <code>mandatoryKeys</code>.
+The value of this property is an array of pairwise distinct public keys.
+This array must be ordered lexicographically.
+Once the account is registered as a multisignature account, every outgoing transaction requires for every public key in <code>mandatoryKeys</code> a signature.
+The array may be empty.</p>
+</li>
+<li>
+<p>The <code>asset</code> property needs to contain the property <code>optionalKeys</code>.
+The value of this property is an array of pairwise distinct public keys.
+This array must be ordered lexicographically.
+Once the account is registered as a multisignature account, every outgoing transaction requires some signatures for some public keys in <code>optionalKeys</code> (the number of needed signatures depends on the <code>numberOfSignatures</code> property and may also be zero).
+The array may be empty.</p>
+</li>
+<li>
+<p>The sets of mandatory and optional keys, specified by <code>mandatoryKeys</code> and <code>optionalKeys</code>, must be disjoint;
+their union must have at least one element and at most 64 elements.</p>
+</li>
+<li>
+<p>The asset property needs to contain the <code>numberOfSignatures</code> property.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>The value must be an integer between 1 and the total number of public keys of the account (sum of optional and mandatory keys).</p>
+</li>
+<li>
+<p>The value must not be smaller than the length of the value of <code>mandatoryKeys</code>.</p>
+</li>
+<li>
+<p>The value specifies how many signatures are needed for every outgoing transaction from the registered multisignature account, where signatures for mandatory and optional keys are counted.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>The <code>signatures</code> property of the transaction object is appended with signatures corresponding to the public keys contained in <code>mandatoryKeys</code> and <code>optionalKeys</code>.
+All public keys must have a corresponding signature.
+The signatures corresponding to <code>mandatoryKeys</code> are appended first, followed by those corresponding to <code>optionalKeys</code>, where the order of signatures is the same as the order of public keys in the respective array.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>The properties <code>lifetime</code> and <code>keysgroup</code> are not required anymore.</p>
+</div>
+<div class="paragraph">
+<p>The address of the multisignature account is the same as the one before the multisignature registration.
+That means, this address has to be used as the <code>recipientID</code> for balance transfers to this multisignature account.</p>
+</div>
+<div class="sect3">
+<h4 id="_adding_sender_public_key_to_transaction_objects"><a class="anchor" href="#_adding_sender_public_key_to_transaction_objects"></a>Adding Sender Public Key to Transaction Objects</h4>
+<div class="paragraph">
+<p>The <code>senderPublicKey</code> property has to be provided in all transactions.
+The value of this property is always the <strong>original public key of the account</strong>, i.e. the public key used for registering the multisignature account.
+This is the case even if this key does neither belong to the set of mandatory nor to the set of optional keys.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_signatures_replaces_signature"><a class="anchor" href="#_signatures_replaces_signature"></a><code>signatures</code> replaces <code>signature</code></h4>
+<div class="paragraph">
+<p>Transactions in the Lisk SDK v3.x had multiple properties which can hold signatures: <code>signature</code>, <code>signSignature</code> and <code>signatures</code>.
+The <code>signature</code> and <code>signSignature</code> properties were removed and only the <code>signatures</code> property is kept.
+This property is used to hold the signatures necessary to validate transactions.
+The items of this array are byte buffers of length 64, or empty byte buffers.</p>
+</div>
+<div class="paragraph">
+<p>For Multisignature Registration Transaction, <code>signatures</code> also contains signatures corresponding to the public keys participating in the multisignature account.
+Specifically, <code>signatures</code> is an array composed of a signature corresponding to the <code>senderPublicKey</code> followed by signatures for the public keys in <code>mandatoryKeys</code> and <code>optionalKeys</code>, where the order of <code>signatures</code> is the same as the order of public keys in the respective array.</p>
+</div>
+<div class="paragraph">
+<p>For other transactions, <code>signatures</code> contains exactly one element.</p>
+</div>
+<div class="paragraph">
+<p>The registration of a multisignature account is updated in the following way:</p>
 </div>
 <div class="tabset is-loading">
 <div class="ulist tabs">
@@ -463,33 +539,7 @@
     },
     nonce: '2',
     fee: '250000',
-});
-console.log(tx);
-/*
-MultisignatureTransaction {
-  senderPublicKey: '',
-  signatures: [],
-  nonce: 2n,
-  fee: 250000n,
-  type: 12,
-  _id: undefined,
-  confirmations: undefined,
-  blockId: undefined,
-  height: undefined,
-  receivedAt: undefined,
-  asset: {
-    mandatoryKeys: [
-      '9d3058175acab969f41ad9b86f7a2926c74258670fe56b37c429c01fca9f2f0f',
-      '141b16ac8d5bd150f16b1caa08f689057ca4c4434445e56661831f4e671b7c0a',
-      '3ff32442bb6da7d60c1b7752b24e6467813c9b698e0f278d48c43580da972135',
-    ],
-    optionalKeys: [],
-    numberOfSignatures: 3,
-    networkIdentifier: '7158c297294a540bc9ac6e474529c3da38d03ece056e3fa2d98141e6ec54132d'
-  },
-  MAX_KEYS_COUNT: 64
-}
-*/</code></pre>
+});</code></pre>
 </div>
 </div>
 </div>
@@ -511,6 +561,19 @@ MultisignatureTransaction {
 </div>
 </div>
 </div>
+</div>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+For more detailed information about the introduced changes please refer to <a href="https://github.com/LiskHQ/lips/blob/master/proposals/lip-0017.md" target="_blank" rel="noopener">LIP 17: Make multisignature accounts more flexible, prevent spamming, and prevent signature mutability</a>.
+</td>
+</tr>
+</table>
 </div>
 </div>
 </div>
@@ -543,7 +606,9 @@ MultisignatureTransaction {
             { delegateAddress:'11750255083444888021L', amount: '-1000000000'},
             { delegateAddress:'64373847834494888026L', amount: '3000000000'}
         ]
-    }
+    },
+    nonce: '2',
+    fee: '250000'
 });</code></pre>
 </div>
 </div>
@@ -712,7 +777,7 @@ Among the Lisk default transactions, only one transaction has a custom <code>NAM
 <div class="listingblock">
 <div class="title">File: base_transaction.ts</div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export abstract class BaseTransaction {
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">export abstract class BaseTransaction {
     //[...]]
     public static MIN_FEE_PER_BYTE = BigInt(1000);
     public static NAME_FEE = BigInt(0);
@@ -756,7 +821,7 @@ After sending the first outgoing transaction, which should therefore include the
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">const helloTransaction = new HelloTransaction({
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const helloTransaction = new HelloTransaction({
     asset: {
         hello: 'Hello SDK 4.0',
     },

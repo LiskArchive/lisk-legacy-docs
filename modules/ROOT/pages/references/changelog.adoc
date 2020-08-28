@@ -51,9 +51,54 @@ x
 
 === Update: Multisignature transaction
 
-The registration of a multisignature account has changed as displayed in the code snippet below.
+The registration of a multisignature account has significantly in SDK 4.0.
+
+Besides all mandatory properties of a transaction (type, senderPublicKey, etc.), the registration transaction needs the following:
+
+. The `asset` property needs to contain the property `mandatoryKeys`.
+The value of this property is an array of pairwise distinct public keys.
+This array must be ordered lexicographically.
+Once the account is registered as a multisignature account, every outgoing transaction requires for every public key in `mandatoryKeys` a signature.
+The array may be empty.
+. The `asset` property needs to contain the property `optionalKeys`.
+The value of this property is an array of pairwise distinct public keys.
+This array must be ordered lexicographically.
+Once the account is registered as a multisignature account, every outgoing transaction requires some signatures for some public keys in `optionalKeys` (the number of needed signatures depends on the `numberOfSignatures` property and may also be zero).
+The array may be empty.
+. The sets of mandatory and optional keys, specified by `mandatoryKeys` and `optionalKeys`, must be disjoint;
+their union must have at least one element and at most 64 elements.
+. The asset property needs to contain the `numberOfSignatures` property.
+** The value must be an integer between 1 and the total number of public keys of the account (sum of optional and mandatory keys).
+** The value must not be smaller than the length of the value of `mandatoryKeys`.
+** The value specifies how many signatures are needed for every outgoing transaction from the registered multisignature account, where signatures for mandatory and optional keys are counted.
+. The `signatures` property of the transaction object is appended with signatures corresponding to the public keys contained in `mandatoryKeys` and `optionalKeys`.
+All public keys must have a corresponding signature.
+The signatures corresponding to `mandatoryKeys` are appended first, followed by those corresponding to `optionalKeys`, where the order of signatures is the same as the order of public keys in the respective array.
+
+The properties `lifetime` and `keysgroup` are not required anymore.
+
+The address of the multisignature account is the same as the one before the multisignature registration.
+That means, this address has to be used as the `recipientID` for balance transfers to this multisignature account.
+
+==== Adding Sender Public Key to Transaction Objects
+
+The `senderPublicKey` property has to be provided in all transactions.
+The value of this property is always the original public key of the account, i.e. the public key used for registering the multisignature account.
+This is the case even if this key does neither belong to the set of mandatory nor to the set of optional keys.
 
 For more detailed information about the introduced changes please refer to {url_github_lip17}[LIP 17: Make multisignature accounts more flexible, prevent spamming, and prevent signature mutability^].
+
+==== `signature` replaces `signatures`
+
+Transactions currently have multiple properties which can hold signatures: `signature`, `signSignature` and `signatures`.
+The `signature` and `signSignature` properties were removed and only the `signatures` property is kept.
+This property is used to hold the signatures necessary to validate transactions.
+The items of this array are byte buffers of length 64, or empty byte buffers.
+
+For Multisignature Registration Transaction, signatures also contains signatures corresponding to the public keys participating in the multisignature account.
+Specifically, signatures is an array composed of a signature corresponding to the `senderPublicKey` followed by signatures for the public keys in `mandatoryKeys` and `optionalKeys`, where the order of signatures is the same as the order of public keys in the respective array.
+
+For other transactions, signatures contains exactly one element.
 
 [tabs]
 =====
@@ -97,6 +142,8 @@ const tx = new transactions.MultisignatureTransaction({
 ----
 --
 =====
+
+==== Sending transactions from a multisig account
 
 === Update: Vote transaction
 
@@ -231,7 +278,7 @@ This defaults to `0`, but can be overwritten as desired.
 Among the Lisk default transactions, only one transaction has a custom `NAME_FEE`: the delegate registration (Type 10) and with a `NAME_FEE` of `1000000000`.
 
 .File: base_transaction.ts
-[source,typescript]
+[source,js]
 ----
 export abstract class BaseTransaction {
     //[...]]
@@ -259,7 +306,7 @@ New accounts start always with a nonce equal to 0.
 After sending the first outgoing transaction, which should therefore include the nonce = 0, it will increment automatically +1.
 ====
 
-[source,typescript]
+[source,js]
 ----
 const helloTransaction = new HelloTransaction({
     asset: {

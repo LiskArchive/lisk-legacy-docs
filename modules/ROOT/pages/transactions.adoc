@@ -39,9 +39,13 @@ image::unif_diagrams/BaseTransaction.png[TxDiagram,width=339,height=310]
 
 Every transaction object in the Lisk protocol has a common set of properties. These properties are shown in the subsection below.
 
-=== `type`
+=== `moduleID`
 
-An integer identifying the type of the transaction.
+An integer identifying the module the transaction belongs to.
+
+=== `assetID`
+
+An integer identifying the specific asset for the transaction in the module.
 
 [[nonce]]
 === `nonce`
@@ -54,9 +58,9 @@ Once one of the two transactions is included in the blockchain, the other one be
 [[fee]]
 === `fee`
 
-The fee to be spent by the transaction. This fee has to be equal or greater than a minimum value for the transaction to be valid. The minimum value is calculated as the size of the transaction object multiplied by a constant, `minFeePerByte`, given by the protocol. The value of `minFeePerByte` is 1000 (10^-5^ LSK/byte in Lisk Mainnet). Note that for *delegate registration* transactions there is an extra summand of 10^9^ (10 LSK in Lisk Mainnet) added to the minimum fee to account for the name space used by this type of transaction.
+The fee to be spent by the transaction. This fee has to be equal or greater than a minimum value for the transaction to be valid. The minimum value is calculated as the size of the transaction object multiplied by a constant, `minFeePerByte`, given by the protocol. The value of `minFeePerByte` is 1000 (10^-5^ LSK/byte in Lisk Mainnet). Note that for *delegate registration* transactions there is an extra summand of 10^9^ (10 LSK in Lisk Mainnet) added to the minimum fee to account for the name space used by this transaction.
 
-For example, in Lisk Mainnet, for a <<transfer,balance transfer>> transaction with a size of 133 bytes, the minimum fee is 10^-5^ LSK/byte × 133 bytes = 0.00133 LSK.
+For example, in Lisk Mainnet, for a <<transfer,token transfer>> transaction with a size of 133 bytes, the minimum fee is 10^-5^ LSK/byte × 133 bytes = 0.00133 LSK.
 In the case of <<delegate,delegate registration>> transaction with a size of 124 bytes, the minimum fee of the transaction is 10 LSK + 10^-5^ LSK/byte × 124 bytes = 10.00124 LSK.
 
 This required minimum fee paid by every transaction is burned, in other words, it is not assigned to any account balance.
@@ -73,13 +77,13 @@ The `senderPublicKey` is used to compute the address under which the sender acco
 === `asset`
 
 This property contains the data specific to the type of the transaction.
-For each `type` value, there exist a unique `asset` property.
-The section <<types,Transaction types>> describes the different transaction types with respect to the `asset` property of each of them.
+Given a specific value for the  properties `moduleID` and `assetID`, there exists a unique `asset` property.
+The section <<types,Transactions>> describes the different transaction with respect to the `asset` property of each of them.
 
 === `signatures`
 
 An array with the signatures of the transaction.
-If the account associated to `senderPublicKey` does not have the xref:{url_accounts_keys}[`keys`] property, the object containing the five properties, `type`, `nonce`, `fee`, `senderPublicKey`, and `asset`, has to be signed by the private key corresponding to the `senderPublicKey`.
+If the account associated to `senderPublicKey` does not have the xref:{url_accounts_keys}[`keys`] property, the object containing the six properties, `moduleID`, `assetID`, `nonce`, `fee`, `senderPublicKey`, and `asset`, has to be signed by the private key corresponding to the `senderPublicKey`.
 Otherwise, the signing process has to be repeated for each of the private keys associated with an applicable set of public keys specified in  the `keys` property of the account.
 In the xref:{url_appendix_signature_scheme}[Appendix] section more details about the signing process are given.
 
@@ -91,24 +95,24 @@ The transaction ID is the SHA-256 hash of the serialized transaction.
 
 == Minimum balance
 
-A <<transfer,balance transfer>> transaction must make the balance of the receiving account equal to or greater than 5 × 10^6^ (0.05 LSK in Lisk Mainnet).
+A <<transfer,token transfer>> transaction must make the balance of the receiving account equal to or greater than 5 × 10^6^ (0.05 LSK in Lisk Mainnet).
 Subsequently, any transaction sent from an account is only valid if the resulting balance of the sender account is at least 5 × 10^6^.
 This constraint exists to account for the cost of creating and storing accounts in Lisk.
 
 [[types]]
-== Transaction types
+== Transactions
 
-The 6 transactions types available in the Lisk protocol are listed in the table displayed above.
+The 6 different transactions available in the Lisk protocol are listed in the table displayed above.
 Each one induces a concrete operation on accounts and is defined by a unique schema and transaction logic.
-The type-specific data is given in the `asset` property previously mentioned.
+The specific data is given in the `asset` property previously mentioned.
 The key points and useful information for each of these transactions are commented in the following subsections.
 
 [[transfer]]
-=== Balance transfer
+=== Token transfer
 
 image::unif_diagrams/BalanceTransferAsset.png[BalanceTDiagram,340,211]
 
-This transaction type transfers the amount of tokens specified in the `amount` property from the xref:{url_accounts}[account] corresponding to the `senderPublicKey`, i.e. the sender account, to the account specified in `recipientAddress`.
+This transaction transfers the amount of tokens specified in the `amount` property from the xref:{url_accounts}[account] corresponding to the `senderPublicKey`, i.e. the sender account, to the account specified in `recipientAddress`.
 This transaction offers the possibility to send a message in the optional property `data`.
 
 [[delegate]]
@@ -116,10 +120,10 @@ This transaction offers the possibility to send a message in the optional proper
 
 image::unif_diagrams/DelegateRegAsset.png[DelegateDiagram,332,151]
 
-This transaction registers the sender account as a xref:{url_consensus_voting_and_weight}[delegate] with the name given in `username`.
+This transaction registers the sender account as a xref:{url_consensus_voting_and_weight}[delegate] with the name given in `username`. A valid name contains only characters from the set _[a-z0-9!@$&_.]_ and has to be at most 20 characters long.
 
 [[vote]]
-=== Vote
+=== Delegate vote
 
 image::unif_diagrams/VoteAsset.png[VoteDiagram,736,192]
 
@@ -130,7 +134,7 @@ If the amount is negative, it implies that the specified amount of votes are rem
 The maximum number of votes that can be cast in a single transaction is 20 and `amount` has to be a multiple of 10^9^ (10 LSK in Lisk Mainnet).
 
 [[unlock]]
-=== Unlock vote
+=== Token unlock
 
 image::unif_diagrams/UnlockVoteAsset.png[UnlockVoteDiagram,765,202]
 
@@ -140,20 +144,20 @@ For a regular vote the unlocking period is 2000 blocks (around 5 hours).
 For self-votes, i.e. if the `delegateAddress` property of the transaction is equal to the account xref:{url_accounts_address}[address], this period is 260,000 blocks (around 30 days).
 
 [[multisignature]]
-=== Multisignature registration
+=== Multisignature group registration
 
 image::unif_diagrams/MultisigRegAsset.png[MultisigDiagram,375,204]
 
-This transaction registers the sender account as a multisignature account.
+This transaction registers the sender account as a multisignature group account.
 The set of [#index-mandatory-2]#*mandatory*# keys needs to be specified in `mandatoryKeys` whereas the set of [#index-optional-2]#*optional*# keys have to be specified in `optionalKeys`.
 The total number of keys required for every future outgoing transaction from the account is given in `numberOfSignatures`.
 Once this transaction is included in a block, every transaction from this account has to be signed by an applicable set of private keys.
 
 [[pom]]
-=== PoM
+=== Delegate misbehavior report
 
 image::unif_diagrams/PoMAsset.png[PoMDiagram,330,184]
 
-This transaction submits a proof of misbehaviour of a certain delegate.
+This transaction reports a proof of misbehaviour of a certain delegate.
 It contains the information necessary to prove that the delegate who signed the xref:{url_blocks_header}[block headers] given in `header1` and `header2` has violated the xref:{url_consensus_bft}[Lisk-BFT protocol].
-The xref:{url_consensus_bft_punishment}[Punishment of Lisk-BFT protocol violations] section provides the details regarding implications of this transaction type.
+The xref:{url_consensus_bft_punishment}[Punishment of Lisk-BFT protocol violations] section provides the details regarding the implications of this transaction.

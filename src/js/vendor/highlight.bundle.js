@@ -33,5 +33,7 @@
   hljs.registerLanguage('swift', require('highlight.js/lib/languages/swift'))
   hljs.registerLanguage('xml', require('highlight.js/lib/languages/xml'))
   hljs.registerLanguage('yaml', require('highlight.js/lib/languages/yaml'))
-  hljs.initHighlighting()
+  ;[].slice.call(document.querySelectorAll('pre code.hljs')).forEach(function (node) {
+    hljs.highlightBlock(node)
+  })
 })()

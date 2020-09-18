@@ -7,12 +7,14 @@ Mona Bärenfänger <mona@lightcurve.io>
 
 :url_wiki_pos: https://en.wikipedia.org/wiki/Proof_of_stake
 
-:url_protocol_delegate_selection: {v_protocol}@lisk-protocol::consensus-algorithm.html#delegate_selection
+:url_protocol_dpos: {v_protocol}@lisk-protocol::consensus-algorithm.adoc#dpos
+:url_protocol_delegate_selection: {v_protocol}@lisk-protocol::consensus-algorithm.adoc#delegate_selection
+:url_protocol_transactions_unlock: {v_protocol}@lisk-protocol::transactions.adoc#unlock
 
 [[dpos]]
 == Delegated Proof of Stake (DPoS)
 
-The Lisk SDK bootstraps a blockchain network that is based on the <<dpos,DPoS>> consensus algorithm.
+The Lisk SDK bootstraps a blockchain network that is based on the xref:{url_protocol_dpos}[DPoS] consensus algorithm.
 
 DPoS is related to the {url_wiki_pos}[Proof of Stake (PoS)^] consensus algorithm.
 In PoS-based blockchains the creator of the next block is chosen via various combinations of random selection and wealth or age (i.e., the stake).
@@ -25,7 +27,7 @@ In order to receive votes from other users, a user needs to register their accou
 [[forging]]
 === Forging
 
-The process of adding new blocks to a blockchain that uses the PoS or DPoS consensus algorithm is called <<forging,forging>>.
+The process of adding new blocks to a blockchain that uses the PoS or DPoS consensus algorithm is called forging.
 
 Users can <<register,register as delegates>>, and increase their <<weight,vote weight>> in order to reach forging positions.
 
@@ -79,38 +81,44 @@ const tx =  new transactions.DelegateTransaction({
     nonce: '1',
     fee: '1500000000'
 });
-
 ----
 
-More information about the xref:{url_protocol_delegate_selection}[delegate selection mechanism] can be found in the Lisk Protocol.
+More information about the delegate selection mechanism can be found in the xref:{url_protocol_delegate_selection}[Lisk Protocol].
 
-=== Voting for a delegate
+=== Voting / unvoting a delegate
 
 Accounts can vote for delegates by locking tokens in their account.
+After unvoting a delegate the locked tokens can be unlocked again through the <<unlock transaction>>.
 
-Lets assume a user holds an account with a balance of 100 tokens.
+Lets assume a user holds an account with a balance of 150 tokens.
+The user has voted before with 50 tokens for the delegate with address `7700165370820050502L`.
 
-The user can now decide if and how they want to use their balance to vote for one or multiple delegates.
+He now wants to remove the 50 tokens from the voteweight of delegate `7700165370820050502L` again.
+At the same time, he wants to use the currently available 100 tokens to vote for 2 other delegates.
 
+Be aware that the user cannot reuse the 50 tokens
 .Example: Vote for two delegates
 [source,js]
 ----
 const tx = new transactions.VoteTransaction({
     asset:{
         votes: [
-            { delegateAddress:'11750255083444888021L', amount: '7000000000'}, // locks 70 tokens
-            { delegateAddress:'64373847834494888026L', amount: '3000000000'} // locks 30 tokens
+            { delegateAddress:'11750255083444888021L', amount: '7000000000'}, <1>
+            { delegateAddress:'64373847834494888026L', amount: '3000000000'} <2>
         ]
     }
 });
 ----
 
+<1> Locks 70 tokens and adds 70 tokens vote weight to the delegate with address `11750255083444888021L`.
+<2> Locks 30 tokens and adds 30 tokens vote weight to the delegate with address `64373847834494888026L`.
 
-=== Unvoting / Unlocking of tokens
+[[unlock]]
+=== Unlocking of tokens
 
 [NOTE]
 ====
-* Any amount of tokens used for voting cannot be used for any other transactions.
+* The amount of tokens used for voting is locked and cannot be used for any other transactions.
 This includes but is not limited to balance transfers, further voting or fees.
 * To use those tokens, the account has to submit a vote transaction with a negative amount (also called “unvote”).
 This will start the unlocking procedure and the LSK will be ready for unlock 2000 blocks later (roughly 5 hours and 30 minutes).
@@ -122,7 +130,7 @@ To recover the locked tokens, the account has to submit two transactions.
 This is done with the new vote transaction, the transaction just needs to contain a negative amount.
 The tokens are now in an “unlocking” state.
 They have been unvoted but are not usable yet.
-
++
 .Example: Unvote a delegate
 [source,js]
 ----
@@ -136,13 +144,13 @@ const tx = new transactions.VoteTransaction({
     fee: '250000'
 });
 ----
-
++
 . After a 2000 block period, the tokens can be unlocked.
 This is done with a new unlock transaction.
-The unlock transaction specifies which tokens have to be unlocked and added back to the balance.
+The xref:{url_protocol_transactions_unlock}[unlock transaction] specifies which tokens have to be unlocked and added back to the balance.
 This mechanism is necessary to allow blocks to be reverted.
 Future improvements of the Lisk blockchain (particularly on the database level) could render this unlock transaction unnecessary.
-
++
 [source,js]
 ----
 const tx = new transactions.UnlockTransaction({

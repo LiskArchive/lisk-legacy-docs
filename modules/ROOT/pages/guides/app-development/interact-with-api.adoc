@@ -130,7 +130,7 @@ api.blocks.get({ height: '123456' })
 .Syntax
 [source,js]
 ----
-api.accounts.get(options)
+await api.accounts.get(options)
 ----
 
 Where `options` can be any of the params described in the xref:{url_reference_api_account_get}[API specification: GET /accounts]
@@ -147,15 +147,21 @@ let offset = 0;
 let accounts = [];
 const accountsArray = [];
 
-do {
-    const retrievedAccounts = await api.accounts.get({ limit: 100, offset });
-    accounts = retrievedAccounts.data;
-    accountsArray.push(...accounts);
+async function getAccounts() {
+    do {
+        const retrievedAccounts = await api.accounts.get({ limit: 100, offset });
+        accounts = retrievedAccounts.data;
+        accountsArray.push(...accounts);
 
-    if (accounts.length === 100) {
-        offset += 100;
-    }
-} while (accounts.length === 100);
+        if (accounts.length === 100) {
+            offset += 100;
+        }
+    } while (accounts.length === 100);
+
+    return accountsArray;
+}
+
+getAccounts().then(accountsArray => console.log(accountsArray));
 ----
 
 === Create new accounts
@@ -221,7 +227,7 @@ This initialization will bind your public key to the address, and ensure the acc
 [source,js]
 ----
 const { APIClient } = require('@liskhq/lisk-api-client');
-const transactions = require('@liskhq/lisk-transactions');
+const { TransferTransaction, utils } = require('@liskhq/lisk-transactions');
 const {getNetworkIdentifier} = require('@liskhq/lisk-cryptography');
 // Generate the network identifier for Devnet
 const networkIdentifier = getNetworkIdentifier(
@@ -231,7 +237,7 @@ const networkIdentifier = getNetworkIdentifier(
 const API_BASEURL = "http://localhost:4000";
 const api = new APIClient([API_BASEURL]);
 
-let tx = new transactions.TransferTransaction({
+let tx = new TransferTransaction({
     asset: {
         amount: '1',
         recipientId: '12345678L',

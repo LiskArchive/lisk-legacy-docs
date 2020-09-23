@@ -1,1 +1,1 @@
-!function(){"use strict";var t=document.querySelectorAll(".nav-item:not(.single-page)");console.log(t[1].childNodes),"Explanations"===t[1].childNodes[1].textContent?t[2].classList.add("is-active"):t[1].classList.add("is-active")}();
+!function(){"use strict";var t=document.querySelectorAll(".nav-item:not(.single-page)");"Explanations"===t[1].childNodes[3].textContent?t[2].classList.add("is-active"):t[1].classList.add("is-active")}();

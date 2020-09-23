@@ -1,9 +1,14 @@
 ;(function () {
   'use strict'
 
-  var navList = document.querySelectorAll('.nav-item:not(.single-page)')[1]
+  var navList = document.querySelectorAll('.nav-item:not(.single-page)');
 
-  navList.classList.add("is-active");
+  if (navList[1].childNodes[3].textContent === "Explanations") {
+    navList[2].classList.add("is-active")
+  } else {
+    navList[1].classList.add("is-active");
+  }
+
 
 })()
 

@@ -3,7 +3,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 :description: The Lisk customization page explains how to create custom transactions and how to register them with the blockchain application.
 :page-aliases: customize.adoc
 :toc:
-:v_sdk: v3.0.2
+:v_sdk: v4.0.0-alpha.1
 :v_protocol: master
 
 :url_github_base_transaction: https://github.com/LiskHQ/lisk-sdk/blob/{v_sdk}/elements/lisk-transactions/src/base_transaction.ts
@@ -11,7 +11,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_github_sdk_entities_tx: https://github.com/LiskHQ/lisk-sdk/blob/{v_sdk}/framework/src/components/storage/entities/transaction.js
 :v_protocol: master
 
-:url_guides_interact: guides/app-development/interact.adoc
+:url_guides_interact: guides/app-development/interact-with-api.adoc
 :url_guides_broadcast: guides/app-development/broadcast.adoc
 :url_guides_broadcast_fee: guides/app-development/broadcast.adoc#fee
 :url_guides_frontend: guides/app-development/frontend.adoc
@@ -21,14 +21,32 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_tutorials: tutorials/index.adoc
 
 == Custom transactions
+:sectnums:
 
 Transactions are an essential part of blockchain applications that are created using the Lisk SDK, as they define the set of actions that can be performed by users in the network.
 Each transaction belongs to a specific *transaction type* that is registered in the network.
 
 The Lisk SDK provides a <<interface,BaseTransaction interface>> from which developers can extend from, in order to create custom transactions.
 
+.Skeleton of a custom transaction
+[source,js]
+----
+const {
+    BaseTransaction
+} = require('@liskhq/lisk-transactions');
+
+class MyCustomTransaction extends BaseTransaction {
+  static get TYPE = /* ... */
+
+  async prepare(store) { /* ... */ }
+  validateAsset() { /* ... */ }
+  async applyAsset(store) { /* ... */ }
+  async undoAsset(store) { /* ... */ }
+}
+----
+
 [[hello_transaction]]
-== Example of a custom transaction: The `HelloTransaction`
+=== Example of a custom transaction: The `HelloTransaction`
 
 .Contents of transactions/hello_transaction.js
 [source,js]
@@ -119,7 +137,7 @@ class HelloTransaction extends BaseTransaction {
 module.exports = HelloTransaction;
 ----
 
-== Create a transaction instance
+=== Creating an instance of a transaction
 
 .How to create and sign a transaction
 [source,js]
@@ -139,7 +157,7 @@ const helloTransaction = new HelloTransaction({
 helloTransaction.sign(networkIdentifier,this.state.passphrase);
 ----
 
-== Register a custom transaction
+=== Registering a custom transaction
 
 Add a custom transaction to a blockchain application by registering it to the application instance as shown below:
 
@@ -149,7 +167,7 @@ Add a custom transaction to a blockchain application by registering it to the ap
 const { Application, genesisBlockDevnet, configDevnet} = require('lisk-sdk');
 const HelloTransaction = require('./hello_transaction'); <1>
 
-configDevnet.app.label = 'hello-world-blockchain-app';
+configDevnet.label = 'hello-world-blockchain-app';
 //configDevnet.components.storage.user = 'lisk';
 //configDevnet.components.storage.password = 'password';
 
@@ -177,6 +195,7 @@ For more information on creating your own custom transactions, please refer to t
 * ... or xref:{url_tutorials}[follow the tutorials].
 ====
 
+:!sectnums:
 == Fees
 
 A transaction fee is a specific amount of tokens that needs to be paid by the sender of a transaction.
@@ -316,7 +335,7 @@ Prepare the relevant information about the accounts, which will be accessible in
 
 [source,js]
 ----
-async applyAsset(store: StateStore): ReadonlyArray<TransactionError>
+async applyAsset(store: StateStore): Promise<ReadonlyArray<TransactionError>>
 ----
 
 The business logic of a transaction is implemented in the `applyAsset` method.
@@ -329,7 +348,7 @@ This transaction can be invalidated by pushing an error into the result array.
 
 [source,js]
 ----
-async undoAsset(store: StateStore): ReadonlyArray<TransactionError>
+async undoAsset(store: StateStore): Promise<ReadonlyArray<TransactionError>>
 ----
 
 The inversion of the `applyAsset` method.

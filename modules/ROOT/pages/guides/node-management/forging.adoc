@@ -89,12 +89,16 @@ For more information about the configuration of the Lisk SDK check out the xref:
 [[forging_enable_disable]]
 == Enable/Disable Forging
 
-IMPORTANT: Remember that after restarting the node, it is necessary to re-enable forging again.
-
 [CAUTION]
 ====
 Do not activate forging for the same delegate on multiple nodes.
 This behaviour will be xref:{url_protocol_blocks_punishment}[punished] by the network.
+
+In case you want to change the node you are forging on, check the section <<safely_activating_forging,Enabling forging on another node>>.
+
+'''
+
+Make sure your node is **fully synchronized** with the network, before you enable forging.
 ====
 
 If the node is running on your local machine, it is possible to enable forging via the API, without any further interruption.
@@ -123,6 +127,7 @@ curl -X PUT \
 
 Use the following curl command to *disable the forging* for your delegate as shown below:
 
+[[disable]]
 .Disable forging
 [source,bash]
 ----
@@ -145,6 +150,47 @@ The endpoints to enable and disable forging are *idempotent*.
 
 This means that the results are identical, regardless of how many times the query is executed.
 ====
+
+[[safely_activating_forging]]
+=== Safely enabling forging on another node
+
+To safely enable forging on another node, make sure to follow the steps below:
+
+. Setup a new node on another server.
+. Start the node and let it synchronize with the network.
+If available, it is recommended to synchronize from snapshots, to speed up the synchronisation process.
+. Login to the server with the old node.
+. <<disable,Disable forging>> on the old node.
+. Stop the old node.
+. Dump the data in the `forger_info` table of the db of your node.
++
+[source,bash]
+----
+pg_dump -d lisk_dev -t forger_info > forger_info.sql
+----
+. Login to the server with the new node.
+. Restore the `forger_info` table.
++
+[source,bash]
+----
+pg_restore -d lisk_dev -t forger_info forger_info.sql
+----
+. <<config_forging_data,Add the forging data to the config>>.
+. Ensure node is fully synchronized with network.
+The height of your node should be equal to the current network height.
++
+[source,bash]
+----
+curl http://127.0.0.1:4000/api/node/status
+----
+. Ensure once again, that forging for this delegate is not enabled on other nodes.
+. <<forging_enable_disable,Enable forging>>.
+
+==== Migrating to another forging node without access to the `forger_info` data
+
+In some edge cases, it is not possible to retrieve the latest `forger_info` data from the old node, e.g. if the database was destroyed or is not accessible anymore.
+
+In this cases, it is important to restore the `maxHeightPreviouslyForged` manually.
 
 [[check_forging]]
 == Check forging
@@ -175,12 +221,4 @@ The result should appear as shown below in the following code snippet:
 }
 ----
 
-== Migrating to another node
 
-=== Migrating to a new forging node with data
-
-//TODO
-
-=== Migrating to a new forging node without data
-
-//TODO

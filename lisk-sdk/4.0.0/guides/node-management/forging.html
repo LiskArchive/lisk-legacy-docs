@@ -9,8 +9,6 @@
     <meta name="generator" content="Antora 2.3.4">
     <link rel="stylesheet" href="../../../../_/css/site.css">
     <link rel="stylesheet" href="../../../../_/css/site-extra.css">
-      <link rel="stylesheet" href="../../../../_/css/vendor/docsearch.min.css">
-      <!-- fetched from https://cdn.jsdelivr.net/npm/docsearch.js@2/dist/cdn/docsearch.min.css -->
 <script src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js"></script>
 <link rel="icon" href="../../../../_/img/favicon.png" type="image/x-icon">
   </head>
@@ -77,9 +75,6 @@
               </div>
             </div>
           </div>
-            <div class="navbar-menu search-box hide-for-print">
-              <input id="search-input" type="text" placeholder="Search">
-            </div>
         </div>
         <div class="navbar-item navbar-right">
 <!--
@@ -510,18 +505,6 @@ Please re-enter your password: ***
 <div class="sect1">
 <h2 id="forging_enable_disable"><a class="anchor" href="#forging_enable_disable"></a>Enable/Disable Forging</h2>
 <div class="sectionbody">
-<div class="admonitionblock important">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-important" title="Important"></i>
-</td>
-<td class="content">
-Remember that after restarting the node, it is necessary to re-enable forging again.
-</td>
-</tr>
-</table>
-</div>
 <div class="admonitionblock caution">
 <table>
 <tr>
@@ -532,6 +515,13 @@ Remember that after restarting the node, it is necessary to re-enable forging ag
 <div class="paragraph">
 <p>Do not activate forging for the same delegate on multiple nodes.
 This behaviour will be <a href="../../../../lisk-protocol/consensus-algorithm.html#punishment" class="page">punished</a> by the network.</p>
+</div>
+<div class="paragraph">
+<p>In case you want to change the node you are forging on, check the section <a href="#safely_activating_forging">Enabling forging on another node</a>.</p>
+</div>
+<hr>
+<div class="paragraph">
+<p>Make sure your node is <strong>fully synchronized</strong> with the network, before you enable forging.</p>
 </div>
 </td>
 </tr>
@@ -581,7 +571,7 @@ If you want to enable forging from remote, ensure to whitelist the remote IP lik
 <div class="paragraph">
 <p>Use the following curl command to <strong>disable the forging</strong> for your delegate as shown below:</p>
 </div>
-<div class="listingblock">
+<div id="disable" class="listingblock">
 <div class="title">Disable forging</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -X PUT \
@@ -620,6 +610,78 @@ If you want to enable forging from remote, ensure to whitelist the remote IP lik
 </tr>
 </table>
 </div>
+<div class="sect2">
+<h3 id="safely_activating_forging"><a class="anchor" href="#safely_activating_forging"></a>Safely enabling forging on another node</h3>
+<div class="paragraph">
+<p>To safely enable forging on another node, make sure to follow the steps below:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Setup a new node on another server.</p>
+</li>
+<li>
+<p>Start the node and let it synchronize with the network.
+If available, it is recommended to synchronize from snapshots, to speed up the synchronisation process.</p>
+</li>
+<li>
+<p>Login to the server with the old node.</p>
+</li>
+<li>
+<p><a href="#disable">Disable forging</a> on the old node.</p>
+</li>
+<li>
+<p>Stop the old node.</p>
+</li>
+<li>
+<p>Dump the data in the <code>forger_info</code> table of the db of your node.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">pg_dump -d lisk_dev -t forger_info &gt; forger_info.sql</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Login to the server with the new node.</p>
+</li>
+<li>
+<p>Restore the <code>forger_info</code> table.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">pg_restore -d lisk_dev -t forger_info forger_info.sql</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p><a href="#config_forging_data">Add the forging data to the config</a>.</p>
+</li>
+<li>
+<p>Ensure node is fully synchronized with network.
+The height of your node should be equal to the current network height.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl http://127.0.0.1:4000/api/node/status</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Ensure once again, that forging for this delegate is not enabled on other nodes.</p>
+</li>
+<li>
+<p><a href="#forging_enable_disable">Enable forging</a>.</p>
+</li>
+</ol>
+</div>
+<div class="sect3">
+<h4 id="_migrating_to_another_forging_node_without_access_to_the_forger_info_data"><a class="anchor" href="#_migrating_to_another_forging_node_without_access_to_the_forger_info_data"></a>Migrating to another forging node without access to the <code>forger_info</code> data</h4>
+<div class="paragraph">
+<p>In some edge cases, it is not possible to retrieve the latest <code>forger_info</code> data from the old node, e.g. if the database was destroyed or is not accessible anymore.</p>
+</div>
+<div class="paragraph">
+<p>In this cases, it is important to restore the <code>maxHeightPreviouslyForged</code> manually.</p>
+</div>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -652,19 +714,6 @@ If you want to enable forging from remote, ensure to whitelist the remote IP lik
   "links": {}
 }</code></pre>
 </div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_migrating_to_another_node"><a class="anchor" href="#_migrating_to_another_node"></a>Migrating to another node</h2>
-<div class="sectionbody">
-<div class="sect2">
-<h3 id="_migrating_to_a_new_forging_node_with_data"><a class="anchor" href="#_migrating_to_a_new_forging_node_with_data"></a>Migrating to a new forging node with data</h3>
-
-</div>
-<div class="sect2">
-<h3 id="_migrating_to_a_new_forging_node_without_data"><a class="anchor" href="#_migrating_to_a_new_forging_node_without_data"></a>Migrating to a new forging node without data</h3>
-
 </div>
 </div>
 </div>
@@ -729,22 +778,6 @@ If you want to enable forging from remote, ensure to whitelist the remote IP lik
 <script async src="../../../../_/js/vendor/tabs-block-behaviour.js"></script>
 <script async src="../../../../_/js/vendor/top-versions.js"></script>
 <script async src="../../../../_/js/vendor/custom.js"></script>
-  <script src="../../../../_/js/vendor/docsearch.min.js"></script>
-  <!-- fetched from https://cdn.jsdelivr.net/npm/docsearch.js@2/dist/cdn/docsearch.min.js -->
-  <script>
-    function focusSearchInput () { document.querySelector('#search-input').focus() }
-    var search = docsearch({
-        appId: 'C4SU57KGV9',
-      apiKey: '55aa8709b04eb62f08f87571cf77547c',
-      indexName: 'lisk-docs-search',
-      inputSelector: '#search-input',
-      autocompleteOptions: { hint: false, keyboardShortcuts: ['s'] },
-      algoliaOptions: { hitsPerPage: 10 }
-    }).autocomplete
-    search.on('autocomplete:closed', function () { search.autocomplete.setVal() })
-    focusSearchInput()
-    window.addEventListener('load', focusSearchInput)
-  </script>
 
   </body>
 </html>

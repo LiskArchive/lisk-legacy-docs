@@ -8,6 +8,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_wiki_pos: https://en.wikipedia.org/wiki/Proof_of_stake
 
 :url_guides_forging: guides/node-management/forging.adoc
+:url_guides_forging_safely: guides/node-management/forging.adoc#safely_activating_forging
 
 :url_protocol_blocks_rewards: {v_protocol}@lisk-protocol::blocks.adoc#rewards_and_fees
 :url_protocol_dpos: {v_protocol}@lisk-protocol::consensus-algorithm.adoc#dpos
@@ -23,17 +24,20 @@ Mona Bärenfänger <mona@lightcurve.io>
 [[dpos]]
 == Delegated Proof of Stake (DPoS)
 
-The Lisk SDK bootstraps a blockchain network that is based on the xref:{url_protocol_dpos}[DPoS] consensus algorithm.
-
-DPoS is related to the {url_wiki_pos}[Proof of Stake (PoS)^] consensus algorithm.
-In PoS-based blockchains the creator of the next block is chosen via a selection mechanism that is related to the stake that an individual account holds.
-In this regard, a higher stake generally means there is an increased chance to forge a new block to the blockchain.
+The Lisk SDK bootstraps a blockchain network that is based on the xref:{url_protocol_dpos}[Lisk DPoS] consensus algorithm.
 
 In DPoS based blockchains, the consensus regarding who can forge the next block is reached by users who vote with their stake for other users.
 
-NOTE: The DPoS used by Lisk is in fact more of a middle ground between PoS and DPoS, as it also requires delegates to hold and lock a certain amount of tokens in their account.
+[NOTE]
+====
+The DPoS used by Lisk is in fact more of a middle ground between {url_wiki_pos}[PoS] and DPoS.
 
-In order to receive votes from other users, a user needs to register their account as <<delegate_registration, delegate>>.
+The DPoS related characteristic is the ability of users to <<delegate_registration,register as delegate>> and then <<vote,receive votes>> from other users, in order to increase their <<weight,delegate weight>>.
+
+The PoS related characteristic is the requirement for delegates to self-vote a certain amount of tokens, to increase their delegate weight.
+Another PoS characteristic is the mechanism for the selection of the <<forging_delegates,two random standby delegates>>, who are selected each forging round.
+Here applies, the higher the delegate weight, the higher the chance to be selected in one of the two random spots for standby delegates.
+====
 
 [[forging]]
 === Forging
@@ -41,32 +45,29 @@ In order to receive votes from other users, a user needs to register their accou
 The process of adding new blocks to a blockchain that uses the PoS or DPoS consensus algorithm is called forging.
 
 In a DPoS system, each account that has an adequate enough balance to send a xref:{url_protocol_transactions_delegate}[register delegate transaction] can <<delegate_registration,register a new delegate>> on the network.
-Delegates need to increase their <<weight,delegate weight>> by receiving votes from other accounts in order to reach forging positions.
 Other accounts can <<vote, vote for delegates>> by sending a xref:{url_protocol_transactions_vote}[delegate vote transaction].
-As a reward for securing the network, the forging delegates receive the xref:{url_protocol_blocks_rewards}[transaction fees and block rewards] of the forged blocks and their included transactions.
+As a reward for securing the network, the forging delegates receive the xref:{url_protocol_blocks_rewards}[transaction fees and block rewards] of the forged blocks and the transactions included int he forged blocks.
 
-The process of forging consumes a minimal amount of energy and is therefore an extremely *energy-friendly* consensus algorithm as compared to "mining", which is the analog process for blockchains that run with Proof of Work (PoW).
-
-The 101 delegates with the highest <<weight,delegate weight>> and 2 additional standby delegates are selected to forge during a forging round.
-During a forging round, delegates forge blocks one after another in a designated order.
-The order in which the selected delegates forge new blocks is a random process and is not connected to the delegate weight.
+The 101 active delegates and 2 additional standby delegates are selected to forge during a forging round.
+During a forging round, delegates forge blocks one after another in a random order, which was defined in the beginning of each forgig round.
 
 [NOTE]
 ====
-During a forging round, no new calculations are required which makes the process highly efficient.
+During a forging round, no new calculations are required, which makes DPoS an extremely *energy-friendly* consensus algorithm, compared to "mining", which is the analog process for blockchains that run with Proof of Work (PoW).
 This technique enables a very energy efficient process of adding new blocks, which allows forging nodes to run even on machines with very limited processing capabilities, such as a Raspberry Pi.
 ====
 
+[[forging_delegates]]
 ....
-101(amount of the forging delegates) + 2(random standby delegates) = 103(Number of blocks of a forging round)
+101(amount of the active delegates) + 2(random standby delegates) = 103(Number of blocks of a forging round)
 ....
-
-After a forging round is completed, the delegate selection process starts again and assigns the delegates to their forging positions.
 
 More information about the delegate selection mechanism can be found in the xref:{url_protocol_delegate_selection}[Lisk Protocol].
 
 [[weight]]
 ==== Delegate weight
+
+The 101 delegates with the highest delegate weight are selected for the active forging positions.
 
 The delegate weight is defined as shown below:
 
@@ -75,7 +76,8 @@ delegate weight = minimum { 10 * delegate self-vote , sum of all votes for the d
 ....
 
 Where `delegate self-vote` is the amount the delegate voted for its own account.
-Note that the `sum of all votes for the delegate` includes the self-votes.
+
+The `sum of all votes for the delegate` includes the self-votes.
 
 [[delegate_registration]]
 === Registering as delegate
@@ -135,10 +137,10 @@ const tx = new transactions.VoteTransaction({
 The amount of tokens used for voting is locked and cannot be used for any other transactions.
 This includes but is not limited to balance transfers, further voting or fees.
 
-To use those tokens, the account has to submit a xref:{url_protocol_transactions_vote}[delegate vote transaction], with a negative amount (also called “unvote”).
+To use those tokens, the account has to submit a xref:{url_protocol_transactions_vote}[delegate vote transaction], with a *negative amount* (also called “unvote”).
 This will start the unlocking procedure and the LSK will be ready for unlocking 2000 blocks later (roughly 5 hours and 30 minutes).
 
-To recover the locked tokens, the account has to submit two transactions.
+To recover the locked tokens, the account has to submit two transactions:
 
 . First, the tokens have to be unvoted.
 This is done with a new `VoteTransaction`, the transaction just needs to contain a negative amount.
@@ -178,10 +180,12 @@ const tx = new transactions.UnlockTransaction({
 });
 ----
 
-==== An unlock transaction can contain multiple unlock objects
-
+.An unlock transaction can contain multiple unlock objects
+[TIP]
+====
 This allows an account to submit multiple delegate votes and recover those tokens with a single unlock transaction.
 Of course, all tokens must have been in the unlocking state for at least 2000 blocks for the unlock to be valid.
+====
 
 == BFT
 
@@ -189,15 +193,14 @@ The Byzantine Fault Tolerance (BFT) algorithm ensures that the network can alway
 The main purpose of the BFT consensus algorithm is that for a given height eventually all Lisk nodes agree on the same block.
 This is in particular important in the case where there are different valid blocks for the same height, which can occur due to network delays or delegates forging multiple blocks in their designated time slot.
 
-In most cases, the BFT consensus algorithm implemented in the Lisk SDK takes care of these matters and resolves all conflicts automatically, following rules defined in the xref:{url_protocol_bft}[Lisk Protocol - BFT] section.
+In most cases, the BFT consensus algorithm implemented in the Lisk SDK takes care of these matters and resolves all conflicts automatically, following rules defined in the xref:{url_protocol_bft}[BFT] section of the Lisk Protocol.
 
-Furthermore delegates can be punished, if they misbehave in one of the following ways:
+Furthermore delegates can be punished, if they forge a block with consensus votes that contradict with the Lisk BFT (see the xref:{url_protocol_punishment}[Punishment of Lisk-BFT protocol violations] section of the Lisk Protocol).
+This can happen for example if they...
 
-They...
-
-* ... perform double forging i.e. having forging actived on multiple node for the same delegate at the same time.
+* ... perform double forging, i.e. having forging actived on multiple node for the same delegate at the same time.
 * ... violate the xref:{url_protocol_fork_choice}[fork choice rule].
-* ... or they somehow else forge a block with consensus votes that contradict with the Lisk BFT (See xref:{url_protocol_punishment}[Lisk Protocol>BFT: Punishment of Lisk-BFT protocol violations]).
+* ... xref:{url_guides_forging_safely}[enable forging on a new node], and didn't port over the `forger_info` data.
 
 To punish a delegate, a xref:{url_protocol_transactions_pom}[delegate misbehaviour report] needs to be posted to the network.
 

@@ -5,6 +5,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 :imagesdir: ../../../assets/images
 :v_protocol: master
 
+:url_github_lip14: https://github.com/LiskHQ/lips/blob/master/proposals/lip-0014.md#detecting-contradicting-block-headers
 :url_wiki_pos: https://en.wikipedia.org/wiki/Proof_of_stake
 
 :url_guides_forging: guides/node-management/forging.adoc
@@ -26,7 +27,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 
 The Lisk SDK bootstraps a blockchain network that is based on the xref:{url_protocol_dpos}[Lisk DPoS] consensus algorithm.
 
-In DPoS based blockchains, the consensus regarding who can forge the next block is reached by users according to the votes cast. 
+In DPoS based blockchains, the consensus regarding who can forge the next block is reached by users according to the votes cast.
 
 [NOTE]
 ====
@@ -101,6 +102,7 @@ More information about enabling and disabling forging on a node can be found in 
 === Voting for a delegate
 
 Accounts can vote for delegates by sending a xref:{url_protocol_transactions_vote}[delegate vote transaction].
+The tokens used to vote for delegates will be locked.
 The locked tokens can be unlocked again if needed, by <<unvote, unvoting>> the delegate again.
 
 For instance, lets assume you hold an account with a balance of 100 tokens.
@@ -131,9 +133,9 @@ const tx = new transactions.VoteTransaction({
 === Unvoting delegates and unlocking of tokens
 
 The amount of tokens used for voting is locked and cannot be used for any other transactions.
-This includes but is not limited to balance transfers, further voting or fees.
+This includes but is not limited to further voting, balance transfers or transaction fees.
 
-To use those tokens, the account has to submit a xref:{url_protocol_transactions_vote}[delegate vote transaction], with a *negative amount* (also called “unvote”).
+To use the locked tokens again, the account has to submit a xref:{url_protocol_transactions_vote}[delegate vote transaction], with a *negative amount* (also called “unvote”).
 This will start the unlocking procedure and the LSK will be ready for unlocking 2000 blocks later, (approximately 5 hours and 30 minutes).
 
 To recover the locked tokens, the account has to submit two transactions:
@@ -200,10 +202,54 @@ This can happen for example if the following actions are performed:
 
 === Delegate misbehaviour report
 
-A  xref:{url_protocol_transactions_pom}[delegate misbehaviour report] transaction can be issued by anyone in the network, who observes a violation of the Lisk BFT consensus algorithm.
+[[discover]]
+=== How to discover misbehavior of a delegate
 
-Any misbehavior of a delegate is indicated by the `maxHeightPreviouslyForged` property of a block forged by a delegate.
-If `maxHeightPreviouslyForged` is not equal to the `height` of the block which was previously forged by the delegate, this can be reported by providing both block headers of the delegate, which have contradicting values.
+Any misbehavior of a delegate is indicated by contradicting block headers between two forged blocks of a particular delegate.
+This can be reported by providing the two block headers which have contradicting values.
+
+.Detecting Contradicting Block Headers (Source: {url_github_lip14}[LIP 14^])
+[source,js]
+----
+function checkHeadersContradicting(blockHeader1,blockHeader2) {
+   // Order the two block headers such that b1 must be forged first
+   let b1=blockHeader1;
+   let b2=blockHeader2;
+   if(b1.maxHeightPreviouslyForged>b2.maxHeightPreviouslyForged ||
+     (b1.maxHeightPreviouslyForged==b2.maxHeightPreviouslyForged && b1.maxHeightPrevoted>b2.maxHeightPrevoted) ||
+     (b1.maxHeightPreviouslyForged==b2.maxHeightPreviouslyForged && b1.maxHeightPrevoted==b2.maxHeightPrevoted && b1.height>b2.height)){
+      b1=blockHeader2;
+      b2=blockHeader1;
+   }
+
+   // The order of cases is essential here
+   if(b1.delegatePubKey!=b2.delegatePubKey) {
+      // Blocks by different delegates are never contradicting
+      return false;
+   } else if(b1.blockID==b2.blockID) {
+      // No contradiction, as block headers are the same
+      return false;
+   } else if (b1.maxHeightPrevoted==b2.maxHeightPrevoted &&  b1.height>=b2.height) {
+      // Violation of the fork choice rule as delegate moved to different chain
+      // without strictly larger maxHeightPrevoted or larger height as justification.
+      // This in particular happens, if a delegate is double forging.
+      return true;
+   } else if(b1.height>b2.maxHeightPreviouslyForged) {
+      // Violates disjointness condition
+      return true;
+   } else if(b1.maxHeightPrevoted>b2.maxHeightPrevoted) {
+      // Violates that delegate chooses branch with largest maxHeightPrevoted
+      return true;
+   } else {
+      // No contradiction between block headers
+      return false;
+   }
+}
+----
+
+=== Reporting a delegate
+
+A xref:{url_protocol_transactions_pom}[delegate misbehaviour report] transaction can be issued by anyone in the network, who observes a violation of the Lisk BFT consensus algorithm, like explained in <<discover>>.
 
 .Report delegate misbehaviour
 [source,js]

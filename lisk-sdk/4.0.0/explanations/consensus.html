@@ -415,8 +415,8 @@
 </div>
 <div class="paragraph">
 <p>The PoS related characteristic is the requirement for delegates to self-vote a certain amount of tokens, to increase their delegate weight.
-Another PoS characteristic is the mechanism for the selection of the <a href="#forging_delegates">two random standby delegates</a>, who are selected each forging round.
-Here applies, the higher the delegate weight, the higher the chance to be selected in one of the two random spots for standby delegates.</p>
+Another PoS characteristic is the mechanism for the selection of the <a href="#forging_delegates">two random standby delegates</a>, who are selected every forging round.
+The higher the delegate weight, the higher the chance to be selected in one of the two random spots for standby delegates.</p>
 </div>
 </td>
 </tr>
@@ -617,7 +617,7 @@ Future improvements of the Lisk blockchain (particularly on the database level),
 <i class="fa icon-tip" title="Tip"></i>
 </td>
 <td class="content">
-<div class="title">An unlock transaction can contain multiple unlock objects</div>
+<div class="title">A token unlock transaction can contain multiple unlock objects</div>
 <div class="paragraph">
 <p>This allows an account to submit multiple delegate votes and recover those tokens with a single unlock transaction.
 Of course, all tokens must have been in the unlocking state for at least 2000 blocks for the unlock to be valid.</p>
@@ -633,42 +633,39 @@ Of course, all tokens must have been in the unlocking state for at least 2000 bl
 <h2 id="_bft"><a class="anchor" href="#_bft"></a>BFT</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The Byzantine Fault Tolerance (BFT) algorithm ensures that the network can always reach a consensus about the current state of the blockchain.
-The main purpose of the BFT consensus algorithm is to ensure that for a given height, eventually all Lisk nodes agree on the same block.
+<p>The Byzantine Fault Tolerance (BFT) algorithm ensures that the network can reach consensus about the current state of the blockchain.
+This means that for a given height, eventually all Lisk nodes agree on the same block.
 This is particularly important in the case whereby there are different valid blocks for the same height, which can occur due to network delays or delegates forging multiple blocks in their designated time slot.</p>
 </div>
 <div class="paragraph">
 <p>In most cases, the BFT consensus algorithm implemented in the Lisk SDK takes care of these points and resolves all conflicts automatically, following the rules defined in the <a href="../../../lisk-protocol/consensus-algorithm.html#lisk_bft" class="page">BFT</a> section of the Lisk Protocol.</p>
 </div>
 <div class="paragraph">
-<p>Additionally delegates can be punished by anyone in the network, if they forge a block with consensus votes that contradict with the Lisk BFT (see the <a href="../../../lisk-protocol/consensus-algorithm.html#punishment" class="page">Punishment of Lisk-BFT protocol violations</a> section of the Lisk Protocol).
-This can happen for example if the following actions are performed:</p>
+<p>Additionally, delegates can be punished by anyone in the network, if they forge contradicting blocks, i.e., two blocks with consensus votes that violate the Lisk BFT (see the <a href="../../../lisk-protocol/consensus-algorithm.html#punishment" class="page">protocol documentation</a> for details).
+In order to avoid that a delegate is punished, a node operator has to take a lot of care when enabling forging on a node.
+This means that they have to ensure the following:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>&#8230;&#8203; Double forging, i.e. having forging activated on multiple nodes for the same delegate at the same time.</p>
+<p>Never activate forging on more than one node.
+Otherwise, the delegate may be punished due to double-forge, i.e., producing two contradicting blocks for the same time slot.</p>
 </li>
 <li>
-<p>&#8230;&#8203; Violating the <a href="../../../lisk-protocol/consensus-algorithm.html#index-fork_choice_rule-1" class="page">fork choice rule</a>.</p>
-</li>
-<li>
-<p>&#8230;&#8203; <a href="../guides/node-management/forging.html#safely_activating_forging" class="page">Enabling forging on a new node</a>, without porting over the <code>forger_info</code> data.</p>
+<p>Never activate forging without porting over the <code>forger_info</code> data (see <a href="../guides/node-management/forging.html#safely_activating_forging" class="page">safely enabling forging on a new node</a>).
+Otherwise, the <code>maxHeightPreviouslyForged</code> property of the forged blocks may be outdated, which can cause the delegate to forge contradicting blocks.</p>
 </li>
 </ul>
 </div>
 <div class="sect2">
-<h3 id="_delegate_misbehaviour_report"><a class="anchor" href="#_delegate_misbehaviour_report"></a>Delegate misbehaviour report</h3>
-
-</div>
-<div class="sect2">
 <h3 id="discover"><a class="anchor" href="#discover"></a>How to discover misbehavior of a delegate</h3>
 <div class="paragraph">
-<p>Any misbehavior of a delegate is indicated by contradicting block headers between two forged blocks of a particular delegate.
-This can be reported by providing the two block headers which have contradicting values.</p>
+<p>Any misbehavior of a delegate is indicated by two contradicting block headers signed by the delegate.
+A misbehavior can therefore be reported by providing the two contradicting block headers.
+The code below checks the conditions for two block headers to be contradicting.</p>
 </div>
 <div class="listingblock">
-<div class="title">Detecting Contradicting Block Headers (Source: https://github.com/LiskHQ/lips/blob/master/proposals/lip-0014.md#detecting-contradicting-block-headers[LIP 14^])</div>
+<div class="title">Detecting Contradicting Block Headers</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">function checkHeadersContradicting(blockHeader1,blockHeader2) {
    // Order the two block headers such that b1 must be forged first
@@ -706,11 +703,14 @@ This can be reported by providing the two block headers which have contradicting
 }</code></pre>
 </div>
 </div>
+<div class="paragraph">
+<p>(Source: <a href="https://github.com/LiskHQ/lips/blob/master/proposals/lip-0014.md#detecting-contradicting-block-headers" target="_blank" rel="noopener">LIP 14</a>)</p>
+</div>
 </div>
 <div class="sect2">
 <h3 id="_reporting_a_delegate"><a class="anchor" href="#_reporting_a_delegate"></a>Reporting a delegate</h3>
 <div class="paragraph">
-<p>A <a href="../../../lisk-protocol/transactions.html#pom" class="page">delegate misbehaviour report</a> transaction can be issued by anyone in the network, who observes a violation of the Lisk BFT consensus algorithm, like explained in <a href="#discover">How to discover misbehavior of a delegate</a>.</p>
+<p>A <a href="../../../lisk-protocol/transactions.html#pom" class="page">delegate misbehaviour report</a> transaction can be issued by anyone in the network who observes a violation of the Lisk BFT consensus algorithm, like explained in <a href="#discover">How to discover misbehavior of a delegate</a>.</p>
 </div>
 <div class="listingblock">
 <div class="title">Report delegate misbehaviour</div>
@@ -767,7 +767,7 @@ This can be reported by providing the two block headers which have contradicting
 <p>Setting the delegate weight to 0 for the next 780,000 blocks (approximately 3 months).</p>
 </li>
 <li>
-<p>The unlocking period for self-votes is increased from 260,000 blocks to 780,000 blocks (from approximately 1 month to 3 months), for the respective delegate.</p>
+<p>The unlocking period for self-votes is increased from 260,000 blocks to 780,000 blocks (from approximately 1 month to 3 months).</p>
 </li>
 </ul>
 </div>

@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var label = document.createAttribute('aria-label')
     var balloon = document.createAttribute('data-balloon-pos')
     label.value = 'Copied'
-    balloon.value = 'down'
+    balloon.value = 'left'
     e.trigger.setAttributeNode(label)
     e.trigger.setAttributeNode(balloon)
     /*var tooltip = document.createElement('span');
@@ -44,6 +44,6 @@ document.addEventListener('DOMContentLoaded', function () {
     setTimeout(function () {
       e.trigger.removeAttribute('aria-label')
       e.trigger.removeAttribute('data-balloon-pos')
-    }, 2000)
+    }, 3000)
   })
 })

@@ -1,5 +1,6 @@
 = Lisk Framework
 Mona Bärenfänger <mona@lightcurve.io>
+//Settings
 :description: The Lisk Framework overview provides a high-level synopsis of the Lisk Framework architecture, including its modules and components, how they communicate, and also how to change the default configuration.
 :page-aliases: lisk-framework/index.adoc
 :toc: preamble
@@ -12,9 +13,10 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_github_lip05: https://github.com/LiskHQ/lips/blob/master/proposals/lip-0005.md
 :url_github_lip11: https://github.com/LiskHQ/lips/blob/master/proposals/lip-0011.md
 
+// Project URLs
 :url_reference_config: references/config.adoc
 
-:url_core_reference_config: {v_core}@lisk-core::reference/config.adoc
+:url_references_config: references/config.adoc
 :url_guides_config: guides/app-development/configuration.adoc
 
 image:banner_framework.png[Logo]
@@ -61,11 +63,13 @@ const app = Application.defaultApplication(genesisBlock, config);
 const app = new Application(genesisBlock, config);
 ----
 
-`genesisBlock` represents the genesis block and `config` represents the application configuration.
+`genesisBlock` represents the <<genesis-block>> and `config` represents the application <<configuration>>.
 
 [TIP]
 The recommended way is to use `defaultApplication` since it comes with default modules.
 If the class constructor is used, the modules need to be added manually.
+
+
 
 === Registering modules and plugins
 
@@ -83,117 +87,101 @@ Additionally, any plugin may be registered with the below function.
 app.registerPlugin(CustomPlugin);
 ----
 
+//TODO: add link to modules & plugins differences
 Differences between custom modules and custom plugins are discussed below.
 
+== Genesis block
 
-== Modules
+A genesis block must be given to the application, and all networks should have different genesis block.
 
-Modules are located in the `modules` folder.
-They are individual building blocks for the Lisk SDK.
+.Genesis block schema
+[source,js]
+----
+const genesisBlock = {
+  header: {
+    generatorPublicKey: "",
+    // height can be either 0 or regenesis height
+    height: number,
+    // empty buffer or merkle root of the previous blocks from previous network
+    previousBlockID: Buffer,
+    reward: 0n,
+    signature: "",
+    // timestamp of the blockchain in unix timestamp in second
+    timestamp: number,
+    // transactionRoot is alway empty hash
+    transactionRoot: Buffer.from('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', 'hex'),
+    version: 0,
+    asset: {
+      // number of initial round to use the initDelegates
+      initRounds: number,
+      // address of initial delegates
+      initDelegates: Buffer[],
+      // encoded accounts for the initial state
+      accounts: Buffer[],
+    },
+  },
+  payload: [],
+}
+----
 
-==== Default modules
+//TODO: add link to genesis block creation guide
+TIP: A valid genesis block can be created using @liskhq/lisk-genesis as described here.
 
-The default modules are shipped along with the Lisk SDK itself.
-These modules constitute the minimum requirements to run a blockchain with the Lisk SDK.
+== Configuration
 
-* *API module:* This provides HTTP API endpoints, that enable users and other programs to interact with the Lisk blockchain through the API.
+The application config object is passed to the `Application` and must follow the  xref:{url_references_config}[] schema.
 
-==== Custom modules
+For more information about how to configure your blockchain application, check out the guide xref:{url_guides_config}[].
 
-NOTE: The implementation of each module is the responsibility of the user, however it must be inherited from the `BaseModule` to implement its methods.
 
-Custom modules can be plugged into the Lisk SDK and may offer new features/capabilities for the application, and replace the default modules functionalities where necessary.
-They extend the existing instance with a specific, (and circumscribed) set of features.
+== Action and event interfaces
+
+The Lisk Framework defines actions and events which can be invoked and subscribed through a channel.
+
+Action and Events can be used as below.
 
 [source,js]
 ----
-const BaseModule = require('lisk-framework/src/modules/base_module')
-
-// Exported as main file to javascript package
-export default class MyModule extends BaseModule {
-    /**
-    * @param {Object} options - An object of module options
-    */
-    constructor(options) { <1>
-     super(options);
-    }
-
-    /**
-    * @return {string} alias - Return the module alias as string.
-    * */
-    static get alias(){ return 'moduleAlias'; }, <2>
-
-    /**
-    * @return {Object} info - JSON object referring the version, module name and module author.
-    */
-    static get info(){ <3>
-        return {
-            author: '',
-            version: '',
-            name: '',
-            };
-    },
-
-    /**
-    * @param {Channel} channel - An instance of a communication channel.
-    * @return {Promise<void>}
-    */
-    async load(channel) {}, <4>
-
-
-    /**
-     * @return {Object} defaults - JSON object with default options for the module.
-     */
-    get defaults() { return {}; }, <5>
-
-    /**
-     * @return {Array} events - String Array of events.
-     */
-    get events() { return []; }, <6>
-
-    /**
-     * @return {Object} actions - Contains all available action names as key, and the corresponding function as value.
-     */
-    get actions() { <7>
-        return {
-            action1: action => {},
-        }
-    },
-
-    /**
-     * @return {Promise<void>}
-     */
-    async unload() {}, <8>
-};
+// action invoke
+const { data }= await channel.invoke('actionName', input);
+// event subscribe
+channel.subscribe('eventName', ({ data }) => {});
 ----
 
-<1> Constructor of the module.
-<2> Required.
-A unique module identifier, that can be accessed throughout the system.
-If a module is already registered with the same alias, it will throw an error.
-<3> Required.
-Package meta information.
-<4> Required.
-Method which will be invoked by the controller to load the module.
-Ensure all loading logic is completed during the life cycle of load.
-The controller emits an event, `lisk:ready` which can be used to perform certain activities, which may be required to be performed when all the other modules are loaded.
-<5> Supported configurations for the module with default values.
-<6> List of valid events which this module wants to register with the controller.
-Each event name will be prefixed by a module alias, e.g. moduleName:event1. Listing an event means to register the event in the application.
-Any module can subscribe or publish that event in the application.
-<7> Object of valid actions which this module wants to register with the controller.
-Each action name will be prefixed by a module alias, e.g. moduleName:action1. The source module can define the action whilst the others can invoke that action.
-<8> Method to be invoked by the controller to perform the cleanup.
+=== Application actions
 
-==== Module communication
+* `app:getConnectedPeers` - Returns all connected peers
+* `getDisconnectedPeers` - Returns all disconnected peers
+* `getForgers` - Returns the status of all registered forgers information for current round
+* `updateForgingStatus` - Enable or disable forging for a registered forger in config
+* `getForgingStatus`
+* `getTransactionsFromPool`
+* `postTransaction`
+* `getLastBlock`
+* `getAccount`
+* `getAccounts`
+* `getBlockByID`
+* `getBlocksByIDs`
+* `getBlockByHeight`
+* `getBlocksByHeightBetween`
+* `getTransactionByID`
+* `getTransactionsByIDs`
+* `getSchema`
+* `getRegisteredModules`
+* `getNodeInfo`
 
-Modules communicate with each other through event-based <<channels,channels>>.
-Modules running in different processes communicate with each other over IPC channels.
+=== Application events
 
-By default, modules will run in the same process as the controller, which loads the module.
-To load a module in a child process, ensure the `ipc` is enabled in the xref:{url_reference_config}[config] and set the environment variable `LISK_CHILD_PROCESS_MODULES` with the module alias.
+* `app:ready` - Fired when the application starts
+* `app:shutdown` - Fired when application stops
+* `app:network:ready` - Fired when network has at least one outbound connection
+* `app:network:event` - Fired when application receives P2P event from the network
+* `app:transaction:new` - Fired when the node receives a new transaction
+* `app:chain:fork` - Fired when the node received a block from forked chain
+* `app:chain:validators:change` - Fired when node updates validator set
+* `app:block:new` - Fired when a new block is added to the blockchain
+* `app:block:delete` - Emitted when a block is deleted from blockchain
 
-TIP: If the respective module is using a high amount of CPU power, loading a module in a child process can prevent CPU usage bottlenecks.
 
-Multiple modules can be defined by using commas, as shown below: `LISK_CHILD_PROCESS_MODULES=httpApi,chain`.
+
 

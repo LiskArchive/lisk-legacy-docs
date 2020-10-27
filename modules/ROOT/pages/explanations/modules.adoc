@@ -1,0 +1,99 @@
+= Modules
+
+== When to create a custom module / custom asset
+
+The Custom module and custom asset are used to provide features to...
+
+* define data stored in blockchain
+* define data sent through transaction asset
+* define logic which is executed per block
+* define logic which is executed per transaction
+* define logic which is executed per asset
+
+Also, all of the logic implemented using a custom module / asset must be “deterministic” and executable within block time.
+
+== What is a custom module and a custom asset?
+
+Custom modules bundle block processing logic and transaction processing logic together with a specific account schema.
+Each custom module is separated based on the domain and data which the account schema contains.
+
+They are responsible for the state machine part of the blockchain logic.
+The state machine validates and updates the information on either account state or chain state.
+Those state changes can be introduced through a block header or a transaction.
+
+Each custom module defines its own data.
+If a module is required to interact with other data which is managed by another module, it should communicate through the functions exposed by other modules.
+
+== How to create custom module and custom asset
+
+The custom module and asset must extend the `BaseModule` and `BaseAsset` defined in the Lisk SDK.
+//TODO: Add missing links
+Interfaces for xref:{}[BaseModule] and xref:{}[BaseAsset] are described in the reference.
+
+For a custom asset, `name`, `id`, `schema` and `apply` are required.
+
+* `name` is used for UI purpose.
+* `Id` is used for `AssetID` to send a transaction.
+* `Schema` defines `asset` schema in a transaction.
+* `Apply` defines a state change induced by this asset.
+
+.custom_asset.ts
+[source,typescript]
+----
+interface Asset {
+  Data: string;
+}
+export class CustomAsset extends BaseAsset {
+  public name = 'executeCustomAsset';
+  public id = 0;
+  public schema = {
+    $id: '/customAsset',
+    type: 'object',
+    properties: {
+      data: {
+        dataType: 'string',
+        fieldNumber: 1,
+      },
+    },
+  };
+
+  public apply(context: ApplyAssetContext<Asset>): Promise<void> {
+    // do something
+  }
+}
+----
+
+For a custom module, `name` and `id` are required properties.
+
+* `name` will be used for a key for the account schema if defined.
+* `id` will be used for a fieldNumber for the account schema, and for a `moduleID` to send a transaction with `CustomAsset`.
+
+.custom_module.ts
+[source,typescript]
+----
+import { CustomAsset } from './custom_asset';
+
+export class CustomModule extends BaseModule {
+  public name = 'customModule';
+  public id = 1001;
+  public accountSchema = {
+    type: 'object',
+    properties: {
+      latestData: {
+        fieldNumber: 1,
+        dataType: 'string',
+      },
+    },
+    default: {
+      latestData: 'initial data',
+    },
+  };
+  public transactionAssets: [new CustomAsset()];
+  public afterBlockApply(context: AfterBlockApplyContext): Promise<void> {
+    // do something after block is applied
+  }
+}
+----
+
+
+

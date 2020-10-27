@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Untitled - Lisk  SDK  Docs</title>
+    <title>Modules - Lisk  SDK  Docs</title>
     <link rel="canonical" href="https://lisk.io/documentation/lisk-sdk/v5/explanations/modules.html">
     <meta name="description" content="The Lisk Documentation comprises guides, tutorials, technical references and in-depth explanations about the Lisk SDK, Lisk Core, Lisk Service and the Lisk Protocol.">
     <meta name="generator" content="Antora 2.3.4">
@@ -419,7 +419,149 @@
   </div>
   <div class="content">
 <article class="doc">
+<h1 class="page">Modules</h1>
+<div class="sect1">
+<h2 id="_when-to-create-a-custom-module-custom-asset"><a class="anchor" href="#_when-to-create-a-custom-module-custom-asset"></a>When to create a custom module / custom asset</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The Custom module and custom asset are used to provide features to&#8230;&#8203;</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>define data stored in blockchain</p>
+</li>
+<li>
+<p>define data sent through transaction asset</p>
+</li>
+<li>
+<p>define logic which is executed per block</p>
+</li>
+<li>
+<p>define logic which is executed per transaction</p>
+</li>
+<li>
+<p>define logic which is executed per asset</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Also, all of the logic implemented using a custom module / asset must be “deterministic” and executable within block time.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what-is-a-custom-module-and-a-custom-asset"><a class="anchor" href="#_what-is-a-custom-module-and-a-custom-asset"></a>What is a custom module and a custom asset?</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Custom modules bundle block processing logic and transaction processing logic together with a specific account schema.
+Each custom module is separated based on the domain and data which the account schema contains.</p>
+</div>
+<div class="paragraph">
+<p>They are responsible for the state machine part of the blockchain logic.
+The state machine validates and updates the information on either account state or chain state.
+Those state changes can be introduced through a block header or a transaction.</p>
+</div>
+<div class="paragraph">
+<p>Each custom module defines its own data.
+If a module is required to interact with other data which is managed by another module, it should communicate through the functions exposed by other modules.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_how-to-create-custom-module-and-custom-asset"><a class="anchor" href="#_how-to-create-custom-module-and-custom-asset"></a>How to create custom module and custom asset</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The custom module and asset must extend the <code>BaseModule</code> and <code>BaseAsset</code> defined in the Lisk SDK.
+Interfaces for <a href="#{}">BaseModule</a> and <a href="#{}">BaseAsset</a> are described in the reference.</p>
+</div>
+<div class="paragraph">
+<p>For a custom asset, <code>name</code>, <code>id</code>, <code>schema</code> and <code>apply</code> are required.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>name</code> is used for UI purpose.</p>
+</li>
+<li>
+<p><code>Id</code> is used for <code>AssetID</code> to send a transaction.</p>
+</li>
+<li>
+<p><code>Schema</code> defines <code>asset</code> schema in a transaction.</p>
+</li>
+<li>
+<p><code>Apply</code> defines a state change induced by this asset.</p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="title">custom_asset.ts</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">interface Asset {
+  Data: string;
+}
+export class CustomAsset extends BaseAsset {
+  public name = 'executeCustomAsset';
+  public id = 0;
+  public schema = {
+    $id: '/customAsset',
+    type: 'object',
+    properties: {
+      data: {
+        dataType: 'string',
+        fieldNumber: 1,
+      },
+    },
+  };
 
+  public apply(context: ApplyAssetContext&lt;Asset&gt;): Promise&lt;void&gt; {
+    // do something
+  }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For a custom module, <code>name</code> and <code>id</code> are required properties.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>name</code> will be used for a key for the account schema if defined.</p>
+</li>
+<li>
+<p><code>id</code> will be used for a fieldNumber for the account schema, and for a <code>moduleID</code> to send a transaction with <code>CustomAsset</code>.</p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="title">custom_module.ts</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import { CustomAsset } from './custom_asset';
+
+export class CustomModule extends BaseModule {
+  public name = 'customModule';
+  public id = 1001;
+  public accountSchema = {
+    type: 'object',
+    properties: {
+      latestData: {
+        fieldNumber: 1,
+        dataType: 'string',
+      },
+    },
+    default: {
+      latestData: 'initial data',
+    },
+  };
+  public transactionAssets: [new CustomAsset()];
+  public afterBlockApply(context: AfterBlockApplyContext): Promise&lt;void&gt; {
+    // do something after block is applied
+  }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
     <div class="bottom-links">
     <div>
       <a class="bottom-link" href="/documentation/lisk-sdk/v5/explanations/framework.html"><i class="icofont-double-left icofont-3x"></i>Lisk Framework

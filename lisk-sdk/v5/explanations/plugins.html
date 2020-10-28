@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Untitled - Lisk  SDK  Docs</title>
+    <title>Custom Plugin interface - Lisk  SDK  Docs</title>
     <link rel="canonical" href="https://lisk.io/documentation/lisk-sdk/v5/explanations/plugins.html">
     <meta name="description" content="The Lisk Documentation comprises guides, tutorials, technical references and in-depth explanations about the Lisk SDK, Lisk Core, Lisk Service and the Lisk Protocol.">
     <meta name="generator" content="Antora 2.3.4">
@@ -419,7 +419,103 @@
   </div>
   <div class="content">
 <article class="doc">
+<h1 class="page">Custom Plugin interface</h1>
+<div class="sect1">
+<h2 id="when-to-create-a-plugin"><a class="anchor" href="#when-to-create-a-plugin"></a>When to create a plugin</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The Custom plugin is used to provide features to provide&#8230;&#8203;</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>a function to aggregate the blockchain data.</p>
+</li>
+<li>
+<p>automation to the blockchain logic, such as automatically seeding transactions.</p>
+</li>
+<li>
+<p>search capabilities for the blockchain data.</p>
+</li>
+<li>
+<p>proxy to the application interfaces.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="plugin-interface"><a class="anchor" href="#plugin-interface"></a>Plugin interface</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>All custom plugins must extend BasePlugin exposed by SDK.
+All plugins and the application can interact with each other by using a channel.
+Each plugin is given one channel through the “load” function as shown below.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="how-to-create-a-custom-plugin"><a class="anchor" href="#how-to-create-a-custom-plugin"></a>How to create a custom plugin</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The interface for the <code>BasePlugin</code> is described in the <a href="#references/framework/index.adoc#the-baseplugin" class="page unresolved">Lisk Framework reference</a>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">export class MyPlugin extends BasePlugin {
+    static get alias(){ return 'pluginAlias'; },
 
+    static get info(){
+        return {
+            author: '',
+            version: '',
+            name: '',
+        };
+    },
+
+    private _knownTimestamps: number[] = [];
+
+    async load(channel: Channel): Promise&lt;void&gt; {
+      // initialize plugin
+      if (this.options.enable) {
+        return false;
+      }
+      channel.subscribe('app:block:new', ({ data }) =&gt; {
+        const decodedBlock = this.codec.decodeBlock(data.block);
+        this.knownTimestamp.push(decodedBlock.header.timestamp);
+        channel.publish('timestamp', { timestamp: decodedBlock.header.timestamp });
+      });
+    }
+
+    get defaults() {
+      return {
+        type: 'object',
+        properties: {
+          enable: {
+            type: 'boolean',
+          }
+        },
+      }
+    }
+
+    get events() {
+      return ['timestamp'];
+    }
+
+    get actions() {
+        return {
+           getKnownTimestamp: () =&gt; this._knownTimestamps;
+        }
+    }
+
+    async unload() {
+      this._knownTimestamps = [];
+    }
+};</code></pre>
+</div>
+</div>
+</div>
+</div>
     <div class="bottom-links">
     <div>
       <a class="bottom-link" href="/documentation/lisk-sdk/v5/explanations/modules.html"><i class="icofont-double-left icofont-3x"></i>Modules

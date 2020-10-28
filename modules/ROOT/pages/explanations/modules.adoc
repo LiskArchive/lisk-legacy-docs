@@ -1,4 +1,57 @@
 = Modules
+Mona Bärenfänger <mona@lightcurve.io>
+//Settings
+:toc: preamble
+:v_core: 3.0.0
+:imagesdir: ../../assets/images
+// Project URLs
+:url_references_framework_basemodule: references/framework/index.adoc#the-basemodule
+:url_references_framework_baseasset: references/framework/index.adoc#the-baseasset
+
+== Default modules
+
+=== Token module
+
+
+
+[cols="30,70",options="header",stripes="hover"]
+|===
+|Name
+|Description
+
+|xref:{}[Token module]
+a|
+The Token module handles all logic related to balance.
+Specifically:
+
+* Validating and subtracting fees for all transactions
+* Checking the minimum remaining balance requirement
+* Giving block rewards to the block generator
+* Transferring account balances
+
+|xref:{}[Sequence module]
+a|
+The Sequence module handles all logic related to nonce.
+
+It should verify the nonce for all transactions and increment if valid.
+
+|xref:{}[Keys module]
+a|
+The Keys module handles all logic related to the signatures.
+
+It should verify the signatures based on the multi-signature rules including non-multi-signature accounts.
+It also handles the registration of multi-signature accounts.
+
+|xref:{}[DPoS module]
+a|
+The DPoS module is responsible for handling all DPoS related logics.
+Specifically:
+
+* Snapshotting vote weights
+* Calculating productivity
+* Handling registerDelegate, voteDelegate, unlockToken and reportDelegateMisbehavior transaction assets
+* Setting the next delegates set
+|===
 
 == When to create a custom module / custom asset
 
@@ -24,13 +77,13 @@ Those state changes can be introduced through a block header or a transaction.
 Each custom module defines its own data.
 If a module is required to interact with other data which is managed by another module, it should communicate through the functions exposed by other modules.
 
-== How to create custom module and custom asset
+== How to create custom module with a custom asset
 
 The custom module and asset must extend the `BaseModule` and `BaseAsset` defined in the Lisk SDK.
-//TODO: Add missing links
-Interfaces for xref:{}[BaseModule] and xref:{}[BaseAsset] are described in the reference.
 
-For a custom asset, `name`, `id`, `schema` and `apply` are required.
+The interfaces for `BaseModule` and `BaseAsset` are described in the xref:{url_references_framework_basemodule}[Lisk Framework reference].
+
+For a custom asset, the following properties are required:
 
 * `name` is used for UI purpose.
 * `Id` is used for `AssetID` to send a transaction.
@@ -63,7 +116,7 @@ export class CustomAsset extends BaseAsset {
 }
 ----
 
-For a custom module, `name` and `id` are required properties.
+For a custom module, the following properties are required:
 
 * `name` will be used for a key for the account schema if defined.
 * `id` will be used for a fieldNumber for the account schema, and for a `moduleID` to send a transaction with `CustomAsset`.
@@ -95,5 +148,22 @@ export class CustomModule extends BaseModule {
 }
 ----
 
+== Life cycle of a block
 
+. Receive block
+. Apply fork choice rule
+. Validate block
+.. Validate transactions
+... Validate transaction
+... *Validate transaction asset*
+. Verify block header
+. Before block apply
+. *Apply block*
+.. Apply transactions
+... *beforeTransactionApply*
+... *Apply asset*
+... *afterTransactionApply*
+. *After block apply*
+. Save block and updated states
 
+The *bold* steps are the steps exposed through the base module and base asset.

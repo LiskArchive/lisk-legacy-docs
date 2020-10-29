@@ -1,4 +1,4 @@
-= Lisk Framework
+= The Lisk Framework
 Mona Bärenfänger <mona@lightcurve.io>
 //Settings
 :page-aliases: lisk-framework/index.adoc
@@ -15,7 +15,7 @@ image:banner_framework.png[Logo]
 
 == What is the Lisk Framework?
 
-The Lisk Framework is an application framework which integrates the Lisk Elements libraries in order to form a functioning Lisk blockchain application.
+The Lisk Framework is an application framework which integrates the Lisk Elements packages in order to form a functioning Lisk blockchain application.
 Its modular architecture allows developers to extend the off-chain and on-chain logic with user defined plugins and modules.
 
 The Lisk Framework provides a consistent and intuitive interface between each module and plugin.
@@ -37,14 +37,12 @@ Node:: The main object in charge of acting on the blockchain including:
 * processing blocks from the network
 * ... and broadcasting blocks and transactions to the network.
 xref:{url_explanations_modules}[Modules]:: Objects injected into the node with a single responsibility related to the blockchain state.
-Example: The “token” module is responsible for everything related to account balances.
 xref:{url_explanations_plugins}[Plugins]:: Applications which interact with the node through RPC channels to expose information from the node outside the context of the blockchain itself.
-Example: “HTTPAPI, “plugin” which exposes blockchain data through HTTP
 
 == Application
 
 The `Application` class is an entry point to create a blockchain application.
-`Application` can be instantiated in two ways.
+It can be instantiated in two ways:
 
 [source,js]
 ----
@@ -57,8 +55,8 @@ const app = new Application(genesisBlock, config);
 `genesisBlock` represents the <<genesis-block>> and `config` represents the application <<configuration>>.
 
 [TIP]
-The recommended way is to use `defaultApplication` since it comes with default modules.
-If the class constructor is used, the modules need to be added manually.
+The recommended way to create an `Application` instance, is to use `defaultApplication` since it comes with the default modules.
+If the class constructor is used, the modules need to be registered manually.
 
 === Registering modules and plugins
 
@@ -123,12 +121,45 @@ For more information about how to configure your blockchain application, check o
 
 The Lisk Framework defines actions and events which can be invoked and subscribed through a channel.
 
-Action and Events can be used as below.
+All modules and plugins will be given a `channel` to communicate with the application via actions and events.
+
+=== How to invoke actions
+
+<<application-actions>> can be invoked through the `channel`.
+Additionally, all actions defined in modules and plugins can be called by every module an plugin in the application.
+
+[source,typescript]
+----
+const { data } = await channel.invoke('app:getSchema'); <1>
+const { data } = await channel.invoke('pluginAlias:getKnownTimestamps'); <2>
+const { data } = await channel.invoke('moduleAlias:anotherAction'); <3>
+const { data }= await channel.invoke('app:actionName', input); <4>
+----
+
+<1> How to invoke a default application action.
+<2> How to invoke a plugin action.
+<3> How to invoke a module action.
+<4> Hot to invoke an action that needs some input.
+
+=== How to publish and subscribe to events
+
+<<application-events>> can be subscribed and published through the `channel`.
+Additionally, all events defined in modules / plugins can be subscribed by every other module and plugin in the application.
+
+[source,typescript]
+----
+channel.publish('pluginAlias:timestamp', { info: 'sample' }); <1>
+channel.subscribe('pluginAlias:timestamp', ({ data }) => { <2>
+  console.log(data.info);
+});
+----
+
+<1> How to publish an event
+<2> How to subscribe to an event
 
 [source,js]
 ----
 // action invoke
-const { data }= await channel.invoke('actionName', input);
 // event subscribe
 channel.subscribe('eventName', ({ data }) => {});
 ----

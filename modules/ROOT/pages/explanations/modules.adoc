@@ -79,77 +79,6 @@ Specifically:
 * Transferring account balances
 |===
 
-== How to create custom module with a custom asset
-
-The custom module and asset must extend the `BaseModule` and `BaseAsset` defined in the Lisk SDK.
-
-The interfaces for `BaseModule` and `BaseAsset` are described in the xref:{url_references_framework_basemodule}[Lisk Framework reference].
-
-For a custom asset, the following properties are required:
-
-* `name` is used for UI purpose.
-* `Id` is used for `AssetID` to send a transaction.
-* `Schema` defines `asset` schema in a transaction.
-* `Apply` defines a state change induced by this asset.
-
-.custom_asset.ts
-[source,typescript]
-----
-interface Asset {
-  Data: string;
-}
-export class CustomAsset extends BaseAsset {
-  public name = 'executeCustomAsset';
-  public id = 0;
-  public schema = {
-    $id: '/customAsset',
-    type: 'object',
-    properties: {
-      data: {
-        dataType: 'string',
-        fieldNumber: 1,
-      },
-    },
-  };
-
-  public apply(context: ApplyAssetContext<Asset>): Promise<void> {
-    // do something
-  }
-}
-----
-
-For a custom module, the following properties are required:
-
-* `name` will be used for a key for the account schema if defined.
-* `id` will be used for a fieldNumber for the account schema, and for a `moduleID` to send a transaction with `CustomAsset`.
-
-.custom_module.ts
-[source,typescript]
-----
-import { CustomAsset } from './custom_asset';
-
-export class CustomModule extends BaseModule {
-  public name = 'customModule';
-  public id = 1001;
-  public accountSchema = {
-    type: 'object',
-    properties: {
-      latestData: {
-        fieldNumber: 1,
-        dataType: 'string',
-      },
-    },
-    default: {
-      latestData: 'initial data',
-    },
-  };
-  public transactionAssets: [new CustomAsset()];
-  public afterBlockApply(context: AfterBlockApplyContext): Promise<void> {
-    // do something after block is applied
-  }
-}
-----
-
 == Life cycle of a block
 
 . Receive block
@@ -169,3 +98,157 @@ export class CustomModule extends BaseModule {
 . Save block and updated states
 
 The *bold* steps are the steps exposed through the base module and base asset.
+
+== How to create custom module with a custom asset
+
+The custom module and asset must extend the base module and base asset defined in the Lisk SDK.
+
+The interfaces for `BaseModule` and `BaseAsset` are described in the xref:{url_references_framework_basemodule}[Lisk Framework reference].
+
+For a custom asset, the following properties are required:
+
+* `name` is used for UI purpose.
+* `id` is used for `AssetID` to send a transaction.
+* `schema` defines `asset` schema in a transaction.
+* `apply` defines a state change induced by this asset.
+
+.custom_asset.ts
+[source,typescript]
+----
+interface Asset {
+  Data: string;
+}
+export class CustomAsset extends BaseAsset {
+  name = 'executeCustomAsset';
+  id = 0;
+  schema = {
+    $id: '/customAsset',
+    type: 'object',
+    properties: {
+      hello: {
+        dataType: 'string',
+        fieldNumber: 1,
+      },
+    },
+  };
+
+  validate(asset: K): void {
+		if (!asset.hello || typeof asset.hello !== 'string' || asset.hello.length > 64) {
+			throw new InvalidTransactionError(
+                'Invalid "asset.hello" defined on transaction',
+                asset.id,
+                '.asset.hello',
+                asset.hello,
+                'A string value no longer than 64 characters',
+            );
+		}
+  };
+
+  async apply({ asset, stateStore, reducerHandler, transaction }) {
+    const senderAddress = transaction.senderAddress;
+    const senderAccount = await stateStore.account.get(senderAddress);
+
+    if (senderAccount.asset && senderAccount.asset.hello) {
+        throw new InvalidTransactionError(
+            'You cannot send a hello transaction multiple times',
+            transaction.id
+        );
+    } else {
+        sender.asset = { hello: this.asset.hello };
+        store.account.set(sender.address, sender);
+    }
+
+    const senderBalance = await reducerHandler.invoke("token:getBalance", {
+      address: senderAddress,
+    });
+    const minRemainingBalance = await reducerHandler.invoke(
+      "token:getMinRemainingBalance"
+    );
+
+    if (asset.initValue < minRemainingBalance) {
+      throw new Error("NFT init value is too low.");
+    }
+
+    if (senderBalance < asset.initValue + minRemainingBalance) {
+      throw new Error("Sender balance is not enough to create an NFT");
+    }
+
+    const nftToken = createNFTToken({
+      ownerAddress: senderAddress,
+      nonce: transaction.nonce,
+      value: asset.initValue,
+      minPurchaseMargin: asset.minPurchaseMargin,
+    });
+
+    senderAccount.nft.ownNFTs.push(nftToken.id);
+    await stateStore.account.set(senderAddress, senderAccount);
+
+    await reducerHandler.invoke("token:debit", {
+      address: senderAddress,
+      amount: asset.initValue,
+    });
+
+    const allTokens = await getAllNFTTokens(stateStore);
+    allTokens.push(nftToken);
+    await setAllNFTTokens(stateStore, allTokens);
+  }
+}
+----
+
+For a custom module, the following properties are required:
+
+* `name` will be used for a key for the account schema if defined.
+* `id` will be used for a fieldNumber for the account schema, and for a `moduleID` to send a transaction with `CustomAsset`.
+
+.custom_module.ts
+[source,typescript]
+----
+import { CustomAsset } from './custom_asset';
+import {
+	TransactionApplyContext,
+	AfterBlockApplyContext,
+	BeforeBlockApplyContext,
+	AfterGenesisBlockApplyContext,
+} from '../types';
+
+export class CustomModule extends BaseModule {
+  name = 'customModule';
+  id = 1001;
+  accountSchema = {
+    type: 'object',
+    properties: {
+      latestData: {
+        fieldNumber: 1,
+        dataType: 'string',
+      },
+    },
+    default: {
+      latestData: 'initial data',
+    },
+  };
+  transactionAssets: [new CustomAsset()];
+  actions = {
+    someAction: async () => {
+        return this.id
+    },
+  };
+  events = ['someEvent','anotherEvent'];
+  reducers = {};
+  beforeTransactionApply(context: TransactionApplyContext): Promise<void> {
+    // Code in here is applied before a transaction is applied.
+    this._channel.publish();
+  };
+  afterTransactionApply(context: TransactionApplyContext): Promise<void> {
+    // Code in here is applied after a transaction is applied.
+  };
+  afterGenesisBlockApply(context: AfterGenesisBlockApplyContext): Promise<void> {
+    // Code in here is applied after a genesis block is applied.
+  };
+  beforeBlockApply(context: BeforeBlockApplyContext): Promise<void> {
+    // Code in here is applied before a block is applied.
+  }
+  afterBlockApply(context: AfterBlockApplyContext): Promise<void> {
+    // Code in here is applied after a block is applied.
+  }
+}
+----

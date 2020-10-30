@@ -60,34 +60,64 @@ Schema is a type defined by codec, which is a Lisk JSON schema.
 .Interface of the BaseModule
 [source,js]
 ----
-class BaseModule {
-  public name: string; <1>
-  public id: number; <2>
-  public transactionAssets: BaseAsset[]; <3>
-  public accountSchema?: Schema; <4>
-  public actions?: Map<string, ActionHandler>; <5>
-  public events?: string[]; <6>
-  public reducers?: Map<string, ReduceHandler>; <7>
-  public beforeTransactionApply?: ({tx: Transaction, stateStore: StateStore, moduleAccess}) => void; <8>
-  public afterTransactionApply?: ({tx: Transaction, stateStore: StateStore, moduleAccess}) => void; <9>
-  public afterGenesisBlockApply?: ({block: GenesisBlock, stateStore: StateStore, consensus: Consensus, moduleAccess}) => void; <10>
-  public beforeBlockApply?: ({block: Block, stateStore: StateStore, moduleAccess}) => void; <11>
-  public afterBlockApply?: ({block: Block, stateStore: StateStore, consensus: Consensus, moduleAccess}) => void; <12>
+import {
+	GenesisConfig,
+	AccountSchema,
+	TransactionApplyContext,
+	AfterBlockApplyContext,
+	BeforeBlockApplyContext,
+	AfterGenesisBlockApplyContext,
+	Reducers,
+	Actions,
+	BaseModuleDataAccess,
+} from '../types';
+import { BaseAsset } from './base_asset';
+
+interface Channel {
+	publish(name: string, data?: object): void;
+}
+
+export abstract class BaseModule {
+	public abstract name: string; <1>
+	public abstract id: number; <2>
+	public transactionAssets: BaseAsset[] = []; <3>
+	public accountSchema?: AccountSchema; <4>
+	public actions: Actions = {}; <5>
+	public events: string[] = []; <6>
+	public reducers: Reducers = {}; <7>
+	public readonly config: GenesisConfig;
+	protected _channel!: Channel;
+	protected _dataAccess!: BaseModuleDataAccess;
+
+	public constructor(genesisConfig: GenesisConfig) {
+		this.config = genesisConfig;
+	}
+
+	public init(input: { channel: Channel; dataAccess: BaseModuleDataAccess }): void {
+		this._channel = input.channel;
+		this._dataAccess = input.dataAccess;
+	}
+
+	public async beforeTransactionApply?(context: TransactionApplyContext): Promise<void>; <8>
+	public async afterTransactionApply?(context: TransactionApplyContext): Promise<void>; <9>
+	public async afterGenesisBlockApply?(context: AfterGenesisBlockApplyContext): Promise<void>; <10>
+	public async beforeBlockApply?(context: BeforeBlockApplyContext): Promise<void>; <11>
+	public async afterBlockApply?(context: AfterBlockApplyContext): Promise<void>; <12>
 }
 ----
 
 <1> Required. Name of the module.
 <2> Required. Module ID.
-<3> Optional. List of transaction assets for this module
-<4> Optional. Schema of account asset to be used in this module
-<5> Optional. Set of actions which can be called from framework
-<6> Optional. Set of events name that will be emitted from this module
-<7> Optional. Set of actions which can be called from other modules during the block processing
-<8> Optional. A function which will be called for all transactions regardless of modules.
-<9> Optional. A function which will be called for all transactions regardless of modules.
-<10> Optional. A function which will be called while applying genesis block
-<11> Optional. A function which will be called in sequence at beforeBlockApply step
-<12> Optional. A function which will be called in sequence at afterBlockApply step
+<3> Optional. List of transaction assets for this module.
+<4> Optional. Schema of account asset to be used in this module.
+<5> Optional. A set of actions which can be called from framework.
+<6> Optional. A set of events name that will be emitted from this module.
+<7> Optional. A set of actions which can be called from other modules during the block processing.
+<8> Optional. A function which will be called for all transactions before the `apply` function of the <<the-baseasset,transaction>>.
+<9> Optional. A function which will be called for all transactions after the `apply` function of the <<the-baseasset,transaction>>.
+<10> Optional. A function which will be called while applying the genesis block.
+<11> Optional. A function which will be called before a block is applied.
+<12> Optional. A function which will be called after a block is applied.
 
 == The BaseAsset
 
@@ -104,9 +134,9 @@ class BaseAsset<K> {
 ----
 
 <1> Name of the asset which will be used in the UI
-<2> Type of the asset which will be used in the Transaction
+<2> Type of the asset which will be used in the transaction
 <3> Schema of the content of this asset
-<4> Validation function that can be implemented if additional
+<4> Optional. Apply
 <5> Optional. Validation function that can be implemented if additional
 
 == The BasePlugin

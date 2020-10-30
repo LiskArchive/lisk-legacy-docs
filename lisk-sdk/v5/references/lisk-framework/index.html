@@ -9,6 +9,8 @@
     <meta name="generator" content="Antora 2.3.4">
     <link rel="stylesheet" href="../../../../_/css/site.css">
     <link rel="stylesheet" href="../../../../_/css/site-extra.css">
+      <link rel="stylesheet" href="../../../../_/css/vendor/docsearch.min.css">
+      <!-- fetched from https://cdn.jsdelivr.net/npm/docsearch.js@2/dist/cdn/docsearch.min.css -->
 <script src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js"></script>
 <link rel="icon" href="../../../../_/img/favicon.png" type="image/x-icon">
   </head>
@@ -76,6 +78,9 @@
               </div>
             </div>
           </div>
+            <div class="navbar-menu search-box hide-for-print">
+              <input id="search-input" type="text" placeholder="Search">
+            </div>
         </div>
         <div class="navbar-item navbar-right">
 <!--
@@ -470,19 +475,49 @@ Schema is a type defined by codec, which is a Lisk JSON schema.</td>
 <div class="listingblock">
 <div class="title">Interface of the BaseModule</div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">class BaseModule {
-  public name: string; <i class="conum" data-value="1"></i><b>(1)</b>
-  public id: number; <i class="conum" data-value="2"></i><b>(2)</b>
-  public transactionAssets: BaseAsset[]; <i class="conum" data-value="3"></i><b>(3)</b>
-  public accountSchema?: Schema; <i class="conum" data-value="4"></i><b>(4)</b>
-  public actions?: Map&lt;string, ActionHandler&gt<i class="conum" data-value="5"></i><b>(5)</b>
-  public events?: string[]; <i class="conum" data-value="6"></i><b>(6)</b>
-  public reducers?: Map&lt;string, ReduceHandler&gt<i class="conum" data-value="7"></i><b>(7)</b>
-  public beforeTransactionApply?: ({tx: Transaction, stateStore: StateStore, moduleAccess}) =&gt; void; <i class="conum" data-value="8"></i><b>(8)</b>
-  public afterTransactionApply?: ({tx: Transaction, stateStore: StateStore, moduleAccess}) =&gt; void; <i class="conum" data-value="9"></i><b>(9)</b>
-  public afterGenesisBlockApply?: ({block: GenesisBlock, stateStore: StateStore, consensus: Consensus, moduleAccess}) =&gt; void; <i class="conum" data-value="10"></i><b>(10)</b>
-  public beforeBlockApply?: ({block: Block, stateStore: StateStore, moduleAccess}) =&gt; void; <i class="conum" data-value="11"></i><b>(11)</b>
-  public afterBlockApply?: ({block: Block, stateStore: StateStore, consensus: Consensus, moduleAccess}) =&gt; void; <i class="conum" data-value="12"></i><b>(12)</b>
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">import {
+	GenesisConfig,
+	AccountSchema,
+	TransactionApplyContext,
+	AfterBlockApplyContext,
+	BeforeBlockApplyContext,
+	AfterGenesisBlockApplyContext,
+	Reducers,
+	Actions,
+	BaseModuleDataAccess,
+} from '../types';
+import { BaseAsset } from './base_asset';
+
+interface Channel {
+	publish(name: string, data?: object): void;
+}
+
+export abstract class BaseModule {
+	public abstract name: string; <i class="conum" data-value="1"></i><b>(1)</b>
+	public abstract id: number; <i class="conum" data-value="2"></i><b>(2)</b>
+	public transactionAssets: BaseAsset[] = []; <i class="conum" data-value="3"></i><b>(3)</b>
+	public accountSchema?: AccountSchema; <i class="conum" data-value="4"></i><b>(4)</b>
+	public actions: Actions = {}; <i class="conum" data-value="5"></i><b>(5)</b>
+	public events: string[] = []; <i class="conum" data-value="6"></i><b>(6)</b>
+	public reducers: Reducers = {}; <i class="conum" data-value="7"></i><b>(7)</b>
+	public readonly config: GenesisConfig;
+	protected _channel!: Channel;
+	protected _dataAccess!: BaseModuleDataAccess;
+
+	public constructor(genesisConfig: GenesisConfig) {
+		this.config = genesisConfig;
+	}
+
+	public init(input: { channel: Channel; dataAccess: BaseModuleDataAccess }): void {
+		this._channel = input.channel;
+		this._dataAccess = input.dataAccess;
+	}
+
+	public async beforeTransactionApply?(context: TransactionApplyContext): Promise&lt;void&gt<i class="conum" data-value="8"></i><b>(8)</b>
+	public async afterTransactionApply?(context: TransactionApplyContext): Promise&lt;void&gt<i class="conum" data-value="9"></i><b>(9)</b>
+	public async afterGenesisBlockApply?(context: AfterGenesisBlockApplyContext): Promise&lt;void&gt<i class="conum" data-value="10"></i><b>(10)</b>
+	public async beforeBlockApply?(context: BeforeBlockApplyContext): Promise&lt;void&gt<i class="conum" data-value="11"></i><b>(11)</b>
+	public async afterBlockApply?(context: AfterBlockApplyContext): Promise&lt;void&gt<i class="conum" data-value="12"></i><b>(12)</b>
 }</code></pre>
 </div>
 </div>
@@ -498,43 +533,43 @@ Schema is a type defined by codec, which is a Lisk JSON schema.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>Optional. List of transaction assets for this module</td>
+<td>Optional. List of transaction assets for this module.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="4"></i><b>4</b></td>
-<td>Optional. Schema of account asset to be used in this module</td>
+<td>Optional. Schema of account asset to be used in this module.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="5"></i><b>5</b></td>
-<td>Optional. Set of actions which can be called from framework</td>
+<td>Optional. A set of actions which can be called from framework.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="6"></i><b>6</b></td>
-<td>Optional. Set of events name that will be emitted from this module</td>
+<td>Optional. A set of events name that will be emitted from this module.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="7"></i><b>7</b></td>
-<td>Optional. Set of actions which can be called from other modules during the block processing</td>
+<td>Optional. A set of actions which can be called from other modules during the block processing.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="8"></i><b>8</b></td>
-<td>Optional. A function which will be called for all transactions regardless of modules.</td>
+<td>Optional. A function which will be called for all transactions before the <code>apply</code> function of the <a href="#the-baseasset">transaction</a>.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="9"></i><b>9</b></td>
-<td>Optional. A function which will be called for all transactions regardless of modules.</td>
+<td>Optional. A function which will be called for all transactions after the <code>apply</code> function of the <a href="#the-baseasset">transaction</a>.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="10"></i><b>10</b></td>
-<td>Optional. A function which will be called while applying genesis block</td>
+<td>Optional. A function which will be called while applying the genesis block.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="11"></i><b>11</b></td>
-<td>Optional. A function which will be called in sequence at beforeBlockApply step</td>
+<td>Optional. A function which will be called before a block is applied.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="12"></i><b>12</b></td>
-<td>Optional. A function which will be called in sequence at afterBlockApply step</td>
+<td>Optional. A function which will be called after a block is applied.</td>
 </tr>
 </table>
 </div>
@@ -563,7 +598,7 @@ Schema is a type defined by codec, which is a Lisk JSON schema.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>Type of the asset which will be used in the Transaction</td>
+<td>Type of the asset which will be used in the transaction</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
@@ -571,7 +606,7 @@ Schema is a type defined by codec, which is a Lisk JSON schema.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="4"></i><b>4</b></td>
-<td>Validation function that can be implemented if additional</td>
+<td>Optional. Apply</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="5"></i><b>5</b></td>
@@ -702,6 +737,22 @@ Controller emit an event <code>app:ready</code> which you can use to perform som
 <script async src="../../../../_/js/vendor/tabs-block-behaviour.js"></script>
 <script async src="../../../../_/js/vendor/top-versions.js"></script>
 <script async src="../../../../_/js/vendor/custom.js"></script>
+  <script src="../../../../_/js/vendor/docsearch.min.js"></script>
+  <!-- fetched from https://cdn.jsdelivr.net/npm/docsearch.js@2/dist/cdn/docsearch.min.js -->
+  <script>
+    function focusSearchInput () { document.querySelector('#search-input').focus() }
+    var search = docsearch({
+        appId: 'C4SU57KGV9',
+      apiKey: '55aa8709b04eb62f08f87571cf77547c',
+      indexName: 'lisk-docs-search',
+      inputSelector: '#search-input',
+      autocompleteOptions: { hint: false, keyboardShortcuts: ['s'] },
+      algoliaOptions: { hitsPerPage: 10 }
+    }).autocomplete
+    search.on('autocomplete:closed', function () { search.autocomplete.setVal() })
+    focusSearchInput()
+    window.addEventListener('load', focusSearchInput)
+  </script>
 
   </body>
 </html>

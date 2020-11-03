@@ -13,7 +13,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_references_framework_basemodule: references/lisk-framework/index.adoc#the-basemodule
 :url_references_framework_baseasset: references/lisk-framework/index.adoc#the-baseasset
 
-== What is a custom module and a custom asset?
+== What is a custom module?
 
 Custom modules bundle block processing logic and transaction processing logic together with a specific account schema.
 Each custom module is separated based on the domain and data which the account schema contains.
@@ -25,9 +25,14 @@ Those state changes can be introduced through a block header or a transaction.
 Each custom module defines its own data.
 If a module is required to interact with other data which is managed by another module, it should communicate through the functions exposed by other modules.
 
-== When to create a custom module / custom asset
 
-The Custom module and custom asset are used to provide features to...
+=== Custom assets
+
+//TODO
+
+== When to create a module
+
+The module and asset are used to provide features to...
 
 * define data stored in blockchain
 * define data sent through transaction asset
@@ -35,9 +40,9 @@ The Custom module and custom asset are used to provide features to...
 * define logic which is executed per transaction
 * define logic which is executed per asset
 
-Also, all of the logic implemented using a custom module / asset must be “deterministic” and executable within block time.
+Also, all of the logic implemented using a module / asset must be “deterministic” and executable within block time.
 
-== Default modules
+== SDK default modules
 
 [cols="30,70",options="header",stripes="hover"]
 |===
@@ -97,15 +102,15 @@ Specifically:
 . *After block apply*
 . Save block and updated states
 
-The *bold* steps are the steps exposed through the base module and base asset.
+The *bold* steps are the steps exposed via the base module and base asset, see the xref:{url_references_framework_basemodule}[Lisk Framework reference].
 
-== How to create custom module with a custom asset
+== How to create module with an asset
 
-The custom module and asset must extend the base module and base asset defined in the Lisk SDK.
+The module and asset must extend the base module and base asset defined in the Lisk SDK.
 
-The interfaces for `BaseModule` and `BaseAsset` are described in the xref:{url_references_framework_basemodule}[Lisk Framework reference].
+NOTE: The interfaces for `BaseModule` and `BaseAsset` are described in the xref:{url_references_framework_basemodule}[Lisk Framework reference].
 
-For a custom asset, the following properties are required:
+For the asset, the following properties are required:
 
 * `name` is used for UI purpose.
 * `id` is used for `AssetID` to send a transaction.
@@ -115,90 +120,68 @@ For a custom asset, the following properties are required:
 .custom_asset.ts
 [source,typescript]
 ----
-interface Asset {
-  Data: string;
-}
-export class CustomAsset extends BaseAsset {
-  name = 'executeCustomAsset';
-  id = 0;
-  schema = {
-    $id: '/customAsset',
-    type: 'object',
-    properties: {
-      hello: {
-        dataType: 'string',
-        fieldNumber: 1,
-      },
-    },
-  };
+const {
+    BaseAsset,
+    ValidationError,
+    codec
+} = require('lisk-sdk');
+const {
+    helloCounterSchema,
+    CHAIN_STATE_HELLO_COUNTER
+} = require('./schemas');
 
-  validate(asset: K): void {
-		if (!asset.hello || typeof asset.hello !== 'string' || asset.hello.length > 64) {
-			throw new InvalidTransactionError(
-                'Invalid "asset.hello" defined on transaction',
-                asset.id,
-                '.asset.hello',
+export class HelloAsset extends BaseAsset { <1>
+    name = 'helloAsset';
+    id = 0;
+    schema = {
+        $id: '/hello/asset',
+        type: 'object',
+        required: ["hello"],
+        properties: {
+            hello: {
+                dataType: 'string',
+                fieldNumber: 1,
+            },
+        },
+    };
+
+    validate({asset}) { <2>
+        if (!asset.hello || typeof asset.hello !== 'string' || asset.hello.length > 64) {
+            throw new ValidationError(
+                'Invalid "asset.hello" defined on transaction: A string value no longer than 64 characters is expected',
                 asset.hello,
-                'A string value no longer than 64 characters',
             );
-		}
-  };
+        }
+    };
 
-  async apply({ asset, stateStore, reducerHandler, transaction }) {
-    const senderAddress = transaction.senderAddress;
-    const senderAccount = await stateStore.account.get(senderAddress);
+    async apply({ asset, stateStore, reducerHandler, transaction }) { <3>
+        const senderAddress = transaction.senderAddress;
+        const senderAccount = await stateStore.account.get(senderAddress);
 
-    if (senderAccount.asset && senderAccount.asset.hello) {
-        throw new InvalidTransactionError(
-            'You cannot send a hello transaction multiple times',
-            transaction.id
+
+        senderAccount.hello = asset.hello;
+        stateStore.account.set(senderAccount.address, senderAccount);
+
+        let counter = await stateStore.chain.get(
+            CHAIN_STATE_HELLO_COUNTER
         );
-    } else {
-        sender.asset = { hello: this.asset.hello };
-        store.account.set(sender.address, sender);
+
+        await stateStore.chain.set(
+            CHAIN_STATE_HELLO_COUNTER,
+            codec.encode(helloCounterSchema, ++counter)
+        );
     }
-
-    const senderBalance = await reducerHandler.invoke("token:getBalance", {
-      address: senderAddress,
-    });
-    const minRemainingBalance = await reducerHandler.invoke(
-      "token:getMinRemainingBalance"
-    );
-
-    if (asset.initValue < minRemainingBalance) {
-      throw new Error("NFT init value is too low.");
-    }
-
-    if (senderBalance < asset.initValue + minRemainingBalance) {
-      throw new Error("Sender balance is not enough to create an NFT");
-    }
-
-    const nftToken = createNFTToken({
-      ownerAddress: senderAddress,
-      nonce: transaction.nonce,
-      value: asset.initValue,
-      minPurchaseMargin: asset.minPurchaseMargin,
-    });
-
-    senderAccount.nft.ownNFTs.push(nftToken.id);
-    await stateStore.account.set(senderAddress, senderAccount);
-
-    await reducerHandler.invoke("token:debit", {
-      address: senderAddress,
-      amount: asset.initValue,
-    });
-
-    const allTokens = await getAllNFTTokens(stateStore);
-    allTokens.push(nftToken);
-    await setAllNFTTokens(stateStore, allTokens);
-  }
 }
 ----
 
+<1> description
+<2> description
+<3> description
+
 For a custom module, the following properties are required:
 
-* `name` will be used for a key for the account schema if defined.
-* `id` will be used for a fieldNumber for the account schema, and for a `moduleID` to send a transaction with `CustomAsset`.
+* `name` will be used for a key of the account schema if defined.
+* `id` will be used for a fieldNumber for the account schema, and for a `moduleID` to send a transaction with the `CustomAsset`.
 
 .custom_module.ts
 [source,typescript]
@@ -212,8 +195,8 @@ import {
 } from '../types';
 
 export class CustomModule extends BaseModule {
-  name = 'customModule';
-  id = 1001;
+  name = 'customModule'; <1>
+  id = 1001; <2>
   accountSchema = {
     type: 'object',
     properties: {

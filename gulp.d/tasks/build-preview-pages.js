@@ -63,7 +63,7 @@ module.exports = (src, previewSrc, previewDest, sink = () => map()) => (done) =>
           })
         )
         .pipe(vfs.dest(previewDest))
-        //.on('error', done)
+        .on('error', done)
         .pipe(sink())
     )
 

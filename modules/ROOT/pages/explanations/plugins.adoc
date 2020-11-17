@@ -1,4 +1,4 @@
-= Lisk plugins
+= Plugins
 Mona Bärenfänger <mona@lightcurve.io>
 //Settings
 :toc:
@@ -7,39 +7,35 @@ Mona Bärenfänger <mona@lightcurve.io>
 //External URLs
 :url_github_httpapi: https://github.com/LiskHQ/lisk-sdk/tree/v5.0.0-alpha.3/framework-plugins/lisk-framework-http-api-plugin
 // Project URLs
+:url_explanations_modules: explanations/modules.adoc
 :url_references_config: references/config.adoc
 :url_references_framework_baseplugin: references/lisk-framework/index.adoc#the-baseplugin
-:url_references_framework_actions: references/lisk-framework/index.adoc#application-actions
 
-== When to create a plugin
+Plugins offer useful features to the application and external sevices, which are part of the off-chain logic of the blockchain application.
+In other words, a plugin will never change the state of the blockchain itself, in contrary to xref:{url_explanations_modules}[modules], which hold the on-chain logic of the blockchain application.
 
-The Custom plugin is used to provide features to provide...
+.When to create a custom plugin
+[NOTE]
+====
+Plugins enable to...
 
-* a function to aggregate the blockchain data.
-* automation to the blockchain logic, such as automatically seeding transactions.
-* search capabilities for the blockchain data.
+* search the blockchain data.
+* aggregate the blockchain data.
+* automate the blockchain logic, such as automatically seeding transactions.
 * proxy to the application interfaces.
-
-== Default plugins
-
-[cols="30,70",options="header",stripes="hover"]
-|===
-|Name
-|Description
-
-|{url_github_httpapi}[HTTP API^]
-a|
-Description
-|===
+====
 
 == How to create a custom plugin
 
 All custom plugins must extend `BasePlugin` exposed by SDK.
 The interface for the `BasePlugin` is described in the xref:{url_references_framework_baseplugin}[Lisk Framework reference].
+
 Plugins and the application can interact with each other by using a channel.
 Each plugin is given one channel through the `load` function as shown below.
 
-[source,typescript]
+=== Example: A timestamp plugin
+
+[source,js]
 ----
 export class MyPlugin extends BasePlugin {
     static get alias(){ return 'pluginAlias'; }, <1>
@@ -50,7 +46,7 @@ export class MyPlugin extends BasePlugin {
             version: '',
             name: '',
         };
-    },
+    };
 
     private _knownTimestamps: number[] = [];
 
@@ -63,17 +59,17 @@ export class MyPlugin extends BasePlugin {
           }
         },
       }
-    }
+    };
 
     get events() { <4>
       return ['timestamp'];
-    }
+    };
 
     get actions() { <5>
         return {
-           getKnownTimestamps: () => this._knownTimestamps;
+           getKnownTimestamp: () => this._knownTimestamps;
         }
-    }
+    };
 
     async load(channel: Channel): Promise<void> { <6>
       // initialize plugin
@@ -82,14 +78,14 @@ export class MyPlugin extends BasePlugin {
       }
       channel.subscribe('app:block:new', ({ data }) => { <8>
         const decodedBlock = this.codec.decodeBlock(data.block); <9>
-        this._knownTimestamps.push(decodedBlock.header.timestamp); <10>
+        this.knownTimestamp.push(decodedBlock.header.timestamp); <10>
         channel.publish('timestamp', { timestamp: decodedBlock.header.timestamp }); <11>
       });
     }
 
     async unload() { <12>
       this._knownTimestamps = [];
-    }
+    },
 };
 ----
 
@@ -104,10 +100,20 @@ Other plugins and modules can subscribe to this event.
 <7> Doesn't load the plugin, if it is disabled in the config.
 <8> Subscribes to the event `app:block:new`.
 For every new block that is forged, it will perform the following commands.
-<9> Decodes the received Block
+<9> Decodes the received block.
 <10> Pushes the timestamp of the new block into the `_knownTimestamps` array.
 <11> Publishes a new event `pluginAlias:timestamp` with the latest block timestamp to the application.
 <12> Method to be invoked by controller to perform the cleanup.
 Deletes all timestamps in the `_knownTimestamps` array.
 
+== Default plugins
 
+[cols="30,70",options="header",stripes="hover"]
+|===
+|Name
+|Description
+
+|{url_github_httpapi}[HTTP API^]
+a|
+Description
+|===

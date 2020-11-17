@@ -1,4 +1,4 @@
-= Lisk modules
+= Modules
 Mona Bärenfänger <mona@lightcurve.io>
 //Settings
 :toc:
@@ -44,46 +44,6 @@ Custom assets contain all logic related to transactions that belong to the modul
 Formerly, this logic was implemented in a custom transaction.
 The implementation of a custom asset is similar to a custom transaction, but much more simple.
 
-
-////
-[cols=",,",options="header"]
-|===
-|Custom transaction
-|Custom asset
-|Note
-
-|TYPE
-|id
-|
-
-|MIN_FEE
-|Removed.
-|Can be defined in the genesis config now.
-
-|Not necessary.
-|schema
-|Defines a schema for the asset data.
-
-|prepare(store)
-|Removed. No longer required.
-|
-
-|validateAsset()
-|validate({asset})
-|
-
-|applyAsset(store)
-|apply({ asset, senderAddress, stateStore, reducerHandler, transaction })
-|
-
-|undoAsset(store)
-|Removed. No longer required.
-|
-
-|===
-////
-
-
 .When to create a custom asset
 [NOTE]
 ====
@@ -100,14 +60,30 @@ Assets enable to...
 
 The module and asset must extend the base module and base asset defined in the Lisk SDK.
 
-NOTE: The interfaces for `BaseModule` and `BaseAsset` are described in the xref:{url_references_framework_basemodule}[Lisk Framework reference].
+=== Life cycle of a block
 
-A module contains the following properties:
+. Receive block
+. Apply fork choice rule
+. Validate block
+.. Validate transactions
+... Validate transaction
+... *Validate transaction asset*
+. Verify block header
+. Before block apply
+. *Apply block*
+.. Apply transactions
+... *beforeTransactionApply*
+... *Apply asset*
+... *afterTransactionApply*
+. *After block apply*
+. Save block and updated states
 
-* `name`(required): will be used for a key of the account schema if defined.
-* `id`(required): will be used for a fieldNumber for the account schema, and as `moduleID` when sending a transaction.
-* `accountSchema`: defines the account schema for the module.
-Defined properties will be added to every account under the `name` of the module.
+The *bold* steps are the steps exposed via the base module and base asset, see the xref:{url_references_framework_basemodule}[Lisk Framework reference].
+
+
+=== Example: A hello module
+
+A simple implementation of a custom module looks like this:
 
 .hello_module.ts
 [source,js]
@@ -121,9 +97,9 @@ const {
 } = require('./schemas');
 
 class HelloModule extends BaseModule {
-    name = 'hello';
-    id = 1000;
-    accountSchema = {
+    name = 'hello'; <1>
+    id = 1000; <2>
+    accountSchema = { <3>
         type: 'object',
         properties: {
             helloMessage: {
@@ -135,8 +111,8 @@ class HelloModule extends BaseModule {
             helloMessage: '',
         },
     };
-    transactionAssets = [ new HelloAsset() ];
-    actions = {
+    transactionAssets = [ new HelloAsset() ]; <4>
+    actions = { <5>
         amountOfHellos: async () => {
             const res = await this._dataAccess.getChainState(CHAIN_STATE_HELLO_COUNTER);
             const count = codec.decode(
@@ -146,13 +122,13 @@ class HelloModule extends BaseModule {
             return count;
         },
     };
-    events = ['newHello'];
-    reducers = {};
-    async beforeTransactionApply({transaction, stateStore, reducerHandler}) {
+    events = ['newHello']; <6>
+    reducers = {}; <7>
+    async beforeTransactionApply({transaction, stateStore, reducerHandler}) { <8>
         // Code in here is applied before each transaction is applied.
     };
 
-    async afterTransactionApply({transaction, stateStore, reducerHandler}) {
+    async afterTransactionApply({transaction, stateStore, reducerHandler}) { <9>
       // Code in here is applied after each transaction is applied.
       if (transaction.moduleID === this.id && transaction.assetID === HelloAssetID) {
 
@@ -167,17 +143,17 @@ class HelloModule extends BaseModule {
         });
       }
     };
-    async afterGenesisBlockApply({genesisBlock, stateStore, reducerHandler}) {
+    async afterGenesisBlockApply({genesisBlock, stateStore, reducerHandler}) { <10>
       // Set the hello counter to zero after the genesis block is applied
       await stateStore.chain.set(
         CHAIN_STATE_HELLO_COUNTER,
         codec.encode(helloCounterSchema, { helloCounter: 0 })
       );
     };
-    async beforeBlockApply(context) {
+    async beforeBlockApply(context) { <11>
         // Code in here is applied before each block is applied.
     }
-    async afterBlockApply(context) {
+    async afterBlockApply(context) { <12>
         // Code in here is applied after each block is applied.
     }
 }
@@ -185,13 +161,24 @@ class HelloModule extends BaseModule {
 module.exports = HelloModule;
 ----
 
-An asset contains the following properties:
 
-* `name`(required): used for UI purpose.
-* `id`(required): used for `AssetID` to send a transaction.
-* `schema`(required): defines `asset` schema in a transaction.
-* `validate` is used to validate the asset data before it is applied.
-* `apply`(required): defines a state change induced by this asset.
+<1> `name`(required): will be used for a key of the account schema if defined.
+<2> `id`(required): will be used for a fieldNumber for the account schema, and as `moduleID` when sending a transaction.
+<3> `accountSchema`: defines the account schema for the module.
+Defined properties will be added to every account under the `name` of the module.
+<4> `transactionAssets`: A list of all custom assets that belong to the module.
+<5> `actions`: A list of actions that can be invoked by plugins and external services.
+<6> `events`: A list of events that other plugins and external services can subscribe to.
+<7> `reducers`: A list of actions that can be invoked by other modules.
+<8> `beforeTransactionApply`: Code in here is applied before each transaction is applied.
+<9> `afterTransactionApply`: Code in here is applied after each transaction is applied.
+<10> `afterGenesisBlockApply`: Code in here is applied after the genesis block is applied.
+<11> `beforeBlockApply`: Code in here is applied before each block is applied.
+<12> `afterBlockApply`: Code in here is applied after each block is applied.
+
+=== Example: The hello asset
+
+A simple implementation of a custom asset looks like this:
 
 .hello_asset.ts
 [source,js]
@@ -208,9 +195,9 @@ const {
 const HelloAssetID = 0;
 
 class HelloAsset extends BaseAsset {
-    name = 'helloAsset';
-    id = HelloAssetID;
-    schema = {
+    name = 'helloAsset'; <1>
+    id = HelloAssetID; <2>
+    schema = { <3>
         $id: '/hello/asset',
         type: 'object',
         required: ["helloString"],
@@ -222,7 +209,7 @@ class HelloAsset extends BaseAsset {
         }
     };
 
-    validate({asset}) {
+    validate({asset}) { <4>
         if (!asset.helloString || typeof asset.helloString !== 'string' || asset.helloString.length > 64) {
           throw new Error(
                 'Invalid "asset.hello" defined on transaction: A string value no longer than 64 characters is expected'
@@ -230,7 +217,7 @@ class HelloAsset extends BaseAsset {
         }
     };
 
-    async apply({ asset, stateStore, reducerHandler, transaction }) {
+    async apply({ asset, stateStore, reducerHandler, transaction }) { <5>
         const senderAddress = transaction.senderAddress;
         const senderAccount = await stateStore.account.get(senderAddress);
 
@@ -258,9 +245,13 @@ class HelloAsset extends BaseAsset {
 module.exports = { HelloAsset, HelloAssetID };
 ----
 
-<1> description
-<2> description
-<3> description
+<1> `name`(required): used for UI purpose.
+<2> `id`(required): used as `AssetID` when sending a transaction.
+<3> `schema`(required): defines the `asset` schema for the transaction.
+<4> `validate` is used to validate the asset data before it is applied.
+Throws an error, in case the validation fails.
+<5> `apply`(required): defines a state change induced by this asset.
+In `HelloAsset`, it adds the hello string that was sent in the transaction to the senders account and increments the `helloCounter`.
 
 == SDK default modules
 
@@ -304,22 +295,3 @@ Specifically:
 * Transferring account balances
 |===
 
-== Life cycle of a block
-
-. Receive block
-. Apply fork choice rule
-. Validate block
-.. Validate transactions
-... Validate transaction
-... *Validate transaction asset*
-. Verify block header
-. Before block apply
-. *Apply block*
-.. Apply transactions
-... *beforeTransactionApply*
-... *Apply asset*
-... *afterTransactionApply*
-. *After block apply*
-. Save block and updated states
-
-The *bold* steps are the steps exposed via the base module and base asset, see the xref:{url_references_framework_basemodule}[Lisk Framework reference].

@@ -33,32 +33,81 @@ $ npm install @liskhq/lisk-api-client
 npm update @liskhq/lisk-api-client
 ----
 
-////
-/*{
-  createIPCClient: [AsyncFunction],
-    createWSClient: [AsyncFunction],
-  createClient: [AsyncFunction]
-}*/
-////
+== Usage
 
-== APIClient
-
-****
-A constructor is exposed, which takes an array of nodes and optionally an options object.
-For convenience, helper functions are provided for creating API clients on specific networks with a default set of nodes.
-It is recommended to use these functions unless you are operating your own nodes, or there is a preference to use nodes provided by a third party.
-
-NOTE: If the generic constructor is used, it is the user's responsibility to ensure that the specified nodes are on the correct network.
-****
-
-=== Syntax
+=== Creating an APIClient
 
 [source,js]
 ----
-new APIClient(nodes, [options])
-APIClient.createMainnetAPIClient([options])
-APIClient.createBetanetAPIClient([options])
-APIClient.createTestnetAPIClient([options])
+const { createIPCClient, createWSClient } from '@liskhq/lisk-transactions';
+const client = await createIPCClient('~/.lisk/lisk-core');
+client = await createWSClient('ws://localhost:8080');
+
+const blockAtHeight123 = await client.block.getByHeight(123);
+----
+
+=== APIClient interface
+
+[source,typescript]
+----
+interface APIClient {
+  public async invoke<T>(actionName: string, params?: Record<string, unknown>): Promise<T>
+  public subscribe(eventName: string, cb: EventCallback): void
+  public transaction: {
+    get: (id: Buffer) => Promise<Record<string, unknown>>,
+    getFromPool: () => Promise<Record<string, unknown>[]>,
+    create: (
+      input: {
+        moduleID?: number; // id takes priority
+        moduleName?: number;
+        assetID?: number; // id takes priority
+        assetName?: number;
+        fee: bigint;
+        nonce: bigint;
+        senderPublicKey: Buffer;
+        asset: Record<string, unknown>;
+        signatures?: Buffer[];
+      },
+      passphrase: string,
+      options?: {
+        nonce?: bigint;
+        includeSenderSignature?: boolean;
+        multisignatureKeys?: {
+          mandatoryKeys: Buffer[];
+          optionalKeys: Buffer[];
+        };
+      },
+    ) => Promise<Record<string, unknown>>;
+    sign: (transaction: Record<string, unknown>, passphrases: string[], options?: {
+      includeSenderSignature?: boolean;
+      multisignatureKeys?: {
+        mandatoryKeys: Buffer[];
+        optionalKeys: Buffer[];
+      };
+    }) => Promise<Record<string, unknown>>;
+    send: (input: Record<string, unknown>) => Promise<void>;
+    getMinFee: (tx: Record<string, unknown>) => bigint;
+    encode: (input: Record<string, unknown>) => Buffer;
+    decode: (input: Buffer) => Record<string, unknown>;
+  }
+  public node: {
+    getInfo: () => Promise<Record<string, unknown>>;
+    getNetworkStats: () => Promise<Record<string, unknown>>;
+    getConnectedPeers: () => Promise<Peer[]>;
+    getDisconnectedPeers: () => Promise<Peer[]>;
+  }
+  public block: {
+    get: (id: Buffer) => Promise<Record<string, unknown>>;
+    getByHeight: (height: number) => Promise<Record<string, unknown>>;
+    encode: (input: Record<string, unknown>) => Buffer;
+    decode: (input: Buffer) => Record<string, unknown>;
+  }
+  public account: {
+    get: (address: Buffer) => Promise<Record<string, unknown>>;
+    encode: (input: Record<string, unknown>) => Buffer;
+    decode: (input: Buffer) => Record<string, unknown>;
+  }
+}
 ----
 
 === Parameters

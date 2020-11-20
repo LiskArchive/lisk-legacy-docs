@@ -1,0 +1,131 @@
+= Architecture
+Mona Bärenfänger <mona@lightcurve.io>
+//Settings
+:page-aliases: lisk-framework/index.adoc
+:toc: preamble
+:v_core: 3.0.0
+:imagesdir: ../../assets/images
+// Project URLs
+:url_explanations_modules: explanations/architecture/on-chain.adoc
+:url_explanations_plugins: explanations/architecture/off-chain.adoc
+:url_explanations_communication: explanations/architecture/communication.adoc
+:url_guides_config: guides/app-development/configuration.adoc
+:url_references_config: references/config.adoc
+
+image:banner_framework.png[Logo]
+
+== The Lisk Framework
+
+The Lisk Framework is an application framework which integrates the Lisk Elements packages in order to form a functioning Lisk blockchain application.
+Its modular architecture allows developers to extend the off-chain and on-chain logic with user defined plugins and modules.
+
+The Lisk Framework provides a consistent and intuitive interface between each module and plugin.
+
+== Architecture overview
+
+The diagram shown below provides a high-level overview of the architecture:
+
+image:architecture.png[Logo]
+
+The framework is constructed by the following components:
+
+===  <<Application>>
+The application is an entry point and manages the controller and the node.
+
+[[on-chain-architecture]]
+=== xref:{url_explanations_modules}[On-chain architecture]
+Node:: The main object in charge of acting on the blockchain including:
+* forging blocks
+* synchronising with the network
+* processing blocks from the network
+* ... and broadcasting blocks and transactions to the network.
+Modules:: Objects injected into the node with a single responsibility related to the blockchain state.
+
+[[off-chain-architecture]]
+=== xref:{url_explanations_plugins}[Off-chain architecture]
+Plugins:: Applications which interact with the node through RPC channels to expose information from the node outside the context of the blockchain itself.
+
+=== xref:{url_explanations_communication}[Communication architecture]
+Controller:: Handles the setup and teardown of channels and plugins.
+Also, it is responsible for the communication between the plugins and the application.
+
+
+== Application
+
+The `Application` class is an entry point to create a blockchain application.
+It can be instantiated in two ways:
+
+[source,js]
+----
+//Initiates the Application including all default modules
+const app = Application.defaultApplication(genesisBlock, config);
+//Initiates the Application without default modules
+const app = new Application(genesisBlock, config);
+----
+
+`genesisBlock` represents the <<genesis-block>> and `config` represents the application <<configuration>>.
+
+[TIP]
+The recommended way to create an `Application` instance, is to use `defaultApplication` since it comes with the default modules.
+If the class constructor is used, the modules need to be registered manually.
+
+=== Registering modules and plugins
+
+In order to register an additional module below function should be used.
+
+[source,js]
+----
+app.registerModule(CustomModule);
+----
+
+Additionally, any plugin may be registered with the below function.
+
+[source,js]
+----
+app.registerPlugin(CustomPlugin);
+----
+
+== Configuration
+
+The application config object is passed to the `Application` and must follow the  xref:{url_references_config}[] schema.
+
+For more information about how to configure your blockchain application, check out the guide xref:{url_guides_config}[].
+
+== Genesis block
+
+A genesis block must be given to the application, and all networks should have different genesis block.
+
+.Genesis block schema
+[source,js]
+----
+const genesisBlock = {
+  header: {
+    generatorPublicKey: "",
+    // height can be either 0 or regenesis height
+    height: number,
+    // empty buffer or merkle root of the previous blocks from previous network
+    previousBlockID: Buffer,
+    reward: 0n,
+    signature: "",
+    // timestamp of the blockchain in unix timestamp in second
+    timestamp: number,
+    // transactionRoot is alway empty hash
+    transactionRoot: Buffer.from('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', 'hex'),
+    version: 0,
+    asset: {
+      // number of initial round to use the initDelegates
+      initRounds: number,
+      // address of initial delegates
+      initDelegates: Buffer[],
+      // encoded accounts for the initial state
+      accounts: Buffer[],
+    },
+  },
+  payload: [],
+}
+----
+
+//TODO: add link to genesis block creation guide
+TIP: A valid genesis block can be created using @liskhq/lisk-genesis.
+
+

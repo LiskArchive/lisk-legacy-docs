@@ -1,27 +1,206 @@
 = Enabling forging
 Mona Bärenfänger <mona@lightcurve.io>
 :description: How to check, enable and disable forging on a Lisk node.
+// Settings
 :sectnums:
 :v_sdk: master
-
+// Project URLs
 :url_sdk_guides_forging: {v_sdk}@lisk-sdk::guides/node-management/forging.adoc
+:url_management_cli: managements/index.adoc#the-command-line-interface
+:url_reference_config: reference/config.adoc
 
-Please refer to the guide how to enable forging on a Lisk node in the xref:{url_sdk_guides_forging}[Lisk SDK docs].
+Use the xref:{url_management_cli}[command-line interface] to enable or disable forging.
 
-[IMPORTANT]
-====
-Keep in mind you need to use the right ports for the network that your Lisk Core node is connected to.
-A reference of all HTTP ports of Lisk Core can be seen below.
-====
+To enable your node to forge for a particular delegate, firstly it is required to insert some data into the config file under the `forging.delegates` array as described below:
 
-.HTTP ports
-****
-The HTTP Port can be different based on your configuration, therefore it is recommended to check the `httpPort` in your config.
+* `publicKey`: The publicKey of the delegate.
+* `encryptedPassphrase`: The symmetrically enrypted 12 word mnemonic passphrase of the delegate account.
+* `hashOnion`: The onion of hashes that is used by the delegate.
 
-The *default ports* for the different networks are:
+== Encrypting the passphrase
 
-* 4000 (Devnet)
-* 5000 (Betanet)
-* 7000 (Testnet)
-* 8000 (Mainnet)
-****
+[source,bash]
+----
+$ lisk-core passphrase:encrypt --outputPublicKey
+Please enter your secret passphrase: ***** <1>
+Please re-enter your secret passphrase: *****
+Please enter your password: *** <2>
+Please re-enter your password: ***
+{
+        "encryptedPassphrase": "iterations=1000000&cipherText=30a3c8&iv=b0d7322bf24e0dfe08462f4f&salt=aa7e26c9f4317b61b4f45b5c6909f941&tag=a2e0eadaf1f11a10b342965bc3bafc68&version=1",
+        "publicKey": "a4465fd76c16fcc458448076372abf1912cc5b150663a64dffefe550f96feadd"
+}
+----
+
+<1> Enter the secret passphrase here that needs to be encrypted.
+<2> Enter the password here that will be required to decrypt the passphrase again.
+
+* Type in the passphrase followed by the password required for encryption.
+* This will result in the creation of an `encryptedPassphrase` key-value pair.
+
+== Generating the hash onion
+
+[source,bash]
+----
+$ lisk-core hash-onion --output ./hash_onion.json
+# Output
+#{
+#    "count": 1000000,
+#    "distance": 1000,
+#    "hashes": [
+#        "ff2156e33c4aefa4a5a790edbe329f4a",
+#        "5f86db180d4e63be6412d42d444dfb49",
+#        "10fc37bb42d7f77030138e45795fef65",
+#        "f04a306a73c5d7d94cc4f262b4d5ebb4",
+#        //[...]
+#        "ca41d52225f4b76140fc7f277731d326",
+#        "fde61109609b74ba16d5ebd72a8b446f",
+#        "9752dc2228492466d7c2046354d5fdfd"
+#    ]
+#}
+----
+
+CAUTION: When you enable forging as a delegate on a new node, you need to use the exact same hash onion in the config as on the old node, to enable forging successfully.
+
+== Adding the delegate info to the config
+
+Add the JSON object to the config under `forging.delegates` as shown below:
+
+[source,js]
+----
+{
+  forging: {
+    force: false,
+    delegates: [ <1>
+        {
+            encryptedPassphrase: "iterations=1&salt=476d4299531718af8c88156aab0bb7d6&cipherText=663dde611776d87029ec188dc616d96d813ecabcef62ed0ad05ffe30528f5462c8d499db943ba2ded55c3b7c506815d8db1c2d4c35121e1d27e740dc41f6c405ce8ab8e3120b23f546d8b35823a30639&iv=1a83940b72adc57ec060a648&tag=b5b1e6c6e225c428a4473735bc8f1fc9&version=1",
+            publicKey: "9d3058175acab969f41ad9b86f7a2926c74258670fe56b37c429c01fca9f2f0f",
+            hashOnion: {
+                "count": 1000000,
+                "distance": 1000,
+                "hashes": [
+                    "ff2156e33c4aefa4a5a790edbe329f4a",
+                    "5f86db180d4e63be6412d42d444dfb49",
+                    "10fc37bb42d7f77030138e45795fef65",
+                    "f04a306a73c5d7d94cc4f262b4d5ebb4",
+                    //[...]
+                    "ca41d52225f4b76140fc7f277731d326",
+                    "fde61109609b74ba16d5ebd72a8b446f",
+                    "9752dc2228492466d7c2046354d5fdfd"
+                ]
+            }
+        }
+    ],
+  },
+  modules: {
+    http_api: {
+      access: {
+        whiteList: ["127.0.0.1", "REPLACE_ME"], <2>
+      }
+    }
+  }
+}
+----
+
+<1>  The list of delegates who are allowed to forge on this node.
+<2> Replace with the IP address which will be used to access the node.
+
+Now restart the node to apply the changes in the config.
+
+For more information about the configuration of the Lisk SDK check out the xref:{url_reference_config}[configuration guide].
+
+== forging:enable
+
+[source,bash]
+----
+Enable forging for given delegate address.
+
+USAGE
+  $ lisk-core forging:enable ADDRESS HEIGHT MAXHEIGHTPREVIOUSLYFORGED MAXHEIGHTPREVOTED
+
+ARGUMENTS
+  ADDRESS                    Address of an account in a base32 format.
+  HEIGHT                     Last forged block height.
+  MAXHEIGHTPREVIOUSLYFORGED  Delegates largest previously forged height.
+  MAXHEIGHTPREVOTED          Delegates largest prevoted height for a block.
+
+OPTIONS
+  -d, --data-path=data-path  Directory path to specify where node data is stored. Environment variable "LISK_DATA_PATH" can also be used.
+
+  -w, --password=password    Specifies a source for your secret password. Command will prompt you for input if this option is not set.
+                             	Examples:
+                             	- --password=pass:password123 (should only be used where security is not important)
+
+  --overwrite                Overwrites the forger info
+
+  --pretty                   Prints JSON in pretty format rather than condensed.
+
+EXAMPLES
+  forging:enable ab0041a7d3f7b2c290b5b834d46bdc7b7eb85815 100 100 10
+  forging:enable ab0041a7d3f7b2c290b5b834d46bdc7b7eb85815 100 100 10 --overwrite
+  forging:enable ab0041a7d3f7b2c290b5b834d46bdc7b7eb85815 100 100 10 --data-path ./data
+  forging:enable ab0041a7d3f7b2c290b5b834d46bdc7b7eb85815 100 100 10 --data-path ./data --password your_password
+----
+
+== forging:disable
+
+[source,bash]
+----
+Disable forging for given delegate address.
+
+USAGE
+  $ lisk-core forging:disable ADDRESS
+
+ARGUMENTS
+  ADDRESS  Address of an account in a base32 format.
+
+OPTIONS
+  -d, --data-path=data-path  Directory path to specify where node data is stored. Environment variable "LISK_DATA_PATH" can also be used.
+
+  -w, --password=password    Specifies a source for your secret password. Command will prompt you for input if this option is not set.
+                             	Examples:
+                             	- --password=pass:password123 (should only be used where security is not important)
+
+  --overwrite                Overwrites the forger info
+
+  --pretty                   Prints JSON in pretty format rather than condensed.
+
+EXAMPLES
+  forging:disable ab0041a7d3f7b2c290b5b834d46bdc7b7eb85815
+  forging:disable ab0041a7d3f7b2c290b5b834d46bdc7b7eb85815 --data-path ./data
+  forging:disable ab0041a7d3f7b2c290b5b834d46bdc7b7eb85815 --data-path ./data --password your_password
+----
+
+== Safely enabling forging on another node
+
+To safely enable forging on another node, please ensure to follow the steps below:
+
+. Setup a new node on another server.
+. Start the node and let it synchronize with the network.
+If available, it is recommended to synchronize from snapshots to speed up the synchronization process.
+. Login to the server with the old node.
+. <<forging-disable,Disable forging>> on the old node.
+. Stop the old node.
+. Dump the data in the `forger_info` table of the db of your node.
++
+[source,bash]
+----
+lisk-core forger-info:export
+----
+. Login to the server with the new node.
+. Restore the `forger_info` table.
++
+[source,bash]
+----
+lisk-core forger-info:import ./forger.db.tar.gz
+----
+. <<add-the-forging-data-to-the-config>>.
+. Ensure the node is fully synchronized with the network.
+The height of your node should be equal to the current network height.
++
+[source,bash]
+----
+curl http://127.0.0.1:4000/api/node/status
+----
+. Please double check again, that forging for this delegate is not enabled on other nodes. See the section <<check_forging, check forging>>
+. <<forging-enable,Enable forging>>.

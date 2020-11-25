@@ -1,0 +1,130 @@
+= Architecture
+Mona Bärenfänger <mona@lightcurve.io>
+//Settings
+:page-aliases: lisk-framework/index.adoc
+:toc: preamble
+:v_core: 3.0.0
+:imagesdir: ../../../assets/images
+// Project URLs
+:url_explanations_on_chain: explanations/architecture/on-chain-architecture.adoc
+:url_explanations_off_chain: explanations/architecture/off-chain-architecture.adoc
+:url_explanations_communication: explanations/architecture/communication-architecture.adoc
+:url_guides_config: guides/app-development/configuration.adoc
+:url_references_config: references/config.adoc
+:url_references_elements_genesis: references/lisk-elements/genesis.adoc
+
+image:banner_framework.png[Logo]
+
+The Lisk Framework is an application framework which integrates the Lisk Elements packages in order to form a functioning Lisk blockchain application.
+Its modular architecture allows developers to extend the off-chain and on-chain logic with user defined plugins and modules.
+
+The Lisk Framework provides a consistent and intuitive interface between each module and plugin.
+
+== Architecture overview
+
+The diagram shown below provides a high-level overview of the architecture:
+
+image:architecture.png[lisk-framework-architecture]
+
+The framework architecture is constructed of three different layer of abstractions.
+The `Application` object encapsulates all together to provide a user facing interface.
+
+=== On-Chain Architecture
+This layer of abstraction provide collection features to configure and run any business logic on the blockchain.
+The data associated with features developed with on-chain architecture can be saved to blockchain and business logic can be executed as well.
+
+More information can be found in section xref:{url_explanations_on_chain}[On-chain architecture]
+
+=== Off-Chain Architecture
+Some business flows or requirements implementation required to perform some computation which is based on the blockchain data but not required to change alter any blockchain state.
+It could be a simple use case as creating HTTP API for your blockchain or providing some aggregation service.
+The off-chain architecture provide features to cover all such use cases.
+
+More information can be found in section xref:{url_explanations_off_chain}[Off-chain architecture]
+
+=== Communication Architecture
+Some applications require to work externally still need to communicate with the blockchain.
+It could be a CLI or any app developed independently in any other technology stack.
+The communication architecture provides two industry standard communication formats, one is Inter Process Communication (IPC) and other is Web Sockets (WS).
+You can connect either to IPC or WS interface and can communicate with the blockchain.
+
+More information can be found in section xref:{url_explanations_communication}[Communication architecture]
+
+== Application
+
+The `Application` class is an entry point to create a blockchain application.
+It can be instantiated in two ways:
+
+[source,js]
+----
+//Initiates the Application including all default modules
+const app = Application.defaultApplication(genesisBlock, config);
+//Initiates the Application without default modules
+const app = new Application(genesisBlock, config);
+----
+
+`genesisBlock` represents the <<genesis-block>> and `config` represents the application <<configuration>>.
+
+[TIP]
+The recommended method to create an `Application` instance, is to use the `defaultApplication` since it comes with the default modules.
+If the class constructor is used, the modules need to be registered manually.
+
+=== Registering modules and plugins
+
+In order to register an additional module, the function below should be used.
+
+[source,js]
+----
+app.registerModule(CustomModule);
+----
+
+Additionally, any plugin may be registered with the function below.
+
+[source,js]
+----
+app.registerPlugin(CustomPlugin);
+----
+
+== Configuration
+
+The application config object is passed to the `Application` and must follow the  xref:{url_references_config}[] schema.
+
+For more information about how to configure your blockchain application, check out the guide xref:{url_guides_config}[].
+
+== Genesis block
+
+A genesis block must be given to the application, and all networks should have a different genesis block.
+
+.Genesis block schema
+[source,js]
+----
+const genesisBlock = {
+  header: {
+    generatorPublicKey: "",
+    // height can be either 0 or regenesis height
+    height: number,
+    // empty buffer or merkle root of the previous blocks from previous network
+    previousBlockID: Buffer,
+    reward: 0n,
+    signature: "",
+    // timestamp of the blockchain in unix timestamp in second
+    timestamp: number,
+    // transactionRoot is alway empty hash
+    transactionRoot: Buffer.from('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', 'hex'),
+    version: 0,
+    asset: {
+      // number of initial round to use the initDelegates
+      initRounds: number,
+      // address of initial delegates
+      initDelegates: Buffer[],
+      // encoded accounts for the initial state
+      accounts: Buffer[],
+    },
+  },
+  payload: [],
+}
+----
+
+//TODO: update link to genesis block creation guide
+TIP: A valid genesis block can be created using xref:{url_references_elements_genesis}[@liskhq/lisk-genesis].
+

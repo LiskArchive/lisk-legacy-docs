@@ -138,10 +138,431 @@ image::tutorials/faucet.png[]
 === Sending a Hello transaction
 image::tutorials/send-hello.png[]
 
+The counter and "latest hello message" values will update on the home page after sending the hello transaction:
+
+image::tutorials/hello-counter.png[Updated home page]
+
 === Get account details
-image::tutorials/account-details.png[]
-image::tutorials/hello-counter.png[]
+image::tutorials/account-details.png[Account details]
 
 === Transferring tokens
+
+To test the token transfer, simply create another account, and use the new account as recipient.
+
 image::tutorials/home.png[]
 
+== The hello module
+
+[source,js]
+----
+const { BaseModule, codec } = require('lisk-sdk');
+const { HelloAsset, HelloAssetID } = require('./hello_asset');
+const {
+    helloCounterSchema,
+    helloAssetSchema,
+    CHAIN_STATE_HELLO_COUNTER
+} = require('./schemas');
+
+class HelloModule extends BaseModule {
+    name = 'hello';
+    id = 1000;
+    accountSchema = {
+        type: 'object',
+        properties: {
+            helloMessage: {
+                fieldNumber: 1,
+                dataType: 'string',
+            },
+        },
+        default: {
+            helloMessage: '',
+        },
+    };
+    transactionAssets = [ new HelloAsset() ];
+    actions = {
+        amountOfHellos: async () => {
+            const res = await this._dataAccess.getChainState(CHAIN_STATE_HELLO_COUNTER);
+            const count = codec.decode(
+                helloCounterSchema,
+                res
+            );
+            return count;
+        },
+    };
+    events = ['newHello'];
+    reducers = {};
+    async afterTransactionApply({transaction, stateStore, reducerHandler}) {
+      // Code in here is applied after each transaction is applied.
+      if (transaction.moduleID === this.id && transaction.assetID === HelloAssetID) {
+
+        const helloAsset = codec.decode(
+          helloAssetSchema,
+          transaction.asset
+        );
+
+        this._channel.publish('hello:newHello', {
+          sender: transaction._senderAddress.toString('hex'),
+          hello: helloAsset.helloString
+        });
+      }
+    };
+    async afterGenesisBlockApply({genesisBlock, stateStore, reducerHandler}) {
+      // Set the hello counter to zero after the genesis block is applied
+      await stateStore.chain.set(
+        CHAIN_STATE_HELLO_COUNTER,
+        codec.encode(helloCounterSchema, { helloCounter: 0 })
+      );
+    };
+}
+
+module.exports = HelloModule;
+----
+
+.hello_module/schemas.js
+[source,js]
+----
+const CHAIN_STATE_HELLO_COUNTER = "hello:helloCounter";
+
+const helloCounterSchema = {
+    $id: "lisk/hello/counter",
+    type: "object",
+    required: ["helloCounter"],
+    properties: {
+        helloCounter: {
+            dataType: "uint32",
+            fieldNumber: 1,
+        },
+    },
+};
+
+const helloAssetSchema = {
+  $id: "lisk/hello/new",
+  type: "object",
+  required: ["helloString"],
+  properties: {
+    helloString: {
+      dataType: "string",
+      fieldNumber: 1,
+    },
+  },
+};
+
+module.exports = {
+    CHAIN_STATE_HELLO_COUNTER,
+    helloCounterSchema,
+    helloAssetSchema
+};
+----
+
+== The hello asset
+
+[source,js]
+----
+const {
+    BaseAsset,
+    codec,
+} = require('lisk-sdk');
+const {
+    helloCounterSchema,
+    CHAIN_STATE_HELLO_COUNTER
+} = require('./schemas');
+
+const HelloAssetID = 0;
+
+class HelloAsset extends BaseAsset {
+    name = 'helloAsset';
+    id = HelloAssetID;
+    schema = {
+        $id: '/hello/asset',
+        type: 'object',
+        required: ["helloString"],
+        properties: {
+            helloString: {
+                dataType: 'string',
+                fieldNumber: 1,
+            },
+        }
+    };
+
+    validate({asset}) {
+        if (!asset.helloString || typeof asset.helloString !== 'string' || asset.helloString.length > 64) {
+          throw new Error(
+                'Invalid "asset.hello" defined on transaction: A string value no longer than 64 characters is expected'
+            );
+        }
+    };
+
+    async apply({ asset, stateStore, reducerHandler, transaction }) {
+        const senderAddress = transaction.senderAddress;
+        const senderAccount = await stateStore.account.get(senderAddress);
+
+        senderAccount.hello.helloMessage = asset.helloString;
+        stateStore.account.set(senderAccount.address, senderAccount);
+
+        let counterBuffer = await stateStore.chain.get(
+            CHAIN_STATE_HELLO_COUNTER
+        );
+
+        let counter = codec.decode(
+            helloCounterSchema,
+            counterBuffer
+        );
+
+        counter.helloCounter++;
+
+        await stateStore.chain.set(
+            CHAIN_STATE_HELLO_COUNTER,
+            codec.encode(helloCounterSchema, counter)
+        );
+    }
+}
+
+module.exports = { HelloAsset, HelloAssetID };
+----
+
+== The hello plugin
+
+[source,js]
+----
+const express = require("express");
+const cors = require("cors");
+const { BasePlugin } = require("lisk-sdk");
+const pJSON = require("../package.json");
+
+class HelloAPIPlugin extends BasePlugin {
+  _server = undefined;
+  _app = undefined;
+  _hello = undefined;
+
+  static get alias() {
+    return "HelloHTTPAPI";
+  }
+
+  static get info() {
+    return {
+      author: pJSON.author,
+      version: pJSON.version,
+      name: pJSON.name,
+    };
+  }
+
+  async load(channel) {
+    this._app = express();
+
+    channel.subscribe('hello:newHello', (info) => {
+      this._hello = info;
+    });
+
+    channel.once("app:ready", () => {
+      this._app.use(cors({ origin: "*", methods: ["GET", "POST", "PUT"] }));
+      this._app.use(express.json());
+
+      this._app.get("/api/hello_counter", async (_req, res) => {
+        const counter = await channel.invoke("hello:amountOfHellos");
+
+        await res.json({ data: counter });
+      });
+
+      // Gets the latest hello message.
+      // Resets when the application is restarted.
+      // To retrieve a persistent latest hello message, create a new action in the hello module which returns the latest hello message by looking at the latest helloAsset transaction.
+      this._app.get("/api/latest_hello", async (req, res) => {
+        await res.json(this._hello);
+      });
+
+      this._server = this._app.listen(8080, "0.0.0.0");
+    });
+  }
+
+  async unload() {
+    await new Promise((resolve, reject) => {
+      this._server.close((err) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve();
+      });
+    });
+  }
+}
+
+module.exports = { HelloAPIPlugin };
+----
+
+== Building the client application
+
+[source,jsx]
+----
+import React, { Component } from 'react';
+import * as api from '../api.js';
+import { createHelloTx } from '../transactions/create_hello_tx';
+
+class Hello extends Component {
+
+    constructor(props) {
+        super(props);
+
+        this.state = {
+            hello: '',
+            fee: '',
+            passphrase: '',
+            transaction: {},
+            response: {}
+        };
+    }
+
+    handleChange = (event) => {
+        let nam = event.target.name;
+        let val = event.target.value;
+        this.setState({[nam]: val});
+    };
+
+    handleSubmit = async (event) => {
+        event.preventDefault();
+
+        const res = await createHelloTx({
+            helloString: this.state.hello,
+            fee: this.state.fee.toString(),
+            passphrase: this.state.passphrase,
+            networkIdentifier: 'f9aa0b17154aa27aa17f585b96b19a6559ed6ef3805352188312912c7b9192e5',
+            minFeePerByte: 1000,
+        });
+        await api.sendTransactions(res.tx).then((response) => {
+            this.setState({
+              transaction: res.tx,
+              response: { status: response.status, message: response.statusText}
+            });
+        });
+    };
+
+    render() {
+        return (
+            <div>
+                <h2>Hello</h2>
+                <p>Send a Hello transaction.</p>
+                <form onSubmit={this.handleSubmit}>
+                    <label>
+                        Hello message:
+                        <input type="text" id="hello" name="hello" onChange={this.handleChange} />
+                    </label>
+                    <label>
+                        Fee:
+                        <input type="text" id="fee" name="fee" onChange={this.handleChange} />
+                    </label>
+                    <label>
+                        Passphrase:
+                        <input type="text" id="passphrase" name="passphrase" onChange={this.handleChange} />
+                    </label>
+                    <input type="submit" value="Submit" />
+                </form>
+                <div>
+                    <pre>Transaction: {JSON.stringify(this.state.transaction, null, 2)}</pre>
+                    <pre>Response: {JSON.stringify(this.state.response, null, 2)}</pre>
+                </div>
+            </div>
+        );
+    }
+}
+export default Hello;
+----
+
+[source,js]
+----
+import { transactions, codec, cryptography } from "@liskhq/lisk-client";
+import { fetchAccountInfo } from "../api";
+import { baseAssetSchema, getFullAssetSchema } from "../utils";
+
+export const createHelloTxSchema = {
+    $id: "lisk/create-hello-asset",
+    type: "object",
+    required: ["helloString"],
+    properties: {
+        helloString: {
+            dataType: 'string',
+            fieldNumber: 1,
+        },
+    },
+};
+
+const calcMinTxFee = (assetSchema, minFeePerByte, tx) => {
+    const assetBytes = codec.codec.encode(assetSchema, tx.asset);
+    const bytes = codec.codec.encode(baseAssetSchema, { ...tx, asset: assetBytes });
+    return BigInt(bytes.length * minFeePerByte);
+};
+
+export const createHelloTx = async ({
+    helloString,
+    passphrase,
+    fee,
+    networkIdentifier,
+    minFeePerByte,
+}) => {
+    const { publicKey } = cryptography.getPrivateAndPublicKeyFromPassphrase(
+        passphrase
+    );
+    const address = cryptography.getAddressFromPassphrase(passphrase);
+    const {
+        sequence: { nonce },
+    } = await fetchAccountInfo(address.toString("hex"));
+
+    const { id, ...rest } = transactions.signTransaction(
+        createHelloTxSchema,
+        {
+            moduleID: 1000,
+            assetID: 0,
+            nonce: BigInt(nonce),
+            fee: BigInt(transactions.convertLSKToBeddows(fee)),
+            senderPublicKey: publicKey,
+            asset: {
+                helloString: helloString,
+            },
+        },
+        Buffer.from(networkIdentifier, "hex"),
+        passphrase
+    );
+
+    return {
+        id: id.toString("hex"),
+        tx: codec.codec.toJSON(getFullAssetSchema(createHelloTxSchema), rest),
+        minFee: calcMinTxFee(createHelloTxSchema, minFeePerByte, rest),
+    };
+};
+----
+
+[source,js]
+----
+
+const LISK_API = 'http://localhost:4000';
+const CUSTOM_API = 'http://localhost:8080';
+
+export const sendTransactions = async (tx) => {
+    return fetch(LISK_API + "/api/transactions", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(tx),
+    });
+};
+
+export const fetchAccountInfo = async (address) => {
+    return fetch(LISK_API +`/api/accounts/${address}`)
+        .then((res) => res.json())
+        .then((res) => res.data);
+};
+
+export const fetchHelloCounter = async () => {
+    return fetch(CUSTOM_API + "/api/hello_counter")
+        .then((res) => res.json())
+        .then((res) => {
+            return res.data
+        })
+};
+
+export const fetchLatestHello = async () => {
+    return fetch(CUSTOM_API + '/api/latest_hello')
+        .then((res) => res.json())
+        .then((res) => res.data);
+};
+----

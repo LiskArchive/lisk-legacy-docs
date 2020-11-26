@@ -172,6 +172,7 @@ image::tutorials/home.png[]
 
 == The hello module
 
+.blockchain_app/hello_module/hello_module.js
 [source,js]
 ----
 const { BaseModule, codec } = require('lisk-sdk');
@@ -199,6 +200,7 @@ class HelloModule extends BaseModule {
     };
     transactionAssets = [ new HelloAsset() ];
     actions = {
+        // Returns the total amount of sent hello transaction from the db
         amountOfHellos: async () => {
             const res = await this._dataAccess.getChainState(CHAIN_STATE_HELLO_COUNTER);
             const count = codec.decode(
@@ -211,14 +213,15 @@ class HelloModule extends BaseModule {
     events = ['newHello'];
     reducers = {};
     async afterTransactionApply({transaction, stateStore, reducerHandler}) {
-      // Code in here is applied after each transaction is applied.
+      // If the transaction is a hello transaction
       if (transaction.moduleID === this.id && transaction.assetID === HelloAssetID) {
-
+        // Decode the transaction asset
         const helloAsset = codec.decode(
           helloAssetSchema,
           transaction.asset
         );
-
+        // And publish a new hello:newHello event,
+        // including the latest hello message and the sender.
         this._channel.publish('hello:newHello', {
           sender: transaction._senderAddress.toString('hex'),
           hello: helloAsset.helloString
@@ -237,7 +240,9 @@ class HelloModule extends BaseModule {
 module.exports = HelloModule;
 ----
 
-.hello_module/schemas.js
+The schemas are saved in a separate file and can be imported to other files where needed.
+
+.blockchain_app/hello_module/schemas.js
 [source,js]
 ----
 const CHAIN_STATE_HELLO_COUNTER = "hello:helloCounter";
@@ -275,6 +280,7 @@ module.exports = {
 
 == The hello asset
 
+.blockchain_app/hello_module/hello_asset.js
 [source,js]
 ----
 const {
@@ -312,23 +318,23 @@ class HelloAsset extends BaseAsset {
     };
 
     async apply({ asset, stateStore, reducerHandler, transaction }) {
+        // Get sender account details
         const senderAddress = transaction.senderAddress;
         const senderAccount = await stateStore.account.get(senderAddress);
-
+        // Add the hello string to the sender account
         senderAccount.hello.helloMessage = asset.helloString;
         stateStore.account.set(senderAccount.address, senderAccount);
-
+        // Get the hello counter and decode it
         let counterBuffer = await stateStore.chain.get(
             CHAIN_STATE_HELLO_COUNTER
         );
-
         let counter = codec.decode(
             helloCounterSchema,
             counterBuffer
         );
-
+        // Increment the hello counter by +1
         counter.helloCounter++;
-
+        // Save the updated counter on the chain
         await stateStore.chain.set(
             CHAIN_STATE_HELLO_COUNTER,
             codec.encode(helloCounterSchema, counter)
@@ -341,6 +347,7 @@ module.exports = { HelloAsset, HelloAssetID };
 
 == The hello plugin
 
+.blockchain_app/hello_plugin/index.js
 [source,js]
 ----
 const express = require("express");
@@ -368,6 +375,7 @@ class HelloAPIPlugin extends BasePlugin {
   async load(channel) {
     this._app = express();
 
+    // Update the _hello property, everytime a new hello transaction is sent.
     channel.subscribe('hello:newHello', (info) => {
       this._hello = info;
     });
@@ -376,6 +384,7 @@ class HelloAPIPlugin extends BasePlugin {
       this._app.use(cors({ origin: "*", methods: ["GET", "POST", "PUT"] }));
       this._app.use(express.json());
 
+      // Gets the total amount of sent hello transaction from the hello module
       this._app.get("/api/hello_counter", async (_req, res) => {
         const counter = await channel.invoke("hello:amountOfHellos");
 
@@ -411,6 +420,7 @@ module.exports = { HelloAPIPlugin };
 
 == Building the client application
 
+.react-client/src/components/Hello.js
 [source,jsx]
 ----
 import React, { Component } from 'react';
@@ -486,6 +496,7 @@ class Hello extends Component {
 export default Hello;
 ----
 
+.react-client/src/transactions/create_hello_tx.js
 [source,js]
 ----
 import { transactions, codec, cryptography } from "@liskhq/lisk-client";
@@ -549,9 +560,9 @@ export const createHelloTx = async ({
 };
 ----
 
+.react-client/src/api.js
 [source,js]
 ----
-
 const LISK_API = 'http://localhost:4000';
 const CUSTOM_API = 'http://localhost:8080';
 

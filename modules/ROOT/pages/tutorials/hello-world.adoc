@@ -172,6 +172,63 @@ image::tutorials/transfer.png[]
 
 == Building the blockchain application
 
+The file `blockchain_app/index.js` is the netry point to the blockchain application.
+Here, we import the `Application` from the `lisk-sdk` package, which is used to create a new application instance.
+The `Application` expects a genesis block and a configuration object as arguments.
+
+After creating the application instance, it is possible to register custom modules and plugins with the application.
+The implementation of the `HelloModule` and the `HelloAPIPlugin` is explained below.
+`HTTPAPIPlugin` is a default plugins which comes with the Lisk SDK.
+
+As last step, the application instance is started.
+
+.blockchain_app/index.js
+[source,js]
+----
+const { Application, configDevnet, utils, HTTPAPIPlugin} = require('lisk-sdk');
+const genesisBlockDevnet = require('./genesis-block');
+const { HelloModule } = require('./hello_module');
+const { HelloAPIPlugin } = require('./hello_plugin');
+
+// Update genesis block accounts to include the hello attribute
+genesisBlockDevnet.header.asset.accounts = genesisBlockDevnet.header.asset.accounts.map(
+    (a) =>
+        utils.objects.mergeDeep({}, a, {
+            hello: {
+                helloMessage: ''
+            },
+        }),
+);
+
+// Create a custom config based on the configDevnet
+const appConfig = utils.objects.mergeDeep({}, configDevnet, {
+    label: 'hello-app',
+    genesisConfig: { communityIdentifier: 'hello' },
+    logger: {
+        consoleLogLevel: 'info',
+    },
+});
+
+// Create the application instance
+const app = Application.defaultApplication(genesisBlockDevnet, appConfig);
+
+// Register Modules
+app.registerModule(HelloModule);
+
+// Register Plugins
+app.registerPlugin(HTTPAPIPlugin);
+app.registerPlugin(HelloAPIPlugin);
+
+// Starts the application
+app
+	.run()
+	.then(() => app.logger.info('App started...'))
+	.catch(error => {
+		console.error('Faced error in application', error);
+		process.exit(1);
+	});
+----
+
 === The hello module
 
 The hello module extents like every other module from the `Basemodule`.

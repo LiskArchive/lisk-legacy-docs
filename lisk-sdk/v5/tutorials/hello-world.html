@@ -599,6 +599,66 @@ npm install</code></pre>
 <div class="sect1">
 <h2 id="building-the-blockchain-application"><a class="anchor" href="#building-the-blockchain-application"></a>Building the blockchain application</h2>
 <div class="sectionbody">
+<div class="paragraph">
+<p>The file <code>blockchain_app/index.js</code> is the netry point to the blockchain application.
+Here, we import the <code>Application</code> from the <code>lisk-sdk</code> package, which is used to create a new application instance.
+The <code>Application</code> expects a genesis block and a configuration object as arguments.</p>
+</div>
+<div class="paragraph">
+<p>After creating the application instance, it is possible to register custom modules and plugins with the application.
+The implementation of the <code>HelloModule</code> and the <code>HelloAPIPlugin</code> is explained below.
+<code>HTTPAPIPlugin</code> is a default plugins which comes with the Lisk SDK.</p>
+</div>
+<div class="paragraph">
+<p>As last step, the application instance is started.</p>
+</div>
+<div class="listingblock">
+<div class="title">blockchain_app/index.js</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { Application, configDevnet, utils, HTTPAPIPlugin} = require('lisk-sdk');
+const genesisBlockDevnet = require('./genesis-block');
+const { HelloModule } = require('./hello_module');
+const { HelloAPIPlugin } = require('./hello_plugin');
+
+// Update genesis block accounts to include the hello attribute
+genesisBlockDevnet.header.asset.accounts = genesisBlockDevnet.header.asset.accounts.map(
+    (a) =&gt;
+        utils.objects.mergeDeep({}, a, {
+            hello: {
+                helloMessage: ''
+            },
+        }),
+);
+
+// Create a custom config based on the configDevnet
+const appConfig = utils.objects.mergeDeep({}, configDevnet, {
+    label: 'hello-app',
+    genesisConfig: { communityIdentifier: 'hello' },
+    logger: {
+        consoleLogLevel: 'info',
+    },
+});
+
+// Create the application instance
+const app = Application.defaultApplication(genesisBlockDevnet, appConfig);
+
+// Register Modules
+app.registerModule(HelloModule);
+
+// Register Plugins
+app.registerPlugin(HTTPAPIPlugin);
+app.registerPlugin(HelloAPIPlugin);
+
+// Starts the application
+app
+	.run()
+	.then(() =&gt; app.logger.info('App started...'))
+	.catch(error =&gt; {
+		console.error('Faced error in application', error);
+		process.exit(1);
+	});</code></pre>
+</div>
+</div>
 <div class="sect2">
 <h3 id="the-hello-module"><a class="anchor" href="#the-hello-module"></a>The hello module</h3>
 <div class="paragraph">

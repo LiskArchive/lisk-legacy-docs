@@ -140,9 +140,6 @@
     <button class="nav-item-toggle"></button>
     <a class="nav-link" href="../references/index.html">References</a>
 <ul class="nav-list">
-  <li class="nav-item single-page" data-depth="2">
-    <a class="nav-link" href="../references/api-specification.html">API specification</a>
-  </li>
   <li class="nav-item" data-depth="2">
     <button class="nav-item-toggle"></button>
     <a class="nav-link" href="../references/lisk-commander/index.html">Lisk Commander</a>
@@ -210,6 +207,9 @@
     <button class="nav-item-toggle"></button>
     <a class="nav-link" href="../references/lisk-framework/index.html">Lisk Framework</a>
 <ul class="nav-list">
+  <li class="nav-item single-page" data-depth="3">
+    <a class="nav-link" href="#references/api-specification.adoc">API specification</a>
+  </li>
   <li class="nav-item single-page" data-depth="3">
     <a class="nav-link" href="../references/config.html">Configuration reference</a>
   </li>
@@ -369,7 +369,7 @@
 <div class="paragraph">
 <p>The open Lisk communication architecture is based on <a href="#https://en.wikipedia.org/wiki/Unix_domain_socket">IPC Unix Sockets</a> and WebSocket.
 The <code>Application</code> exposes an IPC socket that can be used by internal components like modules and plugins, and by any external service like other scripts in JS, a tool in Rust or a Python daemon.
-These external services can connect to this socket and listen to events in the network, or invoke various actions of the <code>Application</code> and its' registered modules plugins.</p>
+These external services can connect to this socket and listen to events in the network, or invoke various actions of the <code>Application</code>.</p>
 </div>
 </div>
 </div>
@@ -383,6 +383,33 @@ These external services can connect to this socket and listen to events in the n
 <p>All modules and plugins will be given a <code>channel</code> to communicate with the application via actions and events.</p>
 </div>
 <div class="sect2">
+<h3 id="the-api-client"><a class="anchor" href="#the-api-client"></a>The API client</h3>
+<div class="paragraph">
+<p>The API client is a Lisk Elements NPM package that can be imported in any JS client application.</p>
+</div>
+<div class="paragraph">
+<p>It allows to send API requests to a node via IPC or WS.</p>
+</div>
+<div class="paragraph">
+<p>It also provides an interface to <strong>subscribe</strong> to all events and to <strong>invoke</strong> actions of the application and its' modules &amp; plugins.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { createIPCClient, createWSClient } from '@liskhq/lisk-api-client';
+const client = await createIPCClient('~/.lisk/lisk-core');
+client = await createWSClient('ws://localhost:8080/ws');
+
+const blockAtHeight123 = await client.block.getByHeight(123);
+client.subscribe('pluginAlias:eventAlias', ({ data }) =&gt; {
+  console.log(data.info);
+});</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>More information about the API Client can be found in the <a href="../references/lisk-elements/api-client.html" class="page">API client reference</a> and the <a href="../guides/node-management/api-access.html" class="page">API access guide</a>.</p>
+</div>
+</div>
+<div class="sect2">
 <h3 id="how-to-invoke-actions"><a class="anchor" href="#how-to-invoke-actions"></a>How to invoke actions</h3>
 <div class="paragraph">
 <p><a href="#application-actions">Application actions</a> can be invoked through the <code>channel</code>.
@@ -390,10 +417,10 @@ Additionally, all actions defined in modules and plugins can be called by every 
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">const { data } = await channel.invoke('app:getSchema'); <i class="conum" data-value="1"></i><b>(1)</b>
-const { data } = await channel.invoke('pluginAlias:getKnownTimestamps'); <i class="conum" data-value="2"></i><b>(2)</b>
-const { data } = await channel.invoke('moduleAlias:anotherAction'); <i class="conum" data-value="3"></i><b>(3)</b>
-const { data }= await channel.invoke('app:actionName', input); <i class="conum" data-value="4"></i><b>(4)</b></code></pre>
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">const { data } = await client.invoke('app:getSchema'); <i class="conum" data-value="1"></i><b>(1)</b>
+const { data } = await client.invoke('pluginAlias:getKnownTimestamps'); <i class="conum" data-value="2"></i><b>(2)</b>
+const { data } = await client.invoke('moduleAlias:anotherAction'); <i class="conum" data-value="3"></i><b>(3)</b>
+const { data }= await client.invoke('app:actionName', input); <i class="conum" data-value="4"></i><b>(4)</b></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -424,24 +451,18 @@ const { data }= await channel.invoke('app:actionName', input); <i class="conum" 
 Additionally, all events defined in modules / plugins can be subscribed by every other module and plugin in the application.</p>
 </div>
 <div class="listingblock">
+<div class="title">Publishing an event</div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">channel.publish('pluginAlias:timestamp', { info: 'sample' }); <i class="conum" data-value="1"></i><b>(1)</b>
-channel.subscribe('pluginAlias:timestamp', ({ data }) =&gt; { <i class="conum" data-value="2"></i><b>(2)</b>
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">channel.publish('pluginAlias:timestamp', { info: 'sample' });</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Subscribing to an event</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">client.subscribe('pluginAlias:timestamp', ({ data }) =&gt; {
   console.log(data.info);
 });</code></pre>
 </div>
-</div>
-<div class="colist arabic">
-<table>
-<tr>
-<td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>How to publish an event</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>How to subscribe to an event</td>
-</tr>
-</table>
 </div>
 </div>
 <div class="sect2">

@@ -6,18 +6,42 @@ Mona Bärenfänger <mona@lightcurve.io>
 //External URLs
 :url_ipc_socket: https://en.wikipedia.org/wiki/Unix_domain_socket
 // Project URLs
+:url_references_api_client: references/lisk-elements/api-client.adoc
+:url_guides_api_access: guides/node-management/api-access.adoc
 
 image::communication-architecture.png[]
 
 The open Lisk communication architecture is based on xref:{url_ipc_socket}[IPC Unix Sockets] and WebSocket.
 The `Application` exposes an IPC socket that can be used by internal components like modules and plugins, and by any external service like other scripts in JS, a tool in Rust or a Python daemon.
-These external services can connect to this socket and listen to events in the network, or invoke various actions of the `Application` and its' registered modules plugins.
+These external services can connect to this socket and listen to events in the network, or invoke various actions of the `Application`.
 
 == Action and event interfaces
 
 The Lisk Framework defines actions and events which can be invoked and subscribed through a channel.
 
 All modules and plugins will be given a `channel` to communicate with the application via actions and events.
+
+=== The API client
+
+The API client is a Lisk Elements NPM package that can be imported in any JS client application.
+
+It allows to send API requests to a node via IPC or WS.
+
+It also provides an interface to *subscribe* to all events and to *invoke* actions of the application and its' modules & plugins.
+
+[source,js]
+----
+const { createIPCClient, createWSClient } from '@liskhq/lisk-api-client';
+const client = await createIPCClient('~/.lisk/lisk-core');
+client = await createWSClient('ws://localhost:8080/ws');
+
+const blockAtHeight123 = await client.block.getByHeight(123);
+client.subscribe('pluginAlias:eventAlias', ({ data }) => {
+  console.log(data.info);
+});
+----
+
+More information about the API Client can be found in the xref:{url_references_api_client}[API client reference] and the xref:{url_guides_api_access}[API access guide].
 
 === How to invoke actions
 
@@ -26,10 +50,10 @@ Additionally, all actions defined in modules and plugins can be called by every 
 
 [source,typescript]
 ----
-const { data } = await channel.invoke('app:getSchema'); <1>
-const { data } = await channel.invoke('pluginAlias:getKnownTimestamps'); <2>
-const { data } = await channel.invoke('moduleAlias:anotherAction'); <3>
-const { data }= await channel.invoke('app:actionName', input); <4>
+const { data } = await client.invoke('app:getSchema'); <1>
+const { data } = await client.invoke('pluginAlias:getKnownTimestamps'); <2>
+const { data } = await client.invoke('moduleAlias:anotherAction'); <3>
+const { data }= await client.invoke('app:actionName', input); <4>
 ----
 
 <1> How to invoke a default application action.
@@ -42,16 +66,20 @@ const { data }= await channel.invoke('app:actionName', input); <4>
 <<application-events>> can be subscribed and published through the `channel`.
 Additionally, all events defined in modules / plugins can be subscribed by every other module and plugin in the application.
 
+.Publishing an event
 [source,typescript]
 ----
-channel.publish('pluginAlias:timestamp', { info: 'sample' }); <1>
-channel.subscribe('pluginAlias:timestamp', ({ data }) => { <2>
+channel.publish('pluginAlias:timestamp', { info: 'sample' });
+----
+
+.Subscribing to an event
+[source,typescript]
+----
+client.subscribe('pluginAlias:timestamp', ({ data }) => {
   console.log(data.info);
 });
 ----
 
-<1> How to publish an event
-<2> How to subscribe to an event
 
 === Application actions
 

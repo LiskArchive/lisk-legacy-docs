@@ -7,11 +7,21 @@
   var levels = parseInt(sidebar.dataset.levels || 2)
   if (levels < 0) return
 
-  var article = document.querySelector('article.doc')
-  var headings
-  var headingSelector = []
-  for (var l = 0; l <= levels; l++) headingSelector.push(l ? '.sect' + l + '>h' + (l + 1) + '[id]' : 'h1[id].sect0')
-  if (!(headings = find(headingSelector.join(','), article)).length) return sidebar.parentNode.removeChild(sidebar)
+  var articleSelector = 'article.doc'
+  var article = document.querySelector(articleSelector)
+  var headingsSelector = []
+  for (var level = 0; level <= levels; level++) {
+    var headingSelector = [articleSelector]
+    if (level) {
+      for (var l = 1; l <= level; l++) headingSelector.push((l === 2 ? '.sectionbody>' : '') + '.sect' + l)
+      headingSelector.push('h' + (level + 1) + '[id]')
+    } else {
+      headingSelector.push('h1[id].sect0')
+    }
+    headingsSelector.push(headingSelector.join('>'))
+  }
+  var headings = find(headingsSelector.join(','), article.parentNode)
+  if (!headings.length) return sidebar.parentNode.removeChild(sidebar)
 
   var lastActiveFragment
   var links = {}

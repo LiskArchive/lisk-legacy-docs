@@ -12,31 +12,35 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_explanations_consensus_register: explanations/consensus.adoc#delegate_registration
 :url_guides_config: guides/app-development/configuration.adoc
 
-:url_protocol_block_forgers: {v_protocol}@lisk-protocol::blocks.adoc#forgers
-:url_protocol_dpos: {v_protocol}@lisk-protocol::consensus-algorithm.adoc
-:url_protocol_delegate_selection: {v_protocol}@lisk-protocol::consensus-algorithm.adoc#delegate_selection
-:url_protocol_blocks_punishment: {v_protocol}@lisk-protocol::consensus-algorithm.adoc#punishment
+:url_protocol_block_forgers: {v_protocol}@lisk-sdk:protocol:blocks.adoc#forgers
+:url_protocol_dpos: {v_protocol}@lisk-sdk:protocol:consensus-algorithm.adoc
+:url_protocol_delegate_selection: {v_protocol}@lisk-sdk:protocol:consensus-algorithm.adoc#delegate_selection
+:url_protocol_blocks_punishment: {v_protocol}@lisk-sdk:protocol:consensus-algorithm.adoc#punishment
 
 This section covers how to enable forging on a node as a delegate.
 
 How to register as a delegate is explained in the xref:{url_explanations_consensus_register}[Registering as a delegate] section of "Consensus in Lisk".
 
-For more information about forging, please check the xref:{url_explanations_consensus}[Forging] explanations in "Consensus in Lisk".
+For more information about forging, please see the xref:{url_explanations_consensus}[Forging] section in the Consensus in Lisk page.
 
 [[config_forging_data]]
-== Add forging data to config
 
-To enable your node to forge for a particular delegate, firstly it is required to insert some data into the config file under the `forging.delegates` array:
+To enable your node to forge for a particular delegate, firstly it is required to insert some data into the config file under the `forging.delegates` array as described below:
 
 * `publicKey`: The publicKey of the delegate.
 * `encryptedPassphrase`: The symmetrically enrypted 12 word mnemonic passphrase of the delegate account.
+* `hashOnion`: The onion of hashes that is used by the delegate.
 
-To encrypt your passphrase, it is recommended to use one of the following alternatives listed below:
+To encrypt your passphrase and to generate the hash onion, it is recommended to use one of the following alternatives:
 
 * xref:{url_commander_commands}[Lisk Commander] via `encrypt passphrase` command.
-* xref:{url_elements_crytpography}[Cryptography package of Lisk Elements]
+* xref:{url_elements_crytpography}[Cryptography package of Lisk Elements].
 
 The first alternative with the Lisk Commander is described in detail below.
+
+
+== Encrypting the passphrase
+
 Please ensure the Lisk Commander is installed in a secure environment.
 Upon completion, please follow these commands to generate the encrypted passphrase:
 
@@ -59,7 +63,34 @@ Please re-enter your password: ***
 
 * Type in the passphrase followed by the password required for encryption.
 * This will result in the creation of an `encryptedPassphrase` key-value pair.
-* Add the JSON object to the config under `forging.delegates` as shown below:
+
+== Generating the hash onion
+
+[source,bash]
+----
+$ lisk hash-onion -o ./hash_onion.json
+# Output
+#{
+#    "count": 1000000,
+#    "distance": 1000,
+#    "hashes": [
+#        "ff2156e33c4aefa4a5a790edbe329f4a",
+#        "5f86db180d4e63be6412d42d444dfb49",
+#        "10fc37bb42d7f77030138e45795fef65",
+#        "f04a306a73c5d7d94cc4f262b4d5ebb4",
+#        //[...]
+#        "ca41d52225f4b76140fc7f277731d326",
+#        "fde61109609b74ba16d5ebd72a8b446f",
+#        "9752dc2228492466d7c2046354d5fdfd"
+#    ]
+#}
+----
+
+CAUTION: When you enable forging as a delegate on a new node, you need to use the exact same hash onion in the config as on the old node, to enable forging successfully.
+
+== Adding the delegate info to the config
+
+Add the JSON object to the config under `forging.delegates` as shown below:
 
 [source,js]
 ----
@@ -69,7 +100,21 @@ Please re-enter your password: ***
     delegates: [ <1>
         {
             encryptedPassphrase: "iterations=1&salt=476d4299531718af8c88156aab0bb7d6&cipherText=663dde611776d87029ec188dc616d96d813ecabcef62ed0ad05ffe30528f5462c8d499db943ba2ded55c3b7c506815d8db1c2d4c35121e1d27e740dc41f6c405ce8ab8e3120b23f546d8b35823a30639&iv=1a83940b72adc57ec060a648&tag=b5b1e6c6e225c428a4473735bc8f1fc9&version=1",
-            publicKey: "9d3058175acab969f41ad9b86f7a2926c74258670fe56b37c429c01fca9f2f0f"
+            publicKey: "9d3058175acab969f41ad9b86f7a2926c74258670fe56b37c429c01fca9f2f0f",
+            hashOnion: {
+                "count": 1000000,
+                "distance": 1000,
+                "hashes": [
+                    "ff2156e33c4aefa4a5a790edbe329f4a",
+                    "5f86db180d4e63be6412d42d444dfb49",
+                    "10fc37bb42d7f77030138e45795fef65",
+                    "f04a306a73c5d7d94cc4f262b4d5ebb4",
+                    //[...]
+                    "ca41d52225f4b76140fc7f277731d326",
+                    "fde61109609b74ba16d5ebd72a8b446f",
+                    "9752dc2228492466d7c2046354d5fdfd"
+                ]
+            }
         }
     ],
   },
@@ -158,7 +203,7 @@ This means that the results are identical, regardless of how many times the quer
 [[safely_activating_forging]]
 === Safely enabling forging on another node
 
-To safely enable forging on another node, please ensure to follow the steps listed below:
+To safely enable forging on another node, please ensure to follow the steps below:
 
 . Setup a new node on another server.
 . Start the node and let it synchronize with the network.

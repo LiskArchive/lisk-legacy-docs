@@ -16,7 +16,8 @@ const postcssImport = require('postcss-import')
 const postcssUrl = require('postcss-url')
 const postcssVar = require('postcss-custom-properties')
 const { Transform } = require('stream')
-const map = (transform = (file, enc, next) => next()) => new Transform({ objectMode: true, transform })
+const map = (transform) => new Transform({ objectMode: true, transform })
+const through = () => map((file, enc, next) => next(null, file))
 const uglify = require('gulp-uglify')
 const vfs = require('vinyl-fs')
 
@@ -103,7 +104,7 @@ module.exports = (src, dest, preview) => () => {
       .src('img/**/*.{gif,ico,jpg,png,svg}', opts)
       .pipe(
         preview
-          ? map()
+          ? through()
           : imagemin(
             [
               imagemin.gifsicle(),

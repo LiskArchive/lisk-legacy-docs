@@ -1,0 +1,74 @@
+= Deploying the documentation on staging
+// External URLs
+:url_docs_staging: https://liskhq.github.io/lisk-docs
+// Project URLs
+:url_structure: structure.adoc
+
+== Setup
+
+=== Prerequisites
+
+- Node.js v12
+- Checkout the `build` branch
+- Setup the working environment like described in xref:{url_structure}[]
+
+=== Antora installation
+
+ npm install --global @antora/cli@2.3 @antora/site-generator-default@2.3
+
+=== Algolia credentials
+
+How to include the aloglia search box in the UI when building the documentation:
+
+. Create a file with the Algolia API credentials inside of the `antora/` folder.
+ touch antora/.env
+. Ask for the Algolia credentails and insert them into `antora/.env`
+
+== The playbook file
+
+.Example content of `site.yml`
+[source,yaml]
+----
+site:
+  title: Lisk documentation
+  url: https://lisk.io/documentation
+  start_page: lisk-sdk::index.adoc
+asciidoc:
+  attributes:
+    toc: ~
+    imagesdir: ~
+    idprefix: ''
+    idseparator: '-'
+  - ./lib/tabs-block/extension.js
+content:
+  sources:
+  - url: https://github.com/LiskHQ/lisk-docs.git
+    branches: [docs-service, docs-sdk, docs-core, docs-sdk-4.0.0, docs-sdk-3.0.2, docs-sdk-2.3.8, docs-core-3.0.0-beta.1, docs-core-3.0.0-beta.0, docs-core-2.1.6, 754-releases] <1>
+ui:
+  bundle:
+   url: ./dev-antora/build/ui-bundle.zip <2>
+   snapshot: true
+output:
+  dir: ./master <3>
+~
+----
+
+<1> All branch names listed under the `branches` key will be used by Antora to build the documentation content.
+<2> Defines the UI bundle that will be used by Antora to build the documentation.
+<3> Defines the output directory for the generated HTML files of the documentation.
+
+== Building the new staging documentation with Antora
+
+.On the `build` branch
+[source,bash]
+----
+source antora/.env
+antora site.yml --fetch
+cd master
+git status
+git add .
+git commit -m "Update docs"
+git push origin master
+----
+
+Once pushed to `master`, the content will be automatically applied under {url_docs_staging}.

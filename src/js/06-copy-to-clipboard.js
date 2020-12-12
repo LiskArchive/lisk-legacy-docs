@@ -44,7 +44,7 @@
 
   function extractCommands (text) {
     var cmdRx = /^\$ (\S[^\\\n]*(\\\n(?!\$ )[^\\\n]*)*)(?=\n|$)/gm
-    var cleanupRx = /( )? *\\\n */g
+    var cleanupRx = /( ) *\\\n *|\\\n( ?) */g
     var cmds = []
     var m
     while ((m = cmdRx.exec(text))) cmds.push(m[1].replace(cleanupRx, '$1'))

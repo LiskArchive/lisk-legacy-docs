@@ -106,6 +106,9 @@
 
   function showNav (e) {
     if (navToggle.classList.contains('is-active')) return hideNav(e)
+    var navBounds = nav.getBoundingClientRect()
+    var expectedNavHeight = window.innerHeight - Math.round(navBounds.top)
+    if (Math.round(navBounds.height) !== expectedNavHeight) nav.style.height = expectedNavHeight + 'px'
     var html = document.documentElement
     html.classList.add('is-clipped--nav')
     navToggle.classList.add('is-active')
@@ -142,7 +145,6 @@
 
   function findNextElement (from, selector) {
     var el = from.nextElementSibling
-    if (!el) return
-    return selector ? el[el.matches ? 'matches' : 'msMatchesSelector'](selector) && el : el
+    return el && selector ? el[el.matches ? 'matches' : 'msMatchesSelector'](selector) && el : el
   }
 })()

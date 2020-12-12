@@ -52,7 +52,7 @@
   }
 
   function writeToClipboard (code) {
-    var text = code.innerText
+    var text = code.innerText.replace(/ *$/gm, '')
     if (code.dataset.lang === 'console' && text.startsWith('$ ')) text = extractCommands(text)
     window.navigator.clipboard.writeText(text).then(
       function () {

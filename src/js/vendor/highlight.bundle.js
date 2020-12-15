@@ -8,6 +8,7 @@
   hljs.registerLanguage('cpp', require('highlight.js/lib/languages/cpp'))
   hljs.registerLanguage('cs', require('highlight.js/lib/languages/cs'))
   hljs.registerLanguage('css', require('highlight.js/lib/languages/css'))
+  hljs.registerLanguage('diff', require('highlight.js/lib/languages/diff'))
   hljs.registerLanguage('dockerfile', require('highlight.js/lib/languages/dockerfile'))
   hljs.registerLanguage('elixir', require('highlight.js/lib/languages/elixir'))
   hljs.registerLanguage('go', require('highlight.js/lib/languages/go'))

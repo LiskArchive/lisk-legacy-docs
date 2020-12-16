@@ -226,6 +226,7 @@ app.registerModule(HelloModule);
 // Register Plugins
 app.registerPlugin(HelloAPIPlugin);
 
+// Starts the application
 app
 	.run()
 	.then(() => app.logger.info('App started...'))
@@ -278,20 +279,17 @@ class HelloModule extends BaseModule { <1>
         },
     };
     events = ['newHello']; <7>
-    reducers = {};
-    async beforeTransactionApply({transaction, stateStore, reducerHandler}) {
-        // Code in here is applied before each transaction is applied.
-    };
-
     async afterTransactionApply({transaction, stateStore, reducerHandler}) { <8>
-      // Code in here is applied after each transaction is applied.
+      // If the transaction is a hello transaction
       if (transaction.moduleID === this.id && transaction.assetID === HelloAssetID) {
-
+        // Decode the transaction asset
         const helloAsset = codec.decode(
           helloAssetSchema,
           transaction.asset
         );
 
+        // And publish a new hello:newHello event,
+        // including the latest hello message and the sender.
         this._channel.publish('hello:newHello', {
           sender: transaction._senderAddress.toString('hex'),
           hello: helloAsset.helloString
@@ -305,12 +303,6 @@ class HelloModule extends BaseModule { <1>
         codec.encode(helloCounterSchema, { helloCounter: 0 })
       );
     };
-    async beforeBlockApply(context) {
-        // Code in here is applied before each block is applied.
-    }
-    async afterBlockApply(context) {
-        // Code in here is applied after each block is applied.
-    }
 }
 
 module.exports = HelloModule;

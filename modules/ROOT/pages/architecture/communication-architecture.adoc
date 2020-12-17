@@ -9,6 +9,8 @@ Mona Bärenfänger <mona@lightcurve.io>
 // Project URLs
 :url_references_api_client: references/lisk-elements/api-client.adoc
 :url_guides_api_access: guides/node-management/api-access.adoc
+:url_rpc_actions: rpc-endpoints.adoc#application-actions
+:url_rpc_events: rpc-endpoints.adoc#application-events
 
 image::communication-architecture.png[]
 
@@ -33,21 +35,31 @@ It also provides an interface to *subscribe* to all events and to *invoke* actio
 [source,js]
 ----
 const { createIPCClient, createWSClient } from '@liskhq/lisk-api-client';
-const client = await createIPCClient('~/.lisk/lisk-core');
-client = await createWSClient('ws://localhost:8080/ws');
+let clientCache;
 
-const blockAtHeight123 = await client.block.getByHeight(123);
-client.subscribe('pluginAlias:eventAlias', ({ data }) => {
-  console.log(data.info);
-});
+export const getClient = async () => {
+    if (!clientCache) {
+        clientCache = await apiClient.createWSClient('ws://localhost:8080/ws');
+    }
+    return clientCache;
+};
+
+export const useClient = async () => {
+    const client = await getClient();
+    const blockAtHeight123 = await client.block.getByHeight(123);
+    client.subscribe('pluginAlias:eventAlias', ({ data }) => {
+      console.log(data.info);
+    });
+};
+await useClient();
 ----
 
 More information about the API Client can be found in the xref:{url_references_api_client}[API client reference] and the xref:{url_guides_api_access}[API access guide].
 
 === How to invoke actions
 
-<<application-actions>> can be invoked through the `channel`.
-Additionally, all actions defined in modules and plugins can be called by every module and plugin in the application.
+xref:{url_rpc_actions}[Actions] can be invoked based on their alias.
+If input is required, it is provided as second argument.
 
 [source,typescript]
 ----
@@ -64,8 +76,7 @@ const { data }= await client.invoke('app:actionName', input); <4>
 
 === How to publish and subscribe to events
 
-<<application-events>> can be subscribed and published through the `channel`.
-Additionally, all events defined in modules / plugins can be subscribed by every other module and plugin in the application.
+xref:{url_rpc_actions}[Events] can be subscribed and published bby their alias.
 
 .Publishing an event
 [source,typescript]
@@ -80,172 +91,3 @@ client.subscribe('pluginAlias:timestamp', ({ data }) => {
   console.log(data.info);
 });
 ----
-
-
-=== Application actions
-
-[cols=",,",options="header",stripes="hover"]
-|===
-|Name
-|Inputs
-|Description
-
-|`app:getConnectedPeers`
-| none
-|Returns all connected peers.
-
-|`app:getDisconnectedPeers`
-| none
-|Returns all disconnected peers
-
-|`app:getForgers`
-| none
-|Returns the status of all registered forgers information for the current round
-
-|`app:updateForgingStatus`
-a|
-[source,typescript]
-----
-{
-  address: string; <1>
-  password: string; <2>
-  forging: boolean; <3>
-}
-----
-<1> binary address in hex string
-<2> password to decrypt the passphrase
-<3> when enabling forging, the value should be `true`
-|Enable or disable forging for a registered forger in config
-
-|`app:getForgingStatus`
-| none
-|Gets information about the forging status of the node.
-
-|`app:getTransactionsFromPool`
-| none
-|Gets information about all transactions that are currently in the transaction pool of the application.
-
-|`app:postTransaction`
-a|
-[source,typescript]
-----
-{
-  transaction: string; <1>
-}
-----
-<1> encoded transaction in hex string
-|Posts a transaction to the node.
-
-|`app:getLastBlock`
-| none
-|Gets the last forged block of the blockchain.
-
-|`app:getAccount`
-a|
-[source,typescript]
-----
-{
-  address: string; <1>
-}
-----
-<1> address in hex string
-|Gets information about an account based on its address.
-
-|`app:getAccounts`
-a|
-[source,typescript]
-----
-{
-  address: string[]; <1>
-}
-----
-<1> address in hex string
-|Gets information about multiple accounts based on their address.
-
-|`app:getBlockByID`
-a|
-[source,typescript]
-----
-{
-  id: string; <1>
-}
-----
-<1> block ID in hex string
-|Get information about a block based on its ID.
-
-|`app:getBlocksByIDs`
-a|
-[source,typescript]
-----
-{
-  ids: string[]; <1>
-}
-----
-<1> block ID in hex string
-|Get information about multiple blocks based on their IDs.
-
-|`app:getBlockByHeight`
-a|
-[source,typescript]
-----
-{
-  height: number; <1>
-}
-----
-<1> block height
-|Get information about a block based on its height.
-
-|`app:getBlocksByHeightBetween`
-a|
-[source,typescript]
-----
-{
-  from: number; <1>
-  to: number; <2>
-}
-----
-<1> block height to fetch from
-<2> block height to fetch to
-|Get all blocks starting from height `from`, until height `to`.
-|`app:getTransactionByID`
-a|
-[source,typescript]
-----
-{
-  ids: string; <1>
-}
-----
-<1> transaction ID in hex string
-|Gets information about a single transaction based on its ID.
-|`app:getTransactionsByIDs`
-a|
-[source,typescript]
-----
-{
-  ids: string[]; <1>
-}
-----
-<1> transaction ID in hex string
-|Gets information about multiple transactions based on their IDs.
-|`app:getSchema`
-| none
-|Get the app schema.
-|`app:getRegisteredModules`
-| none
-|Get a list of all modules that are registered in the application.
-|`app:getNodeInfo`
-| none
-|Gets information about the node.
-|===
-
-=== Application events
-
-* `app:ready` - Fired when the application starts
-* `app:shutdown` - Fired when the application stops
-* `app:network:ready` - Fired when the network has at least one outbound connection
-* `app:network:event` - Fired when the application receives P2P event from the network
-* `app:transaction:new` - Fired when the node receives a new transaction
-* `app:chain:fork` - Fired when the node received a block from the forked chain
-* `app:chain:validators:change` - Fired when the node updates the validator set
-* `app:block:new` - Fired when a new block is added to the blockchain
-* `app:block:delete` - Emitted when a block is deleted from the blockchain

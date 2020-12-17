@@ -1,131 +1,105 @@
-= Prerequisites
+= Starting a blockchain application
 Mona Bärenfänger <mona@lightcurve.io>
-:description: How to install the Lisk SDK with NPM. In addition, how to set up all required prerequisites for both Linux and MacOS systems.
+// Settings
 :toc:
-:imagesdir: assets/images
-:v_core: v3
-:page-previous: /lisk-sdk/index.html
-:page-previous-title: Introduction
+// Project URLs
+:url_guide_config: guides/app-development/configuration.adoc
 
-:url_homebrew: https://brew.sh/
-:url_mac_support: https://support.apple.com/en-gb/guide/mac-help/mtusr001/mac
-:url_npm_sdk: https://www.npmjs.com/package/lisk-sdk
-:url_pm2: https://github.com/Unitech/pm2
-:url_xcode: https://developer.apple.com/xcode/
+This guide explains how to  set up a new project that uses the `lisk-sdk` to bootstrap a preconfigured blockchain application.
 
-:url_core_api: {v_core}@lisk-core::reference/api.adoc
-:url_core_network: {v_core}@lisk-core::interact-with-the-api.adoc
-:url_guides_config: guides/app-development/configuration.adoc
-:url_guides: guides/index.adoc
-:url_tutorials: tutorials/supply-chain/index.adoc
+== Setup
 
-== Dependencies
+=== Dependencies
 
-The following dependencies must be installed in order to run applications created with the Lisk SDK:
+* Node.js v12
 
-include::partial$dependencies.adoc[]
+=== Project setup
 
-[[ports]]
-== Ports
+Create a new folder for the blockchain application and navigate into it.
 
-[IMPORTANT]
-====
-*Mandatory:* Always open the *WebSocket* port of your desired network, to enable communication with other peer nodes.
+[source,bash]
+----
+mkdir my_blockchain_app
+cd my_blockchain_app
+----
 
-*Optional:* Open the corresponding HTTP port for your network, to ensure your node’s xref:{url_core_api}[API] is reachable.
-For more information, please see the diagram on the xref:{url_core_network}[Interact with the API] page.
-====
+Create a `package.json` file.
 
-To connect to the desired network with Lisk Core, please ensure that the corresponding ports are open:
+[source,bash]
+----
+npm init --yes
+----
 
-[options="header",]
-|===
-|Network |HTTP |WebSocket
-|Devnet |4000 |5000
-|===
+Install the `lisk-sdk` package.
 
-These ports can be altered later in the xref:{url_guides_config}[configuration] file.
+[source,bash]
+----
+npm i lisk-sdk
+----
 
-[[pre_install]]
-== Prerequisites
+== Creating a blockchain application
 
-=== Create a new user
+Create a new file `index.js`.
+We want to use this file to store the code that will start the blockchain application by using the Lisk SDK.
+
+In `index.js`, import the `Application`, `genesisBlockDevnet` and `configDevnet` from the the `lisk-sdk` package.
+
+[source,js]
+----
+const { Application, genesisBlockDevnet, configDevnet } = require('lisk-sdk');
+----
+
+Now use the objects to create a blockchain application:
+
+[source,js]
+----
+const app = Application.defaultApplication(genesisBlockDevnet, configDevnet);
+----
+
+This will create a new blockchain application that uses `genesisBlockDevnet` as the genesis block for the blockchain, and `configDevnet`to configure the application with common default options to run a node in a development network.
 
 [NOTE]
 ====
-To install the required prerequisites, it is necessary to have a user with sudo rights on the server.
-The `lisk` user itself *does not need* any `sudo` rights to run the node.
+The `lisk-sdk` package contains the sample objects `genesisBlockDevnet` and `configDevnet` which enable the user to quickly spin up a development blockchain network.
+`genesisBlockDevnet` includes a set of preconfigured genesis delegates, that will immediately start forging on a single node to stabilize the network.
+`configDevnet` includes the configuration for the Devnet.
+
+Both objects can be customized before passing them to the `Application` instance, if desired.
+
+Find out more in the guide about xref:{url_guide_config}[]
 ====
 
-To run and manage a node in the future, please create a separate `lisk` user.
-Please execute the following command:
+Use `app.run()` to start the application:
 
-[tabs]
-=====
-Ubuntu::
-+
---
-[source,bash]
+[source,js]
 ----
-sudo adduser lisk
+app
+	.run()
+	.then(() => app.logger.info('App started...'))
+	.catch(error => {
+		console.error('Faced error in application', error);
+		process.exit(1);
+	});
 ----
---
-MacOS::
-+
---
-It is not mandatory to set up a `lisk` user, especially when running a local instance for development purposes.
-However, if it is required then it is recommended to {url_mac_support}[create the user using the macOS GUI^].
---
-=====
 
-=== Toolchain components
+After adding all of the above contents, save the file.
+Now it is possible to start a blockchain application with a default configuration, that will connect to a local devnet.
 
-This is used for compiling dependencies.
+== Starting the application
 
-[tabs]
-=====
-Ubuntu::
-+
---
-[source,bash]
-----
-sudo apt install -y libtool automake autoconf curl python-minimal build-essential
-----
---
-MacOS::
-+
---
-Ensure that both {url_xcode}[XCode^] and {url_homebrew}[Homebrew^] are installed.
+Start the application as shown below:
 
 [source,bash]
 ----
-brew install autoconf automake libtool
-----
---
-=====
-
-include::partial$install-postgres.adoc[]
-
-include::partial$install-node.adoc[]
-
-=== PM2 (optional)
-
-Install {url_pm2}[PM2^] for managing the start/stop process of the application in the background by executing the following command:
-
-[source,bash]
-----
-npm install pm2 -g
+node index.js
 ----
 
-== Installation
+To verify the application start, check the log messages in the terminal.
+If the start was successful, the application will enable forging for all genesis delegates and will start to add new blocks to the blockchain every 10 seconds.
 
-To install the NPM package {url_npm_sdk}[lisk-sdk^], please execute the following command:
+[NOTE]
+====
+After completing these steps, the default blockchain application of the Lisk SDK will now be running.
 
-[source,bash]
-----
-npm install lisk-sdk
-----
-
-After successful completion of all the above steps, the Lisk SDK and and all required dependencies are installed.
-
-The next step now is to head to the xref:{url_guides}[Guides] section to learn how to build a blockchain application with the Lisk SDK, or directly head to the xref:{url_tutorials}[Tutorials] to learn how to build proof of concept blockchain applications for real industry use cases.
+It is now be possible to customize your application by registering new modules and plugins, and also adjusting the genesis block and config to suit your specific use case.
+====

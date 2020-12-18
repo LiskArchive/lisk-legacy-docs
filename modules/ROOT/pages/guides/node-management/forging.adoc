@@ -17,9 +17,38 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_protocol_delegate_selection: protocol:consensus-algorithm.adoc#delegate_selection
 :url_protocol_blocks_punishment: protocol:consensus-algorithm.adoc#punishment
 
-Describes how to enable forging on a node as a delegate.
+:url_protocol_transactions_delegate: protocol:transactions.adoc#delegate
+:url_protocol_blocks_rewards: :protocol:blocks.adoc#rewards_and_fees
+:url_guides_forging: guides/node-management/forging.adoc
+:url_endpoints: references/lisk-framework/http-api-plug-in.adoc#list-of-endpoints
+
+//Describes how to enable forging on a node as a delegate.
 
 == Registering a delegate
+
+[[delegate_registration]]
+
+
+In a DPoS system, each account that has an adequate enough balance to send a xref:{url_protocol_transactions_delegate}[register delegate transaction] can register a new delegate on the network.
+Other accounts can <<vote, vote for delegates>> to support them with their stake.
+As a reward for securing the network, the forging delegates receive the xref:{url_protocol_blocks_rewards}[transaction fees and block rewards] of the forged blocks, and the transactions included in the forged blocks.
+
+NOTE: The chosen delegate name has to be unique in the network.
+
+.Example: Creating a delegate registration transaction
+[source,js]
+----
+const tx =  new transactions.DelegateTransaction({
+    asset:{
+        username: 'myDelegateName'
+    },
+    nonce: '1',
+    fee: '1500000000'
+});
+----
+//@ Mona: Could you please check this code snippet above?
+More information about enabling and disabling forging on a node can be found in the xref:{url_guides_forging}[Enable forging guide].
+
 
 //@TODO: Uncomment again, when explanations are back
 //How to register as delegate is explained in the xref:{url_explanations_consensus_register}[Registering as delegate] section of "Consensus in Lisk".
@@ -32,8 +61,8 @@ Describes how to enable forging on a node as a delegate.
 
 To enable your node to forge for a particular delegate, firstly it is required to insert some data into the config file under the `forging.delegates` array:
 
-* `publicKey`: The publicKey of the delegate.
-* `encryptedPassphrase`: The symmetrically enrypted 12 word mnemonic passphrase of the delegate account.
+//* `publicKey`: The publicKey of the delegate.
+* `encryptedPassphrase`: The symmetrically encrypted 12 word mnemonic passphrase of the delegate account.
 
 To encrypt your passphrase, it is recommended to use one of the following alternatives listed below:
 
@@ -43,6 +72,8 @@ To encrypt your passphrase, it is recommended to use one of the following altern
 The first alternative with the Lisk Commander is described in detail below.
 Please ensure the Lisk Commander is installed in a secure environment.
 Upon completion, please follow these commands to generate the encrypted passphrase:
+
+//@ Mona, can you help with this code snippet please?
 
 [source,bash]
 ----
@@ -95,6 +126,79 @@ Now restart the node to apply the changes in the config.
 //@TODO: Uncomment again, when dev guides are back
 //For more information about the configuration of the Lisk SDK check out the xref:{url_guides_config}[configuration guide].
 
+
+== Generating the hash onion
+
+[source,bash]
+----
+$ lisk hash-onion -o ./hash_onion.json
+# Output
+#{
+#    "count": 1000000,
+#    "distance": 1000,
+#    "hashes": [
+#        "ff2156e33c4aefa4a5a790edbe329f4a",
+#        "5f86db180d4e63be6412d42d444dfb49",
+#        "10fc37bb42d7f77030138e45795fef65",
+#        "f04a306a73c5d7d94cc4f262b4d5ebb4",
+#        //[...]
+#        "ca41d52225f4b76140fc7f277731d326",
+#        "fde61109609b74ba16d5ebd72a8b446f",
+#        "9752dc2228492466d7c2046354d5fdfd"
+#    ]
+#}
+----
+
+CAUTION: When you enable forging as a delegate on a new node, you need to use the exact same hash onion in the config as on the old node, to enable forging successfully.
+
+== Adding the delegate info to the config
+
+Add the JSON object to the config under `forging.delegates` as shown below:
+
+[source,js]
+----
+{
+  forging: {
+    force: false,
+    delegates: [ <1>
+        {
+            encryptedPassphrase: "iterations=1&salt=476d4299531718af8c88156aab0bb7d6&cipherText=663dde611776d87029ec188dc616d96d813ecabcef62ed0ad05ffe30528f5462c8d499db943ba2ded55c3b7c506815d8db1c2d4c35121e1d27e740dc41f6c405ce8ab8e3120b23f546d8b35823a30639&iv=1a83940b72adc57ec060a648&tag=b5b1e6c6e225c428a4473735bc8f1fc9&version=1",
+            publicKey: "9d3058175acab969f41ad9b86f7a2926c74258670fe56b37c429c01fca9f2f0f",
+            hashOnion: {
+                "count": 1000000,
+                "distance": 1000,
+                "hashes": [
+                    "ff2156e33c4aefa4a5a790edbe329f4a",
+                    "5f86db180d4e63be6412d42d444dfb49",
+                    "10fc37bb42d7f77030138e45795fef65",
+                    "f04a306a73c5d7d94cc4f262b4d5ebb4",
+                    //[...]
+                    "ca41d52225f4b76140fc7f277731d326",
+                    "fde61109609b74ba16d5ebd72a8b446f",
+                    "9752dc2228492466d7c2046354d5fdfd"
+                ]
+            }
+        }
+    ],
+  },
+  modules: {
+    http_api: {
+      access: {
+        whiteList: ["127.0.0.1", "REPLACE_ME"], <2>
+      }
+    }
+  }
+}
+----
+
+<1>  The list of delegates who are allowed to forge on this node.
+<2> Replace with the IP address which will be used to access the node.
+
+Now restart the node to apply the changes in the config.
+
+For more information about the configuration of the Lisk SDK check out the xref:{url_guides_config}[configuration guide].
+
+
 [[forging_enable_disable]]
 == Enable/Disable Forging
 
@@ -115,6 +219,7 @@ If you want to enable forging from remote, ensure to whitelist the remote IP as 
 
 Use the following curl command to *enable the forging* for your delegate:
 
+//@Mona, Can you help with this code snippet please?
 .Enable forging
 [source,bash]
 ----
@@ -123,14 +228,13 @@ curl -X PUT \
   -H 'cache-control: no-cache' \
   -H 'content-type: application/json' \
   -d '{
-          "publicKey": "YYYYYYYYY", <2>
-          "password": "XXX", <3>
-          "forging": true <4>
+          "password": "XXX", <2>
+          "forging": true <3>
       }'
 ----
 
 <1> Replace `127.0.0.1` with the IP of your Lisk node, if you run the command remotely.
-<2> `publicKey` is the key for the delegate which is required to be enabled/disabled.
+//<2> `publicKey` is the key for the delegate which is required to be enabled/disabled.
 <3> `password` is the password used to encrypt your passphrase in the config.
 <4> `forging` is the boolean value to enable or disable the forging.
 
@@ -193,7 +297,49 @@ The height of your node should be equal to the current network height.
 curl http://127.0.0.1:4000/api/node/status
 ----
 . Please double check again, that forging for this delegate is not enabled on other nodes. See the section <<check_forging, check forging>>
-. <<forging_enable_disable,Enable forging>>.
+//. <<forging_enable_disable,Enable forging>>.
+
+// Do we need to add in the 'List of endpoints' here, as they are already in the references under HTTP API plugin
+
+=== List of Endpoints
+
+All possible API endpoints including the descriptions, details and examples can be found here in the xref:{url_endpoints}[list of endpoints] in the HTTP API plugin section.
+
+=== updateForgingStatus
+
+IMPORTANT: *Please note: This is a private endpoint ONLY authorized to whitelisted IPs*.
+
+After inputting the correct password, forging will be enabled or disabled for the delegate of this particular node.
+The password can be generated locally by encrypting your passphrase, either by using Lisk Commander or with Lisk Elements.
+
+=== Syntax
+
+[source,js]
+----
+updateForgingStatus([options])
+----
+
+=== Parameters
+
+`options`: Please see the options in the following link: xref:{url_lisk_core_api}[Core API documentation].
+
+=== Return value
+
+`Promise`: Resolves to an API response object.
+
+=== Examples
+//code snippet
+[source,js]
+----
+client.node.updateForgingStatus({
+    forging: true,
+    password: 'happy tree friends',
+    publicKey: '968ba2fa993ea9dc27ed740da0daf49eddd740dbd7cb1cb4fc5db3a20baf341b',
+})
+    .then(res => {
+        console.log(res.data);
+    })
+----
 
 //TODO
 //==== Migrating to another forging node without access to the `forger_info` data

@@ -7,8 +7,7 @@
   var navToggle = document.querySelector('.nav-toggle')
 
   navToggle.addEventListener('click', showNav)
-  // NOTE don't let click events propagate outside of nav container
-  navContainer.addEventListener('click', concealEvent)
+  navContainer.addEventListener('click', trapEvent)
 
   var menuPanel = navContainer.querySelector('[data-panel=menu]')
   if (!menuPanel) return
@@ -114,7 +113,7 @@
     navToggle.classList.add('is-active')
     navContainer.classList.add('is-active')
     html.addEventListener('click', hideNav)
-    concealEvent(e)
+    trapEvent(e)
   }
 
   function hideNav (e) {
@@ -123,11 +122,10 @@
     navToggle.classList.remove('is-active')
     navContainer.classList.remove('is-active')
     html.removeEventListener('click', hideNav)
-    concealEvent(e)
+    trapEvent(e)
   }
 
-  // NOTE don't let event get picked up by window click listener
-  function concealEvent (e) {
+  function trapEvent (e) {
     e.stopPropagation()
   }
 

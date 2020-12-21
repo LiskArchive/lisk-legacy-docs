@@ -8,8 +8,7 @@
 
   toggle.addEventListener('click', function (e) {
     selector.classList.toggle('is-active')
-    // don't let this event get smothered
-    e.stopPropagation()
+    e.stopPropagation() // trap event
   })
 
   document.documentElement.addEventListener('click', function () {

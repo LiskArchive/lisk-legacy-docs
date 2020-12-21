@@ -47,7 +47,7 @@
     var cleanupRx = /( ) *\\\n *|\\\n( ?) */g
     var cmds = []
     var m
-    while ((m = cmdRx.exec(text))) cmds.push(m[1].replace(cleanupRx, '$1'))
+    while ((m = cmdRx.exec(text))) cmds.push(m[1].replace(cleanupRx, '$1$2'))
     return cmds.join(' && ')
   }
 

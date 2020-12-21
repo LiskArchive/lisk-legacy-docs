@@ -1,5 +1,10 @@
 ;(function () {
   'use strict'
+
+  var CMD_RX = /^\$ (\S[^\\\n]*(\\\n(?!\$ )[^\\\n]*)*)(?=\n|$)/gm
+  var LINE_CONTINUATION_RX = /( ) *\\\n *|\\\n( ?) */g
+  var TRAILING_SPACE_RX = / +$/gm
+
   ;[].slice.call(document.querySelectorAll('.doc pre.highlight, .doc .literalblock pre')).forEach(function (pre) {
     var code, language, lang, copy, toast, toolbox
     if (pre.classList.contains('highlight')) {
@@ -43,16 +48,14 @@
   })
 
   function extractCommands (text) {
-    var cmdRx = /^\$ (\S[^\\\n]*(\\\n(?!\$ )[^\\\n]*)*)(?=\n|$)/gm
-    var cleanupRx = /( ) *\\\n *|\\\n( ?) */g
     var cmds = []
     var m
-    while ((m = cmdRx.exec(text))) cmds.push(m[1].replace(cleanupRx, '$1$2'))
+    while ((m = CMD_RX.exec(text))) cmds.push(m[1].replace(LINE_CONTINUATION_RX, '$1$2'))
     return cmds.join(' && ')
   }
 
   function writeToClipboard (code) {
-    var text = code.innerText.replace(/ *$/gm, '')
+    var text = code.innerText.replace(TRAILING_SPACE_RX, '')
     if (code.dataset.lang === 'console' && text.startsWith('$ ')) text = extractCommands(text)
     window.navigator.clipboard.writeText(text).then(
       function () {

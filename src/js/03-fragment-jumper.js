@@ -9,11 +9,7 @@
   }
 
   function computePosition (el, sum) {
-    if (article.contains(el)) {
-      return computePosition(el.offsetParent, el.offsetTop + sum)
-    } else {
-      return sum
-    }
+    return article.contains(el) ? computePosition(el.offsetParent, el.offsetTop + sum) : sum
   }
 
   function jumpToAnchor (e) {

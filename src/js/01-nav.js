@@ -58,7 +58,7 @@
           while ((current = current.parentNode) && current !== ceiling) {
             var id = current.id
             // NOTE: look for section heading
-            if (!id && (id = current.className.match(SECT_CLASS_RX))) id = (current.firstElementChild || {}).id
+            if (!id && (id = SECT_CLASS_RX.test(current.className))) id = (current.firstElementChild || {}).id
             if (id && (navLink = menuPanel.querySelector('.nav-link[href="#' + id + '"]'))) break
           }
         }

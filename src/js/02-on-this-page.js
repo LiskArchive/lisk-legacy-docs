@@ -4,7 +4,7 @@
   var sidebar = document.querySelector('aside.toc.sidebar')
   if (!sidebar) return
   if (document.querySelector('body.-toc')) return sidebar.parentNode.removeChild(sidebar)
-  var levels = parseInt(sidebar.dataset.levels || 2)
+  var levels = parseInt(sidebar.dataset.levels || 2, 10)
   if (levels < 0) return
 
   var articleSelector = 'article.doc'
@@ -30,7 +30,7 @@
     link.textContent = heading.textContent
     links[(link.href = '#' + heading.id)] = link
     var listItem = document.createElement('li')
-    listItem.dataset.level = parseInt(heading.nodeName.slice(1)) - 1
+    listItem.dataset.level = parseInt(heading.nodeName.slice(1), 10) - 1
     listItem.appendChild(link)
     accum.appendChild(listItem)
     return accum

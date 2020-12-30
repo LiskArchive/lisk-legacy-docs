@@ -110,7 +110,7 @@ module.exports = (src, dest, preview) => () => {
             imagemin.optipng(),
             imagemin.svgo({
               plugins: [
-                { cleanupIDs: { preservePrefixes: ['symbol-', 'view-'] } },
+                { cleanupIDs: { preservePrefixes: ['icon-', 'view-'] } },
                 { removeViewBox: false },
                 { removeDesc: false },
               ],

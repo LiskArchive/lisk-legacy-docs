@@ -141,9 +141,11 @@ The following transaction assets are provided by the token module.
 Allows to send a register delegate transaction, which registers a delegate for the sender account with a given username.
 
 Name::
-registerDelegate
+`registerDelegate`
 ID::
-1
+`0`
+Base fee::
+10 LSK
 
 .Schema
 [source,typescript]
@@ -171,9 +173,9 @@ Each token can only be used once for voting, therefore the sender locks a certai
 After unvoting a delegate, the user is able to unlock the token again with the <<unlocktransactionasset, unlock transaction>>.
 
 Name::
-voteDelegate
+`voteDelegate`
 ID::
-1
+`1`
 
 .Schema
 [source,typescript]
@@ -214,9 +216,9 @@ ID::
 Allows to send an unlock transaction, which unlocks token that have been locked after voting for a delegate, after unvoting this delegate.
 
 Name::
-unlockToken
+`unlockToken`
 ID::
-2
+`2`
 
 .Schema
 [source,typescript]
@@ -261,9 +263,9 @@ ID::
 Allows to send a proof-of-misbehavior transaction, reports violations of the BFT protocol by a particular delegate.
 
 Name::
-reportDelegateMisbehavior
+`reportDelegateMisbehavior`
 ID::
-3
+`3`
 
 .Schema
 [source,typescript]
@@ -335,3 +337,167 @@ Returns a list of delegate unvotes of a certain account, the height of the unvot
 }[]
 ----
 
+[[dpos]]
+== Delegated Proof of Stake (DPoS)
+
+The Lisk SDK bootstraps a blockchain network that is based on the xref:{url_protocol_dpos}[Lisk DPoS] consensus algorithm.
+
+In DPoS based blockchains, the consensus regarding who can forge the next block is reached by users according to the votes cast.
+
+[NOTE]
+====
+The DPoS used by Lisk is in fact more of a middle ground between {url_wiki_pos}[PoS] and DPoS.
+
+The DPoS related characteristic is the ability of users to <<delegate_registration,register as delegate>> and then <<vote,receive votes>> from other users, in order to increase their <<weight,delegate weight>>.
+
+The PoS related characteristic is the requirement for delegates to self-vote a certain amount of tokens, in order to increase their delegate weight.
+Another PoS characteristic is the mechanism for the selection of the <<forging_delegates,two random standby delegates>>, who are selected every forging round.
+The higher the delegate weight, the higher the chance to be selected in one of the two random spots available for standby delegates.
+====
+
+[[forging]]
+=== Forging
+
+The process of adding new blocks to a blockchain that uses the PoS or DPoS consensus algorithm is called forging.
+
+The 101 active delegates and 2 additional standby delegates are selected to forge during a forging round.
+
+[NOTE]
+====
+During a forging round, no new calculations are required, which makes DPoS an extremely *energy-friendly* consensus algorithm, compared to "mining", which is the analog process for blockchains that run with Proof of Work (PoW).
+This technique enables a very energy efficient process of adding new blocks, which allows forging nodes to run even on machines with very limited processing capabilities, such as a Raspberry Pi.
+====
+
+[[forging_delegates]]
+....
+101(amount of the active delegates) + 2(random standby delegates) = 103(Number of blocks of a forging round)
+....
+
+More information about the delegate selection mechanism can be found in the xref:{url_protocol_delegate_selection}[Lisk Protocol].
+
+[[weight]]
+==== Delegate weight
+
+The 101 delegates with the highest delegate weight are selected for the active forging positions.
+
+The delegate weight is defined as shown below:
+
+....
+delegate weight = minimum { 10 * delegate self-vote , sum of all votes for the delegate }
+....
+
+Where `delegate self-vote` is the amount the delegate voted for its own account.
+
+The `sum of all votes for the delegate` includes the self-votes.
+
+[[delegate_registration]]
+=== Registering as delegate
+
+In a DPoS system, each account that has an adequate enough balance to send a xref:{url_protocol_transactions_delegate}[register delegate transaction] can register a new delegate on the network.
+Other accounts can <<vote, vote for delegates>> to support them with their stake.
+As a reward for securing the network, the forging delegates receive the xref:{url_protocol_blocks_rewards}[transaction fees and block rewards] of the forged blocks, and the transactions included in the forged blocks.
+
+NOTE: The chosen delegate name has to be unique in the network.
+
+.Example: Creating a delegate registration transaction
+[source,js]
+----
+const tx = await APIClient.transaction.create({
+    moduleID: 5,
+    assetID: 0,
+    fee: 1100000000,
+    asset: {
+        username: 'lightcurve',
+    },
+}, passphrase);
+----
+
+More information about enabling and disabling forging on a node can be found in the xref:{url_guides_forging}[Enable forging giude].
+
+[[vote]]
+=== Voting for a delegate
+
+Accounts can vote for delegates by sending a xref:{url_protocol_transactions_vote}[delegate vote transaction].
+The tokens used to vote for delegates will be locked.
+The locked tokens can be unlocked again if required, by <<unvote, unvoting>> the delegate again.
+
+For instance, lets assume you hold an account with a balance of 100 tokens.
+
+You could use only a part of your tokens for voting, but let's assume you want to vote with all 100.
+It is of course possible to split your tokens among multiple delegates, or to use all of them to vote for only one delegate.
+For example you could use it to vote for 10 delegates with 10 tokens, or alternatively just on one delegate with the full 100 tokens.
+
+In the example below we decide to vote for one delegate with 70 tokens, and for another one with 30 tokens.
+
+.Example: Vote for two delegates
+[source,js]
+----
+const tx = await APIClient.transaction.create({
+    moduleID: 5,
+    assetID: 1,
+    fee: 10000000,
+    asset: {
+        votes: [
+            { delegateAddress:'11750255083444888021L', amount: '7000000000'}, <1>
+            { delegateAddress:'64373847834494888026L', amount: '3000000000'} <2>
+        ]
+    },
+}, passphrase);
+----
+
+<1> Locks 70 tokens and adds 70 tokens delegate weight to the delegate with address `11750255083444888021L`.
+<2> Locks 30 tokens and adds 30 tokens delegate weight to the delegate with address `64373847834494888026L`.
+
+[[unlock]]
+=== Unvoting delegates and unlocking of tokens
+
+The amount of tokens used for voting is locked and cannot be used for any other transactions.
+This includes but is not limited to further voting, balance transfers or transaction fees.
+
+To use the locked tokens again, the account has to submit a xref:{url_protocol_transactions_vote}[delegate vote transaction], with a *negative amount* (also called “unvote”).
+This will start the unlocking procedure and the LSK will be ready for unlocking 2000 blocks later, (approximately 5 hours and 30 minutes).
+
+To recover the locked tokens, the account has to submit two transactions:
+
+. First, the tokens have to be unvoted.
+This is done with a new `VoteTransaction`, the transaction just needs to contain a negative amount.
+The tokens are now in an “unlocking” state.
+They have been unvoted but are not usable yet.
++
+.Example: Unvote a delegate
+[source,js]
+----
+const tx = new transactions.VoteTransaction({
+    asset:{
+        votes: [
+            { delegateAddress:'64373847834494888026L', amount: '-1500000000'} // 15 tokens can be unlocked in 2000 blocks
+        ]
+    },
+    nonce: '2',
+    fee: '250000'
+});
+----
++
+. After a 2000 block period, the tokens can be unlocked.
+This is done with a new `UnlockTransaction`.
+The xref:{url_protocol_transactions_unlock}[token unlock transaction] specifies which tokens have to be unlocked and added back to the balance.
+This mechanism is necessary to allow blocks to be reverted.
+Future improvements of the Lisk blockchain (particularly on the database level), could render this unlock transaction unnecessary.
++
+[source,js]
+----
+const tx = new transactions.UnlockTransaction({
+    asset:{
+        unlockingObjects:[
+            { delegateAddress:'64373847834494888026L', amount: '1500000000', unvoteHeight: '1234' }
+        ]
+    },
+    nonce: '3',
+    fee: '250000'
+});
+----
+
+.A token unlock transaction can contain multiple unlock objects
+[TIP]
+This allows an account to submit multiple delegate votes and recover those tokens with a single unlock transaction.
+Of course, all tokens must have been in the unlocking state for at least 2000 blocks for the unlock to be valid.

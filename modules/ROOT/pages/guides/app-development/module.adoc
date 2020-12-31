@@ -89,7 +89,69 @@ A list of actions that other modules of the application can invoke.
 
 == Defining the lifecycle hooks
 
+`beforeTransactionApply()`::
+description
+`afterTransactionApply()`::
+description
+`afterGenesisBlockApply()`::
+description
+`beforeBlockApply()`::
+description
+`afterBlockApply()`::
+description
+
+[source,js]
+----
+async beforeTransactionApply({transaction, stateStore, reducerHandler}) {
+    // Code in here is applied before each transaction is applied.
+};
+
+async afterTransactionApply({transaction, stateStore, reducerHandler}) {
+  // Code in here is applied after each transaction is applied.
+  if (transaction.moduleID === this.id && transaction.assetID === HelloAssetID) {
+
+    const helloAsset = codec.decode(
+      helloAssetSchema,
+      transaction.asset
+    );
+
+    this._channel.publish('hello:newHello', {
+      sender: transaction._senderAddress.toString('hex'),
+      hello: helloAsset.helloString
+    });
+  }
+};
+async afterGenesisBlockApply({genesisBlock, stateStore, reducerHandler}) {
+  // Set the hello counter to zero after the genesis block is applied
+  await stateStore.chain.set(
+    CHAIN_STATE_HELLO_COUNTER,
+    codec.encode(helloCounterSchema, { helloCounter: 0 })
+  );
+};
+async beforeBlockApply(context) {
+    // Code in here is applied before each block is applied.
+}
+async afterBlockApply(context) {
+    // Code in here is applied after each block is applied.
+}
+----
 
 == Registering the module with the application
 
-//need to update the genesis block liek in hello world?
+//is there need to update the genesis block like in hello world?
+.index.js
+[source,js]
+----
+const { Application, genesisBlockDevnet, configDevnet } = require('lisk-sdk');
+const { MyModule } = require('./my-module.js');
+
+const app = Application.defaultApplication(genesisBlockDevnet, configDevnet);
+
+app
+	.run()
+	.then(() => app.logger.info('App started...'))
+	.catch(error => {
+		console.error('Faced error in application', error);
+		process.exit(1);
+	});
+----

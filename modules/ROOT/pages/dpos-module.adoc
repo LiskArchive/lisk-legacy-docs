@@ -1,4 +1,17 @@
 = The DPoS module
+:url_github_lip14: https://github.com/LiskHQ/lips/blob/master/proposals/lip-0014.md#detecting-contradicting-block-headers
+:url_wiki_pos: https://en.wikipedia.org/wiki/Proof_of_stake
+
+:url_protocol_blocks_rewards: protocol:blocks.adoc#rewards_and_fees
+:url_protocol_dpos: protocol:consensus-algorithm.adoc#dpos
+:url_protocol_bft: protocol:consensus-algorithm.adoc#lisk_bft
+:url_protocol_delegate_selection: protocol:consensus-algorithm.adoc#delegate_selection
+:url_protocol_fork_choice: protocol:consensus-algorithm.adoc#index-fork_choice_rule-1
+:url_protocol_punishment: protocol:consensus-algorithm.adoc#punishment
+:url_protocol_transactions_pom: protocol:transactions.adoc#pom
+:url_protocol_transactions_delegate: protocol:transactions.adoc#delegate
+:url_protocol_transactions_unlock: protocol:transactions.adoc#unlock
+:url_protocol_transactions_vote: protocol:transactions.adoc#vote
 
 The DPoS module handles all logic related to balance.
 Specifically:
@@ -412,7 +425,7 @@ const tx = await APIClient.transaction.create({
 }, passphrase);
 ----
 
-More information about enabling and disabling forging on a node can be found in the xref:{url_guides_forging}[Enable forging giude].
+//More information about enabling and disabling forging on a node can be found in the xref:{url_guides_forging}[Enable forging giude].
 
 [[vote]]
 === Voting for a delegate
@@ -467,15 +480,16 @@ They have been unvoted but are not usable yet.
 .Example: Unvote a delegate
 [source,js]
 ----
-const tx = new transactions.VoteTransaction({
-    asset:{
+const tx = await APIClient.transaction.create({
+    moduleID: 5,
+    assetID: 1,
+    fee: 10000000,
+    asset: {
         votes: [
             { delegateAddress:'64373847834494888026L', amount: '-1500000000'} // 15 tokens can be unlocked in 2000 blocks
         ]
     },
-    nonce: '2',
-    fee: '250000'
-});
+}, passphrase);
 ----
 +
 . After a 2000 block period, the tokens can be unlocked.
@@ -486,18 +500,142 @@ Future improvements of the Lisk blockchain (particularly on the database level),
 +
 [source,js]
 ----
-const tx = new transactions.UnlockTransaction({
-    asset:{
+const tx = await APIClient.transaction.create({
+    moduleID: 5,
+    assetID: 3,
+    fee: 10000000,
+    asset: {
         unlockingObjects:[
             { delegateAddress:'64373847834494888026L', amount: '1500000000', unvoteHeight: '1234' }
         ]
     },
-    nonce: '3',
-    fee: '250000'
-});
+}, passphrase);
 ----
 
 .A token unlock transaction can contain multiple unlock objects
 [TIP]
 This allows an account to submit multiple delegate votes and recover those tokens with a single unlock transaction.
 Of course, all tokens must have been in the unlocking state for at least 2000 blocks for the unlock to be valid.
+
+== BFT
+
+The Byzantine Fault Tolerance (BFT) algorithm ensures that the network can reach consensus about the current state of the blockchain.
+This means that for a given height, eventually all Lisk nodes agree on the same block.
+This is particularly important in the case where there are different valid blocks for the same height, which can occur due to network delays or delegates forging multiple blocks in their designated time slot.
+
+Additionally, delegates can be punished by anyone in the network if they forge contradicting blocks, i.e., two blocks with consensus votes that violate the Lisk-BFT protocol (see the xref:{url_protocol_punishment}[Lisk protocol documentation] for details).
+In order to avoid that a delegate is punished, a node operator has to take great care when enabling forging on a node.
+This means that it is very important to adhere to the following points below:
+
+* Never activate forging on more than one node.
+Otherwise, the delegate may be punished due to double-forge, i.e., producing two contradicting blocks for the same time slot.
+* Never activate forging without porting over the `forger_info` data
+//(see xref:{url_guides_forging_safely}[safely enabling forging on a new node])
+.
+Otherwise, the `maxHeightPreviouslyForged` property of the forged blocks may be outdated, which can cause the delegate to forge contradicting blocks.
+
+[[discover]]
+=== How to discover misbehavior of a delegate
+
+Any misbehavior of a delegate is indicated by two contradicting block headers signed by the delegate.
+A misbehavior can therefore be reported by providing the two contradicting block headers.
+The code below checks if two contradicting block headers exist.
+
+.Detecting Contradicting Block Headers
+[source,js]
+----
+function checkHeadersContradicting(blockHeader1,blockHeader2) {
+   // Order the two block headers such that b1 must be forged first
+   let b1=blockHeader1;
+   let b2=blockHeader2;
+   if(b1.maxHeightPreviouslyForged>b2.maxHeightPreviouslyForged ||
+     (b1.maxHeightPreviouslyForged==b2.maxHeightPreviouslyForged && b1.maxHeightPrevoted>b2.maxHeightPrevoted) ||
+     (b1.maxHeightPreviouslyForged==b2.maxHeightPreviouslyForged && b1.maxHeightPrevoted==b2.maxHeightPrevoted && b1.height>b2.height)){
+      b1=blockHeader2;
+      b2=blockHeader1;
+   }
+
+   // The order of cases is essential here
+   if(b1.delegatePubKey!=b2.delegatePubKey) {
+      // Blocks by different delegates are never contradicting
+      return false;
+   } else if(b1.blockID==b2.blockID) {
+      // No contradiction, as block headers are the same
+      return false;
+   } else if (b1.maxHeightPrevoted==b2.maxHeightPrevoted &&  b1.height>=b2.height) {
+      // Violation of the fork choice rule as delegate moved to different chain
+      // without strictly larger maxHeightPrevoted or larger height as justification.
+      // This in particular happens, if a delegate is double forging.
+      return true;
+   } else if(b1.height>b2.maxHeightPreviouslyForged) {
+      // Violates disjointness condition
+      return true;
+   } else if(b1.maxHeightPrevoted>b2.maxHeightPrevoted) {
+      // Violates that delegate chooses branch with largest maxHeightPrevoted
+      return true;
+   } else {
+      // No contradiction between block headers
+      return false;
+   }
+}
+----
+(Source: {url_github_lip14}[LIP 14^])
+
+=== Reporting a delegate
+
+A xref:{url_protocol_transactions_pom}[delegate misbehavior report] transaction can be issued by anyone in the network who observes a violation of the Lisk-BFT consensus algorithm, as explained in <<discover>>.
+
+.Reporting delegate misbehavior
+[source,js]
+----
+const tx = new transactions.ProofOfMisbehaviorTransaction({
+    asset:{
+        header1: {
+            blockSignature: 'e8b4768a7805bdcef097458e52b4acc5aed9816032504a57a0ae14ede0054bd916ddc0ff93a4baac91048930afde72f0e89a9fd5b07bd98620e3d5558b34b005',
+            generatorPublicKey: '7a7f24c061db6a92320ba14323f814c20dbcc811a931ead3ca63c75a4de1b643',
+            height: 8938,
+            maxHeightPreviouslyForged: 8788,
+            maxHeightPrevoted: 8868,
+            numberOfTransactions: 0,
+            payloadHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+            payloadLength: 0,
+            previousBlockId: '9326981395427095175',
+            reward: '500000000',
+            seedReveal: 'abe2a66d7a35fd7b580e977d9f7911ae',
+            timestamp: 122329567,
+            totalAmount: '0',
+            totalFee: '0',
+            version: 2
+        },
+        header2: {
+            blockSignature: '31ccf4ce1a3a224a2a32c3f4bdc6fad0ddb8feb45b05b7d411eee1a608f9d91284d09c727bba173c882d5dc90cb951c5affc10462d650031a627e00d919cbf08',
+            generatorPublicKey: '7a7f24c061db6a92320ba14323f814c20dbcc811a931ead3ca63c75a4de1b643',
+            height: 8933,
+            maxHeightPreviouslyForged: 8788,
+            maxHeightPrevoted: 8868,
+            numberOfTransactions: 0,
+            payloadHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+            payloadLength: 0,
+            previousBlockId: '9326981395427095175',
+            reward: '500000000',
+            seedReveal: 'abe2a66d7a35fd7b580e977d9f7911ae',
+            timestamp: 122329567,
+            totalAmount: '0',
+            totalFee: '0',
+            version: 2
+        }
+    }
+});
+----
+
+[[punishment_consequences]]
+=== Consequences for punished delegates and their voters
+
+If a valid delegate misbehavior report is posted to the network, the respective delegate will face the following consequences:
+
+* Setting the delegate weight to 0 for the next 780,000 blocks (approximately 3 months).
+* The unlocking period for self-votes is increased from 260,000 blocks to 780,000 blocks (from approximately 1 month to 3 months).
+
+Voters of the respective delegate will receive the following punishment:
+
+* The unlocking period for the votes for the punished delegate is increased from 2,000 blocks to 260,000 blocks (from approximately 5 hours to 1 month).

@@ -47,17 +47,27 @@ module.exports = MyModule;
 
 Inside of the `myModule` class, define the different properties of the module:
 
-`id`::
+`id`(number)::
 The ID of the module.
 Must be unique in the application.
 The ID is used for example to for creation of transactions of the module.
-* Number
-* Minimum value is `1024`
-`name`::
+Minimum value is `1024`.
+`name`(string)::
 The name of the module.
 Must be unique in the application.
 The name is used for example to subscribe to events, or to invoke actions of the module.
-* String
+
+[source,js]
+----
+const { BaseModule } = require('lisk-sdk');
+
+class MyModule extends BaseModule {
+  id = 1024;
+  name = 'my-module';
+}
+
+module.exports = MyModule;
+----
 
 == Defining the account schema
 
@@ -66,11 +76,163 @@ The account schema defines which propeties are added to user accounts by the mod
 The new properties will be added under a key that is named after the module name.
 Inside this new key, the module-specific properties for every account are saved.
 
+DataType must be one of `string`, `bytes`, `boolean`, `uint32`, `sint32`, `uint64` or `sint64`.
+
+[cols=",,",options="header",stripes="hover"]
+|===
+|Database
+|JavaScript object
+|JSON
+
+|string
+|string
+|string
+
+|uint32
+|number
+|number
+
+|sint32
+|number
+|number
+
+|uint64
+|BigInt
+|string
+
+|sint64
+|BigInt
+|string
+
+|bytes
+|Buffer
+|string in hex format
+
+|boolean
+|boolean
+|boolean
+
+|===
+
+The schema must be defined like the example below, which is a modified JSON schema.
+
+If the property is either an object or an array, the `type` property must be used to identify it, instead of `dataType`.
+
+For better overview, let's create a new file `schemas.js`, which will export the account schema for our new module:
+
+.schemas.js
+[source,js]
+----
+export const myAccountSchema = {
+  // Root type must be type object
+  type: "object",
+  // Properties for the object
+  properties: {
+    key1: {
+      dataType: "string",
+      fieldNumber: 1,
+    },
+    key2: {
+      dataType: "boolean",
+      fieldNumber: 2,
+    },
+    key3: {
+      dataType: "uint64",
+      fieldNumber: 3,
+    },
+    key4: {
+      type: "object",
+      fieldNumber: 4,
+      properties: {
+        nestedKey1: {
+          dataType: "sint32",
+          fieldNumber: 1,
+        },
+        nestedKey2: {
+          dataType: "string",
+          fieldNumber: 2,
+        },
+      },
+    },
+    key5: {
+      type: "array",
+      fieldNumber: 5,
+      items: {
+        type: "object",
+        properties: {
+          nestedArrayKey1: {
+            dataType: "string",
+            fieldNumber: 1,
+          },
+          nestedArrayKey2: {
+            dataType: "boolean",
+            fieldNumber: 2,
+          },
+        },
+      },
+    },
+    key6: {
+      type: "array",
+      fieldNumber: 6,
+      items: {
+        dataType: "bytes",
+      },
+    },
+  },
+  // Default values for the different properties
+  default: {
+    key1 : "",
+    key2 : false,
+    key3 : 0,
+    key4 : {},
+    key5 : [],
+    key6 : [],
+  }
+}
+----
+
+Now include the schema in the module:
+
+[source,js]
+----
+const { BaseModule } = require('lisk-sdk');
+const { myAccountSchema } = require('./schemas.js'); <1>
+
+class MyModule extends BaseModule {
+  id = 1024;
+  name = 'my-module';
+  accountSchema = myAccountSchema; <2>
+}
+
+module.exports = MyModule;
+----
+
+<1> Require the schema.
+<2> Set the `accountSchema` of the module to the imported schema.
+
 == Adding transaction assets to the module
 
-A module can include various custom transaction assets, that provide new transactionn types to the application.
+A module can include various custom transaction assets, that provide new transaction types to the application.
 
 Before a new asset can be added, it is first required to create the custom asset as described in the xref:{url_guides_asset}[] guide.
+
+Assuming you have created an asset `myAsset` for the module, then it can be included like this:
+
+[source,js]
+----
+const { BaseModule } = require('lisk-sdk');
+const { myAccountSchema } = require('./schemas.js');
+const { myAsset } = require('./my-asset.js');
+
+class MyModule extends BaseModule {
+  id = 1024;
+  name = 'my-module';
+  accountSchema = myAccountSchema;
+  transactionAssets = [ new myAsset() ];
+}
+
+module.exports = MyModule;
+----
 
 == Adding an interface by providing reducers, actions and events
 

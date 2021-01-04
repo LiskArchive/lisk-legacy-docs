@@ -1,150 +1,0 @@
-= Transaction pool
-:description: This section covers the installation, updates, constants, specifications and data structures for the transaction pool package of Lisk Elements.
-:toc:
-
-The @liskhq/lisk-transaction-pool package collects, verifies and provides transactions to the forger module in order to produce a block.
-
-Due to dynamic transaction fees and transaction nonces supported by the Lisk protocol, the transaction pool is required to sort transactions based on a nonce while also maximizing the fee.
-
-The transaction pool has a single list of transactions and a periodic job which sorts and cleans the list as necessary.
-
-== Installation
-
-[source,bash]
-----
-npm install @liskhq/lisk-transaction-pool
-----
-
-== Update
-
-To perform an upgrade, execute the following command:
-
-[source,bash]
-----
-npm update @liskhq/lisk-transaction-pool
-----
-
-== Constants
-
-Transaction-pool-specific constants include names as shown below:
-
-=== Usage
-
-[source,js]
-----
-const transactionPool = require('@liskhq/lisk-transaction-pool')
-
-transactionPool.EVENT_ADDED_TRANSACTIONS; // 'transactionsAdded'
-transactionPool.EVENT_REMOVED_TRANSACTIONS; // 'transactionsRemoved'
-transactionPool.EVENT_VERIFIED_TRANSACTION_ONCE; // 'transactionVerifiedOnce'
-
-transactionPool.ACTION_ADD_VERIFIED_REMOVED_TRANSACTIONS; // 'addVerifiedRemovedTransactions'
-transactionPool.ACTION_REMOVE_CONFIRMED_TRANSACTIONS; // 'removeConfirmedTransactions'
-transactionPool.ACTION_ADD_TRANSACTIONS; // 'addTransactions'
-transactionPool.ACTION_EXPIRE_TRANSACTIONS; // 'expireTransactions'
-transactionPool.ACTION_PROCESS_VERIFIED_TRANSACTIONS; // 'processVerifiedTransactions'
-transactionPool.ACTION_VALIDATE_RECEIVED_TRANSACTIONS; // 'validateReceivedTransactions'
-transactionPool.ACTION_VERIFY_VALIDATED_TRANSACTIONS; // 'verifyValidatedTransactions'
-transactionPool.ACTION_ADD_VERIFIED_TRANSACTIONS; // 'addVerifiedTransactions'
-transactionPool.ACTION_ADD_PENDING_TRANSACTIONS; // 'addPendingTransactions'
-----
-
-== Terminology
-
-Invalid transaction::  
-* A transaction that cannot be applied .
-* A transaction that has a nonce value less than the nonce value  stored in the account state.
-* A transaction that does not satisfy the specific transaction requirements (example: fails the transaction validation or application logic) .
-Processable transaction::
-* A transaction that has a correct nonce .
-* A transaction that is applicable to the latest blockchain state.
-Non-processable transaction::
-A transaction that is not applicable to the latest blockchain state, whereby the transaction nonce is larger than the account nonce .
-Promote::
-The status update of a transaction to “processable” after applying it .
-Demote::
-The status update of a transaction to “non-processable” due to the arrival of a new transaction, a new block or any change in the account state. 
-Evict::
-The eviction of transaction(s) from the pool when the list is full .
-Discard::
-The removal of invalid transactions from the pool .
-Reorganize::
-A periodic job that promotes, demotes or evicts transactions .
-
-== Specifications
-
-* Access to an account state is required, in order to check if a transaction is non-processable or processable .
-* A transaction pool has a maximum transaction limit  for the whole pool (default: 4096).
-* Each individual account also has its own maximum transactions limit (default: 64).
-* A transaction pool can set a minimum entrance fee priority for transactions to be included.
-* A transaction pool can set the minimum replacement fee difference for previous transaction invalidation and replacement.
-* A user can opt to invalidate a previously sent transaction by resending a new transaction with the same nonce and a higher fee.
-* Transactions in the pool expire after a set amount of time (default: 3 hours).
-
-== Data structures
-
-transactionList::
-A list of all the valid transactions (both non-processable or processible) which have arrived via the transport module.
-transactionAll::
-A list of all received and pending transactions, for checking the existence of, or returning by interface the transactions in the pool.
-
-== Life cycle of transactions in the pool
-
-. Unknown => non-processable .
-.. Schema must be valid .
-.. Signatures must be valid .
-.. `Transaction.nonce >= account.nonce`. 
-.. All state changes must be valid.
-. Unknown => processable. 
-.. All conditions from 1, except `transaction.nonce > account.nonce` .
-.. `transaction.nonce === account.nonce `.
-. No other transactions in the pool from the same address , with the same nonce.
-. Non-processable => processable (Promote) 
-.. `Transaction.nonce == account.nonce || transaction.nonce == otherTransactionFromTheSameSender.nonce + 1` .
-.. All state changes per transaction are valid.
-.. All transactions from the same account which have a correct nonce are all valid when applied together .
-. Processable => non-processable .
-.. New block arrives and causes some transactions to become invalid .
-.. A replacement transaction arrives for a processable transaction with the same nonce, and hence it makes transactions which have a higher nonce unprocessable. 
-.. Forger reverts a block and adds transactions back to the transaction pool, which makes transactions from the same account which have a higher nonce unprocessable. 
-
-== Transaction pool jobs
-
-Reorganize::
-. Checks each account for promotable transactions .
-. Promotes all non-processable transactions which can be processable by applying them together with existing processable transactions .
-. Discards all invalid transactions and all subsequent transactions .
-Evict::
-Evicts all transactions which exceed the expiry time and updates all subsequent transactions from the same account to be non-processable .
-
-== Transaction pool actions
-
-removeTransaction::
-Removes a transaction from the list.
-All transactions from the same account with a larger nonce are updated to be non-processable. 
-addTransaction::
-Adds a transaction to the list.
-If it is a replacement transaction and has a higher fee, it replaces the older one and subsequent transactions are updated to be non-processable.
-If the transaction pool is full and an incoming transaction has a higher fee priority, it should accept the incoming transaction and evict another transaction according to the following rules: 
-* Remove non-processable transactions with the lowest feePriority. 
-* Remove the lowest feePriority transaction from within the highest nonce transactions for each account .
-* Apply the transaction using applyFunction and check if it is PROCESSABLE, UNPROCESSABLE or INVALID.
-* If PROCESSABLE or UNPROCESSABLE then add it to transactionList and feePriorityQueue, if INVALID then a relevant error is returned.
-getProcessableTransactions::
-Provides a copy of processable transactions with a map of accounts to processable transactions, ordered by the nonce. 
-getAllTransactions::
-Provides a copy of all transactions in the pool .
-getTransaction::
-Returns a transaction by ID for provision  to another node. 
-
-== Transaction pool events
-
-* On block save: Remove transactions from the pool.
-* On block delete: Adds transactions back to the pool.
-* On transaction receive:
-** Checks if the transaction exists in the pool, then adds it to the pool if the nonce is not lower than the account.
-** Rejects the transaction if the nonce is lower than the account.
-** If the transaction is the same nonce:
-*** Rejects the transaction if it has a lower fee.
-*** Replaces the transaction if it has a higher fee.
-** If the transaction is non-sequential but it has a larger nonce, it remains in the pool for a limited time.

@@ -728,36 +728,152 @@ Plugins and external services an subscribe to these events with the API client.<
 </dd>
 </dl>
 </div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { BaseModule } = require('lisk-sdk');
+const { myAccountSchema } = require('./schemas.js');
+const { myAsset } = require('./my-asset.js');
+
+class MyModule extends BaseModule {
+  id = 1024;
+  name = 'my-module';
+  accountSchema = myAccountSchema;
+  transactionAssets = [ new myAsset() ];
+  actions = {
+    myAction: async () =&gt; {
+        // Returns some data
+    },
+    anotherAction: async (params) =&gt; {
+        // Returns some other data
+    }
+  };
+  events = ['myEvent','anotherEvent'];
+  reducers = {
+    myReducer: async (params, stateStore) =&gt; {
+      // Returns some data
+    },
+    anotherReducer: async (params, stateStore) =&gt; {
+      // Returns some other data
+    }
+  };
+}
+
+module.exports = MyModule;</code></pre>
+</div>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>What events, actions and reducers to create for a module, or if these interfaces are needed at all is individual for every module, as it heavily depends on which functionality the module intends to provide to the application.</p>
+</div>
+<div class="paragraph">
+<p>The best way to understand what to provide here is to look at existing examples in the Lisk SDK default modules, or examples of other blockchain applications built with the Lisk SDK, for example the <a href="../../tutorials/hello-world.html" class="page">Hello World</a> application.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="data-access-for-actions"><a class="anchor" href="#data-access-for-actions"></a>5.1. Data access for actions</h3>
+<div class="paragraph">
+<p>Blockchain data can be accessed in a module via <code>this._dataAccess</code>.</p>
+</div>
+<div class="paragraph">
+<p>The data access is mainly used in the implementation of the actions to retrieve certain information from the blockchain.</p>
+</div>
+<div class="listingblock">
+<div class="title">Interface of <code>dataAccess</code></div>
+<div class="content">
+<pre>interface dataAccess {
+    getChainState: async (key: string) =&gt; Buffer,
+    getAccountByAddress: async &lt;T = AccountDefaultProps&gt;(address: Buffer) =&gt; Account,
+    getLastBlockHeader: async () =&gt; BlockHeader
+}</pre>
+</div>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="defining-the-lifecycle-hooks"><a class="anchor" href="#defining-the-lifecycle-hooks"></a>6. Defining the lifecycle hooks</h2>
 <div class="sectionbody">
+<div class="paragraph">
+<p>Lifecycle hooks allow a module to execute certain logic, before or after blocks or transactions are applied to the blockchain.</p>
+</div>
+<div class="paragraph">
+<p>Inside of the lifecycle hooks, it&#8217;s possible to <strong>publish</strong> the above defined events to the application and to filter for certain transactions and blocks, before applying the logic.</p>
+</div>
+<div class="paragraph">
+<p>The following lifecycle hooks are available for each module:</p>
+</div>
 <div class="dlist">
 <dl>
 <dt class="hdlist1"><code>beforeTransactionApply()</code></dt>
 <dd>
-<p>description</p>
+<p>Code in here is applied before each transaction is applied.</p>
 </dd>
 <dt class="hdlist1"><code>afterTransactionApply()</code></dt>
 <dd>
-<p>description</p>
+<p>Code in here is applied after each transaction is applied.</p>
 </dd>
 <dt class="hdlist1"><code>afterGenesisBlockApply()</code></dt>
 <dd>
-<p>description</p>
+<p>Set the hello counter to zero after the genesis block is applied.</p>
 </dd>
 <dt class="hdlist1"><code>beforeBlockApply()</code></dt>
 <dd>
-<p>description</p>
+<p>Code in here is applied before each block is applied.</p>
 </dd>
 <dt class="hdlist1"><code>afterBlockApply()</code></dt>
 <dd>
-<p>description</p>
+<p>Code in here is applied after each block is applied.</p>
 </dd>
 </dl>
 </div>
+<div class="sect2">
+<h3 id="statestore"><a class="anchor" href="#statestore"></a>6.1. StateStore</h3>
+<div class="paragraph">
+<p>The <code>StateStore</code> is used to mutate the state of the blockchain data, or to retrieve data from the blockchain.</p>
+</div>
+<div class="paragraph">
+<p>Inside of a module, the <code>StateStore</code> is available for reducers and all lifecycle hooks.</p>
+</div>
 <div class="listingblock">
+<div class="title">Interface of <code>StateStore</code></div>
+<div class="content">
+<pre>interface StateStore {
+	readonly account: {
+		get&lt;T = AccountDefaultProps&gt;(address: Buffer): Promise&lt;Account&lt;T&gt;&gt;;
+		getOrDefault&lt;T = AccountDefaultProps&gt;(address: Buffer): Promise&lt;Account&lt;T&gt;&gt;;
+		set&lt;T = AccountDefaultProps&gt;(address: Buffer, updatedElement: Account&lt;T&gt;): Promise&lt;void&gt;;
+		del(address: Buffer): Promise&lt;void&gt;;
+	};
+	readonly chain: {
+		lastBlockHeaders: ReadonlyArray&lt;BlockHeader&gt;;
+		lastBlockReward: bigint;
+		networkIdentifier: Buffer;
+		get(key: string): Promise&lt;Buffer | undefined&gt;;
+		set(key: string, value: Buffer): Promise&lt;void&gt;;
+	};
+}</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="reducerhandler"><a class="anchor" href="#reducerhandler"></a>6.2. reducerHandler</h3>
+<div class="paragraph">
+<p>Reducers of other modules can be <strong>invoked</strong> inside of the lifecycle hooks via the <code>reducerHandler</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="lifecycle-hooks"><a class="anchor" href="#lifecycle-hooks"></a>6.3. Lifecycle hooks</h3>
+<div class="listingblock">
+<div class="title">Lifecycle hooks example</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">async beforeTransactionApply({transaction, stateStore, reducerHandler}) {
     // Code in here is applied before each transaction is applied.
@@ -765,16 +881,15 @@ Plugins and external services an subscribe to these events with the API client.<
 
 async afterTransactionApply({transaction, stateStore, reducerHandler}) {
   // Code in here is applied after each transaction is applied.
-  if (transaction.moduleID === this.id &amp;&amp; transaction.assetID === HelloAssetID) {
+  if (transaction.moduleID === this.id &amp;&amp; transaction.assetID === MyAssetID) {
 
-    const helloAsset = codec.decode(
-      helloAssetSchema,
+    const myAsset = codec.decode(
+      myAssetSchema,
       transaction.asset
     );
 
-    this._channel.publish('hello:newHello', {
-      sender: transaction._senderAddress.toString('hex'),
-      hello: helloAsset.helloString
+    this._channel.publish('my-module:myEvent', {
+      sender: transaction._senderAddress.helloString
     });
   }
 };
@@ -785,12 +900,13 @@ async afterGenesisBlockApply({genesisBlock, stateStore, reducerHandler}) {
     codec.encode(helloCounterSchema, { helloCounter: 0 })
   );
 };
-async beforeBlockApply(context) {
+async beforeBlockApply(block, stateStore, reducerHandler) {
     // Code in here is applied before each block is applied.
 }
-async afterBlockApply(context) {
+async afterBlockApply(block, stateStore, reducerHandler, consensus) {
     // Code in here is applied after each block is applied.
 }</code></pre>
+</div>
 </div>
 </div>
 </div>

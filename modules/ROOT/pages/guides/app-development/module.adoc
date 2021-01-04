@@ -3,7 +3,9 @@
 // Project URLS
 :url_guides_setup: guides/app-development/setup.adoc
 :url_guides_asset: guides/app-development/transaction-asset.adoc
+:url_modules_dpos: dpos-module.adoc
 :url_rpc_endpoints: rpc-endpoints.adoc
+:url_tutorials_hello: tutorials/hello-world.adoc
 
 This guide explains step-byb-step, how to create a custom module for a blockchain application built with the Lisk SDK.
 
@@ -248,20 +250,113 @@ A list of actions that plugins and external services can invoke  via the API cli
 `reducers`::
 A list of actions that other modules of the application can invoke.
 
+[source,js]
+----
+const { BaseModule } = require('lisk-sdk');
+const { myAccountSchema } = require('./schemas.js');
+const { myAsset } = require('./my-asset.js');
+
+class MyModule extends BaseModule {
+  id = 1024;
+  name = 'my-module';
+  accountSchema = myAccountSchema;
+  transactionAssets = [ new myAsset() ];
+  actions = {
+    myAction: async () => {
+        // Returns some data
+    },
+    anotherAction: async (params) => {
+        // Returns some other data
+    }
+  };
+  events = ['myEvent','anotherEvent'];
+  reducers = {
+    myReducer: async (params, stateStore) => {
+      // Returns some data
+    },
+    anotherReducer: async (params, stateStore) => {
+      // Returns some other data
+    }
+  };
+}
+
+module.exports = MyModule;
+----
+
+[TIP]
+====
+What events, actions and reducers to create for a module, or if these interfaces are needed at all is individual for every module, as it heavily depends on which functionality the module intends to provide to the application.
+
+The best way to understand what to provide here is to look at existing examples in the Lisk SDK default modules, or examples of other blockchain applications built with the Lisk SDK, for example the xref:{url_tutorials_hello}[] application.
+====
+
+=== Data access for actions
+
+Blockchain data can be accessed in a module via `this._dataAccess`.
+
+The data access is mainly used in the implementation of the actions to retrieve certain information from the blockchain.
+
+.Interface of `dataAccess`
+----
+interface dataAccess {
+    getChainState: async (key: string) => Buffer,
+    getAccountByAddress: async <T = AccountDefaultProps>(address: Buffer) => Account,
+    getLastBlockHeader: async () => BlockHeader
+}
+----
+
 
 == Defining the lifecycle hooks
 
-`beforeTransactionApply()`::
-description
-`afterTransactionApply()`::
-description
-`afterGenesisBlockApply()`::
-description
-`beforeBlockApply()`::
-description
-`afterBlockApply()`::
-description
+Lifecycle hooks allow a module to execute certain logic, before or after blocks or transactions are applied to the blockchain.
 
+Inside of the lifecycle hooks, it's possible to *publish* the above defined events to the application and to filter for certain transactions and blocks, before applying the logic.
+
+The following lifecycle hooks are available for each module:
+
+`beforeTransactionApply()`::
+Code in here is applied before each transaction is applied.
+`afterTransactionApply()`::
+Code in here is applied after each transaction is applied.
+`afterGenesisBlockApply()`::
+Set the hello counter to zero after the genesis block is applied.
+`beforeBlockApply()`::
+Code in here is applied before each block is applied.
+`afterBlockApply()`::
+Code in here is applied after each block is applied.
+
+=== StateStore
+
+The `StateStore` is used to mutate the state of the blockchain data, or to retrieve data from the blockchain.
+
+Inside of a module, the `StateStore` is available for reducers and all lifecycle hooks.
+
+.Interface of `StateStore`
+----
+interface StateStore {
+	readonly account: {
+		get<T = AccountDefaultProps>(address: Buffer): Promise<Account<T>>;
+		getOrDefault<T = AccountDefaultProps>(address: Buffer): Promise<Account<T>>;
+		set<T = AccountDefaultProps>(address: Buffer, updatedElement: Account<T>): Promise<void>;
+		del(address: Buffer): Promise<void>;
+	};
+	readonly chain: {
+		lastBlockHeaders: ReadonlyArray<BlockHeader>;
+		lastBlockReward: bigint;
+		networkIdentifier: Buffer;
+		get(key: string): Promise<Buffer | undefined>;
+		set(key: string, value: Buffer): Promise<void>;
+	};
+}
+----
+
+=== reducerHandler
+
+Reducers of other modules can be *invoked* inside of the lifecycle hooks via the `reducerHandler`.
+
+=== Lifecycle hooks
+
+.Lifecycle hooks example
 [source,js]
 ----
 async beforeTransactionApply({transaction, stateStore, reducerHandler}) {
@@ -270,16 +365,15 @@ async beforeTransactionApply({transaction, stateStore, reducerHandler}) {
 
 async afterTransactionApply({transaction, stateStore, reducerHandler}) {
   // Code in here is applied after each transaction is applied.
-  if (transaction.moduleID === this.id && transaction.assetID === HelloAssetID) {
+  if (transaction.moduleID === this.id && transaction.assetID === MyAssetID) {
 
-    const helloAsset = codec.decode(
-      helloAssetSchema,
+    const myAsset = codec.decode(
+      myAssetSchema,
       transaction.asset
     );
 
-    this._channel.publish('hello:newHello', {
-      sender: transaction._senderAddress.toString('hex'),
-      hello: helloAsset.helloString
+    this._channel.publish('my-module:myEvent', {
+      sender: transaction._senderAddress.helloString
     });
   }
 };
@@ -290,10 +384,10 @@ async afterGenesisBlockApply({genesisBlock, stateStore, reducerHandler}) {
     codec.encode(helloCounterSchema, { helloCounter: 0 })
   );
 };
-async beforeBlockApply(context) {
+async beforeBlockApply(block, stateStore, reducerHandler) {
     // Code in here is applied before each block is applied.
 }
-async afterBlockApply(context) {
+async afterBlockApply(block, stateStore, reducerHandler, consensus) {
     // Code in here is applied after each block is applied.
 }
 ----

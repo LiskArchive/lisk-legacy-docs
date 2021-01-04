@@ -100,7 +100,13 @@
   }
 
   function toggleActive () {
-    this.classList.toggle('is-active')
+    if (this.classList.toggle('is-active')) {
+      var padding = parseFloat(window.getComputedStyle(this).marginTop)
+      var rect = this.getBoundingClientRect()
+      var menuPanelRect = menuPanel.getBoundingClientRect()
+      var overflowY = (rect.bottom - menuPanelRect.top - menuPanelRect.height + padding).toFixed()
+      if (overflowY > 0) menuPanel.scrollTop += Math.min((rect.top - menuPanelRect.top - padding).toFixed(), overflowY)
+    }
   }
 
   function showNav (e) {

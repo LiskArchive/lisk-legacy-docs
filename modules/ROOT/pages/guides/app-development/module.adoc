@@ -319,47 +319,11 @@ Code in here is applied before each transaction is applied.
 `afterTransactionApply()`::
 Code in here is applied after each transaction is applied.
 `afterGenesisBlockApply()`::
-Set the hello counter to zero after the genesis block is applied.
+Code in here is applied after the genesis block is applied.
 `beforeBlockApply()`::
 Code in here is applied before each block is applied.
 `afterBlockApply()`::
 Code in here is applied after each block is applied.
-
-=== stateStore
-
-The `stateStore` is used to mutate the state of the blockchain data, or to retrieve data from the blockchain.
-
-Inside of a module, the `stateStore` is available for reducers and all lifecycle hooks.
-
-.Interface of `stateStore`
-----
-interface StateStore {
-	readonly account: {
-		get<T = AccountDefaultProps>(address: Buffer): Promise<Account<T>>;
-		getOrDefault<T = AccountDefaultProps>(address: Buffer): Promise<Account<T>>;
-		set<T = AccountDefaultProps>(address: Buffer, updatedElement: Account<T>): Promise<void>;
-		del(address: Buffer): Promise<void>;
-	};
-	readonly chain: {
-		lastBlockHeaders: ReadonlyArray<BlockHeader>;
-		lastBlockReward: bigint;
-		networkIdentifier: Buffer;
-		get(key: string): Promise<Buffer | undefined>;
-		set(key: string, value: Buffer): Promise<void>;
-	};
-}
-----
-
-=== reducerHandler
-
-Reducers of other modules can be *invoked* inside of the lifecycle hooks via the `reducerHandler`.
-
-.Interface of `reducerHandler`
-----
-interface ReducerHandler {
-	invoke: <T = unknown>(name: string, params?: Record<string, unknown>) => Promise<T>;
-}
-----
 
 === Lifecycle hooks
 
@@ -399,7 +363,45 @@ async afterBlockApply(block, stateStore, reducerHandler, consensus) {
 }
 ----
 
+=== stateStore
+
+The `stateStore` is used to mutate the state of the blockchain data, or to retrieve data from the blockchain.
+
+Inside of a module, the `stateStore` is available for reducers and all lifecycle hooks.
+
+.Interface of `stateStore`
+----
+interface StateStore {
+	readonly account: {
+		get<T = AccountDefaultProps>(address: Buffer): Promise<Account<T>>;
+		getOrDefault<T = AccountDefaultProps>(address: Buffer): Promise<Account<T>>;
+		set<T = AccountDefaultProps>(address: Buffer, updatedElement: Account<T>): Promise<void>;
+		del(address: Buffer): Promise<void>;
+	};
+	readonly chain: {
+		lastBlockHeaders: ReadonlyArray<BlockHeader>;
+		lastBlockReward: bigint;
+		networkIdentifier: Buffer;
+		get(key: string): Promise<Buffer | undefined>;
+		set(key: string, value: Buffer): Promise<void>;
+	};
+}
+----
+
+=== reducerHandler
+
+Reducers of other modules can be *invoked* inside of the lifecycle hooks via the `reducerHandler`.
+
+.Interface of `reducerHandler`
+----
+interface ReducerHandler {
+	invoke: <T = unknown>(name: string, params?: Record<string, unknown>) => Promise<T>;
+}
+----
+
 == Registering the module with the application
+
+The last thing needed to do is to register the newly created module in the application:
 
 //is there need to update the genesis block like in hello world?
 .index.js
@@ -410,6 +412,8 @@ const { MyModule } = require('./my-module.js');
 
 const app = Application.defaultApplication(genesisBlockDevnet, configDevnet);
 
+app.registerModule(MyModule);
+
 app
 	.run()
 	.then(() => app.logger.info('App started...'))
@@ -418,3 +422,6 @@ app
 		process.exit(1);
 	});
 ----
+
+Now save and close `index.js`.
+The new module `MyModule` will now be available, the next time you start the application with `node index.js`.

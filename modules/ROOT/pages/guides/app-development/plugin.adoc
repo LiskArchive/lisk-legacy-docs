@@ -1,0 +1,282 @@
+= Creating a custom plugin
+
+= Creating a custom module
+:sectnums:
+// Project URLS
+:url_guides_setup: guides/app-development/setup.adoc
+:url_guides_asset: guides/app-development/transaction-asset.adoc
+:url_modules_dpos: dpos-module.adoc
+:url_rpc_endpoints: rpc-endpoints.adoc
+:url_tutorials_hello: tutorials/hello-world.adoc
+
+This guide explains step-byb-step, how to create a custom plugin for a blockchain application built with the Lisk SDK.
+
+.Prerequisites
+[NOTE]
+====
+To follow this guide, the following is assumed:
+
+* a basic blockchain application is already initiated, like explained in the previous guide xref:{url_guides_setup}[].
+====
+
+First, create a new file named after the new module, for example `my-module.js`.
+
+----
+├── blockchain_app
+│   ├── index.js
+│   ├── my-plugin.js
+│   └── package.json
+----
+
+== Creating the plugin class
+
+Now open `my-plugin.js` and import the `BasePlugin` from the `lisk-sdk` package:
+
+[source,js]
+----
+const { BasePlugin } = require('lisk-sdk');
+----
+
+Next, define a new class `MyModule`, which extends from the `BaseModule`:
+
+[source,js]
+----
+const { BasePlugin } = require('lisk-sdk');
+
+class MyPlugin extends BasePlugin {
+
+}
+
+module.exports = MyPlugin;
+----
+
+== Setting the plugin alias
+
+[source,js]
+----
+const { BasePlugin } = require('lisk-sdk');
+
+class MyPlugin extends BasePlugin {
+  static get alias() {
+    return "MyPlugin";
+  }
+}
+
+module.exports = MyPlugin;
+----
+
+== Defining the plugin meta information
+
+[source,js]
+----
+const { BasePlugin } = require('lisk-sdk');
+const pJSON = require('../package.json');
+
+class MyPlugin extends BasePlugin {
+  static get alias() {
+    return "MyPlugin";
+  }
+
+  static get info() {
+    return {
+      author: pJSON.author,
+      version: pJSON.version,
+      name: pJSON.name,
+    };
+  }
+}
+
+module.exports = MyPlugin;
+----
+
+== Defining the plugin configuration
+
+.defaults.js
+[source,js]
+----
+export const myConfig = {
+    type: 'object',
+    properties: {
+        myKey1: {
+            type: 'integer',
+            minimum: 1,
+            maximum: 9999,
+        },
+        myKey2: {
+            type: 'array',
+            items: {
+                type: 'string',
+            },
+        },
+        myKey3: {
+            type: 'object',
+            properties: {
+                myKey4: {
+                    anyOf: [{ type: 'string' }, { type: 'boolean' }],
+                },
+                myKey5: {
+                    type: 'array',
+                },
+            },
+            required: ['myKey4'],
+        },
+      },
+    required: ['myKey1', 'myKey2'],
+    default: {
+        myKey1: 5000,
+        myKey2: ['127.0.0.1']
+    },
+}
+----
+
+[source,js]
+----
+const { BasePlugin } = require('lisk-sdk');
+const { myConfig } = require('./defaults');
+const pJSON = require('../package.json');
+
+class MyPlugin extends BasePlugin {
+  static get alias() {
+    return "MyPlugin";
+  }
+
+  static get info() {
+    return {
+      author: pJSON.author,
+      version: pJSON.version,
+      name: pJSON.name,
+    };
+  }
+
+  get defaults() {
+    return myConfig;
+  }
+}
+
+module.exports = MyPlugin;
+----
+
+== Defining the plugin logic
+
+[source,js]
+----
+const { BasePlugin } = require('lisk-sdk');
+const { myConfig } = require('./defaults');
+const pJSON = require('../package.json');
+
+class MyPlugin extends BasePlugin {
+  _latestTx = undefined;
+  _genesisBlock = undefined;
+
+  static get alias() {
+    return "MyPlugin";
+  }
+
+  static get info() {
+    return {
+      author: pJSON.author,
+      version: pJSON.version,
+      name: pJSON.name,
+    };
+  }
+
+  get defaults() {
+    return myConfig;
+  }
+
+  async load(channel) {
+    channel.subscribe('app:transaction:new', (tx) => {
+      this._latestTx = tx;
+    });
+
+
+
+    const { blockAtHeight123 } = await client.invoke('app:getBlockByHeight', 123);
+
+
+  }
+
+  async unload() {
+  }
+}
+
+module.exports = MyPlugin;
+----
+
+== Defining the plugin interfaces
+
+[source,js]
+----
+const { BasePlugin, codec } = require('lisk-sdk');
+const { myConfig } = require('./defaults');
+const pJSON = require('../package.json');
+
+class MyPlugin extends BasePlugin {
+  _latestTx = undefined;
+  _genesisBlock = undefined;
+
+  static get alias() {
+    return "MyPlugin";
+  }
+
+  static get info() {
+    return {
+      author: pJSON.author,
+      version: pJSON.version,
+      name: pJSON.name,
+    };
+  }
+
+  get defaults() {
+    return myConfig;
+  }
+
+  get events() {
+    return ['newDelegate'];
+  }
+
+  get actions() {
+    return {
+      getGenesisBlock: () => this._genesisBlock,
+    };
+  }
+
+  async load(channel) {
+    channel.subscribe('app:transaction:new', (tx) => {
+      this._latestTx = tx;
+    });
+    this._genesisBlock = await client.invoke('app:getBlockByHeight', 1);
+  }
+
+  async unload() {
+  }
+}
+
+module.exports = MyPlugin;
+----
+
+== Registering the module with the application
+
+The last thing needed to do is to register the newly created module in the application:
+
+.index.js
+[source,js]
+----
+const { Application, genesisBlockDevnet, configDevnet } = require('lisk-sdk');
+const { MyModule } = require('./my-module.js');
+
+const app = Application.defaultApplication(genesisBlockDevnet, configDevnet);
+
+app.registerModule(MyModule);
+
+app
+	.run()
+	.then(() => app.logger.info('App started...'))
+	.catch(error => {
+		console.error('Faced error in application', error);
+		process.exit(1);
+	});
+----
+
+Now save and close `index.js`.
+The new module `MyModule` will now be available, the next time you start the application with `node index.js`.

@@ -1,0 +1,197 @@
+= Schemas
+Mona Bärenfänger <mona@lightcurve.io>
+// Settings
+:toc:
+// Project URLs
+
+Schemas are used in various places in the Lisk SDK to encode and decode the data that is retrieved or pushed to the database.
+
+NOTE: All blockchain related data such as blocks, transactions, account state, and chain state are encoded using `@liskhq/lisk-codec`.
+
+Schemas are specifically used in the following:
+
+* *modules* to define the `accountSchema`, which consists of module-specific properties that are added to each account by the module.
+* *assets*, for the `schema`, which defines the data structure and formats of the transaction asset.
+* modules and/or assets, to *decode/encode* other specific data from the database, such as blocks, transactions, account state, and chain state data.
+
+== Format
+
+Schemas must be defined as shown in the example below, which is a modified JSON schema.
+
+NOTE: If the property is either an object or an array, the `type` property must be used instead of `dataType`.
+
+[source,js]
+----
+export const myAssetSchema = {
+  // Unique identifier of the schema throughout the system
+  // This property is not required for account schemas in modules
+  $id: "/unique-id",
+  // Root type must be type object
+  type: "object",
+  // Required properties
+  // This property is not required for account schemas in modules
+  required: ["key1","key2"],
+  // Properties for the object
+  properties: {
+    key1: {
+      dataType: "string",
+      fieldNumber: 1,
+    },
+    key2: {
+      dataType: "boolean",
+      fieldNumber: 2,
+    },
+    key3: {
+      dataType: "uint64",
+      fieldNumber: 3,
+    },
+    key4: {
+      type: "object",
+      fieldNumber: 4,
+      properties: {
+        nestedKey1: {
+          dataType: "sint32",
+          fieldNumber: 1,
+        },
+        nestedKey2: {
+          dataType: "string",
+          fieldNumber: 2,
+        },
+      },
+    },
+    key5: {
+      type: "array",
+      fieldNumber: 5,
+      items: {
+        type: "object",
+        properties: {
+          nestedArrayKey1: {
+            dataType: "string",
+            fieldNumber: 1,
+          },
+          nestedArrayKey2: {
+            dataType: "boolean",
+            fieldNumber: 2,
+          },
+        },
+      },
+    },
+    key6: {
+      type: "array",
+      fieldNumber: 6,
+      items: {
+        dataType: "bytes",
+      },
+    },
+  },
+  // Default values for the different properties
+  default: {
+    key1 : "",
+    key2 : false,
+    key3 : 0,
+    key4 : {},
+    key5 : [],
+    key6 : [],
+  }
+}
+----
+
+== Data types
+
+The application data is stored in specific data types and structures in the database.
+
+A schema always defines the data types that will be used in the database to store specific data.
+When the data is retrieved from the database by a module or plugin of the blockchain application, it is returned as a JavaScript object or JSON, depending on the context:
+
+Database::
+These data types are used to save the respective data in the *database*.
+JavaScript object::
+These data types are used *internally* in the blockchain application to handle data from the database.
+JSON::
+Data that is provided by *actions* and *events* is always returned in JSON format.
+
+.Table: Data types of the different data structures
+[cols=",,",options="header",stripes="hover"]
+|===
+|Database
+|JavaScript object
+|JSON
+
+|string
+|string
+|string
+
+|uint32
+|number
+|number
+
+|sint32
+|number
+|number
+
+|uint64
+|BigInt
+|string
+
+|sint64
+|BigInt
+|string
+
+|bytes
+|Buffer
+|string in hex format
+
+|boolean
+|boolean
+|boolean
+
+|===
+
+== Decoding and encoding data
+
+To conveniently decode and encode the data structures, use the `codec` package, which can be imported from the `lisk-sdk`, `@liskhq/lisk-client` or installed separately with `@liskhq/lisk-codec`.
+
+[source,js]
+----
+const {
+    codec,
+} = require('lisk-sdk');
+
+const CHAIN_STATE_KEY = "myContext:moreContext";
+
+const schema = {
+    $id: "lisk/myContext/moreContext",
+    type: "object",
+    required: ["myCounter"],
+    properties: {
+        myCounter: {
+            dataType: "uint32",
+            fieldNumber: 1,
+        },
+    },
+    default: {
+      myCounter: 0
+    }
+};
+
+// Get data from the database
+let counterBuffer = await stateStore.chain.get(
+    CHAIN_STATE_KEY
+);
+
+// Decode the retrieved data with the schema
+let counter = codec.decode(
+    schema,
+    counterBuffer
+);
+
+// Mutate the retrieved data
+counter.myCounter++;
+
+// Post the data back to the database
+await stateStore.chain.set(
+    CHAIN_STATE_KEY,
+    // Encode the data again before sending it to the DB
+    codec.encode(schema, counter)
+);
+----

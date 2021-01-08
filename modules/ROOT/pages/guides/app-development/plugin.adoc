@@ -165,7 +165,7 @@ const { myConfig } = require('./defaults');
 const pJSON = require('../package.json');
 
 class MyPlugin extends BasePlugin {
-  _latestTx = undefined;
+  _latestDelegate = undefined;
   _genesisBlock = undefined;
 
   static get alias() {
@@ -187,13 +187,16 @@ class MyPlugin extends BasePlugin {
   async load(channel) {
     this._api = await apiClient.createIPCClient('~/.lisk/my-app');
 
-    channel.subscribe('app:transaction:new', (tx) => {
-      const transaction = this._api.transaction.decode(tx);
-      console.log(transaction);
-      this._latestTx = transaction;
+    channel.subscribe('app:transaction:new', (data) => {
+      const txBuffer = Buffer.from(data.transaction, 'hex');
+      const transaction = this._api.transaction.decode(txBuffer);
+      if ( transaction.moduleID === 5 && transaction.assetID === 0 ) {
+        this._latestDelegate = transaction.username;
+        channel.publish('myPlugin:newDelegate', {
+          name: transaction.username,
+        });
+      }
     });
-
-    const { blockAtHeight123 } = await client.invoke('app:getBlockByHeight', 123);
   }
 
   async unload() {
@@ -212,7 +215,7 @@ const { myConfig } = require('./defaults');
 const pJSON = require('../package.json');
 
 class MyPlugin extends BasePlugin {
-  _latestTx = undefined;
+  _latestDelegate = undefined;
   _genesisBlock = undefined;
 
   static get alias() {
@@ -238,14 +241,23 @@ class MyPlugin extends BasePlugin {
   get actions() {
     return {
       getGenesisBlock: () => this._genesisBlock,
+      getLatestDelegate: () => this._latestDelegate
     };
   }
 
   async load(channel) {
-    channel.subscribe('app:transaction:new', (tx) => {
-      this._latestTx = tx;
+    this._api = await apiClient.createIPCClient('~/.lisk/my-app');
+
+    channel.subscribe('app:transaction:new', (data) => {
+      const txBuffer = Buffer.from(data.transaction, 'hex');
+      const transaction = this._api.transaction.decode(txBuffer);
+      if ( transaction.moduleID === 5 && transaction.assetID === 0 ) {
+        this._latestDelegate = transaction.username;
+        channel.publish('myPlugin:newDelegate', {
+          name: transaction.username,
+        });
+      }
     });
-    this._genesisBlock = await client.invoke('app:getBlockByHeight', 1);
   }
 
   async unload() {

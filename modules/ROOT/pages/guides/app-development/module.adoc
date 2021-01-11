@@ -1,0 +1,350 @@
+= Creating a custom module
+:sectnums:
+// Project URLS
+:url_guides_setup: guides/app-development/setup.adoc
+:url_guides_asset: guides/app-development/asset.adoc
+:url_modules_dpos: dpos-module.adoc
+:url_rpc_endpoints: rpc-endpoints.adoc
+:url_references_schemas: references/schemas.adoc
+:url_tutorials_hello: tutorials/hello-world.adoc
+
+This guide explains step-by-step, how to create a custom module for a blockchain application built with the Lisk SDK.
+
+.Prerequisites
+[NOTE]
+====
+To follow this guide, the following criteria is assumed:
+
+* a basic blockchain application is already initiated as explained in the previous guide xref:{url_guides_setup}[].
+====
+
+First, create a new file named after the new module, for example `my-module.js`.
+
+----
+├── blockchain_app
+│   ├── index.js
+│   ├── my-module.js
+│   └── package.json
+----
+
+== Creating the module class
+
+Now open `my-module.js` and import the `BaseModule` from the `lisk-sdk` package:
+
+[source,js]
+----
+const { BaseModule } = require('lisk-sdk');
+----
+
+Next, define a new class `MyModule`, which extends from the `BaseModule`:
+
+[source,js]
+----
+const { BaseModule } = require('lisk-sdk');
+
+class MyModule extends BaseModule {
+
+}
+
+module.exports = MyModule;
+----
+
+== Setting name and ID of the module
+
+Inside of the `myModule` class, define the different properties of the module:
+
+`id`(number)::
+The ID of the module.
+Must be unique in the application.
+The ID is used for example during the creation of transactions of the module.
+Minimum value is `1024`.
+`name`(string)::
+The name of the module.
+Must be unique in the application.
+The name is used for example to subscribe to events, or to invoke actions of the module.
+
+[source,js]
+----
+const { BaseModule } = require('lisk-sdk');
+
+class MyModule extends BaseModule {
+  id = 1024;
+  name = 'my-module';
+}
+
+module.exports = MyModule;
+----
+
+== Defining the account schema
+
+The account schema defines which properties are added to user accounts by the module.
+
+TIP: For more information about schemas and how they are used in the Lisk SDK, check out the xref:{url_references_schemas}[].
+
+The new properties will be added under a key that is named after the module name.
+The module-specific properties for every account are saved inside this key.
+
+To achieve a better overview, it is recommended to create a new file `schemas.js`, which will export the account schema for our new module:
+
+.schemas.js
+[source,js]
+----
+export const myAccountSchema = {
+  // Root type must be type object
+  type: "object",
+  // Properties for the object
+  properties: {
+    key1: {
+      dataType: "string",
+      fieldNumber: 1,
+    },
+    key2: {
+      dataType: "boolean",
+      fieldNumber: 2,
+    },
+    key3: {
+      dataType: "uint64",
+      fieldNumber: 3,
+    }
+  },
+  // Default values for the different properties
+  default: {
+    key1 : "",
+    key2 : false,
+    key3 : 0
+  }
+}
+----
+
+Now include the schema in the module:
+
+[source,js]
+----
+const { BaseModule } = require('lisk-sdk');
+const { myAccountSchema } = require('./schemas.js'); <1>
+
+class MyModule extends BaseModule {
+  id = 1024;
+  name = 'my-module';
+  accountSchema = myAccountSchema; <2>
+}
+
+module.exports = MyModule;
+----
+
+<1> Require the schema.
+<2> Set the `accountSchema` of the module to the imported schema.
+
+== Adding transaction assets to the module
+
+A module can include various custom transaction assets, that provide new transaction types to the application.
+
+Before a new asset can be added, it is first required to create the custom asset as described in the xref:{url_guides_asset}[] guide.
+
+Assuming an asset `myAsset` has been created for the module, then it can be included as shown below:
+
+[source,js]
+----
+const { BaseModule } = require('lisk-sdk');
+const { myAccountSchema } = require('./schemas.js');
+const { MyAsset } = require('./my-asset.js');
+
+class MyModule extends BaseModule {
+  id = 1024;
+  name = 'my-module';
+  accountSchema = myAccountSchema;
+  transactionAssets = [ new myAsset() ];
+}
+
+module.exports = MyModule;
+----
+
+== Adding an interface by providing reducers, actions and events
+
+Each module allows the user to define certain reducers, actions, and events which provide the module with an interface, that allows other modules and plugins or external services to interact with the module.
+
+TIP: See the xref:{url_rpc_endpoints}[] page for more information.
+
+`events`::
+A list of events this module emits.
+Plugins and external services can subscribe to these events with the API client.
+`actions`::
+A list of actions that plugins and external services can invoke via the API client.
+`reducers`::
+A list of actions that other modules of the application can invoke.
+
+[source,js]
+----
+const { BaseModule } = require('lisk-sdk');
+const { myAccountSchema } = require('./schemas.js');
+const { myAsset } = require('./my-asset.js');
+
+class MyModule extends BaseModule {
+  id = 1024;
+  name = 'my-module';
+  accountSchema = myAccountSchema;
+  transactionAssets = [ new myAsset() ];
+  actions = {
+    myAction: async () => {
+        // Returns some data
+    },
+    anotherAction: async (params) => {
+        // Returns some other data
+    }
+  };
+  events = ['myEvent','anotherEvent'];
+  reducers = {
+    myReducer: async (params, stateStore) => {
+      // Returns some data
+    },
+    anotherReducer: async (params, stateStore) => {
+      // Returns some other data
+    }
+  };
+}
+
+module.exports = MyModule;
+----
+
+[TIP]
+====
+What events, actions and reducers are used within a module, or if these interfaces are actually required at all, will be a specific individual requirement for every module; as it is heavily dependant on which functionality the module intends to provide to the application.
+
+The best way to understand the necessary requirements here is to look at existing examples in the Lisk SDK default modules, or examples of other blockchain applications built with the Lisk SDK, for example the xref:{url_tutorials_hello}[] application.
+====
+
+=== Data access for actions
+
+Blockchain data can be accessed in a module via `this._dataAccess`.
+
+The data access is only used in the implementation of the actions to retrieve certain information from the blockchain.
+
+.Interface of `dataAccess`
+----
+interface dataAccess {
+    getChainState: async (key: string) => Buffer,
+    getAccountByAddress: async <T = AccountDefaultProps>(address: Buffer) => Account,
+    getLastBlockHeader: async () => BlockHeader
+}
+----
+
+
+== Defining the lifecycle hooks
+
+Lifecycle hooks allow a module to execute certain logic, before or after blocks or transactions are applied to the blockchain.
+
+Inside of the lifecycle hooks, it's possible to *publish* the above defined events to the application and to filter for certain transactions and blocks, before applying the logic.
+
+The following lifecycle hooks are available for each module:
+
+`beforeTransactionApply()`::
+The code here is applied before each transaction is applied.
+`afterTransactionApply()`::
+The code here is applied after each transaction is applied.
+`afterGenesisBlockApply()`::
+The code here is applied after the genesis block is applied.
+`beforeBlockApply()`::
+The code here is applied before each block is applied.
+`afterBlockApply()`::
+The code here is applied after each block is applied.
+
+=== Lifecycle hooks
+
+.Lifecycle hooks example
+[source,js]
+----
+async beforeTransactionApply({transaction, stateStore, reducerHandler}) {
+    // Code in here is applied before each transaction is applied.
+};
+
+async afterTransactionApply({transaction, stateStore, reducerHandler}) {
+  // Code in here is applied after each transaction is applied.
+  if (transaction.moduleID === this.id && transaction.assetID === MyAssetID) {
+
+    const myAsset = codec.decode(
+      myAssetSchema,
+      transaction.asset
+    );
+
+    this._channel.publish('my-module:myEvent', {
+      sender: transaction._senderAddress.toString('hex')
+    });
+  }
+};
+async afterGenesisBlockApply({genesisBlock, stateStore, reducerHandler}) {
+  // Sets the hello counter to zero after the genesis block is applied
+  await stateStore.chain.set(
+    CHAIN_STATE_HELLO_COUNTER,
+    codec.encode(helloCounterSchema, { helloCounter: 0 })
+  );
+};
+async beforeBlockApply({block, stateStore, reducerHandler}) {
+    // Code in here is applied before each block is applied.
+}
+async afterBlockApply({block, stateStore, reducerHandler, consensus}) {
+    // Code in here is applied after each block is applied.
+}
+----
+
+=== stateStore
+
+The `stateStore` is used to mutate the state of the blockchain data, or to retrieve data from the blockchain.
+
+Inside of a module, the `stateStore` is available for reducers and all lifecycle hooks.
+
+.Interface of `stateStore`
+----
+interface StateStore {
+	readonly account: {
+		get<T = AccountDefaultProps>(address: Buffer): Promise<Account<T>>;
+		getOrDefault<T = AccountDefaultProps>(address: Buffer): Promise<Account<T>>;
+		set<T = AccountDefaultProps>(address: Buffer, updatedElement: Account<T>): Promise<void>;
+		del(address: Buffer): Promise<void>;
+	};
+	readonly chain: {
+		lastBlockHeaders: ReadonlyArray<BlockHeader>;
+		lastBlockReward: bigint;
+		networkIdentifier: Buffer;
+		get(key: string): Promise<Buffer | undefined>;
+		set(key: string, value: Buffer): Promise<void>;
+	};
+}
+----
+
+=== reducerHandler
+
+Reducers of other modules can be *invoked* inside of the lifecycle hooks via the `reducerHandler`.
+
+.Interface of `reducerHandler`
+----
+interface ReducerHandler {
+	invoke: <T = unknown>(name: string, params?: Record<string, unknown>) => Promise<T>;
+}
+----
+
+== Registering the module with the application
+
+The final requirement is to register the newly created module in the application:
+
+//is there need to update the genesis block like in hello world?
+.index.js
+[source,js]
+----
+const { Application, genesisBlockDevnet, configDevnet } = require('lisk-sdk');
+const { MyModule } = require('./my-module.js');
+
+const app = Application.defaultApplication(genesisBlockDevnet, configDevnet);
+
+app.registerModule(MyModule);
+
+app
+	.run()
+	.then(() => app.logger.info('App started...'))
+	.catch(error => {
+		console.error('Faced error in application', error);
+		process.exit(1);
+	});
+----
+
+Now save and close `index.js`.
+The new module `MyModule` will now be available, the next time the application is started with `node index.js`.

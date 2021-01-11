@@ -1,0 +1,230 @@
+= Creating a custom asset
+Mona Bärenfänger <mona@lightcurve.io>
+// Settings
+:page-aliases: customize.adoc
+:toc:
+:v_sdk: v5.0.1
+// Project URLs
+:url_guides_setup: guides/app-development/setup.adoc
+:url_guides_module: guides/app-development/module.adoc
+:url_references_schemas: references/schemas.adoc
+:url_tutorials: tutorials/index.adoc
+
+This guide explains step-by-step, how to create a custom asset for a module of a blockchain application built with the Lisk SDK.
+
+.Prerequisites
+[NOTE]
+====
+To follow this guide, the following is assumed:
+
+* a basic blockchain application is already initiated, like explained in the guide xref:{url_guides_setup}[].
+* a custom module `MyModule` is created, like explained in the previous guide xref:{url_guides_module}[].
+====
+
+First, create a new file named after the new asset, for example `my-asset.js`.
+
+----
+├── blockchain_app
+│   ├── index.js
+│   ├── my-asset.js
+│   ├── my-module.js
+│   └── package.json
+----
+
+== Creating the asset class
+
+Now open `my-asset.js` and import the `BaseAsset` from the `lisk-sdk` package:
+
+[source,js]
+----
+const { BaseAsset } = require('lisk-sdk');
+----
+
+Next, define a new class `MyAsset`, which extends from the `BaseAsset`:
+
+[source,js]
+----
+const { BaseAsset } = require('lisk-sdk');
+
+class MyAsset extends BaseAsset {
+
+}
+
+module.exports = MyAsset;
+----
+
+== Setting name and ID of the asset
+
+Inside of the `MyAsset` class, define the different properties of the transaction asset:
+
+`id`(number)::
+The ID of an asset.
+Must be unique within the module.
+The ID is used (combined with the module ID)  for example to create transaction objects.
+`name`(string)::
+The name of an asset.
+Must be unique within the module.
+
+[source,js]
+----
+const { BaseAsset } = require('lisk-sdk');
+
+class MyAsset extends BaseAsset {
+  id = 0; <1>
+  name = 'myAsset';
+}
+
+module.exports = MyAsset;
+----
+
+<1> The transaction asset `MyAsset` is the first asset of the module `MyModule`, therefore we set the `id` to the lowest possible value, which is `0`.
+
+== Defining the asset schema
+
+The asset schema defines in which format data is sent in the transaction asset.
+
+TIP: For more information about schemas and how they are used in the Lisk SDK, check out the xref:{url_references_schemas}[].
+
+If the property is either an object or an array, the `type` property must be used to identify it, instead of `dataType`.
+
+For better overview, let's add the schema to the file `schemas.js`, which was created in the previous guide xref:{url_guides_module}[].
+
+.schemas.js
+[source,js]
+----
+export const myAssetSchema = {
+  // Unique identifier of the schema throughout the system
+  $id: "/unique-id",
+  // Root type must be type object
+  type: "object",
+  // Required properties
+  required: ["key1","key2"],
+  // Properties for the object
+  properties: {
+    key1: {
+      dataType: "string",
+      fieldNumber: 1,
+    },
+    key2: {
+      dataType: "boolean",
+      fieldNumber: 2,
+    },
+    key3: {
+      dataType: "uint64",
+      fieldNumber: 3,
+    }
+  },
+  // Default values for the different properties
+  default: {
+    key1 : "",
+    key2 : false,
+    key3 : 0
+  }
+}
+----
+
+Now include the schema in the asset:
+
+[source,js]
+----
+const { BaseAsset } = require('lisk-sdk');
+const { myAssetSchema } = require('./schemas'); <1>
+
+class MyAsset extends BaseAsset {
+  id = 0;
+  name = 'myAsset';
+  schema = myAssetSchema; <2>
+}
+
+module.exports = MyAsset;
+----
+
+<1> Require the schema.
+<2> Set the `schema` of the asset to the imported schema.
+
+== Validating asset inputs
+
+Next, define a function `validate()`, which will validate the data of a transaction asset, to check if the data has the proper format.
+
+In this example, we validate if the data in key1 is present, type `string`, and is no longer than 64 characters.
+If one of these conditions is not fulfilled, the transaction won't be processed, and an error will be thrown.
+
+[source,js]
+----
+const { BaseAsset } = require('lisk-sdk');
+const { myAssetSchema } = require('./schemas');
+
+class MyAsset extends BaseAsset {
+  id = 0;
+  name = 'myAsset';
+  schema = myAssetSchema;
+
+  validate({asset}) {
+    if (!asset.key1 || typeof asset.key1 !== 'string' || asset.key1.length > 64) {
+      throw new Error(
+            'Invalid "asset.key1" defined on transaction: A string value no longer than 64 characters is expected'
+        );
+    }
+  };
+}
+
+module.exports = MyAsset;
+----
+
+If the validation doesn't throw any errors, it means the validations has been successfull, and the data will be applied like defined in the `apply()` function.
+
+== Applying the transaction asset logic
+
+Finally, define a function `apply()`, which contains the logic of how the data in the transaction asset should be applied on tyhe blockchain.
+
+In this example, we save the provided string in `key1` from the transaction asset into the users account under the `myModule` property.
+
+[source,js]
+----
+const { BaseAsset } = require('lisk-sdk');
+const { myAssetSchema } = require('./schemas');
+
+class MyAsset extends BaseAsset {
+  id = 0;
+  name = 'myAsset';
+  schema = myAssetSchema;
+
+  validate({asset}) {
+    if (!asset.key1 || typeof asset.key1 !== 'string' || asset.key1.length > 64) {
+      throw new Error(
+            'Invalid "asset.key1" defined on transaction: A string value no longer than 64 characters is expected'
+        );
+    }
+  };
+
+  async apply({ asset, stateStore, reducerHandler, transaction }) {
+    const senderAddress = transaction.senderAddress;
+    const senderAccount = await stateStore.account.get(senderAddress);
+
+    senderAccount.myModule.key1 = asset.key1;
+    stateStore.account.set(senderAccount.address, senderAccount);
+  }
+}
+
+module.exports = MyAsset;
+----
+
+== Adding the asset to the module
+
+The last thing to do is to add the newly created asset to the `transactionAssets` property of the module it belongs to.
+
+[source,js]
+----
+const { BaseModule } = require('lisk-sdk');
+const { myAccountSchema } = require('./schemas.js');
+const { MyAsset } = require('./my-asset.js');
+
+class MyModule extends BaseModule {
+  id = 1024;
+  name = 'myModule';
+  accountSchema = myAccountSchema;
+  transactionAssets = [ new MyAsset() ];
+}
+
+module.exports = MyModule;
+----

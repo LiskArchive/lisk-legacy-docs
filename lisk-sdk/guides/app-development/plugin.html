@@ -543,6 +543,9 @@ module.exports = MyPlugin;</code></pre>
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">export const myConfig = {
     type: 'object',
     properties: {
+        enable: {
+            type: 'boolean',
+        },
         myKey1: {
             type: 'integer',
             minimum: 1,
@@ -630,7 +633,30 @@ module.exports = MyPlugin;</code></pre>
 <div class="sect1">
 <h2 id="defining-the-plugin-logic"><a class="anchor" href="#defining-the-plugin-logic"></a>5. Defining the plugin logic</h2>
 <div class="sectionbody">
+<div class="paragraph">
+<p>The <code>load()</code> function of a plugin contains the plugin logic that is executed, when the plugin is initialized.</p>
+</div>
+<div class="paragraph">
+<p>It can be used to retrieve, mutate, store and/or publish data in a specific way, depending on the purpose of the plugin.</p>
+</div>
+<div class="paragraph">
+<p>The <code>unload()</code> method contains the logic that needs to be executed to unload the plugin correctly.</p>
+</div>
+<div class="paragraph">
+<p>The <code>channel</code>, which is available inside of the <code>load()</code> function, allows to access the <a href="../../rpc-endpoints.html" class="page">RPC endpoints</a> in order to subscribe to events or to invoke certain actions within the application, to retrieve the desired data.</p>
+</div>
+<div class="paragraph">
+<p>In this example, we subscribe to the event <code>app:transaction:new</code>, which is published everytime a new transaction is added to the application.
+Next, the transaction is decoded and checked for it&#8217;s <code>moduleID</code> and <code>assetID</code>.
+If the transaction is a register delegate transaction, the delegate name is saved under <code>this._latestDelegate</code> and a new event <code>myPlugin:newDelegate</code> is published, which is announcing the new delegate to the application.</p>
+</div>
+<div class="paragraph">
+<p>Additionally, we subscribe to the event <code>app:block:new</code>, which is published everytime a new block is added to the blockchain.
+Next, the block is decoded and the timestamp of the block is pushed into the <code>_knownTimestamps</code> array.
+Then a new event <code>myPlugin:timestamp</code> is published, which returns the updated timestamp array.</p>
+</div>
 <div class="listingblock">
+<div class="title">my-plugin.js</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { BasePlugin, apiClient } = require('lisk-sdk');
 const { myConfig } = require('./defaults');
@@ -638,7 +664,7 @@ const pJSON = require('../package.json');
 
 class MyPlugin extends BasePlugin {
   _latestDelegate = undefined;
-  _genesisBlock = undefined;
+  _knownTimestamps = [];
 
   static get alias() {
     return "MyPlugin";
@@ -657,6 +683,10 @@ class MyPlugin extends BasePlugin {
   }
 
   async load(channel) {
+     if (!this.options.enable) {
+        return;
+     }
+
     this._api = await apiClient.createIPCClient('~/.lisk/my-app');
 
     channel.subscribe('app:transaction:new', (data) =&gt; {
@@ -669,9 +699,16 @@ class MyPlugin extends BasePlugin {
         });
       }
     });
+    channel.subscribe('app:block:new', ({ data }) =&gt; {
+      const decodedBlock = this.codec.decodeBlock(data.block);
+      this._knownTimestamps.push(decodedBlock.header.timestamp);
+      channel.publish('myPlugin:timestamp', { timestamp: decodedBlock.header.timestamp });
+    });
   }
 
   async unload() {
+    this._latestDelegate = undefined;
+    this._knownTimestamps = [];
   }
 }
 
@@ -683,15 +720,44 @@ module.exports = MyPlugin;</code></pre>
 <div class="sect1">
 <h2 id="defining-the-plugin-interfaces"><a class="anchor" href="#defining-the-plugin-interfaces"></a>6. Defining the plugin interfaces</h2>
 <div class="sectionbody">
+<div class="paragraph">
+<p>Similar to modules, plugins expose <code>actions</code> and <code>events</code>, which are interfaces that allow other plugins or external services to interact with the plugin.</p>
+</div>
+<div class="paragraph">
+<p>In this example, two events are added:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>newDelegate</code>, which is published in the <code>load()</code> function, when a new delegate is registered in ther network.</p>
+</li>
+<li>
+<p><code>timestamp</code>, which is published in the <code>load()</code> function, when a new block is added to the blockchain.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>In addition, two actions are added:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>If <code>getKnownTimestamp</code> is invoked, it returns the list of timestamps of the blocks that where added to the chain, while the plugin was active.</p>
+</li>
+<li>
+<p>If <code>getLatestDelegate</code> is invoked, it returns the last delegate name that was registered in the network.</p>
+</li>
+</ul>
+</div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { BasePlugin, codec } = require('lisk-sdk');
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { BasePlugin, apiClient } = require('lisk-sdk');
 const { myConfig } = require('./defaults');
 const pJSON = require('../package.json');
 
 class MyPlugin extends BasePlugin {
   _latestDelegate = undefined;
-  _genesisBlock = undefined;
+  _knownTimestamps = [];
 
   static get alias() {
     return "MyPlugin";
@@ -710,12 +776,12 @@ class MyPlugin extends BasePlugin {
   }
 
   get events() {
-    return ['newDelegate'];
+    return ['newDelegate','timestamp'];
   }
 
   get actions() {
     return {
-      getGenesisBlock: () =&gt; this._genesisBlock,
+      getKnownTimestamp: () =&gt; this._knownTimestamps,
       getLatestDelegate: () =&gt; this._latestDelegate
     };
   }
@@ -733,9 +799,16 @@ class MyPlugin extends BasePlugin {
         });
       }
     });
+    channel.subscribe('app:block:new', ({ data }) =&gt; {
+      const decodedBlock = this.codec.decodeBlock(data.block);
+      this._knownTimestamps.push(decodedBlock.header.timestamp);
+      channel.publish('myPlugin:timestamp', { timestamp: decodedBlock.header.timestamp });
+    });
   }
 
   async unload() {
+    this._latestDelegate = undefined;
+    this._knownTimestamps = [];
   }
 }
 
@@ -745,7 +818,7 @@ module.exports = MyPlugin;</code></pre>
 </div>
 </div>
 <div class="sect1">
-<h2 id="registering-the-module-with-the-application"><a class="anchor" href="#registering-the-module-with-the-application"></a>7. Registering the module with the application</h2>
+<h2 id="registering-the-plugin-with-the-application"><a class="anchor" href="#registering-the-plugin-with-the-application"></a>7. Registering the plugin with the application</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>The last thing needed to do is to register the newly created module in the application:</p>
@@ -754,11 +827,11 @@ module.exports = MyPlugin;</code></pre>
 <div class="title">index.js</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { Application, genesisBlockDevnet, configDevnet } = require('lisk-sdk');
-const { MyModule } = require('./my-module.js');
+const { MyPlugin } = require('./my-plugin.js');
 
 const app = Application.defaultApplication(genesisBlockDevnet, configDevnet);
 
-app.registerModule(MyModule);
+app.registerPlugin(MyPlugin);
 
 app
 	.run()
@@ -771,7 +844,7 @@ app
 </div>
 <div class="paragraph">
 <p>Now save and close <code>index.js</code>.
-The new module <code>MyModule</code> will now be available, the next time you start the application with <code>node index.js</code>.</p>
+The new plugin <code>MyPlugin</code> will now be available, the next time the application is started with <code>node index.js</code>.</p>
 </div>
 </div>
 </div>

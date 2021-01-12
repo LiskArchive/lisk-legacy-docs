@@ -1,7 +1,11 @@
 = Creating a custom plugin
+Mona Bärenfänger <mona@lightcurve.io>
+// Settings
+:toc:
 :sectnums:
 // Project URLS
 :url_architecture: architecture/index.adoc#configuration
+:url_guides_modules: guides/app-development/module.adoc
 :url_guides_setup: guides/app-development/setup.adoc
 :url_guides_asset: guides/app-development/transaction-asset.adoc
 :url_modules_dpos: dpos-module.adoc
@@ -110,6 +114,9 @@ For a better overview, create a new file `defaults.js` and define the schema for
 export const myConfig = {
     type: 'object',
     properties: {
+        enable: {
+            type: 'boolean',
+        },
         myKey1: {
             type: 'integer',
             minimum: 1,
@@ -192,8 +199,24 @@ module.exports = MyPlugin;
 
 == Defining the plugin logic
 
+The `load()` function of a plugin contains the plugin logic that is executed, when the plugin is initialized.
+
+It can be used to retrieve, mutate, store and/or publish data in a specific way, depending on the purpose of the plugin.
+
+The `unload()` method contains the logic that needs to be executed to unload the plugin correctly.
+
+The `channel`, which is available inside of the `load()` function, allows to access the xref:{url_rpc_endpoints}[] in order to subscribe to events or to invoke certain actions within the application, to retrieve the desired data.
+
+In this example, we subscribe to the event `app:transaction:new`, which is published everytime a new transaction is added to the application.
+Next, the transaction is decoded and checked for it's `moduleID` and `assetID`.
+If the transaction is a register delegate transaction, the delegate name is saved under `this._latestDelegate` and a new event `myPlugin:newDelegate` is published, which is announcing the new delegate to the application.
+
+Additionally, we subscribe to the event `app:block:new`, which is published everytime a new block is added to the blockchain.
+Next, the block is decoded and the timestamp of the block is pushed into the `_knownTimestamps` array.
+Then a new event `myPlugin:timestamp` is published, which returns the updated timestamp array.
 
 
+.my-plugin.js
 [source,js]
 ----
 const { BasePlugin, apiClient } = require('lisk-sdk');
@@ -202,7 +225,7 @@ const pJSON = require('../package.json');
 
 class MyPlugin extends BasePlugin {
   _latestDelegate = undefined;
-  _genesisBlock = undefined;
+  _knownTimestamps = [];
 
   static get alias() {
     return "MyPlugin";
@@ -221,6 +244,10 @@ class MyPlugin extends BasePlugin {
   }
 
   async load(channel) {
+     if (!this.options.enable) {
+        return;
+     }
+
     this._api = await apiClient.createIPCClient('~/.lisk/my-app');
 
     channel.subscribe('app:transaction:new', (data) => {
@@ -233,26 +260,46 @@ class MyPlugin extends BasePlugin {
         });
       }
     });
+    channel.subscribe('app:block:new', ({ data }) => {
+      const decodedBlock = this.codec.decodeBlock(data.block);
+      this._knownTimestamps.push(decodedBlock.header.timestamp);
+      channel.publish('myPlugin:timestamp', { timestamp: decodedBlock.header.timestamp });
+    });
   }
 
   async unload() {
+    this._latestDelegate = undefined;
+    this._knownTimestamps = [];
   }
 }
 
 module.exports = MyPlugin;
 ----
 
+
 == Defining the plugin interfaces
+
+Similar to modules, plugins expose `actions` and `events`, which are interfaces that allow other plugins or external services to interact with the plugin.
+
+In this example, two events are added:
+
+* `newDelegate`, which is published in the `load()` function, when a new delegate is registered in ther network.
+* `timestamp`, which is published in the `load()` function, when a new block is added to the blockchain.
+
+In addition, two actions are added:
+
+* If `getKnownTimestamp` is invoked, it returns the list of timestamps of the blocks that where added to the chain, while the plugin was active.
+* If `getLatestDelegate` is invoked, it returns the last delegate name that was registered in the network.
 
 [source,js]
 ----
-const { BasePlugin, codec } = require('lisk-sdk');
+const { BasePlugin, apiClient } = require('lisk-sdk');
 const { myConfig } = require('./defaults');
 const pJSON = require('../package.json');
 
 class MyPlugin extends BasePlugin {
   _latestDelegate = undefined;
-  _genesisBlock = undefined;
+  _knownTimestamps = [];
 
   static get alias() {
     return "MyPlugin";
@@ -271,12 +318,12 @@ class MyPlugin extends BasePlugin {
   }
 
   get events() {
-    return ['newDelegate'];
+    return ['newDelegate','timestamp'];
   }
 
   get actions() {
     return {
-      getGenesisBlock: () => this._genesisBlock,
+      getKnownTimestamp: () => this._knownTimestamps,
       getLatestDelegate: () => this._latestDelegate
     };
   }
@@ -294,16 +341,23 @@ class MyPlugin extends BasePlugin {
         });
       }
     });
+    channel.subscribe('app:block:new', ({ data }) => {
+      const decodedBlock = this.codec.decodeBlock(data.block);
+      this._knownTimestamps.push(decodedBlock.header.timestamp);
+      channel.publish('myPlugin:timestamp', { timestamp: decodedBlock.header.timestamp });
+    });
   }
 
   async unload() {
+    this._latestDelegate = undefined;
+    this._knownTimestamps = [];
   }
 }
 
 module.exports = MyPlugin;
 ----
 
-== Registering the module with the application
+== Registering the plugin with the application
 
 The last thing needed to do is to register the newly created module in the application:
 
@@ -311,11 +365,11 @@ The last thing needed to do is to register the newly created module in the appli
 [source,js]
 ----
 const { Application, genesisBlockDevnet, configDevnet } = require('lisk-sdk');
-const { MyModule } = require('./my-module.js');
+const { MyPlugin } = require('./my-plugin.js');
 
 const app = Application.defaultApplication(genesisBlockDevnet, configDevnet);
 
-app.registerModule(MyModule);
+app.registerPlugin(MyPlugin);
 
 app
 	.run()
@@ -327,4 +381,4 @@ app
 ----
 
 Now save and close `index.js`.
-The new module `MyModule` will now be available, the next time you start the application with `node index.js`.
+The new plugin `MyPlugin` will now be available, the next time the application is started with `node index.js`.

@@ -17,8 +17,6 @@ This guide explains step-by-step, how to build a simple frontend that communicat
 To follow this guide, the following criteria is assumed:
 
 * a basic blockchain application is already initiated, as explained in the previous guide xref:{url_guides_setup}[].
-* a custom module has been registered with the application, as explained in the previous guide xref:{url_guides_module}[].
-* a custom asset is created, as explained in the previous guide xref:{url_guides_asset}[].
 ====
 
 To interact with the blockchain application conveniently through a browser, we want to build a simple frontend application.
@@ -34,9 +32,6 @@ First let's take a look at the current file structure of the project:
 ----
 ├── blockchain-app
 │   ├── index.js
-│   ├── my-asset.js
-│   ├── my-module.js
-│   ├── my-plugin.js
 │   └── package.json
 ----
 
@@ -79,7 +74,7 @@ Now, let's customize this simple app by creating different components for the fi
 
 * New account: Generates new account credentials.
 * Faucet: A component that sends funds to a specified account from the genesis account.
-* Send transaction: A component that allows to send a specific transaction to the network.
+* Send transfer transaction: A component that allows to send token from one account to another.
 * Account details: Returns details of a user account by address.
 
 === New account
@@ -210,16 +205,17 @@ export default Faucet;
 
 === Send transaction
 
-.transaction.js
+.transfer.js
 [source,jsx]
 ----
-import { transactions } from '@liskhq/lisk-client';
 import React, { useState } from 'react';
+import { cryptography, transactions } from '@liskhq/lisk-client';
 import * as api from '../api.js';
 
-const Hello = () => {
+const Transfer = () => {
     const [state, updateState] = useState({
-        hello: '',
+        address: '',
+        amount: '',
         fee: '',
         passphrase: '',
         transaction: {},
@@ -238,57 +234,67 @@ const Hello = () => {
         event.preventDefault();
 
         const client = await api.getClient();
+        const address = cryptography.getAddressFromBase32Address(state.address);
         const tx = await client.transaction.create({
-            moduleID: 1000,
+            moduleID: 2,
             assetID: 0,
             fee: BigInt(transactions.convertLSKToBeddows(state.fee)),
             asset: {
-                helloString: state.hello,
+                amount: BigInt(transactions.convertLSKToBeddows(state.amount)),
+                recipientAddress: address,
+                data: '',
             },
         }, state.passphrase);
-
-        let res = '';
+        let res;
         try {
-          res = await client.transaction.send(tx);
+            res = await client.transaction.send(tx);
         } catch (error) {
-          res = error;
+            res = error;
         }
+
         updateState({
-          transaction: client.transaction.toJSON(tx),
-          response: res,
-          hello: '',
-          fee: '',
-          passphrase: '',
+            transaction: client.transaction.toJSON(tx),
+            response: res,
+            address: '',
+            amount: '',
+            fee: '',
+            passphrase: '',
         });
     };
 
     return (
         <div>
-            <h2>Hello</h2>
-            <p>Send a Hello transaction.</p>
+            <h2>Transfer</h2>
+            <p>Send tokens from one account to another.</p>
             <form onSubmit={handleSubmit}>
                 <label>
-                    Hello message:
-                        <input type="text" id="hello" name="hello" onChange={handleChange} value={state.hello} />
+                    Recipient:
+                        <input type="text" id="address" name="address" onChange={handleChange} value={state.address} />
+                </label>
+                <label>
+                    Amount (1 = 10^8 tokens):
+                        <input type="text" id="amount" name="amount" onChange={handleChange} value={state.amount} />
                 </label>
                 <label>
                     Fee:
-                        <input type="text" id="fee" name="fee" onChange={handleChange} value={state.fee} />
+                        <input type="text" id="fee" name="fee" onChange={handleChange}  value={state.fee} />
                 </label>
                 <label>
                     Passphrase:
-                        <input type="text" id="passphrase" name="passphrase" onChange={handleChange} value={state.passphrase} />
+                        <input type="text" id="passphrase" name="passphrase" onChange={handleChange}  value={state.passphrase} />
                 </label>
                 <input type="submit" value="Submit" />
             </form>
-            <div>
-                <pre>Transaction: {JSON.stringify(state.transaction, null, 2)}</pre>
-                <pre>Response: {JSON.stringify(state.response, null, 2)}</pre>
-            </div>
+            {state.transaction &&
+                <div>
+                    <pre>Transaction: {JSON.stringify(state.transaction, null, 2)}</pre>
+                    <pre>Response: {JSON.stringify(state.response, null, 2)}</pre>
+                </div>
+            }
         </div>
     );
 }
-export default Hello;
+export default Transfer;
 ----
 
 === Account details
@@ -382,30 +388,9 @@ class Home extends Component {
 
     constructor(props) {
       super(props);
-
-      this.state = {
-        data: {
-          helloCounter: 0,
-        },
-        latestHello: {
-          message: 'N/A',
-          sender: 'N/A'
-        }
-      };
     }
 
     async componentDidMount() {
-        const helloData = await fetchHelloCounter() ;
-        const latestHello = await fetchLatestHello() ;
-
-        this.setState({
-          data: {
-            helloCounter: helloData.helloCounter
-          },
-          latestHello: {
-            message: latestHello ? latestHello.hello: '',
-            sender: latestHello ? latestHello.sender : '',
-        }});
     }
 
     render() {
@@ -413,13 +398,6 @@ class Home extends Component {
             <div>
                 <h2>Hello Lisk!</h2>
                 <p>A simple frontend for blockchain applications built with the Lisk SDK.</p>
-                <p>Hello counter:</p>
-                <pre>{this.state.data.helloCounter}</pre>
-                <p>Latest Hello:</p>
-                <p>Message:</p>
-                <pre>{this.state.latestHello.message}</pre>
-                <p>Sender:</p>
-                <pre>{this.state.latestHello.sender}</pre>
             </div>
         );
     }

@@ -8,8 +8,8 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_guides_api_access: guides/node-management/api-access.adoc
 :url_commander_commands: references/lisk-commander/commands.adoc
 :url_elements_crytpography: references/lisk-elements/cryptography.adoc
-:url_explanations_consensus: consensus.adoc#forging
-:url_explanations_consensus_register: consensus.adoc#delegate_registration
+:url_explanations_consensus: dpos-module.adoc#forging
+:url_explanations_consensus_register: dpos-module.adoc#delegate_registration
 :url_guides_config: guides/app-development/configuration.adoc
 
 :url_protocol_block_forgers: protocol:blocks.adoc#forgers
@@ -24,11 +24,34 @@ Describes how to enable forging on a node as a delegate.
 
 == Registering a delegate
 
-//@TODO: Uncomment again, when explanations are back
-//How to register as delegate is explained in the xref:{url_explanations_consensus_register}[Registering as delegate] section of "Consensus in Lisk".
+[source,js]
+----
+const { createWSClient } = require('@liskhq/lisk-api-client');
 
-//@TODO: Uncomment again, when explanations are back
-//For more information about forging, please check the xref:{url_explanations_consensus}[Forging] explanations in "Consensus in Lisk".
+export const registerDelegate = async () => {
+    let apiClient = await createWSClient('ws://localhost:8080/ws');
+    let response;
+
+    const tx = await apiClient.transaction.create({
+        moduleID: 5,
+        assetID: 0,
+        fee: 1100000000,
+        asset: {
+            username: 'lightcurve', <1>
+        },
+    }, passphrase);
+
+    try {
+      response = await apiClient.transaction.send(tx);
+    } catch (error) {
+      response = error;
+    }
+}
+----
+
+<1> The chosen delegate name has to be unique in the network.
+
+For more information about forging, please check the xref:{url_explanations_consensus}[forging] explanations on the DPoS module page.
 
 [[config_forging_data]]
 == Add forging data to config
@@ -37,6 +60,7 @@ To enable your node to forge for a particular delegate, firstly it is required t
 
 * `publicKey`: The publicKey of the delegate.
 * `encryptedPassphrase`: The symmetrically enrypted 12 word mnemonic passphrase of the delegate account.
+* `hashOnion`: The hash onion stores the random seeds of the delegate for each forging round.
 
 To encrypt your passphrase, it is recommended to use one of the following alternatives listed below:
 
@@ -50,14 +74,13 @@ Upon completion, please follow these commands to generate the encrypted passphra
 [source,bash]
 ----
 $ lisk
-lisk passphrase:encrypt --outputPublicKey
+lisk passphrase:encrypt --json
 Please enter your secret passphrase: ***** <1>
 Please re-enter your secret passphrase: *****
 Please enter your password: *** <2>
 Please re-enter your password: ***
 {
         "encryptedPassphrase": "iterations=1000000&cipherText=30a3c8&iv=b0d7322bf24e0dfe08462f4f&salt=aa7e26c9f4317b61b4f45b5c6909f941&tag=a2e0eadaf1f11a10b342965bc3bafc68&version=1",
-        "publicKey": "a4465fd76c16fcc458448076372abf1912cc5b150663a64dffefe550f96feadd"
 }
 ----
 
@@ -68,108 +91,129 @@ Please re-enter your password: ***
 ====
 Be sure to use a strong password.
 
-See the {url_wikipedia_password_strength}[Guidelines for password strength^] at Wikipedia for reference. 
+See the {url_wikipedia_password_strength}[Guidelines for password strength^] at Wikipedia for reference.
 ====
 
-* Type in the passphrase followed by the password required for encryption.
-* This will result in the creation of an `encryptedPassphrase` key-value pair.
+The hash onion can be generated with Lisk Commander the following way:
+
+[source,bash]
+----
+lisk hash-onion --json
+----
+
+* Add the hash onion and the delegate address (binary) to the object with the `encryptedPassphraser`.
 * Add the JSON object to the config under `forging.delegates` as shown below:
 
 [source,js]
 ----
 {
-  forging: {
-    force: false,
-    delegates: [ <1>
+  "forging": {
+    "force": false,
+    "delegates": [ <1>
         {
-            encryptedPassphrase: "iterations=1&salt=476d4299531718af8c88156aab0bb7d6&cipherText=663dde611776d87029ec188dc616d96d813ecabcef62ed0ad05ffe30528f5462c8d499db943ba2ded55c3b7c506815d8db1c2d4c35121e1d27e740dc41f6c405ce8ab8e3120b23f546d8b35823a30639&iv=1a83940b72adc57ec060a648&tag=b5b1e6c6e225c428a4473735bc8f1fc9&version=1",
-            publicKey: "9d3058175acab969f41ad9b86f7a2926c74258670fe56b37c429c01fca9f2f0f"
+            "address": "86555265f0110b4ed5a8cb95dbc732e77732c474",
+            "encryptedPassphrase": "iterations=1&salt=476d4299531718af8c88156aab0bb7d6&cipherText=663dde611776d87029ec188dc616d96d813ecabcef62ed0ad05ffe30528f5462c8d499db943ba2ded55c3b7c506815d8db1c2d4c35121e1d27e740dc41f6c405ce8ab8e3120b23f546d8b35823a30639&iv=1a83940b72adc57ec060a648&tag=b5b1e6c6e225c428a4473735bc8f1fc9&version=1",
+            "hashOnion": {
+              "count":1000000,
+              "distance":1000,
+              "hashes":[
+                "a623885d5422ce0f2aad3ee128e447ce",
+                "91e7ecad63bafdf36a5b02556ea77fe7",
+                "4a66b400290185cba622f8c9f5d37181",
+                //[...]
+                "fb8eee95e630e812cdf90d054acc903a"
+              ]
+            }
         }
-    ],
-  },
-  modules: {
-    http_api: {
-      access: {
-        whiteList: ["127.0.0.1", "REPLACE_ME"], <2>
-      }
-    }
+    ]
   }
 }
 ----
 
 <1>  The list of delegates who are allowed to forge on this node.
-<2> Replace with the IP address which will be used to access the node.
 
 Now restart the node to apply the changes in the config.
 
-//@TODO: Uncomment again, when dev guides are back
-//For more information about the configuration of the Lisk SDK check out the xref:{url_guides_config}[configuration guide].
+For more information about the configuration of the Lisk SDK check out the xref:{url_guides_config}[configuration guide].
 
 [[forging_enable_disable]]
 == Enable/Disable Forging
 
 [CAUTION]
 ====
-Do not activate forging for the same delegate on multiple nodes.
+Do not activate forging for the same delegate on multiple nodes at rthe same time.
 This behaviour will be xref:{url_protocol_blocks_punishment}[punished] by the network.
 
 In case you want to change the node you are forging on, check the section <<safely_activating_forging,Enabling forging on another node>>.
 
 '''
 
-Please ensure your node is **fully synchronized** with the network, before you enable forging.
+Ensure the node is **fully synchronized** with the network, before enabling forging on that node.
 ====
 
-If the node is running on your local machine, it is possible to enable forging via the API, without any further interruption.
-If you want to enable forging from remote, ensure to whitelist the remote IP as described in the xref:{url_guides_api_access}[API access guide].
-
-Use the following curl command to *enable the forging* for your delegate:
+Invoke the following action to *enable the forging* for a delegate:
 
 .Enable forging
-[source,bash]
+[source,js]
 ----
-curl -X PUT \
-  http://127.0.0.1:4000/api/node/status/forging \ <1>
-  -H 'cache-control: no-cache' \
-  -H 'content-type: application/json' \
-  -d '{
-          "publicKey": "YYYYYYYYY", <2>
-          "password": "XXX", <3>
-          "forging": true <4>
-      }'
+const { createWSClient } = require('@liskhq/lisk-api-client');
+
+export const enableForging = async () => {
+    let apiClient = await createWSClient('ws://localhost:8080/ws');
+    let response;
+
+    const { data } = await apiClient.invoke('app:updateForgingStatus', {
+      address: string, <1>
+      password: string, <2>
+      forging: true, <3>
+      height?: number, <4>
+      maxHeightPrevoted?: number, <5>
+      maxHeightPreviouslyForged?: number, <6>
+      override?: boolean <7>
+    });
+
+    try {
+      response = await apiClient.transaction.send(tx);
+    } catch (error) {
+      response = error;
+    }
+};
 ----
 
-<1> Replace `127.0.0.1` with the IP of your Lisk node, if you run the command remotely.
-<2> `publicKey` is the key for the delegate which is required to be enabled/disabled.
-<3> `password` is the password used to encrypt your passphrase in the config.
-<4> `forging` is the boolean value to enable or disable the forging.
+<1> Binary address in hex string.
+<2> Password that was used above to encrypt the passphrase in the configuration.
+<3> When enabling forging, the value should be `true`.
+<4> Not required, when enabling forging for a delegate for the first time.
+Height of the last forged block by the delegate.
+<5> Not required, when enabling forging for a delegate for the first time.
+Height of the previously prevoted block by any delegate.
+Must match the value in the `forger_info` data.
+<6> Not required, when enabling forging for a delegate for the first time.
+Height of the previously last forged block.
+Must match the value in the `forger_info` data.
+<7> Optional: If true, overrides `maxHeightPreviouslyForged` and `maxHeightPrevoted` values in the forger_info data.
 
-Use the following curl command to *disable the forging* for your delegate:
+Invoke the following action to *disale the forging* for a delegate:
 
 [[disable]]
 .Disable forging
-[source,bash]
+[source,js]
 ----
-curl -X PUT \
-  http://127.0.0.1:4000/api/node/status/forging \
-  -H 'cache-control: no-cache' \
-  -H 'content-type: application/json' \
-  -d '{
-          "publicKey": "YYYYYYYYY",
-          "password": "XXX",
-          "forging": false <1>
-      }'
+const { createWSClient } = require('@liskhq/lisk-api-client');
+
+export const disableForging = async () => {
+    let apiClient = await createWSClient('ws://localhost:8080/ws');
+    const { data } = await apiClient.invoke('app:updateForgingStatus', {
+      address: string,
+      password: string,
+      forging: false
+    });
+};
 ----
 
 <1> Change forging to `false` to disable forging for a delegate on the node.
 
-[NOTE]
-====
-The endpoints to enable and disable forging are *idempotent*.
-
-This means that the results are identical, regardless of how many times the query is executed.
-====
-
+////
 [[safely_activating_forging]]
 === Safely enabling forging on another node
 
@@ -181,11 +225,11 @@ If available, it is recommended to synchronize from snapshots to speed up the sy
 . Login to the server with the old node.
 . <<disable,Disable forging>> on the old node.
 . Stop the old node.
-. Dump the data in the `forger_info` table of the db of your node.
+. Display the forging information of the old node.
 +
-[source,bash]
+[source,js]
 ----
-pg_dump -d lisk_dev -t forger_info > forger_info.sql
+const info = await apiClient.invoke('app:getForgingStatus');
 ----
 . Login to the server with the new node.
 . Restore the `forger_info` table.
@@ -240,3 +284,4 @@ The result should appear as shown below in the following code snippet:
   "links": {}
 }
 ----
+////

@@ -1,0 +1,910 @@
+= WebSocket JSON 2.0 RPC API
+
+== Lisk Service WebSocket JSON-RPC API Documentation
+
+=== Access paths and compatibility
+The WebSocket API can be accessed by the `wss://service.lisk.io/rpc-v1`.
+
+You can also access the testnet network by `wss://testnet-service.lisk.io/rpc-v1`.
+
+The Lisk Service WebSocket API uses the `socket.io` library and it is compatible with JSON-RPC 2.0 standard.
+The specification below contains numerous examples how to use the API in practice.
+
+=== Endpoint logic
+The logic of the endpoints comes as follows: the method naming is always based on the following pattern: `<action>.<entity>`, where the action is equivalent to HTTP standard (GET, POST, PUT, etc.) and `entity` is a part of the application logic, ex. `accounts`, transactions and so on.
+
+=== Responses
+All responses are returned in the JSON format - application/json.
+
+Each API request has the following structure:
+
+[source,js]
+----
+{
+    "jsonrpc": "2.0",    // standard JSON-RPC envelope
+    "result": {
+        "data": {}, // Contains the requested data
+        "meta": {}, // Contains additional metadata, e.g. the values of `limit` and `offset`
+    },
+    "id": 1    // Number of response in chain
+}
+----
+
+=== Date Format
+In the contrary to the original Lisk Core API, all timestamps used by the Lisk Service are in the UNIX timestamp format.
+The blockchain dates are always expressed as integers and the epoch date is equal to the number of seconds since 1970-01-01 00:00:00.
+
+=== Multi-Requests
+A request can consist of an array of multiple responses.
+
+[source,js]
+----
+[
+    { "jsonrpc": "2.0", "id": 1, "method": "get.blocks", "params": {} },
+    { "jsonrpc": "2.0", "id": 2, "method": "get.transactions", "params": { "height": "16" } },
+    { "jsonrpc": "2.0", "id": 3, "method": "get.accounts", "params": { "id": "123L"} }
+]
+----
+
+Response
+
+[source,js]
+----
+[
+    {
+        "jsonrpc": "2.0",
+        "result": {
+            "data": [
+                ... // List of blocks
+            ],
+            "meta": {},
+        },
+        "id": 1
+    },
+    {
+        "jsonrpc": "2.0",
+        "result": {
+            "data": [
+                ... // List of transactions
+            ],
+            "meta": {},
+        },
+        "id": 2
+    },
+    {
+        "jsonrpc": "2.0",
+            "data": [
+                ... // List of accounts
+            ],
+            "meta": {},
+        },
+        "id": 3
+    }
+]
+----
+
+== Lisk Blockchain-related Endpoints
+
+=== Accounts
+
+==== get.accounts
+Retrieves account details based on criteria defined by params.
+
+Supports pagination.
+
+[cols="2,3,4", options="header"]
+.Parameters
+|===
+|Parameter name |Example |Description
+
+|`address`
+|`4935562234363081651L`
+|Lisk account address
+
+|`publickey`
+|`968ba2...af341b`
+|Public key to query
+
+|`secpubkey`
+|`968ba2...af341b`
+|Second public key to query
+
+|`username`
+|`genesis_12`
+|Delegate username to query
+
+|`limit`
+|`0`
+|Number of requested items
+
+|`offset`
+|`25`
+|Number of items to skip
+
+|`sort`
+|`name:desc`
+|Sorting order
+
+Available values: `balance:asc`, `balance:desc`
+
+Default value: `balance:asc`
+
+|===
+
+.Response
+[source,json]
+----
+[
+  {
+    "data": [
+      {
+        "address": "4935562234363081651L",
+        "publicKey": "968ba2fa993ea9dc27ed740da0daf49eddd740dbd7cb1cb4fc5db3a20baf341b",
+        "secondPublicKey": "968ba2fa993ea9dc27ed740da0daf49eddd740dbd7cb1cb4fc5db3a20baf341b",
+        "balance": "4448642000",
+        "delegate": {
+          "approval": "35.77",
+          "missedBlocks": 157,
+          "producedBlocks": 55222,
+          "productivity": "99.72",
+          "rank": 93,
+          "rewards": "109500000000",
+          "username": "genesis_84",
+          "vote": "4630668157412954"
+        },
+        "knowledge": {
+          "owner": "genesis_84",
+          "description": "Genesis wallet"
+        },
+        "multisignatureAccount": {
+          "lifetime": 48,
+          "minimalNumberAcccounts": 2,
+          "members": [
+            {
+              "address": "4935562234363081651L",
+              "publicKey": "968ba2fa993ea9dc27ed740da0daf49eddd740dbd7cb1cb4fc5db3a20baf341b",
+              "secondPublicKey": "968ba2fa993ea9dc27ed740da0daf49eddd740dbd7cb1cb4fc5db3a20baf341b",
+              "balance": "4448642000",
+              "unconfirmedSignature": 0
+            }
+          ]
+        },
+        "multisignatureMemberships": [
+          {
+            "address": "4935562234363081651L",
+            "balance": "4448642000",
+            "lifetime": 48,
+            "min": 2,
+            "publicKey": "968ba2fa993ea9dc27ed740da0daf49eddd740dbd7cb1cb4fc5db3a20baf341b",
+            "secondPublicKey": "968ba2fa993ea9dc27ed740da0daf49eddd740dbd7cb1cb4fc5db3a20baf341b",
+          }
+        ],
+        "transactionCount": {
+          "incoming": "216",
+          "outgoing": "1581"
+        },
+        "unconfirmedMultisignatureMemberships": [
+          {
+            "address": "4935562234363081651L",
+            "publicKey": "968ba2fa993ea9dc27ed740da0daf49eddd740dbd7cb1cb4fc5db3a20baf341b",
+            "secondPublicKey": "968ba2fa993ea9dc27ed740da0daf49eddd740dbd7cb1cb4fc5db3a20baf341b",
+            "balance": "4448642000",
+            "unconfirmedSignature": 0
+          }
+        ]
+      }
+    ],
+    "meta": {
+      "count": 100,
+      "offset": 25,
+      "total": 43749
+    }
+  }
+]
+----
+
+.Example: Get address with certain Lisk account ID
+[source,json]
+----
+{
+    "method": "get.accounts",
+    "params": {
+        "address": "123L"
+    }
+}
+----
+
+==== get.votes
+Retrieves votes for a single account based on address, public key or delegate name.
+
+Supports pagination.
+
+[cols="2,3,4", options="header"]
+.Parameters
+|===
+|Parameter name |Example |Description
+
+|`address`
+|`4935562234363081651L`
+|Lisk account address
+
+|`publickey`
+|`968ba2...af341b`
+|Public key to query
+
+|`secpubkey`
+|`968ba2...af341b`
+|Second public key to query
+
+|`username`
+|`genesis_12`
+|Delegate username to query
+
+|`limit`
+|`0`
+|Number of requested items
+
+|`offset`
+|`25`
+|Number of items to skip
+
+|===
+
+.Response
+[source,json]
+----
+{
+  "data": [
+    {
+      "address": "4935562234363081651L",
+      "publicKey": "968ba2fa993ea9dc27ed740da0daf49eddd740dbd7cb1cb4fc5db3a20baf341b",
+      "balance": 1081560729258,
+      "username": "liskhq"
+    }
+  ],
+  "meta": {
+    "count": 100,
+    "offset": 25,
+    "total": 43749
+  }
+}
+----
+
+.Examples
+[source,json]
+----
+{
+    "method": "get.votes",
+    "params": {
+        "address": "4935562234363081651L"
+    }
+}
+----
+==== get.voters
+
+[cols="2,3,4", options="header"]
+.Parameters
+|===
+|Parameter name |Example |Description
+
+|`address`
+|`4935562234363081651L`
+|Lisk account address
+
+|`publickey`
+|`968ba2...af341b`
+|Public key to query
+
+|`secpubkey`
+|`968ba2...af341b`
+|Second public key to query
+
+|`username`
+|`genesis_12`
+|Delegate username to query
+
+|`limit`
+|`0`
+|Number of requested items
+
+|`offset`
+|`25`
+|Number of items to skip
+
+|`sort`
+|`name:desc`
+|Sorting order
+
+Available values: `balance:asc`, `balance:desc`
+
+Default value: `balance:asc`
+
+|===
+
+.Response
+[source,json]
+----
+{
+  "data": [
+    {
+      "address": "4935562234363081651L",
+      "publicKey": "968ba2fa993ea9dc27ed740da0daf49eddd740dbd7cb1cb4fc5db3a20baf341b",
+      "balance": 1081560729258,
+      "username": "liskhq"
+    }
+  ],
+  "meta": {
+    "count": 100,
+    "offset": 25,
+    "total": 43749
+  }
+}
+----
+.Examples
+[source,json]
+----
+{
+    "method": "get.voters",
+    "params": {
+        "address": "4935562234363081651L"
+    }
+}
+----
+=== Blocks
+==== get.blocks
+[cols="2,3,4", options="header"]
+.Parameters
+|===
+|Parameter name |Example |Description
+
+|`id`
+|`6258354802676165798`
+|Block id to query
+
+|`height`
+|`1`
+|Current height of the network
+
+|`from`
+|`85944650`
+|Starting UNIX timestamp
+
+|`to`
+|`85944650`
+|Ending UNIX timestamp
+
+|`address`
+|`4935562234363081651L`
+|Lisk address, public key or account name
+
+|`limit`
+|`0`
+|Number of requested items
+
+|`offset`
+|`25`
+|Number of items to skip
+
+|`sort`
+|`name:desc`
+|Sorting order
+
+Available values: `height:asc`, `height:desc`, `totalAmount:asc`, `totalAmount:desc`, `totalFee:asc`, `totalFee:desc`, `timestamp:asc`, `timestamp:desc`
+
+Default value: `height:desc`
+|===
+
+.Response
+[source,json]
+----
+{
+  "data": [
+    {
+      "id": "6258354802676165798",
+      "height": 8344448,
+      "version": 0,
+      "timestamp": 85944650,
+      "payloadLength": 117,
+      "generatorAddress": "7749538982696555450L",
+      "generatorPublicKey": "6e904b2f678eb3b6c3042acb188a607d903d441d61508d047fe36b3c982995c8",
+      "generatorUsername": "genesis_13",
+      "payloadHash": "4e4d91be041e09a2e54bb7dd38f1f2a02ee7432ec9f169ba63cd1f193a733dd2",
+      "blockSignature": "a3733254aad600fa787d6223002278c3400be5e8ed4763ae27f9a15b80e20c22ac9259dc926f4f4cabdf0e4f8cec49308fa8296d71c288f56b9d1e11dfe81e07",
+      "confirmations": 200,
+      "previousBlockId": "15918760246746894806",
+      "numberOfTransactions": 15,
+      "totalAmount": "150000000",
+      "totalFee": "15000000",
+      "reward": "50000000",
+      "totalForged": "65000000"
+    }
+  ],
+  "meta": {
+    "count": 100,
+    "offset": 25,
+    "total": 43749
+  },
+  "links": {}
+}
+----
+=== Delegates
+==== get.delegates
+[cols="2,3,4", options="header"]
+.Parameters
+|===
+|Parameter name |Example |Description
+
+|`address`
+|`4935562234363081651L`
+|Lisk account address
+
+|`publickey`
+|`968ba2...af341b`
+|Public key to query
+
+|`secpubkey`
+|`968ba2...af341b`
+|Second public key to query
+
+|`username`
+|`genesis_12`
+|Delegate username to query
+
+|`search`
+|`genesis`
+|Delegate name full text search phrase
+
+|`limit`
+|`50`
+|Number of requested items
+
+|`offset`
+|`25`
+|Number of items to skip
+
+|`sort`
+|`name:desc`
+|Sorting order
+
+Available values: `username:asc`, `username:desc`, `rank:asc`, `rank:desc`, `productivity:asc`, `productivity:desc`, `missedBlocks:asc`, `missedBlocks:desc`
+
+Default value: `rank:asc`
+
+|===
+
+.Response
+[source,json]
+----
+{
+  "data": [
+    {
+      "address": "4935562234363081651L",
+      "approval": "35.77",
+      "missedBlocks": 157,
+      "producedBlocks": 55222,
+      "productivity": "99.72",
+      "publicKey": "6122ac1fd71b437014ddbc4ec01e07879f5af1853536efaa0233bc12907c684b",
+      "secondPublicKey": "6122ac1fd71b437014ddbc4ec01e07879f5af1853536efaa0233bc12907c684b",
+      "rank": 93,
+      "rewards": "109500000000",
+      "username": "genesis_84",
+      "vote": "4630668157412954"
+    }
+  ],
+  "meta": {
+    "count": 100,
+    "offset": 25,
+    "total": 43749
+  }
+}
+----
+.Examples
+[source,json]
+----
+{
+    "method": "get.delegates",
+    "params": {
+        "address": "4935562234363081651L"
+    }
+}
+----
+==== get.delegates.next_forgers
+Retrieves next forgers with details in the current round.
+
+Supports pagination.
+
+[cols="2,3,4", options="header"]
+.Parameters
+|===
+|Parameter name |Example |Description
+
+|`limit`
+|`50`
+|Limit applied to results
+
+|`offset`
+|`25`
+|Number of items to skip
+
+|===
+
+.Response
+[source,json]
+----
+{
+  "data": [
+    {
+      "address": "4935562234363081651L",
+      "approval": "35.77",
+      "missedBlocks": 157,
+      "producedBlocks": 55222,
+      "productivity": "99.72",
+      "publicKey": "6122ac1fd71b437014ddbc4ec01e07879f5af1853536efaa0233bc12907c684b",
+      "secondPublicKey": "6122ac1fd71b437014ddbc4ec01e07879f5af1853536efaa0233bc12907c684b",
+      "rank": 93,
+      "username": "genesis_84",
+      "vote": "4630668157412954"
+    }
+  ],
+  "meta": {
+    "count": 100,
+    "offset": 25,
+    "total": 43749
+  },
+}
+----
+
+.Example: Get 20 item, skip 50 first
+[source,json]
+----
+{
+    "method": "get.delegates.next_forgers",
+    "params": {
+        "limit": "20",
+        "offset": "50"
+    }
+}
+----
+=== Peers
+==== get.peers
+Retrieves network peers with details based on criteria.
+
+Supports pagination.
+
+[cols="2,3,4", options="header"]
+.Parameters
+|===
+|Parameter name |Example |Description
+
+|`address`
+|`4935562234363081651L`
+|Lisk account address
+
+|`publickey`
+|`968ba2...af341b`
+|Public key to query
+
+|`secpubkey`
+|`968ba2...af341b`
+|Second public key to query
+
+|`username`
+|`genesis_12`
+|Delegate username to query
+
+|`limit`
+|`0`
+|Number of requested items
+
+|`offset`
+|`25`
+|Number of items to skip
+
+|`sort`
+|`name:desc`
+|Sorting order
+
+Available values: `balance:asc`, `balance:desc`
+
+Default value: `balance:asc`
+
+|===
+
+.Response
+[source,json]
+----
+----
+.Examples
+[source,json]
+----
+----
+=== Transactions
+==== get.transactions
+[cols="2,3,4", options="header"]
+.Parameters
+|===
+|Parameter name |Example |Description
+
+|`address`
+|`4935562234363081651L`
+|Lisk account address
+
+|`publickey`
+|`968ba2...af341b`
+|Public key to query
+
+|`secpubkey`
+|`968ba2...af341b`
+|Second public key to query
+
+|`username`
+|`genesis_12`
+|Delegate username to query
+
+|`limit`
+|`0`
+|Number of requested items
+
+|`offset`
+|`25`
+|Number of items to skip
+
+|`sort`
+|`name:desc`
+|Sorting order
+
+Available values: `balance:asc`, `balance:desc`
+
+Default value: `balance:asc`
+
+|===
+
+.Response
+[source,json]
+----
+----
+.Examples
+[source,json]
+----
+----
+==== get.transactions.statistics.day
+[cols="2,3,4", options="header"]
+.Parameters
+|===
+|Parameter name |Example |Description
+
+|`address`
+|`4935562234363081651L`
+|Lisk account address
+
+|`publickey`
+|`968ba2...af341b`
+|Public key to query
+
+|`secpubkey`
+|`968ba2...af341b`
+|Second public key to query
+
+|`username`
+|`genesis_12`
+|Delegate username to query
+
+|`limit`
+|`0`
+|Number of requested items
+
+|`offset`
+|`25`
+|Number of items to skip
+
+|`sort`
+|`name:desc`
+|Sorting order
+
+Available values: `balance:asc`, `balance:desc`
+
+Default value: `balance:asc`
+
+|===
+
+.Response
+[source,json]
+----
+----
+.Examples
+[source,json]
+----
+----
+==== get.transactions.statistics.month
+[cols="2,3,4", options="header"]
+.Parameters
+|===
+|Parameter name |Example |Description
+
+|`address`
+|`4935562234363081651L`
+|Lisk account address
+
+|`publickey`
+|`968ba2...af341b`
+|Public key to query
+
+|`secpubkey`
+|`968ba2...af341b`
+|Second public key to query
+
+|`username`
+|`genesis_12`
+|Delegate username to query
+
+|`limit`
+|`0`
+|Number of requested items
+
+|`offset`
+|`25`
+|Number of items to skip
+
+|`sort`
+|`name:desc`
+|Sorting order
+
+Available values: `balance:asc`, `balance:desc`
+
+Default value: `balance:asc`
+
+|===
+
+.Response
+[source,json]
+----
+----
+.Examples
+[source,json]
+----
+----
+=== Network
+==== get.network.status
+[cols="2,3,4", options="header"]
+.Parameters
+|===
+|Parameter name |Example |Description
+
+|`address`
+|`4935562234363081651L`
+|Lisk account address
+
+|`publickey`
+|`968ba2...af341b`
+|Public key to query
+
+|`secpubkey`
+|`968ba2...af341b`
+|Second public key to query
+
+|`username`
+|`genesis_12`
+|Delegate username to query
+
+|`limit`
+|`0`
+|Number of requested items
+
+|`offset`
+|`25`
+|Number of items to skip
+
+|`sort`
+|`name:desc`
+|Sorting order
+
+Available values: `balance:asc`, `balance:desc`
+
+Default value: `balance:asc`
+
+|===
+
+.Response
+[source,json]
+----
+----
+.Examples
+[source,json]
+----
+----
+==== get.network.statistic
+[cols="2,3,4", options="header"]
+.Parameters
+|===
+|Parameter name |Example |Description
+
+|`address`
+|`4935562234363081651L`
+|Lisk account address
+
+|`publickey`
+|`968ba2...af341b`
+|Public key to query
+
+|`secpubkey`
+|`968ba2...af341b`
+|Second public key to query
+
+|`username`
+|`genesis_12`
+|Delegate username to query
+
+|`limit`
+|`0`
+|Number of requested items
+
+|`offset`
+|`25`
+|Number of items to skip
+
+|`sort`
+|`name:desc`
+|Sorting order
+
+Available values: `balance:asc`, `balance:desc`
+
+Default value: `balance:asc`
+
+|===
+
+.Response
+[source,json]
+----
+----
+.Examples
+[source,json]
+----
+----
+==== get.search
+[cols="2,3,4", options="header"]
+.Parameters
+|===
+|Parameter name |Example |Description
+
+|`address`
+|`4935562234363081651L`
+|Lisk account address
+
+|`publickey`
+|`968ba2...af341b`
+|Public key to query
+
+|`secpubkey`
+|`968ba2...af341b`
+|Second public key to query
+
+|`username`
+|`genesis_12`
+|Delegate username to query
+
+|`limit`
+|`0`
+|Number of requested items
+
+|`offset`
+|`25`
+|Number of items to skip
+
+|`sort`
+|`name:desc`
+|Sorting order
+
+Available values: `balance:asc`, `balance:desc`
+
+Default value: `balance:asc`
+
+|===
+
+.Response
+[source,json]
+----
+----
+.Examples
+[source,json]
+----
+----

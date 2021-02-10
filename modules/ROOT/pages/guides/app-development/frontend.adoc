@@ -1,0 +1,544 @@
+= Communicating with a frontend
+Mona Bärenfänger <mona@lightcurve.io>
+:toc:
+:sectnums:
+:imagesdir: ../../../assets/images
+// External URLs
+:url_reactjs: https://reactjs.org/
+// Project URLS
+:url_guides_asset: guides/app-development/asset.adoc
+:url_guides_module: guides/app-development/module.adoc
+:url_guides_setup: guides/app-development/setup.adoc
+
+This guide explains step-by-step, how to build a simple frontend that communicates with a blockchain application built with the Lisk SDK.
+
+.Prerequisites
+[NOTE]
+====
+To follow this guide, the following criteria is assumed:
+
+* a basic blockchain application is already initiated, as explained in the previous guide xref:{url_guides_setup}[].
+====
+
+To interact with the blockchain application conveniently through a browser, it is possible to build a simple frontend application.
+This frontend can be built with any technology stack of your choice.
+In this example, {url_reactjs}[React.js] is used.
+
+We will use the `@liskhq/lisk-client` package in the frontend application to communicate with the blockchain application.
+
+== Create a new React app
+
+The current file structure of the project can be seen below:
+
+----
+├── blockchain-app
+│   ├── index.js
+│   └── package.json
+----
+
+Create a new folder for the frontend on the root level of your project:
+
+[source,bash]
+----
+npx create-react-app frontend-app
+----
+
+This will automatically set up a React project for you with default configurations in a newly created `frontend-app` folder.
+
+----
+├── blockchain-app
+│   ├── index.js
+│   └── package.json
+├── frontend-app
+│   ├── public/
+│   ├── src/
+│   ├── README.md
+│   └── package.json
+----
+
+It is already possible to start the frontend at this point:
+
+[source,bash]
+----
+cd frontend-app
+npm start
+----
+
+== Install dependencies
+
+[source,bash]
+----
+npm i react-router-dom
+npm i @liskhq/lisk-client
+----
+
+To use `BigInt` in the frontend, it may be required to add the following options to the `package.json` file:
+
+.frontend-app/package.json
+[source,js]
+----
+{
+  // [...]
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ],
+    "env": {
+      "es2020": true,
+      "browser": true,
+      "node": true,
+      "mocha": true
+    }
+  },
+  // [...]
+}
+----
+
+== Create basic components
+
+This simple app can be customized by creating different components for the first basic functions of the frontend as shown below:
+
+* New account: Generates new account credentials.
+* Faucet: A component that sends funds to a specified account from the genesis account.
+* Send transfer transaction: A component that allows sending tokens from one account to another.
+* Account details: Returns details of a user account by address.
+
+=== New account
+
+A page for generating new accounts that conveniently allows the creation of credentials that can be used in the application.
+
+Import `passphrase` and `cryptography` from the `lisk-client` package to create new account credentials.
+
+[source,jsx]
+----
+import { passphrase, cryptography } from '@liskhq/lisk-client';
+
+const newCredentials = () => {
+    const pass = passphrase.Mnemonic.generateMnemonic();
+    const keys = cryptography.getPrivateAndPublicKeyFromPassphrase(pass);
+    const credentials = {
+        address: cryptography.getBase32AddressFromPassphrase(pass),
+        binaryAddress: cryptography.getAddressFromPassphrase(pass).toString("hex"),
+        passphrase: pass,
+        publicKey: keys.publicKey.toString("hex"),
+        privateKey: keys.privateKey.toString("hex")
+    };
+    return credentials;
+};
+
+const NewAccount = () => {
+    const credentials = newCredentials();
+    return (
+        <div>
+            <h2>Create new account</h2>
+            <p>Refresh page to get new credentials.</p>
+            <pre>{JSON.stringify(credentials, null, 2)}</pre>
+        </div>
+    );
+}
+export default NewAccount;
+----
+
+=== Faucet
+
+The faucet is a component that allows accounts to receive tokens from the genesis account, which holds the majority of initial tokens at the start of the Devnet.
+
+In a new file `api.js`, the `apiClient` from package `lisk-client` provides an interface for the faucet and other React components to connect to the blockchain application via a websocket on port 8888.
+
+.api.js
+[source,js]
+----
+const { apiClient } = require('@liskhq/lisk-client');
+const RPC_ENDPOINT = 'ws://localhost:8888/ws';
+
+let clientCache;
+
+export const getClient = async () => {
+    if (!clientCache) {
+        clientCache = await apiClient.createWSClient(RPC_ENDPOINT);
+    }
+    return clientCache;
+};
+----
+
+Next, create a new file `Faucet.js`, which will store the React component of the faucet.
+
+.Faucet.js
+[source,jsx]
+----
+import React, { useState } from 'react';
+import * as api from './api.js'; <1>
+import { cryptography, transactions } from '@liskhq/lisk-client'; <2>
+
+const accounts = { <3>
+  "genesis": {
+    "passphrase": "peanut hundred pen hawk invite exclude brain chunk gadget wait wrong ready"
+  }
+};
+
+const Faucet = () => {
+    const [state, updateState] = useState({
+        address: '',
+        amount: '',
+        transaction: {},
+        response: {}
+    });
+
+    const handleChange = (event) => {
+        const { name, value } = event.target;
+        updateState({
+            ...state,
+            [name]: value,
+        });
+    };
+
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+
+        const client = await api.getClient();
+        const address = cryptography.getAddressFromBase32Address(state.address);
+        const tx = await client.transaction.create({ <4>
+            moduleID: 2,
+            assetID: 0,
+            fee: BigInt(transactions.convertLSKToBeddows('0.01')),
+            asset: {
+                amount: BigInt(transactions.convertLSKToBeddows(state.amount)),
+                recipientAddress: address,
+                data: '',
+            },
+        }, accounts.genesis.passphrase);
+        const response = await client.transaction.send(tx); <5>
+        updateState({ <6>
+            transaction: client.transaction.toJSON(tx),
+            address: '',
+            amount: '',
+            response:response
+        });
+    }
+
+    return (
+        <div>
+            <h2>Faucet</h2>
+            <p>The faucet transfers tokens from the genesis account to another.</p>
+            <form onSubmit={handleSubmit}>
+                <label>
+                    Address:
+                        <input type="text" id="address" name="address" onChange={handleChange} value={state.address} />
+                </label>
+                <label>
+                    Amount (1 = 10^8 tokens):
+                        <input type="text" id="amount" name="amount" onChange={handleChange} value={state.amount} />
+                </label>
+                <input type="submit" value="Submit" />
+            </form>
+            {state.transaction && <7>
+                <div>
+                    <pre>Transaction: {JSON.stringify(state.transaction, null, 2)}</pre>
+                    <pre>Response: {JSON.stringify(state.response, null, 2)}</pre>
+                </div>
+            }
+        </div>
+    );
+};
+
+export default Faucet;
+----
+
+<1> Inside `Faucet.js`, we import the previously defined API client from `api.js`.
+<2> `transactions` and `cryptography` from the `lisk-client` package are used to convert the data of the transaction into the correct format.
+<3> The passphrase for the genesis account of the Devnet.
+<4> The API client is used to create the transaction object based on the inputs in the form below.
+<5> After creation, the transaction is submitted to the blockchain application.
+<6> After submitting the transaction and receiving the response, the state of the Faucet component is updated with the transaction object and the API response.
+<7> If the transaction object is present in the state, it is displayed below the form on the same page.
+
+=== Send transaction
+
+Now that we are able to create a new account and receive some initial tokens, let's build a new component that allows to send tokens from an account to another.
+
+To do this, create a new file `Transfer.js`.
+The contents of `Transfer.js` are similar to `Faucet.js`, as a transfer transaction will be sent on both pages.
+The only difference is, that the sender is not essentially a genesis account, but can be any account in the network.
+
+.Transfer.js
+[source,jsx]
+----
+import React, { useState } from 'react';
+import { cryptography, transactions } from '@liskhq/lisk-client';
+import * as api from './api.js';
+
+const Transfer = () => {
+    const [state, updateState] = useState({
+        address: '',
+        amount: '',
+        fee: '',
+        passphrase: '',
+        transaction: {},
+        response: {}
+    });
+
+    const handleChange = (event) => {
+        const { name, value } = event.target;
+        updateState({
+            ...state,
+            [name]: value,
+        });
+    };
+
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+
+        const client = await api.getClient();
+        const address = cryptography.getAddressFromBase32Address(state.address);
+        const tx = await client.transaction.create({
+            moduleID: 2,
+            assetID: 0,
+            fee: BigInt(transactions.convertLSKToBeddows(state.fee)),
+            asset: {
+                amount: BigInt(transactions.convertLSKToBeddows(state.amount)),
+                recipientAddress: address,
+                data: '',
+            },
+        }, state.passphrase); <1>
+        let res;
+        try {
+            res = await client.transaction.send(tx);
+        } catch (error) {
+            res = error;
+        }
+
+        updateState({
+            transaction: client.transaction.toJSON(tx),
+            response: res,
+            address: '',
+            amount: '',
+            fee: '',
+            passphrase: '',
+        });
+    };
+
+    return (
+        <div>
+            <h2>Transfer</h2>
+            <p>Send tokens from one account to another.</p>
+            <form onSubmit={handleSubmit}>
+                <label>
+                    Recipient:
+                        <input type="text" id="address" name="address" onChange={handleChange} value={state.address} />
+                </label>
+                <label>
+                    Amount (1 = 10^8 tokens):
+                        <input type="text" id="amount" name="amount" onChange={handleChange} value={state.amount} />
+                </label>
+                <label>
+                    Fee:
+                        <input type="text" id="fee" name="fee" onChange={handleChange}  value={state.fee} />
+                </label>
+                <label>
+                    Passphrase:
+                        <input type="text" id="passphrase" name="passphrase" onChange={handleChange}  value={state.passphrase} />
+                </label>
+                <input type="submit" value="Submit" />
+            </form>
+            {state.transaction &&
+                <div>
+                    <pre>Transaction: {JSON.stringify(state.transaction, null, 2)}</pre>
+                    <pre>Response: {JSON.stringify(state.response, null, 2)}</pre>
+                </div>
+            }
+        </div>
+    );
+}
+export default Transfer;
+----
+
+<1> Here the transaction gets signed with the passphrase provided in the form.
+
+=== Account details
+
+For the final component, we can add a page that displays the account details by address.
+
+The API client is imported again from `api.js`, in order to communicate with the blockchain application.
+
+.Account.js
+[source,jsx]
+----
+import { cryptography } from '@liskhq/lisk-client';
+import React, { useState } from 'react';
+import * as api from './api.js';
+
+const Account = () => {
+    const [state, updateState] = useState({
+        address: '',
+        account: {},
+    });
+
+    const handleChange = (event) => {
+        const { name, value } = event.target;
+        updateState({
+            ...state,
+            [name]: value,
+        });
+    };
+
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+        const client = await api.getClient();
+        const account = await client.account.get(cryptography.getAddressFromBase32Address(state.address)); <1>
+        updateState({
+            ...state,
+            account: client.account.toJSON(account),
+        });
+    };
+
+    return (
+        <div>
+            <h2>Account</h2>
+            <p>Get account details by address.</p>
+            <form onSubmit={handleSubmit}>
+                <label>
+                    Address:
+                        <input type="text" id="address" name="address" onChange={handleChange} value={state.address} />
+                </label>
+                <input type="submit" value="Submit" />
+            </form>
+            <div>
+                <pre>Account: {JSON.stringify(state.account, null, 2)}</pre> <2>
+            </div>
+        </div>
+    );
+}
+export default Account;
+----
+
+<1> Retrieves the account details from the blockchain application, based on the address provided.
+<2> If `state.account` is not empty, it will display the account details on the same page.
+
+=== Index and navigation
+
+Now that all the basic components for the frontend are created, a small component for the landing page can be added.
+
+.Home.js
+[source,jsx]
+----
+import React from "react";
+
+const Home = () => {
+  return (
+    <div>
+      <h2>Hello Lisk!</h2>
+      <p>A simple frontend for blockchain applications built with the Lisk SDK.</p>
+    </div>
+  );
+};
+
+export default Home;
+----
+
+Now modify the already existing `App.js` file to include the above defined React components and to build a basic navigation.
+
+.App.js
+[source,jsx]
+----
+import React from "react";
+import {
+  BrowserRouter as Router,
+  Switch,
+  Route,
+  Link
+} from "react-router-dom";
+import Home from './Home';
+import NewAccount from './NewAccount';
+import Faucet from './Faucet';
+import Account from './Account';
+import Transfer from './Transfer';
+
+export const app = () => {
+  return (
+    <Router>
+      <div>
+        <Route>
+          <ul>
+            <li><Link to="/">Home</Link></li>
+            <hr />
+            <h3> Interact </h3>
+            <li><Link to="/new-account">New Account</Link></li>
+            <li><Link to="/faucet">Faucet</Link></li>
+            <li><Link to="/send-transfer">Send Transfer</Link></li>
+            <hr />
+            <h3> Explore </h3>
+            <li><Link to="/account">Account</Link></li>
+          </ul>
+        </Route>
+
+        <Switch>
+          <Route exact path="/">
+            <Home />
+          </Route>
+          <Route path="/new-account">
+            <NewAccount />
+          </Route>
+          <Route path="/faucet">
+            <Faucet />
+          </Route>
+          <Route path="/send-transfer">
+            <Transfer />
+          </Route>
+          <Route path="/account">
+            <Account />
+          </Route>
+        </Switch>
+      </div>
+    </Router>
+  );
+}
+
+export default app;
+----
+
+In the already existing `index.js` file, the `App.js` component is finally included in the `root` element, which is defined in `index.html`.
+
+.index.js
+[source,jsx]
+----
+import React from 'react';
+import ReactDOM from 'react-dom';
+import './index.css';
+import App from './App';
+
+ReactDOM.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+  document.getElementById('root')
+);
+----
+
+== View in browser
+
+After completing all the steps above, start the app again:
+
+[source,bash]
+----
+npm start
+----
+
+This should open the app in browser under the URL http://localhost:3000 .
+
+It is now possible to use the app in a browser to create new accounts, fund accounts, view the account details of a specific account, and send tokens from one account to another.
+
+.Homepage
+image:guides/frontend/home.png[]
+
+.New account page
+image:guides/frontend/new-account.png[]
+
+.Faucet page
+image:guides/frontend/faucet.png[]
+
+.Transfer tokens
+image:guides/frontend/transfer.png[]
+
+.Get Account details page
+image:guides/frontend/account.png[]

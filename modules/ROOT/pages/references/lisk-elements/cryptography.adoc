@@ -6,7 +6,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_github_tweetnacl: https://github.com/dchest/tweetnacl-js
 :url_github_sodium: https://github.com/sodium-friends/sodium-native
 
-:url_guides_forging: guides/forging.adoc
+:url_guides_forging: guides/node-management/forging.adoc
 
 :url_wikipedia_password_strength: https://en.wikipedia.org/wiki/Password_strength#Guidelines_for_strong_passwords
 
@@ -68,7 +68,10 @@ Cryptography-specific constants are available via the `cryptography.constants` k
 ----
 {
   SIGNED_MESSAGE_PREFIX: 'Lisk Signed Message:\n',
-  BINARY_ADDRESS_LENGTH: 20
+  BINARY_ADDRESS_LENGTH: 20,
+  DEFAULT_BASE32_ADDRESS_PREFIX: 'lsk',
+  BIG_ENDIAN: 'big',
+  LITTLE_ENDIAN: 'little'
 }
 ----
 
@@ -78,101 +81,12 @@ Cryptography-specific constants are available via the `cryptography.constants` k
 ----
 import * as cryptography from '@liskhq/lisk-cryptography';
 
-cryptography.constants.SIGNED_MESSAGE_PREFIX; <1>
+cryptography.constants.SIGNED_MESSAGE_PREFIX;
 ----
-
-<1> Prefix for signed messages.
 
 == Methods for converting between formats
 
 Methods for converting between different formats.
-
-=== bufferToHex
-
-This converts a buffer or byte array to a hex string.
-
-==== Syntax
-
-[source,js]
-----
-bufferToHex(buffer)
-----
-
-==== Parameters
-
-`buffer`: The buffer to convert into hex string format.
-
-==== Return value
-
-`string`: The hex string representation of the buffer.
-
-==== Examples
-
-[source,js]
-----
-import * as cryptography from '@liskhq/lisk-cryptography';
-
-const buffer = Buffer.from([0xab, 0xcd, 0x12, 0x34]);
-cryptography.bufferToHex(buffer); // 'abcd1234'
-----
-
-=== hexToBuffer
-
-Converts a hexadecimal value string to a buffer.
-
-==== Syntax
-
-[source,js]
-----
-hexToBuffer(hexString)
-----
-
-==== Parameters
-
-`hexString`: The string to convert to a buffer.
-
-==== Return value
-
-`buffer`: The created buffer.
-
-==== Examples
-
-[source,js]
-----
-const hex = 'abcd1234';
-cryptography.hexToBuffer(hex); // <Buffer ab cd 12 34>
-----
-
-=== intToBuffer
-
-Converts an integer value to a buffer.
-
-==== Syntax
-
-[source,js]
-----
-intToBuffer(intString, byteLength, endianness)
-----
-
-==== Parameters
-
-* `intString`(required): The integer to convert to a buffer.
-Can be of type `string` or `number`
-* `byteLength`(required): Size of the buffer.
-* `endianness`: A `string` value that refers to the order of bytes in the buffer.
-Default value is `big`.
-
-==== Return value
-
-`buffer`: The created buffer.
-
-==== Examples
-
-[source,js]
-----
-const int = '12345';
-cryptography.intToBuffer(int,2); // <Buffer 30 39>
-----
 
 === parseEncryptedPassphrase
 
@@ -187,7 +101,7 @@ parseEncryptedPassphrase(encryptedPassphrase)
 
 ==== Parameters
 
-`encryptedPassphrase`: The stringified encrypted passphrase to parse.
+`encryptedPassphrase`(string): The encrypted passphrase to parse.
 
 ==== Return value
 
@@ -239,33 +153,6 @@ const encryptedPassphrase = cryptography.encryptPassphraseWithPassword(
 cryptography.stringifyEncryptedPassphrase(encryptedPassphrase); // 'iterations=1000000&salt=bce40d3176e31998ec435ffc2993b280&cipherText=99bb7eff6755ecfe1dfa0368328c2d10589d7b85a23f75043497d7bdf7f14fb84e8caee1f9bc4b9543ba320e7f10801b0ff2065427d55c3139cf15e3b626b54f73b72a5b993323a6d60ec4aa407472ae&iv=51bcc76bbd0ab97b2292e305&tag=12e8fcfe7ad735fa9957baa48442e205&version=1'
 ----
 
-=== stringToBuffer
-
-This converts a string value into a Buffer.
-
-==== Syntax
-
-[source,js]
-----
-stringToBuffer(string)
-----
-
-==== Parameters
-
-`string`: A string value.
-
-==== Return value
-
-`Buffer`: The buffer representation of the string value.
-
-==== Examples
-
-[source,js]
-----
-const someString = "foobar";
-cryptography.stringToBuffer(someString); // <Buffer 66 6f 6f 62 61 72>
-----
-
 == Methods for encrypting and decrypting
 
 === decryptMessageWithPassphrase
@@ -281,13 +168,10 @@ decryptMessageWithPassphrase(cipherHex, nonce, passphrase, senderPublicKey)
 
 ==== Parameters
 
-`cipherHex`: The hex string representation of the encrypted message.
-
-`nonce`: The hex string representation of the nonce used during encryption.
-
-`passphrase`: The passphrase to be used in decryption.
-
-`senderPublicKey`: The public key of the message sender, (this is used to ensure the message was signed by the correct person).
+. `cipherHex`: The hex string representation of the encrypted message.
+. `nonce`: The hex string representation of the nonce used during encryption.
+. `passphrase`(string): The passphrase to be used in decryption.
+. `senderPublicKey`(Buffer): The public key of the message sender, (this is used to ensure the message was signed by the correct person).
 
 ==== Return value
 
@@ -318,9 +202,9 @@ decryptPassphraseWithPassword(encryptedPassphraseObject, password)
 
 ==== Parameters
 
-* `encryptedPassphraseObject`: The output of `encryptPassphraseWithPassword`.
+. `encryptedPassphraseObject`: The output of `encryptPassphraseWithPassword`.
 Contains `iterations`, `cipherText`, `iv`, `salt`, `tag`, and `version`.
-* `password`: The password to be used in decryption.
+. `password`: The password to be used in decryption.
 
 ==== Return value
 
@@ -357,11 +241,9 @@ encryptMessageWithPassphrase(message, passphrase, recipientPublicKey)
 
 ==== Parameters
 
-`message`: The plaintext message to encrypt.
-
-`passphrase`: The passphrase used to sign the encryption and ensure message integrity.
-
-`recipientPublicKey`: The public key to be used in encryption.
+. `message`: The plaintext message to encrypt.
+. `passphrase`: The passphrase used to sign the encryption and ensure message integrity.
+. `recipientPublicKey`: The public key to be used in encryption.
 
 ==== Return value
 
@@ -396,11 +278,9 @@ encryptPassphraseWithPassword(passphrase, password, [iterations])
 
 ==== Parameters
 
-`passphrase`: The passphrase in plaintext to encrypt.
-
-`password`: The password to be used in encryption.
-
-`iterations`: The number of iterations to use when deriving a key from the password using PBKDF2. (Default if not provided is 1,000,000.)
+. `passphrase`: The passphrase in plaintext to encrypt.
+. `password`: The password to be used in encryption.
+. `iterations`: The number of iterations to use when deriving a key from the password using PBKDF2. (Default if not provided is 1,000,000.)
 
 [NOTE]
 ====
@@ -435,6 +315,7 @@ const encryptedPassphrase = cryptography.encryptPassphraseWithPassword(
 == Methods for hashing
 
 === getNetworkIdentifier
+Returns the network identifier based on the `genesisBlockPayloadHash` and `communityIdentifier`.
 
 ==== Syntax
 
@@ -445,12 +326,12 @@ getNetworkIdentifier(genesisBlockPayloadHash, communityIdentifier)
 
 ==== Parameters
 
-* `genesisBlockPayloadHash`(`Buffer`): The payload hash of the genesis block.
-* `communityIdentifier`(`Buffer`): The community identifier.
+. `genesisBlockPayloadHash`(`Buffer`): The payload hash of the genesis block.
+. `communityIdentifier`(`string`): The community identifier.
 
 ==== Return value
 
-`string`: The ID of the corresponding network as hash string.
+`Buffer`: The network ID of the corresponding network.
 
 ==== Examples
 
@@ -476,12 +357,12 @@ hash(data, [format])
 ==== Parameters
 
 * `data`: The data to hash provided as a buffer, or a string.
-* `format`: The format of the input data if provided as a string.
+* `format`(string)(optional): The format of the input data if provided as a string.
 Must be one of `hex` or `utf8`.
 
 ==== Return value
 
-`buffer`: The result of hashing.
+`Buffer`: The result of hashing.
 
 ==== Examples
 
@@ -492,8 +373,11 @@ cryptography.hash('abcd1234', 'hex'); // <Buffer 77 79 07 d5 4b 6a 45 02 bd 65 4
 cryptography.hash('abcd1234', 'utf8'); // <Buffer e9 ce e7 1a b9 32 fd e8 63 33 8d 08 be 4d e9 df e3 9e a0 49 bd af b3 42 ce 65 9e c5 45 0b 69 ae>
 ----
 
+== Methods for the hash onion
+
 [[hashonion]]
 === hashOnion
+Generates a hash onion, which is required for delegates for enabling forging.
 
 ==== Syntax
 
@@ -504,18 +388,18 @@ hashOnion(seed, count, distance)
 
 ==== Parameters
 
-* `seed`(Buffer): seed created by `generateHashOnionSeed`.
+. `seed`(Buffer): seed created by `generateHashOnionSeed`.
 The seed is a random 16 bytes number, that can be generated by the function `generateHashOnionSeed()`.
-* `count`(number): The amount of layers that the hash onion will have.
+. `count`(number)(optional): The amount of layers that the hash onion will have.
 Default value: 1000000.
-* `distance`(number): The distance between checkpoints in the hash onion.
+. `distance`(number)(optional): The distance between checkpoints in the hash onion.
 Default value: 1000
 
 ==== Return value
 
-`array`: A list of the checkpoints of the hash onion.
+`Buffer[]`: A list of the checkpoints of the hash onion.
 This should be inserted in the config of a node, before enabling forging for a delegate.
-See the xref:{url_guides_forging}[enable forging guide] for more information.
+See the guide xref:{url_guides_forging}[] for more information.
 
 ==== Examples
 
@@ -630,6 +514,7 @@ cryptography.hashOnion(seed);
 ----
 
 === generateHashOnionSeed
+Generates the seed that can be used to geenrate a <<hashonion>>
 
 ==== Syntax
 
@@ -644,7 +529,7 @@ None.
 
 ==== Return value
 
-`hash`: A random 16 bytes number.
+`Buffer`: A random 16 bytes number.
 To be used as `seed` parameter in the <<hashonion, hashOnion>> function.
 
 ==== Examples
@@ -781,6 +666,24 @@ cryptography.getPrivateAndPublicKeyFromPassphrase(
 } */
 ----
 
+=== verifyChecksum
+To verify the checksum of Base32 encoded addresses.
+
+==== Syntax
+
+[source,js]
+----
+verifyChecksum(integerSequence)
+----
+
+==== Parameters
+
+`integerSequence`(number[]): Input for verifyChecksum must be a sequence of integers between 0 and 31.
+
+==== Return value
+
+`boolean`: `true` if the checksum is valid, `false` otherwise.
+
 === getBase32AddressFromPublicKey
 
 Converts the public key input to a base32 address.
@@ -789,57 +692,59 @@ Converts the public key input to a base32 address.
 
 [source,js]
 ----
-getBase32AddressFromPublicKey: (publicKey: Buffer, prefix: string) => string
+getBase32AddressFromPublicKey(publicKey, prefix)
 ----
 
-=== getLegacyAddressFromPublicKey
+==== Parameters
 
-Returns a legacy address (number+L) format from the given public key.
+. `publicKey`(Buffer): The public key which is used to retrieve the base32 address.
+. `prefix`(string)(optional): Prefix for account addresses.
+Default value: `lsk`.
+
+==== Return value
+
+`string`: The corresponding address in base32 format.
+
+=== getBase32AddressFromPassphrase
+
+Converts the passphrase input to a base32 address.
 
 ==== Syntax
 
 [source,js]
 ----
-getLegacyAddressFromPublicKey: (publicKey: Buffer) => string;
+getBase32AddressFromPassphrase(passphrase, prefix)
 ----
 
-=== getLegacyAddressAndPublicKeyFromPassphrase
+==== Parameters
 
-Returns a legacy address and public key converted from the passphrase
+. `passphrase`(string): The passphrase which is used to retrieve the base32 address.
+. `prefix`(string)(optional): Prefix for account addresses.
+Default value: `lsk`.
+
+==== Return value
+
+`string`: The corresponding address in base32 format.
+
+=== getAddressFromBase32Address
+Returns an account address in binary format for a given account address in base32 format.
 
 ==== Syntax
 
 [source,js]
 ----
-getLegacyAddressAndPublicKeyFromPassphrase: (passphrase: string) => {
-    readonly address: string;
-    readonly publicKey: Buffer;
-}
+getAddressFromBase32Address(base32Address,prefix)
 ----
 
-=== getLegacyAddressFromPassphrase
+==== Parameters
 
-Returns a legacy address converted from the passphrase.
+. `base32Address`(string): The account address in base32 format
+. `prefix`(string)(optional): Prefix for account addresses.
+Default value: `lsk`.
 
-==== Syntax
+==== Return value
 
-[source,js]
-----
-getLegacyAddressFromPassphrase: (passphrase: string) => string;
-----
-
-=== getLegacyAddressFromPrivateKey
-
-Returns a legacy address converted from the private key
-
-==== Syntax
-
-[source,js]
-----
-getLegacyAddressFromPrivateKey: (privateKey: Buffer) => string;
-----
-
-== Methods for signing and verifying
+`Buffer`: The account address in binary format.
 
 === validateBase32Address
 
@@ -849,8 +754,101 @@ Validates if input address is correct base32 address or not.
 
 [source,js]
 ----
-validateBase32Address: (address: string, prefix?: string) => boolean
+validateBase32Address(address, prefix)
 ----
+
+==== Parameters
+
+. `address`(string): An account address in base32 format.
+. `prefix`(string)(optional): Prefix for account addresses.
+Default value: `lsk`.
+
+==== Return value
+
+`Boolean`: `true` if the address is valid, `false` otherwise.
+
+== Methods for the legacy address
+
+=== getLegacyAddressAndPublicKeyFromPassphrase
+
+Returns a legacy address and public key converted from the passphrase
+
+==== Syntax
+
+[source,js]
+----
+getLegacyAddressAndPublicKeyFromPassphrase(passphrase)
+----
+
+==== Parameters
+
+`passphrase`(string): The passphrase of an account.
+
+==== Return value
+----
+{ address: string; publicKey: Buffer }
+----
+
+`Object`: The legacy address and legacy public key of the specified account.
+
+=== getLegacyAddressFromPassphrase
+
+Returns a legacy address converted from the passphrase.
+
+==== Syntax
+
+[source,js]
+----
+getLegacyAddressFromPassphrase(passphrase)
+----
+
+==== Parameters
+
+`passphrase`(string): The passphrase of an account.
+
+==== Return value
+
+`string`: The legacy address of the specified account.
+
+=== getLegacyAddressFromPublicKey
+
+Returns a legacy address (number+L) format from the given public key.
+
+==== Syntax
+
+[source,js]
+----
+getLegacyAddressFromPublicKey(publicKey)
+----
+
+==== Parameters
+
+`publicKey`(Buffer): The public key of an account.
+
+==== Return value
+
+`string`: The legacy address of the specified account.
+
+=== getLegacyAddressFromPrivateKey
+
+Returns a legacy address converted from the private key.
+
+==== Syntax
+
+[source,js]
+----
+getLegacyAddressFromPrivateKey(privateKey)
+----
+
+==== Parameters
+
+`privateKey`(Buffer): The private key of an account.
+
+==== Return value
+
+`string`: The legacy address of the specified account.
+
+== Methods for signing and verifying
 
 === printSignedMessage
 
@@ -899,16 +897,13 @@ This signs a message with one or two passphrases and outputs a string representa
 
 [source,js]
 ----
-signAndPrintMessage(message, passphrase, [secondPassphrase])
+signAndPrintMessage(message, passphrase)
 ----
 
 ==== Parameters
 
-`message`: The string message to sign.
-
-`passphrase`: The secret passphrase to use to sign the message.
-
-`secondPassphrase`: The optional second secret passphrase used to sign the message.
+. `message`: The string message to sign.
+. `passphrase`: The secret passphrase to use to sign the message.
 
 ==== Return value
 
@@ -980,7 +975,7 @@ verifyMessageWithPublicKey(signedMessageObject)
 
 ==== Return value
 
-`boolean`: Returns `true` if the signature is valid, and `false` if not.
+`Boolean`: Returns `true` if the signature is valid, and `false` if not.
 
 ==== Examples
 
@@ -1004,9 +999,56 @@ signDataWithPrivateKey(data,privatekey)
 
 ==== Parameters
 
-`data`: The data to be signed, e.g. a transaction object as `Buffer`.
-`privatekey`: The private key if a user account as `Buffer`.
+`data`(Buffer): The data to be signed, e.g. a transaction object.
+`privatekey`(Buffer): The private key of a user account.
 
 ==== Return value
 
 `Buffer`: Returns the signed data.
+
+=== signDataWithPassphrase
+
+Signs data with a passphrase.
+
+==== Syntax
+
+[source,js]
+----
+signDataWithPassphrase(data,passphrase)
+----
+
+==== Parameters
+
+`data`(Buffer): The data to be signed, e.g. a transaction object.
+`passphrase`(string): The passphrase of a user account.
+
+==== Return value
+
+`Buffer`: Returns the signed data.
+
+=== signData
+
+Alias for <<signDataWithPassphrase>>.
+
+=== verifyData
+
+Verifies that a signature for a given data matches the provided public key.
+
+==== Syntax
+
+[source,js]
+----
+verifyData(data,signature,publicKey)
+----
+
+==== Parameters
+
+. `data`(Buffer): The data to be verified, e.g. a transaction object.
+. `signature`(Buffer): Signature against which data is verified.
+. `publicKey`(Buffer): Public key used to sign the data.
+
+==== Return value
+
+`Boolean`: Returns `true` if signed data is valid, `false` otherwise.
+
+

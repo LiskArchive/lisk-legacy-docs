@@ -1,0 +1,157 @@
+= Protecting a non-forging node
+// Settings
+:toc:
+// External URLs
+:url_haproxy: http://www.haproxy.org/
+:url_haproxy_blog: https://www.haproxy.com/blog/the-four-essential-sections-of-an-haproxy-configuration/
+// Project URLs
+:url_plugin_http_api: references/lisk-framework/http-api-plugin.adoc
+
+== Setting up a blockchain application behind a reverse proxy
+Sometimes, it's desirable to run a blockchain application behind a reverse proxy for SSL termination, rate limiting and other reasons.
+
+*We highly recommended running a reverse proxy for a public web service*
+
+{url_haproxy}[HAProxy^] is one such reverse proxy.
+
+An HAProxy configuration has 4 sections, {url_haproxy_blog}[explained here ^].
+The sections that we are concerned with here are `frontend` and `backend`.
+We'll start out with a very basic config snippet and then build up.
+
+[NOTE]
+====
+For this example to work, it is assumed that the application uses the default configuration for the WebSocket port, which is `8080`.
+
+If you configured a different port, replace `8080` with it in the below example.
+====
+
+[source,bash]
+----
+frontend f_lisk
+        mode http
+        bind :80 <1>
+        use_backend b_lisk_ws <2>
+backend b_lisk_ws
+        server lisk_ws 127.0.0.1:8080 <3>
+----
+
+<1> A new `bind` line is added, creates a listener on port 80.
+<2> `use_backend` defines the backend which responds to incoming requests.
+<3> `server` sets the backend server and expects a name as first argument, and the IP and port as second argument.
+
+This does nothing more than proxy requests coming in at port 80 to your blockchain application WebSocket port.
+
+=== SSL Termination
+We can add SSL termination by telling it to listen on port 443 and specifying the certificate in the frontend section:
+
+[source,bash]
+----
+frontend f_lisk
+        mode http
+        bind [::]:443 ssl crt /etc/haproxy/ssl/cert.pem alpn h2,http/1.1 <1>
+        bind [::]:80 <2>
+        http-response set-header Strict-Transport-Security max-age=15768000 <3>
+        redirect scheme https code 301 <4>
+        use_backend b_lisk_ws
+----
+
+<1> A new `bind` line is added, which
+* Listens on port 443
+* Specifies the SSL certificate
+* Enables the TLS ALPN extension, as described in the HAProxy documentation https://www.haproxy.com/documentation/aloha/12-5/traffic-management/lb-layer7/tls/
+<2> The `bind` lines were changed so that HAProxy will also listen on ipv6.
+<3> The `Strict-Transport-Security` response header is set to tell web browsers to only access this site over HTTPS
+<4> A permanent redirect is created for anyone connecting over http to connect via https
+
+=== Rate Limiting
+HAProxy is very configurable when it comes to rate limiting.
+We'll provide a specific example here.
+
+[TIP]
+====
+Recommended additional reading:
+
+* https://www.haproxy.com/blog/four-examples-of-haproxy-rate-limiting/ is a good starting point for further investigation.
+* https://www.haproxy.com/blog/use-haproxy-response-policies-to-stop-threats/
+* https://www.haproxy.com/blog/bot-protection-with-haproxy/
+====
+
+[source,bash]
+----
+frontend f_lisk
+        mode http
+        bind [::]:443 ssl crt /etc/haproxy/ssl/cert.pem alpn h2,http/1.1
+        bind [::]:80
+        http-response set-header Strict-Transport-Security max-age=15768000
+        redirect scheme https code 301
+        rate-limit sessions 500 <1>
+        stick-table type ipv6 size 200k expire 10m store gpc0 <2>
+        acl repeat_abuses src_get_gpc0(f_lisk) gt 2 <3>
+        tcp-request content track-sc0 src <4>
+        tcp-request content reject if repeat_abuses <5>
+        use_backend b_lisk_ws
+backend b_lisk_ws
+        stick-table type ipv6 size 200k expire 2m store conn_rate(10s) <6>
+        tcp-request content track-sc1 src <7>
+        acl exceeds_conn_rate sc1_conn_rate gt 50 <8>
+        acl mark_repeat_abuses sc0_inc_gpc0 gt 0 <9>
+        http-request deny deny_status 429 if exceeds_conn_rate mark_repeat_abuses <10>
+        server lisk_ws 127.0.0.1:8080
+----
+
+This is a bit of a 3-pronged approach to rate limiting.
+`rate-limit sessions 500` limits the number of new sessions per second.
+New sessions are queued and accepted in line with the set value, which can be adjusted as needed.
+
+The rest of the changes here tell HAProxy to track the connection rate (over a rolling 10 seconds) of up 200k connecting IP addresses, the entries of which will expire after 2 minutes.
+If the connection rate of an IP exceeds 50 connections per 10 seconds, a 429 response gets returned and a global counter for that IP gets incremented, to track repeat abuses.
+If an IP exceeds this threshold more than twice in a 10 minute period, new connections from that IP will get silently dropped.
+
+=== Multiple Backends
+So far, the examples have been just for proxying the Lisk WebSocket RPC endpoint.
+The example below will proxy both the WebSocket RPC endpoint and the HTTP API endpoint by hostname (`http.lisk.example` is a placeholder for whatever your domain is).
+
+[NOTE]
+====
+For this example to work, it is assumed that the application has the xref:{url_plugin_http_api}[] enabled with the HTTP port set to 4000 (which is the default value).
+
+If you configured a different port, replace `4000` with it in the below example.
+====
+
+You can have multiple backends that get served using all kinds of different criteria.
+Commonly, this is by `Host` header to serve more than one site.
+We'll do this:
+
+[source,bash]
+----
+frontend f_lisk
+        mode http
+        bind [::]:443 ssl crt /etc/haproxy/ssl/cert.pem alpn h2,http/1.1
+        bind [::]:80
+        http-response set-header Strict-Transport-Security max-age=15768000
+        redirect scheme https code 301
+        rate-limit sessions 500
+        stick-table type ipv6 size 200k expire 10m store gpc0
+        acl repeat_abuses src_get_gpc0(f_lisk) gt 2
+        tcp-request content track-sc0 src
+        tcp-request content reject if repeat_abuses
+        acl host_http hdr(host) http.lisk.example
+        use_backend b_lisk_http if host_http
+    default_backend b_lisk_ws
+backend b_lisk_ws
+        stick-table type ipv6 size 200k expire 2m store conn_rate(10s)
+        tcp-request content track-sc1 src
+        acl exceeds_conn_rate sc1_conn_rate gt 50
+        acl mark_repeat_abuses sc0_inc_gpc0 gt 0
+        http-request deny deny_status 429 if exceeds_conn_rate mark_repeat_abuses
+        server lisk_ws 127.0.0.1:8080
+backend b_lisk_http
+        stick-table type ipv6 size 200k expire 2m store conn_rate(10s)
+        tcp-request content track-sc2 src
+        acl exceeds_conn_rate sc2_conn_rate gt 50
+        acl mark_repeat_abuses sc0_inc_gpc0 gt 0
+        http-request deny deny_status 429 if exceeds_conn_rate mark_repeat_abuses
+        server lisk_http 127.0.0.1:4000
+----
+
+TIP: If you use multiple domains with SSL termination, your certificate will either have to be for those multiple domains or you will have to have multiple certificates, which can be specified with `crt-list` instead of `crt` (https://www.haproxy.com/documentation/aloh

@@ -30,19 +30,27 @@ networks:
 services:
   core:
     depends_on:
-    - postgres_core
-    - redis_common
-    - redis_core
+      mysql_core:
+        condition: service_started
+      redis_common:
+        condition: service_started
+      redis_core:
+        condition: service_started
     environment:
-      ENV_LISK_DB_DATABASE: lisk
-      ENV_LISK_DB_PASSWORD: password
-      ENV_LISK_DB_USER: lisk
+      ENABLE_FEE_ESTIMATOR_FULL: "false"
+      ENABLE_FEE_ESTIMATOR_QUICK: "true"
+      ENABLE_TRANSACTION_STATS: "true"
       GEOIP_JSON: https://geoip.lisk.io/json
+      INDEX_N_BLOCKS: '0'
       LISK_CORE_HTTP: https://mainnet.lisk.io
       LISK_CORE_WS: wss://mainnet.lisk.io
       LISK_STATIC: https://static-data.lisk.io
+      MYSQL_DATABASE: lisk
+      MYSQL_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_USER: lisk
       SERVICE_BROKER: redis://redis_common:6379/0
-      SERVICE_CORE_POSTGRES: postgres://lisk:password@postgres_core:5432/lisk
+      SERVICE_CORE_MYSQL: mysql://lisk:password@mysql_core:3306/lisk
       SERVICE_CORE_REDIS: redis://redis_core:6379/0
       SERVICE_LOG_CONSOLE: "false"
       SERVICE_LOG_FILE: "false"
@@ -56,8 +64,11 @@ services:
     restart: always
   gateway:
     depends_on:
-    - core
+      core:
+        condition: service_started
     environment:
+      ENABLE_HTTP_API: 'http-version1,http-version1-compat,http-status'
+      ENABLE_WS_API: 'rpc,rpc-v1,blockchain'
       HOST: 0.0.0.0
       PORT: '9901'
       SERVICE_BROKER: redis://redis_common:6379/0
@@ -74,13 +85,35 @@ services:
     ports:
     - 127.0.0.1:9901:9901/tcp
     restart: always
-  postgres_core:
-    image: postgres:10-alpine
+  mysql_core:
+    environment:
+      ENABLE_FEE_ESTIMATOR_FULL: "false"
+      ENABLE_FEE_ESTIMATOR_QUICK: "true"
+      ENABLE_TRANSACTION_STATS: "true"
+      GEOIP_JSON: https://geoip.lisk.io/json
+      INDEX_N_BLOCKS: '0'
+      LISK_STATIC: https://static-data.lisk.io
+      MYSQL_DATABASE: lisk
+      MYSQL_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_USER: lisk
+      SERVICE_CORE_MYSQL: mysql://lisk:password@mysql_core:3306/lisk
+      SERVICE_CORE_REDIS: redis://redis_core:6379/0
+    healthcheck:
+      retries: 10
+      test:
+      - CMD
+      - mysqladmin
+      - ping
+      - -h
+      - localhost
+      timeout: 20s
+    image: mysql:5.7
     networks:
       core_network: {}
     restart: always
     volumes:
-    - postgres_core_vol:/var/lib/postgresql/data:rw
+    - mysql-data:/var/lib/mysql:rw
   redis_common:
     command: redis-server /etc/redis/redis.conf
     healthcheck:
@@ -90,7 +123,7 @@ services:
       services_network: {}
     restart: always
     volumes:
-    - /Users/mona/git/lisk-service/docker/redis/redis.volatile.conf:/etc/redis/redis.conf:ro
+    - /path/to/lisk-service/docker/redis/redis.volatile.conf:/etc/redis/redis.conf:ro
   redis_core:
     command: redis-server /etc/redis/redis.conf
     healthcheck:
@@ -100,10 +133,10 @@ services:
       core_network: {}
     restart: always
     volumes:
-    - /Users/mona/git/lisk-service/docker/redis/redis.persistent.conf:/etc/redis/redis.conf:ro
-version: '3.0'
+    - /path/to/lisk-service/docker/redis/redis.persistent.conf:/etc/redis/redis.conf:ro
+version: '3'
 volumes:
-  postgres_core_vol: {}
+  mysql-data: {}
 ----
 
 [[default_configs]]

@@ -6,8 +6,9 @@ Mona Bärenfänger <mona@lightcurve.io>
 // Project URLS
 :url_architecture: architecture/index.adoc#configuration
 :url_guides_modules: guides/app-development/module.adoc
+:url_guides_asset: guides/app-development/asset.adoc
+:url_guides_config: guides/app-development/configuration.adoc
 :url_guides_setup: guides/app-development/setup.adoc
-:url_guides_asset: guides/app-development/transaction-asset.adoc
 :url_modules_dpos: dpos-module.adoc
 :url_rpc_endpoints: rpc-endpoints.adoc
 :url_tutorials_hello: tutorials/hello-world.adoc
@@ -19,7 +20,8 @@ This guide explains step-by-step, how to create a custom plugin for a blockchain
 ====
 To use this guide, it is assumed that the following criteria have been met:
 
-* a basic blockchain application is already initiated, as explained in the previous guide xref:{url_guides_setup}[].
+* a basic blockchain application is already initiated, as explained in the first guide xref:{url_guides_setup}[].
+* the application is configured as explained in the hello world example of the previous guide xref:{url_guides_config}[].
 ====
 
 First, create a new file named after the new plugin, for example `my-plugin.js`.
@@ -50,7 +52,7 @@ class MyPlugin extends BasePlugin {
 
 }
 
-module.exports = MyPlugin;
+module.exports = { MyPlugin };
 ----
 
 == Setting the plugin alias
@@ -69,7 +71,7 @@ class MyPlugin extends BasePlugin {
   }
 }
 
-module.exports = MyPlugin;
+module.exports = { MyPlugin };
 ----
 
 == Defining the plugin meta information
@@ -97,7 +99,7 @@ class MyPlugin extends BasePlugin {
   }
 }
 
-module.exports = MyPlugin;
+module.exports = { MyPlugin };
 ----
 
 == Defining the plugin configuration
@@ -111,7 +113,7 @@ For a better overview, create a new file `defaults.js` and define the schema for
 .defaults.js
 [source,js]
 ----
-export const myConfig = {
+const myConfig = {
     type: 'object',
     properties: {
         enable: {
@@ -148,6 +150,8 @@ export const myConfig = {
         myKey2: ['127.0.0.1']
     },
 }
+
+module.exports = { myConfig };
 ----
 
 This defines that the configuration options for the plugin can be provided in the following manner:
@@ -176,11 +180,11 @@ To make the configuration options available to the plugin, require the prepared 
 ----
 const { BasePlugin } = require('lisk-sdk');
 const { myConfig } = require('./defaults');
-const pJSON = require('../package.json');
+const pJSON = require('./package.json');
 
 class MyPlugin extends BasePlugin {
   static get alias() {
-    return "MyPlugin";
+    return "myPlugin";
   }
 
   static get info() {
@@ -196,7 +200,7 @@ class MyPlugin extends BasePlugin {
   }
 }
 
-module.exports = MyPlugin;
+module.exports = { MyPlugin };
 ----
 
 == Defining the plugin logic
@@ -262,7 +266,7 @@ class MyPlugin extends BasePlugin {
         });
       }
     });
-    channel.subscribe('app:block:new', ({ data }) => {
+    channel.subscribe('app:block:new', (data) => {
       const decodedBlock = this.codec.decodeBlock(data.block);
       this._knownTimestamps.push(decodedBlock.header.timestamp);
       channel.publish('myPlugin:timestamp', { timestamp: decodedBlock.header.timestamp });
@@ -275,7 +279,7 @@ class MyPlugin extends BasePlugin {
   }
 }
 
-module.exports = MyPlugin;
+module.exports = { MyPlugin };
 ----
 
 
@@ -356,7 +360,7 @@ class MyPlugin extends BasePlugin {
   }
 }
 
-module.exports = MyPlugin;
+module.exports = { MyPlugin };
 ----
 
 == Registering the plugin with the application
@@ -369,7 +373,24 @@ Finally, it is required to register the newly created module in the application:
 const { Application, genesisBlockDevnet, configDevnet } = require('lisk-sdk');
 const { MyPlugin } = require('./my-plugin.js');
 
-const app = Application.defaultApplication(genesisBlockDevnet, configDevnet);
+// Create a custom config based on the configDevnet
+const appConfig = utils.objects.mergeDeep({}, configDevnet, {
+  label: 'my-app',
+  genesisConfig: { communityIdentifier: 'hello' },
+  rpc: {
+    enable: true,
+    mode: 'ws',
+    port: 8888,
+  },
+  network: {
+    port: 8887,
+  },
+  logger: {
+    consoleLogLevel: 'info',
+  },
+});
+
+const app = Application.defaultApplication(genesisBlockDevnet, appConfig);
 
 app.registerPlugin(MyPlugin);
 

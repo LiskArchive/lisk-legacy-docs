@@ -153,6 +153,24 @@
   </li>
   <li class="nav-item" data-depth="1">
     <button class="nav-item-toggle"></button>
+    <span class="nav-text">Management guides</span>
+<ul class="nav-list">
+  <li class="nav-item single-page" data-depth="2">
+    <a class="nav-link" href="../guides/node-management/non-forging-node-protection.html">Protecting a non-forging node</a>
+  </li>
+  <li class="nav-item single-page" data-depth="2">
+    <a class="nav-link" href="../guides/node-management/forging-node-protection.html">Protecting a forging node</a>
+  </li>
+  <li class="nav-item single-page" data-depth="2">
+    <a class="nav-link" href="../guides/node-management/forging.html">Enabling forging</a>
+  </li>
+  <li class="nav-item single-page" data-depth="2">
+    <a class="nav-link" href="../guides/node-management/logging.html">Managing logs</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
     <span class="nav-text">Tutorials</span>
 <ul class="nav-list">
   <li class="nav-item single-page" data-depth="2">
@@ -160,15 +178,6 @@
   </li>
   <li class="nav-item single-page" data-depth="2">
     <a class="nav-link" href="../tutorials/hello-world.html">Hello World</a>
-  </li>
-</ul>
-  </li>
-  <li class="nav-item" data-depth="1">
-    <button class="nav-item-toggle"></button>
-    <span class="nav-text">Management guides</span>
-<ul class="nav-list">
-  <li class="nav-item single-page" data-depth="2">
-    <a class="nav-link" href="../guides/node-management/logging.html">Managing logs</a>
   </li>
 </ul>
   </li>
@@ -482,63 +491,69 @@ Each plugin is given one channel through the <code>load</code> function as shown
 <h3 id="example-a-timestamp-plugin"><a class="anchor" href="#example-a-timestamp-plugin"></a>Example: A timestamp plugin</h3>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">export class MyPlugin extends BasePlugin {
-    static get alias(){ return 'pluginAlias'; }, <i class="conum" data-value="1"></i><b>(1)</b>
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { BasePlugin } = require('lisk-sdk');
 
-    static get info(){ <i class="conum" data-value="2"></i><b>(2)</b>
-        return {
-            author: '',
-            version: '',
-            name: '',
-        };
+class TimestampPlugin extends BasePlugin {
+  static get alias() { <i class="conum" data-value="1"></i><b>(1)</b>
+    return 'timestampPlugin';
+  };
+
+  static get info(){ <i class="conum" data-value="2"></i><b>(2)</b>
+    return {
+      author: 'authorName',
+      version: '0.0.1',
+      name: 'packageName',
     };
+  };
 
-    private _knownTimestamps: number[] = [];
+  _knownTimestamps = [];
 
-    get defaults() { <i class="conum" data-value="3"></i><b>(3)</b>
-      return {
-        type: 'object',
-        properties: {
-          enable: {
-            type: 'boolean',
-          }
-        },
-      }
-    };
-
-    get events() { <i class="conum" data-value="4"></i><b>(4)</b>
-      return ['timestamp'];
-    };
-
-    get actions() { <i class="conum" data-value="5"></i><b>(5)</b>
-        return {
-           getKnownTimestamp: () =&gt; this._knownTimestamps;
+  get defaults() { <i class="conum" data-value="3"></i><b>(3)</b>
+    return {
+      type: 'object',
+      properties: {
+        enable: {
+          type: 'boolean',
         }
-    };
-
-    async load(channel: Channel): Promise&lt;void&gt; { <i class="conum" data-value="6"></i><b>(6)</b>
-      // initialize plugin
-      if (!this.options.enable) { <i class="conum" data-value="7"></i><b>(7)</b>
-        return;
-      }
-      channel.subscribe('app:block:new', ({ data }) =&gt; { <i class="conum" data-value="8"></i><b>(8)</b>
-        const decodedBlock = this.codec.decodeBlock(data.block); <i class="conum" data-value="9"></i><b>(9)</b>
-        this.knownTimestamp.push(decodedBlock.header.timestamp); <i class="conum" data-value="10"></i><b>(10)</b>
-        channel.publish('timestamp', { timestamp: decodedBlock.header.timestamp }); <i class="conum" data-value="11"></i><b>(11)</b>
-      });
+      },
     }
+  };
 
-    async unload() { <i class="conum" data-value="12"></i><b>(12)</b>
-      this._knownTimestamps = [];
-    },
-};</code></pre>
+  get events() { <i class="conum" data-value="4"></i><b>(4)</b>
+    return ['timestamp'];
+  };
+
+  get actions() {
+    return { <i class="conum" data-value="5"></i><b>(5)</b>
+      getKnownTimestamp: () =&gt; this._knownTimestamps
+    }
+  };
+
+  async load(channel) { <i class="conum" data-value="6"></i><b>(6)</b>
+    // initialize plugin
+    if (!this.options.enable) { <i class="conum" data-value="7"></i><b>(7)</b>
+      return;
+    }
+    channel.subscribe('app:block:new', ({ data }) =&gt; { <i class="conum" data-value="8"></i><b>(8)</b>
+      const decodedBlock = this.codec.decodeBlock(data.block); <i class="conum" data-value="9"></i><b>(9)</b>
+      this.knownTimestamp.push(decodedBlock.header.timestamp); <i class="conum" data-value="10"></i><b>(10)</b>
+      channel.publish('timestampPlugin:timestamp', { timestamp: decodedBlock.header.timestamp }); <i class="conum" data-value="11"></i><b>(11)</b>
+    });
+  };
+
+  async unload() { <i class="conum" data-value="12"></i><b>(12)</b>
+    this._knownTimestamps = [];
+  };
+};
+
+module.exports = { TimestampPlugin };</code></pre>
 </div>
 </div>
 <div class="colist arabic">
 <table>
 <tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>The unique plugin identifier for this plugin is <code>pluginAlias</code>.</td>
+<td>The unique plugin identifier for this plugin is <code>timestampPlugin</code>.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
@@ -551,12 +566,12 @@ After registering the plugin with the application, it can be configured in the <
 </tr>
 <tr>
 <td><i class="conum" data-value="4"></i><b>4</b></td>
-<td>The plugin registers the event <code>pluginAlias:timestamp</code> with the application.
+<td>The plugin registers the event <code>timestampPlugin:timestamp</code> with the application.
 Other plugins and modules can subscribe to this event.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="5"></i><b>5</b></td>
-<td>Defines the action <code>pluginAlias:getKnownTimestamp</code>, which can be invoked by other plugins and modules in the application.</td>
+<td>Defines the action <code>timestampPlugin:getKnownTimestamp</code>, which can be invoked by other plugins and modules in the application.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="6"></i><b>6</b></td>
@@ -581,7 +596,7 @@ For every new block that is forged, it will perform the following commands.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="11"></i><b>11</b></td>
-<td>Publishes a new event <code>pluginAlias:timestamp</code> with the latest block timestamp to the application.</td>
+<td>Publishes a new event <code>timestampPlugin:timestamp</code> with the latest block timestamp to the application.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="12"></i><b>12</b></td>
@@ -609,14 +624,14 @@ Deletes all timestamps in the <code>_knownTimestamps</code> array.</td>
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">HTTP API plugin</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../references/lisk-framework/http-api-plugin.html" class="page">HTTP API plugin</a></p></td>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
 <p>Provides a RESTful HTTP API for a Lisk node.
 The API serves information related to accounts, blocks, transactions, node info and more.</p>
 </div></div></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Forger Plugin</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../references/lisk-framework/forger-plugin.html" class="page">Forger plugin</a></p></td>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
 <p>The forger plugin is mainly responsible for:</p>
 </div>
@@ -635,13 +650,13 @@ The API serves information related to accounts, blocks, transactions, node info 
 </div></div></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Report  Misbehavior Plugin</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../references/lisk-framework/report-misbehavior-plugin.html" class="page">Report misbehavior plugin</a></p></td>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
 <p>A plugin that provides automatic detection of delegate misbehavior and sends a <code>reportDelegateMisbehaviorTransaction</code> to the running node.</p>
 </div></div></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Monitor Plugin</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../references/lisk-framework/monitor-plugin.html" class="page">Monitor plugin</a></p></td>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
 <p>A plugin that provides network statistics of the running node.</p>
 </div></div></td>

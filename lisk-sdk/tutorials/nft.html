@@ -270,16 +270,16 @@
     <span class="nav-text">Default modules</span>
 <ul class="nav-list">
   <li class="nav-item single-page" data-depth="4">
-    <a class="nav-link" href="../token-module.html">The token module</a>
+    <a class="nav-link" href="../token-module.html">Token module</a>
   </li>
   <li class="nav-item single-page" data-depth="4">
-    <a class="nav-link" href="../sequence-module.html">The sequence module</a>
+    <a class="nav-link" href="../sequence-module.html">Sequence module</a>
   </li>
   <li class="nav-item single-page" data-depth="4">
-    <a class="nav-link" href="../keys-module.html">The keys module</a>
+    <a class="nav-link" href="../keys-module.html">Keys module</a>
   </li>
   <li class="nav-item single-page" data-depth="4">
-    <a class="nav-link" href="../dpos-module.html">The DPoS module</a>
+    <a class="nav-link" href="../dpos-module.html">DPoS module</a>
   </li>
 </ul>
   </li>
@@ -1167,18 +1167,18 @@ class PurchaseNFTAsset extends BaseAsset {
   };
 
   async apply({ asset, stateStore, reducerHandler, transaction }) {
+    // verify if purchasing nft token exists <i class="conum" data-value="1"></i><b>(1)</b>
     const nftTokens = await getAllNFTTokens(stateStore);
     const nftTokenIndex = nftTokens.findIndex((t) =&gt; t.id.equals(asset.nftId));
 
-    // verify if purchasing nft token exists <i class="conum" data-value="1"></i><b>(1)</b>
     if (nftTokenIndex &lt; 0) {
       throw new Error("Token id not found");
     }
+    // verify if minimum nft purchasing condition met <i class="conum" data-value="2"></i><b>(2)</b>
     const token = nftTokens[nftTokenIndex];
     const tokenOwner = await stateStore.account.get(token.ownerAddress);
     const tokenOwnerAddress = tokenOwner.address;
 
-    // verify if minimum nft purchasing condition met <i class="conum" data-value="2"></i><b>(2)</b>
     if (token &amp;&amp; token.minPurchaseMargin === 0) {
       throw new Error("This NFT token can not be purchased");
     }
@@ -1190,13 +1190,13 @@ class PurchaseNFTAsset extends BaseAsset {
     const purchaseValue = asset.purchaseValue;
 
     if (tokenMinPurchaseValue &gt; purchaseValue) {
-      throw new Error("Token can not be purchased on given value");
+      throw new Error("Token can not be purchased value is too low. Minimum value: " + tokenMinPurchaseValue);
     }
 
+    // remove nft token from owner account <i class="conum" data-value="3"></i><b>(3)</b>
     const purchaserAddress = transaction.senderAddress;
     const purchaserAccount = await stateStore.account.get(purchaserAddress);
 
-    // remove nft token from owner account <i class="conum" data-value="3"></i><b>(3)</b>
     const ownerTokenIndex = tokenOwner.nft.ownNFTs.findIndex((a) =&gt;
       a.equals(token.id)
     );
@@ -1233,27 +1233,35 @@ module.exports = PurchaseNFTAsset;</code></pre>
 <table>
 <tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>description</td>
+<td>First verify, that the NFT which is purchased exists in the databbase.
+To do this, we request all NFTs with <code>getAllNFTTokens()</code> and search inside the returned list for the desired NFT ID.
+If no NFT is found, a corresponding error is thrown.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>description</td>
+<td>If the NFT was found, it is retrieved from the database, and the minimum purchase value of the token is compared to the purchase value in the transaction asset.
+If the purchase value in the transaction asset is equal or higher than the minimal purchase value of the NFT, the NFT can be purchased.
+Otherwise, an error will beb thrown.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>description</td>
+<td>Next, it is needed to remove the NFT from the current owner account.
+The <code>StateStore</code> is used here to retrieve the owner account data from the database and later to update the owner account in the database, after the token ID has been removed from their owned tokens.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="4"></i><b>4</b></td>
-<td>description</td>
+<td>Next, we add the NFT to the account of the purchaser.
+The <code>StateStore</code> is used again to update the purchaser account in the database, after the token ID has been added to their owned tokens.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="5"></i><b>5</b></td>
-<td>description</td>
+<td>Now we need to debit the purchase value from the purchasers account.
+We use here the <code>reducerHandler</code> and invoke <code>token:debit</code> from <a href="../token-module.html" class="page">Token module</a> which allows to conveniently debit tokens from an account.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="6"></i><b>6</b></td>
-<td>description</td>
+<td>Finally we need to credit the purchase value to the owners account.
+We use here the <code>reducerHandler</code> and invoke <code>token:debit</code> from <a href="../token-module.html" class="page">Token module</a> which allows to conveniently credit tokens to an account.</td>
 </tr>
 </table>
 </div>

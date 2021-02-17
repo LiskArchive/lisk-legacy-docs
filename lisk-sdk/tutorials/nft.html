@@ -643,7 +643,7 @@ cd transactions/</code></pre>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { BaseAsset } = require("lisk-sdk");
 
-// 1.extend base asset to implement your custom asset
+// extend base asset to implement your custom asset
 class CreateNFTAsset extends BaseAsset { <i class="conum" data-value="1"></i><b>(1)</b>
 
 }
@@ -673,9 +673,9 @@ module.exports = CreateNFTAsset; <i class="conum" data-value="2"></i><b>(2)</b><
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { BaseAsset } = require("lisk-sdk");
 
-// 1.extend base asset to implement your custom asset
+// extend base asset to implement your custom asset
 class CreateNFTAsset extends BaseAsset {
-  // 2.define unique asset name and id
+  // define unique asset name and id
   name = "createNFT"; <i class="conum" data-value="1"></i><b>(1)</b>
   id = 0; <i class="conum" data-value="2"></i><b>(2)</b>
 }
@@ -737,12 +737,12 @@ For more information how schemas are used in the application, check out the <a h
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { BaseAsset } = require("lisk-sdk");
 
-// 1.extend base asset to implement your custom asset
+// extend base asset to implement your custom asset
 class CreateNFTAsset extends BaseAsset {
-  // 2.define unique asset name and id
+  // define unique asset name and id
   name = "createNFT";
   id = 0;
-  // 3.define asset schema for serialization
+  // define asset schema for serialization
   schema = {
     $id: "lisk/nft/create",
     type: "object",
@@ -774,10 +774,10 @@ module.exports = CreateNFTAsset;</code></pre>
 <div class="sect3">
 <h4 id="nft-token-related-functions"><a class="anchor" href="#nft-token-related-functions"></a>2.1.3. NFT token related functions</h4>
 <div class="paragraph">
-<p>For a better overview, create a new file <code>nft_token.js</code> in the <code>nft-module/</code> folder.</p>
+<p>For a better overview, create a new file <code>nft.js</code> in the <code>nft-module/</code> folder.</p>
 </div>
 <div class="paragraph">
-<p>Now open <code>nft_token.js</code> and define the functions related to the NFT token, which will be used in the assets and the module in the next steps.</p>
+<p>Now open <code>nft.js</code> and define the functions related to the NFT token, which will be used in the assets and the module in the next steps.</p>
 </div>
 <div class="paragraph">
 <p>The following functions are implemtented:</p>
@@ -820,7 +820,7 @@ These variables are available in the module or plugin files, and are explained i
 </table>
 </div>
 <div class="listingblock">
-<div class="title">nft/blockchain-app/nft-module/nft_token.js</div>
+<div class="title">nft/blockchain-app/nft-module/nft.js</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { codec, cryptography } = require("lisk-sdk");
 
@@ -936,7 +936,74 @@ module.exports = {
 </div>
 </div>
 <div class="sect3">
-<h4 id="the-apply-function"><a class="anchor" href="#the-apply-function"></a>2.1.4. The <code>apply()</code> function</h4>
+<h4 id="the-validate-function"><a class="anchor" href="#the-validate-function"></a>2.1.4. The <code>validate()</code> function</h4>
+<div class="paragraph">
+<p>Before the data in the transaction asset is applied in the next step, use the <code>validate()</code> function to verify the correctness of the submitted data.</p>
+</div>
+<div class="paragraph">
+<p>The <code>validate()</code> function has access to:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>asset</code>: the posted transaction asset.</p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="title">nft/blockchain-app/nft-module/transactions/create_nft.js</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { BaseAsset } = require("lisk-sdk");
+
+// extend base asset to implement your custom asset
+class CreateNFTAsset extends BaseAsset {
+  // define unique asset name and id
+  name = "createNFT";
+  id = 0;
+  // define asset schema for serialization
+  schema = {
+    $id: "lisk/nft/create",
+    type: "object",
+    required: ["minPurchaseMargin", "initValue", "name"],
+    properties: {
+      minPurchaseMargin: {
+        dataType: "uint32",
+        fieldNumber: 1,
+      },
+      initValue: {
+        dataType: "uint64",
+        fieldNumber: 2,
+      },
+      name: {
+        dataType: "string",
+        fieldNumber: 3,
+      },
+    },
+  };
+
+  // verify if init value is &gt; 0 <i class="conum" data-value="1"></i><b>(1)</b>
+  validate({asset}) {
+    if (asset.initValue &lt;= 0) {
+      throw new Error("NFT init value is too low.");
+    }
+  };
+}
+
+module.exports = CreateNFTAsset;</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Verifies that the initial value of the NFT is greater than 0.
+If not, the transaction is not applied, and a corresponding error is thrown.</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="the-apply-function"><a class="anchor" href="#the-apply-function"></a>2.1.5. The <code>apply()</code> function</h4>
 <div class="paragraph">
 <p>The <code>apply()</code> function has access to:</p>
 </div>
@@ -965,14 +1032,14 @@ const {
   getAllNFTTokens,
   setAllNFTTokens,
   createNFTToken,
-} = require("../nft_token"); <i class="conum" data-value="1"></i><b>(1)</b>
+} = require("../nft"); <i class="conum" data-value="1"></i><b>(1)</b>
 
-// 1.extend base asset to implement your custom asset
+// extend base asset to implement your custom asset
 class CreateNFTAsset extends BaseAsset {
-  // 2.define unique asset name and id
+  // define unique asset name and id
   name = "createNFT";
   id = 0;
-  // 3.define asset schema for serialization
+  // define asset schema for serialization
   schema = {
     $id: "lisk/nft/create",
     type: "object",
@@ -993,16 +1060,17 @@ class CreateNFTAsset extends BaseAsset {
     },
   };
 
-  async apply({ asset, stateStore, reducerHandler, transaction }) {
-    // 4. verify if init value is &gt; 0 <i class="conum" data-value="1"></i><b>(1)</b>
-    const senderAddress = transaction.senderAddress;
-    const senderAccount = await stateStore.account.get(senderAddress);
-
+  // verify if init value is &gt; 0
+  validate({asset}) {
     if (asset.initValue &lt;= 0) {
       throw new Error("NFT init value is too low.");
     }
+  };
 
-    // 5.create nft token <i class="conum" data-value="2"></i><b>(2)</b>
+  async apply({ asset, stateStore, reducerHandler, transaction }) {
+    // create NFT <i class="conum" data-value="2"></i><b>(2)</b>
+    const senderAddress = transaction.senderAddress;
+    const senderAccount = await stateStore.account.get(senderAddress);
     const nftToken = createNFTToken({
       name: asset.name,
       ownerAddress: senderAddress,
@@ -1011,17 +1079,17 @@ class CreateNFTAsset extends BaseAsset {
       minPurchaseMargin: asset.minPurchaseMargin,
     });
 
-    // 6.update sender account with unique nft id <i class="conum" data-value="3"></i><b>(3)</b>
+    // update sender account with unique NFT ID <i class="conum" data-value="3"></i><b>(3)</b>
     senderAccount.nft.ownNFTs.push(nftToken.id);
     await stateStore.account.set(senderAddress, senderAccount);
 
-    // 7.debit tokens from sender account to create nft token <i class="conum" data-value="4"></i><b>(4)</b>
+    // debit tokens from sender account to create an NFT <i class="conum" data-value="4"></i><b>(4)</b>
     await reducerHandler.invoke("token:debit", {
       address: senderAddress,
       amount: asset.initValue,
     });
 
-    // 8.save nft tokens <i class="conum" data-value="5"></i><b>(5)</b>
+    // save NFTs <i class="conum" data-value="5"></i><b>(5)</b>
     const allTokens = await getAllNFTTokens(stateStore);
     allTokens.push(nftToken);
     await setAllNFTTokens(stateStore, allTokens);
@@ -1035,23 +1103,24 @@ module.exports = CreateNFTAsset;</code></pre>
 <table>
 <tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>description</td>
+<td>Import <code>getAllNFTTokens</code>, <code>setAllNFTTokens</code> and <code>createNFTToken</code> fromt her <code>nft.js</code> file.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>description</td>
+<td>Create the NFT based on the asset data and the sender address of the transaction.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>description</td>
+<td>Push the ID of the newly created NFT into the sender account.
+Save the updated sender account in the database.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="4"></i><b>4</b></td>
-<td>description</td>
+<td>Debit the initial value of the NFT from the sender account.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="5"></i><b>5</b></td>
-<td>description</td>
+<td>Push the newly created NFT into the list of all NFTs and save it in the database.</td>
 </tr>
 </table>
 </div>
@@ -1069,14 +1138,14 @@ module.exports = CreateNFTAsset;</code></pre>
 <div class="title">nft/blockchain-app/nft-module/transactions/purchase_nft.js</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { BaseAsset } = require("lisk-sdk");
-const { getAllNFTTokens, setAllNFTTokens } = require("../nft_token");
+const { getAllNFTTokens, setAllNFTTokens } = require("../nft");
 
-// 1.extend base asset to implement your custom asset
+// extend base asset to implement your custom asset
 class PurchaseNFTAsset extends BaseAsset {
-  // 2.define unique asset name and id
+  // define unique asset name and id
   name = "purchaseNFT";
   id = 1;
-  // 3.define asset schema for serialization
+  // define asset schema for serialization
   schema = {
     $id: "lisk/nft/purchase",
     type: "object",
@@ -1101,7 +1170,7 @@ class PurchaseNFTAsset extends BaseAsset {
     const nftTokens = await getAllNFTTokens(stateStore);
     const nftTokenIndex = nftTokens.findIndex((t) =&gt; t.id.equals(asset.nftId));
 
-    // 4.verify if purchasing nft token exists
+    // verify if purchasing nft token exists <i class="conum" data-value="1"></i><b>(1)</b>
     if (nftTokenIndex &lt; 0) {
       throw new Error("Token id not found");
     }
@@ -1109,7 +1178,7 @@ class PurchaseNFTAsset extends BaseAsset {
     const tokenOwner = await stateStore.account.get(token.ownerAddress);
     const tokenOwnerAddress = tokenOwner.address;
 
-    // 5.verify if minimum nft purchasing condition met
+    // verify if minimum nft purchasing condition met <i class="conum" data-value="2"></i><b>(2)</b>
     if (token &amp;&amp; token.minPurchaseMargin === 0) {
       throw new Error("This NFT token can not be purchased");
     }
@@ -1127,14 +1196,14 @@ class PurchaseNFTAsset extends BaseAsset {
     const purchaserAddress = transaction.senderAddress;
     const purchaserAccount = await stateStore.account.get(purchaserAddress);
 
-    // 6.remove nft token from owner account
+    // remove nft token from owner account <i class="conum" data-value="3"></i><b>(3)</b>
     const ownerTokenIndex = tokenOwner.nft.ownNFTs.findIndex((a) =&gt;
       a.equals(token.id)
     );
     tokenOwner.nft.ownNFTs.splice(ownerTokenIndex, 1);
     await stateStore.account.set(tokenOwnerAddress, tokenOwner);
 
-    // 7.add nft token to purchaser account
+    // add nft token to purchaser account <i class="conum" data-value="4"></i><b>(4)</b>
     purchaserAccount.nft.ownNFTs.push(token.id);
     await stateStore.account.set(purchaserAddress, purchaserAccount);
 
@@ -1143,13 +1212,13 @@ class PurchaseNFTAsset extends BaseAsset {
     nftTokens[nftTokenIndex] = token;
     await setAllNFTTokens(stateStore, nftTokens);
 
-    // 8.debit LSK tokens from purchaser account
+    // debit LSK tokens from purchaser account <i class="conum" data-value="5"></i><b>(5)</b>
     await reducerHandler.invoke("token:debit", {
       address: purchaserAddress,
       amount: purchaseValue,
     });
 
-    // 9.credit LSK tokens to purchaser account
+    // credit LSK tokens to purchaser account <i class="conum" data-value="6"></i><b>(6)</b>
     await reducerHandler.invoke("token:credit", {
       address: tokenOwnerAddress,
       amount: purchaseValue,
@@ -1159,6 +1228,34 @@ class PurchaseNFTAsset extends BaseAsset {
 
 module.exports = PurchaseNFTAsset;</code></pre>
 </div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>description</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>description</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>description</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>description</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>description</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td>description</td>
+</tr>
+</table>
 </div>
 </div>
 <div class="sect2">
@@ -1281,7 +1378,7 @@ module.exports = { NFTModule };</code></pre>
 <div class="title">nft/blockchain-app/nft-module/index.js</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { BaseModule } = require("lisk-sdk");
-const { getAllNFTTokensAsJSON } = require("./nft_token");
+const { getAllNFTTokensAsJSON } = require("./nft");
 
 const CreateNFT = require("./transactions/create_nft");
 const PurchaseNFT = require("./transactions/purchase_nft");
@@ -1319,7 +1416,7 @@ module.exports = { NFTModule };</code></pre>
 <div class="title">nft/blockchain-app/nft-module/index.js</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { BaseModule } = require("lisk-sdk");
-const { getAllNFTTokensAsJSON } = require("./nft_token");
+const { getAllNFTTokensAsJSON } = require("./nft");
 
 const CreateNFT = require("./transactions/create_nft");
 const PurchaseNFT = require("./transactions/purchase_nft");

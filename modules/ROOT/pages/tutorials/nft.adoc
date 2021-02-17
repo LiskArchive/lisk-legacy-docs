@@ -132,7 +132,7 @@ Now open the file and paste the code below:
 ----
 const { BaseAsset } = require("lisk-sdk");
 
-// 1.extend base asset to implement your custom asset
+// extend base asset to implement your custom asset
 class CreateNFTAsset extends BaseAsset { <1>
 
 }
@@ -151,9 +151,9 @@ Now let's define all required properties for the transaction asset one after ano
 ----
 const { BaseAsset } = require("lisk-sdk");
 
-// 1.extend base asset to implement your custom asset
+// extend base asset to implement your custom asset
 class CreateNFTAsset extends BaseAsset {
-  // 2.define unique asset name and id
+  // define unique asset name and id
   name = "createNFT"; <1>
   id = 0; <2>
 }
@@ -183,12 +183,12 @@ Therefore, create the schema like described below:
 ----
 const { BaseAsset } = require("lisk-sdk");
 
-// 1.extend base asset to implement your custom asset
+// extend base asset to implement your custom asset
 class CreateNFTAsset extends BaseAsset {
-  // 2.define unique asset name and id
+  // define unique asset name and id
   name = "createNFT";
   id = 0;
-  // 3.define asset schema for serialization
+  // define asset schema for serialization
   schema = {
     $id: "lisk/nft/create",
     type: "object",
@@ -217,9 +217,9 @@ After we defined in the `schema` what data to expect, we now define how the data
 
 ==== NFT token related functions
 
-For a better overview, create a new file `nft_token.js` in the `nft-module/` folder.
+For a better overview, create a new file `nft.js` in the `nft-module/` folder.
 
-Now open `nft_token.js` and define the functions related to the NFT token, which will be used in the assets and the module in the next steps.
+Now open `nft.js` and define the functions related to the NFT token, which will be used in the assets and the module in the next steps.
 
 The following functions are implemtented:
 
@@ -236,7 +236,7 @@ You might have spotted, that we use special parameters in the functions, like `s
 These variables are available in the module or plugin files, and are explained in more detail in the next section.
 ====
 
-.nft/blockchain-app/nft-module/nft_token.js
+.nft/blockchain-app/nft-module/nft.js
 [source,js]
 ----
 const { codec, cryptography } = require("lisk-sdk");
@@ -351,32 +351,25 @@ module.exports = {
 };
 ----
 
-==== The `apply()` function
+==== The `validate()` function
 
-The `apply()` function has access to:
+Before the data in the transaction asset is applied in the next step, use the `validate()` function to verify the correctness of the submitted data.
+
+The `validate()` function has access to:
 
 * `asset`: the posted transaction asset.
-* `stateStore`: The state store is a data structure that holds temporary state while processing a block.
-It is used here to get and set certain data from and to the database.
-* `reducerHandler`: Allows to use reducer functions of other modules inside the `apply()` function.
-* `transaction`: the complete transaction object.
 
 .nft/blockchain-app/nft-module/transactions/create_nft.js
 [source,js]
 ----
 const { BaseAsset } = require("lisk-sdk");
-const {
-  getAllNFTTokens,
-  setAllNFTTokens,
-  createNFTToken,
-} = require("../nft_token"); <1>
 
-// 1.extend base asset to implement your custom asset
+// extend base asset to implement your custom asset
 class CreateNFTAsset extends BaseAsset {
-  // 2.define unique asset name and id
+  // define unique asset name and id
   name = "createNFT";
   id = 0;
-  // 3.define asset schema for serialization
+  // define asset schema for serialization
   schema = {
     $id: "lisk/nft/create",
     type: "object",
@@ -397,16 +390,77 @@ class CreateNFTAsset extends BaseAsset {
     },
   };
 
-  async apply({ asset, stateStore, reducerHandler, transaction }) {
-    // 4. verify if init value is > 0 <1>
-    const senderAddress = transaction.senderAddress;
-    const senderAccount = await stateStore.account.get(senderAddress);
-
+  // verify if init value is > 0 <1>
+  validate({asset}) {
     if (asset.initValue <= 0) {
       throw new Error("NFT init value is too low.");
     }
+  };
+}
 
-    // 5.create nft token <2>
+module.exports = CreateNFTAsset;
+----
+
+<1> Verifies that the initial value of the NFT is greater than 0.
+If not, the transaction is not applied, and a corresponding error is thrown.
+
+==== The `apply()` function
+
+The `apply()` function has access to:
+
+* `asset`: the posted transaction asset.
+* `stateStore`: The state store is a data structure that holds temporary state while processing a block.
+It is used here to get and set certain data from and to the database.
+* `reducerHandler`: Allows to use reducer functions of other modules inside the `apply()` function.
+* `transaction`: the complete transaction object.
+
+.nft/blockchain-app/nft-module/transactions/create_nft.js
+[source,js]
+----
+const { BaseAsset } = require("lisk-sdk");
+const {
+  getAllNFTTokens,
+  setAllNFTTokens,
+  createNFTToken,
+} = require("../nft"); <1>
+
+// extend base asset to implement your custom asset
+class CreateNFTAsset extends BaseAsset {
+  // define unique asset name and id
+  name = "createNFT";
+  id = 0;
+  // define asset schema for serialization
+  schema = {
+    $id: "lisk/nft/create",
+    type: "object",
+    required: ["minPurchaseMargin", "initValue", "name"],
+    properties: {
+      minPurchaseMargin: {
+        dataType: "uint32",
+        fieldNumber: 1,
+      },
+      initValue: {
+        dataType: "uint64",
+        fieldNumber: 2,
+      },
+      name: {
+        dataType: "string",
+        fieldNumber: 3,
+      },
+    },
+  };
+
+  // verify if init value is > 0
+  validate({asset}) {
+    if (asset.initValue <= 0) {
+      throw new Error("NFT init value is too low.");
+    }
+  };
+
+  async apply({ asset, stateStore, reducerHandler, transaction }) {
+    // create NFT <2>
+    const senderAddress = transaction.senderAddress;
+    const senderAccount = await stateStore.account.get(senderAddress);
     const nftToken = createNFTToken({
       name: asset.name,
       ownerAddress: senderAddress,
@@ -415,17 +469,17 @@ class CreateNFTAsset extends BaseAsset {
       minPurchaseMargin: asset.minPurchaseMargin,
     });
 
-    // 6.update sender account with unique nft id <3>
+    // update sender account with unique NFT ID <3>
     senderAccount.nft.ownNFTs.push(nftToken.id);
     await stateStore.account.set(senderAddress, senderAccount);
 
-    // 7.debit tokens from sender account to create nft token <4>
+    // debit tokens from sender account to create an NFT <4>
     await reducerHandler.invoke("token:debit", {
       address: senderAddress,
       amount: asset.initValue,
     });
 
-    // 8.save nft tokens <5>
+    // save NFTs <5>
     const allTokens = await getAllNFTTokens(stateStore);
     allTokens.push(nftToken);
     await setAllNFTTokens(stateStore, allTokens);
@@ -435,11 +489,12 @@ class CreateNFTAsset extends BaseAsset {
 module.exports = CreateNFTAsset;
 ----
 
-<1> description
-<2> description
-<3> description
-<4> description
-<5> description
+<1> Import `getAllNFTTokens`, `setAllNFTTokens` and `createNFTToken` fromt her `nft.js` file.
+<2> Create the NFT based on the asset data and the sender address of the transaction.
+<3> Push the ID of the newly created NFT into the sender account.
+Save the updated sender account in the database.
+<4> Debit the initial value of the NFT from the sender account.
+<5> Push the newly created NFT into the list of all NFTs and save it in the database.
 
 === PurchaseNFT asset
 
@@ -451,14 +506,14 @@ Create a new file `purchase_nft.js` inside the `transactions/` folder.
 [source,js]
 ----
 const { BaseAsset } = require("lisk-sdk");
-const { getAllNFTTokens, setAllNFTTokens } = require("../nft_token");
+const { getAllNFTTokens, setAllNFTTokens } = require("../nft");
 
-// 1.extend base asset to implement your custom asset
+// extend base asset to implement your custom asset
 class PurchaseNFTAsset extends BaseAsset {
-  // 2.define unique asset name and id
+  // define unique asset name and id
   name = "purchaseNFT";
   id = 1;
-  // 3.define asset schema for serialization
+  // define asset schema for serialization
   schema = {
     $id: "lisk/nft/purchase",
     type: "object",
@@ -483,7 +538,7 @@ class PurchaseNFTAsset extends BaseAsset {
     const nftTokens = await getAllNFTTokens(stateStore);
     const nftTokenIndex = nftTokens.findIndex((t) => t.id.equals(asset.nftId));
 
-    // 4.verify if purchasing nft token exists
+    // verify if purchasing nft token exists <1>
     if (nftTokenIndex < 0) {
       throw new Error("Token id not found");
     }
@@ -491,7 +546,7 @@ class PurchaseNFTAsset extends BaseAsset {
     const tokenOwner = await stateStore.account.get(token.ownerAddress);
     const tokenOwnerAddress = tokenOwner.address;
 
-    // 5.verify if minimum nft purchasing condition met
+    // verify if minimum nft purchasing condition met <2>
     if (token && token.minPurchaseMargin === 0) {
       throw new Error("This NFT token can not be purchased");
     }
@@ -509,14 +564,14 @@ class PurchaseNFTAsset extends BaseAsset {
     const purchaserAddress = transaction.senderAddress;
     const purchaserAccount = await stateStore.account.get(purchaserAddress);
 
-    // 6.remove nft token from owner account
+    // remove nft token from owner account <3>
     const ownerTokenIndex = tokenOwner.nft.ownNFTs.findIndex((a) =>
       a.equals(token.id)
     );
     tokenOwner.nft.ownNFTs.splice(ownerTokenIndex, 1);
     await stateStore.account.set(tokenOwnerAddress, tokenOwner);
 
-    // 7.add nft token to purchaser account
+    // add nft token to purchaser account <4>
     purchaserAccount.nft.ownNFTs.push(token.id);
     await stateStore.account.set(purchaserAddress, purchaserAccount);
 
@@ -525,13 +580,13 @@ class PurchaseNFTAsset extends BaseAsset {
     nftTokens[nftTokenIndex] = token;
     await setAllNFTTokens(stateStore, nftTokens);
 
-    // 8.debit LSK tokens from purchaser account
+    // debit LSK tokens from purchaser account <5>
     await reducerHandler.invoke("token:debit", {
       address: purchaserAddress,
       amount: purchaseValue,
     });
 
-    // 9.credit LSK tokens to purchaser account
+    // credit LSK tokens to purchaser account <6>
     await reducerHandler.invoke("token:credit", {
       address: tokenOwnerAddress,
       amount: purchaseValue,
@@ -541,6 +596,14 @@ class PurchaseNFTAsset extends BaseAsset {
 
 module.exports = PurchaseNFTAsset;
 ----
+
+<1> description
+<2> description
+<3> description
+<4> description
+<5> description
+<6> description
+
 === TransferNFT asset
 
 == The NFT module
@@ -627,7 +690,7 @@ module.exports = { NFTModule };
 [source,js]
 ----
 const { BaseModule } = require("lisk-sdk");
-const { getAllNFTTokensAsJSON } = require("./nft_token");
+const { getAllNFTTokensAsJSON } = require("./nft");
 
 const CreateNFT = require("./transactions/create_nft");
 const PurchaseNFT = require("./transactions/purchase_nft");
@@ -663,7 +726,7 @@ module.exports = { NFTModule };
 [source,js]
 ----
 const { BaseModule } = require("lisk-sdk");
-const { getAllNFTTokensAsJSON } = require("./nft_token");
+const { getAllNFTTokensAsJSON } = require("./nft");
 
 const CreateNFT = require("./transactions/create_nft");
 const PurchaseNFT = require("./transactions/purchase_nft");

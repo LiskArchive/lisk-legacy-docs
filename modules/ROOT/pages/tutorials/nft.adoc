@@ -8,6 +8,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_github_nft: https://github.com/LiskHQ/lisk-sdk-examples/tree/development/tutorials/nft
 // Project URLs
 :url_references_schemas: references/schemas.adoc
+:url_references_token_module: token-module.adoc
 
 In the NFT tutorial, you learn step-by-step how to create modules and plugins which add the feature to create and purchase NFTs to a blockchain application.
 
@@ -535,18 +536,18 @@ class PurchaseNFTAsset extends BaseAsset {
   };
 
   async apply({ asset, stateStore, reducerHandler, transaction }) {
+    // verify if purchasing nft token exists <1>
     const nftTokens = await getAllNFTTokens(stateStore);
     const nftTokenIndex = nftTokens.findIndex((t) => t.id.equals(asset.nftId));
 
-    // verify if purchasing nft token exists <1>
     if (nftTokenIndex < 0) {
       throw new Error("Token id not found");
     }
+    // verify if minimum nft purchasing condition met <2>
     const token = nftTokens[nftTokenIndex];
     const tokenOwner = await stateStore.account.get(token.ownerAddress);
     const tokenOwnerAddress = tokenOwner.address;
 
-    // verify if minimum nft purchasing condition met <2>
     if (token && token.minPurchaseMargin === 0) {
       throw new Error("This NFT token can not be purchased");
     }
@@ -558,13 +559,13 @@ class PurchaseNFTAsset extends BaseAsset {
     const purchaseValue = asset.purchaseValue;
 
     if (tokenMinPurchaseValue > purchaseValue) {
-      throw new Error("Token can not be purchased on given value");
+      throw new Error("Token can not be purchased value is too low. Minimum value: " + tokenMinPurchaseValue);
     }
 
+    // remove nft token from owner account <3>
     const purchaserAddress = transaction.senderAddress;
     const purchaserAccount = await stateStore.account.get(purchaserAddress);
 
-    // remove nft token from owner account <3>
     const ownerTokenIndex = tokenOwner.nft.ownNFTs.findIndex((a) =>
       a.equals(token.id)
     );
@@ -597,12 +598,20 @@ class PurchaseNFTAsset extends BaseAsset {
 module.exports = PurchaseNFTAsset;
 ----
 
-<1> description
-<2> description
-<3> description
-<4> description
-<5> description
-<6> description
+<1> First verify, that the NFT which is purchased exists in the databbase.
+To do this, we request all NFTs with `getAllNFTTokens()` and search inside the returned list for the desired NFT ID.
+If no NFT is found, a corresponding error is thrown.
+<2> If the NFT was found, it is retrieved from the database, and the minimum purchase value of the token is compared to the purchase value in the transaction asset.
+If the purchase value in the transaction asset is equal or higher than the minimal purchase value of the NFT, the NFT can be purchased.
+Otherwise, an error will beb thrown.
+<3> Next, it is needed to remove the NFT from the current owner account.
+The `StateStore` is used here to retrieve the owner account data from the database and later to update the owner account in the database, after the token ID has been removed from their owned tokens.
+<4> Next, we add the NFT to the account of the purchaser.
+The `StateStore` is used again to update the purchaser account in the database, after the token ID has been added to their owned tokens.
+<5> Now we need to debit the purchase value from the purchasers account.
+We use here the `reducerHandler` and invoke `token:debit` from xref:{url_references_token_module}[] which allows to conveniently debit tokens from an account.
+<6> Finally we need to credit the purchase value to the owners account.
+We use here the `reducerHandler` and invoke `token:debit` from xref:{url_references_token_module}[] which allows to conveniently credit tokens to an account.
 
 === TransferNFT asset
 

@@ -25,13 +25,13 @@ TIP: For the *full code example* please see {url_github_nft}[NFT app on Github^]
 
 |Description
 |Tokens that can be readily interchanged with each other.
-| Each token has unique characteristics which make it special.
+|Each token has unique characteristics which make it special.
 
 |Charactericitics
 a|
 * Not unique
 * Divisible
-* mutually interchangeable
+* Mutually interchangeable
 
 a|
 * Unique
@@ -214,7 +214,60 @@ class CreateNFTAsset extends BaseAsset {
 module.exports = CreateNFTAsset;
 ----
 
-After we defined in the `schema` what data to expect, we now define how the data is applied on the blockchain in the `apply()` function.
+Now that the `schema` defines what data to expect, we can use the `validate()` function to validate the received data of the transaction asset before applying it.
+
+==== The `validate()` function
+
+Before the data in the transaction asset is applied in the next step, use the `validate()` function to verify the correctness of the submitted data.
+
+The `validate()` function has access to:
+
+* `asset`: the posted transaction asset.
+
+.nft/blockchain-app/nft-module/transactions/create_nft.js
+[source,js]
+----
+const { BaseAsset } = require("lisk-sdk");
+
+// extend base asset to implement your custom asset
+class CreateNFTAsset extends BaseAsset {
+  // define unique asset name and id
+  name = "createNFT";
+  id = 0;
+  // define asset schema for serialization
+  schema = {
+    $id: "lisk/nft/create",
+    type: "object",
+    required: ["minPurchaseMargin", "initValue", "name"],
+    properties: {
+      minPurchaseMargin: {
+        dataType: "uint32",
+        fieldNumber: 1,
+      },
+      initValue: {
+        dataType: "uint64",
+        fieldNumber: 2,
+      },
+      name: {
+        dataType: "string",
+        fieldNumber: 3,
+      },
+    },
+  };
+
+  // verify if init value is > 0 <1>
+  validate({asset}) {
+    if (asset.initValue <= 0) {
+      throw new Error("NFT init value is too low.");
+    }
+  };
+}
+
+module.exports = CreateNFTAsset;
+----
+
+<1> Verifies that the initial value of the NFT is greater than 0.
+If not, the transaction is not applied, and a corresponding error is thrown.
 
 ==== NFT token related functions
 
@@ -351,59 +404,6 @@ module.exports = {
   createNFTToken,
 };
 ----
-
-==== The `validate()` function
-
-Before the data in the transaction asset is applied in the next step, use the `validate()` function to verify the correctness of the submitted data.
-
-The `validate()` function has access to:
-
-* `asset`: the posted transaction asset.
-
-.nft/blockchain-app/nft-module/transactions/create_nft.js
-[source,js]
-----
-const { BaseAsset } = require("lisk-sdk");
-
-// extend base asset to implement your custom asset
-class CreateNFTAsset extends BaseAsset {
-  // define unique asset name and id
-  name = "createNFT";
-  id = 0;
-  // define asset schema for serialization
-  schema = {
-    $id: "lisk/nft/create",
-    type: "object",
-    required: ["minPurchaseMargin", "initValue", "name"],
-    properties: {
-      minPurchaseMargin: {
-        dataType: "uint32",
-        fieldNumber: 1,
-      },
-      initValue: {
-        dataType: "uint64",
-        fieldNumber: 2,
-      },
-      name: {
-        dataType: "string",
-        fieldNumber: 3,
-      },
-    },
-  };
-
-  // verify if init value is > 0 <1>
-  validate({asset}) {
-    if (asset.initValue <= 0) {
-      throw new Error("NFT init value is too low.");
-    }
-  };
-}
-
-module.exports = CreateNFTAsset;
-----
-
-<1> Verifies that the initial value of the NFT is greater than 0.
-If not, the transaction is not applied, and a corresponding error is thrown.
 
 ==== The `apply()` function
 

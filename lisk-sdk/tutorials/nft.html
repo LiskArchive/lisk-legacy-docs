@@ -1476,6 +1476,10 @@ Same goes for the ID, though the minimum value for it is <code>1024</code>, as t
 <p>Next, define the account schema.
 This property defines the properties, that are added to each network account by the module, if it is registered with the application later.</p>
 </div>
+<div class="paragraph">
+<p>Here, we expect each account to have a property <code>ownNFTs</code>, which is an array of NFTs which the account owns.
+By default, it is empty.</p>
+</div>
 <div class="listingblock">
 <div class="title">nft/blockchain-app/nft-module/index.js</div>
 <div class="content">
@@ -1509,6 +1513,12 @@ module.exports = { NFTModule };</code></pre>
 </div>
 <div class="sect2">
 <h3 id="importing-transaction-assets-into-the-module"><a class="anchor" href="#importing-transaction-assets-into-the-module"></a>4.3. Importing transaction assets into the module</h3>
+<div class="paragraph">
+<p>Now let&#8217;s import the transactions which we created in section 2: <a href="#transaction-assets">Transaction assets</a> into the module.</p>
+</div>
+<div class="paragraph">
+<p>Add them to the <code>tansactionAssets</code> property like shown in the snippet below:</p>
+</div>
 <div class="listingblock">
 <div class="title">nft/blockchain-app/nft-module/index.js</div>
 <div class="content">
@@ -1517,6 +1527,7 @@ const { getAllNFTTokensAsJSON } = require("./nft");
 
 const CreateNFT = require("./transactions/create_nft");
 const PurchaseNFT = require("./transactions/purchase_nft");
+const TransferNFT = require("./transactions/transfer_nft");
 
 // Extend base module to implement your custom module
 class NFTModule extends BaseModule {
@@ -1538,7 +1549,8 @@ class NFTModule extends BaseModule {
       ownNFTs: [],
     },
   };
-  transactionAssets = [new CreateNFT(), new PurchaseNFT()];
+  // Add the transaction assets to the module
+  transactionAssets = [new CreateNFT(), new PurchaseNFT(), new TransferNFT()];
 }
 
 module.exports = { NFTModule };</code></pre>
@@ -1547,6 +1559,12 @@ module.exports = { NFTModule };</code></pre>
 </div>
 <div class="sect2">
 <h3 id="actions"><a class="anchor" href="#actions"></a>4.4. Actions</h3>
+<div class="paragraph">
+<p>As a last feature for the NFT module, we create an action <code>getAllNFTTokens</code> which will allow the frontend app later to retrieve a list of all existing NFT tokens.</p>
+</div>
+<div class="paragraph">
+<p>To implement it, we simply use the function <code>getAllNFTTokensAsJSON()</code>, which has been described in section <a href="#nft-related-functions">NFT related functions</a>.</p>
+</div>
 <div class="listingblock">
 <div class="title">nft/blockchain-app/nft-module/index.js</div>
 <div class="content">
@@ -1592,7 +1610,167 @@ module.exports = { NFTModule };</code></pre>
 <div class="sect1">
 <h2 id="the-nft-plugin"><a class="anchor" href="#the-nft-plugin"></a>5. The NFT plugin</h2>
 <div class="sectionbody">
+<div class="paragraph">
+<p>Now that all on-chain logic for the NFTs is defined in the NFT module, let&#8217;s add a corresponding NFT plugin, which will handle the off-chain logic for the NFT app.</p>
+</div>
+<div class="paragraph">
+<p>The NFT plugin shall provide a HTTP API which offers new endpoints for NFT related data from the blockchain.</p>
+</div>
+<div class="paragraph">
+<p>Move out of the <code>nft-module</code> folder back into the <code>blockchain-app</code> folder.
+Create a new folder <code>nft-api-plugin/</code> and inside it a new file <code>db.js</code>:</p>
+</div>
+<div class="listingblock">
+<div class="title">nft/blockchain-app/</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">mkdir nft-api-plugin
+touch nft-api-plugin/db.js</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">nft/blockchain-app/nft-api-plugin/db.js</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const fs_extra = require("fs-extra");
+const os = require("os");
+const path = require("path");
+const { cryptography, codec, db } = require("lisk-sdk");
 
+const DB_KEY_TRANSACTIONS = "nft:transactions";
+
+// Schemas
+const encodedTransactionSchema = {
+  $id: 'nft/encoded/transactions',
+  type: 'object',
+  required: ['transactions'],
+  properties: {
+    transactions: {
+      type: 'array',
+      fieldNumber: 1,
+      items: {
+        dataType: 'bytes',
+      },
+    },
+  },
+};
+
+const encodedNFTHistorySchema = {
+  $id: 'nft/encoded/nftHistory',
+  type: 'object',
+  required: ['nftHistory'],
+  properties: {
+    nftHistory: {
+      type: 'array',
+      fieldNumber: 1,
+      items: {
+        dataType: 'bytes',
+      },
+    },
+  },
+};
+
+// DB instance for the NFT plugin
+const getDBInstance = async (dataPath = '~/.lisk/nft-app/', dbName = 'nft_plugin.db') =&gt; {
+  const dirPath = path.join(dataPath.replace('~', os.homedir()), 'plugins/data', dbName);
+  await fs_extra.ensureDir(dirPath);
+  return new db.KVStore(dirPath);
+};
+
+
+const getTransactions = async (db) =&gt; {
+  try {
+    const encodedTransactions = await db.get(DB_KEY_TRANSACTIONS);
+    const { transactions } = codec.decode(encodedTransactionSchema, encodedTransactions);
+    return transactions;
+  }
+  catch (error) {
+    return [];
+  }
+};
+
+const getAllTransactions = async (db, registeredSchema) =&gt; {
+  const savedTransactions = await getTransactions(db);
+  const transactions = [];
+  for (const trx of savedTransactions) {
+    transactions.push(decodeTransaction(trx, registeredSchema));
+  }
+  return transactions;
+};
+
+const saveTransactions = async (db, payload) =&gt; {
+  const savedTransactions = await getTransactions(db);
+  const transactions = [...savedTransactions, ...payload];
+  const encodedTransactions = codec.encode(encodedTransactionSchema, { transactions });
+  await db.put(DB_KEY_TRANSACTIONS, encodedTransactions);
+};
+
+const getNFTHistory = async (db, dbKey) =&gt; {
+  try {
+    const encodedNFTHistory = await db.get(dbKey);
+    const { nftHistory } = codec.decode(encodedNFTHistorySchema, encodedNFTHistory);
+
+    return nftHistory;
+  }
+  catch (error) {
+    return [];
+  }
+};
+
+const saveNFTHistory = async (db, decodedBlock, registeredModules) =&gt; {
+  decodedBlock.payload.map(async trx =&gt; {
+    const module = registeredModules.find(m =&gt; m.id === trx.moduleID);
+    if (module.name === 'nft') {
+      const dbKey = `${trx.asset.name}`;
+      const base32Address = cryptography.getBase32AddressFromPublicKey(Buffer.from(trx.senderPublicKey, 'hex'), 'lsk');
+      const savedHistory = await getNFTHistory(db, dbKey);
+      const nftHistory = [Buffer.from(base32Address, 'binary'), ...savedHistory];
+      const encodedNFTHistory = codec.encode(encodedNFTHistorySchema, { nftHistory });
+      await db.put(dbKey, encodedNFTHistory);
+    }
+  });
+};
+
+const decodeTransaction = (
+  encodedTransaction,
+  registeredSchema,
+) =&gt; {
+  const transaction = codec.decode(registeredSchema.transaction, encodedTransaction);
+  const assetSchema = getTransactionAssetSchema(transaction, registeredSchema);
+  const asset = codec.decode(assetSchema, transaction.asset);
+  const id = cryptography.hash(encodedTransaction);
+  return {
+    ...codec.toJSON(registeredSchema.transaction, transaction),
+    asset: codec.toJSON(assetSchema, asset),
+    id: id.toString('hex'),
+  };
+};
+
+const getTransactionAssetSchema = (
+  transaction,
+  registeredSchema,
+) =&gt; {
+  const txAssetSchema = registeredSchema.transactionsAssets.find(
+    assetSchema =&gt;
+      assetSchema.moduleID === transaction.moduleID &amp;&amp; assetSchema.assetID === transaction.assetID,
+  );
+  if (!txAssetSchema) {
+    throw new Error(
+      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+      `ModuleID: ${transaction.moduleID} AssetID: ${transaction.assetID} is not registered.`,
+    );
+  }
+  return txAssetSchema.schema;
+};
+
+module.exports = {
+  getDBInstance,
+  getAllTransactions,
+  getTransactions,
+  saveTransactions,
+  saveNFTHistory,
+  getNFTHistory,
+}</code></pre>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">

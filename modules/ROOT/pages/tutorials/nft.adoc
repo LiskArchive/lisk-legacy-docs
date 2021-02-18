@@ -623,6 +623,91 @@ We use here the `reducerHandler` and invoke `token:debit` from xref:{url_referen
 We use here the `reducerHandler` and invoke `token:debit` from xref:{url_references_token_module}[] which allows to conveniently credit tokens to an account.
 
 === TransferNFT asset
+The last transaction asset that we want to implement in this tutorial is the `transferNFT` transaction.
+
+Create a new file `transfer_nft.js` inside the `transactions/` folder.
+Create the `transferNFT` asset by pasting the snippet below.
+
+.nft/blockchain-app/nft-module/transactions/transfer_nft.js
+[source,js]
+----
+const { BaseAsset } = require("lisk-sdk");
+const { getAllNFTTokens, setAllNFTTokens } = require("../nft_token");
+
+// 1.extend base asset to implement your custom asset
+class TransferNFTAsset extends BaseAsset {
+  // 2.define unique asset name and id
+  name = "transferNFT";
+  id = 2;
+  // 3.define asset schema for serialization
+  schema = {
+    $id: "lisk/nft/transfer",
+    type: "object",
+    required: ["nftId", "recipient"],
+    properties: {
+      nftId: {
+        dataType: "bytes",
+        fieldNumber: 1,
+      },
+      recipient: {
+        dataType: "bytes",
+        fieldNumber: 2,
+      },
+      name: {
+        dataType: "string",
+        fieldNumber: 3,
+      },
+    },
+  };
+
+  async apply({ asset, stateStore, reducerHandler, transaction }) {
+    const nftTokens = await getAllNFTTokens(stateStore);
+    const nftTokenIndex = nftTokens.findIndex((t) => t.id.equals(asset.nftId));
+
+    // 4.verify if the nft exists <1>
+    if (nftTokenIndex < 0) {
+      throw new Error("Token id not found");
+    }
+    const token = nftTokens[nftTokenIndex];
+    const tokenOwnerAddress = token.ownerAddress;
+    const senderAddress = transaction.senderAddress;
+    // 5.verify that the sender owns the nft <2>
+
+    if (!tokenOwnerAddress.equals(senderAddress)) {
+      throw new Error("An NFT can only be transferred by the owner of the NFT.");
+    }
+
+    const tokenOwner = await stateStore.account.get(tokenOwnerAddress);
+    // 6.remove nft from the owner account <3>
+    const ownerTokenIndex = tokenOwner.nft.ownNFTs.findIndex((a) =>
+      a.equals(token.id)
+    );
+    tokenOwner.nft.ownNFTs.splice(ownerTokenIndex, 1);
+    await stateStore.account.set(tokenOwnerAddress, tokenOwner);
+
+    // 7.add nft to the recipient account <4>
+    const recipientAddress = asset.recipient;
+    const recipientAccount = await stateStore.account.get(recipientAddress);
+    recipientAccount.nft.ownNFTs.push(token.id);
+    await stateStore.account.set(recipientAddress, recipientAccount);
+
+    token.ownerAddress = recipientAddress;
+    nftTokens[nftTokenIndex] = token;
+    await setAllNFTTokens(stateStore, nftTokens);
+  }
+}
+
+module.exports = TransferNFTAsset;
+----
+
+<1> First verify, that the NFT which is purchased exists in the databbase.
+To do this, we request all NFTs with `getAllNFTTokens()` and search inside the returned list for the desired NFT ID.
+If no NFT is found, a corresponding error is thrown.
+<2> Next verify, that the account who wants to transfer the NFT actually owns the NFT.
+<3> Next, it is needed to remove the NFT from the current owner account.
+The `StateStore` is used here to retrieve the owner account data from the database and later to update the owner account in the database, after the token ID has been removed from their owned tokens.
+<4> Next, we add the NFT to the account of the recipient.
+The `StateStore` is used again to update the recipient account in the database, after the token ID has been added to their owned tokens.
 
 == The NFT module
 

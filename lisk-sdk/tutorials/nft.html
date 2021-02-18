@@ -852,13 +852,35 @@ If not, the transaction is not applied, and a corresponding error is thrown.</td
 <div class="ulist">
 <ul>
 <li>
-<p><code>registeredNFTTokensSchema</code>: The schema, how the NFTs are saved in the database.</p>
+<p><code>registeredNFTTokensSchema</code>: The schema, how the NFTs are saved in the database.
+Each NFT has the following properties:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>id</p>
+</li>
+<li>
+<p>value</p>
+</li>
+<li>
+<p>ownerAddress</p>
+</li>
+<li>
+<p>minPurchaseMargin</p>
+</li>
+<li>
+<p>name</p>
+</li>
+</ul>
+</div>
 </li>
 <li>
 <p><code>CHAIN_STATE_NFT_TOKENS</code>: The key under which the NFTs are saved in the database.</p>
 </li>
 <li>
-<p><code>createNFTToken()</code>: Creates a new NFT based on provided <code>name</code>, <code>ownerAddress</code>, <code>nonce</code>, <code>value</code> and  <code>minPurchaseMargin</code>.</p>
+<p><code>createNFTToken()</code>: Creates a new NFT based on provided <code>name</code>, <code>ownerAddress</code>, <code>nonce</code>, <code>value</code> and  <code>minPurchaseMargin</code>.
+The ID for the NFT is created by combining and hashing the owner address and its' current nonce, which in combination always creates a unique value.
+This way it is ensured that each newly created NFT has a unique ID in the database.</p>
 </li>
 <li>
 <p><code>setAllNFTTokens()</code>: Saves provided NFTs to the database.</p>
@@ -880,7 +902,7 @@ If not, the transaction is not applied, and a corresponding error is thrown.</td
 <td class="content">
 <div class="paragraph">
 <p>You might have spotted, that we use special parameters in the functions, like <code>stateStore</code> and <code>dataAccess</code>.
-These variables are available in the module or plugin files, and are explained in more detail in the next section.</p>
+These variables are available in the module or plugin files, and are explained in more detail in the next sections.</p>
 </div>
 </td>
 </tr>
@@ -934,6 +956,7 @@ const CHAIN_STATE_NFT_TOKENS = "nft:registeredNFTTokens";
 const createNFTToken = ({ name, ownerAddress, nonce, value, minPurchaseMargin }) =&gt; {
   const nonceBuffer = Buffer.alloc(8);
   nonceBuffer.writeBigInt64LE(nonce);
+  // Create a unique seed by using a combination of the owner account address and the current nonce of the account.
   const seed = Buffer.concat([ownerAddress, nonceBuffer]);
   const id = cryptography.hash(seed);
 
@@ -1268,7 +1291,109 @@ We use here the <code>reducerHandler</code> and invoke <code>token:debit</code> 
 </div>
 <div class="sect2">
 <h3 id="transfernft-asset"><a class="anchor" href="#transfernft-asset"></a>2.3. TransferNFT asset</h3>
+<div class="paragraph">
+<p>The last transaction asset that we want to implement in this tutorial is the <code>transferNFT</code> transaction.</p>
+</div>
+<div class="paragraph">
+<p>Create a new file <code>transfer_nft.js</code> inside the <code>transactions/</code> folder.
+Create the <code>transferNFT</code> asset by pasting the snippet below.</p>
+</div>
+<div class="listingblock">
+<div class="title">nft/blockchain-app/nft-module/transactions/transfer_nft.js</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { BaseAsset } = require("lisk-sdk");
+const { getAllNFTTokens, setAllNFTTokens } = require("../nft_token");
 
+// 1.extend base asset to implement your custom asset
+class TransferNFTAsset extends BaseAsset {
+  // 2.define unique asset name and id
+  name = "transferNFT";
+  id = 2;
+  // 3.define asset schema for serialization
+  schema = {
+    $id: "lisk/nft/transfer",
+    type: "object",
+    required: ["nftId", "recipient"],
+    properties: {
+      nftId: {
+        dataType: "bytes",
+        fieldNumber: 1,
+      },
+      recipient: {
+        dataType: "bytes",
+        fieldNumber: 2,
+      },
+      name: {
+        dataType: "string",
+        fieldNumber: 3,
+      },
+    },
+  };
+
+  async apply({ asset, stateStore, reducerHandler, transaction }) {
+    const nftTokens = await getAllNFTTokens(stateStore);
+    const nftTokenIndex = nftTokens.findIndex((t) =&gt; t.id.equals(asset.nftId));
+
+    // 4.verify if the nft exists <i class="conum" data-value="1"></i><b>(1)</b>
+    if (nftTokenIndex &lt; 0) {
+      throw new Error("Token id not found");
+    }
+    const token = nftTokens[nftTokenIndex];
+    const tokenOwnerAddress = token.ownerAddress;
+    const senderAddress = transaction.senderAddress;
+    // 5.verify that the sender owns the nft <i class="conum" data-value="2"></i><b>(2)</b>
+
+    if (!tokenOwnerAddress.equals(senderAddress)) {
+      throw new Error("An NFT can only be transferred by the owner of the NFT.");
+    }
+
+    const tokenOwner = await stateStore.account.get(tokenOwnerAddress);
+    // 6.remove nft from the owner account <i class="conum" data-value="3"></i><b>(3)</b>
+    const ownerTokenIndex = tokenOwner.nft.ownNFTs.findIndex((a) =&gt;
+      a.equals(token.id)
+    );
+    tokenOwner.nft.ownNFTs.splice(ownerTokenIndex, 1);
+    await stateStore.account.set(tokenOwnerAddress, tokenOwner);
+
+    // 7.add nft to the recipient account <i class="conum" data-value="4"></i><b>(4)</b>
+    const recipientAddress = asset.recipient;
+    const recipientAccount = await stateStore.account.get(recipientAddress);
+    recipientAccount.nft.ownNFTs.push(token.id);
+    await stateStore.account.set(recipientAddress, recipientAccount);
+
+    token.ownerAddress = recipientAddress;
+    nftTokens[nftTokenIndex] = token;
+    await setAllNFTTokens(stateStore, nftTokens);
+  }
+}
+
+module.exports = TransferNFTAsset;</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>First verify, that the NFT which is purchased exists in the databbase.
+To do this, we request all NFTs with <code>getAllNFTTokens()</code> and search inside the returned list for the desired NFT ID.
+If no NFT is found, a corresponding error is thrown.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Next verify, that the account who wants to transfer the NFT actually owns the NFT.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Next, it is needed to remove the NFT from the current owner account.
+The <code>StateStore</code> is used here to retrieve the owner account data from the database and later to update the owner account in the database, after the token ID has been removed from their owned tokens.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Next, we add the NFT to the account of the recipient.
+The <code>StateStore</code> is used again to update the recipient account in the database, after the token ID has been added to their owned tokens.</td>
+</tr>
+</table>
+</div>
 </div>
 </div>
 </div>

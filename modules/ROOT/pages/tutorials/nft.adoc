@@ -891,14 +891,84 @@ Now that all on-chain logic for the NFTs is defined in the NFT module, let's add
 The NFT plugin shall provide a HTTP API which offers new endpoints for NFT related data from the blockchain.
 
 Move out of the `nft-module` folder back into the `blockchain-app` folder.
-Create a new folder `nft-api-plugin/` and inside it a new file `db.js`:
+Create a new folder `nft-api-plugin/`.
+
+Inside the `nft-api-plugin/` folder, create a new file `index.js`.
 
 .nft/blockchain-app/
 [source,bash]
 ----
 mkdir nft-api-plugin
-touch nft-api-plugin/db.js
+touch nft-api-plugin/index.js
 ----
+
+Open `index.js` and create the skeleton, which will contain all parts of the NFT plugin:
+
+.nft/blockchain-app/nft-api-plugin/index.js
+[source,js]
+----
+const { BasePlugin } = require("lisk-sdk");
+const pJSON = require("../package.json");
+
+class NFTAPIPlugin extends BasePlugin { <1>
+  _server = undefined;
+  _app = undefined;
+  _channel = undefined;
+  _db = undefined;
+  _nodeInfo = undefined;
+
+  static get alias() { <2>
+    return "NFTHttpApi";
+  }
+
+  static get info() { <3>
+    return {
+      author: pJSON.author,
+      version: pJSON.version,
+      name: pJSON.name,
+    };
+  }
+
+  get defaults() {
+    return {};
+  }
+
+  get events() {
+    return [];
+  }
+
+  get actions() {
+    return {};
+  }
+}
+
+module.exports = { NFTAPIPlugin }; <4>
+----
+
+<1> Extend from the base plugin to implement a custom plugin.
+<2> Set the alias for the plugin to `NFTHttpApi`.
+<3> Set the meta information for the plugin.
+Here, we use the data from the `package.json` file.
+<4> Export the plugin, so it can be imported later into the application.
+
+Next, we will define all required properties for the plugin one after another.
+
+=== Database related functions
+For a better overview, we will first create another file which will contain the functions related to the plugin database.
+
+Create a new file `db.js`.
+Paste the below snippet into the newly created file `db.js`.
+
+`db.js` contains various functions that take care of the following aspects:
+
+* `getDBInstance(dataPath,dbName)`: Create a new key-value store `nft_plugin.db` for the NFT plugin.
+The key-value store is used to store NFT related blockchain information of the plugin in a schema that makes it conveniently accessible for third party services.
+* `saveTransactions(db, payload)`: Saves new transactions to the DB.
+* `getAllTransactions(db, registeredSchema)`: Returns a list of all transactions from the DB.
+* `getNFTHistory(db, dbKey)`: Returns the owner history of an NFT.
+* `saveNFTHistory(db, decodedBlock, registeredModules)`: Filters for transactions of the NFT module in the decoded block.
+Updates the NFT history based on the found NFT transaction in the block.
+Saves the individual owner history for the corresponding NFTs in the database.
 
 .nft/blockchain-app/nft-api-plugin/db.js
 [source,js]
@@ -941,13 +1011,18 @@ const encodedNFTHistorySchema = {
   },
 };
 
-// DB instance for the NFT plugin
 const getDBInstance = async (dataPath = '~/.lisk/nft-app/', dbName = 'nft_plugin.db') => {
   const dirPath = path.join(dataPath.replace('~', os.homedir()), 'plugins/data', dbName);
   await fs_extra.ensureDir(dirPath);
   return new db.KVStore(dirPath);
 };
 
+const saveTransactions = async (db, payload) => {
+  const savedTransactions = await getTransactions(db);
+  const transactions = [...savedTransactions, ...payload];
+  const encodedTransactions = codec.encode(encodedTransactionSchema, { transactions });
+  await db.put(DB_KEY_TRANSACTIONS, encodedTransactions);
+};
 
 const getTransactions = async (db) => {
   try {
@@ -969,13 +1044,6 @@ const getAllTransactions = async (db, registeredSchema) => {
   return transactions;
 };
 
-const saveTransactions = async (db, payload) => {
-  const savedTransactions = await getTransactions(db);
-  const transactions = [...savedTransactions, ...payload];
-  const encodedTransactions = codec.encode(encodedTransactionSchema, { transactions });
-  await db.put(DB_KEY_TRANSACTIONS, encodedTransactions);
-};
-
 const getNFTHistory = async (db, dbKey) => {
   try {
     const encodedNFTHistory = await db.get(dbKey);
@@ -992,7 +1060,7 @@ const saveNFTHistory = async (db, decodedBlock, registeredModules) => {
   decodedBlock.payload.map(async trx => {
     const module = registeredModules.find(m => m.id === trx.moduleID);
     if (module.name === 'nft') {
-      const dbKey = `${trx.asset.name}`;
+      const dbKey = `nft${trx.asset.nftId}`;
       const base32Address = cryptography.getBase32AddressFromPublicKey(Buffer.from(trx.senderPublicKey, 'hex'), 'lsk');
       const savedHistory = await getNFTHistory(db, dbKey);
       const nftHistory = [Buffer.from(base32Address, 'binary'), ...savedHistory];
@@ -1043,5 +1111,8 @@ module.exports = {
   getNFTHistory,
 }
 ----
+
+=== The plugin alias
+
 
 == Frontend application

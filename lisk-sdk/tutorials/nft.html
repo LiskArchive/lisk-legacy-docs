@@ -1618,14 +1618,117 @@ module.exports = { NFTModule };</code></pre>
 </div>
 <div class="paragraph">
 <p>Move out of the <code>nft-module</code> folder back into the <code>blockchain-app</code> folder.
-Create a new folder <code>nft-api-plugin/</code> and inside it a new file <code>db.js</code>:</p>
+Create a new folder <code>nft-api-plugin/</code>.</p>
+</div>
+<div class="paragraph">
+<p>Inside the <code>nft-api-plugin/</code> folder, create a new file <code>index.js</code>.</p>
 </div>
 <div class="listingblock">
 <div class="title">nft/blockchain-app/</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">mkdir nft-api-plugin
-touch nft-api-plugin/db.js</code></pre>
+touch nft-api-plugin/index.js</code></pre>
 </div>
+</div>
+<div class="paragraph">
+<p>Open <code>index.js</code> and create the skeleton, which will contain all parts of the NFT plugin:</p>
+</div>
+<div class="listingblock">
+<div class="title">nft/blockchain-app/nft-api-plugin/index.js</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { BasePlugin } = require("lisk-sdk");
+const pJSON = require("../package.json");
+
+class NFTAPIPlugin extends BasePlugin { <i class="conum" data-value="1"></i><b>(1)</b>
+  _server = undefined;
+  _app = undefined;
+  _channel = undefined;
+  _db = undefined;
+  _nodeInfo = undefined;
+
+  static get alias() { <i class="conum" data-value="2"></i><b>(2)</b>
+    return "NFTHttpApi";
+  }
+
+  static get info() { <i class="conum" data-value="3"></i><b>(3)</b>
+    return {
+      author: pJSON.author,
+      version: pJSON.version,
+      name: pJSON.name,
+    };
+  }
+
+  get defaults() {
+    return {};
+  }
+
+  get events() {
+    return [];
+  }
+
+  get actions() {
+    return {};
+  }
+}
+
+module.exports = { NFTAPIPlugin }; <i class="conum" data-value="4"></i><b>(4)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Extend from the base plugin to implement a custom plugin.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Set the alias for the plugin to <code>NFTHttpApi</code>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Set the meta information for the plugin.
+Here, we use the data from the <code>package.json</code> file.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Export the plugin, so it can be imported later into the application.</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="database-related-functions"><a class="anchor" href="#database-related-functions"></a>5.1. Database related functions</h3>
+<div class="paragraph">
+<p>For a better overview, first create another file which will contain the functions related to the plugin database.
+Here, we use a key-value store to save the data, similar to how the on-chain related data is saved in the default key-value store of the blockchain application.</p>
+</div>
+<div class="paragraph">
+<p>Create a new file <code>db.js</code>.
+Paste the below snippet into the newly created file <code>db.js</code>.</p>
+</div>
+<div class="paragraph">
+<p><code>db.js</code> contains various functions that take care of the following aspects:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>getDBInstance(dataPath,dbName)</code>: Creates a new key-value store <code>nft_plugin.db</code> for the NFT plugin.
+The key-value store is used to store NFT related blockchain information of the plugin in a schema that makes it conveniently accessible for third party services.</p>
+</li>
+<li>
+<p><code>saveTransactions(db, payload)</code>: Saves new transactions to the DB.</p>
+</li>
+<li>
+<p><code>getAllTransactions(db, registeredSchema)</code>: Returns a list of all transactions from the DB.</p>
+</li>
+<li>
+<p><code>getNFTHistory(db, dbKey)</code>: Returns the owner history of an NFT.</p>
+</li>
+<li>
+<p><code>saveNFTHistory(db, decodedBlock, registeredModules)</code>: Filters for transactions of the NFT module in the decoded block.
+Updates the NFT history based on the found NFT transaction in the block.
+Saves the individual owner history for the corresponding NFTs in the database.</p>
+</li>
+</ul>
 </div>
 <div class="listingblock">
 <div class="title">nft/blockchain-app/nft-api-plugin/db.js</div>
@@ -1635,10 +1738,10 @@ const os = require("os");
 const path = require("path");
 const { cryptography, codec, db } = require("lisk-sdk");
 
-const DB_KEY_TRANSACTIONS = "nft:transactions";
+const DB_KEY_TRANSACTIONS = "nft:transactions"; <i class="conum" data-value="1"></i><b>(1)</b>
 
 // Schemas
-const encodedTransactionSchema = {
+const encodedTransactionSchema = { <i class="conum" data-value="2"></i><b>(2)</b>
   $id: 'nft/encoded/transactions',
   type: 'object',
   required: ['transactions'],
@@ -1653,7 +1756,7 @@ const encodedTransactionSchema = {
   },
 };
 
-const encodedNFTHistorySchema = {
+const encodedNFTHistorySchema = { <i class="conum" data-value="3"></i><b>(3)</b>
   $id: 'nft/encoded/nftHistory',
   type: 'object',
   required: ['nftHistory'],
@@ -1668,13 +1771,18 @@ const encodedNFTHistorySchema = {
   },
 };
 
-// DB instance for the NFT plugin
 const getDBInstance = async (dataPath = '~/.lisk/nft-app/', dbName = 'nft_plugin.db') =&gt; {
   const dirPath = path.join(dataPath.replace('~', os.homedir()), 'plugins/data', dbName);
   await fs_extra.ensureDir(dirPath);
   return new db.KVStore(dirPath);
 };
 
+const saveTransactions = async (db, payload) =&gt; {
+  const savedTransactions = await getTransactions(db);
+  const transactions = [...savedTransactions, ...payload];
+  const encodedTransactions = codec.encode(encodedTransactionSchema, { transactions });
+  await db.put(DB_KEY_TRANSACTIONS, encodedTransactions);
+};
 
 const getTransactions = async (db) =&gt; {
   try {
@@ -1696,13 +1804,6 @@ const getAllTransactions = async (db, registeredSchema) =&gt; {
   return transactions;
 };
 
-const saveTransactions = async (db, payload) =&gt; {
-  const savedTransactions = await getTransactions(db);
-  const transactions = [...savedTransactions, ...payload];
-  const encodedTransactions = codec.encode(encodedTransactionSchema, { transactions });
-  await db.put(DB_KEY_TRANSACTIONS, encodedTransactions);
-};
-
 const getNFTHistory = async (db, dbKey) =&gt; {
   try {
     const encodedNFTHistory = await db.get(dbKey);
@@ -1719,7 +1820,7 @@ const saveNFTHistory = async (db, decodedBlock, registeredModules) =&gt; {
   decodedBlock.payload.map(async trx =&gt; {
     const module = registeredModules.find(m =&gt; m.id === trx.moduleID);
     if (module.name === 'nft') {
-      const dbKey = `${trx.asset.name}`;
+      const dbKey = `nft/${trx.asset.nftId}`; <i class="conum" data-value="4"></i><b>(4)</b>
       const base32Address = cryptography.getBase32AddressFromPublicKey(Buffer.from(trx.senderPublicKey, 'hex'), 'lsk');
       const savedHistory = await getNFTHistory(db, dbKey);
       const nftHistory = [Buffer.from(base32Address, 'binary'), ...savedHistory];
@@ -1771,12 +1872,303 @@ module.exports = {
 }</code></pre>
 </div>
 </div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td><code>DB_KEY_TRANSACTIONS</code>: The key we use to save the transactions in the key-value store.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td><code>encodedTransactionSchema</code>: The schema how the transactions will be saved in the key-value store.
+Here, we define a simple array which contains the encoded transactions.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td><code>encodedNFTHistorySchema</code>: The schema how the owner history of an NFT is saved in the key-value store
+Here, we define a simple array, which contains the adresses of the current and all previous owners of the NFT.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td><code>dbKey</code>: The key we use to save the owner history of a NFT in the key-value store.</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="the-plugin-logic"><a class="anchor" href="#the-plugin-logic"></a>5.2. The plugin logic</h3>
+<div class="paragraph">
+<p>Now go back to <code>index.js</code> and implement the desired plugin logic.</p>
+</div>
+<div class="paragraph">
+<p>The plugin shall provide the following additional data to the application:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>a list of all existing NFTs and their corresponding owner history.</p>
+</li>
+<li>
+<p>details of an NFT including the owner history, by NFT ID.</p>
+</li>
+<li>
+<p>a list of all transactions, including their module and asset IDs and the transaction asset.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>To create this data, the plugin needs to listen to events for new blocks in the blockchain application.
+When a new block is created, the plugin checks if the block contains transactions and if so, saves them in the key-value store of the plugin.
+In case the block contains transactions of the NFT module, it will also update the owner history of the NFTs in the key-value store.</p>
+</div>
+<div class="paragraph">
+<p>We will then create an HTTP server and create the required API endpoints to serve the data to the frontend application.</p>
+</div>
+<div class="paragraph">
+<p>We define all of this inside of the <code>load()</code> function.
+All code inside the <code>load()</code> function is executed by the blockchain application when it loads the plugin.</p>
+</div>
+<div class="paragraph">
+<p>The code in the <code>unload()</code> function is executed in complement by the blockchain application when it unloads the plugin.</p>
+</div>
+<div class="listingblock">
+<div class="title">nft/blockchain-app/nft-api-plugin/index.js</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const express = require("express");
+const cors = require("cors");
+const { BasePlugin, codec } = require("lisk-sdk");
+const pJSON = require("../package.json");
+const { getDBInstance, getNFTHistory, getAllTransactions, saveNFTHistory, saveTransactions } = require("./db");
+
+// 1.plugin can be a daemon/HTTP/Websocket service for off-chain processing
+class NFTAPIPlugin extends BasePlugin {
+  _server = undefined;
+  _app = undefined;
+  _channel = undefined;
+  _db = undefined;
+  _nodeInfo = undefined;
+
+  static get alias() {
+    return "NFTHttpApi";
+  }
+
+  static get info() {
+    return {
+      author: pJSON.author,
+      version: pJSON.version,
+      name: pJSON.name,
+    };
+  }
+
+  get defaults() {
+    return {};
+  }
+
+  get events() {
+    return [];
+  }
+
+  get actions() {
+    return {};
+  }
+
+  async load(channel) {
+    this._app = express();
+    this._channel = channel;
+    this._db = await getDBInstance();
+    this._nodeInfo = await this._channel.invoke("app:getNodeInfo");
+
+
+    this._app.use(cors({ origin: "*", methods: ["GET", "POST", "PUT"] }));
+    this._app.use(express.json());
+
+    this._app.get("/api/nft_tokens", async (_req, res) =&gt; {
+      const nftTokens = await this._channel.invoke("nft:getAllNFTTokens");
+      const data = await Promise.all(nftTokens.map(async token =&gt; {
+        const dbKey = `${token.name}`;
+        let tokenHistory = await getNFTHistory(this._db, dbKey);
+        tokenHistory = tokenHistory.map(h =&gt; h.toString('binary'));
+        return {
+          ...token,
+          tokenHistory,
+        }
+      }));
+
+      res.json({ data });
+    });
+
+    this._app.get("/api/nft_tokens/:id", async (req, res) =&gt; {
+      const nftTokens = await this._channel.invoke("nft:getAllNFTTokens");
+      const token = nftTokens.find((t) =&gt; t.id === req.params.id);
+      const dbKey = `${token.name}`;
+      let tokenHistory = await getNFTHistory(this._db, dbKey);
+      tokenHistory = tokenHistory.map(h =&gt; h.toString('binary'));
+
+      res.json({ data: { ...token, tokenHistory } });
+    });
+
+    this._app.get("/api/transactions", async (_req, res) =&gt; {
+      const transactions = await getAllTransactions(this._db, this.schemas);
+
+      const data = transactions.map(trx =&gt; {
+        const module = this._nodeInfo.registeredModules.find(m =&gt; m.id === trx.moduleID);
+        const asset = module.transactionAssets.find(a =&gt; a.id === trx.assetID);
+        return {
+          ...trx,
+          ...trx.asset,
+          moduleName: module.name,
+          assetName: asset.name,
+        }
+      })
+      res.json({ data });
+    });
+
+    this._subscribeToChannel();
+
+    this._server = this._app.listen(8080, "0.0.0.0");
+  }
+
+  _subscribeToChannel() {
+    // listen to application events and enrich blockchain data for UI/third party application
+    this._channel.subscribe('app:block:new', async (data) =&gt; {
+      const { block } = data;
+      const { payload } = codec.decode(
+        this.schemas.block,
+        Buffer.from(block, 'hex'),
+      );
+      if (payload.length &gt; 0) {
+        await saveTransactions(this._db, payload);
+        const decodedBlock = this.codec.decodeBlock(block);
+        // save NFT transaction history
+        await saveNFTHistory(this._db, decodedBlock, this._nodeInfo.registeredModules);
+      }
+    });
+  }
+
+  async unload() {
+    // close http server
+    await new Promise((resolve, reject) =&gt; {
+      this._server.close((err) =&gt; {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve();
+      });
+    });
+    // close database connection
+    await this._db.close();
+  }
+}
+
+module.exports = { NFTAPIPlugin };</code></pre>
+</div>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="frontend-application"><a class="anchor" href="#frontend-application"></a>6. Frontend application</h2>
+<h2 id="registering-module-and-plugin"><a class="anchor" href="#registering-module-and-plugin"></a>6. Registering module and plugin</h2>
 <div class="sectionbody">
+<div class="paragraph">
+<p>Now that the NFT module and plugin have been implemented, we need to let the blockchain application know about them.</p>
+</div>
+<div class="paragraph">
+<p>This is done by registering them with the blockchain application like shown below.</p>
+</div>
+<div class="paragraph">
+<p>Open again the <code>nft/blockchain-app/index.js</code> file and paste the following code:</p>
+</div>
+<div class="listingblock">
+<div class="title">nft/blockchain-app/index.js</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">// 1.Import lisk sdk to create the blockchain application
+const {
+	Application,
+	configDevnet,
+	genesisBlockDevnet,
+	HTTPAPIPlugin,
+	utils,
+} = require('lisk-sdk');
 
+// 2.Import NFT module and Plugin
+const { NFTModule } = require('./nft-module');
+const { NFTAPIPlugin } = require('./nft-api-plugin');
+
+// 3.Update the genesis block accounts to include NFT module attributes
+genesisBlockDevnet.header.timestamp = 1605699440;
+genesisBlockDevnet.header.asset.accounts = genesisBlockDevnet.header.asset.accounts.map(
+	(a) =&gt;
+		utils.objects.mergeDeep({}, a, {
+			nft: {
+				ownNFTs: [],
+			},
+		}),
+);
+
+// 4.Update application config to include unique label
+// and communityIdentifier to mitigate transaction replay
+const appConfig = utils.objects.mergeDeep({}, configDevnet, {
+	label: 'nft-app',
+	genesisConfig: { communityIdentifier: 'NFT' }, //In order to have a unique networkIdentifier
+	logger: {
+		consoleLogLevel: 'info',
+	},
+});
+
+// 5.Initialize the application with genesis block and application config
+const app = Application.defaultApplication(genesisBlockDevnet, appConfig);
+
+// 6.Register custom NFT Module and Plugins
+app.registerModule(NFTModule);
+app.registerPlugin(HTTPAPIPlugin);
+app.registerPlugin(NFTAPIPlugin);
+
+// 7.Run the application
+app
+	.run()
+	.then(() =&gt; console.info('NFT Blockchain running....'))
+	.catch(console.error);</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Save and close the <code>index.js</code>.</p>
+</div>
+<div class="paragraph">
+<p>When you start the application now again with <code>node index.js</code>, the blockchain application will load the newly created NFT module and the plugins and the new features become availalbe to the blockchain application.</p>
+</div>
+<div class="paragraph">
+<p>In the next step, we will build a simple React frontend, which allows us to interact with the blockchain application through the browser.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="frontend-application"><a class="anchor" href="#frontend-application"></a>7. Frontend application</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The final part of the NFT application is the frontend application.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The development of the frontend application is absolutely flexible, and you can use any technology stack that you feel comfortable with.</p>
+</div>
+<div class="paragraph">
+<p>In this example, we use React to build the client application.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>This tutorial is mainly about explaining how to build with the Lisk SDK, therefore other parts of the frontend app wont be explained in much detail.
+You can get more information about how to build React application for example at the <a href="https://reactjs.org/docs/getting-started.html" target="_blank" rel="noopener">official React documentation</a>.</p>
+</div>
 </div>
 </div>
     <div class="bottom-links">

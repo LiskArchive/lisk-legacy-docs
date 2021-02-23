@@ -1462,9 +1462,9 @@ image:tutorials/nft/04-create-nft.png[]
 
 After approx. 10 seconds, the NFT should appear on the home page, after refreshing the page.
 
-At the bottom of the NFT card, the user has now the option to transfer or purchase the NFT.
-
 image:tutorials/nft/05-home-nft.png[]
+
+At the bottom of the NFT card, the user has now the option to transfer or purchase the NFT.
 
 ==== Transferring an NFT
 
@@ -1527,6 +1527,26 @@ Next let's take a dive into the most important parts of the frontend app, regard
 
 === API related functions
 
+At first define multiple functions that fetch data from the HTTP API of the blockchain information.
+
+The NFT blockchain app offers two different HTTP APIs:
+
+* http://localhost:4000/api/ : The API of the `HTTPAPIPlugin`.
+Used to retrieve general blockchain infromation from the database.
+* http://localhost:8080/api/ : The API of the `NFTAPIPlugin`.
+Used to retrieve NFT related information from the database.
+
+We will use both APIs and their provided endpoints to retrieve the following data:
+
+* General blockchain information
+** `fetchNodeInfo()`: Returns information about the connected node.
+** `fetchAccountInfo(address)`: Returns details of a specific account, based on its address.
+** `sendTransactions(tx)`: Sends a specified transaction obbject `tx` to the node.
+* NFT related information
+** `fetchAllNFTTokens()`: Fetches a list of all registered NFTs int he network.
+** `fetchNFTToken()`: Returns details of a specific NFT, based on its ID.
+** `getAllTransactions()`: Returns a list of all posted trasnactions int he network.
+
 .frontend-app/src/api/index.js
 [source,js]
 ----
@@ -1578,7 +1598,6 @@ export const getAllTransactions = async () => {
 === Dialogs
 
 ==== Create account dialog
-
 .frontend-app/src/components/dialogs/CreateAccountDialog.js
 [source,jsx]
 ----
@@ -1642,6 +1661,81 @@ export default function CreateAccountDialog(props) {
 }
 ----
 ==== Create NFT dialog
+
+
+.frontend-app/src/utils/transactions/create_nft_token.js
+[source,js]
+----
+/* global BigInt */
+
+import { transactions, codec, cryptography } from "@liskhq/lisk-client";
+import { getFullAssetSchema, calcMinTxFee } from "../common";
+import { fetchAccountInfo } from "../../api";
+
+export const createNFTTokenSchema = {
+  $id: "lisk/create-nft-asset",
+  type: "object",
+  required: ["minPurchaseMargin", "initValue", "name"],
+  properties: {
+    minPurchaseMargin: {
+      dataType: "uint32",
+      fieldNumber: 1,
+    },
+    initValue: {
+      dataType: "uint64",
+      fieldNumber: 2,
+    },
+    name: {
+      dataType: "string",
+      fieldNumber: 3,
+    },
+  },
+};
+
+export const createNFTToken = async ({
+  name,
+  initValue,
+  minPurchaseMargin,
+  passphrase,
+  fee,
+  networkIdentifier,
+  minFeePerByte,
+}) => {
+  const { publicKey } = cryptography.getPrivateAndPublicKeyFromPassphrase(
+    passphrase
+  );
+  const address = cryptography.getAddressFromPassphrase(passphrase).toString("hex");
+
+  const {
+    sequence: { nonce },
+  } = await fetchAccountInfo(address);
+
+  const { id, ...rest } = transactions.signTransaction(
+    createNFTTokenSchema,
+    {
+      moduleID: 1024,
+      assetID: 0,
+      nonce: BigInt(nonce),
+      fee: BigInt(transactions.convertLSKToBeddows(fee)),
+      senderPublicKey: publicKey,
+      asset: {
+        name,
+        initValue: BigInt(transactions.convertLSKToBeddows(initValue)),
+        minPurchaseMargin: parseInt(minPurchaseMargin),
+      },
+    },
+    Buffer.from(networkIdentifier, "hex"),
+    passphrase
+  );
+
+  return {
+    id: id.toString("hex"),
+    tx: codec.codec.toJSON(getFullAssetSchema(createNFTTokenSchema), rest),
+    minFee: calcMinTxFee(createNFTTokenSchema, minFeePerByte, rest),
+  };
+};
+----
+
 .frontend-app/src/components/dialogs/CreateNFTTokenDialog.js
 [source,jsx]
 ----
@@ -1747,6 +1841,79 @@ export default function CreateNFTTokenDialog(props) {
 }
 ----
 ==== Purchase NFT dialog
+
+.frontend-app/src/utils/transactions/purchase_nft_token.js
+[source,js]
+----
+/* global BigInt */
+
+import { transactions, codec, cryptography } from "@liskhq/lisk-client";
+import { getFullAssetSchema, calcMinTxFee } from "../common";
+import { fetchAccountInfo } from "../../api";
+
+export const purchaseNFTTokenSchema = {
+  $id: "lisk/nft/purchase",
+  type: "object",
+  required: ["nftId", "purchaseValue"],
+  properties: {
+    nftId: {
+      dataType: "bytes",
+      fieldNumber: 1,
+    },
+    purchaseValue: {
+      dataType: "uint64",
+      fieldNumber: 2,
+    },
+    name: {
+      dataType: "string",
+      fieldNumber: 3,
+    },
+  },
+};
+
+export const purchaseNFTToken = async ({
+  name,
+  nftId,
+  purchaseValue,
+  passphrase,
+  fee,
+  networkIdentifier,
+  minFeePerByte,
+}) => {
+  const { publicKey } = cryptography.getPrivateAndPublicKeyFromPassphrase(
+    passphrase
+  );
+  const address = cryptography.getAddressFromPassphrase(passphrase);
+  const {
+    sequence: { nonce },
+  } = await fetchAccountInfo(address.toString("hex"));
+
+  const { id, ...rest } = transactions.signTransaction(
+    purchaseNFTTokenSchema,
+    {
+      moduleID: 1024,
+      assetID: 1,
+      nonce: BigInt(nonce),
+      fee: BigInt(transactions.convertLSKToBeddows(fee)),
+      senderPublicKey: publicKey,
+      asset: {
+        name,
+        nftId: Buffer.from(nftId, "hex"),
+        purchaseValue: BigInt(transactions.convertLSKToBeddows(purchaseValue)),
+      },
+    },
+    Buffer.from(networkIdentifier, "hex"),
+    passphrase
+  );
+
+  return {
+    id: id.toString("hex"),
+    tx: codec.codec.toJSON(getFullAssetSchema(purchaseNFTTokenSchema), rest),
+    minFee: calcMinTxFee(purchaseNFTTokenSchema, minFeePerByte, rest),
+  };
+};
+----
+
 .frontend-app/src/components/dialogs/PurchaseNFTTokenDialog.js
 [source,jsx]
 ----
@@ -1863,6 +2030,83 @@ export default function PurchaseNFTTokenDialog(props) {
 }
 ----
 ==== Transfer funds dialog
+
+.frontend-app/src/utils/transactions/transfer.js
+[source,js]
+----
+/* global BigInt */
+
+import { transactions, codec, cryptography } from "@liskhq/lisk-client";
+import { getFullAssetSchema, calcMinTxFee } from "../common";
+import { fetchAccountInfo } from "../../api";
+
+export const transferAssetSchema = {
+  $id: "lisk/transfer-asset",
+  title: "Transfer transaction asset",
+  type: "object",
+  required: ["amount", "recipientAddress", "data"],
+  properties: {
+    amount: {
+      dataType: "uint64",
+      fieldNumber: 1,
+    },
+    recipientAddress: {
+      dataType: "bytes",
+      fieldNumber: 2,
+      minLength: 20,
+      maxLength: 20,
+    },
+    data: {
+      dataType: "string",
+      fieldNumber: 3,
+      minLength: 0,
+      maxLength: 64,
+    },
+  },
+};
+
+export const transfer = async ({
+  recipientAddress,
+  amount,
+  passphrase,
+  fee,
+  networkIdentifier,
+  minFeePerByte,
+}) => {
+  const { publicKey } = cryptography.getPrivateAndPublicKeyFromPassphrase(
+    passphrase
+  );
+  const address = cryptography.getAddressFromPassphrase(passphrase);
+  const {
+    sequence: { nonce },
+  } = await fetchAccountInfo(address.toString("hex"));
+  const recipient = cryptography.getAddressFromBase32Address(recipientAddress);
+  const { id, ...rest } = transactions.signTransaction(
+    transferAssetSchema,
+    {
+      moduleID: 2,
+      assetID: 0,
+      nonce: BigInt(nonce),
+      fee: BigInt(transactions.convertLSKToBeddows(fee)),
+      senderPublicKey: publicKey,
+      asset: {
+        amount: BigInt(transactions.convertLSKToBeddows(amount)),
+        recipientAddress: recipient,
+        data: "",
+      },
+    },
+    Buffer.from(networkIdentifier, "hex"),
+    passphrase
+  );
+
+  return {
+    id: id.toString("hex"),
+    tx: codec.codec.toJSON(getFullAssetSchema(transferAssetSchema), rest),
+    minFee: calcMinTxFee(transferAssetSchema, minFeePerByte, rest),
+  };
+};
+----
+
 .frontend-app/src/components/dialogs/TransferFundsDialog.js
 [source,jsx]
 ----
@@ -1972,6 +2216,80 @@ export default function TransferFundsDialog(props) {
 }
 ----
 ==== Transfer NFT dialog
+
+.frontend-app/src/utils/transactions/transfer_nft.js
+[source,js]
+----
+/* global BigInt */
+
+import { transactions, codec, cryptography } from "@liskhq/lisk-client";
+import { getFullAssetSchema, calcMinTxFee } from "../common";
+import { fetchAccountInfo } from "../../api";
+
+export const transferNFTSchema = {
+  $id: "lisk/nft/transfer",
+  type: "object",
+  required: ["nftId", "recipient"],
+  properties: {
+    nftId: {
+      dataType: "bytes",
+      fieldNumber: 1,
+    },
+    recipient: {
+      dataType: "bytes",
+      fieldNumber: 2,
+    },
+    name: {
+      dataType: "string",
+      fieldNumber: 3,
+    },
+  },
+};
+
+export const transferNFT = async ({
+                                         name,
+                                         nftId,
+                                         recipientAddress,
+                                         passphrase,
+                                         fee,
+                                         networkIdentifier,
+                                         minFeePerByte,
+                                       }) => {
+  const { publicKey } = cryptography.getPrivateAndPublicKeyFromPassphrase(
+    passphrase
+  );
+  const address = cryptography.getAddressFromPassphrase(passphrase);
+  const recipient = cryptography.getAddressFromBase32Address(recipientAddress);
+  const {
+    sequence: { nonce },
+  } = await fetchAccountInfo(address.toString("hex"));
+
+  const { id, ...rest } = transactions.signTransaction(
+    transferNFTSchema,
+    {
+      moduleID: 1024,
+      assetID: 2,
+      nonce: BigInt(nonce),
+      fee: BigInt(transactions.convertLSKToBeddows(fee)),
+      senderPublicKey: publicKey,
+      asset: {
+        name,
+        nftId: Buffer.from(nftId, "hex"),
+        recipient: recipient,
+      },
+    },
+    Buffer.from(networkIdentifier, "hex"),
+    passphrase
+  );
+
+  return {
+    id: id.toString("hex"),
+    tx: codec.codec.toJSON(getFullAssetSchema(transferNFTSchema), rest),
+    minFee: calcMinTxFee(transferNFTSchema, minFeePerByte, rest),
+  };
+};
+----
+
 .frontend-app/src/components/dialogs/TransferNFTDialog.js
 [source,jsx]
 ----

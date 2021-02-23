@@ -1379,29 +1379,39 @@ npm start
 
 This should open the React app in the browser under http://localhost:3000/.
 
-In the screenshots we use the following account credentials:
+=== Frontend walkabout
+
+Before we explore the code of the frontend app, lets first take a tour through the frontend in the browser, to see how it all works together.
+
+In the example screenshots we use the following account credentials:
 
 [source,json]
 ----
 {
   "artist": {
-    "passphrase": "monitor grass since sadness dilemma opera unveil recall calm battle upon firm",
-    "binaryAddress": "adeb5a798f68f321181cf84c5ffd3729960b1cd1"
+    "passphrase": "boss annual room suspect ride robot connect repeat relax govern dolphin depth",
+    "binaryAddress": "lsktxksfsbmkmoto68y7edszaecgpnaxqqg7cs43d"
   },
   "collector1": {
-    "passphrase": "recipe pause piece glass angry drill foster arch victory double cotton fever",
-    "binaryAddress": "21a112a253d1613107924976a6f58b335b34bc78"
+    "passphrase": "mammal fan below aspect thing iron uniform then humble double endorse gauge",
+    "binaryAddress": "lskybgqryr9tk4m3rdp66ethaf6xurm6hj8c93udo"
   },
   "collector2": {
-    "passphrase": "general drop earth dog resource business clever girl arch car level shed",
-    "binaryAddress": "7387dc9bebff891fc129eccd25f218de8b90b615"
+    "passphrase": "emotion project prepare cream double damage gentle basket submit enhance between drill",
+    "binaryAddress": "lskha38ewso7do8zeuqx8qnyoqd8962mk48atknbs"
   }
 }
 ----
 
 But you can also create new credentials by using the `Create Account` dialog.
 
+image:tutorials/nft/02-create-account.png[]
 
+==== The home page
+image:tutorials/nft/01-home.png[]
+
+==== Transferring funds
+image:tutorials/nft/03-transfer-funds.png[]
 .Logs of the blockchain app when a valid transaction is posted to the node
 ----
 15:20:56 INFO lisk-framework: Added transaction to pool (module=lisk:app)
@@ -1418,16 +1428,989 @@ But you can also create new credentials by using the `Create Account` dialog.
 }
 ----
 
-image:tutorials/nft/01-home.png[]
-image:tutorials/nft/02-create-account.png[]
-image:tutorials/nft/03-transfer-funds.png[]
+==== Creating a new NFT
 image:tutorials/nft/04-create-nft.png[]
 image:tutorials/nft/05-home-nft.png[]
+
+==== Transferring an NFT
 image:tutorials/nft/06-transfer-nft.png[]
 image:tutorials/nft/07-home-nft.png[]
+
+==== Purchasing an NFT
 image:tutorials/nft/08-purchase-nft.png[]
 image:tutorials/nft/09-collector2-account-page.png[]
 image:tutorials/nft/10-collector1-account-page.png[]
+
+==== The transactions page
 image:tutorials/nft/11-transactions.png[]
+
+==== Creating non-purchasable NFTs
 image:tutorials/nft/12-create-mew.png[]
 image:tutorials/nft/13-home-nft.png[]
+
+=== API related functions
+
+.frontend-app/src/api/index.js
+[source,js]
+----
+export const fetchNodeInfo = async () => {
+  return fetch("http://localhost:4000/api/node/info")
+    .then((res) => res.json())
+    .then((res) => res.data);
+};
+
+export const fetchAccountInfo = async (address) => {
+  return fetch(`http://localhost:4000/api/accounts/${address}`)
+    .then((res) => res.json())
+    .then((res) => res.data);
+};
+
+export const sendTransactions = async (tx) => {
+  return fetch("http://localhost:4000/api/transactions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(tx),
+  })
+    .then((res) => res.json())
+    .then((res) => res.data);
+};
+
+export const fetchAllNFTTokens = async () => {
+  return fetch("http://localhost:8080/api/nft_tokens")
+    .then((res) => res.json())
+    .then((res) => res.data);
+};
+
+export const fetchNFTToken = async (id) => {
+  return fetch(`http://localhost:8080/api/nft_tokens/${id}`)
+    .then((res) => res.json())
+    .then((res) => res.data);
+};
+
+export const getAllTransactions = async () => {
+  return fetch(`http://localhost:8080/api/transactions`)
+    .then((res) => res.json())
+    .then((res) => {
+      return res.data;
+    });
+};
+----
+
+=== Dialogs
+
+==== Create account dialog
+
+.frontend-app/src/components/dialogs/CreateAccountDialog.js
+[source,jsx]
+----
+import React, { Fragment, useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  TextField,
+} from "@material-ui/core";
+import { makeStyles } from "@material-ui/core/styles";
+import { passphrase, cryptography } from "@liskhq/lisk-client";
+
+const useStyles = makeStyles((theme) => ({
+  root: {
+    "& .MuiTextField-root": {
+      margin: theme.spacing(1),
+    },
+  },
+}));
+
+export default function CreateAccountDialog(props) {
+  const [data, setData] = useState({ passphrase: "", address: "" });
+  const classes = useStyles();
+
+  useEffect(() => {
+    const pw = passphrase.Mnemonic.generateMnemonic();
+    const address = cryptography.getBase32AddressFromPassphrase(pw).toString("hex");
+    setData({ passphrase: pw, address });
+  }, [props.open]);
+
+  return (
+    <Fragment>
+      <Dialog open={props.open} onBackdropClick={props.handleClose} fullWidth>
+        <DialogTitle id="alert-dialog-title">
+          {"Please copy the address and passphrase"}
+        </DialogTitle>
+        <DialogContent>
+          <form noValidate autoComplete="off" className={classes.root}>
+            <TextField
+              label="Passphrase"
+              value={data.passphrase}
+              fullWidth
+              InputProps={{
+                readOnly: true,
+              }}
+            />
+            <TextField
+              label="Address"
+              value={data.address}
+              fullWidth
+              InputProps={{
+                readOnly: true,
+              }}
+            />
+          </form>
+        </DialogContent>
+      </Dialog>
+    </Fragment>
+  );
+}
+----
+==== Create NFT dialog
+.frontend-app/src/components/dialogs/CreateNFTTokenDialog.js
+[source,jsx]
+----
+import React, { Fragment, useContext, useState } from "react";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  TextField,
+  Button,
+  DialogActions,
+} from "@material-ui/core";
+import { makeStyles } from "@material-ui/core/styles";
+import { NodeInfoContext } from "../../context";
+import { createNFTToken } from "../../utils/transactions/create_nft_token";
+import * as api from "../../api";
+
+const useStyles = makeStyles((theme) => ({
+  root: {
+    "& .MuiTextField-root": {
+      margin: theme.spacing(1),
+    },
+  },
+}));
+
+export default function CreateNFTTokenDialog(props) {
+  const nodeInfo = useContext(NodeInfoContext);
+  const classes = useStyles();
+  const [data, setData] = useState({
+    name: "",
+    initValue: "",
+    minPurchaseMargin: "",
+    fee: "",
+    passphrase: "",
+  });
+
+  const handleChange = (event) => {
+    event.persist();
+    setData({ ...data, [event.target.name]: event.target.value });
+  };
+
+  const handleSend = async (event) => {
+    event.preventDefault();
+
+    const res = await createNFTToken({
+      ...data,
+      networkIdentifier: nodeInfo.networkIdentifier,
+      minFeePerByte: nodeInfo.minFeePerByte,
+    });
+    await api.sendTransactions(res.tx);
+    props.handleClose();
+  };
+
+  return (
+    <Fragment>
+      <Dialog open={props.open} onBackdropClick={props.handleClose}>
+        <DialogTitle id="alert-dialog-title">{"Create NFT"}</DialogTitle>
+        <DialogContent>
+          <form className={classes.root} noValidate autoComplete="off">
+            <TextField
+              label="Name"
+              value={data.name}
+              name="name"
+              onChange={handleChange}
+              fullWidth
+            />
+            <TextField
+              label="Initial Token value"
+              value={data.initValue}
+              name="initValue"
+              onChange={handleChange}
+              fullWidth
+            />
+            <TextField
+              label="Minimum Purchase Margin (0 - 100)"
+              value={data.minPurchaseMargin}
+              name="minPurchaseMargin"
+              onChange={handleChange}
+              fullWidth
+            />
+            <TextField
+              label="Fee"
+              value={data.fee}
+              name="fee"
+              onChange={handleChange}
+              fullWidth
+            />
+            <TextField
+              label="Passphrase"
+              value={data.passphrase}
+              name="passphrase"
+              onChange={handleChange}
+              fullWidth
+            />
+          </form>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleSend}>Create NFT</Button>
+        </DialogActions>
+      </Dialog>
+    </Fragment>
+  );
+}
+----
+==== Purchase NFT dialog
+.frontend-app/src/components/dialogs/PurchaseNFTTokenDialog.js
+[source,jsx]
+----
+import React, { Fragment, useContext, useState } from "react";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  TextField,
+  Button,
+  DialogActions,
+} from "@material-ui/core";
+import { makeStyles } from "@material-ui/core/styles";
+import { NodeInfoContext } from "../../context";
+import { purchaseNFTToken } from "../../utils/transactions/purchase_nft_token";
+import * as api from "../../api";
+import { transactions } from "@liskhq/lisk-client";
+
+const useStyles = makeStyles((theme) => ({
+  root: {
+    "& .MuiTextField-root": {
+      margin: theme.spacing(1),
+    },
+  },
+}));
+
+export default function PurchaseNFTTokenDialog(props) {
+  const nodeInfo = useContext(NodeInfoContext);
+  const classes = useStyles();
+  const currentValue = parseFloat(
+    transactions.convertBeddowsToLSK(props.token.value)
+  );
+  const minPurchaseMargin = parseFloat(props.token.minPurchaseMargin);
+  const minPurchaseValue =
+    currentValue + (currentValue * minPurchaseMargin) / 100.0;
+
+  const [data, setData] = useState({
+    name: props.token.name,
+    nftId: props.token.id,
+    purchaseValue: "",
+    fee: "",
+    passphrase: "",
+  });
+
+  const handleChange = (event) => {
+    event.persist();
+    setData({ ...data, [event.target.name]: event.target.value });
+  };
+
+  const handleSend = async (event) => {
+    event.preventDefault();
+
+    const res = await purchaseNFTToken({
+      ...data,
+      networkIdentifier: nodeInfo.networkIdentifier,
+      minFeePerByte: nodeInfo.minFeePerByte,
+    });
+    await api.sendTransactions(res.tx);
+    props.handleClose();
+  };
+
+  return (
+    <Fragment>
+      <Dialog open={props.open} onBackdropClick={props.handleClose}>
+        <DialogTitle id="alert-dialog-title">
+          {"Purchase NFT"}
+        </DialogTitle>
+        <DialogContent>
+          <form className={classes.root} noValidate autoComplete="off">
+            <TextField
+              label="Token Name"
+              value={data.name}
+              name="name"
+              onChange={handleChange}
+              fullWidth
+            />
+            <TextField
+              label="Token ID"
+              value={data.nftId}
+              name="nftId"
+              onChange={handleChange}
+              fullWidth
+            />
+            <TextField
+              label="Purchase Value"
+              value={data.purchaseValue}
+              name="purchaseValue"
+              onChange={handleChange}
+              helperText={`Minimum purchase value: ${minPurchaseValue}`}
+              fullWidth
+            />
+            <TextField
+              label="Fee"
+              value={data.fee}
+              name="fee"
+              onChange={handleChange}
+              fullWidth
+            />
+            <TextField
+              label="Passphrase"
+              value={data.passphrase}
+              name="passphrase"
+              onChange={handleChange}
+              fullWidth
+            />
+          </form>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleSend}>Purchase NFT</Button>
+        </DialogActions>
+      </Dialog>
+    </Fragment>
+  );
+}
+----
+==== Transfer funds dialog
+.frontend-app/src/components/dialogs/TransferFundsDialog.js
+[source,jsx]
+----
+import React, { Fragment, useContext, useState } from "react";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  TextField,
+  Button,
+  DialogActions,
+} from "@material-ui/core";
+import { makeStyles } from "@material-ui/core/styles";
+import { NodeInfoContext } from "../../context";
+import { transfer } from "../../utils/transactions/transfer";
+import * as api from "../../api";
+
+const useStyles = makeStyles((theme) => ({
+  root: {
+    "& .MuiTextField-root": {
+      margin: theme.spacing(1),
+    },
+  },
+}));
+
+export default function TransferFundsDialog(props) {
+  const nodeInfo = useContext(NodeInfoContext);
+  const classes = useStyles();
+  const [data, setData] = useState({
+    recipientAddress: "",
+    passphrase: "",
+    amount: "",
+    fee: "",
+  });
+
+  const handleChange = (event) => {
+    event.persist();
+    setData({ ...data, [event.target.name]: event.target.value });
+  };
+
+  const handleSend = async (event) => {
+    event.preventDefault();
+
+    const res = await transfer({
+      ...data,
+      networkIdentifier: nodeInfo.networkIdentifier,
+      minFeePerByte: nodeInfo.minFeePerByte,
+    });
+    await api.sendTransactions(res.tx);
+    props.handleClose();
+  };
+
+  return (
+    <Fragment>
+      <Dialog open={props.open} onBackdropClick={props.handleClose}>
+        <DialogTitle id="alert-dialog-title">{"Transfer Funds"}</DialogTitle>
+        <DialogContent>
+          <form className={classes.root} noValidate autoComplete="off">
+            <TextField
+              label="Recipient Address"
+              value={data.recipientAddress}
+              name="recipientAddress"
+              onChange={handleChange}
+              fullWidth
+            />
+            <TextField
+              label="Amount"
+              value={data.amount}
+              name="amount"
+              onChange={handleChange}
+              fullWidth
+            />
+            <TextField
+              label="Fee"
+              value={data.fee}
+              name="fee"
+              onChange={handleChange}
+              fullWidth
+            />
+            <TextField
+              label="Passphrase"
+              value={data.passphrase}
+              name="passphrase"
+              onChange={handleChange}
+              fullWidth
+            />
+
+            <Button
+              onClick={() => {
+                setData({
+                  ...data,
+                  passphrase:
+                    "peanut hundred pen hawk invite exclude brain chunk gadget wait wrong ready",
+                });
+              }}
+            >
+              Use Genesis Account
+            </Button>
+          </form>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleSend}>Send Funds</Button>
+        </DialogActions>
+      </Dialog>
+    </Fragment>
+  );
+}
+----
+==== Transfer NFT dialog
+.frontend-app/src/components/dialogs/TransferNFTDialog.js
+[source,jsx]
+----
+import React, { Fragment, useContext, useState } from "react";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  TextField,
+  Button,
+  DialogActions,
+} from "@material-ui/core";
+import { makeStyles } from "@material-ui/core/styles";
+import { NodeInfoContext } from "../../context";
+import { transferNFT } from "../../utils/transactions/transfer_nft";
+import * as api from "../../api";
+
+const useStyles = makeStyles((theme) => ({
+  root: {
+    "& .MuiTextField-root": {
+      margin: theme.spacing(1),
+    },
+  },
+}));
+
+export default function TransferNFTDialog(props) {
+  const nodeInfo = useContext(NodeInfoContext);
+  const classes = useStyles();
+
+  const [data, setData] = useState({
+    name: props.token.name,
+    nftId: props.token.id,
+    recipientAddress: "",
+    fee: "",
+    passphrase: "",
+  });
+
+  const handleChange = (event) => {
+    event.persist();
+    setData({ ...data, [event.target.name]: event.target.value });
+  };
+
+  const handleSend = async (event) => {
+    event.preventDefault();
+
+    const res = await transferNFT({
+      ...data,
+      networkIdentifier: nodeInfo.networkIdentifier,
+      minFeePerByte: nodeInfo.minFeePerByte,
+    });
+    await api.sendTransactions(res.tx);
+    props.handleClose();
+  };
+
+  return (
+    <Fragment>
+      <Dialog open={props.open} onBackdropClick={props.handleClose}>
+        <DialogTitle id="alert-dialog-title">
+          {"Transfer NFT"}
+        </DialogTitle>
+        <DialogContent>
+          <form className={classes.root} noValidate autoComplete="off">
+            <TextField
+              label="Token Name"
+              value={data.name}
+              name="name"
+              onChange={handleChange}
+              fullWidth
+            />
+            <TextField
+              label="Token ID"
+              value={data.nftId}
+              name="nftId"
+              onChange={handleChange}
+              fullWidth
+            />
+            <TextField
+              label="Recipient address"
+              value={data.recipientAddress}
+              name="recipientAddress"
+              onChange={handleChange}
+              helperText={`Address of the account that will receive the NFT.`}
+              fullWidth
+            />
+            <TextField
+              label="Fee"
+              value={data.fee}
+              name="fee"
+              onChange={handleChange}
+              fullWidth
+            />
+            <TextField
+              label="Passphrase"
+              value={data.passphrase}
+              name="passphrase"
+              onChange={handleChange}
+              fullWidth
+            />
+          </form>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleSend}>Transfer NFT</Button>
+        </DialogActions>
+      </Dialog>
+    </Fragment>
+  );
+}
+----
+
+=== Components
+
+==== Account component
+.frontend-app/src/components/Account.js
+[source,jsx]
+----
+import React, { useState, useEffect } from "react";
+import { Container, Typography, Divider, Grid } from "@material-ui/core";
+import { makeStyles } from "@material-ui/core/styles";
+import {Buffer, cryptography, transactions} from "@liskhq/lisk-client";
+import NFTToken from "./NFTToken";
+import { fetchNFTToken } from "../api";
+
+const useStyles = makeStyles((theme) => ({
+  propertyList: {
+    listStyle: "none",
+
+    "& li": {
+      margin: theme.spacing(2, 0),
+      borderBottomColor: theme.palette.divider,
+      borderBottomStyle: "solid",
+      borderBottomWidth: 1,
+
+      "& dt": {
+        display: "block",
+        width: "100%",
+        fontWeight: "bold",
+        margin: theme.spacing(1, 0),
+      },
+      "& dd": {
+        display: "block",
+        width: "100%",
+        margin: theme.spacing(1, 0),
+      },
+    },
+  },
+}));
+
+export default function Account(props) {
+  const [nftTokens, setNftTokens] = useState([]);
+  const classes = useStyles();
+  const base32UIAddress = cryptography.getBase32AddressFromAddress(Buffer.from(props.account.address, 'hex'), 'lsk').toString('binary');
+
+  useEffect(() => {
+    async function fetchData() {
+      setNftTokens(
+        await Promise.all(
+          props.account.nft.ownNFTs.map((a) => fetchNFTToken(a))
+        )
+      );
+    }
+
+    fetchData();
+  }, [props.account.nft.ownNFTs]);
+
+  return (
+    <Container>
+      <Typography variant="h5">{base32UIAddress}</Typography>
+      <Divider />
+      <dl className={classes.propertyList}>
+        <li>
+          <dt>Balance</dt>
+          <dd>
+            {transactions.convertBeddowsToLSK(props.account.token.balance)}
+          </dd>
+          <dt>Nonce</dt>
+          <dd>{props.account.sequence.nonce}</dd>
+          <dt>Binary address</dt>
+          <dd>{props.account.address}</dd>
+        </li>
+      </dl>
+      <Typography variant="h6">{"NFTs"}</Typography>
+      <Grid container spacing={4}>
+        {nftTokens.map((item) => (
+          <Grid item md={3}>
+            <NFTToken item={item} key={item.address} minimum={true} />
+          </Grid>
+        ))}
+      </Grid>
+    </Container>
+  );
+}
+----
+==== Account page component
+.frontend-app/src/components/AccountPage.js
+[source,jsx]
+----
+import React, { Fragment, useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import { fetchAccountInfo } from "../api";
+import Account from "./Account";
+import { cryptography } from "@liskhq/lisk-client";
+
+
+function AccountPage() {
+  const { address } = useParams();
+  const [account, setAccount] = useState({});
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    async function fetchData() {
+      const binaryAddress = cryptography.getAddressFromBase32Address(address).toString('hex');
+      setAccount(await fetchAccountInfo(binaryAddress));
+      setLoaded(true);
+    }
+
+    fetchData();
+  }, [address]);
+
+  return loaded ? <Account account={account} /> : <Fragment></Fragment>;
+}
+
+export default AccountPage;
+----
+==== Home page component
+.frontend-app/src/components/HomePage.js
+[source,jsx]
+----
+import React, { Fragment, useEffect, useState } from "react";
+import NFTToken from "./NFTToken";
+import { Grid } from "@material-ui/core";
+import { fetchAllNFTTokens } from "../api";
+
+function HomePage() {
+  const [NFTAccounts, setNFTAccounts] = useState([]);
+
+  useEffect(() => {
+    async function fetchData() {
+      setNFTAccounts(await fetchAllNFTTokens());
+    }
+    fetchData();
+  }, []);
+
+  return (
+    <Fragment>
+      <Grid container spacing={4}>
+        {NFTAccounts.map((item) => (
+          <Grid item md={4}>
+            <NFTToken item={item} key={item.id} />
+          </Grid>
+        ))}
+      </Grid>
+    </Fragment>
+  );
+}
+
+export default HomePage;
+----
+==== NFT component
+.frontend-app/src/components/NFTToken.js
+[source,jsx]
+----
+import React, { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardActions,
+  Typography,
+  Link,
+  Divider,
+  Button,
+} from "@material-ui/core";
+import { makeStyles } from "@material-ui/core/styles";
+import { Link as RouterLink } from "react-router-dom";
+import { transactions, cryptography, Buffer } from "@liskhq/lisk-client";
+
+import PurchaseNFTTokenDialog from "./dialogs/PurchaseNFTTokenDialog";
+import TransferNFTDialog from "./dialogs/TransferNFTDialog";
+
+const useStyles = makeStyles((theme) => ({
+  propertyList: {
+    listStyle: "none",
+
+    "& li": {
+      margin: theme.spacing(2, 0),
+      borderBottomColor: theme.palette.divider,
+      borderBottomStyle: "solid",
+      borderBottomWidth: 1,
+
+      "& dt": {
+        display: "block",
+        width: "100%",
+        fontWeight: "bold",
+        margin: theme.spacing(1, 0),
+      },
+      "& dd": {
+        display: "block",
+        width: "100%",
+        margin: theme.spacing(1, 0),
+      },
+    },
+  },
+}));
+
+export default function NFTToken(props) {
+  const classes = useStyles();
+  const [openPurchase, setOpenPurchase] = useState(false);
+  const [openTransfer, setOpenTransfer] = useState(false);
+  const base32UIAddress = cryptography.getBase32AddressFromAddress(Buffer.from(props.item.ownerAddress, 'hex'), 'lsk').toString('binary');
+  return (
+    <Card>
+      <CardContent>
+        <Typography variant="h6">{props.item.name}</Typography>
+        <Divider />
+        <dl className={classes.propertyList}>
+          <li>
+            <dt>Token ID</dt>
+            <dd>{props.item.id}</dd>
+          </li>
+          <li>
+            <dt>Token value</dt>
+            <dd>{transactions.convertBeddowsToLSK(props.item.value)}</dd>
+          </li>
+          <li>
+            <dt>Minimum Purchase Margin</dt>
+            <dd>{props.item.minPurchaseMargin}</dd>
+          </li>
+          {!props.minimum && (
+            <li>
+              <dt>Current Owner</dt>
+              <dd>
+                <Link
+                  component={RouterLink}
+                  to={`/accounts/${base32UIAddress}`}
+                >
+                  {base32UIAddress}
+                </Link>
+              </dd>
+            </li>
+          )}
+        </dl>
+        <Typography variant="h6">NFT History</Typography>
+        <Divider />
+        {props.item.tokenHistory.map((base32UIAddress) => (
+          <dl className={classes.propertyList}>
+            <li>
+              <dd>
+                <Link
+                  component={RouterLink}
+                  to={`/accounts/${base32UIAddress}`}
+                >
+                  {base32UIAddress}
+                </Link>
+              </dd>
+            </li>
+          </dl>
+        ))}
+
+      </CardContent>
+      <CardActions>
+        <>
+          <Button
+            size="small"
+            color="primary"
+            onClick={() => {
+              setOpenTransfer(true);
+            }}
+          >
+            Transfer NFT
+          </Button>
+          <TransferNFTDialog
+            open={openTransfer}
+            handleClose={() => {
+              setOpenTransfer(false);
+            }}
+            token={props.item}
+          />
+        </>
+        {props.item.minPurchaseMargin > 0 ? (
+          <>
+            <Button
+              size="small"
+              color="primary"
+              onClick={() => {
+                setOpenPurchase(true);
+              }}
+            >
+              Purchase NFT
+            </Button>
+            <PurchaseNFTTokenDialog
+              open={openPurchase}
+              handleClose={() => {
+                setOpenPurchase(false);
+              }}
+              token={props.item}
+            />
+          </>
+        ) : (
+          <Typography variant="body">Can't purchase this token</Typography>
+        )}
+      </CardActions>
+    </Card>
+  );
+}
+----
+==== Transactions page component
+.frontend-app/src/components/TransactionsPage.js
+[source,jsx]
+----
+import React from 'react';
+import { makeStyles } from '@material-ui/core/styles';
+import Paper from '@material-ui/core/Paper';
+import Table from '@material-ui/core/Table';
+import TableBody from '@material-ui/core/TableBody';
+import TableCell from '@material-ui/core/TableCell';
+import TableContainer from '@material-ui/core/TableContainer';
+import TableHead from '@material-ui/core/TableHead';
+import TablePagination from '@material-ui/core/TablePagination';
+import TableRow from '@material-ui/core/TableRow';
+import { getAllTransactions } from "../api";
+import { cryptography, Buffer } from '@liskhq/lisk-client';
+
+const columns = [
+  { id: 'moduleName', label: 'ModuleName', minWidth: 100, maxWidth: 50 },
+  { id: 'assetName', label: 'AssetName', minWidth: 100, maxWidth: 50 },
+  { id: 'address', label: 'Address', minWidth: 170, maxWidth: 50 },
+  { id: 'id', label: 'TransactionID', minWidth: 170, maxWidth: 50 },
+];
+
+const useStyles = makeStyles({
+  root: {
+    width: '100%',
+  },
+  container: {
+    maxHeight: 440,
+  },
+});
+
+export default function TransactionsPage() {
+  const classes = useStyles();
+  const [page, setPage] = React.useState(0);
+  const [rowsPerPage, setRowsPerPage] = React.useState(10);
+  const [Transactions, setTransactions] = React.useState([]);
+
+  React.useEffect(() => {
+    async function fetchData() {
+      setTransactions(await getAllTransactions());
+    }
+    fetchData();
+  }, []);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(+event.target.value);
+    setPage(0);
+  };
+
+  return (
+    <Paper className={classes.root}>
+      <TableContainer className={classes.container}>
+        <Table stickyHeader aria-label="sticky table">
+          <TableHead>
+            <TableRow>
+              {columns.map((column) => (
+                <TableCell
+                  key={column.id}
+                  align={column.align}
+                  style={{ minWidth: column.minWidth }}
+                >
+                  {column.label}
+                </TableCell>
+              ))}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {Transactions.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => {
+              return (
+                <TableRow hover role="checkbox" tabIndex={-1} key={row.code}>
+                  {columns.map((column) => {
+                    let base32UIAddress;
+                    let value;
+                    if (row['recipientAddress']) {
+                      base32UIAddress = cryptography.getBase32AddressFromAddress(Buffer.from(row['recipientAddress'], 'hex'));
+                      value = base32UIAddress;
+                    } else if (row['senderPublicKey']) {
+                      base32UIAddress = cryptography.getBase32AddressFromPublicKey(Buffer.from(row['senderPublicKey'], 'hex'), 'lsk').toString('binary');
+                      value = base32UIAddress;
+                    }
+                    value = row[column.id];
+                    return (
+                      <TableCell key={column.id} align={column.align}>
+                        {
+                          column.format && typeof value === 'number' ? column.format(value) :
+                            (column.id === 'address' ? base32UIAddress : value)
+                        }
+                      </TableCell>
+                    );
+                  })}
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </TableContainer>
+      <TablePagination
+        rowsPerPageOptions={[10, 25, 100]}
+        component="div"
+        count={Transactions.length}
+        rowsPerPage={rowsPerPage}
+        page={page}
+        onChangePage={handleChangePage}
+        onChangeRowsPerPage={handleChangeRowsPerPage}
+      />
+    </Paper>
+  );
+}
+----

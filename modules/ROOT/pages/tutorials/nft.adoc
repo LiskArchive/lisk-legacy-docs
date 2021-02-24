@@ -980,6 +980,8 @@ const path = require("path");
 const { cryptography, codec, db } = require("lisk-sdk");
 
 const DB_KEY_TRANSACTIONS = "nft:transactions"; <1>
+const CREATENFT_ASSET_ID = 0;
+const TRANSFERNFT_ASSET_ID = 2;
 
 // Schemas
 const encodedTransactionSchema = { <2>
@@ -1057,16 +1059,35 @@ const getNFTHistory = async (db, dbKey) => {
   }
 };
 
-const saveNFTHistory = async (db, decodedBlock, registeredModules) => {
+const saveNFTHistory = async (db, decodedBlock, registeredModules, channel) => {
   decodedBlock.payload.map(async trx => {
     const module = registeredModules.find(m => m.id === trx.moduleID);
     if (module.name === 'nft') {
-      const dbKey = `nft/${trx.asset.nftId}`; <4>
-      const base32Address = cryptography.getBase32AddressFromPublicKey(Buffer.from(trx.senderPublicKey, 'hex'), 'lsk');
-      const savedHistory = await getNFTHistory(db, dbKey);
-      const nftHistory = [Buffer.from(base32Address, 'binary'), ...savedHistory];
-      const encodedNFTHistory = codec.encode(encodedNFTHistorySchema, { nftHistory });
-      await db.put(dbKey, encodedNFTHistory);
+      let dbKey, savedHistory, base32Address, nftHistory, encodedNFTHistory;
+      if (trx.assetID === CREATENFT_ASSET_ID){
+        channel.invoke('nft:getAllNFTTokens').then(async (val) => {
+          for (let i = 0; i < val.length; i++) {
+            const senderAdress = cryptography.getAddressFromPublicKey(Buffer.from(trx.senderPublicKey, 'hex'));
+            if (val[i].ownerAddress === senderAdress.toString('hex')) {
+              dbKey = `nft:${val[i].id}`; <4>
+              savedHistory = await getNFTHistory(db, dbKey);
+              if (savedHistory && savedHistory.length < 1) {
+                base32Address = cryptography.getBase32AddressFromPublicKey(Buffer.from(trx.senderPublicKey, 'hex'), 'lsk');
+                nftHistory = [Buffer.from(base32Address, 'binary'), ...savedHistory];
+                encodedNFTHistory = codec.encode(encodedNFTHistorySchema, { nftHistory });
+                await db.put(dbKey, encodedNFTHistory);
+              }
+            }
+          };
+        });
+      } else {
+        dbKey = `nft:${trx.asset.nftId}`; <5>
+        base32Address = (trx.assetID === TRANSFERNFT_ASSET_ID) ? cryptography.getBase32AddressFromAddress(Buffer.from(trx.asset.recipient, 'hex')) : cryptography.getBase32AddressFromPublicKey(Buffer.from(trx.senderPublicKey, 'hex'), 'lsk');
+        savedHistory = await getNFTHistory(db, dbKey);
+        nftHistory = [Buffer.from(base32Address, 'binary'), ...savedHistory];
+        encodedNFTHistory = codec.encode(encodedNFTHistorySchema, { nftHistory });
+        await db.put(dbKey, encodedNFTHistory);
+      }
     }
   });
 };
@@ -1119,7 +1140,8 @@ module.exports = {
 Here, we define a simple array which contains the encoded transactions.
 <3> `encodedNFTHistorySchema`: The schema how the owner history of an NFT is saved in the key-value store
 Here, we define a simple array, which contains the adresses of the current and all previous owners of the NFT.
-<4> `dbKey`: The key we use to save the owner history of a NFT in the key-value store.
+<4> `dbKey`: The key we use to save the owner history of a newly created NFT in the key-value store.
+<5> `dbKey`: The same key as in <4>, but it can be retrieved directly from the transaction asset for an existing NFT in the key-value store.
 
 === The plugin logic
 
@@ -1251,7 +1273,7 @@ class NFTAPIPlugin extends BasePlugin {
         await saveTransactions(this._db, payload);
         const decodedBlock = this.codec.decodeBlock(block);
         // save NFT transaction history
-        await saveNFTHistory(this._db, decodedBlock, this._nodeInfo.registeredModules);
+        await saveNFTHistory(this._db, decodedBlock, this._nodeInfo.registeredModules, this._channel);
       }
     });
   }

@@ -1748,6 +1748,8 @@ const path = require("path");
 const { cryptography, codec, db } = require("lisk-sdk");
 
 const DB_KEY_TRANSACTIONS = "nft:transactions"; <i class="conum" data-value="1"></i><b>(1)</b>
+const CREATENFT_ASSET_ID = 0;
+const TRANSFERNFT_ASSET_ID = 2;
 
 // Schemas
 const encodedTransactionSchema = { <i class="conum" data-value="2"></i><b>(2)</b>
@@ -1825,16 +1827,35 @@ const getNFTHistory = async (db, dbKey) =&gt; {
   }
 };
 
-const saveNFTHistory = async (db, decodedBlock, registeredModules) =&gt; {
+const saveNFTHistory = async (db, decodedBlock, registeredModules, channel) =&gt; {
   decodedBlock.payload.map(async trx =&gt; {
     const module = registeredModules.find(m =&gt; m.id === trx.moduleID);
     if (module.name === 'nft') {
-      const dbKey = `nft/${trx.asset.nftId}`; <i class="conum" data-value="4"></i><b>(4)</b>
-      const base32Address = cryptography.getBase32AddressFromPublicKey(Buffer.from(trx.senderPublicKey, 'hex'), 'lsk');
-      const savedHistory = await getNFTHistory(db, dbKey);
-      const nftHistory = [Buffer.from(base32Address, 'binary'), ...savedHistory];
-      const encodedNFTHistory = codec.encode(encodedNFTHistorySchema, { nftHistory });
-      await db.put(dbKey, encodedNFTHistory);
+      let dbKey, savedHistory, base32Address, nftHistory, encodedNFTHistory;
+      if (trx.assetID === CREATENFT_ASSET_ID){
+        channel.invoke('nft:getAllNFTTokens').then(async (val) =&gt; {
+          for (let i = 0; i &lt; val.length; i++) {
+            const senderAdress = cryptography.getAddressFromPublicKey(Buffer.from(trx.senderPublicKey, 'hex'));
+            if (val[i].ownerAddress === senderAdress.toString('hex')) {
+              dbKey = `nft:${val[i].id}`; <i class="conum" data-value="4"></i><b>(4)</b>
+              savedHistory = await getNFTHistory(db, dbKey);
+              if (savedHistory &amp;&amp; savedHistory.length &lt; 1) {
+                base32Address = cryptography.getBase32AddressFromPublicKey(Buffer.from(trx.senderPublicKey, 'hex'), 'lsk');
+                nftHistory = [Buffer.from(base32Address, 'binary'), ...savedHistory];
+                encodedNFTHistory = codec.encode(encodedNFTHistorySchema, { nftHistory });
+                await db.put(dbKey, encodedNFTHistory);
+              }
+            }
+          };
+        });
+      } else {
+        dbKey = `nft:${trx.asset.nftId}`; <i class="conum" data-value="5"></i><b>(5)</b>
+        base32Address = (trx.assetID === TRANSFERNFT_ASSET_ID) ? cryptography.getBase32AddressFromAddress(Buffer.from(trx.asset.recipient, 'hex')) : cryptography.getBase32AddressFromPublicKey(Buffer.from(trx.senderPublicKey, 'hex'), 'lsk');
+        savedHistory = await getNFTHistory(db, dbKey);
+        nftHistory = [Buffer.from(base32Address, 'binary'), ...savedHistory];
+        encodedNFTHistory = codec.encode(encodedNFTHistorySchema, { nftHistory });
+        await db.put(dbKey, encodedNFTHistory);
+      }
     }
   });
 };
@@ -1899,7 +1920,11 @@ Here, we define a simple array, which contains the adresses of the current and a
 </tr>
 <tr>
 <td><i class="conum" data-value="4"></i><b>4</b></td>
-<td><code>dbKey</code>: The key we use to save the owner history of a NFT in the key-value store.</td>
+<td><code>dbKey</code>: The key we use to save the owner history of a newly created NFT in the key-value store.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td><code>dbKey</code>: The same key as in &lt;4&gt;, but it can be retrieved directly from the transaction asset for an existing NFT in the key-value store.</td>
 </tr>
 </table>
 </div>
@@ -2049,7 +2074,7 @@ class NFTAPIPlugin extends BasePlugin {
         await saveTransactions(this._db, payload);
         const decodedBlock = this.codec.decodeBlock(block);
         // save NFT transaction history
-        await saveNFTHistory(this._db, decodedBlock, this._nodeInfo.registeredModules);
+        await saveNFTHistory(this._db, decodedBlock, this._nodeInfo.registeredModules, this._channel);
       }
     });
   }
@@ -2980,7 +3005,7 @@ The amount will be debited from the balance of the account which creates the NFT
 </ul>
 </div>
 <div class="paragraph">
-<p>It then uses the <code>createNFTToken()</code> function we defined in the <a href="#create-nft">Create NFT</a> section to create the NFT and the <code>sendTransactions()</code> function from the <a href="#api-related-functions">API related functions</a> section to post the transaction to the blockchain application.</p>
+<p>It then uses the <code>createNFTToken()</code> function we defined in the <a href="#create-nft">Create NFT</a> section to create the <code>createNFT</code> transaction and the <code>sendTransactions()</code> function from the <a href="#api-related-functions">API related functions</a> section to post the transaction to the blockchain application.</p>
 </div>
 <div class="listingblock">
 <div class="title">frontend-app/src/components/dialogs/CreateNFTTokenDialog.js</div>
@@ -3117,7 +3142,7 @@ For assistance, the minimum valid purchase margin for this particular NFT is dis
 </ul>
 </div>
 <div class="paragraph">
-<p>It then uses the <code>purchaseNFTToken()</code> function we defined in the <a href="#purchase-nft">Purchase NFT</a> section to purchase the NFT and the <code>sendTransactions()</code> function from the <a href="#api-related-functions">API related functions</a> section to post the transaction to the blockchain application.</p>
+<p>It then uses the <code>purchaseNFTToken()</code> function we defined in the <a href="#purchase-nft">Purchase NFT</a> section to create the <code>purchaseNFT</code> transaction and the <code>sendTransactions()</code> function from the <a href="#api-related-functions">API related functions</a> section to post the transaction to the blockchain application.</p>
 </div>
 <div class="listingblock">
 <div class="title">frontend-app/src/components/dialogs/PurchaseNFTTokenDialog.js</div>
@@ -3261,7 +3286,7 @@ export default function PurchaseNFTTokenDialog(props) {
 </ul>
 </div>
 <div class="paragraph">
-<p>It then uses the <code>transfer()</code> function we defined in the <a href="#transfer-funds">Transfer funds</a> section to transfer the tokens and the <code>sendTransactions()</code> function from the <a href="#api-related-functions">API related functions</a> section to post the transaction to the blockchain application.</p>
+<p>It then uses the <code>transfer()</code> function we defined in the <a href="#transfer-funds">Transfer funds</a> section to create the <code>transfer</code> transaction and the <code>sendTransactions()</code> function from the <a href="#api-related-functions">API related functions</a> section to post the transaction to the blockchain application.</p>
 </div>
 <div class="listingblock">
 <div class="title">frontend-app/src/components/dialogs/TransferFundsDialog.js</div>
@@ -3401,7 +3426,7 @@ export default function TransferFundsDialog(props) {
 </ul>
 </div>
 <div class="paragraph">
-<p>It then uses the <code>transferNFT()</code> function we defined in the <a href="#transfer-nft">Transfer NFT</a> section to transfer the NFT and the <code>sendTransactions()</code> function from the <a href="#api-related-functions">API related functions</a> section to post the transaction to the blockchain application.</p>
+<p>It then uses the <code>transferNFT()</code> function we defined in the <a href="#transfer-nft">Transfer NFT</a> section to create the <code>transferNFT</code> transaction and the <code>sendTransactions()</code> function from the <a href="#api-related-functions">API related functions</a> section to post the transaction to the blockchain application.</p>
 </div>
 <div class="listingblock">
 <div class="title">frontend-app/src/components/dialogs/TransferNFTDialog.js</div>

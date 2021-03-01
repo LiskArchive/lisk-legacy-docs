@@ -75,16 +75,234 @@ Create a new folder `srs_module/` and inside a new file `index.js`:
 [source,bash]
 ----
 mkdir srs_module
+cd srs_module
 ----
 
 == Transaction assets
 
+Users shall have the ability to:
+
+[start=0]
+. Create recovery configs for their account.
+. Initiate a recovery for an account which has a recovery config.
+. Vouch for a rescuer account, if certain conditions are met.
+. Claim a recovery, if certain conditions are met.
+. Cancel a recovery, for example if they found their passphrase from the old account again.
+. Remove a recovery config again from the account.
+
+To do this, we create the corresponding transaction assets for the SRS module.
+These transaction assets each define both, the asset schema for the transaction data, and the logic, how this data is applied and stored in the database.
+
+.srs/blockchain_app/srs_module/
+[source,bash]
+----
+mkdir transactions <1>
+cd transactions/
+----
+
+<1> Create a new folder `transactions/`, which will contain the files for the transaction assets.
+
 === createRecovery asset
+Create a new file `create_recovery.js` inside the newly created `transactions/` folder.
+
+Now open the file and paste the code below:
+
+.srs/blockchain_app/srs_module/transactions/create_recovery.js
+[source,js]
+----
+const { BaseAsset } = require("lisk-sdk");
+
+// extend base asset to implement the custom asset
+class CreateRecoveryAsset extends BaseAsset { <1>
+
+}
+
+module.exports = CreateRecoveryAsset; <2>
+----
+
+<1> Extend from the base asset to implement a custom asset.
+<2> Export the asset, so it can be imported later into the custom module.
+
+Now all required properties for the transaction asset are defined one after another.
+
+==== Asset ID and name
+.srs/blockchain_app/srs_module/transactions/create_recovery.js
+[source,js]
+----
+const { BaseAsset } = require("lisk-sdk");
+
+// extend base asset to implement your custom asset
+class CreateRecoveryAsset extends BaseAsset {
+  // define unique asset name and id
+  name = "createRecovery"; <1>
+  id = 0; <2>
+}
+
+module.exports = CreateRecoveryAsset;
+----
+
+<1> Set the asset name to `"createRecovery"`.
+<2> Set the asset id to `0`.
+
+==== Asset schema
+
+The asset schema describes the required datatypes and the structure of the data in the respective transaction asset.
+
+TIP: For more information how schemas are used in the application, check out the xref:{url_references_schemas}[] reference.
+
+For creating a recovery configuration, the following information is required:
+
+* `friends`: A list of trusted adresses.
+* `recoveryThreshold`: Minimum amount of friends that need to vouch for a rescuer, before the rescuer can claim the recovery.
+* `delayPeriod`: The % value of the initial value, that is added to the initial value when purchasing the NFT.
+
+Therefore, create the schema like described below:
+
+.srs/blockchain_app/srs_module/transactions/create_recovery.js
+[source,js]
+----
+const { BaseAsset } = require('lisk-sdk');
+
+class CreateRecoveryAsset extends BaseAsset {
+	name = 'createRecovery';
+	id = 0;
+	schema = {
+        $id: 'srs/recovery/create',
+        type: 'object',
+        required: ['friends', 'recoveryThreshold', 'delayPeriod'],
+        properties: {
+            friends: {
+                type: 'array',
+                fieldNumber: 1,
+                items: {
+                    dataType: 'bytes',
+                },
+            },
+            recoveryThreshold: {
+                dataType: 'uint32',
+                fieldNumber: 2,
+              },
+            delayPeriod: {
+                dataType: 'uint32',
+                fieldNumber: 3,
+            },
+        },
+    };
+}
+
+module.exports = CreateRecoveryAsset;
+----
+
+==== The apply function
+
+The `apply()` function has access to:
+
+* `asset`: the posted transaction asset.
+* `stateStore`: The xref:{url_statestore}[state store] is a data structure that holds temporary state while processing a block.
+It is used here to get and set certain data from and to the database.
+* `reducerHandler`: Allows to use reducer functions of other modules inside the `apply()` function.
+* `transaction`: the complete transaction object.
+
+.srs/blockchain_app/srs_module/transactions/create_recovery.js
+[source,js]
+----
+const { BaseAsset, transactions } = require('lisk-sdk');
+
+const BASE_RECOVERY_DEPOSIT = '1000000000';
+const FRIEND_FACTOR_FEE = 2;
+
+class CreateRecoveryAsset extends BaseAsset {
+	name = 'createRecovery';
+	id = 0;
+	schema = {
+        $id: 'srs/recovery/create',
+        type: 'object',
+        required: ['friends', 'recoveryThreshold', 'delayPeriod'],
+        properties: {
+            friends: {
+                type: 'array',
+                fieldNumber: 1,
+                items: {
+                    dataType: 'bytes',
+                },
+            },
+            recoveryThreshold: {
+                dataType: 'uint32',
+                fieldNumber: 2,
+              },
+            delayPeriod: {
+                dataType: 'uint32',
+                fieldNumber: 3,
+            },
+        },
+    };
+
+    async apply({
+		asset,
+		transaction,
+		stateStore,
+	}) {
+        const sender = await stateStore.account.get(transaction.senderAddress);
+        if (sender.srs.config && sender.srs.config.friends.length !== 0) {
+            throw Error('Account already has a recovery configuration.')
+        }
+        const sameAccount = asset.friends.find(f => f === sender.address);
+        if (sameAccount) {
+            throw new Error('You cannot add yourself to the friend list.');
+        }
+        // Add friends to the list
+        sender.srs.config.friends = [...asset.friends.sort()];
+        // Minimum number of friends required to vouch
+        sender.srs.config.recoveryThreshold = asset.recoveryThreshold;
+        // Minimum number of blocks after recovery process when account will be recoverable
+        sender.srs.config.delayPeriod = asset.delayPeriod;
+        // Set the deposit based on number of friends, 10 + friends.length * 2
+        const deposit = BigInt(BASE_RECOVERY_DEPOSIT) + BigInt(transactions.convertLSKToBeddows((sender.srs.config.friends.length * FRIEND_FACTOR_FEE).toString()));
+        sender.srs.config.deposit = deposit;
+        // Save the value in stateStore
+        await stateStore.account.set(sender.address, sender);
+    }
+}
+
+module.exports = CreateRecoveryAsset;
+----
+
+The other transaction assets are created analog to the `CreateRecoveryAsset`
+
 === initiateRecovery asset
+
+.srs/blockchain_app/srs_module/transactions/create_recovery.js
+[source,js]
+----
+----
+
 === vouchRecovery asset
+
+.srs/blockchain_app/srs_module/transactions/vouch_recovery.js
+[source,js]
+----
+----
+
 === claimRecovery asset
+
+.srs/blockchain_app/srs_module/transactions/claim_recovery.js
+[source,js]
+----
+----
+
 === closeRecovery asset
+
+.srs/blockchain_app/srs_module/transactions/close_recovery.js
+[source,js]
+----
+----
+
 === removeRecovery asset
+
+.srs/blockchain_app/srs_module/transactions/remove_recovery.js
+[source,js]
+----
+----
 
 == The SRS module
 === Module ID and name

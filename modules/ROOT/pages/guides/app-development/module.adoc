@@ -48,7 +48,7 @@ class MyModule extends BaseModule {
 
 }
 
-module.exports = MyModule;
+module.exports = { MyModule };
 ----
 
 == Setting name and ID of the module
@@ -71,10 +71,10 @@ const { BaseModule } = require('lisk-sdk');
 
 class MyModule extends BaseModule {
   id = 1024;
-  name = 'my-module';
+  name = 'myModule';
 }
 
-module.exports = MyModule;
+module.exports = { MyModule };
 ----
 
 == Defining the account schema
@@ -91,7 +91,7 @@ To achieve a better overview, it is recommended to create a new file `schemas.js
 .schemas.js
 [source,js]
 ----
-export const myAccountSchema = {
+const myAccountSchema = {
   // Root type must be type object
   type: "object",
   // Properties for the object
@@ -116,6 +116,10 @@ export const myAccountSchema = {
     key3 : 0
   }
 }
+
+module.exports = {
+  myAccountSchema
+};
 ----
 
 Now include the schema in the module:
@@ -127,11 +131,11 @@ const { myAccountSchema } = require('./schemas.js'); <1>
 
 class MyModule extends BaseModule {
   id = 1024;
-  name = 'my-module';
+  name = 'myModule';
   accountSchema = myAccountSchema; <2>
 }
 
-module.exports = MyModule;
+module.exports = { MyModule };
 ----
 
 <1> Require the schema.
@@ -153,12 +157,12 @@ const { MyAsset } = require('./my-asset.js');
 
 class MyModule extends BaseModule {
   id = 1024;
-  name = 'my-module';
+  name = 'myModule';
   accountSchema = myAccountSchema;
   transactionAssets = [ new myAsset() ];
 }
 
-module.exports = MyModule;
+module.exports = { MyModule };
 ----
 
 == Adding an interface by providing reducers, actions and events
@@ -179,13 +183,12 @@ A list of actions that other modules of the application can invoke.
 ----
 const { BaseModule } = require('lisk-sdk');
 const { myAccountSchema } = require('./schemas.js');
-const { myAsset } = require('./my-asset.js');
 
 class MyModule extends BaseModule {
   id = 1024;
-  name = 'my-module';
+  name = 'myModule';
   accountSchema = myAccountSchema;
-  transactionAssets = [ new myAsset() ];
+  transactionAssets = [];
   actions = {
     myAction: async () => {
         // Returns some data
@@ -205,11 +208,12 @@ class MyModule extends BaseModule {
   };
 }
 
-module.exports = MyModule;
+module.exports = { MyModule };
 ----
 
 [TIP]
 ====
+
 What events, actions and reducers are used within a module, or if these interfaces are actually required at all, will be a specific individual requirement for every module; as it is heavily dependant on which functionality the module intends to provide to the application.
 
 The best way to understand the necessary requirements here is to look at existing examples in the Lisk SDK default modules, or examples of other blockchain applications built with the Lisk SDK, for example the xref:{url_tutorials_hello}[] application.
@@ -255,37 +259,61 @@ The code here is applied after each block is applied.
 .Lifecycle hooks example
 [source,js]
 ----
-async beforeTransactionApply({transaction, stateStore, reducerHandler}) {
+const { BaseModule } = require('lisk-sdk');
+const { myAccountSchema } = require('./schemas.js');
+
+class MyModule extends BaseModule {
+  id = 1024;
+  name = 'myModule';
+  accountSchema = myAccountSchema;
+  transactionAssets = [];
+  actions = {
+    myAction: async () => {
+        // Returns some data
+    },
+    anotherAction: async (params) => {
+        // Returns some other data
+    }
+  };
+  events = ['myEvent','anotherEvent'];
+  reducers = {
+    myReducer: async (params, stateStore) => {
+      // Returns some data
+    },
+    anotherReducer: async (params, stateStore) => {
+      // Returns some other data
+    }
+  };
+  async beforeTransactionApply({transaction, stateStore, reducerHandler}) {
     // Code in here is applied before each transaction is applied.
-};
+  };
 
-async afterTransactionApply({transaction, stateStore, reducerHandler}) {
-  // Code in here is applied after each transaction is applied.
-  if (transaction.moduleID === this.id && transaction.assetID === MyAssetID) {
+  async afterTransactionApply({transaction, stateStore, reducerHandler}) {
+    // Code in here is applied after each transaction is applied.
+    /*if (transaction.moduleID === this.id && transaction.assetID === MyAssetID) {
 
-    const myAsset = codec.decode(
-      myAssetSchema,
-      transaction.asset
-    );
+      const myAsset = codec.decode(
+        myAssetSchema,
+        transaction.asset
+      );
 
-    this._channel.publish('my-module:myEvent', {
-      sender: transaction._senderAddress.toString('hex')
-    });
-  }
-};
-async afterGenesisBlockApply({genesisBlock, stateStore, reducerHandler}) {
-  // Sets the hello counter to zero after the genesis block is applied
-  await stateStore.chain.set(
-    CHAIN_STATE_HELLO_COUNTER,
-    codec.encode(helloCounterSchema, { helloCounter: 0 })
-  );
-};
-async beforeBlockApply({block, stateStore, reducerHandler}) {
+      this._channel.publish('my-module:myEvent', {
+        sender: transaction._senderAddress.toString('hex')
+      });
+    }
+  };*/
+  async afterGenesisBlockApply({genesisBlock, stateStore, reducerHandler}) {
+    // Code in here is applied after the genesis block is applied.
+  };
+  async beforeBlockApply({block, stateStore, reducerHandler}) {
     // Code in here is applied before each block is applied.
-}
-async afterBlockApply({block, stateStore, reducerHandler, consensus}) {
+  }
+  async afterBlockApply({block, stateStore, reducerHandler, consensus}) {
     // Code in here is applied after each block is applied.
+  }
 }
+
+module.exports = { MyModule };
 ----
 
 === stateStore
@@ -328,12 +356,26 @@ interface ReducerHandler {
 
 The final requirement is to register the newly created module in the application:
 
-//is there need to update the genesis block like in hello world?
 .index.js
 [source,js]
 ----
 const { Application, genesisBlockDevnet, configDevnet } = require('lisk-sdk');
 const { MyModule } = require('./my-module.js');
+
+// Update genesis block accounts to include the config options of myModule
+genesisBlockDevnet.header.asset.accounts = genesisBlockDevnet.header.asset.accounts.map(
+  (a) =>
+    utils.objects.mergeDeep({}, a, {
+      myModule: {
+        key1 : "",
+        key2 : false,
+        key3 : 0
+      },
+    }),
+);
+
+// Set a custom label for the bblockchain app
+configDevnet.label = 'my-app';
 
 const app = Application.defaultApplication(genesisBlockDevnet, configDevnet);
 

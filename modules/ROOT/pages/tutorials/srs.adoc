@@ -27,11 +27,15 @@ image:tutorials/srs/srs-overview.png[]
 
 As the above image describes, we need to create the following components:
 
-. The NFT module (on-chain)
-.. Three new transaction assets for the NFT module
-. The NFT plugin (off-chain)
+. The SRS module (on-chain)
+.. 6 new transaction assets for the SRS module
+.. 3 SRS-specific events
+. Plugins (off-chain)
+.. The SRS data plugin
+... 1 action
+.. The SRS API plugin
 
-Additional to the blockchain application, we will also implement **frontend application**, which allows us to interact with the blockchain applicationn through a UI in the browser.
+Additional to the blockchain application, we will also implement **frontend application**, which allows us to interact with the blockchain application through a UI in the browser.
 
 :sectnums:
 
@@ -117,7 +121,7 @@ class CreateRecoveryAsset extends BaseAsset { <1>
 
 }
 
-module.exports = CreateRecoveryAsset; <2>
+module.exports = { CreateRecoveryAsset }; <2>
 ----
 
 <1> Extend from the base asset to implement a custom asset.
@@ -131,18 +135,21 @@ Now all required properties for the transaction asset are defined one after anot
 ----
 const { BaseAsset } = require("lisk-sdk");
 
+const CREATE_RECOVERY_ASSET_ID = 0;
+
 // extend base asset to implement your custom asset
 class CreateRecoveryAsset extends BaseAsset {
   // define unique asset name and id
   name = "createRecovery"; <1>
-  id = 0; <2>
+  id = CREATE_RECOVERY_ASSET_ID; <2>
 }
 
-module.exports = CreateRecoveryAsset;
+module.exports = { CreateRecoveryAsset, CREATE_RECOVERY_ASSET_ID }; <3>
 ----
 
 <1> Set the asset name to `"createRecovery"`.
 <2> Set the asset id to `0`.
+<3> Export the asset ID for later use in the application.
 
 ==== Asset schema
 
@@ -156,41 +163,54 @@ For creating a recovery configuration, the following information is required:
 * `recoveryThreshold`: Minimum amount of friends that need to vouch for a rescuer, before the rescuer can claim the recovery.
 * `delayPeriod`: The % value of the initial value, that is added to the initial value when purchasing the NFT.
 
-Therefore, create the schema like described below:
+To be able to import the schema conveniently later in the module, create a new file `schemas.js`.
+
+.srs/blockchain_app/srs_module/schemas.js
+[source,js]
+----
+const createRecoverySchema = {
+  $id: 'srs/recovery/create',
+  type: 'object',
+  required: ['friends', 'recoveryThreshold', 'delayPeriod'],
+  properties: {
+    friends: {
+      type: 'array',
+      fieldNumber: 1,
+      items: {
+        dataType: 'bytes',
+      },
+    },
+    recoveryThreshold: {
+      dataType: 'uint32',
+      fieldNumber: 2,
+    },
+    delayPeriod: {
+      dataType: 'uint32',
+      fieldNumber: 3,
+    },
+  },
+};
+
+module.exports = { createRecoverySchema };
+----
+
+Now import is into `create_recovery.js`.
 
 .srs/blockchain_app/srs_module/transactions/create_recovery.js
 [source,js]
 ----
 const { BaseAsset } = require('lisk-sdk');
+const { createRecoverySchema } = require('../schemas');
+
+const CREATE_RECOVERY_ASSET_ID = 0;
 
 class CreateRecoveryAsset extends BaseAsset {
 	name = 'createRecovery';
-	id = 0;
-	schema = {
-        $id: 'srs/recovery/create',
-        type: 'object',
-        required: ['friends', 'recoveryThreshold', 'delayPeriod'],
-        properties: {
-            friends: {
-                type: 'array',
-                fieldNumber: 1,
-                items: {
-                    dataType: 'bytes',
-                },
-            },
-            recoveryThreshold: {
-                dataType: 'uint32',
-                fieldNumber: 2,
-              },
-            delayPeriod: {
-                dataType: 'uint32',
-                fieldNumber: 3,
-            },
-        },
-    };
+	id = CREATE_RECOVERY_ASSET_ID;
+	schema = createRecoverySchema;
 }
 
-module.exports = CreateRecoveryAsset;
+module.exports = { CreateRecoveryAsset, CREATE_RECOVERY_ASSET_ID };
 ----
 
 ==== The apply function
@@ -207,35 +227,16 @@ It is used here to get and set certain data from and to the database.
 [source,js]
 ----
 const { BaseAsset, transactions } = require('lisk-sdk');
+const { createRecoverySchema } = require('../schemas');
 
 const BASE_RECOVERY_DEPOSIT = '1000000000';
 const FRIEND_FACTOR_FEE = 2;
+const CREATE_RECOVERY_ASSET_ID = 0;
 
 class CreateRecoveryAsset extends BaseAsset {
 	name = 'createRecovery';
-	id = 0;
-	schema = {
-        $id: 'srs/recovery/create',
-        type: 'object',
-        required: ['friends', 'recoveryThreshold', 'delayPeriod'],
-        properties: {
-            friends: {
-                type: 'array',
-                fieldNumber: 1,
-                items: {
-                    dataType: 'bytes',
-                },
-            },
-            recoveryThreshold: {
-                dataType: 'uint32',
-                fieldNumber: 2,
-              },
-            delayPeriod: {
-                dataType: 'uint32',
-                fieldNumber: 3,
-            },
-        },
-    };
+	id = CREATE_RECOVERY_ASSET_ID;
+	schema = createRecoverySchema;
 
     async apply({
 		asset,
@@ -264,7 +265,7 @@ class CreateRecoveryAsset extends BaseAsset {
     }
 }
 
-module.exports = CreateRecoveryAsset;
+module.exports = { CreateRecoveryAsset, CREATE_RECOVERY_ASSET_ID };
 ----
 
 The other transaction assets are created analog to the `CreateRecoveryAsset`

@@ -703,7 +703,7 @@ const SRSAccountSchema = {
         default: {
           friends: [],
           recoveryThreshold: 0,
-					delayPeriod: 0,
+		  delayPeriod: 0,
         },
       },
       status: {
@@ -741,7 +741,26 @@ const SRSAccountSchema = {
 module.exports = { SRSAccountSchema, createRecoverySchema, initiateRecoverySchema, removeRecoverySchema };
 ----
 
-=== Importing transaction assets into the module
+Now use the `SRSAccountSchema` inside of the module:
+
+.srs/blockchain_app/srs_module/index.js
+[source,js]
+----
+const { BaseModule } = require('lisk-sdk');
+const { SRSAccountSchema } = require('./schemas');
+
+// Extend from the base module to implement a custom module
+class SRSModule extends BaseModule {
+  name = 'srs';
+  id = 1026;
+  accountSchema = SRSAccountSchema;
+
+}
+
+module.exports = { SRSModule };
+----
+
+=== Importing the transaction assets into the module
 
 Now let's import the transactions which were created in section 2: <<transaction-assets>> into the module.
 
@@ -753,7 +772,7 @@ Add them to the `tansactionAssets` property like shown in the snippet below.
 ====
 It's a good practise to name the imported transaction assets after their corresponding classname.
 
-In this example: `CreateNFTAsset`, `PurchaseNFTAsset`, and `TransferNFTAsset`.
+In this example: `CreateRecoveryAsset`, `InitiateRecoveryAsset`, `VouchRecoveryAsset`, `ClaimRecoveryAsset`, `CloseRecoveryAsset`, and `RemoveRecoveryAsset`.
 ====
 
 .srs/blockchain_app/srs_module/index.js
@@ -762,9 +781,9 @@ In this example: `CreateNFTAsset`, `PurchaseNFTAsset`, and `TransferNFTAsset`.
 const { BaseModule } = require('lisk-sdk');
 const  { CreateRecoveryAsset } = require('./assets/create_recovery');
 const { InitiateRecoveryAsset } = require('./assets/initiate_recovery');
-const VouchRecovery = require('./assets/vouch_recovery');
-const ClaimRecovery = require('./assets/claim_recovery');
-const CloseRecovery = require('./assets/close_recovery');
+const VouchRecoveryAsset = require('./assets/vouch_recovery');
+const ClaimRecoveryAsset = require('./assets/claim_recovery');
+const CloseRecoveryAsset = require('./assets/close_recovery');
 const { RemoveRecoveryAsset } = require('./assets/remove_recovery');
 const { SRSAccountSchema } = require('./schemas');
 
@@ -777,9 +796,9 @@ class SRSModule extends BaseModule {
   transactionAssets = [
     new CreateRecoveryAsset(),
     new InitiateRecoveryAsset(),
-    new VouchRecovery(),
-    new ClaimRecovery(),
-    new CloseRecovery(),
+    new VouchRecoveryAsset(),
+    new ClaimRecoveryAsset(),
+    new CloseRecoveryAsset(),
     new RemoveRecoveryAsset(),
   ];
 }
@@ -789,15 +808,23 @@ module.exports = { SRSModule };
 
 === Events
 
+Define the events which are available part of this module.
+
+Like described in section <<srs-application-overview>>, define three different events:
+
+* createdConfig
+* removedConfig
+* initiatedRecovery
+
 .srs/blockchain_app/srs_module/index.js
 [source,js]
 ----
 const { BaseModule } = require('lisk-sdk');
 const  { CreateRecoveryAsset } = require('./assets/create_recovery');
 const { InitiateRecoveryAsset } = require('./assets/initiate_recovery');
-const VouchRecovery = require('./assets/vouch_recovery');
-const ClaimRecovery = require('./assets/claim_recovery');
-const CloseRecovery = require('./assets/close_recovery');
+const VouchRecoveryAsset = require('./assets/vouch_recovery');
+const ClaimRecoveryAsset = require('./assets/claim_recovery');
+const CloseRecoveryAsset = require('./assets/close_recovery');
 const { RemoveRecoveryAsset } = require('./assets/remove_recovery');
 const { SRSAccountSchema } = require('./schemas');
 
@@ -810,9 +837,9 @@ class SRSModule extends BaseModule {
   transactionAssets = [
     new CreateRecoveryAsset(),
     new InitiateRecoveryAsset(),
-    new VouchRecovery(),
-    new ClaimRecovery(),
-    new CloseRecovery(),
+    new VouchRecoveryAsset(),
+    new ClaimRecoveryAsset(),
+    new CloseRecoveryAsset(),
     new RemoveRecoveryAsset(),
   ];
 
@@ -824,6 +851,10 @@ module.exports = { SRSModule };
 ----
 
 === Lifecycle hooks
+
+Use the life cycle hooks of the module, to publish the events we just created in the <<events>> section.
+
+Here we use the hook `afterTransactionApply()` which is executed each time after a transaction is applied on the blockchain.
 
 .srs/blockchain_app/srs_module/index.js
 [source,js]
@@ -855,27 +886,35 @@ class SRSModule extends BaseModule {
   events = ['createdConfig','removedConfig','initiatedRecovery'];
 
   async afterTransactionApply({transaction, stateStore, reducerHandler}) {
+    // if the transaction is a create recovery transaction
     if (transaction.moduleID === this.id && transaction.assetID === CREATE_RECOVERY_ASSET_ID) {
+      // decode the tx asset
       let createRecoveryAsset = codec.decode(
         createRecoverySchema,
         transaction.asset
       );
       const friends = createRecoveryAsset.friends.map(bufferFriend => bufferFriend.toString('hex'));
+      // publish the createdConfig event
       this._channel.publish('srs:createdConfig', {
          address: transaction._senderAddress.toString('hex'),
          friends: friends,
          recoveryThreshold: createRecoveryAsset.recoveryThreshold,
          delayPeriod: createRecoveryAsset.delayPeriod
       });
+    // if the transaction is a remove recovery transaction
     } else if (transaction.moduleID === this.id && transaction.assetID === REMOVE_RECOVERY_ASSET_ID) {
+      // publish the removedConfig event
       this._channel.publish('srs:removedConfig', {
         address: transaction._senderAddress.toString('hex')
       });
+    // if the transaction is a initiate recovery transaction
     } else if (transaction.moduleID === this.id && transaction.assetID === INITIATE_RECOVERY_ASSET_ID) {
+      // decode the tx asset
       const initiateRecoveryAsset = codec.decode(
         initiateRecoverySchema,
         transaction.asset
       );
+      // publish the initiatedRecovery event
       this._channel.publish('srs:initiatedRecovery', {
         address: transaction._senderAddress.toString('hex'),
         config: initiateRecoveryAsset

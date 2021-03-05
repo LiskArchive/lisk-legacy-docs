@@ -71,16 +71,7 @@ app
 ----
 
 This code snippet creates a default blockchain application, which is configured for development purposes.
-We will use this app as basis for the SRS app and extend it with a module and a plugin in the next steps, to suit the desired use case.
-
-Create a new folder `srs_module/` and inside a new file `index.js`:
-
-.srs/blockchain_app/
-[source,bash]
-----
-mkdir srs_module
-cd srs_module
-----
+Use this app as basis for the SRS app and extend it with a module and a plugin in the next steps, to suit the desired use case.
 
 == Transaction assets
 
@@ -97,14 +88,17 @@ Users shall have the ability to:
 To do this, we create the corresponding transaction assets for the SRS module.
 These transaction assets each define both, the asset schema for the transaction data, and the logic, how this data is applied and stored in the database.
 
-.srs/blockchain_app/srs_module/
+Create a new folder `srs_module/` and inside another new folder `transactions`:
+
+.srs/blockchain_app/
 [source,bash]
 ----
-mkdir transactions <1>
-cd transactions/
+mkdir srs_module
+mkdir srs_module/transactions <1>
+cd srs_module/transactions/
 ----
 
-<1> Create a new folder `transactions/`, which will contain the files for the transaction assets.
+<1> Create a new folder `transactions/` which will contain the files for the transaction assets.
 
 === createRecovery asset
 Create a new file `create_recovery.js` inside the newly created `transactions/` folder.
@@ -164,6 +158,8 @@ For creating a recovery configuration, the following information is required:
 * `delayPeriod`: The % value of the initial value, that is added to the initial value when purchasing the NFT.
 
 To be able to import the schema conveniently later in the module, create a new file `schemas.js`.
+
+Here we store the schemas which are reused later in different places of the application.
 
 .srs/blockchain_app/srs_module/schemas.js
 [source,js]
@@ -272,9 +268,90 @@ The other transaction assets are created analog to the `CreateRecoveryAsset`
 
 === initiateRecovery asset
 
+Add the respective asset schema to `schemas.js` and require it then in the transaction asset:
+
+.srs/blockchain_app/srs_module/schemas.js
+[source,js]
+----
+//...
+
+const initiateRecoverySchema = {
+  $id: 'srs/recovery/initiate',
+  type: 'object',
+  required: ['lostAccount'],
+  properties: {
+    lostAccount: {
+      dataType: 'bytes',
+      fieldNumber: 1,
+    },
+  },
+};
+
+module.exports = { createRecoverySchema, initiateRecoverySchema };
+----
+
 .srs/blockchain_app/srs_module/transactions/create_recovery.js
 [source,js]
 ----
+const { BaseAsset } = require('lisk-sdk');
+const { initiateRecoverySchema } = require('../schemas');
+
+const INITIATE_RECOVERY_ASSET_ID = 1;
+
+class InitiateRecoveryAsset extends BaseAsset {
+	name = 'initiateRecovery';
+	id = INITIATE_RECOVERY_ASSET_ID;
+	schema = initiateRecoverySchema;
+
+    async apply({
+		asset,
+		transaction,
+		stateStore,
+        reducerHandler,
+	}) {
+        const rescuer = await stateStore.account.get(transaction.senderAddress);
+        const lostAccount = await stateStore.account.get(asset.lostAccount);
+
+        const sameAccount = lostAccount.srs.config.friends.find(f => f === rescuer.address);
+        if (sameAccount) {
+            throw new Error('You cannot recover your own account.');
+        }
+
+        // Check if recovery configuration is present for the lost account or not
+        if (lostAccount.srs.config && lostAccount.srs.config.friends.length === 0) {
+            throw Error('Lost account has no recovery configuration.')
+        }
+
+        const currentHeight = stateStore.chain.lastBlockHeaders[0].height;
+        const deposit = lostAccount.srs.config.deposit;
+
+        // Check if rescuer account has enough balance
+        const rescuerBalance = await reducerHandler.invoke('token:getBalance', {
+            address: rescuer.address,
+        });
+
+        if (deposit > rescuerBalance) {
+            throw new Error('Rescuer doesnt have enough balance to deposit for recovery process.');
+        }
+        // Deduct the balance from rescuer and update rescuer account
+        await reducerHandler.invoke('token:debit', {
+            address: rescuer.address,
+            amount: deposit,
+          });
+
+        // Update lost account address to active recovery
+        lostAccount.srs.status.active = true;
+        lostAccount.srs.status.rescuer = rescuer.address;
+        lostAccount.srs.status.created = currentHeight;
+        lostAccount.srs.status.deposit = deposit;
+        lostAccount.srs.status.vouchList = [];
+
+        // Save lost account values to stateStore
+        await stateStore.account.set(lostAccount.address, lostAccount);
+    }
+}
+
+module.exports = { InitiateRecoveryAsset, INITIATE_RECOVERY_ASSET_ID };
 ----
 
 === vouchRecovery asset
@@ -282,6 +359,60 @@ The other transaction assets are created analog to the `CreateRecoveryAsset`
 .srs/blockchain_app/srs_module/transactions/vouch_recovery.js
 [source,js]
 ----
+const { BaseAsset } = require('lisk-sdk');
+
+class VouchRecoveryAsset extends BaseAsset {
+	name = 'vouchRecovery';
+	id = 2;
+	schema = {
+        $id: 'srs/recovery/vouch',
+        type: 'object',
+        required: ['lostAccount', 'rescuer'],
+        properties: {
+            rescuer: {
+                dataType: 'bytes',
+                fieldNumber: 1,
+              },
+            lostAccount: {
+                dataType: 'bytes',
+                fieldNumber: 2,
+            },
+        },
+    };
+
+    async apply({
+		asset,
+		transaction,
+		stateStore,
+	}) {
+        const sender = await stateStore.account.get(transaction.senderAddress);
+        const lostAccount = await stateStore.account.get(asset.lostAccount);
+        const rescuer = await stateStore.account.get(asset.rescuer);
+
+        // Make sure rescuer and lost account match according to config settings
+        if (!lostAccount.srs.status.rescuer.equals(rescuer.address)) {
+            throw new Error(`Rescuer address is incorrect for the recovery of ${lostAccount.address.toString('hex')}`)
+        }
+
+        const found = lostAccount.srs.config.friends.find(f => f.equals(sender.address));
+        // Make sure friend is present in the configuration
+        if (!found) {
+            throw new Error('The sender is not part of friends who can vouch for rescuer for recovery process.')
+        }
+
+        const foundSignature = lostAccount.srs.status.vouchList.find(f => f.equals(sender.address));
+        // Make sure the friend has not already voted
+        if (foundSignature) {
+            throw new Error('The sender has already vouched for the rescuer for recovery process.')
+        }
+
+        // Push signature to vouch list
+        lostAccount.srs.status.vouchList.push(sender.address);
+        await stateStore.account.set(lostAccount.address, lostAccount);
+    }
+}
+
+module.exports = VouchRecoveryAsset;
 ----
 
 === claimRecovery asset
@@ -289,6 +420,82 @@ The other transaction assets are created analog to the `CreateRecoveryAsset`
 .srs/blockchain_app/srs_module/transactions/claim_recovery.js
 [source,js]
 ----
+const { BaseAsset } = require('lisk-sdk');
+
+class ClaimRecoveryAsset extends BaseAsset {
+	name = 'claimRecovery';
+	id = 3;
+	schema = {
+        $id: 'srs/recovery/claim',
+        type: 'object',
+        required: ['lostAccount'],
+        properties: {
+            lostAccount: {
+                dataType: 'bytes',
+                fieldNumber: 1,
+            },
+        },
+    };
+
+    async apply({
+		asset,
+		transaction,
+		stateStore,
+        reducerHandler,
+	}) {
+        const rescuer = await stateStore.account.get(transaction.senderAddress);
+        const lostAccount = await stateStore.account.get(asset.lostAccount);
+
+        const currentHeight = stateStore.chain.lastBlockHeaders[0].height;
+        const delayPeriod = lostAccount.srs.config.delayPeriod;
+        const recoveryThreshold = lostAccount.srs.config.recoveryThreshold;
+        const deposit = lostAccount.srs.config.deposit;
+
+        // Check if the delay period is passed to claim the recovery
+        if ((currentHeight - rescuer.srs.status.created) < delayPeriod) {
+            throw new Error(`Cannot claim account before delay period of ${delayPeriod}.`);
+        }
+
+        // Check if the recovery has received minimum number of vouch from friends
+        if (lostAccount.srs.status.vouchList.length < recoveryThreshold) {
+            throw new Error(`Cannot claim account until minimum threshold of ${lostAccount.srs.config.friends.length} friends have vouched.`);
+        }
+
+        const minBalance = await reducerHandler.invoke('token:getMinRemainingBalance');
+        // Get the account balance of lost account
+        const lostAccountBalance = await reducerHandler.invoke('token:getBalance', {
+            address: lostAccount.address,
+        });
+
+        await reducerHandler.invoke('token:debit', {
+            address: lostAccount.address,
+            // Get the deposit back from the lost account as well as your own deposit that was locked
+            amount: lostAccountBalance - minBalance,
+        });
+
+        await reducerHandler.invoke('token:credit', {
+            address: rescuer.address,
+            // Get the deposit back from the lost account as well as your own deposit that was locked
+            amount: BigInt(2) * deposit + lostAccountBalance - minBalance,
+        });
+
+        // Reset recovery status
+        await stateStore.account.set(rescuer.address, rescuer);
+        // Reset all recovery values in the lost account
+        lostAccount.srs.config.friends = [];
+        lostAccount.srs.config.delayPeriod = 0;
+        lostAccount.srs.config.recoveryThreshold = 0;
+        lostAccount.srs.config.deposit = BigInt('0');
+        lostAccount.srs.status.active = false;
+        lostAccount.srs.status.rescuer = Buffer.from('');
+        lostAccount.srs.status.created = 0;
+        lostAccount.srs.status.deposit = BigInt('0');
+        lostAccount.srs.status.vouchList = [];
+        await stateStore.account.set(lostAccount.address, lostAccount);
+	}
+}
+
+module.exports = ClaimRecoveryAsset;
 ----
 
 === closeRecovery asset
@@ -296,25 +503,396 @@ The other transaction assets are created analog to the `CreateRecoveryAsset`
 .srs/blockchain_app/srs_module/transactions/close_recovery.js
 [source,js]
 ----
+const { BaseAsset } = require('lisk-sdk');
+
+class CloseRecoveryAsset extends BaseAsset {
+	name = 'closeRecovery';
+	id = 4;
+	schema = {
+        $id: 'srs/recovery/close',
+        type: 'object',
+        required: ['rescuer'],
+        properties: {
+            rescuer: {
+                dataType: 'bytes',
+                fieldNumber: 1,
+            },
+        },
+    };
+
+    async apply({
+		asset,
+		transaction,
+		stateStore,
+        reducerHandler,
+	}) {
+        const lostAccount = await stateStore.account.get(transaction.senderAddress);
+        if (!lostAccount.srs.status.active) {
+            throw new Error(`No active recovery found for address ${lostAccount.address.toString('hex')}.`);
+        }
+        if (!lostAccount.srs.status.rescuer.equals(asset.rescuer)) {
+            throw new Error(`Incorrect rescuer address`);
+        }
+
+        const rescuer = await stateStore.account.get(asset.rescuer);
+
+        // Debit deposit amount from the rescuer and credit to the lost account
+        await reducerHandler.invoke('token:debit', {
+            address: rescuer.address,
+            amount: lostAccount.srs.config.deposit,
+          });
+
+        await reducerHandler.invoke('token:credit', {
+            address: lostAccount.address,
+            amount: lostAccount.srs.config.deposit,
+          });
+
+        // Reset recovery status
+        lostAccount.srs.status.active = false;
+        lostAccount.srs.status.rescuer = Buffer.from('');
+        lostAccount.srs.status.created = 0;
+        lostAccount.srs.status.deposit = BigInt('0');
+        lostAccount.srs.status.vouchList = [];
+        await stateStore.account.set(lostAccount.address, lostAccount);
+    }
+}
+
+module.exports = CloseRecoveryAsset;
 ----
 
 === removeRecovery asset
 
+Add the respective asset schema to `schemas.js` and require it then in the transaction asset:
+
+.srs/blockchain_app/srs_module/schemas.js
+[source,js]
+----
+//...
+
+const removeRecoverySchema = {
+  $id: 'srs/recovery/remove',
+  type: 'object',
+  required: ['lostAccount'],
+  properties: {
+    lostAccount: {
+      dataType: 'bytes',
+      fieldNumber: 1,
+    },
+  },
+};
+
+module.exports = { createRecoverySchema, initiateRecoverySchema, removeRecoverySchema };
+----
+
 .srs/blockchain_app/srs_module/transactions/remove_recovery.js
 [source,js]
 ----
+const {
+	BaseAsset
+} = require('lisk-sdk');
+const { removeRecoverySchema } = require('../schemas');
+
+const REMOVE_RECOVERY_ASSET_ID = 5;
+
+class RemoveRecoveryAsset extends BaseAsset {
+	name = 'removeRecovery';
+	id = REMOVE_RECOVERY_ASSET_ID;
+	schema = removeRecoverySchema;
+
+	async apply({
+		transaction,
+		stateStore,
+		reducerHandler,
+	}) {
+		const lostAccount = await stateStore.account.get(transaction.senderAddress);
+
+		if (lostAccount.srs.config.friends.length === 0) {
+			throw Error('Account does not have a recovery configuration.')
+		}
+
+		if (lostAccount.srs.status.active) {
+			throw Error('There is active recovery in process. Please close the recovery to remove recovery configuration.')
+		}
+
+		const deposit = lostAccount.srs.config.deposit;
+
+		// Unlock the deposit and give it back
+		await reducerHandler.invoke('token:credit', {
+			address: lostAccount.address,
+			amount: deposit,
+		});
+
+		// Reset all the default values
+		lostAccount.srs.config.friends = [];
+		lostAccount.srs.config.recoveryThreshold = 0;
+		lostAccount.srs.config.delayPeriod = 0;
+		lostAccount.srs.config.deposit = BigInt('0');
+		lostAccount.srs.status.rescuer = Buffer.from('');
+		lostAccount.srs.status.deposit = BigInt('0');
+		lostAccount.srs.status.vouchList = [];
+		lostAccount.srs.status.created = 0;
+		lostAccount.srs.status.active = false;
+		await stateStore.account.set(lostAccount.address, lostAccount);
+	}
+}
+
+module.exports = { RemoveRecoveryAsset, REMOVE_RECOVERY_ASSET_ID };
 ----
 
 == The SRS module
-=== Module ID and name
-=== The account schema
-=== Importing transaction assets into the module
-=== Actions
 
-== The SRS plugin
+Inside the srs_module/ folder, create a new file `index.js`.
+
+Open `index.js` and create the skeleton which will contain all parts of the SRS module:
+
+=== Module ID and name
+
+Set the unique identifier for the SRS module to `srs`, and the module ID to `1026`.
+
+[source,js]
+----
+const { BaseModule } = require('lisk-sdk');
+
+// Extend from the base module to implement a custom module
+class SRSModule extends BaseModule {
+  name = 'srs';
+  id = 1026;
+}
+
+module.exports = { SRSModule };
+----
+
+=== The account schema
+
+Open the in section <<asset-schema>> created `schemas.js` file again, and add the account schema for the SRS module:
+
+.srs/blockchain_app/srs_module/schemas.js
+[source,js]
+----
+//...
+
+const SRSAccountSchema = {
+    type: 'object',
+    required: ['config'],
+    properties: {
+      config: {
+        fieldNumber: 1,
+        type: 'object',
+        required: ['friends'],
+        properties: {
+          friends: {
+              type: 'array',
+              fieldNumber: 1,
+              items: {
+                  dataType: 'bytes',
+              },
+          },
+          recoveryThreshold: {
+              dataType: 'uint32',
+              fieldNumber: 2,
+          },
+          delayPeriod: {
+              dataType: 'uint32',
+              fieldNumber: 3,
+          },
+          deposit: {
+            dataType: 'uint64',
+            fieldNumber: 4,
+          }
+        },
+        default: {
+          friends: [],
+          recoveryThreshold: 0,
+					delayPeriod: 0,
+        },
+      },
+      status: {
+        fieldNumber: 2,
+        type: 'object',
+        properties: {
+          rescuer: {
+            dataType: 'bytes',
+            fieldNumber: 1,
+          },
+          created: {
+            dataType: 'uint32',
+            fieldNumber: 2,
+          },
+          deposit: {
+            dataType: 'uint64',
+            fieldNumber: 3,
+          },
+          vouchList: {
+            type: 'array',
+            fieldNumber: 4,
+            items: {
+                dataType: 'bytes',
+            },
+          },
+          active: {
+            dataType: 'boolean',
+            fieldNumber: 5,
+          },
+        },
+      }
+    },
+};
+
+module.exports = { SRSAccountSchema, createRecoverySchema, initiateRecoverySchema, removeRecoverySchema };
+----
+
+=== Importing transaction assets into the module
+
+Now let's import the transactions which were created in section 2: <<transaction-assets>> into the module.
+
+Add them to the `tansactionAssets` property like shown in the snippet below.
+
+.Best practise
+[TIP]
+
+====
+It's a good practise to name the imported transaction assets after their corresponding classname.
+
+In this example: `CreateNFTAsset`, `PurchaseNFTAsset`, and `TransferNFTAsset`.
+====
+
+.srs/blockchain_app/srs_module/index.js
+[source,js]
+----
+const { BaseModule } = require('lisk-sdk');
+const  { CreateRecoveryAsset } = require('./assets/create_recovery');
+const { InitiateRecoveryAsset } = require('./assets/initiate_recovery');
+const VouchRecovery = require('./assets/vouch_recovery');
+const ClaimRecovery = require('./assets/claim_recovery');
+const CloseRecovery = require('./assets/close_recovery');
+const { RemoveRecoveryAsset } = require('./assets/remove_recovery');
+const { SRSAccountSchema } = require('./schemas');
+
+// Extend from the base module to implement a custom module
+class SRSModule extends BaseModule {
+  name = 'srs';
+  id = 1026;
+  accountSchema = SRSAccountSchema;
+
+  transactionAssets = [
+    new CreateRecoveryAsset(),
+    new InitiateRecoveryAsset(),
+    new VouchRecovery(),
+    new ClaimRecovery(),
+    new CloseRecovery(),
+    new RemoveRecoveryAsset(),
+  ];
+}
+
+module.exports = { SRSModule };
+----
+
+=== Events
+
+.srs/blockchain_app/srs_module/index.js
+[source,js]
+----
+const { BaseModule } = require('lisk-sdk');
+const  { CreateRecoveryAsset } = require('./assets/create_recovery');
+const { InitiateRecoveryAsset } = require('./assets/initiate_recovery');
+const VouchRecovery = require('./assets/vouch_recovery');
+const ClaimRecovery = require('./assets/claim_recovery');
+const CloseRecovery = require('./assets/close_recovery');
+const { RemoveRecoveryAsset } = require('./assets/remove_recovery');
+const { SRSAccountSchema } = require('./schemas');
+
+// Extend from the base module to implement a custom module
+class SRSModule extends BaseModule {
+  name = 'srs';
+  id = 1026;
+  accountSchema = SRSAccountSchema;
+
+  transactionAssets = [
+    new CreateRecoveryAsset(),
+    new InitiateRecoveryAsset(),
+    new VouchRecovery(),
+    new ClaimRecovery(),
+    new CloseRecovery(),
+    new RemoveRecoveryAsset(),
+  ];
+
+  events = ['createdConfig','removedConfig','initiatedRecovery'];
+
+}
+
+module.exports = { SRSModule };
+----
+
+=== Lifecycle hooks
+
+.srs/blockchain_app/srs_module/index.js
+[source,js]
+----
+const { BaseModule, codec } = require('lisk-sdk');
+const  { CreateRecoveryAsset, CREATE_RECOVERY_ASSET_ID } = require('./assets/create_recovery');
+const { InitiateRecoveryAsset, INITIATE_RECOVERY_ASSET_ID } = require('./assets/initiate_recovery');
+const VouchRecovery = require('./assets/vouch_recovery');
+const ClaimRecovery = require('./assets/claim_recovery');
+const CloseRecovery = require('./assets/close_recovery');
+const { RemoveRecoveryAsset, REMOVE_RECOVERY_ASSET_ID } = require('./assets/remove_recovery');
+const { SRSAccountSchema, createRecoverySchema, initiateRecoverySchema } = require('./schemas');
+
+// Extend from the base module to implement a custom module
+class SRSModule extends BaseModule {
+  name = 'srs';
+  id = 1026;
+  accountSchema = SRSAccountSchema;
+
+  transactionAssets = [
+    new CreateRecoveryAsset(),
+    new InitiateRecoveryAsset(),
+    new VouchRecovery(),
+    new ClaimRecovery(),
+    new CloseRecovery(),
+    new RemoveRecoveryAsset(),
+  ];
+
+  events = ['createdConfig','removedConfig','initiatedRecovery'];
+
+  async afterTransactionApply({transaction, stateStore, reducerHandler}) {
+    if (transaction.moduleID === this.id && transaction.assetID === CREATE_RECOVERY_ASSET_ID) {
+      let createRecoveryAsset = codec.decode(
+        createRecoverySchema,
+        transaction.asset
+      );
+      const friends = createRecoveryAsset.friends.map(bufferFriend => bufferFriend.toString('hex'));
+      this._channel.publish('srs:createdConfig', {
+         address: transaction._senderAddress.toString('hex'),
+         friends: friends,
+         recoveryThreshold: createRecoveryAsset.recoveryThreshold,
+         delayPeriod: createRecoveryAsset.delayPeriod
+      });
+    } else if (transaction.moduleID === this.id && transaction.assetID === REMOVE_RECOVERY_ASSET_ID) {
+      this._channel.publish('srs:removedConfig', {
+        address: transaction._senderAddress.toString('hex')
+      });
+    } else if (transaction.moduleID === this.id && transaction.assetID === INITIATE_RECOVERY_ASSET_ID) {
+      const initiateRecoveryAsset = codec.decode(
+        initiateRecoverySchema,
+        transaction.asset
+      );
+      this._channel.publish('srs:initiatedRecovery', {
+        address: transaction._senderAddress.toString('hex'),
+        config: initiateRecoveryAsset
+      });
+    }
+  };
+
+}
+
+module.exports = { SRSModule };
+----
+
+== The SRS data plugin
+== The SRS API plugin
 === Controllers
 
-== Registering module & plugin
+== Registering module & plugins
 
 == Frontend application
 === Prepare example accounts

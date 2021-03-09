@@ -852,9 +852,9 @@ module.exports = { SRSModule };
 
 === Lifecycle hooks
 
-Use the life cycle hooks of the module, to publish the events we just created in the <<events>> section.
+Use the life cycle hooks of the module to publish the events we just created in the <<events>> section.
 
-Here we use the hook `afterTransactionApply()` which is executed each time after a transaction is applied on the blockchain.
+Here we use the hook `afterTransactionApply()`, which is executed each time after a transaction is applied on the blockchain.
 
 .srs/blockchain_app/srs_module/index.js
 [source,js]
@@ -927,7 +927,214 @@ class SRSModule extends BaseModule {
 module.exports = { SRSModule };
 ----
 
+The implementation of the SRS module is now complete.
+
 == The SRS data plugin
+
+To be able to conveniently get a list of all accounts which created a recovery configuration, create a custom plugin.
+
+First, navigate out of the `srs_module` folder, and create a new folder which will store the files for the new plugin.
+
+.srs/blockchain_app/
+[source,bash]
+----
+mkdir srs_data_plugin
+cd srs_data_plugin
+----
+
+Now create a new file `index.js` inside the newly created `srs_data_plugin/` folder.
+
+Open `index.js` and create the skeleton, which will contain all parts of the SRS data plugin:
+
+.srs/blockchain_app/srs_data_plugin/index.js
+[source,js]
+----
+
+const { BasePlugin } = require('lisk-sdk');
+const pJSON = require('../package.json');
+
+class SRSDataPlugin extends BasePlugin { <1>
+
+  static get alias() { <2>
+    return 'SRSData';
+  }
+
+  static get info() { <3>
+    return {
+      author: pJSON.author,
+      version: pJSON.version,
+      name: pJSON.name,
+    };
+  }
+
+  get defaults() {
+    return {};
+  }
+
+  get events() {
+    return [];
+  }
+}
+
+module.exports = { SRSDataPlugin }; <4>
+----
+
+<1> Extend from the base plugin to implement a custom plugin.
+<2> Set the alias for the plugin to `SRSData`.
+<3> Set the meta information for the plugin.
+Here, we re-use the data from the `package.json` file.
+<4> Export the plugin, so it can be imported later into the application.
+
+=== The `load()` function
+
+[source,js]
+----
+const { BasePlugin, db, codec } = require('lisk-sdk');
+const pJSON = require('../package.json');
+const fs_extra = require("fs-extra");
+const os = require("os");
+const path = require("path");
+
+const DB_KEY_CONFIGACCOUNTS = "srs:configAccounts";
+
+const getDBInstance = async (dataPath = '~/.lisk/srs-app/', dbName = 'srs_data_plugin.db') => {
+  const dirPath = path.join(dataPath.replace('~', os.homedir()), 'plugins/data', dbName);
+  await fs_extra.ensureDir(dirPath);
+  return new db.KVStore(dirPath); <2>
+};
+
+const encodedConfigAccountsSchema = {
+  $id: 'srs:configAccounts',
+  type: 'object',
+  required: ['accounts'],
+  properties: {
+    accounts: {
+      type: 'array',
+      fieldNumber: 1,
+      items: {
+        type: 'object',
+        properties: {
+          address: {
+            dataType: 'bytes',
+            fieldNumber: 1,
+          },
+          friends: {
+            type: 'array',
+            fieldNumber: 2,
+            items: {
+              dataType: 'bytes',
+            }
+          },
+          recoveryThreshold: {
+            dataType: 'uint32',
+            fieldNumber: 3
+          },
+          delayPeriod: {
+            dataType: 'uint32',
+            fieldNumber: 4
+          }
+        }
+      },
+    },
+  },
+};
+
+const getConfigAccounts = async (database) => {
+  try {
+    const encodedConfigAccounts = await database.get(DB_KEY_CONFIGACCOUNTS); <4>
+    const { accounts } = codec.decode(encodedConfigAccountsSchema, encodedConfigAccounts);
+    return accounts;
+  }
+  catch (error) {
+    return [];
+  }
+};
+
+const saveConfigAccounts = async (database, accounts) => {
+  const encodedConfigs = codec.encode(encodedConfigAccountsSchema, { accounts }); <9>
+
+  await database.put(DB_KEY_CONFIGACCOUNTS, encodedConfigs); <10>
+};
+
+class SRSDataPlugin extends BasePlugin {
+  _accountsWithConfig = undefined;
+  _db = undefined;
+
+  static get alias() {
+    return 'SRSData';
+  }
+
+  static get info() {
+    return {
+      author: pJSON.author,
+      version: pJSON.version,
+      name: pJSON.name,
+    };
+  }
+
+  get defaults() {
+    return {};
+  }
+
+  get events() {
+    return [];
+  }
+
+  async load(channel) {
+    this._db = await getDBInstance(); <1>
+    this._accountsWithConfig =  await getConfigAccounts(this._db); <3>
+    channel.subscribe('srs:createdConfig', async (info) => { <5>
+
+      let duplicate = false;
+      for (let i = 0; i < this._accountsWithConfig.length; i++) {
+        if (this._accountsWithConfig[i].address.toString('hex') === info.address) { <6>
+          duplicate = true;
+          return;
+        }
+      }
+      if (!duplicate){
+        info.address = Buffer.from(info.address, 'hex'); <7>
+        info.friends = info.friends.map(friend => Buffer.from(friend, 'hex'));
+        this._accountsWithConfig.push(info);
+      }
+      await saveConfigAccounts(this._db, this._accountsWithConfig); <8>
+    });
+    channel.subscribe('srs:removedConfig', async (info) => { <11>
+      for (let i = 0; i < this._accountsWithConfig.length; i++) {
+        if (this._accountsWithConfig[i].address.toString('hex') === info.address) { <12>
+          this._accountsWithConfig.splice(i, 1);
+          return;
+        }
+      }
+      await saveConfigAccounts(this._db, this._accountsWithConfig); <13>
+    });
+  }
+
+  async unload() {
+  }
+}
+
+module.exports = { SRSDataPlugin };
+----
+
+<1> The database instance for the SRS data plugin is stored in the variable `this._db`.
+<2>
+<3>
+<4>
+<5>
+<6>
+<7>
+<8>
+<9>
+<10>
+<11>
+<12>
+<13>
+
+=== Create an action to get all accounts with recovery configs
+
+
+
 == The SRS API plugin
 === Controllers
 

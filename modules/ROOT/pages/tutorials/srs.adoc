@@ -8,6 +8,13 @@ Mona Bärenfänger <mona@lightcurve.io>
 :experimental:
 // External URLs
 :url_github_srs: https://github.com/LiskHQ/lisk-sdk-examples/tree/development/tutorials/srs
+:url_github_srs_transfer: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/social-recovery/blockchain_app/srs_api_plugin/controllers/transfer_token_api.js
+:url_github_srs_create: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/social-recovery/blockchain_app/srs_api_plugin/controllers/create_recovery_api.js
+:url_github_srs_initiate: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/social-recovery/blockchain_app/srs_api_plugin/controllers/initiate_recovery_api.js
+:url_github_srs_vouch: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/social-recovery/blockchain_app/srs_api_plugin/controllers/vouch_recovery_api.js
+:url_github_srs_claim: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/social-recovery/blockchain_app/srs_api_plugin/controllers/claim_recovery_api.js
+:url_github_srs_close: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/social-recovery/blockchain_app/srs_api_plugin/controllers/close_recovery_api.js
+:url_github_srs_remove: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/social-recovery/blockchain_app/srs_api_plugin/controllers/remove_recovery_api.js
 :url_react_docs: https://reactjs.org/docs/getting-started.html
 // Project URLs
 :url_references_schemas: references/schemas.adoc
@@ -1133,14 +1140,223 @@ Use the above defined `encodedConfigAccountsSchema` for this purpose.
 <11> Now listen to a second event `srs:removedConfig`, which we implemented before in section <<the-srs-module>>.
 <12> If the event `srs:removedConfig` is received, check if the respective account is part of the lis `this._accountsWithConfig`.
 If it is found, the account will be removed from the list.
-<13> The above defined function `saveConfigAccounts()`  is called to save the updated accounts list in the database.
+<13> The above defined function `saveConfigAccounts()` is called to save the updated accounts list in the database.
 
 === Create an action to get all accounts with recovery configs
 
+To make the plugin data available to the public, create a new action that returns a list of all accounts with recovery confguration.
 
+Add the following code snippet to the existing properties in the `SRSDataPlugin` class:
+
+[source,js]
+----
+get actions() {
+  return {
+    getAllRecoveryConfigs: () => { <1>
+      let stringAccounts = this._accountsWithConfig.map((account) => { <2>
+        account.address = account.address.toString('hex');
+        account.friends = account.friends.map(friend => friend.toString('hex'));
+        return account;
+      });
+      return stringAccounts; <3>
+    },
+  };
+}
+----
+
+<1> We give the action the name `getAllRecoveryConfigs`.
+The action can be invoked by external services by referring to it like this: `SRSDataPlugin:getAllRecoveryConfigs`.
+<2> The binary account addresses are converted from Buffer to String format for all accounts in `this._accountsWithConfig`.
+<3> The list of all accounts with recovery configs with stringified binary addresses is returned.
+
+The SRS data plugin is now complete.
+It will allow the frontend application to receive the list of all accounts with recovery configuration by connecting to the blockchain application via WebSockets, and invoking the respective action.
 
 == The SRS API plugin
+
+The SRS API plugin provides HTTP API endpoints to create and post the different transactions of the SRS module, and also for the token transfer transaction.
+
+[NOTE]
+====
+This could be realized alternatively without an HTTP API, by using a WebSocket connection to the blockchain application, like realized in the SRS data plugin.
+
+Instead of providing new HTTP API endpoints, the same could be achieved by adding multiple new actions to the plugin, that can be invoked later by the frontend application.
+
+As an excercise, you could optionally try to implement all HTTP endpoints of the SRS API plugin as plugin actions.
+====
+
+First, navigate out of the `srs_data_plugin` folder, and create a new folder which will store the files for the SRS API plugin.
+
+.srs/blockchain_app/
+[source,bash]
+----
+mkdir srs_api_plugin
+cd srs_api_plugin
+----
+
+Now create a new file `index.js` inside the newly created `srs_api_plugin/` folder.
+
+Open `index.js` and paste the following snippet:
+
+.srs/blockchain_app/srs_api_plugin/index.js
+[source,js]
+----
+const express = require('express');
+const cors = require('cors');
+const { BasePlugin } = require('lisk-sdk');
+const pJSON = require('../package.json');
+const controllers = require('./controllers');
+
+// 1.plugin can be a daemon/HTTP/Websocket service for off-chain processing
+class SRSAPIPlugin extends BasePlugin {
+  _server = undefined;
+  _app = undefined;
+  _channel = undefined;
+  _db = undefined;
+  _nodeInfo = undefined;
+
+  static get alias() {
+    return 'SRSHttpApi';
+  }
+
+  static get info() {
+    return {
+      author: pJSON.author,
+      version: pJSON.version,
+      name: pJSON.name,
+    };
+  }
+
+  get defaults() {
+    return {};
+  }
+
+  get events() {
+    return [];
+  }
+
+  get actions() {
+    return {};
+  }
+
+  async load(channel) {
+    this._app = express();
+    this._channel = channel;
+    this._nodeInfo = await this._channel.invoke('app:getNodeInfo');
+
+    this._app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PUT'] }));
+    this._app.use(express.json());
+
+    this._app.post('/api/token/transfer', controllers.transferToken(this.codec, this._channel, this._nodeInfo));
+    this._app.post('/api/recovery/create', controllers.createRecoveryConfigTrs(this.codec, this._channel, this._nodeInfo));
+    this._app.post('/api/recovery/initiate', controllers.initiateRecovery(this.codec, this._channel, this._nodeInfo));
+    this._app.post('/api/recovery/vouch', controllers.vouchRecovery(this.codec, this._channel, this._nodeInfo));
+    this._app.post('/api/recovery/claim', controllers.claimRecovery(this.codec, this._channel, this._nodeInfo));
+    this._app.post('/api/recovery/close', controllers.closeRecovery(this.codec, this._channel, this._nodeInfo));
+    this._app.post('/api/recovery/remove', controllers.removeRecovery(this.codec, this._channel, this._nodeInfo));
+
+    this._server = this._app.listen(8080, '0.0.0.0');
+  }
+
+  async unload() {
+    // close http server
+    await new Promise((resolve, reject) => {
+      this._server.close((err) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve();
+      });
+    });
+  }
+}
+
+module.exports = { SRSAPIPlugin };
+----
+
 === Controllers
+
+Create a new folder to store the different controllers for the API endpoints.
+
+.srs/blockchain_app/srs_api_plugin/
+[source,bash]
+----
+mkdir controllers
+cd controllers
+----
+
+Inside the folder, we need to define the following controllers:
+
+* {url_github_srs_transfer}[transferToken^]: Creates a transfer transaction and sends it to the blockchain application.
+* {url_github_srs_create}[createRecoveryConfigTrs^]: Creates a createRecovery transaction and sends it to the blockchain application.
+* {url_github_srs_initiate}[initiateRecovery^]: Creates a initiateRecovery transaction and sends it to the blockchain application.
+* {url_github_srs_vouch}[vouchRecovery^]: Creates a vouchRecovery transaction and sends it to the blockchain application.
+* {url_github_srs_claim}[claimRecovery^]: Creates a claimRecovery transaction and sends it to the blockchain application.
+* {url_github_srs_close}[closeRecovery^]: Creates a closeRecovery transaction and sends it to the blockchain application.
+* {url_github_srs_remove}[removeRecovery^]: Creates a removeRecovery transaction and sends it to the blockchain application.
+
+Only the `createRecoveryConfigTrs` controller is explained here in detail, as the implementation of the different controllers is very similar.
+
+[source,js]
+----
+const { transactions, cryptography } = require('@liskhq/lisk-client');
+const { createRecoverySchema } = require('../schemas');
+const { SRS_CREATE_ASSET_ID, SRS_MODULE_ID, DEFAULT_FEE } = require('../constants');
+
+const createRecoveryConfigTrs = (
+    codec,
+    channel,
+    nodeInfo,
+) => async (req, res) => {
+    try {
+        const { passphrase, friends, delayPeriod, recoveryThreshold, fee } = req.body;
+        const asset = {
+            friends: friends.map(f => Buffer.from(f, 'hex')),
+            delayPeriod: +delayPeriod,
+            recoveryThreshold: +recoveryThreshold,
+        };
+
+        const { publicKey } = cryptography.getPrivateAndPublicKeyFromPassphrase(
+            passphrase
+        );
+        const address = cryptography.getAddressFromPassphrase(passphrase);
+        const account = await channel.invoke('app:getAccount', {
+            address,
+        });
+        const { sequence: { nonce } } = codec.decodeAccount(account);
+
+        const { id, ...tx } = transactions.signTransaction(
+            createRecoverySchema,
+            {
+                moduleID: SRS_MODULE_ID,
+                assetID: SRS_CREATE_ASSET_ID,
+                nonce: BigInt(nonce),
+                fee: fee || DEFAULT_FEE,
+                senderPublicKey: publicKey,
+                asset,
+            },
+            Buffer.from(nodeInfo.networkIdentifier, 'hex'),
+            passphrase,
+        );
+
+        const encodedTransaction = codec.encodeTransaction(tx);
+        const result = await channel.invoke('app:postTransaction', {
+          transaction: encodedTransaction,
+        });
+
+        res.status(200).json({ data: result, meta: {} });
+      } catch (err) {
+        res.status(409).json({
+          errors: [{ message: err.message }],
+        });
+      }
+};
+
+module.exports = {
+    createRecoveryConfigTrs,
+};
+----
 
 == Registering module & plugins
 

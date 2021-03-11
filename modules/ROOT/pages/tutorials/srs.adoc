@@ -1182,7 +1182,7 @@ This could be realized alternatively without an HTTP API, by using a WebSocket c
 
 Instead of providing new HTTP API endpoints, the same could be achieved by adding multiple new actions to the plugin, that can be invoked later by the frontend application.
 
-As an excercise, you could optionally try to implement all HTTP endpoints of the SRS API plugin as plugin actions.
+As an exercise, you could optionally try to implement all the HTTP endpoints of the SRS API plugin as plugin actions.
 ====
 
 First, navigate out of the `srs_data_plugin` folder, and create a new folder which will store the files for the SRS API plugin.
@@ -1194,7 +1194,7 @@ mkdir srs_api_plugin
 cd srs_api_plugin
 ----
 
-Now create a new file `index.js` inside the newly created `srs_api_plugin/` folder.
+Then create a new file `index.js` inside the newly created `srs_api_plugin/` folder.
 
 Open `index.js` and paste the following snippet:
 
@@ -1240,14 +1240,14 @@ class SRSAPIPlugin extends BasePlugin {
   }
 
   async load(channel) {
-    this._app = express();
+    this._app = express(); <1>
     this._channel = channel;
     this._nodeInfo = await this._channel.invoke('app:getNodeInfo');
 
-    this._app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PUT'] }));
-    this._app.use(express.json());
+    this._app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PUT'] })); <2>
+    this._app.use(express.json()); <3>
 
-    this._app.post('/api/token/transfer', controllers.transferToken(this.codec, this._channel, this._nodeInfo));
+    this._app.post('/api/token/transfer', controllers.transferToken(this.codec, this._channel, this._nodeInfo)); <4>
     this._app.post('/api/recovery/create', controllers.createRecoveryConfigTrs(this.codec, this._channel, this._nodeInfo));
     this._app.post('/api/recovery/initiate', controllers.initiateRecovery(this.codec, this._channel, this._nodeInfo));
     this._app.post('/api/recovery/vouch', controllers.vouchRecovery(this.codec, this._channel, this._nodeInfo));
@@ -1255,7 +1255,7 @@ class SRSAPIPlugin extends BasePlugin {
     this._app.post('/api/recovery/close', controllers.closeRecovery(this.codec, this._channel, this._nodeInfo));
     this._app.post('/api/recovery/remove', controllers.removeRecovery(this.codec, this._channel, this._nodeInfo));
 
-    this._server = this._app.listen(8080, '0.0.0.0');
+    this._server = this._app.listen(8080, '0.0.0.0'); <5>
   }
 
   async unload() {
@@ -1274,6 +1274,19 @@ class SRSAPIPlugin extends BasePlugin {
 
 module.exports = { SRSAPIPlugin };
 ----
+
+<1> Start the express server and save it under the variable `this._app`.
+<2> Enable cross-origin ressource sharing.
+<3> Recognize the incoming request object as a JSON Object.
+<4> Define 7 different endpoints:
+* POST `/api/token/transfer`
+* POST `/api/recovery/create`
+* POST `/api/recovery/initiate`
+* POST `/api/recovery/vouch`
+* POST `/api/recovery/claim`
+* POST `/api/recovery/close`
+* POST `/api/recovery/remove`
+<5> The API listens on port `8080` at localhost.
 
 === Controllers
 
@@ -1298,6 +1311,9 @@ Inside the folder, we need to define the following controllers:
 
 Only the `createRecoveryConfigTrs` controller is explained here in detail, as the implementation of the different controllers is very similar.
 
+Feel free to copy and paste the files above from GitHub into your own project.
+
+.srs/blockchain_app/srs_api_plugin/controllers
 [source,js]
 ----
 const { transactions, cryptography } = require('@liskhq/lisk-client');
@@ -1311,7 +1327,7 @@ const createRecoveryConfigTrs = (
 ) => async (req, res) => {
     try {
         const { passphrase, friends, delayPeriod, recoveryThreshold, fee } = req.body;
-        const asset = {
+        const asset = { <1>
             friends: friends.map(f => Buffer.from(f, 'hex')),
             delayPeriod: +delayPeriod,
             recoveryThreshold: +recoveryThreshold,
@@ -1326,7 +1342,7 @@ const createRecoveryConfigTrs = (
         });
         const { sequence: { nonce } } = codec.decodeAccount(account);
 
-        const { id, ...tx } = transactions.signTransaction(
+        const { id, ...tx } = transactions.signTransaction( <2>
             createRecoverySchema,
             {
                 moduleID: SRS_MODULE_ID,
@@ -1340,12 +1356,12 @@ const createRecoveryConfigTrs = (
             passphrase,
         );
 
-        const encodedTransaction = codec.encodeTransaction(tx);
-        const result = await channel.invoke('app:postTransaction', {
+        const encodedTransaction = codec.encodeTransaction(tx); <3>
+        const result = await channel.invoke('app:postTransaction', { <4>
           transaction: encodedTransaction,
         });
 
-        res.status(200).json({ data: result, meta: {} });
+        res.status(200).json({ data: result, meta: {} }); <4>
       } catch (err) {
         res.status(409).json({
           errors: [{ message: err.message }],
@@ -1358,7 +1374,92 @@ module.exports = {
 };
 ----
 
+<1> Create the transaction asset for the `createRecovery` transaction, based on the request data.
+<2> Create and sign the transaction object by utiliying the `signTransaction()` method of the `transactions` library.
+<3> Prepare the transaction by encoding it with the `encodeTransaction()` method of the `codec` library.
+<4> Sets the HTTP status for the API response.
+
 == Registering module & plugins
+Now that the SRS module and the two plugins have been implemented, we need to let the blockchain application know about them.
+
+This is done by registering them with the blockchain application like shown below.
+
+Open again the `srs/blockchain_app/index.js` file and paste the following code:
+
+[source,js]
+----
+// 1.Import lisk sdk to create the blockchain application
+const {
+	Application,
+	configDevnet,
+	genesisBlockDevnet,
+	HTTPAPIPlugin,
+	utils,
+} = require('lisk-sdk');
+
+// 2.Import SRS module
+const { SRSModule } = require('./srs_module');
+const { SRSAPIPlugin } = require('./srs_api_plugin/');
+const { SRSDataPlugin } = require('./srs_data_plugin/');
+
+// 3.Update the genesis block accounts to include SRS module attributes
+genesisBlockDevnet.header.timestamp = 1605699440;
+genesisBlockDevnet.header.asset.accounts = genesisBlockDevnet.header.asset.accounts.map(
+	(account) =>
+		utils.objects.mergeDeep({}, account, {
+			srs: {
+				config: {
+					friends: [],
+					recoveryThreshold: 0,
+					delayPeriod: 0,
+				},
+				status: {
+					active: false,
+					vouchList: [],
+					created: 0,
+					deposit: BigInt(0),
+					rescuer: Buffer.from(''),
+				},
+			},
+		}),
+);
+
+// 4.Update application config to include unique label
+// and communityIdentifier to mitigate transaction replay
+const appConfig = utils.objects.mergeDeep({}, configDevnet, {
+	label: 'srs-app',
+	genesisConfig: { communityIdentifier: 'SRS' }, //In order to have a unique networkIdentifier
+	logger: {
+		consoleLogLevel: 'info',
+	},
+    rpc: {
+        enable: true,
+        mode: 'ws',
+        port: 8888,
+    },
+});
+
+// 5.Initialize the application with genesis block and application config
+const app = Application.defaultApplication(genesisBlockDevnet, appConfig);
+
+// 6.Register custom SRS Module and Plugins
+app.registerModule(SRSModule);
+app.registerPlugin(HTTPAPIPlugin);
+app.registerPlugin(SRSAPIPlugin);
+app.registerPlugin(SRSDataPlugin);
+
+// 7.Run the application
+app
+	.run()
+	.then(() => console.info('SRS Blockchain running....'))
+	.catch(console.error);
+----
+
+Save and close `index.js`.
+
+When you start the application now again by running `node index.js`, the blockchain application will load the newly created SRS module and the plugins and the new features become available to the blockchain application.
+
+In the next step, we will build a simple React frontend, which allows us to interact with the blockchain application through the browser.
 
 == Frontend application
 === Prepare example accounts

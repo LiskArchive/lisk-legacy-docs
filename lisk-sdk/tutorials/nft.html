@@ -1011,10 +1011,12 @@ class CreateNFTAsset extends BaseAsset {
     },
   };
 
-  // verify if init value is &gt; 0 <i class="conum" data-value="1"></i><b>(1)</b>
+  // verify data in the transaction asset
   validate({asset}) {
-    if (asset.initValue &lt;= 0) {
+    if (asset.initValue &lt;= 0) { <i class="conum" data-value="1"></i><b>(1)</b>
       throw new Error("NFT init value is too low.");
+    } else if (asset.minPurchaseMargin &lt; 0 || asset.minPurchaseMargin &gt; 100) { <i class="conum" data-value="2"></i><b>(2)</b>
+      throw new Error("The NFT minimum purchase value needs to be between 0-100.");
     }
   };
 }
@@ -1028,6 +1030,10 @@ module.exports = CreateNFTAsset;</code></pre>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
 <td>Verifies that the initial value of the NFT is greater than 0.
 If not, the transaction is not applied, and a corresponding error is thrown.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Verifies that the minimal purchase margin is a value between 0 and 100.</td>
 </tr>
 </table>
 </div>
@@ -1090,7 +1096,7 @@ class CreateNFTAsset extends BaseAsset {
     },
   };
 
-  // verify if init value is &gt; 0
+  // verify data in the transaction asset
   validate({asset}) {
     if (asset.initValue &lt;= 0) {
       throw new Error("The NFT init value is too low.");
@@ -1265,7 +1271,7 @@ module.exports = PurchaseNFTAsset;</code></pre>
 <table>
 <tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>First verify, that the NFT which is purchased exists in the database.
+<td>Verify, that the NFT which is purchased exists in the database.
 To do this, we request all NFTs with <code>getAllNFTTokens()</code> and search inside the returned list for the desired NFT ID.
 If no NFT is found, a corresponding error is thrown.</td>
 </tr>
@@ -1277,22 +1283,22 @@ Otherwise, an error will be thrown.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>Next, it is needed to remove the NFT from the current owner account.
+<td>Remove the NFT from the current owner account.
 The <code>StateStore</code> is used here to retrieve the owner account data from the database and later to update the owner account in the database, after the token ID has been removed from their owned tokens.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="4"></i><b>4</b></td>
-<td>Next, we add the NFT to the account of the purchaser.
+<td>Add the NFT to the account of the purchaser.
 The <code>StateStore</code> is used again to update the purchaser account in the database, after the token ID has been added to their owned tokens.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="5"></i><b>5</b></td>
-<td>Now we need to debit the purchase value from the purchasers account.
+<td>Debit the purchase value from the purchasers account.
 We use here the <code>reducerHandler</code> and invoke <code>token:debit</code> from <a href="../token-module.html" class="page">Token module</a> which allows to conveniently debit tokens from an account.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="6"></i><b>6</b></td>
-<td>Finally we need to credit the purchase value to the owners account.
+<td>Credit the purchase value to the owners account.
 We use here the <code>reducerHandler</code> and invoke <code>token:debit</code> from <a href="../token-module.html" class="page">Token module</a> which allows to conveniently credit tokens to an account.</td>
 </tr>
 </table>
@@ -1383,22 +1389,22 @@ module.exports = TransferNFTAsset;</code></pre>
 <table>
 <tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>First verify, that the NFT which is purchased exists in the database.
+<td>Verify, that the NFT which is purchased exists in the database.
 To do this, we request all NFTs with <code>getAllNFTTokens()</code> and search inside the returned list for the desired NFT ID.
 If no NFT is found, a corresponding error is thrown.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>Next verify, that the account who wants to transfer the NFT actually owns the NFT.</td>
+<td>Verify, that the account who wants to transfer the NFT actually owns the NFT.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>Next, it is needed to remove the NFT from the current owner account.
+<td>Remove the NFT from the current owner account.
 The <code>StateStore</code> is used here to retrieve the owner account data from the database and later to update the owner account in the database, after the token ID has been removed from their owned tokens.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="4"></i><b>4</b></td>
-<td>Next, we add the NFT to the account of the recipient.
+<td>Add the NFT to the account of the recipient.
 The <code>StateStore</code> is used again to update the recipient account in the database, after the token ID has been added to their owned tokens.</td>
 </tr>
 </table>
@@ -1473,8 +1479,13 @@ module.exports = { NFTModule };</code></pre>
 </table>
 </div>
 <div class="paragraph">
-<p>You can choose any module name, but it has to be unique in the network.
-Same goes for the ID, though the minimum value for it is <code>1024</code>, as the other IDs are reserved for future default modules of the Lisk SDK.</p>
+<p>The module ID has to be unique within the network.
+The minimum value for it is <code>1024</code>, as the other IDs are reserved for future default modules of the Lisk SDK.
+If the module ID is not unique, it will cause forks in the network.</p>
+</div>
+<div class="paragraph">
+<p>The module name should be unique within the network as well.
+Otherwise it will lead to confusion, for example when subscribing to events or invoking actions of that module.</p>
 </div>
 </div>
 <div class="sect2">

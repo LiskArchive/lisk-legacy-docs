@@ -1518,7 +1518,7 @@ The accounts have the following roles:
 . The original account creates a recovery configuration.
 . We assume the original account loses their credentials.
 The owner of the original account uses a new account to rescue the funds in the original account.
-. The rescuer accounnt initiates a recovery process.
+. The rescuer account initiates a recovery process.
 . We assume the owner of the original account informs their friends about the lost credentials and informs them about the new account address of the rescuer account.
 . The friends which are listed in the recovery configuration of the original account vouch for the rescuer account.
 . The rescuer account waits until the minimum threshold of vouches is reached, and the delay period is over and then claims the recovery.
@@ -1609,33 +1609,415 @@ The home page is the landing page you see when opening the frontend app under ht
 image:tutorials/srs/01-home.png[]
 
 ==== Creating a recovery config
+Click on kbd:[Setup Recovery] to create a recovery configuration.
+For convenience, the fields in the form are already pre-filled with the correct data, so you can simply press the button kbd:[CREAT RECOVERY CONFIG].
+
 image:tutorials/srs/02-setup2.png[]
 
 .Logs of the blockchain app when a valid transaction is posted to the node
 image:tutorials/srs/03-logs.png[]
 
 ==== Initiating an account recovery
+We assume that the original account lost their credentials, and that they use a new account to rescue the funds of the old account.
+Click on kbd:[Initiate Recovery] to initiate the recovery process for the original account.
+We use the passphrase of the rescuer account to sign the transaction.
+The data is pre-filled again with the correct values, so you can simply press the button kbd:[INITIATE RECOVERY] to initiate the recovery process.
+
 image:tutorials/srs/05-initiate2.png[]
 
 ==== Vouching for a friend
+We assume the owner of the rescuer account (who is also the owner of the original account) ask their 3 friends who are listed in the recovery configuration to vouch for their new account.
+
+The first friend would then click on kbd:[Vouch For Friend] and has to vouch that the owner of the original account is the same as for the rescuer account.
+The data is pre-filled again with the correct values, so you can simply press the button kbd:[VOUCH RECOVERY] to vouch for the rescuer account.
+
 image:tutorials/srs/04-vouch2.png[]
+
+Because we set the recovery threshold to 2 in the recovery config, we need one more friend that vouches for the rescuer, before the recovery can be claimed.
+Copy and past the passphrase of `Friend 2` (or `Friend 3`, as you like) into the passphrase field and vouch again by pressing the button kbd:[VOUCH RECOVERY].
 image:tutorials/srs/04-vouch3.png[]
 
 ==== Checking the recovery status
+After a few seconds, the transaction should be included in the blockchain.
+You can check the updated recovery status on the kbd:[Get Account] page.
+The vouch list should display the addresses of the two friend accounts that vouched for the rescuer account.
+
 image:tutorials/srs/06-account-details.png[]
+
+Check the current block height of the network on the kbd:[Get Node Info] page.
+The delay period is defined as 10 blocks in the recovery config of the account.
+That means, after initiating a recovery, the rescuer needs to wait at least 10 blocks, until they can claim the recovery.
+At which block height the recovery was initiated can be seen in the recovery status of the original account.
+
 image:tutorials/srs/07-node-info.png[]
 
 ==== Claiming the recovery
+
+The rescuer account can then claim the recovery.
+Click on kbd:[Claim Recovery] to claim the tokens in the original account.
+The address of the original account is pre-filled in the `Lost Account Address` field.
+The `Passphrase` field is pre-filled wiht the pasphrase of the rescuer accounnt.
+Press the button kbd:[CLAIM RECOVERY] to finish the recovery process.
+As a result, all tokens in the balance of the original account will be transferred to the rescuer account.
+
 image:tutorials/srs/08-claim2.png[]
 
 .Empty balance of the original account
 image:tutorials/srs/09-account-original.png[]
 
+NOTE: The 0.05 tokens remaining in the original account balance are the minimum required account balance.
+
 .Tokens of the original account have been transferred to the rescuer account
 image:tutorials/srs/09-account-rescuer.png[]
 
+That’s it, the frontend walkabout in the browser is now complete.
+
+Next let’s take a dive into the most important parts of the frontend app, regarding the blockchain related logic.
+
 === API related functions
+
+At first define multiple functions that fetch and post data from and to the blockchain application.
+
+We will make use of the following different APIs:
+
+* http://localhost:4000/api/ : The HTTP API of the HTTPAPIPlugin.
+Used to retrieve general blockchain information from the database.
+* http://localhost:8080/api/ : The HTTP API of the SRSAPIPlugin.
+Used to post transactions to the blockchain application.
+* ws://localhost:8888/ws : The WebSocket API of the blockchain application.
+Used to invoke actions in the blockchain application.
+
+The following functions are defined:
+
+* Fetching blockchain data
+** `fetchAccountInfo(address)`:
+** `fetchNodeInfo()`:
+* Posting transactions
+** `sendTransactions(tx, action)`:
+* Invoking actions
+** `fetchRecoveryConfigs()`:
+
+.srs/frontent_app/src/api/index.js
+[source,js]
+----
+import { apiClient } from '@liskhq/lisk-client';
+
+const RPC_ENDPOINT = 'ws://localhost:8888/ws';
+
+let clientCache;
+
+export const getClient = async () => {
+  if (!clientCache) {
+    clientCache = await apiClient.createWSClient(RPC_ENDPOINT);
+  }
+  return clientCache;
+};
+
+export const fetchRecoveryConfigs = async () => {
+  const client = await getClient();
+  return client.invoke('SRSData:getAllRecoveryConfigs');
+};
+
+export const sendTransactions = async (tx, action) => {
+    return fetch(`http://localhost:8080/api/recovery/${action}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(tx),
+    })
+      .then((res) => res.json())
+      .then((res) => res);
+  };
+
+export const fetchAccountInfo = async (address) => {
+    return fetch(`http://localhost:4000/api/accounts/${address}`)
+      .then((res) => res.json())
+      .catch((res) => res.data);
+};
+
+export const fetchNodeInfo = async () => {
+  return fetch("http://localhost:4000/api/node/info")
+    .then((res) => res.json())
+    .catch((res) => res.data);
+};
+----
+
 === Components
+
+For the frontend we define the following components:
+
+* `Home()`: description
+* `CreateRecovery()`: description
+* `InitiateRecovery()`: description
+* `VouchRecovery()`: description
+* `ClaimRecovery()`: description
+* `CloseRecovery()`: description
+* `RemoveRecovery()`: description
+* `GetAccount()`: description
+* `GetNodeInfo()`: description
+* `GetRecoveryConfigs()`: description
+* `SideMenu()`: description
+* `RecoveryManager()`: description
+
+The code examples for the `CreateRecovery` and `GetRecoveryConfigs` are explained in detail below.
+If you are curious, how the other components of the frontent app are implemented, please look directly at the example code.
+Most logic of the other components is implemented analog to the below presented examples.
+
+.srs/frontent_app/src/components/createRecovery.js
+[source,jsx]
+----
+import React, { Fragment, useContext, useState } from 'react';
+import Avatar from '@material-ui/core/Avatar';
+import Button from '@material-ui/core/Button';
+import CssBaseline from '@material-ui/core/CssBaseline';
+import TextField from '@material-ui/core/TextField';
+import Link from '@material-ui/core/Link';
+import Grid from '@material-ui/core/Grid';
+import Box from '@material-ui/core/Box';
+import Typography from '@material-ui/core/Typography';
+import { makeStyles } from '@material-ui/core/styles';
+import Container from '@material-ui/core/Container';
+import { grey, green } from '@material-ui/core/colors';
+import EnhancedEncryptionIcon from '@material-ui/icons/EnhancedEncryption';
+import { sendTransactions } from '../api';
+import { createRecoveryDefaults } from "../utils/defaults";
+import Snackbar from '@material-ui/core/Snackbar';
+import MuiAlert from '@material-ui/lab/Alert';
+import { cryptography } from '@liskhq/lisk-client';
+
+function Alert(props) {
+  return <MuiAlert elevation={6} variant="filled" {...props} />;
+}
+
+function Footer() {
+  return (
+    <Typography variant="body2" color="textSecondary" align="center">
+      <Link style={{ color: grey[500] }} href="/">
+        About Social Recovery System
+      </Link>
+    </Typography>
+  );
+}
+
+const useStyles = makeStyles((theme) => ({
+  paper: {
+    marginTop: theme.spacing(8),
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+  },
+  avatar: {
+    margin: theme.spacing(1),
+    backgroundColor: 'rgb(37 35 35 / 87%)',
+  },
+  form: {
+    width: '100%',
+    marginTop: theme.spacing(3),
+  },
+  submit: {
+    margin: theme.spacing(3, 0, 2),
+  },
+}));
+
+export default function CreateRecovery() {
+  const classes = useStyles();
+  const [open, setOpen ] = useState(false);
+
+  const [data, setData] = useState({
+    friends: createRecoveryDefaults.friends,
+    delayPeriod: createRecoveryDefaults.delayPeriod,
+    recoveryThreshold: createRecoveryDefaults.recoveryThreshold,
+    passphrase: createRecoveryDefaults.passphrase,
+    msg: '',
+    severity: 'success',
+  });
+
+  const handleClose = (event, reason) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+
+    setOpen(false);
+  };
+
+  const handleChange = (event) => {
+    event.persist();
+    setData({ ...data, [event.target.name]: event.target.value });
+  };
+
+  const handleSend = async (event) => {
+    event.preventDefault();
+    const { friends } = data;
+
+    const friendList = friends ? friends.split(',').map(str => str.replace(/\s/g, '')): [];
+    const binaryFriends = friendList.map(friend => cryptography.getAddressFromBase32Address(friend).toString('hex'));
+    try {
+        const result = await sendTransactions({ delayPeriod: data.delayPeriod, recoveryThreshold: data.recoveryThreshold, friends: binaryFriends, passphrase: data.passphrase }, window.location.pathname.slice(1));
+        if (result.errors) {
+            setData({ msg: result.errors[0].message, severity: 'error' });
+        } else {
+            setData({ msg: `Transaction ID ${result.data.transactionId} is added`, severity: 'success' });
+        }
+        setOpen(true);
+
+    } catch (error) {}
+  };
+
+  return (
+    <Container component="main" maxWidth="xs">
+      <CssBaseline />
+      <div className={classes.paper}>
+        <Avatar className={classes.avatar}>
+        <EnhancedEncryptionIcon style={{ color: green[500] }}/>
+        </Avatar>
+        <Typography component="h1" variant="h5">
+          Setup Social Recovery
+        </Typography>
+        <Typography component="h4" style={{color: 'grey'}}>
+          Create recovery configuration for your account
+        </Typography>
+        <form className={classes.form} noValidate autoComplete="off">
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <TextField
+                variant="outlined"
+                required
+                fullWidth
+                id="friends"
+                label="Comme separated addresses of friends"
+                name="friends"
+                multiline
+                rows={5}
+                onChange={handleChange}
+                defaultValue={createRecoveryDefaults.friends}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                variant="outlined"
+                required
+                fullWidth
+                name="delayPeriod"
+                label="Delay Period"
+                id="delayPeriod"
+                onChange={handleChange}
+                defaultValue={createRecoveryDefaults.delayPeriod}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                variant="outlined"
+                required
+                fullWidth
+                name="recoveryThreshold"
+                label="Recovery Threshold"
+                id="threshold"
+                onChange={handleChange}
+                defaultValue={createRecoveryDefaults.recoveryThreshold}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                variant="outlined"
+                required
+                fullWidth
+                name="passphrase"
+                label="Passphrase"
+                id="passphrase"
+                type="password"
+                onChange={handleChange}
+                defaultValue={createRecoveryDefaults.passphrase}
+              />
+            </Grid>
+          <Button
+            onClick={handleSend}
+            fullWidth
+            variant="contained"
+            color="primary"
+          >
+            Create Recovery Config
+          </Button>
+          </Grid>
+        </form>
+        <Snackbar open={open} autoHideDuration={10000} onClose={handleClose}>
+            <Alert onClose={handleClose} severity={data.severity}>
+                <label id='msg'>{data.msg}</label>
+            </Alert>
+        </Snackbar>
+      </div>
+      <Box mt={5}>
+        <Footer />
+      </Box>
+    </Container>
+  );
+}
+----
+
+.srs/frontent_app/src/components/getRecoveryAccounts.js
+[source,jsx]
+----
+import React, {
+  useEffect,
+  useState
+} from 'react';
+import {
+  Grid,
+  CssBaseline,
+  Container,
+} from '@material-ui/core';
+import {
+  makeStyles
+} from '@material-ui/core/styles';
+import { fetchRecoveryConfigs } from '../api';
+import RecoveryConfig from "./recoveryConfig";
+
+const useStyles = makeStyles((theme) => ({
+  root: {
+    flexGrow: 1,
+  },
+  paper: {
+    padding: theme.spacing(2),
+    textAlign: 'center',
+    color: theme.palette.text.primary,
+  },
+}));
+
+export default function GetRecoveryConfigs () {
+  const classes = useStyles();
+  const [data, setData] = useState({
+    result: []
+  });
+
+  useEffect(() => {
+    async function getRecoveryConfigs() {
+      const result = await fetchRecoveryConfigs();
+      if ( result.length > 0 ) {
+        setData({ result });
+      }
+    }
+    getRecoveryConfigs()
+  }, [])
+
+  return (
+    <Container component="main" className={classes.paper}>
+      <CssBaseline />
+      <div className={classes.root}>
+        { data.result.length > 0
+          ?
+        <Grid container spacing={3}>
+          {  data.result.map((config) => (
+            <Grid item xs={12}>
+              <RecoveryConfig item={config} key={config.address} />
+            </Grid>
+          )) }
+        </Grid>
+          : <p>No recoverable accounts found</p> }
+      </div>
+    </Container>
+  );
+}
+----
 
 == Summary
 

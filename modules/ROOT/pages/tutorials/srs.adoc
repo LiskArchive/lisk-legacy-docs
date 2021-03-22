@@ -89,6 +89,10 @@ app
 This code snippet creates a default blockchain application, which is configured for development purposes.
 Use this app as basis for the SRS app and extend it with a module and a plugin in the next steps, to suit the desired use case.
 
+At this point it is already possile to start the default blockchain application with runninng `node index.js` in the terminal.
+To verify the successful start of the applications, observe the logs in the terminal for possibble errors.
+If everything is correct, the application will start to add new blocks to the chain every 10 seconds after the initial start.
+
 == Transaction assets
 
 Users shall have the ability to:
@@ -854,6 +858,12 @@ Use the life cycle hooks of the module to publish the events we just created in 
 
 The hook `afterTransactionApply()` which is used here is executed each time after a transaction is applied on the blockchain.
 
+The following events are fired:
+
+* `srs:configCreated` when a *create recovery* transaction is applied.
+* `srs:configRemoved` when a *claim recovery* or a *remove recovery* transaction is applied.
+* `srs:recoveryInitiated` when a *initiateRecovery* transaction is applied.
+
 .srs/blockchain_app/srs_module/index.js
 [source,js]
 ----
@@ -956,11 +966,11 @@ Now create a new file `index.js` inside the newly created `srs_data_plugin/` fol
 
 Open `index.js` and create the skeleton, which will contain all parts of the SRS data plugin:
 
-.srs/blockchain_app/srs_data_plugin/index.js
+.srs/blockchain_app/plugins/srs_data_plugin/index.js
 [source,js]
 ----
 const { BasePlugin } = require('lisk-sdk');
-const pJSON = require('../package.json');
+const pJSON = require('../../package.json');
 
 class SRSDataPlugin extends BasePlugin { <1>
 
@@ -996,11 +1006,11 @@ Here, we re-use the data from the `package.json` file.
 
 === The `load()` function
 
-.srs/blockchain_app/srs_data_plugin/index.js
+.srs/blockchain_app/plugins/srs_data_plugin/index.js
 [source,js]
 ----
 const { BasePlugin, db, codec } = require('lisk-sdk');
-const pJSON = require('../package.json');
+const pJSON = require('../../package.json');
 const fs_extra = require("fs-extra");
 const os = require("os");
 const path = require("path");
@@ -1190,7 +1200,7 @@ As an exercise, you could optionally try to implement all the HTTP endpoints of 
 
 First, navigate out of the `srs_data_plugin` folder, and create a new folder which will store the files for the SRS API plugin.
 
-.srs/blockchain_app/
+.srs/blockchain_app/plugins/
 [source,bash]
 ----
 mkdir srs_api_plugin
@@ -1201,13 +1211,13 @@ Then create a new file `index.js` inside the newly created `srs_api_plugin/` fol
 
 Open `index.js` and paste the following snippet:
 
-.srs/blockchain_app/srs_api_plugin/index.js
+.srs/blockchain_app/plugins/srs_api_plugin/index.js
 [source,js]
 ----
 const express = require('express');
 const cors = require('cors');
 const { BasePlugin } = require('lisk-sdk');
-const pJSON = require('../package.json');
+const pJSON = require('../../package.json');
 const controllers = require('./controllers');
 
 // 1.plugin can be a daemon/HTTP/Websocket service for off-chain processing
@@ -1295,7 +1305,7 @@ module.exports = { SRSAPIPlugin };
 
 Create a new folder to store the different controllers for the API endpoints.
 
-.srs/blockchain_app/srs_api_plugin/
+.srs/blockchain_app/plugins/srs_api_plugin/
 [source,bash]
 ----
 mkdir controllers
@@ -1316,7 +1326,7 @@ Only the `createRecoveryConfigTrs` controller is explained here in detail, as th
 
 Feel free to copy and paste the files above from GitHub into your own project.
 
-.srs/blockchain_app/srs_api_plugin/controllers
+.srs/blockchain_app/plugins/srs_api_plugin/controllers
 [source,js]
 ----
 const { transactions, cryptography } = require('@liskhq/lisk-client');
@@ -1389,6 +1399,7 @@ This is done by registering them with the blockchain application like shown belo
 
 Open again the `srs/blockchain_app/index.js` file and paste the following code:
 
+.srs/blockchain_app/index.js
 [source,js]
 ----
 // 1.Import lisk sdk to create the blockchain application
@@ -1399,8 +1410,7 @@ const {
 	HTTPAPIPlugin,
 	utils,
 } = require('lisk-sdk');
-
-// 2.Import SRS module
+// 2.Import SRS module & plugins
 const { SRSModule } = require('./srs_module');
 const { SRSAPIPlugin } = require('./srs_api_plugin/');
 const { SRSDataPlugin } = require('./srs_data_plugin/');

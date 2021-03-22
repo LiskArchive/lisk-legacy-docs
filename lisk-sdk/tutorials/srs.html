@@ -548,6 +548,11 @@ app
 <p>This code snippet creates a default blockchain application, which is configured for development purposes.
 Use this app as basis for the SRS app and extend it with a module and a plugin in the next steps, to suit the desired use case.</p>
 </div>
+<div class="paragraph">
+<p>At this point it is already possile to start the default blockchain application with runninng <code>node index.js</code> in the terminal.
+To verify the successful start of the applications, observe the logs in the terminal for possibble errors.
+If everything is correct, the application will start to add new blocks to the chain every 10 seconds after the initial start.</p>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -1200,14 +1205,6 @@ class CloseRecoveryAsset extends BaseAsset {
             throw new Error(`Incorrect rescuer address`);
         }
 
-        const rescuer = await stateStore.account.get(asset.rescuer);
-
-        // Debit deposit amount from the rescuer and credit to the lost account
-        await reducerHandler.invoke('token:debit', {
-            address: rescuer.address,
-            amount: lostAccount.srs.config.deposit,
-          });
-
         await reducerHandler.invoke('token:credit', {
             address: lostAccount.address,
             amount: lostAccount.srs.config.deposit,
@@ -1280,14 +1277,6 @@ class RemoveRecoveryAsset extends BaseAsset {
 		if (lostAccount.srs.status.active) {
 			throw Error('There is active recovery in process. Please close the recovery to remove recovery configuration.')
 		}
-
-		const deposit = lostAccount.srs.config.deposit;
-
-		// Unlock the deposit and give it back
-		await reducerHandler.invoke('token:credit', {
-			address: lostAccount.address,
-			amount: deposit,
-		});
 
 		// Reset all the default values
 		lostAccount.srs.config.friends = [];
@@ -1586,6 +1575,22 @@ module.exports = { SRSModule };</code></pre>
 <div class="paragraph">
 <p>The hook <code>afterTransactionApply()</code> which is used here is executed each time after a transaction is applied on the blockchain.</p>
 </div>
+<div class="paragraph">
+<p>The following events are fired:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>srs:configCreated</code> when a <strong>create recovery</strong> transaction is applied.</p>
+</li>
+<li>
+<p><code>srs:configRemoved</code> when a <strong>claim recovery</strong> or a <strong>remove recovery</strong> transaction is applied.</p>
+</li>
+<li>
+<p><code>srs:recoveryInitiated</code> when a <strong>initiateRecovery</strong> transaction is applied.</p>
+</li>
+</ul>
+</div>
 <div class="listingblock">
 <div class="title">srs/blockchain_app/srs_module/index.js</div>
 <div class="content">
@@ -1698,10 +1703,10 @@ cd plugins/srs_data_plugin</code></pre>
 <p>Open <code>index.js</code> and create the skeleton, which will contain all parts of the SRS data plugin:</p>
 </div>
 <div class="listingblock">
-<div class="title">srs/blockchain_app/srs_data_plugin/index.js</div>
+<div class="title">srs/blockchain_app/plugins/srs_data_plugin/index.js</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { BasePlugin } = require('lisk-sdk');
-const pJSON = require('../package.json');
+const pJSON = require('../../package.json');
 
 class SRSDataPlugin extends BasePlugin { <i class="conum" data-value="1"></i><b>(1)</b>
 
@@ -1753,10 +1758,10 @@ Here, we re-use the data from the <code>package.json</code> file.</td>
 <div class="sect2">
 <h3 id="the-load-function"><a class="anchor" href="#the-load-function"></a>4.1. The <code>load()</code> function</h3>
 <div class="listingblock">
-<div class="title">srs/blockchain_app/srs_data_plugin/index.js</div>
+<div class="title">srs/blockchain_app/plugins/srs_data_plugin/index.js</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { BasePlugin, db, codec } = require('lisk-sdk');
-const pJSON = require('../package.json');
+const pJSON = require('../../package.json');
 const fs_extra = require("fs-extra");
 const os = require("os");
 const path = require("path");
@@ -2022,7 +2027,7 @@ It will allow the frontend application to receive the list of all accounts with 
 <p>First, navigate out of the <code>srs_data_plugin</code> folder, and create a new folder which will store the files for the SRS API plugin.</p>
 </div>
 <div class="listingblock">
-<div class="title">srs/blockchain_app/</div>
+<div class="title">srs/blockchain_app/plugins/</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">mkdir srs_api_plugin
 cd srs_api_plugin</code></pre>
@@ -2035,12 +2040,12 @@ cd srs_api_plugin</code></pre>
 <p>Open <code>index.js</code> and paste the following snippet:</p>
 </div>
 <div class="listingblock">
-<div class="title">srs/blockchain_app/srs_api_plugin/index.js</div>
+<div class="title">srs/blockchain_app/plugins/srs_api_plugin/index.js</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const express = require('express');
 const cors = require('cors');
 const { BasePlugin } = require('lisk-sdk');
-const pJSON = require('../package.json');
+const pJSON = require('../../package.json');
 const controllers = require('./controllers');
 
 // 1.plugin can be a daemon/HTTP/Websocket service for off-chain processing
@@ -2166,7 +2171,7 @@ module.exports = { SRSAPIPlugin };</code></pre>
 <p>Create a new folder to store the different controllers for the API endpoints.</p>
 </div>
 <div class="listingblock">
-<div class="title">srs/blockchain_app/srs_api_plugin/</div>
+<div class="title">srs/blockchain_app/plugins/srs_api_plugin/</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">mkdir controllers
 cd controllers</code></pre>
@@ -2207,7 +2212,7 @@ cd controllers</code></pre>
 <p>Feel free to copy and paste the files above from GitHub into your own project.</p>
 </div>
 <div class="listingblock">
-<div class="title">srs/blockchain_app/srs_api_plugin/controllers</div>
+<div class="title">srs/blockchain_app/plugins/srs_api_plugin/controllers</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { transactions, cryptography } = require('@liskhq/lisk-client');
 const { createRecoverySchema } = require('../schemas');
@@ -2303,6 +2308,7 @@ module.exports = {
 <p>Open again the <code>srs/blockchain_app/index.js</code> file and paste the following code:</p>
 </div>
 <div class="listingblock">
+<div class="title">srs/blockchain_app/index.js</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">// 1.Import lisk sdk to create the blockchain application
 const {
@@ -2312,8 +2318,7 @@ const {
 	HTTPAPIPlugin,
 	utils,
 } = require('lisk-sdk');
-
-// 2.Import SRS module
+// 2.Import SRS module &amp; plugins
 const { SRSModule } = require('./srs_module');
 const { SRSAPIPlugin } = require('./srs_api_plugin/');
 const { SRSDataPlugin } = require('./srs_data_plugin/');

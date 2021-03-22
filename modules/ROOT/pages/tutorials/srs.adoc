@@ -365,10 +365,16 @@ It will contain the logic for the transaction asset which allows friends to vouc
 
 The following logic is implemented:
 
-* The asset contains
+* The asset contains:
 ** the property `lostAccount`, which is the address of the account that is intended to be recovered.
 ** the property `rescuer`, which is the address of the account that wants to recover the `lostAccount`.
-* description
+* Check, if the `rescuer` has initiated a recovery for the `lostAccount`.
+If not, throw an error.
+* Check if the account that vouches for the rescuer is listed under `friends` in the recovery config of the `lostAccount`.
+If not, throw an error.
+* Check, if the friend has vouched before.
+If so, throw an error.
+* If all conditions are met, add the friends address to the `vouchList` in the `lostAccount` details.
 
 .srs/blockchain_app/srs_module/transactions/vouch_recovery.js
 [source,js]
@@ -423,8 +429,18 @@ It will contain the logic for the transaction asset which allows the rescuer acc
 
 The following logic is implemented:
 
-* description
-* description
+* The asset contains the property `lostAccount`, which is the address of the account that is intended to be recovered.
+* Check, if enough blocks have passed since initialization of the recovery.
+If not, throw an error.
+The amount of blocks that need to have passed since initialization is defined in the `delayPeriod` property of the recovery configuration.
+* Check, if enough friends have vouched for the rescuer account.
+If not, throw an error.
+The amount of friends in the `vouchList` needs to be euqal or greater than the `recoveryThreshold` property of the recovery configuration.
+* If all conditions are met
+** transfer the balannce from the `lostAccount` to the rescuer account and
+** reset the recovery configuration and status of the `lostAccount`.
+
+NOTE: You always need to leave the minimum account balance inside of the `lostAccount`, so it is not possible to empty it completely.
 
 .srs/blockchain_app/srs_module/transactions/claim_recovery.js
 [source,js]
@@ -505,8 +521,11 @@ It will contain the logic for the transaction asset which allows to close an act
 
 The following logic is implemented:
 
-* description
-* description
+* The asset contains the property `rescuer`, which is the address of the account that initialized the account recovery.
+* An account recovery needs to be initialized for the account to be able to close it.
+* An active recovery can only be closed by the original account.
+* The deposit which was debited from the rescuer account during the recovery initialization is credited to the original account.
+* The recovery status in the original account is reset.
 
 .srs/blockchain_app/srs_module/transactions/close_recovery.js
 [source,js]
@@ -566,8 +585,10 @@ It will contain the logic for the transaction asset which allows the owner of an
 
 The following logic is implemented:
 
-* description
-* description
+* The asset contains the property `lostAccount`.
+* Only accounts with created recovery configurations can remove the configurations again (obviously).
+* The recovery status has to be inactive to be able to remove a recovery configuration.
+* If the conditions are met, the recovery config and status inside the original account are reset completely.
 
 .srs/blockchain_app/srs_module/transactions/remove_recovery.js
 [source,js]

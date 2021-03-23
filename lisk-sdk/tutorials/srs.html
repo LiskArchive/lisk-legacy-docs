@@ -8,8 +8,6 @@
     <meta name="generator" content="Antora 2.3.4">
     <link rel="stylesheet" href="../../_/css/site.css">
     <link rel="stylesheet" href="../../_/css/site-extra.css">
-      <link rel="stylesheet" href="../../_/css/vendor/docsearch.min.css">
-      <!-- fetched from https://cdn.jsdelivr.net/npm/docsearch.js@2/dist/cdn/docsearch.min.css -->
 <script src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js"></script>
 <link rel="icon" href="../../_/img/favicon.png" type="image/x-icon">
   </head>
@@ -75,9 +73,6 @@
               </div>
             </div>
           </div>
-            <div class="navbar-menu search-box hide-for-print">
-              <input id="search-input" type="text" placeholder="Search">
-            </div>
         </div>
         <div class="navbar-item navbar-right">
 <!--
@@ -549,8 +544,8 @@ app
 Use this app as basis for the SRS app and extend it with a module and a plugin in the next steps, to suit the desired use case.</p>
 </div>
 <div class="paragraph">
-<p>At this point it is already possile to start the default blockchain application with runninng <code>node index.js</code> in the terminal.
-To verify the successful start of the applications, observe the logs in the terminal for possibble errors.
+<p>At this point it is already possile to start the blockchain application by running <code>node index.js</code> in the terminal.
+To verify the successful start of the applications, observe the logs in the terminal for possible errors.
 If everything is correct, the application will start to add new blocks to the chain every 10 seconds after the initial start.</p>
 </div>
 </div>
@@ -1055,7 +1050,7 @@ The amount of friends in the <code>vouchList</code> needs to be euqal or greater
 <div class="ulist">
 <ul>
 <li>
-<p>transfer the balannce from the <code>lostAccount</code> to the rescuer account and</p>
+<p>transfer the balance from the <code>lostAccount</code> to the rescuer account and</p>
 </li>
 <li>
 <p>reset the recovery configuration and status of the <code>lostAccount</code>.</p>
@@ -1757,6 +1752,52 @@ Here, we re-use the data from the <code>package.json</code> file.</td>
 </div>
 <div class="sect2">
 <h3 id="the-load-function"><a class="anchor" href="#the-load-function"></a>4.1. The <code>load()</code> function</h3>
+<div class="paragraph">
+<p>The following helper functions and constants are defined:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>getDBInstance()</code></dt>
+<dd>
+<p>Returns a key-value store for the plugin data, which is stored under the path <code>~/.lisk/srs-app/plugins/data/srs_data_plugin.db</code>.</p>
+</dd>
+<dt class="hdlist1"><code>encodedConfigAccountsSchema</code></dt>
+<dd>
+<p>The schema describes how the accounts and their recovery configurations are saved in the database.
+We define the following schema for the plugin data:</p>
+</dd>
+</dl>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "accounts": [
+    {
+      "address": bytes,
+      "friends": array[bytes],
+      "recoveryThreshold": number,
+      "delayPeriod": number
+    }
+  ]
+}</code></pre>
+</div>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>getConfigAccounts(database)</code></dt>
+<dd>
+<p>A helper function that returns the list of all accounts with recovery configurations from the database.
+Inside the <code>getConfigAccounts()</code> function, use the database key <code>srs:configAccounts</code> to get the accounts from the database.
+If no accounts are saved yet in the databbase, return an empty list.</p>
+</dd>
+<dt class="hdlist1"><code>saveConfigAccounts(database,accounts)</code></dt>
+<dd>
+<p>A helper functions to save the list of all accounts with recovery configurations to the databbase.
+Inside the <code>saveConfigAccounts()</code> function, encode the accounts list for the database.
+Use the above defined <code>encodedConfigAccountsSchema</code> for this purpose.</p>
+</dd>
+</dl>
+</div>
 <div class="listingblock">
 <div class="title">srs/blockchain_app/plugins/srs_data_plugin/index.js</div>
 <div class="content">
@@ -1771,7 +1812,7 @@ const DB_KEY_CONFIGACCOUNTS = "srs:configAccounts";
 const getDBInstance = async (dataPath = '~/.lisk/srs-app/', dbName = 'srs_data_plugin.db') =&gt; {
   const dirPath = path.join(dataPath.replace('~', os.homedir()), 'plugins/data', dbName);
   await fs_extra.ensureDir(dirPath);
-  return new db.KVStore(dirPath); <i class="conum" data-value="2"></i><b>(2)</b>
+  return new db.KVStore(dirPath);
 };
 
 const encodedConfigAccountsSchema = {
@@ -1853,31 +1894,31 @@ class SRSDataPlugin extends BasePlugin {
 
   async load(channel) {
     this._db = await getDBInstance(); <i class="conum" data-value="1"></i><b>(1)</b>
-    this._accountsWithConfig =  await getConfigAccounts(this._db); <i class="conum" data-value="3"></i><b>(3)</b>
-    channel.subscribe('srs:createdConfig', async (info) =&gt; { <i class="conum" data-value="5"></i><b>(5)</b>
+    this._accountsWithConfig =  await getConfigAccounts(this._db); <i class="conum" data-value="2"></i><b>(2)</b>
+    channel.subscribe('srs:createdConfig', async (info) =&gt; { <i class="conum" data-value="3"></i><b>(3)</b>
 
       let duplicate = false;
       for (let i = 0; i &lt; this._accountsWithConfig.length; i++) {
-        if (this._accountsWithConfig[i].address.toString('hex') === info.address) { <i class="conum" data-value="6"></i><b>(6)</b>
+        if (this._accountsWithConfig[i].address.toString('hex') === info.address) { <i class="conum" data-value="4"></i><b>(4)</b>
           duplicate = true;
           return;
         }
       }
       if (!duplicate){
-        info.address = Buffer.from(info.address, 'hex'); <i class="conum" data-value="7"></i><b>(7)</b>
+        info.address = Buffer.from(info.address, 'hex'); <i class="conum" data-value="5"></i><b>(5)</b>
         info.friends = info.friends.map(friend =&gt; Buffer.from(friend, 'hex'));
         this._accountsWithConfig.push(info);
       }
-      await saveConfigAccounts(this._db, this._accountsWithConfig); <i class="conum" data-value="8"></i><b>(8)</b>
+      await saveConfigAccounts(this._db, this._accountsWithConfig); <i class="conum" data-value="6"></i><b>(6)</b>
     });
-    channel.subscribe('srs:removedConfig', async (info) =&gt; { <i class="conum" data-value="11"></i><b>(11)</b>
+    channel.subscribe('srs:removedConfig', async (info) =&gt; { <i class="conum" data-value="7"></i><b>(7)</b>
       for (let i = 0; i &lt; this._accountsWithConfig.length; i++) {
-        if (this._accountsWithConfig[i].address.toString('hex') === info.address) { <i class="conum" data-value="12"></i><b>(12)</b>
+        if (this._accountsWithConfig[i].address.toString('hex') === info.address) { <i class="conum" data-value="8"></i><b>(8)</b>
           this._accountsWithConfig.splice(i, 1);
           return;
         }
       }
-      await saveConfigAccounts(this._db, this._accountsWithConfig); <i class="conum" data-value="13"></i><b>(13)</b>
+      await saveConfigAccounts(this._db, this._accountsWithConfig); <i class="conum" data-value="9"></i><b>(9)</b>
     });
   }
 
@@ -1896,54 +1937,36 @@ module.exports = { SRSDataPlugin };</code></pre>
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>The database is stored as key-value store under the path <code>~/.lisk/srs-app/plugins/data/srs_data_plugin.db</code>.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="3"></i><b>3</b></td>
 <td>The accounts with recovery config are retrieved from the database by calling the abbove defined function <code>getConfigAccounts()</code> and then stored in the variable <code>this._accountsWithConfig</code>.</td>
 </tr>
 <tr>
-<td><i class="conum" data-value="4"></i><b>4</b></td>
-<td>Inside the <code>getConfigAccounts()</code> function, use the database key <code>srs:configAccounts</code> to get the accounts from the database.
-If no accounts are saved yet in the databbase, return an empty list.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
 <td>Next subscribe to the event <code>srs:createdConfig</code>, which we implemented before in section <a href="#the-srs-module">The SRS module</a>.</td>
 </tr>
 <tr>
-<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
 <td>If a new config was created, check if <code>this._accountsWithConfig</code> already contains this account.</td>
 </tr>
 <tr>
-<td><i class="conum" data-value="7"></i><b>7</b></td>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
 <td>If it doesn&#8217;t contain the account yet, prepare the account addresses for the database by converting them into Buffers.
 Then push the data into the array <code>this._accountsWithConfig</code>.</td>
 </tr>
 <tr>
-<td><i class="conum" data-value="8"></i><b>8</b></td>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
 <td>The above defined function <code>saveConfigAccounts()</code> is called to save the updated accounts list in the database.</td>
 </tr>
 <tr>
-<td><i class="conum" data-value="9"></i><b>9</b></td>
-<td>Inside the <code>saveConfigAccounts()</code> function, encode the accounts list for the database.
-Use the above defined <code>encodedConfigAccountsSchema</code> for this purpose.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="10"></i><b>10</b></td>
-<td>Then update the database with the updated and encoded list of accounts with recovery configs.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="11"></i><b>11</b></td>
+<td><i class="conum" data-value="7"></i><b>7</b></td>
 <td>Now listen to a second event <code>srs:removedConfig</code>, which we implemented before in section <a href="#the-srs-module">The SRS module</a>.</td>
 </tr>
 <tr>
-<td><i class="conum" data-value="12"></i><b>12</b></td>
+<td><i class="conum" data-value="8"></i><b>8</b></td>
 <td>If the event <code>srs:removedConfig</code> is received, check if the respective account is part of the lis <code>this._accountsWithConfig</code>.
 If it is found, the account will be removed from the list.</td>
 </tr>
 <tr>
-<td><i class="conum" data-value="13"></i><b>13</b></td>
+<td><i class="conum" data-value="9"></i><b>9</b></td>
 <td>The above defined function <code>saveConfigAccounts()</code> is called to save the updated accounts list in the database.</td>
 </tr>
 </table>
@@ -2011,10 +2034,8 @@ It will allow the frontend application to receive the list of all accounts with 
 </td>
 <td class="content">
 <div class="paragraph">
-<p>This could be realized alternatively without an HTTP API, by using a WebSocket connection to the blockchain application, like realized in the SRS data plugin.</p>
-</div>
-<div class="paragraph">
-<p>Instead of providing new HTTP API endpoints, the same could be achieved by adding multiple new actions to the plugin, that can be invoked later by the frontend application.</p>
+<p>This could be realized alternatively without an HTTP API, by using a WebSocket connection to the blockchain application, like realized in the SRS data plugin.
+Instead of providing new HTTP API endpoints, the same could be achieved by adding multiple new actions to the plugin, that can be invoked later by the frontend application.</p>
 </div>
 <div class="paragraph">
 <p>As an exercise, you could optionally try to implement all the HTTP endpoints of the SRS API plugin as plugin actions.</p>
@@ -2042,11 +2063,8 @@ cd srs_api_plugin</code></pre>
 <div class="listingblock">
 <div class="title">srs/blockchain_app/plugins/srs_api_plugin/index.js</div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const express = require('express');
-const cors = require('cors');
-const { BasePlugin } = require('lisk-sdk');
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { BasePlugin } = require('lisk-sdk');
 const pJSON = require('../../package.json');
-const controllers = require('./controllers');
 
 // 1.plugin can be a daemon/HTTP/Websocket service for off-chain processing
 class SRSAPIPlugin extends BasePlugin {
@@ -2079,94 +2097,16 @@ class SRSAPIPlugin extends BasePlugin {
   get actions() {
     return {};
   }
-
-  async load(channel) {
-    this._app = express(); <i class="conum" data-value="1"></i><b>(1)</b>
-    this._channel = channel;
-    this._nodeInfo = await this._channel.invoke('app:getNodeInfo');
-
-    this._app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PUT'] })); <i class="conum" data-value="2"></i><b>(2)</b>
-    this._app.use(express.json()); <i class="conum" data-value="3"></i><b>(3)</b>
-
-    this._app.post('/api/token/transfer', controllers.transferToken(this.codec, this._channel, this._nodeInfo)); <i class="conum" data-value="4"></i><b>(4)</b>
-    this._app.post('/api/recovery/create', controllers.createRecoveryConfigTrs(this.codec, this._channel, this._nodeInfo));
-    this._app.post('/api/recovery/initiate', controllers.initiateRecovery(this.codec, this._channel, this._nodeInfo));
-    this._app.post('/api/recovery/vouch', controllers.vouchRecovery(this.codec, this._channel, this._nodeInfo));
-    this._app.post('/api/recovery/claim', controllers.claimRecovery(this.codec, this._channel, this._nodeInfo));
-    this._app.post('/api/recovery/close', controllers.closeRecovery(this.codec, this._channel, this._nodeInfo));
-    this._app.post('/api/recovery/remove', controllers.removeRecovery(this.codec, this._channel, this._nodeInfo));
-
-    this._server = this._app.listen(8080, '0.0.0.0'); <i class="conum" data-value="5"></i><b>(5)</b>
-  }
-
-  async unload() {
-    // close http server
-    await new Promise((resolve, reject) =&gt; {
-      this._server.close((err) =&gt; {
-        if (err) {
-          reject(err);
-          return;
-        }
-        resolve();
-      });
-    });
-  }
 }
 
 module.exports = { SRSAPIPlugin };</code></pre>
 </div>
 </div>
-<div class="colist arabic">
-<table>
-<tr>
-<td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>Start the express server and save it under the variable <code>this._app</code>.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>Enable cross-origin ressource sharing.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>Recognize the incoming request object as a JSON Object.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="4"></i><b>4</b></td>
-<td>Define 7 different endpoints:
-<div class="ulist">
-<ul>
-<li>
-<p>POST <code>/api/token/transfer</code></p>
-</li>
-<li>
-<p>POST <code>/api/recovery/create</code></p>
-</li>
-<li>
-<p>POST <code>/api/recovery/initiate</code></p>
-</li>
-<li>
-<p>POST <code>/api/recovery/vouch</code></p>
-</li>
-<li>
-<p>POST <code>/api/recovery/claim</code></p>
-</li>
-<li>
-<p>POST <code>/api/recovery/close</code></p>
-</li>
-<li>
-<p>POST <code>/api/recovery/remove</code></p>
-</li>
-</ul>
-</div></td>
-</tr>
-<tr>
-<td><i class="conum" data-value="5"></i><b>5</b></td>
-<td>The API listens on port <code>8080</code> at localhost.</td>
-</tr>
-</table>
-</div>
 <div class="sect2">
 <h3 id="controllers"><a class="anchor" href="#controllers"></a>5.1. Controllers</h3>
+<div class="paragraph">
+<p>Next we will define multiple controllers for creating and posting the different transaction objects.</p>
+</div>
 <div class="paragraph">
 <p>Create a new folder to store the different controllers for the API endpoints.</p>
 </div>
@@ -2280,7 +2220,7 @@ module.exports = {
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>Create and sign the transaction object by utiliying the <code>signTransaction()</code> method of the <code>transactions</code> library.</td>
+<td>Create and sign the transaction object by utilizing the <code>signTransaction()</code> method of the <code>transactions</code> library.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
@@ -2289,6 +2229,146 @@ module.exports = {
 <tr>
 <td><i class="conum" data-value="4"></i><b>4</b></td>
 <td>Sets the HTTP status for the API response.</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="the-load-annd-unload-functions"><a class="anchor" href="#the-load-annd-unload-functions"></a>5.2. The <code>load()</code> annd <code>unload()</code> functions</h3>
+<div class="paragraph">
+<p>Go back to the index.js file and define what logic shall we executed by the plugin.
+Now that we prepared all the controllers, we can reuse them in the <code>SRSAPIPlugin</code> to provide the corresponding API endpoints for each controller.</p>
+</div>
+<div class="paragraph">
+<p>Add the new function <code>load()</code> into the <code>SRSAPIPlugin</code> with the following contents:</p>
+</div>
+<div class="listingblock">
+<div class="title">srs/blockchain_app/plugins/srs_api_plugin/index.js</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const express = require('express');
+const cors = require('cors');
+const { BasePlugin } = require('lisk-sdk');
+const pJSON = require('../../package.json');
+const controllers = require('./controllers');
+
+// 1.plugin can be a daemon/HTTP/Websocket service for off-chain processing
+class SRSAPIPlugin extends BasePlugin {
+  _server = undefined;
+  _app = undefined;
+  _channel = undefined;
+  _db = undefined;
+  _nodeInfo = undefined;
+
+  static get alias() {
+    return 'SRSHttpApi';
+  }
+
+  static get info() {
+    return {
+      author: pJSON.author,
+      version: pJSON.version,
+      name: pJSON.name,
+    };
+  }
+
+  get defaults() {
+    return {};
+  }
+
+  get events() {
+    return [];
+  }
+
+  get actions() {
+    return {};
+  }
+
+  async load(channel) {
+    this._app = express(); <i class="conum" data-value="1"></i><b>(1)</b>
+    this._channel = channel;
+    this._nodeInfo = await this._channel.invoke('app:getNodeInfo');
+
+    this._app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PUT'] })); <i class="conum" data-value="2"></i><b>(2)</b>
+    this._app.use(express.json()); <i class="conum" data-value="3"></i><b>(3)</b>
+
+    this._app.post('/api/token/transfer', controllers.transferToken(this.codec, this._channel, this._nodeInfo)); <i class="conum" data-value="4"></i><b>(4)</b>
+    this._app.post('/api/recovery/create', controllers.createRecoveryConfigTrs(this.codec, this._channel, this._nodeInfo));
+    this._app.post('/api/recovery/initiate', controllers.initiateRecovery(this.codec, this._channel, this._nodeInfo));
+    this._app.post('/api/recovery/vouch', controllers.vouchRecovery(this.codec, this._channel, this._nodeInfo));
+    this._app.post('/api/recovery/claim', controllers.claimRecovery(this.codec, this._channel, this._nodeInfo));
+    this._app.post('/api/recovery/close', controllers.closeRecovery(this.codec, this._channel, this._nodeInfo));
+    this._app.post('/api/recovery/remove', controllers.removeRecovery(this.codec, this._channel, this._nodeInfo));
+
+    this._server = this._app.listen(8080, '0.0.0.0'); <i class="conum" data-value="5"></i><b>(5)</b>
+  }
+
+  async unload() { <i class="conum" data-value="6"></i><b>(6)</b>
+    // close http server
+    await new Promise((resolve, reject) =&gt; {
+      this._server.close((err) =&gt; {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve();
+      });
+    });
+  }
+}
+
+module.exports = { SRSAPIPlugin };</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Start the Express server and save it under the variable <code>this._app</code>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Enable cross-origin ressource sharing.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Recognize the incoming request object as a JSON Object.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Define 7 different endpoints:
+<div class="ulist">
+<ul>
+<li>
+<p>POST <code>/api/token/transfer</code></p>
+</li>
+<li>
+<p>POST <code>/api/recovery/create</code></p>
+</li>
+<li>
+<p>POST <code>/api/recovery/initiate</code></p>
+</li>
+<li>
+<p>POST <code>/api/recovery/vouch</code></p>
+</li>
+<li>
+<p>POST <code>/api/recovery/claim</code></p>
+</li>
+<li>
+<p>POST <code>/api/recovery/close</code></p>
+</li>
+<li>
+<p>POST <code>/api/recovery/remove</code></p>
+</li>
+</ul>
+</div></td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>The API listens on port <code>8080</code> at localhost.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td>This will close the Express server when the plugin is unloaded again, for example on application shutdown.</td>
 </tr>
 </table>
 </div>
@@ -2475,7 +2555,7 @@ npm i</code></pre>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>Five different accounts are created and prepared with some initial amount of tokens in their balannce.
+<p>Five different accounts are created and prepared with some initial amount of tokens in their balance.
 The accounts have the following roles:</p>
 <div class="olist loweralpha">
 <ol class="loweralpha" type="a">
@@ -2531,46 +2611,46 @@ Original Account
 -----------------------
 passphrase:
 peanut hundred pen hawk invite exclude brain chunk gadget wait wrong ready
-binary address:
-d04699e57c4a3846c988f3c15306796f8eae5c1c
-base32 address:
+address:
 lskdxc4ta5j43jp9ro3f8zqbxta9fn6jwzjucw7yt
+address (hex string):
+d04699e57c4a3846c988f3c15306796f8eae5c1c
 =======================
 Rescuer
 -----------------------
 passphrase:
 endless focus guilt bronze hold economy bulk parent soon tower cement venue
-binary address:
-9cabee3d27426676b852ce6b804cb2fdff7cd0b5
-base32 address:
+address:
 lsktrqfj84n34tn97vraaq2ztmrgwgwakmqyskqw4
+address (hex string):
+9cabee3d27426676b852ce6b804cb2fdff7cd0b5
 =======================
 Friend 1
 -----------------------
 passphrase:
 mushroom edit regular pencil ten casino wine north vague bachelor swim piece
-binary address:
-463e7e879b7bdc6a97ec02a2a603aa1a46a04c80
-base32 address:
+address:
 lsk32gnhxjs887bqmgoz6y6ozh6c4c6ztpz7wjfa9
+address (hex string):
+463e7e879b7bdc6a97ec02a2a603aa1a46a04c80
 =======================
 Friend 2
 -----------------------
 passphrase:
 thought talk cherry write armed valve salute fabric auction maid join rebuild
-binary address:
-328d0f546695c5fa02105deb055cf2801d9b8ba1
-base32 address:
+address:
 lskb6bufqcbrwvgkzuu5wqu6wnruz7awvhxwfkonb
+address (hex string):
+328d0f546695c5fa02105deb055cf2801d9b8ba1
 =======================
 Friend 3
 -----------------------
 passphrase:
 exist night more net diesel exact will purse orbit vacuum birth wide
-binary address:
-6174515fa66c91bff1128913edd4e0f1de37cee0
-base32 address:
-lskomdmvwhb9r3sgj3ryp4fsqnzfn8c8twzkecugt</pre>
+address:
+lskomdmvwhb9r3sgj3ryp4fsqnzfn8c8twzkecugt
+address (hex string):
+6174515fa66c91bff1128913edd4e0f1de37cee0</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -2681,7 +2761,7 @@ At which block height the recovery was initiated can be seen in the recovery sta
 <p>The rescuer account can then claim the recovery.
 Click on <kbd>Claim Recovery</kbd> to claim the tokens in the original account.
 The address of the original account is pre-filled in the <code>Lost Account Address</code> field.
-The <code>Passphrase</code> field is pre-filled wiht the pasphrase of the rescuer accounnt.
+The <code>Passphrase</code> field is pre-filled wiht the pasphrase of the rescuer account.
 Press the button <kbd>CLAIM RECOVERY</kbd> to finish the recovery process.
 As a result, all tokens in the balance of the original account will be transferred to the rescuer account.</p>
 </div>
@@ -3213,22 +3293,6 @@ export default function GetRecoveryConfigs () {
 <script async src="../../_/js/vendor/tabs-block-behaviour.js"></script>
 <script async src="../../_/js/vendor/top-versions.js"></script>
 <script async src="../../_/js/vendor/custom.js"></script>
-  <script src="../../_/js/vendor/docsearch.min.js"></script>
-  <!-- fetched from https://cdn.jsdelivr.net/npm/docsearch.js@2/dist/cdn/docsearch.min.js -->
-  <script>
-    function focusSearchInput () { document.querySelector('#search-input').focus() }
-    var search = docsearch({
-        appId: 'C4SU57KGV9',
-      apiKey: '55aa8709b04eb62f08f87571cf77547c',
-      indexName: 'lisk-docs-search',
-      inputSelector: '#search-input',
-      autocompleteOptions: { hint: false, keyboardShortcuts: ['s'] },
-      algoliaOptions: { hitsPerPage: 10 }
-    }).autocomplete
-    search.on('autocomplete:closed', function () { search.autocomplete.setVal() })
-    focusSearchInput()
-    window.addEventListener('load', focusSearchInput)
-  </script>
 
   </body>
 </html>

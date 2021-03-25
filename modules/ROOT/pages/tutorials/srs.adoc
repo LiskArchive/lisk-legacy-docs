@@ -90,7 +90,7 @@ This code snippet creates a default blockchain application, which is configured 
 Use this app as basis for the SRS app and extend it with a module and a plugin in the next steps, to suit the desired use case.
 
 At this point it is already possile to start the blockchain application by running `node index.js` in the terminal.
-To verify the successful start of the applications, observe the logs in the terminal for possible errors.
+To verify the successful start of the application, observe the logs in the terminal for possible errors.
 If everything is correct, the application will start to add new blocks to the chain every 10 seconds after the initial start.
 
 == Transaction assets
@@ -242,7 +242,7 @@ For creating a recovery configuration, the following information is required:
 
 * `friends`: A list of trusted adresses.
 * `recoveryThreshold`: Minimum amount of friends that need to vouch for a rescuer, before the rescuer can claim the recovery.
-* `delayPeriod`: The % value of the initial value, that is added to the initial value when purchasing the NFT.
+* `delayPeriod`: The minimum number of blocks required from the height at which account recovery was initiated to successfully recover the account.
 
 Create a new file `schemas.js`.
 Here we store the schemas which are reused later in different places of the module and assets.
@@ -447,7 +447,7 @@ If not, throw an error.
 If not, throw an error.
 * Check, if the friend has vouched before.
 If so, throw an error.
-* If all conditions are met, add the friends address to the `vouchList` in the `lostAccount` details.
+* If all conditions are met, add the friend's address to the `vouchList` in the `lostAccount` details.
 
 .srs/blockchain_app/srs_module/transactions/vouch_recovery.js
 [source,js]
@@ -590,7 +590,7 @@ module.exports = ClaimRecoveryAsset;
 
 === closeRecovery asset
 Create a new file {url_github_srs_close_asset}[close_recovery.js^] inside the `transactions/` folder.
-It will contain the logic for the transaction asset which allows to close an active recovery, for example in case that the lost credentials where found again.
+It will contain the logic for the transaction asset which allows to close an active recovery, for example, in case when the lost credentials were found.
 
 The following logic is implemented:
 
@@ -1236,14 +1236,14 @@ module.exports = { SRSDataPlugin };
 ----
 
 <1> The database instance for the SRS data plugin is stored in the variable `this._db`.
-<2> The accounts with recovery config are retrieved from the database by calling the abbove defined function `getConfigAccounts()` and then stored in the variable `this._accountsWithConfig`.
+<2> The accounts with recovery config are retrieved from the database by calling the above defined function `getConfigAccounts()` and then stored in the variable `this._accountsWithConfig`.
 <3> Next subscribe to the event `srs:createdConfig`, which we implemented before in section <<the-srs-module>>.
 <4> If a new config was created, check if `this._accountsWithConfig` already contains this account.
 <5> If it doesn't contain the account yet, prepare the account addresses for the database by converting them into Buffers.
 Then push the data into the array `this._accountsWithConfig`.
 <6> The above defined function `saveConfigAccounts()` is called to save the updated accounts list in the database.
 <7> Now listen to a second event `srs:removedConfig`, which we implemented before in section <<the-srs-module>>.
-<8> If the event `srs:removedConfig` is received, check if the respective account is part of the lis `this._accountsWithConfig`.
+<8> If the event `srs:removedConfig` is received, check if the respective account is part of the list `this._accountsWithConfig`.
 If it is found, the account will be removed from the list.
 <9> The above defined function `saveConfigAccounts()` is called to save the updated accounts list in the database.
 
@@ -1826,7 +1826,7 @@ image:tutorials/srs/07-node-info.png[]
 The rescuer account can then claim the recovery.
 Click on kbd:[Claim Recovery] to claim the tokens in the original account.
 The address of the original account is pre-filled in the `Lost Account Address` field.
-The `Passphrase` field is pre-filled wiht the pasphrase of the rescuer account.
+The `Passphrase` field is pre-filled with the pasphrase of the rescuer account.
 Press the button kbd:[CLAIM RECOVERY] to finish the recovery process.
 As a result, all tokens in the balance of the original account will be transferred to the rescuer account.
 
@@ -2215,19 +2215,19 @@ export default function GetRecoveryConfigs () {
 == Summary
 
 That's it!
-You should now have a complete blockchain application running which allows users to recover their accounts in case they lost heir credentials.
+You should now have a complete blockchain application running which allows users to recover their accounts in case they lost their credentials.
 
 It consists of the following components:
 
 * a blockchain application with:
 ** a custom module for a social account recovery system.
 ** a custom plugin which provides a list of all accounts with created recovery configuration.
-** a custom plugin which provides additional HTTP API endpoints to convenienntly create and post different transaction types.
+** a custom plugin which provides additional HTTP API endpoints to conveniently create and post different transaction types.
 * a frontend application which allows you to use and test the applications in the browser.
 
 === Optional exercises
 
-Feel free to play around with the code example by changing/adjusting certain options, or bby extending the application in your own way.
+Feel free to play around with the code example by changing/adjusting certain options, or by extending the application in your own way.
 
 The following exercises might be interesting to get more familiar with the Lisk SDK.
 
@@ -2245,5 +2245,4 @@ Try to re-implement the different HTTP API endpoints as actions in <<the-srs-api
 In section <<lifecycle-hooks>>, we defined that the event `srs:recoveryInitiated` is published for every incoming "initiate recovery" transaction.
 
 Try use this event to warn an account owner, that a recovery has been initiated for their account.
-This can prevent that someone else can initiate a recovery in order to steal the tokens of the account.
-The original account would get warned in case this happens, and if it wasn't themselves who initiated the recovery, they can quickly close the recovery process before the delay period is passed and before the needed amount of vouches was reached.
+The original account will get warned in case someone malicious starts recovery on their account to steal their funds, and if it wasn't themselves who initiated the recovery, then they can quickly close the recovery process before the delay period is passed and the set threshold number of friends already vouched for it.

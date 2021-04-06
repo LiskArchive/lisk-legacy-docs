@@ -27,6 +27,7 @@
   hljs.registerLanguage('puppet', require('highlight.js/lib/languages/puppet'))
   hljs.registerLanguage('python', require('highlight.js/lib/languages/python'))
   hljs.registerLanguage('ruby', require('highlight.js/lib/languages/ruby'))
+  hljs.registerLanguage('rust', require('highlight.js/lib/languages/rust'))
   hljs.registerLanguage('scala', require('highlight.js/lib/languages/scala'))
   hljs.registerLanguage('shell', require('highlight.js/lib/languages/shell'))
   hljs.registerLanguage('sql', require('highlight.js/lib/languages/sql'))

@@ -16,10 +16,14 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_lisk_wallet: https://lisk.io/wallet
 :url_moleculer: https://moleculer.services/
 :url_nats: http://nats.io/
+:url_npm_socketio_client: https://www.npmjs.com/package/socket.io-client
 
+:url_apiv1_http:  references/apiv1.adoc
 :url_api_http:  references/api.adoc
+:url_api_rpc:  references/rpc-api.adoc
+:url_api_subscribe:  references/subscribe-api.adoc
 :url_config:  configuration/docker.adoc
-:url_protocol: master@lisk-protocol::index.adoc
+:url_protocol: master@lisk-sdk:protocol:index.adoc
 :url_setup:  setup/docker.adoc
 
 {url_github_lisk_service}[Lisk Service^] is a web application that allows interaction with various blockchain networks based on xref:{url_protocol}[Lisk] and {url_bitcoin}[Bitcoin] protocols.
@@ -65,35 +69,118 @@ The purpose here is to reduce code duplication and increase consistency between 
 [[usage]]
 == Usage
 
-=== Quick Installation
+Once Lisk Service is xref:{url_setup}[set up], xref:{url_config}[configured] and started, it is possible to retrieve data from the blockchain network.
 
-To install Lisk Service with all its dependencies, clone the {url_github_lisk_service}[Lisk Service^] repository:
+Lisk Service provides the data through several alternative APIs:
 
-[source,bash]
-----
-git clone https://github.com/LiskHQ/lisk-service.git
-----
+==== The JSON-RPC API
 
-NOTE: A more detailed description of the setup and the prerequisites of Lisk Service is described in the xref:{url_setup}[Lisk Service setup guides].
+The xref:{url_api_rpc}[]  provides blockchain data in standardized JSON format over a WebSocket connection.
+The API uses the `socket.io` library and it is compatible with JSON-RPC 2.0 standard.
 
-=== Start Lisk Service
+NOTE: Check out the xref:{url_api_rpc}[] reference for an overview of all available RPC requests.
 
-[source,bash]
-----
-cd lisk-service
-make up
-----
+===== Example: Emit to remote-procedure calls with socket.io
 
-=== Stop Lisk Service
+Use the {url_npm_socketio_client}[socket.io-client^] to connect to the RPC API.
 
 [source,bash]
 ----
-make down
+npm i socket.io-client@2
 ----
 
-=== Retrieve data
+IMPORTANT: Specify version 2 of the socket.io client, as the current version 3 is not compatible with Lisk Service.
 
-Once Lisk Service is xref:{url_setup}[set up], xref:{url_config}[configured] and started, it is possible to retrieve data from the blockchain network, that it is connected to.
+[source,js]
+----
+// 1. Require the dependencies
+const io = require('socket.io-client'); // The socket.io client
+const jsome = require('jsome'); // Prettifies the JSON output
+
+jsome.params.colored = true;
+
+// 2. Connect to Lisk Service via WebSockets
+const socket = io('ws://localhost:9901/rpc-v2', {
+  forceNew: true,
+  transports: ['websocket']
+});
+
+// 3. Emit the remote procedure call
+socket.emit('request', {
+  jsonrpc: '2.0',
+  method: 'get.delegates.next_forgers',
+  params: {limit: "20", offset: "50"} },
+  answer => {
+    jsome(answer);
+    process.exit(0);
+});
+----
+
+==== The Subscribe API
+
+The xref:{url_api_subscribe}[], or sometimes called the publish/subscribe or Event-Driven API.
+It uses a two-way streaming connection, which means that not only the client can request the server for a data update, but also the server can notify the client about new data instantly as it arrives.
+
+NOTE: Check out the xref:{url_api_subscribe}[] reference for an overview of all available RPC requests.
+
+===== Example: Subscribe to events with socket.io
+
+Use the {url_npm_socketio_client}[socket.io-client^] to connect to the RPC API.
+
+[source,bash]
+----
+npm i socket.io-client@2
+----
+
+IMPORTANT: Specify version 2 of the socket.io client, as the current version 3 is not compatible with Lisk Service.
+
+[source,js]
+----
+const io = require('socket.io-client');
+const jsome = require('jsome');
+
+jsome.params.colored = true;
+
+const socket = io('ws://localhost:9901/blockchain', {
+	forceNew: true,
+	transports: ['websocket'],
+});
+
+const subscribe = event => {
+	socket.on(event, answer => {
+		console.log(`====== ${event} ======`);
+		// console.log(answer);
+		jsome(answer);
+	});
+};
+
+subscribe('update.block');
+subscribe('update.round');
+subscribe('update.forgers');
+subscribe('update.transactions.confirmed');
+subscribe('update.fee_estimates');
+
+// To log all events
+[
+	'connect', 'reconnect',
+	'connect_error', 'connect_timeout', 'error', 'disconnect',
+	'reconnect', 'reconnect_attempt',
+	'reconnecting', 'reconnect_error', 'reconnect_failed',
+].forEach(item => {
+	socket.on(item, res => {
+		console.log(`Event: ${item}, res: ${res || '-'}`);
+	});
+});
+
+// To log incoming data
+['status'].forEach(eventName => {
+	socket.on(eventName, newData => {
+		console.log(
+			`Received data from ws://localhost:9901/blockchain/${eventName}: ${newData}`,
+		);
+	});
+});
+----
 
 ==== The HTTP API
 
@@ -101,12 +188,7 @@ The xref:{url_api_http}[HTTP API] offers a RESTful API with various additional e
 
 This API can be utilized to build powerful wallets and user interfaces for blockchain applications which are built with the Lisk SDK.
 
-[NOTE]
-====
-A complete overview of all available API endpoints is described in the xref:{url_api_http}[API reference].
-
-The API reference also offers the possibility to send **interactive requests** to Lisk Service, in order to retrieve live data from the Lisk Mainnet.
-====
+===== Example: Request data with curl
 
 .Example request: Obtain a list of all 101 currently forging delegates
 [source,bash]

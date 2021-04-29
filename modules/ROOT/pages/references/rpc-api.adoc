@@ -4,9 +4,9 @@
 == Lisk Service WebSocket JSON-RPC API Documentation
 
 === Access paths and compatibility
-The WebSocket API can be accessed by the `wss://service.lisk.io/rpc-v1`.
+The WebSocket API can be accessed by the `wss://service.lisk.io/rpc`.
 
-The testnet network can also be accessed by `wss://testnet-service.lisk.io/rpc-v1`.
+The testnet network can also be accessed by `wss://testnet-service.lisk.io/rpc`.
 
 The Lisk Service WebSocket API uses the `socket.io` library and it is compatible with JSON-RPC 2.0 standard.
 The specification below contains numerous examples how to use the API in practice.
@@ -14,10 +14,34 @@ The specification below contains numerous examples how to use the API in practic
 === Endpoint logic
 The logic of the endpoints is derived as follows: the method naming is always based on the following pattern: `<action>.<entity>`, where the action is equivalent to HTTP standard (GET, POST, PUT, etc.) and `entity` is a part of the application logic, ex. `accounts`, transactions and so on.
 
+=== Requests
+
+[source,js]
+----
+import io from 'socket.io-client';
+
+const request = async (endpoint, method, params) => new Promise(resolve => {
+	const socket = io(endpoint, { forceNew: true, transports: ['websocket'] });
+
+	socket.emit('request', { jsonrpc: '2.0', method, params }, answer => {
+		socket.close();
+		resolve(answer);
+	});
+});
+
+const wsRequest = async () => {
+  return await request('ws://localhost:9901/rpc', 'get.accounts', { "address": "lskzkfw7ofgp3uusknbetemrey4aeatgf2ntbhcds" });
+};
+
+wsRequest().then(response => {
+  console.log(response);
+});
+----
+
 === Responses
 All responses are returned in the JSON format - application/json.
 
-Each API request has the following structure:
+Each API response has the following structure:
 
 [source,js]
 ----
@@ -42,8 +66,8 @@ A request can consist of an array of multiple responses.
 ----
 [
     { "jsonrpc": "2.0", "id": 1, "method": "get.blocks", "params": {} },
-    { "jsonrpc": "2.0", "id": 2, "method": "get.transactions", "params": { "height": "16" } },
-    { "jsonrpc": "2.0", "id": 3, "method": "get.accounts", "params": { "id": "123L"} }
+    { "jsonrpc": "2.0", "id": 2, "method": "get.transactions", "params": { "height": "123" } },
+    { "jsonrpc": "2.0", "id": 3, "method": "get.accounts", "params": { "address": "lskzkfw7ofgp3uusknbetemrey4aeatgf2ntbhcds"} }
 ]
 ----
 
@@ -93,124 +117,164 @@ Retrieves account details based on criteria defined by params.
 
 Supports pagination.
 
-[cols="2,3,4", options="header"]
+[cols=",,,,", options="header"]
 .Parameters
 |===
-|Parameter name |Example |Description
+|Parameter |Type |Validation |Default |Comment
 
 |`address`
-|`4935562234363081651L`
-|Lisk account address
+|String
+|`/^lsk[a-hjkm-z2-9]{38}$//^[1-9]\d{0,19}[L|l]$/`
+|(empty)
+|Resolves new and old address system.
 
 |`publickey`
-|`968ba2...af341b`
-|Public key to query
-
-|`secpubkey`
-|`968ba2...af341b`
-|Second public key to query
+|String
+|`/^([A-Fa-f0-9]{2}){32}$/`
+|(empty)
+|
 
 |`username`
-|`genesis_12`
-|Delegate username to query
+|String
+|`/^[a-z0-9!@$&_.]{1,20}$/`
+|(empty)
+|
+
+|`isDelegate`
+|Boolean
+|`true` or `false`
+|(empty)
+|
+
+|`status`
+|String
+|`active`, `standby`, `banned`, `punished`, `non-eligible`
+|(empty)
+|Multiple choice possible i.e. `active,banned`
+
+|`search`
+|String
+|
+|(empty)
+|
 
 |`limit`
-|`0`
-|Number of requested items
+|Number
+|`<1;100>`
+|10
+|
 
 |`offset`
-|`25`
-|Number of items to skip
+|Number
+|`<0;+Inf>`
+|0
+|
 
 |`sort`
-|`name:desc`
-|Sorting order
-
-Available values: `balance:asc`, `balance:desc`
-
-Default value: `balance:asc`
-
+|Array of strings
+|`["balance:asc", "balance:desc", "rank:asc", "rank:desc"]`
+|`balance:desc`
+|Rank is dedicated to delegate accounts
 |===
 
-.Response
+.Response example
 [source,json]
 ----
-[
-  {
-    "data": [
-      {
-        "address": "4935562234363081651L",
-        "publicKey": "968ba2fa993ea9dc27ed740da0daf49eddd740dbd7cb1cb4fc5db3a20baf341b",
-        "secondPublicKey": "968ba2fa993ea9dc27ed740da0daf49eddd740dbd7cb1cb4fc5db3a20baf341b",
-        "balance": "4448642000",
-        "delegate": {
-          "approval": "35.77",
-          "missedBlocks": 157,
-          "producedBlocks": 55222,
-          "productivity": "99.72",
-          "rank": 93,
-          "rewards": "109500000000",
-          "username": "genesis_84",
-          "vote": "4630668157412954"
-        },
-        "knowledge": {
-          "owner": "genesis_84",
-          "description": "Genesis wallet"
-        },
-        "multisignatureAccount": {
-          "lifetime": 48,
-          "minimalNumberAcccounts": 2,
-          "members": [
-            {
-              "address": "4935562234363081651L",
-              "publicKey": "968ba2fa993ea9dc27ed740da0daf49eddd740dbd7cb1cb4fc5db3a20baf341b",
-              "secondPublicKey": "968ba2fa993ea9dc27ed740da0daf49eddd740dbd7cb1cb4fc5db3a20baf341b",
-              "balance": "4448642000",
-              "unconfirmedSignature": 0
-            }
-          ]
-        },
-        "multisignatureMemberships": [
-          {
-            "address": "4935562234363081651L",
-            "balance": "4448642000",
-            "lifetime": 48,
-            "min": 2,
-            "publicKey": "968ba2fa993ea9dc27ed740da0daf49eddd740dbd7cb1cb4fc5db3a20baf341b",
-            "secondPublicKey": "968ba2fa993ea9dc27ed740da0daf49eddd740dbd7cb1cb4fc5db3a20baf341b",
-          }
+{
+  "data": {
+    "summary": {
+      "address": "lsk24cd35u4jdq8szo3pnsqe5dsxwrnazyqqqg5eu",
+      "legacyAddress": "2841524825665420181L",
+      "balance": "151146419900",
+      "username": "liberspirita",
+      "publicKey": "968ba2fa993ea9dc27ed740da0daf49eddd740dbd7cb1cb4fc5db3a20baf341b",
+      "isMigrated": true,
+      "isDelegate": true,
+      "isMultisignature": true,
+    },
+    "knowledge": {
+      "owner": "Genesis Account",
+      "description": ""
+    },
+    "token": {
+      "balance": "151146419900"
+    },
+    "sequence": {
+      "nonce": "11"
+    },
+    "keys": {
+      "numberOfSignatures": 0,
+      "mandatoryKeys": [],
+      "optionalKeys": [],
+      "members": [
+        {
+          "address": "lsk24cd35u4jdq8szo3pnsqe5dsxwrnazyqqqg5eu",
+          "publicKey": "968ba2fa993ea9dc27ed740da0daf49eddd740dbd7cb1cb4fc5db3a20baf341b",
+          "isMandatory": true,
+        }
+      ],
+      "memberships": [
+        {
+          "address": "lsk24cd35u4jdq8szo3pnsqe5dsxwrnazyqqqg5eu",
+          "publicKey": "968ba2fa993ea9dc27ed740da0daf49eddd740dbd7cb1cb4fc5db3a20baf341b",
+          "username": "genesis_51",
+        }
+      ],
+    },
+    "dpos": {
+      "delegate": {
+        "username": "liberspirita",
+        "pomHeights": [
+          { "start": 123, "end": 456 },
+          { "start": 789, "end": 1050 }
         ],
-        "transactionCount": {
-          "incoming": "216",
-          "outgoing": "1581"
+        "consecutiveMissedBlocks": 0,
+        "lastForgedHeight": 68115,
+        "isBanned": false,
+        "totalVotesReceived": "201000000000",
+      },
+      "sentVotes": [
+        {
+          "delegateAddress": "lsk24cd35u4jdq8szo3pnsqe5dsxwrnazyqqqg5eu",
+          "amount": "102000000000"
         },
-        "unconfirmedMultisignatureMemberships": [
-          {
-            "address": "4935562234363081651L",
-            "publicKey": "968ba2fa993ea9dc27ed740da0daf49eddd740dbd7cb1cb4fc5db3a20baf341b",
-            "secondPublicKey": "968ba2fa993ea9dc27ed740da0daf49eddd740dbd7cb1cb4fc5db3a20baf341b",
-            "balance": "4448642000",
-            "unconfirmedSignature": 0
+        {
+          "delegateAddress": "lsk24cd35u4jdq8szo3pnsqe5dsxwrnazyqqqg5eu",
+          "amount": "95000000000"
+        }
+      ],
+      "unlocking": [
+        {
+          "delegateAddress": "lskdwsyfmcko6mcd357446yatromr9vzgu7eb8y99",
+          "amount": "150000000",
+          "height": {
+            "start": "10",
+            "end": "2010"
           }
-        ]
+        }
+      ],
+      "legacy": {
+        "address": "2841524825665420181L", // legacyAddress
+        "balance": "234500000" // Reclaimable balance
       }
-    ],
-    "meta": {
-      "count": 100,
-      "offset": 25,
-      "total": 43749
     }
-  }
-]
+  },
+  "meta": {
+    "count": 1,
+    "offset": 0
+  },
+  "links": {}
+}
 ----
 
 .Example: Get account with a specific Lisk account ID
 [source,json]
 ----
 {
+    "jsonrpc": "2.0",
     "method": "get.accounts",
     "params": {
-        "address": "123L"
+        "address": "lskzkfw7ofgp3uusknbetemrey4aeatgf2ntbhcds"
     }
 }
 ----
@@ -220,34 +284,28 @@ Retrieves votes of a single account based on address, public key or delegate nam
 
 Supports pagination.
 
-[cols="2,3,4", options="header"]
+[cols=",,,,", options="header"]
 .Parameters
 |===
-|Parameter name |Example |Description
+|Parameter |Type |Validation |Default |Comment
 
 |`address`
-|`4935562234363081651L`
-|Lisk account address
+|String
+|`/^lsk[a-hjkm-z2-9]{38}$//^[1-9]\d{0,19}[L|l]$/`
+|(empty)
+|Resolves only new address system
 
 |`publickey`
-|`968ba2...af341b`
-|Public key to query
-
-|`secpubkey`
-|`968ba2...af341b`
-|Second public key to query
+|String
+|`/^([A-Fa-f0-9]{2}){32}$/`
+|(empty)
+|
 
 |`username`
-|`genesis_12`
-|Delegate username to query
-
-|`limit`
-|`0`
-|Number of requested items
-
-|`offset`
-|`25`
-|Number of items to skip
+|String
+|`/^[a-z0-9!@$&_.]{1,20}$/`
+|(empty)
+|
 
 |===
 
@@ -255,19 +313,26 @@ Supports pagination.
 [source,json]
 ----
 {
-  "data": [
-    {
-      "address": "4935562234363081651L",
-      "publicKey": "968ba2fa993ea9dc27ed740da0daf49eddd740dbd7cb1cb4fc5db3a20baf341b",
-      "balance": 1081560729258,
-      "username": "liskhq"
-    }
-  ],
+  "data": {
+    "account": {
+      "address": "lsk24cd35u4jdq8szo3pnsqe5dsxwrnazyqqqg5eu",
+      "username": "genesis_56",
+      "votesUsed": 10
+    },
+    "votes": [
+      {
+        "address": "lsk24cd35u4jdq8szo3pnsqe5dsxwrnazyqqqg5eu",
+        "amount": 1081560729258, // = voteWeight
+        "username": "liskhq"
+      }
+    ]
+  },
   "meta": {
-    "count": 100,
-    "offset": 25,
-    "total": 43749
-  }
+    "count": 10,
+    "offset": 0,
+    "total": 10 // = votesUsed
+  },
+  "links": {}
 }
 ----
 
@@ -277,51 +342,50 @@ Supports pagination.
 {
     "method": "get.votes_sent",
     "params": {
-        "address": "4935562234363081651L"
+        "address": "lsk24cd35u4jdq8szo3pnsqe5dsxwrnazyqqqg5eu"
     }
 }
 ----
+
 ==== get.votes_received
 Retrieves voters for a delegate account based on address, public key or delegate name.
 
 Supports pagination.
 
-[cols="2,3,4", options="header"]
+[cols=",,,,", options="header"]
 .Parameters
 |===
-|Parameter name |Example |Description
+|Parameter |Type |Validation |Default |Comment
 
 |`address`
-|`4935562234363081651L`
-|Lisk account address
+|String
+|`/^lsk[a-hjkm-z2-9]{38}$//^[1-9]\d{0,19}[L|l]$/`
+|(empty)
+|Resolves only new address system
 
 |`publickey`
-|`968ba2...af341b`
-|Public key to query
-
-|`secpubkey`
-|`968ba2...af341b`
-|Second public key to query
+|String
+|`/^([A-Fa-f0-9]{2}){32}$/`
+|(empty)
+|
 
 |`username`
-|`genesis_12`
-|Delegate username to query
+|String
+|`/^[a-z0-9!@$&_.]{1,20}$/`
+|(empty)
+|
 
 |`limit`
-|`0`
-|Number of requested items
+|Number
+|`<1;100>`
+|10
+|
 
 |`offset`
-|`25`
-|Number of items to skip
-
-|`sort`
-|`name:desc`
-|Sorting order
-
-Available values: `balance:asc`, `balance:desc`
-
-Default value: `balance:asc`
+|Number
+|`<0;+Inf>`
+|0
+|
 
 |===
 
@@ -329,77 +393,98 @@ Default value: `balance:asc`
 [source,json]
 ----
 {
-  "data": [
-    {
-      "address": "4935562234363081651L",
-      "publicKey": "968ba2fa993ea9dc27ed740da0daf49eddd740dbd7cb1cb4fc5db3a20baf341b",
-      "balance": 1081560729258,
-      "username": "liskhq"
-    }
-  ],
+  "data": {
+    "account": {
+      "address": "lsk24cd35u4jdq8szo3pnsqe5dsxwrnazyqqqg5eu",
+      "username": "genesis_56",
+      "votesUsed": 10
+    },
+    "votes": [
+      {
+        "address": "lsk24cd35u4jdq8szo3pnsqe5dsxwrnazyqqqg5eu",
+        "amount": 1081560729258, // = voteWeight
+        "username": "liskhq"
+      }
+    ]
+  },
   "meta": {
-    "count": 100,
-    "offset": 25,
-    "total": 43749
-  }
+    "count": 10,
+    "offset": 0,
+    "total": 10 // = votesUsed
+  },
+  "links": {}
 }
 ----
 .Example
 [source,json]
 ----
 {
+    "jsonrpc": "2.0",
     "method": "get.votes_received",
     "params": {
-        "address": "4935562234363081651L"
+        "address": "lsk24cd35u4jdq8szo3pnsqe5dsxwrnazyqqqg5eu"
     }
 }
 ----
+
 === Blocks
 ==== get.blocks
 Retrieves blocks from the blockchain based on ID, height or account.
 
 Supports pagination.
 
-[cols="2,3,4", options="header"]
+[cols=",,,,", options="header"]
 .Parameters
 |===
-|Parameter name |Example |Description
+|Parameter |Type |Validation |Default |Comment
 
-|`id`
-|`6258354802676165798`
-|Block id to query
+|`blockId`
+|String
+|`/^([1-9]|[A-Fa-f0-9]){1,64}$/`
+|(empty)
+|
 
 |`height`
-|`1`
-|Current height of the network
+|String
+|`/[0-9]+/` and `/[0-9]+:[0-9]+/`
+|(empty)
+|Can be expressed as an interval ie. `1:20`.
 
-|`from`
-|`85944650`
-|Starting UNIX timestamp
+|`generatorAddress`
+|String
+|`/^lsk[a-hjkm-z2-9]{38}$/ and /^[1-9]\d{0,19}[L|l]$/`
+|(empty)
+|Resolves new and old address system.
 
-|`to`
-|`85944650`
-|Ending UNIX timestamp
+|`generatorPublicKey`
+|String
+|`/^([A-Fa-f0-9]{2}){32}$/`
+|(empty)
+|
 
-|`address`
-|`4935562234363081651L`
-|Lisk address, public key or account name
+|`generatorUsername`
+|String
+|`/^[a-z0-9!@$&_.]{1,20}$/`
+|(empty)
+|
 
 |`limit`
-|`0`
-|Number of requested items
+|Number
+|`<1;100>`
+|10
+|
 
 |`offset`
-|`25`
-|Number of items to skip
+|Number
+|`<0;+Inf>`
+|0
+|
 
 |`sort`
-|`name:desc`
-|Sorting order
-
-Available values: `height:asc`, `height:desc`, `totalAmount:asc`, `totalAmount:desc`, `totalFee:asc`, `totalFee:desc`, `timestamp:asc`, `timestamp:desc`
-
-Default value: `height:desc`
+|Array of strings
+|`["height:asc", "height:desc","timestamp:asc", "timestamp:desc"]`
+|`height:desc`
+|Rank is dedicated to delegate accounts
 |===
 
 .Response
@@ -408,23 +493,25 @@ Default value: `height:desc`
 {
   "data": [
     {
-      "id": "6258354802676165798",
+      "id": "1963e291eaa694fb41af320d7af4e92e38be26ddd88f61b150c74347f119de2e",
       "height": 8344448,
       "version": 0,
       "timestamp": 85944650,
-      "payloadLength": 117,
-      "generatorAddress": "7749538982696555450L",
+      "generatorAddress": "lsk24cd35u4jdq8szo3pnsqe5dsxwrnazyqqqg5eu",
       "generatorPublicKey": "6e904b2f678eb3b6c3042acb188a607d903d441d61508d047fe36b3c982995c8",
       "generatorUsername": "genesis_13",
-      "payloadHash": "4e4d91be041e09a2e54bb7dd38f1f2a02ee7432ec9f169ba63cd1f193a733dd2",
-      "blockSignature": "a3733254aad600fa787d6223002278c3400be5e8ed4763ae27f9a15b80e20c22ac9259dc926f4f4cabdf0e4f8cec49308fa8296d71c288f56b9d1e11dfe81e07",
-      "confirmations": 200,
+      "transactionRoot": "4e4d91be041e09a2e54bb7dd38f1f2a02ee7432ec9f169ba63cd1f193a733dd2",
+      "signature": "a3733254aad600fa787d6223002278c3400be5e8ed4763ae27f9a15b80e20c22ac9259dc926f4f4cabdf0e4f8cec49308fa8296d71c288f56b9d1e11dfe81e07",
       "previousBlockId": "15918760246746894806",
       "numberOfTransactions": 15,
-      "totalAmount": "150000000",
       "totalFee": "15000000",
       "reward": "50000000",
-      "totalForged": "65000000"
+      "totalForged": "65000000",
+      "totalBurnt": "10000000",
+      "isFinal": true,
+      "maxHeightPreviouslyForged": 68636,
+      "maxHeightPrevoted": 68707,
+      "seedReveal": "4021e5048af4c9f64ff2e12780af21f4"
     }
   ],
   "meta": {
@@ -435,104 +522,28 @@ Default value: `height:desc`
   "links": {}
 }
 ----
-=== Delegates
-==== get.delegates
-[cols="2,3,4", options="header"]
-.Parameters
-|===
-|Parameter name |Example |Description
-
-|`address`
-|`4935562234363081651L`
-|Lisk account address
-
-|`publickey`
-|`968ba2...af341b`
-|Public key to query
-
-|`secpubkey`
-|`968ba2...af341b`
-|Second public key to query
-
-|`username`
-|`genesis_12`
-|Delegate username to query
-
-|`search`
-|`genesis`
-|Delegate name full text search phrase
-
-|`limit`
-|`50`
-|Number of requested items
-
-|`offset`
-|`25`
-|Number of items to skip
-
-|`sort`
-|`name:desc`
-|Sorting order
-
-Available values: `username:asc`, `username:desc`, `rank:asc`, `rank:desc`, `productivity:asc`, `productivity:desc`, `missedBlocks:asc`, `missedBlocks:desc`
-
-Default value: `rank:asc`
-
-|===
-
-.Response
-[source,json]
-----
-{
-  "data": [
-    {
-      "address": "4935562234363081651L",
-      "approval": "35.77",
-      "missedBlocks": 157,
-      "producedBlocks": 55222,
-      "productivity": "99.72",
-      "publicKey": "6122ac1fd71b437014ddbc4ec01e07879f5af1853536efaa0233bc12907c684b",
-      "secondPublicKey": "6122ac1fd71b437014ddbc4ec01e07879f5af1853536efaa0233bc12907c684b",
-      "rank": 93,
-      "rewards": "109500000000",
-      "username": "genesis_84",
-      "vote": "4630668157412954"
-    }
-  ],
-  "meta": {
-    "count": 100,
-    "offset": 25,
-    "total": 43749
-  }
-}
-----
-.Example
-[source,json]
-----
-{
-    "method": "get.delegates",
-    "params": {
-        "address": "4935562234363081651L"
-    }
-}
-----
-==== get.delegates.next_forgers
+=== Forgers
+==== get.forgers
 Retrieves next forgers with details in the current round.
 
 Supports pagination.
 
-[cols="2,3,4", options="header"]
+[cols=",,,,", options="header"]
 .Parameters
 |===
-|Parameter name |Example |Description
+|Parameter |Type |Validation |Default |Comment
 
 |`limit`
-|`50`
-|Limit applied to results
+|Number
+|`<1;103>`
+|10
+|
 
 |`offset`
-|`25`
-|Number of items to skip
+|Number
+|`<0;+Inf>`
+|0
+|
 
 |===
 
@@ -542,23 +553,20 @@ Supports pagination.
 {
   "data": [
     {
-      "address": "4935562234363081651L",
-      "approval": "35.77",
-      "missedBlocks": 157,
-      "producedBlocks": 55222,
-      "productivity": "99.72",
-      "publicKey": "6122ac1fd71b437014ddbc4ec01e07879f5af1853536efaa0233bc12907c684b",
-      "secondPublicKey": "6122ac1fd71b437014ddbc4ec01e07879f5af1853536efaa0233bc12907c684b",
-      "rank": 93,
-      "username": "genesis_84",
-      "vote": "4630668157412954"
-    }
+      "username": "genesis_51",
+      "totalVotesReceived": "1006000000000",
+      "address": "c6d076ed541ca20869a1398a9d28c645ac8a8719",
+      "minActiveHeight": 27605,
+      "isConsensusParticipant": true,
+      "nextForgingTime": 1607521557
+    },
   ],
   "meta": {
-    "count": 100,
-    "offset": 25,
-    "total": 43749
+    "count": 10,
+    "offset": 20,
+    "total": 103
   },
+  "links": {}
 }
 ----
 
@@ -566,184 +574,145 @@ Supports pagination.
 [source,json]
 ----
 {
-    "method": "get.delegates.next_forgers",
+    "jsonrpc": "2.0",
+    "method": "get.forgers",
     "params": {
         "limit": "20",
         "offset": "50"
     }
 }
 ----
-=== Peers
-==== get.peers
-Retrieves network peers with details based on criteria.
 
-Supports pagination.
-
-[cols="2,3,4", options="header"]
-.Parameters
-|===
-|Parameter name |Example |Description
-
-|`ip`
-|`127.0.0.1`
-|IP of the node or delegate
-
-|`httpPort`
-|`8000`
-|HTTP port of the node or delegate
-
-|`wsPort	`
-|`8001`
-|Web socket port for the node or delegate
-
-|`os`
-|`debian`
-|OS of the node
-
-|`version`
-|`v0.8.0`
-|Lisk version of the node
-
-|`state`
-|`2`
-|Current state of the network
-
-|`height`
-|`8350681`
-|Current height of the network
-
-|`broadhash`
-|`258974...3db1ea`
-|Broadhash of the network
-
-|`limit`
-|`0`
-|Number of requested items
-
-|`offset`
-|`25`
-|Number of items to skip
-
-|`sort`
-|`name:desc`
-|Sorting order
-
-Available values: `height:asc`, `height:desc`, `version:asc`, `version:desc`
-
-Default value: `height:desc`
-
-|===
-
-.Response
-[source,json]
-----
-{
-  "data": [
-    {
-      "ip": "127.0.0.1",
-      "httpPort": 8000,
-      "wsPort": 8001,
-      "os": "debian",
-      "version": "v0.8.0",
-      "state": v0.8.0,
-      "height": 8350681,
-      "broadhash": "258974416d58533227c6a3da1b6333f0541b06c65b41e45cf31926847a3db1ea",
-      "nonce": "sYHEDBKcScaAAAYg",
-      "location": {
-        "city": "Berlin",
-        "countryCode": "DE",
-        "countryName": "Germany",
-        "hostname": "host.210.239.23.62.rev.coltfrance.com",
-      }
-    }
-  ],
-  "meta": {
-    "count": 100,
-    "offset": 25,
-    "total": 43749
-  }
-}
-----
-.Example: Get hosts with a specific IP address
-[source,json]
-----
-{
-    "method": "get.peers",
-    "params": {
-        "ip": "210.239.23.62"
-    }
-}
-----
 === Transactions
 ==== get.transactions
 Retrieves network transactions by criteria defined by params.
 
 Supports pagination.
 
-[cols="2,3,4", options="header"]
+[cols=",,,,", options="header"]
 .Parameters
 |===
-|Parameter name |Example |Description
+|Parameter |Type |Validation |Default |Comment
 
-|`id`
-|`222675625422353767`
-|Transaction id to query
+|`transactionId`
+|String
+|`/^([1-9]|[A-Fa-f0-9]){1,64}$/`
+|(empty)
+|
 
-|`type`
-|`0`
-|Transaction type (0-7)
+|`moduleAssetId`
+|String
+|`ModuleId:AssetId/[0-9]+:[0-9]+/`
+|(empty)
+|Transfer transaction: moduleID = 2,assetID = 0
 
-|`address`
-|`4935562234363081651L`
-|Lisk address, public key or account name
+|`moduleAssetName`
+|String
+|`ModuleName:AssetName/[a-z]+:[a-z]+/`
+|(empty)
+|Transfer transaction: moduleName = token, assetName = transfer
 
-|`sender`
-|`4935562234363081651L`
-|Lisk address, public key or account name (senderId)
+|`senderAddress`
+|String
+|`/^lsk[a-hjkm-z2-9]{38}$//^[1-9]\d{0,19}[L|l]$/`
+|(empty)
+|
 
-|`recipient`
-|`4935562234363081651L`
-|Lisk address, public key or account name (recipientId)
+|`senderPublicKey`
+|String
+|`/^([A-Fa-f0-9]{2}){32}$/`
+|(empty)
+|
 
-|`min`
-|`150000000`
-|Minimum transaction amount in Beddows
+|`senderUsername`
+|String
+|`/^[a-z0-9!@$&_.]{1,20}$/`
+|(empty)
+|
 
-|`max`
-|`150000000`
-|Maximum transaction amount in Beddows
+|`recipientAddress`
+|String
+|`/^lsk[a-hjkm-z2-9]{38}$//^[1-9]\d{0,19}[L|l]$/`
+|(empty)
+|
 
-|`from`
-|`28227090`
-|Starting UNIX timestamp
+|`recipientPublicKey`
+|String
+|`/^([A-Fa-f0-9]{2}){32}$/`
+|(empty)
+|
 
-|`to`
-|`28227090`
-|Ending UNIX timestamp
+|`recipientUsername`
+|String
+|`/^[a-z0-9!@$&_.]{1,20}$/`
+|(empty)
+|
 
-|`block`
-|`6258354802676165798`
-|Block id to query
+|`amount`
+|String
+|
+|(empty)
+|Can be expressed as interval ie. `100000:200000`.
+
+|`timestamp`
+|String
+|
+|(empty)
+|Can be expressed as interval ie. `100000:200000`
+
+|`blockId`
+|String
+|`/^([1-9]|[A-Fa-f0-9]){1,64}$/`
+|(empty)
+|Block ID
 
 |`height`
-|`8350681`
-|Height of the network
+|String
+|
+|(empty)
+|Block height
+
+|`search`
+|String
+|
+|(empty)
+|Wildcard search
+
+|`data`
+|String
+|
+|(empty)
+|Wildcard search
+
+|`includePending`
+|Boolean
+|
+|false
+|
+
+|`nonce`
+|String
+|`/^\d+$/`
+|(empty)
+|In conjunction with senderAddress
 
 |`limit`
-|`50`
-|Number of requested items
+|Number
+|`<1;100>`
+|10
+|
 
 |`offset`
-|`25`
-|Number of items to skip
+|Number
+|`<0;+Inf>`
+|0
+|
 
 |`sort`
-|`name:desc`
-|Sorting order
-
-Available values: `amount:asc`, `amount:desc`, `fee:asc`, `fee:desc`, `type:asc`, `type:desc`, `timestamp:asc`, `timestamp:desc`
-
-Default value: `timestamp:desc`
+|Array of strings
+|`["amount:asc", "amount:desc", "timestamp:asc", "timestamp:desc"]`
+|`timestamp:desc`
+|
 
 |===
 
@@ -754,43 +723,51 @@ Default value: `timestamp:desc`
   "data": [
     {
       "id": "222675625422353767",
-      "amount": "150000000",
+      "operationId": "2:0",
+      "operationName": "token:transfer",
       "fee": "1000000",
-      "type": 0,
-      "height": 8350681,
-      "blockId": "6258354802676165798",
-      "timestamp": 28227090,
-      "senderId": "4935562234363081651L",
-      "senderPublicKey": "2ca9a7143fc721fdc540fef893b27e8d648d2288efa61e56264edf01a2c23079",
-      "senderSecondPublicKey": "2ca9a7143fc721fdc540fef893b27e8d648d2288efa61e56264edf01a2c23079",
-      "recipientId": "4935562234363081651L",
-      "recipientPublicKey": "2ca9a7143fc721fdc540fef893b27e8d648d2288efa61e56264edf01a2c23079",
-      "signature": "2821d93a742c4edf5fd960efad41a4def7bf0fd0f7c09869aed524f6f52bf9c97a617095e2c712bd28b4279078a29509b339ac55187854006591aa759784c205",
-      "signSignature": "2821d93a742c4edf5fd960efad41a4def7bf0fd0f7c09869aed524f6f52bf9c97a617095e2c712bd28b4279078a29509b339ac55187854006591aa759784c205",
-      "signatures": [
-        "72c9b2aa734ec1b97549718ddf0d4737fd38a7f0fd105ea28486f2d989e9b3e399238d81a93aa45c27309d91ce604a5db9d25c9c90a138821f2011bc6636c60a"
-      ],
+      "nonce": "0",
+      "block": { // optional
+        "id": "6258354802676165798",
+        "height": 8350681,
+        "timestamp": 28227090,
+      },
+      "sender": {
+        "address": "lsk24cd35u4jdq8szo3pnsqe5dsxwrnazyqqqg5eu",
+        "publicKey": "2ca9a7...c23079",
+        "username": "genesis_51",
+      },
+      "signatures": [ "72c9b2...36c60a" ],
       "confirmations": 0,
-      "asset": {},
-      "receivedAt": "2019-08-02T08:24:45.009Z",
+      "asset": {     // Depends on operation
+        "amount": "150000000",
+        "recipient": {
+          "address": "lsk24cd35u4jdq8szo3pnsqe5dsxwrnazyqqqg5eu",
+          "publicKey": "2ca9a7...c23079",
+          "username": "genesis_49",
+        },
+        "data": "message"
+      },
       "relays": 0,
-      "ready": false
+      "isPending": false
     }
   ],
   "meta": {
     "count": 100,
     "offset": 25,
     "total": 43749
-  }
+  },
+  "links": {}
 }
 ----
 .Example: Getting a transaction by transaction ID
 [source,json]
 ----
 {
+    "jsonrpc": "2.0",
     "method": "get.transactions",
     "params": {
-        "id": "222675625422353767"
+        "transactionId": "222675625422353767"
     }
 }
 ----
@@ -798,30 +775,65 @@ Default value: `timestamp:desc`
 [source,json]
 ----
 {
+    "jsonrpc": "2.0",
     "method": "get.transactions",
     "params": {
-        "address": "14935562234363081651L",
+        "address": "lsk24cd35u4jdq8szo3pnsqe5dsxwrnazyqqqg5eu",
         "limit": "25"
     }
 }
 ----
-==== get.transactions.statistics.day
+==== post.transactions
+Posts transactions to the network.
+
+No parameters.
+
+.Example Response
+[source,json]
+----
+{
+  "message": "Transaction payload was successfully passed to the network node"
+  "transactionId": "123456789"
+}
+----
+
+.Example: Posting a transaction
+[source,json]
+----
+{
+    "jsonrpc": "2.0",
+    "method": "post.transactions",
+    "payload": {"transaction":"08021000180d2080c2d72f2a200fe9a3f1a21b5530f27f87a414b549e79a940bf24fdf2b2f05e7f22aeeecc86a32270880c2d72f12144fd8cc4e27a3489b57ed986efe3d327d3de40d921a0a73656e6420746f6b656e3a4069242925e0e377906364fe6c2eed67f419dfc1a757f73e848ff2f1ff97477f90263487d20aedf538edffe2ce5b3e7601a8528e5cd63845272e9d79c294a6590a"}
+}
+----
+
+==== get.transactions.statistics
 Retrieves daily network transactions statistics for time spans defined by params.
 
 Supports pagination.
 
-[cols="2,3,4", options="header"]
+[cols=",,,,", options="header"]
 .Parameters
 |===
-|Parameter name |Example |Description
+|Parameter |Type |Validation |Default |Comment
+
+|`interval`
+|String
+|`["day", "month"]`
+|(empty)
+|Required field.
 
 |`limit`
-|`0`
-|Number of requested items (days)
+|Number
+|`<1;103>`
+|10
+|
 
 |`offset`
-|`25`
-|Number of items to skip
+|Number
+|`<0;+Inf>`
+|0
+|
 
 |===
 
@@ -829,95 +841,59 @@ Supports pagination.
 [source,json]
 ----
 {
-  "data":{
-    "timeline":[
-      {
-        "date":"2019-11-27",
-        "transactionCount":503,
-        "volume":"20087361290583",
-        "timestamp":1574812800
-      },
-      {
-        "date":"2019-11-26",
-        "transactionCount":363,
-        "volume":"61577610129315",
-        "timestamp":1574726400
-      },
-      {
-        "date":"2019-11-25",
-        "transactionCount":1211,
-        "volume":"27747743232112",
-        "timestamp":1574640000
-      },
-      {
-        "date":"2019-11-24",
-        "transactionCount":4431,
-        "volume":"96306777872811",
-        "timestamp":1574553600
-      },
-      {
-        "date":"2019-11-23",
-        "transactionCount":609,
-        "volume":"20665122707837",
-        "timestamp":1574467200
-      }
-    ],
-    "distributionByType":{
-      "0":7063,
-      "1":1,
-      "2":2,
-      "3":51
+    "data": {
+      "timeline": [
+        {
+          "timestamp": 1556100060,
+          "date": "2019-11-27",
+          "transactionCount": "14447177193385",
+          "volume": "14447177193385"
+        }
+      ],
+      "distributionByOperation": {},
+      "distributionByAmount": {}
     },
-    "distributionByAmount":{
-      "1_10":5042,
-      "10_100":585,
-      "100_1000":542,
-      "1000_10000":236,
-      "10000_100000":52,
-      "100000_1000000":3,
-      "0.1_1":657
-    }
-  },
-  "meta":{
-    "limit":7,
-    "offset":0,
-    "aggregateBy":"day",
-    "dateFormat":"YYYY-MM-DD",
-    "dateFrom":"2019-11-23",
-    "dateTo":"2019-11-27"
-  },
-  "links":{
-
-  }
+    "meta": {
+      "count": 100,
+      "offset": 25,
+      "total": 43749
+    },
+    "links": {}
 }
 ----
+
 .Example: Get transaction statistics for past 7 days
 [source,json]
 ----
 {
-    "method": "get.transactions.statistics.day",
+    "jsonrpc": "2.0",
+    "method": "get.transactions.statistics",
     "params": {
-        "limit": 7,
+        "interval": "day",
+        "limit": 7
     }
 }
 ----
-==== get.transactions.statistics.month
-Retrieves monthly network transactions statistics for time spans defined by params.
 
-Supports pagination.
+==== get.transactions.schemas
+Retrieves transaction schema for certain transaction payloads.
 
-[cols="2,3,4", options="header"]
+[cols=",,,,", options="header"]
 .Parameters
 |===
-|Parameter name |Example |Description
+|Parameter |Type |Validation |Default |Comment
 
-|`limit`
-|`0`
-|Number of requested items (months)
+|`moduleAssetId`
+|String
+|`ModuleId:AssetId /[0-9]+:[0-9]+/`
+|(empty)
+|Transfer transaction: moduleID = 2,assetID = 0
 
-|`offset`
-|`25`
-|Number of items to skip
+|`moduleAssetName`
+|String
+|`ModuleName:AssetName /[a-z]+:[a-z]+/`
+|(empty)
+|Transfer transaction: moduleName = token, assetName = transfer
 
 |===
 
@@ -925,63 +901,168 @@ Supports pagination.
 [source,json]
 ----
 {
-  "data":{
-    "timeline":[
-      {
-        "date":"2019-12",
-        "transactionCount":503,
-        "volume":"20087361290583",
-        "timestamp":1574812800
-      },
-      {
-        "date":"2019-11",
-        "transactionCount":363,
-        "volume":"61577610129315",
-        "timestamp":1574726400
-      },
-      {
-        "date":"2019-10",
-        "transactionCount":1211,
-        "volume":"27747743232112",
-        "timestamp":1574640000
-      },
-    ],
-    "distributionByType":{
-      "0":7063,
-      "1":1,
-      "2":2,
-      "3":51
+  "data": [
+    {
+      "moduleAssetId": "2:0",
+      "moduleAssetName": "token:transfer",
+      "schema": {
+        ...
+      }
     },
-    "distributionByAmount":{
-      "1_10":5042,
-      "10_100":585,
-      "100_1000":542,
-      "1000_10000":236,
-      "10000_100000":52,
-      "100000_1000000":3,
-      "0.1_1":657
-    }
+  ],
+  "meta": {
+    "count": 10,
+    "offset": 0,
+    "total": 10
   },
-  "meta":{
-    "limit":3,
-    "offset":0,
-    "aggregateBy":"month",
-    "dateFormat":"YYYY-MM",
-    "dateFrom":"2019-10",
-    "dateTo":"2019-12"
-  },
-  "links":{
-
-  }
+  "links": {}
 }
 ----
-.Example: Get transaction statistics for past 12 months
+
+.Example: Get transaction schema for token transfer
 [source,json]
 ----
 {
-    "method": "get.transactions.statistics.month",
+    "jsonrpc": "2.0",
+    "method": "get.transactions.schemas",
     "params": {
-        "limit": 12,
+        "moduleAssetName": "token:transfer"
+    }
+}
+----
+
+=== Fees
+==== get.fees
+Requests transaction fee estimates per byte.
+
+No parameters.
+
+.Response
+[source,json]
+----
+{
+  "data": {
+    "feeEstimatePerByte": {
+      "low": 0,
+      "medium": 1000,
+      "high": 2000
+    },
+    "baseFeeById": {
+      "2:0": "1000000000"
+    },
+    "baseFeeByName": {
+      "token:transfer": "1000000000"
+    },
+    "minFeePerByte": 1000,
+  },
+  "meta": {
+    "lastUpdate": 123456789,
+    "lastBlockHeight": 25,
+    "lastBlockId": 1354568
+  },
+  "links": {}
+}
+----
+
+.Example: Get fees
+[source,json]
+----
+{
+    "jsonrpc": "2.0",
+    "method": "get.fees",
+}
+----
+=== Peers
+==== get.peers
+Retrieves network peers with details based on criteria.
+
+Supports pagination.
+
+[cols=",,,,", options="header"]
+.Parameters
+|===
+|Parameter |Type |Validation |Default |Comment
+
+|`ip`
+|String
+|`/^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/`
+|(empty)
+|
+
+|`networkVersion`
+|String
+|`/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-(0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(\.(0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*)?(\+[0-9a-zA-Z-]+(\.[0-9a-zA-Z-]+)*)?$/`
+|(empty)
+|
+
+|`state`
+|Array of strings
+|`["connected", "disconnected", "any"]`
+|`connected`
+|
+
+|`height`
+|Number
+|`<1;+Inf>`
+|(empty)
+|
+
+|`limit`
+|Number
+|`<1;100>`
+|10
+|
+
+|`offset`
+|Number
+|`<0;+Inf>`
+|0
+|
+
+|`sort`
+|Array of strings
+|`["height:asc", "height:desc", "networkVersion:asc", "networkVersion:desc"]`
+|`height:desc`
+|
+
+|===
+
+.Response
+[source,json]
+----
+{
+    "data": [
+      {
+        "ip": "127.0.0.1",
+        "port": 4000,
+        "networkVersion": "2.0",
+        "state": "connected",
+        "height": 8350681,
+        "networkIdentifier": "258974416d58533227c6a3da1b6333f0541b06c65b41e45cf31926847a3db1ea",
+        "location": {
+          "countryCode": "DE",
+          "countryName": "Germany",
+          "hostname": "host.210.239.23.62.rev.coltfrance.com",
+          "ip": "210.239.23.62",
+        }
+      }
+    ],
+    "meta": {
+      "count": 100,
+      "offset": 25,
+      "total": 43749
+    },
+    "links": {}
+}
+----
+.Example: Get hosts with a specific IP address
+[source,json]
+----
+{
+    "jsonrpc": "2.0",
+    "method": "get.peers",
+    "params": {
+        "ip": "210.239.23.62"
     }
 }
 ----
@@ -995,30 +1076,36 @@ No parameters.
 [source,json]
 ----
 {
-  "broadhash": "258974416d58533227c6a3da1b6333f0541b06c65b41e45cf31926847a3db1ea",
-  "height": 123,
-  "networkHeight": 123,
-  "epoch": "2016-05-24T17:00:00.000Z",
-  "milestone": "500000000",
-  "nethash": "ed14889723f24ecc54871d058d98ce91ff2f973192075c0155ba2b7b70ad2511",
-  "supply": "10575384500000000",
-  "reward": "500000000",
-  "fees": {
-    "send": "10000000",
-    "vote": "100000000",
-    "secondSignature": "500000000",
-    "delegate": "2500000000",
-    "multisignature": "500000000",
-    "dappRegistration": "2500000000",
-    "dappWithdrawal": "10000000",
-    "dappDeposit": "10000000"
-  }
+  "data": {
+    "height": 27256,
+    "finalizedHeight": 27112,
+    "milestone": "0",
+    "networkVersion": "2.0",
+    "networkIdentifier": "08ec0e01794b57e5ceaf5203be8c1bda51bcdd39bb6fc516adbe93223f85d630",
+    "reward": "500000000",
+    "supply": "10094237000000000",
+    "registeredModules": ["token", "sequence", "keys", "dpos", "legacyAccount"],
+    "operations": [
+      { "id": "2:0", "name": "token:transfer" }
+      ...
+    ],
+    "blockTime": 10,
+    "communityIdentifier": "Lisk",
+    "maxPayloadLength": 15360,
+  },
+  "meta": {
+    "lastUpdate": 123456789,
+    "lastBlockHeight": 25,
+    "lastBlockId": 1354568
+  },
+  "links": {}
 }
 ----
 .Example
 [source,json]
 ----
 {
+    "jsonrpc": "2.0",
     "method": "get.network.status"
 }
 ----
@@ -1031,71 +1118,30 @@ No parameters.
 [source,json]
 ----
 {
-  "data": {
-    "basic": {
-      "connectedPeers": 134,
-      "disconnectedPeers": 48,
-      "totalPeers": 181
+    "data": {
+      "basic": {
+        "connectedPeers": 134,
+        "disconnectedPeers": 48,
+        "totalPeers": 181
+      },
+      "height": {
+        "7982598": 24
+      },
+      "networkVersion": {
+        "2.0": 12,
+        "2.1": 41
+      }
     },
-    "height": {
-      "7982598": 24
-    },
-    "coreVer": {
-      "1.4.0": 12,
-      "1.5.0": 41
-    },
-    "os": {
-      "linux3.10": 33,
-      "linux4.4": 71
-    }
-  },
-  "meta": {},
-  "links": {}
-}
+    "meta": {},
+    "links": {}
+  }
+
 ----
 .Example
 [source,json]
 ----
 {
+    "jsonrpc": "2.0",
     "method": "get.network.statistics"
-}
-----
-==== get.search
-Performs search among the delegates, accounts, public keys, transactions, blocks and height.
-
-[cols="2,3,4", options="header"]
-.Parameters
-|===
-|Parameter name |Example |Description
-
-|`q`
-|`genesis`
-|Search string
-
-|===
-
-.Response
-[source,json]
-----
-{
-  "results": [
-    {
-      "score": 0.82,
-      "description": "genesis_10",
-      "id": "1864409191503661202L",
-      "type": "address"
-    }
-  ],
-  "meta": {}
-}
-----
-.Example: Getting entities which contain the `genesis` string.
-[source,json]
-----
-{
-    "method": "get.search",
-    "params": {
-        "q": "genesis"
-    }
 }
 ----

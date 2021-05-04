@@ -25,7 +25,19 @@ npm update @liskhq/lisk-genesis
 
 [source,js]
 ----
-import * as genesis from '@liskhq/lisk-genesis';
+const { TokenModule, DPoSModule, genesis, configDevnet } = require('lisk-sdk');
+
+// Get account schemas of the modules which are registered with the application
+const token = new TokenModule(configDevnet.genesisConfig).accountSchema;
+const dpos = new DPoSModule(configDevnet.genesisConfig).accountSchema;
+// Add fieldNumber property, to avoid errors
+dpos.fieldNumber = 2;
+token.fieldNumber = 9;
+// Pack all account schemas in one big object
+const accountAssetSchemas = {
+  token,
+  dpos
+};
 
 const delegates = [
     {
@@ -34,32 +46,17 @@ const delegates = [
 		dpos: { delegate: { username: 'ef374a2e8fb9934ad1db0fd5346eb7' } }
     }
 ];
+
 const accounts = [
     {
         address: Buffer.from('dedfbd4c6a1ad1ef0d7a95cd6907114548d8c6d8', 'hex'),
         token: { balance: BigInt(653021139) }
     }
 ];
-const accountAssetSchemas = {
-	token: {
-		type: 'object',
-		fieldNumber: 2,
-		properties: {
-			balance: {
-				fieldNumber: 1,
-				dataType: 'uint64',
-			},
-		},
-		default: {
-			balance: BigInt(0),
-		},
-	}
-	// dpos: {...}
-};
 
 const genesisBlockParams = {
 	initDelegates: delegates.map(a => a.address),
-	accounts,
+	accounts: [...accounts, ...delegates],
 	accountAssetSchemas,
 };
 

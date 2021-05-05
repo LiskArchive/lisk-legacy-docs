@@ -3,8 +3,11 @@ Mona Bärenfänger <mona@lightcurve.io>
 // Settings
 :toc:
 // Project URLs
+:url_default_modules: modules.adoc#sdk-default-modules
 :url_guides_setup: guides/app-development/setup.adoc
 :url_guides_module: guides/app-development/module.adoc
+:url_modules_dpos: dpos-module.adoc
+:url_modules_token: token-module.adoc
 
 How to use `lisk-genesis` to generate a genesis block for a blockchain application.
 
@@ -29,13 +32,13 @@ Required. The genesis block needs to contain all account asset schemas for all m
 The different account asset schemas are all grouped together in one big object and added as `accountAssetSchemas` to the genesis block params.
 `accountAssetSchemas` is one of the most important parameters for generating a valid genesis block, so make sure it includes all required account asset schemas.
 
+`initDelegates`(array)::
+Required. List of initial delegate addresses used during the bootstrap period to forge blocks.
+Addresses are expected to be in `Buffer` format.
+
 `accounts`(array)::
 Required. List of initial accounts in the network.
 Minimum required is `address`, but can have other properties like `balance`.
-Addresses are expected to be in `Buffer` format.
-
-`initDelegates`(array)::
-Required. List of initial delegate addresses used during the bootstrap period to forge blocks.
 Addresses are expected to be in `Buffer` format.
 
 `initRounds?`(number)::
@@ -51,7 +54,6 @@ Optional. Timestamp of the genesis block.
 Optional. Previous block ID.
 Can be used for example in case of regenesis.
 
-
 The genesis library can bbe used to generate a valid genesis block based on the above parameters.
 It can be imported directly from the `lisk-sdk` package, or alternatively it can be installed as separate package `@liskhq/lisk-genesis`.
 
@@ -62,15 +64,157 @@ npm install @liskhq/lisk-genesis
 
 [source,js]
 ----
-import * as genesis from '@liskhq/lisk-genesis
+const { genesis } = require("lisk-sdk");
 // or
-// const { genesis } = require("lisk-sdk");
+//import * as genesis from '@liskhq/lisk-genesis
 ----
 
 == Including the account asset schemas
 
+The genesis block needs to include the account schemas of all modules that are registered with the application.
+This also includes all account schemas of the xref:{url_default_modules}[default modules] which are registered with the application by default.
+
+To achieve this, first import all relevant modules to get their account schemas:
+
+[source,js]
+----
+const { TokenModule, DPoSModule, KeysModule, SequenceModule, genesis, passphrase, cryptography, configDevnet } = require('lisk-sdk');
+const { MyModule } = require('./my-module');
+
+// Creating the accountAssetSchemas
+
+const token = new TokenModule(configDevnet.genesisConfig).accountSchema;
+const dpos = new DPoSModule(configDevnet.genesisConfig).accountSchema;
+const keys = new KeysModule(configDevnet.genesisConfig).accountSchema;
+const sequence = new SequenceModule(configDevnet.genesisConfig).accountSchema;
+const myModule = new MyModule().accountSchema;
+
+const accountAssetSchemas = {
+  token,
+  dpos,
+  keys,
+  sequence,
+  myModule
+};
+----
+
+NOTE: The key of each account schema should equal the `name` property of the respective module.
+
+[IMPORTANT]
+
+====
+The xref:{url_default_modules}[default modules] are always required to be included in the application for it to work properly.
+
+If they are not included in the application, other modules need to be included, which replace their functionalities.
+====
+
 == Generating a list of genesis delegates
 
+The genesis block includes a list of genesis delegates under the `initDelegates` key.
+
+These delegates will forge during the bootstrap period of the blockchain, which is lasting 3 forging rounds (`3 * 103 blocks = 309 blocks`) by default.
+
+TIP: The default length of the bootstrap period can be altered with the `initRounds` property.
+
+=== Generation a fresh list of genesis delegates
+
+If you don't have a list of already existing account details, it is needed to generate the accounts newly.
+
+The three minimum properties for a delegate are the following:
+
+* `address`(`Buffer`): Address of the delegate account.
+* `token.balance`(`BigInt`): Balance of the delegate.
+* `dpos.delegate.username`(`string`): Unique username of the delegate.
+
+[source,js]
+----
+// Generating the genesis delegates
+
+const newCredentials = () => {
+    const pass = passphrase.Mnemonic.generateMnemonic();
+    const keys = cryptography.getPrivateAndPublicKeyFromPassphrase(pass);
+    const credentials = {
+        address: cryptography.getBase32AddressFromPassphrase(pass),
+        binaryAddress: cryptography.getAddressFromPassphrase(pass).toString("hex"),
+        passphrase: pass,
+        publicKey: keys.publicKey.toString("hex"),
+        privateKey: keys.privateKey.toString("hex")
+    };
+    return credentials;
+};
+
+const credentials = [];
+
+
+const newDelegate = (name) => {
+  const cred = newCredentials();
+  credentials.push(cred);
+    const delegate = {
+        address: cred.address,
+        token: { balance: BigInt(100000000) },
+        dpos: { delegate: { username: name } }
+    };
+    return delegate;
+};
+
+const generateDelegates = (amount) => {
+  const delegates = [];
+  const name = 'genesisDelegate';
+  for (let i = 1; i <= amount; i++) {
+    let nameNumber = name + i;
+    delegates.push(newDelegate(nameNumber))
+  }
+  return delegates;
+};
+
+const delegates = generateDelegates(5);
+----
+
 == Generating the list of genesis accounts
+
+All accounts that exist already in the beginning of the network are listed under the property `accounts` of the genesis block.
+
+The `accounts` property is a list of accounts that always needs to include the accounts for the genesis delegates, that were created in the previous step.
+
+Beside this, any other accounts can be added here, and accout properties like balance can be configured as desired.
+
+[source,js]
+----
+// Creating the genesis account list
+
+const newAccount = () => {
+  const cred = newCredentials();
+  credentials.push(cred);
+  const account = {
+    address: cred.address,
+    token: { balance: BigInt(25000000000) }
+  };
+  return account;
+};
+
+const generateAccounts = (amount) => {
+  const accounts = [];
+  for (let i = 1; i <= amount; i++) {
+    accounts.push(newAccount())
+  }
+};
+
+const genAccounts = generateAccounts(3);
+
+const accounts = [...delegates, ...genAccounts];
+----
+
+== Creating the genesis block
+
+[source,js]
+----
+const genesisBlockParams = {
+	initDelegates: delegates.map(a => a.address),
+	accounts,
+	accountAssetSchemas,
+};
+
+const genesisBlock = genesis.createGenesisBlock(genesisBlockParams);
+----
 
 == Optional parameters for the genesis block

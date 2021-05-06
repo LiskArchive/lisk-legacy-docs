@@ -1,0 +1,515 @@
+= Testnet and Mainnet v3 migration guide
+:toc:
+:experimental:
+:idprefix:
+:idseparator: -
+:lisk-migrator: lisk-migrator-v1.0.0-rc.0-linux-x64.tar.gz
+// External URLs
+:url_lisk_migrator: https://downloads.lisk.io/lisk-migrator/{lisk-migrator}
+:url_wallet: https://lisk.io/wallet
+// Project URLs
+:url_core_install: setup/binary.adoc
+:url_core_2_install: master@lisk-core::setup/application.adoc
+:url_core_2_update: master@lisk-core::update/application.adoc
+:url_sdk_protocol_voteweight: master@lisk-sdk:protocol:consensus-algorithm.adoc#voting_and_weight
+
+How to migrate a Lisk Core 2.1.6 node to Lisk Core 3.0.0.
+
+[IMPORTANT]
+
+====
+All actively forging delegates on the Lisk Mainnet and the Lisk Testnet need to follow this guide to correctly migrate their nodes to the new network, in order to not miss any blocks after the network hard fork.
+
+Optionally, anyone running a Lisk Core 2.1.6 who is not an actively forging delegate can participate in the migration process.
+In this case, the following steps 1.4, 2.7, 2.8, and 2.9 in this guide can be skipped, as they are only relevant for delegates.
+====
+
+:sectnums:
+:sectnumlevels: 5
+== Preparation
+
+[NOTE]
+
+====
+The following hardware setup is recommended for running the migration script:
+
+* Machines with a minimum of 4 GB RAM for the Mainnet
+* Machines with a minimum of 2 GB RAM for the Testnet
+====
+
+=== Preparing Lisk Core 2.1.6
+
+==== Ensure you are running the binary distribution of Lisk Core
+If you are using a different distribution of Lisk Core 2.1.6, such as Docker, Commander or Source, it will be necessary to xref:{url_core_2_install}[install the application/binary distribution].
+
+==== Ensure you are running version 2.1.6 of Lisk Core
+Ensure you are running version 2.1.6 of Lisk Core to be able to seamlessly migrate to Lisk Core 3.0.0.
+
+Open `package.json` to check the `version` of your Lisk Core node.
+If your version is lower than 2.1.6, make sure to xref:{url_core_2_update}[update Lisk Core] before you proceed with the migration.
+
+=== Setting up the Lisk migrator
+
+==== Download the migration script
+Download the migration script by running the following command in the terminal:
+
+[subs=attributes+]
+[source,bash]
+----
+curl -o lisk-migrator.tar.gz {url_lisk_migrator}
+----
+
+==== Download checksum and verify
+Download the checksum and verify the successful download of lisk-migrator.
+
+{counter:seq3:A}) Download the checksum.
+
+[subs=attributes+]
+[source,bash]
+----
+curl -o lisk-migrator.tar.gz.SHA256 {url_lisk_migrator}.SHA256
+----
+
+{counter:seq3}) Run the following command in the terminal and ensure the output is `sha256sum: <file name>: OK`
+
+[source,bash]
+----
+sha256sum -c lisk-migrator.tar.gz.SHA256
+----
+
+==== Extract and add to PATH
+
+Unpack it, and then add it to the system path, in order to use it in the terminal:
+
+[source,bash]
+----
+tar -xf ./lisk-migrator.tar.gz
+----
+
+Make the `lisk-migrator` command available in the PATH, e.g. by executing the following command:
+
+[source,bash]
+----
+export PATH="$PATH:$HOME/lisk-migrator/bin" <1>
+----
+
+<1> Replace `$HOME` with the absolute path of where the `lisk-migrator` folder is located, in case you extracted it somewhere other than your home directory.
+
+=== Setting up Lisk Core 3.0.0
+
+Follow the guide how to xref:{url_core_install}[setup Lisk Core 3.0.0] for the binary distribution.
+
+IMPORTANT: Don't start Lisk Core 3.0.0 yet.
+
+=== Create a custom config with your delegate information
+
+First copy the existing config file for the respective network.
+
+[tabs]
+====
+Mainnet::
++
+--
+[source,bash]
+----
+cp ~/lisk-core/config/mainnet/config.json ~/lisk-core/config/mainnet/custom-config.json <1>
+----
+--
+Testnet::
++
+--
+[source,bash]
+----
+cp ~/lisk-core/config/testnet/config.json ~/lisk-core/config/testnet/custom-config.json <1>
+----
+--
+====
+
+Next, use the CLI of Lisk Core 3.0.0 to generate the delegate configuration data.
+
+[source,bash]
+----
+lisk-core forging:config --output custom-forging.json
+----
+
+After running the command, you will be prompted for your delegate passphrase and for the password that will be used to encrypt the passphrase, so it can be stored securely in the delegate configuration data.
+
+----
+? Please enter passphrase:  [hidden]
+? Please re-enter passphrase:  [hidden]
+? Please enter password:  [hidden]
+? Please re-enter password:  [hidden]
+----
+
+After providing the required inputs, the delegate configuration data will be saved in the file `custom-forging.json`.
+
+.Example of forging-config.json
+[source,js]
+----
+{
+  forging: {
+    delegates: [ <1>
+        {
+            address: "86555265f0110b4ed5a8cb95dbc732e77732c474",
+            encryptedPassphrase: "iterations=1&salt=476d4299531718af8c88156aab0bb7d6&cipherText=663dde611776d87029ec188dc616d96d813ecabcef62ed0ad05ffe30528f5462c8d499db943ba2ded55c3b7c506815d8db1c2d4c35121e1d27e740dc41f6c405ce8ab8e3120b23f546d8b35823a30639&iv=1a83940b72adc57ec060a648&tag=b5b1e6c6e225c428a4473735bc8f1fc9&version=1",
+            hashOnion: {
+                "count": 1000000,
+                "distance": 1000,
+                "hashes": [
+                    "ff2156e33c4aefa4a5a790edbe329f4a",
+                    "5f86db180d4e63be6412d42d444dfb49",
+                    "10fc37bb42d7f77030138e45795fef65",
+                    "f04a306a73c5d7d94cc4f262b4d5ebb4",
+                    //[...]
+                    "ca41d52225f4b76140fc7f277731d326",
+                    "fde61109609b74ba16d5ebd72a8b446f",
+                    "9752dc2228492466d7c2046354d5fdfd"
+                ]
+            }
+        }
+    ]
+  }
+}
+----
+
+<1>  The list of delegates who are allowed to forge on this node.
+
+Merge the forging config with the in <<create-a-custom-config-with-your-delegate-information,step 1.4>> created custom config to add the delegate information to the application configuration:
+
+[tabs]
+====
+Mainnet::
++
+--
+[source,bash]
+----
+TEMP_FILE=$( mktemp )
+jq --slurp '.[0] * .[1]' ~/lisk-core/config/mainnet/custom-config.json ./custom-forging.json >$TEMP_FILE
+mv $TEMP_FILE ~/lisk-core/config/mainnet/custom-config.json
+----
+--
+Testnet::
++
+--
+[source,bash]
+----
+TEMP_FILE=$( mktemp )
+jq --slurp '.[0] * .[1]' ~/lisk-core/config/testnet/custom-config.json ./custom-forging.json >$TEMP_FILE
+mv $TEMP_FILE ~/lisk-core/config/testnet/custom-config.json
+----
+--
+====
+
+
+== Migration steps
+
+//TODO: Add URL to snapshot height announcement
+
+=== Check the announced snapshot height
+
+Check the announced snapshot height on <WEBSITE>.
+
+The height is needed by `lisk-migrator` in the next step.
+A snapshot of the blockchain will be created at this particular height, which will then be used to create the genesis block for the new blockchain.
+
+=== Ensure Lisk Core 2.1.6 is fully synced with the network
+Check the current block height of your node directly in the terminal by running:
+
+[tabs]
+====
+Mainnet::
++
+--
+./home/lisk/lisk-main
+[source,bash]
+----
+$ bash lisk.sh status
+Lisk configured for mainnet
+[+] Lisk is running as PID: 24468
+Current Block Height:   14992772
+----
+--
+Testnet::
++
+--
+./home/lisk/lisk-test
+[source,bash]
+----
+$ bash lisk.sh status
+Lisk configured for testnet
+[+] Lisk is running as PID: 24751
+Current Block Height:  13279765
+----
+--
+====
+
+Compare the current height of your node to the network height in {url_wallet}[Lisk Desktop^], which is shown on the kbd:[Network] or kbd:[Blocks] pages.
+
+If both heights are equal, it is verified that your node is fully synched with the network.
+
+NOTE: To view the current height of the Lisk Testnet, use the network switcher of Lisk Desktop, which can be enabled in the settings.
+
+=== Run lisk migrator
+
+[IMPORTANT]
+====
+.When to start the migrator script?
+`lisk-migrator` can be started any time before the announced snapshot height.
+====
+
+If you have added `lisk-migrator` to the PATH as described in section <<setting-up-the-lisk-migrator>> you can start the migration script by running the following command in the terminal:
+
+[tabs]
+====
+Mainnet::
++
+--
+[source,bash]
+----
+lisk-migrator --snapshot-height ${snapshotHeight} --output ~/.lisk/lisk-core/config/mainnet/genesis_block.json --lisk-core-path ~/lisk-main
+----
+--
+Testnet::
++
+--
+[source,bash]
+----
+lisk-migrator --snapshot-height ${snapshotHeight} --output ~/.lisk/lisk-core/config/testnet/genesis_block.json --lisk-core-path ~/lisk-test
+----
+--
+====
+
+* `--snapshot-height`:
+The height on which the blockchain snapshot will be performed.
+The snapshot height will be announced separately.
+* `--output`:
+The absolute path to the directory, where the newly generated genesis block should be saved.
+* `--lisk-core-path`:
+The absolute path to the directory, where the Lisk Core 2.1.6 node is located.
+
+=== Wait until the network reaches the snapshot height
+
+Observe if `lisk-migrator` finishes successfully, (this takes about 30-60 minutes from the snapshot height).
+
+After the snapshot height is reached, delegates have approximately 2 hours time to start their Lisk Core 3.0.0 and enable forging, to ensure they will not miss any blocks after the hardfork.
+
+If the node is started at a later point in time, it will simply sync to the current network height.
+For delegates, this might result in them missing a block, for everyone else it will not have any impact.
+
+=== Stop Lisk Core 2.1.6
+
+After the `lisk-migrator` script has finished and the announced snapshot height has passed, there is no reason to continue running Lisk Core 2.1.6 and therefore it is recommended to stop it.
+
+First ensure, that Lisk Core will not start again by removing the existing cronjob:
+
+[source,bash]
+----
+crontab -e
+----
+
+Choose your favorite editor to open the `crontab` file and remove the following line:
+
+ @reboot /bin/bash /home/lisk/lisk-test/lisk.sh start > /home/lisk/lisk-test/cron.log 2>&1
+
+Save and close the `crontab` file again.
+
+Navigate into the root folder of your Lisk Core 2.1.6 installation and run the following command to stop the old Lisk Core version:
+
+[source,bash]
+----
+bash lisk.sh stop
+----
+
+Last but not least, remove the folder with Lisk Core 2.1.6, e.g. by executing:
+
+[tabs]
+====
+Mainnet::
++
+--
+[source,bash]
+----
+rm -r lisk-main
+----
+--
+Testnet::
++
+--
+[source,bash]
+----
+rm -r lisk-test
+----
+--
+====
+
+=== Start Lisk Core 3.0.0
+Use the Lisk Core CLI to start Lisk Core 3.0.0.
+
+Run the following command in the terminal and check the logs in the console to verify that Lisk Core starts successfully:
+
+[tabs]
+====
+Mainnet::
++
+--
+[source,bash]
+----
+lisk-core start --network mainnet --config=~/lisk-core/config/mainnet/custom-config.json
+----
+--
+Testnet::
++
+--
+[source,bash]
+----
+lisk-core start --network testnet --config=~/lisk-core/config/testnet/custom-config.json
+----
+--
+====
+
+Press kbd:[CTRL] + kbd:[C] to stop the process again.
+
+Install PM2 to run Lisk Core in the background:
+
+[source,bash]
+----
+npm i -g pm2
+----
+
+Create a pm2 config as shown in the example below:
+
+[tabs]
+====
+Mainnet::
++
+--
+.~/lisk-core/pm2.conf.json
+[source,json]
+----
+{
+  "name": "lisk-core",
+  "script": "lisk-core start",
+  "env": {
+    "LISK_NETWORK": "mainnet",
+    "LISK_CONFIG_FILE": "~/lisk-core/config/mainnet/custom-config.json"
+  }
+}
+----
+--
+Testnet::
++
+--
+.~/lisk-core/pm2.conf.json
+[source,json]
+----
+{
+  "name": "lisk-core",
+  "script": "lisk-core start",
+  "env": {
+    "LISK_NETWORK": "testnet",
+    "LISK_CONFIG_FILE": "~/lisk-core/config/testnet/custom-config.json"
+  }
+}
+----
+--
+====
+
+TIP: All available options for `scripts` and `env` can be found in `lisk-core start --help`.
+
+After creating the config, start it with the following command:
+
+.~/lisk-core/
+[source,bash]
+----
+pm2 start pm2.conf.json
+----
+
+This will start Lisk Core in the background.
+
+You can verify that the node is running correctly by executing the following command:
+
+[source,bash]
+----
+lisk-core node:info
+----
+
+This will return some general node information, for example as shown below:
+----
+{"version":"3.0.0-beta.5.5e1a7cf","networkVersion":"2.0","networkIdentifier":"01e47ba4e3e57981642150f4b45f64c2160c10bac9434339888210a4fa5df097","lastBlockID":"a98f7027ee16c8f8169ba676a72679dd8e6f56d83e93fec813b8f3041fb9c03d","height":670287,"finalizedHeight":670148,"syncing":false,"unconfirmedTransactions":0,"genesisConfig":{"blockTime":10,"communityIdentifier":"Lisk","maxPayloadLength":15360,"bftThreshold":68,"minFeePerByte":1000,"baseFees":[{"moduleID":5,"assetID":0,"baseFee":"1000000000"}],"rewards":{"milestones":["500000000","400000000","300000000","200000000","100000000"],"offset":2160,"distance":3000000},"minRemainingBalance":"5000000","activeDelegates":101,"standbyDelegates":2,"delegateListRoundOffset":2},"registeredModules":[{"id":2,"name":"token","actions":[],"events":[],"reducers":["token:credit","token:debit","token:getBalance","token:getMinRemainingBalance"],"transactionAssets":[{"id":0,"name":"transfer"}]},{"id":3,"name":"sequence","actions":[],"events":[],"reducers":[],"transactionAssets":[]},{"id":4,"name":"keys","actions":[],"events":[],"reducers":[],"transactionAssets":[{"id":0,"name":"registerMultisignatureGroup"}]},{"id":5,"name":"dpos","actions":["dpos:getAllDelegates","dpos:getUnlockings"],"events":[],"reducers":[],"transactionAssets":[{"id":0,"name":"registerDelegate"},{"id":1,"name":"voteDelegate"},{"id":2,"name":"unlockToken"},{"id":3,"name":"reportDelegateMisbehavior"}]},{"id":1000,"name":"legacyAccount","actions":["legacyAccount:getUnregisteredAccount"],"events":[],"reducers":[],"transactionAssets":[{"id":0,"name":"reclaimLSK"}]}]}
+----
+
+TIP: Use the `--pretty` flag to return the response in formatted JSON: `lisk-core node:info --pretty`.
+
+=== Check new account address
+
+It is necessary to know your new address to enable forging for your delegate in the new network.
+
+Use the following command to view your new account address.
+You will be prompted for your passphrase from which the other account details will be generated.
+
+[source,bash]
+----
+lisk-core account:show
+----
+
+After running the command, you will be prompted for your delegate passphrase.
+
+----
+? Please enter passphrase:  [hidden]
+? Please re-enter passphrase:  [hidden]
+----
+
+This will return an object including `privateKey`, `publicKey`, `address` and `binaryAddress`.
+
+The value under `binaryAddress` is used to self-vote for the delegate account and to enable forging in the next steps.
+
+=== Self-voting
+
+In the new DPoS rules, delegates need to self-vote with a significant amount of tokens to be able to reach forging positions.
+
+For more information how self-voting affects the vote weight, see xref:{url_sdk_protocol_voteweight}[Delegates, voting and delegate weight (Lisk Protocol)].
+
+Use the Lisk Core CLI to cast the self-vote with the desired amount of tokens.
+
+[source,bash]
+----
+$ lisk-core transaction:create 5 1 100000000
+? Please enter: votes(delegateAddress, amount):  89aa5fc8861d392f60662f76a379cc348fe97d28, 148000000000
+? Want to enter another votes(delegateAddress, amount) No
+? Please enter passphrase:  [hidden]
+? Please re-enter passphrase:  [hidden]
+{"transaction":"0805100118012080c2d72f2a2024350a05e078b181fa8f3c273ca9882a8f5ed6efbaf3d1537665f9480635273f321f0a1d0a1489aa5fc8861d392f60662f76a379cc348fe97d281080a0e6d7ce083a403aef0012b05f3d962e3bc4b1ba70d6cc4fea783e24c02c36bc644e283ef2dd7618ec072594505c7ab8ce2a1e22dda5e90c51be79d06ac4871daf8430ff6a330b"}
+$ lisk-core transaction:send 0805100118012080c2d72f2a2024350a05e078b181fa8f3c273ca9882a8f5ed6efbaf3d1537665f9480635273f321f0a1d0a1489aa5fc8861d392f60662f76a379cc348fe97d281080a0e6d7ce083a403aef0012b05f3d962e3bc4b1ba70d6cc4fea783e24c02c36bc644e283ef2dd7618ec072594505c7ab8ce2a1e22dda5e90c51be79d06ac4871daf8430ff6a330b
+Transaction with id: '6a6121adf6a73a857bef92eaec9c29545f53c9196a16faa1eafdf58012f5a2e5' received by node.
+----
+
+=== Enable forging
+
+The final step is to enable forging on the node for your delegate.
+
+Again, this can be done by using the Lisk Core CLI.
+Just use it with your own delegate address.
+
+[source,bash]
+----
+lisk-core forging:enable 89aa5fc8861d392f60662f76a379cc348fe97d28 0 0 0 <1>
+----
+
+<1> Replace the address with your delegate address in hexadecimal representation.
+
+The `0 0 0` stands for the three variables `HEIGHT`, `MAXHEIGHTPREVIOUSLYFORGED`, `MAXHEIGHTPREVOTED`.
+These three variables need to be set to `0` for every delegate who starts forging for the first time in the network, which will be the case for all delegates participating in the migration.
+
+[TIP]
+
+====
+When a delegate has already forged in the network, it is necessary to check which values to use for `HEIGHT`, `MAXHEIGHTPREVIOUSLYFORGED`, and `MAXHEIGHTPREVOTED`.
+
+These values can be checked by running the following command:
+
+[source,bash]
+----
+lisk-core forging:status
+[{"address":"89aa5fc8861d392f60662f76a379cc348fe97d28","forging":true,"height":670237,"maxHeightPrevoted":670159,"maxHeightPreviouslyForged":670187}]
+----
+====

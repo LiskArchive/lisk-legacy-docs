@@ -662,7 +662,7 @@ const newDelegate = (name) =&gt; {
   const cred = newCredentials();
   credentials.push(cred);
     const delegate = {
-        address: cred.address,
+        address: Buffer.from(cred.binaryAddress, 'hex'),
         token: { balance: BigInt(100000000) },
         dpos: { delegate: { username: name } }
     };
@@ -695,7 +695,7 @@ const delegates = generateDelegates(5);</code></pre>
 <p>The <code>accounts</code> property is a list of accounts that always needs to include the accounts for the genesis delegates, that were created in the previous step.</p>
 </div>
 <div class="paragraph">
-<p>Beside this, any other accounts can be added here, and accout properties like balance can be configured as desired.</p>
+<p>Beside this, any other accounts can be added here, and account properties like <code>balance</code> can be configured as desired.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -705,7 +705,7 @@ const newAccount = () =&gt; {
   const cred = newCredentials();
   credentials.push(cred);
   const account = {
-    address: cred.address,
+    address: Buffer.from(cred.binaryAddress, 'hex'),
     token: { balance: BigInt(25000000000) }
   };
   return account;
@@ -729,6 +729,28 @@ const accounts = [...delegates, ...genesisAccounts];</code></pre>
 <div class="sect1">
 <h2 id="creating-the-genesis-block"><a class="anchor" href="#creating-the-genesis-block"></a>Creating the genesis block</h2>
 <div class="sectionbody">
+<div class="paragraph">
+<p>As final step, use the function <code>createGenesisBlock()</code> of the genesis library to generate the genesis block.</p>
+</div>
+<div class="paragraph">
+<p>The parameters for the genesis block are all packed into one object.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>initDelegates</code>(Array): List of addresses of the genesis delegates in <code>Buffer</code> format.</p>
+</li>
+<li>
+<p><code>accounts</code>(Array): List of genesis accounts.</p>
+</li>
+<li>
+<p><code>accountAssetSchemas</code>(Array): The account schemas of all modules which are registered with thee application.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>This object is provided as parameter for the <code>createGenesisBlock()</code> function, which will then use them to generate the dedicated genesis block.</p>
+</div>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const genesisBlockParams = {
@@ -748,8 +770,129 @@ console.log(genesisBlock);</code></pre>
 <h2 id="complete-example"><a class="anchor" href="#complete-example"></a>Complete example</h2>
 <div class="sectionbody">
 <div class="listingblock">
+<div class="title">Full example: How to generate a genesis block</div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js"></code></pre>
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { TokenModule, DPoSModule, KeysModule, SequenceModule, genesis, passphrase, cryptography, configDevnet } = require('lisk-sdk');
+const { MyModule } = require('./my-module');
+
+// Create the accountAssetSchemas
+const token = new TokenModule(configDevnet.genesisConfig).accountSchema;
+const dpos = new DPoSModule(configDevnet.genesisConfig).accountSchema;
+const keys = new KeysModule(configDevnet.genesisConfig).accountSchema;
+const sequence = new SequenceModule(configDevnet.genesisConfig).accountSchema;
+const myModule = new MyModule().accountSchema;
+
+// Add fieldNumber starting from 2. Field number 1 is assigned to address of the account
+token.fieldNumber = 2;
+dpos.fieldNumber = 3;
+keys.fieldNumber = 4;
+sequence.fieldNumber = 5;
+myModule.fieldNumber = 6;
+
+const accountAssetSchemas = {
+  token,
+  dpos,
+  keys,
+  sequence,
+  myModule
+};
+
+// Generating the genesis delegates
+
+const newCredentials = () =&gt; {
+  const pass = passphrase.Mnemonic.generateMnemonic();
+  const keys = cryptography.getPrivateAndPublicKeyFromPassphrase(pass);
+  const credentials = {
+    address: cryptography.getBase32AddressFromPassphrase(pass),
+    binaryAddress: cryptography.getAddressFromPassphrase(pass).toString("hex"),
+    passphrase: pass,
+    publicKey: keys.publicKey.toString("hex"),
+    privateKey: keys.privateKey.toString("hex")
+  };
+  return credentials;
+};
+
+const credentials = [];
+
+
+const newDelegate = (name) =&gt; {
+  const cred = newCredentials();
+  credentials.push(cred);
+  const delegate = {
+    address: Buffer.from(cred.binaryAddress, 'hex'),
+    token: { balance: BigInt(100000000) },
+    dpos: { delegate: { username: name } }
+  };
+  return delegate;
+};
+
+const generateDelegates = (amount) =&gt; {
+  const delegates = [];
+  const name = 'genesisDelegate';
+  for (let i = 1; i &lt;= amount; i++) {
+    let nameNumber = name + i;
+    delegates.push(newDelegate(nameNumber))
+  }
+  return delegates;
+};
+
+const delegates = generateDelegates(5);
+
+// Creating the genesis account list
+
+const newAccount = () =&gt; {
+  const cred = newCredentials();
+  credentials.push(cred);
+  const account = {
+    address: Buffer.from(cred.binaryAddress, 'hex'),
+    token: { balance: BigInt(25000000000) }
+  };
+  return account;
+};
+
+const generateAccounts = (amount) =&gt; {
+  const accounts = [];
+  for (let i = 1; i &lt;= amount; i++) {
+    accounts.push(newAccount())
+  }
+  return accounts;
+};
+
+const genesisAccounts = generateAccounts(3);
+
+const accounts = [...delegates, ...genesisAccounts];
+
+// Creating the genesis block
+
+const genesisBlockParams = {
+  initDelegates: delegates.map(a =&gt; a.address),
+  accounts,
+  accountAssetSchemas,
+};
+
+const genesisBlock = genesis.createGenesisBlock(genesisBlockParams);
+
+console.log(genesisBlock);</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Example output</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">{
+  header: {
+    generatorPublicKey: &lt;Buffer &gt;,
+    height: 0,
+    previousBlockID: &lt;Buffer &gt;,
+    reward: 0n,
+    signature: &lt;Buffer &gt;,
+    timestamp: 1620398241,
+    transactionRoot: &lt;Buffer e3 b0 c4 42 98 fc 1c 14 9a fb f4 c8 99 6f b9 24 27 ae 41 e4 64 9b 93 4c a4 95 99 1b 78 52 b8 55&gt;,
+    version: 0,
+    asset: { initRounds: 3, initDelegates: [Array], accounts: [Array] },
+    id: &lt;Buffer a8 eb 2c da 7b 2a 8f 0e 84 24 1e 78 af 78 4e c9 0b ce d0 39 d0 b4 98 87 95 a8 5d 63 83 be c5 a0&gt;
+  },
+  payload: []
+}</code></pre>
 </div>
 </div>
 </div>
@@ -760,8 +903,43 @@ console.log(genesisBlock);</code></pre>
 <div class="paragraph">
 <p>Beside the three required properties <code>initDelegates</code>, <code>accounts</code>, and <code>accountAssetSchemas</code>, it is possible to set the following optional propeerties for the genesis block:</p>
 </div>
-<div class="paragraph">
-<p>*</p>
+<div class="ulist">
+<ul>
+<li>
+<p><code>initRounds</code>(number): Number of rounds for bootstrap period, default is 3.</p>
+</li>
+<li>
+<p><code>height</code>(number): Height of the genesis block.</p>
+</li>
+<li>
+<p><code>timestamp</code>(number): Timestamp of the genesis block.</p>
+</li>
+<li>
+<p><code>previousBlockID</code>(Buffer): Previous block ID.
+Can be used for example in case of regenesis.</p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="title">Example: Generating a genesis block with all optional properties included</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const genesisBlockParams = {
+	initDelegates: delegates.map(a =&gt; a.address),
+	accounts,
+	accountAssetSchemas,
+	initRounds: 200,
+	height: 123,
+	timestamp: 1520668243,
+	previousBlockID: Buffer.from(
+		'454690a1c37838326007519a7ce1c8a6a495df50898f1ebd69d22fbcedf9689a',
+		'hex',
+	)
+};
+
+const genesisBlock = genesis.createGenesisBlock(genesisBlockParams);
+
+console.log(genesisBlock);</code></pre>
+</div>
 </div>
 </div>
 </div>

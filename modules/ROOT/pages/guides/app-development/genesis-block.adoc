@@ -151,7 +151,7 @@ const newDelegate = (name) => {
   const cred = newCredentials();
   credentials.push(cred);
     const delegate = {
-        address: cred.address,
+        address: Buffer.from(cred.binaryAddress, 'hex'),
         token: { balance: BigInt(100000000) },
         dpos: { delegate: { username: name } }
     };
@@ -177,7 +177,7 @@ All accounts that exist already in the beginning of the network are listed under
 
 The `accounts` property is a list of accounts that always needs to include the accounts for the genesis delegates, that were created in the previous step.
 
-Beside this, any other accounts can be added here, and accout properties like balance can be configured as desired.
+Beside this, any other accounts can be added here, and account properties like `balance` can be configured as desired.
 
 [source,js]
 ----
@@ -187,7 +187,7 @@ const newAccount = () => {
   const cred = newCredentials();
   credentials.push(cred);
   const account = {
-    address: cred.address,
+    address: Buffer.from(cred.binaryAddress, 'hex'),
     token: { balance: BigInt(25000000000) }
   };
   return account;
@@ -208,6 +208,16 @@ const accounts = [...delegates, ...genesisAccounts];
 
 == Creating the genesis block
 
+As final step, use the function `createGenesisBlock()` of the genesis library to generate the genesis block.
+
+The parameters for the genesis block are all packed into one object.
+
+* `initDelegates`(Array): List of addresses of the genesis delegates in `Buffer` format.
+* `accounts`(Array): List of genesis accounts.
+* `accountAssetSchemas`(Array): The account schemas of all modules which are registered with thee application.
+
+This object is provided as parameter for the `createGenesisBlock()` function, which will then use them to generate the dedicated genesis block.
+
 [source,js]
 ----
 const genesisBlockParams = {
@@ -223,13 +233,160 @@ console.log(genesisBlock);
 
 == Complete example
 
+.Full example: How to generate a genesis block
 [source,js]
 ----
+const { TokenModule, DPoSModule, KeysModule, SequenceModule, genesis, passphrase, cryptography, configDevnet } = require('lisk-sdk');
+const { MyModule } = require('./my-module');
+
+// Create the accountAssetSchemas
+const token = new TokenModule(configDevnet.genesisConfig).accountSchema;
+const dpos = new DPoSModule(configDevnet.genesisConfig).accountSchema;
+const keys = new KeysModule(configDevnet.genesisConfig).accountSchema;
+const sequence = new SequenceModule(configDevnet.genesisConfig).accountSchema;
+const myModule = new MyModule().accountSchema;
+
+// Add fieldNumber starting from 2. Field number 1 is assigned to address of the account
+token.fieldNumber = 2;
+dpos.fieldNumber = 3;
+keys.fieldNumber = 4;
+sequence.fieldNumber = 5;
+myModule.fieldNumber = 6;
+
+const accountAssetSchemas = {
+  token,
+  dpos,
+  keys,
+  sequence,
+  myModule
+};
+
+// Generating the genesis delegates
+
+const newCredentials = () => {
+  const pass = passphrase.Mnemonic.generateMnemonic();
+  const keys = cryptography.getPrivateAndPublicKeyFromPassphrase(pass);
+  const credentials = {
+    address: cryptography.getBase32AddressFromPassphrase(pass),
+    binaryAddress: cryptography.getAddressFromPassphrase(pass).toString("hex"),
+    passphrase: pass,
+    publicKey: keys.publicKey.toString("hex"),
+    privateKey: keys.privateKey.toString("hex")
+  };
+  return credentials;
+};
+
+const credentials = [];
+
+
+const newDelegate = (name) => {
+  const cred = newCredentials();
+  credentials.push(cred);
+  const delegate = {
+    address: Buffer.from(cred.binaryAddress, 'hex'),
+    token: { balance: BigInt(100000000) },
+    dpos: { delegate: { username: name } }
+  };
+  return delegate;
+};
+
+const generateDelegates = (amount) => {
+  const delegates = [];
+  const name = 'genesisDelegate';
+  for (let i = 1; i <= amount; i++) {
+    let nameNumber = name + i;
+    delegates.push(newDelegate(nameNumber))
+  }
+  return delegates;
+};
+
+const delegates = generateDelegates(5);
+
+// Creating the genesis account list
+
+const newAccount = () => {
+  const cred = newCredentials();
+  credentials.push(cred);
+  const account = {
+    address: Buffer.from(cred.binaryAddress, 'hex'),
+    token: { balance: BigInt(25000000000) }
+  };
+  return account;
+};
+
+const generateAccounts = (amount) => {
+  const accounts = [];
+  for (let i = 1; i <= amount; i++) {
+    accounts.push(newAccount())
+  }
+  return accounts;
+};
+
+const genesisAccounts = generateAccounts(3);
+
+const accounts = [...delegates, ...genesisAccounts];
+
+// Creating the genesis block
+
+const genesisBlockParams = {
+  initDelegates: delegates.map(a => a.address),
+  accounts,
+  accountAssetSchemas,
+};
+
+const genesisBlock = genesis.createGenesisBlock(genesisBlockParams);
+
+console.log(genesisBlock);
+
 ----
 
+.Example output
+[source,js]
+----
+{
+  header: {
+    generatorPublicKey: <Buffer >,
+    height: 0,
+    previousBlockID: <Buffer >,
+    reward: 0n,
+    signature: <Buffer >,
+    timestamp: 1620398241,
+    transactionRoot: <Buffer e3 b0 c4 42 98 fc 1c 14 9a fb f4 c8 99 6f b9 24 27 ae 41 e4 64 9b 93 4c a4 95 99 1b 78 52 b8 55>,
+    version: 0,
+    asset: { initRounds: 3, initDelegates: [Array], accounts: [Array] },
+    id: <Buffer a8 eb 2c da 7b 2a 8f 0e 84 24 1e 78 af 78 4e c9 0b ce d0 39 d0 b4 98 87 95 a8 5d 63 83 be c5 a0>
+  },
+  payload: []
+}
+----
 
 == Optional parameters for the genesis block
 
 Beside the three required properties `initDelegates`, `accounts`, and `accountAssetSchemas`, it is possible to set the following optional propeerties for the genesis block:
 
-* 
+* `initRounds`(number): Number of rounds for bootstrap period, default is 3.
+* `height`(number): Height of the genesis block.
+* `timestamp`(number): Timestamp of the genesis block.
+* `previousBlockID`(Buffer): Previous block ID.
+Can be used for example in case of regenesis.
+
+.Example: Generating a genesis block with all optional properties included
+[source,js]
+----
+const genesisBlockParams = {
+	initDelegates: delegates.map(a => a.address),
+	accounts,
+	accountAssetSchemas,
+	initRounds: 200,
+	height: 123,
+	timestamp: 1520668243,
+	previousBlockID: Buffer.from(
+		'454690a1c37838326007519a7ce1c8a6a495df50898f1ebd69d22fbcedf9689a',
+		'hex',
+	)
+};
+
+const genesisBlock = genesis.createGenesisBlock(genesisBlockParams);
+
+console.log(genesisBlock);
+----

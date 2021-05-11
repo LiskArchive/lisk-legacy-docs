@@ -1,5 +1,5 @@
 = Testnet and Mainnet v3 migration guide
-:toc:
+:toc: preamble
 :experimental:
 :idprefix:
 :idseparator: -
@@ -13,7 +13,11 @@
 :url_core_2_update: master@lisk-core::update/application.adoc
 :url_sdk_protocol_voteweight: master@lisk-sdk:protocol:consensus-algorithm.adoc#voting_and_weight
 
-How to migrate a Lisk Core 2.1.6 node to Lisk Core 3.0.0.
+This guide explains how to migrate a Lisk Core 2.1.6 node to Lisk Core 3.0.0 using the Lisk migrator.
+
+The Lisk migrator CLI will generate a new genesis block for Lisk Core 3.0.0.
+The new genesis block is created based on a snapshot of the old blockchain (running on Lisk Core 2.1.6) at a given height.
+The Lisk migrator will not install Lisk Core 3.0.0, nor will it uninstall Lisk Core 2.1.6, these are steps that need to be done manually as described below.
 
 [IMPORTANT]
 
@@ -28,13 +32,21 @@ In this case, the following steps 1.4, 2.7, 2.8, and 2.9 in this guide can be sk
 :sectnumlevels: 5
 == Preparation
 
+.System requirements
 [NOTE]
 
 ====
-The following hardware setup is recommended for running the migration script:
+The following system requirements are recommended for running the migration script:
 
+Memory::
 * Machines with a minimum of 4 GB RAM for the Mainnet
 * Machines with a minimum of 2 GB RAM for the Testnet
+
+OS::
+* Ubuntu 20.04
+* Ubuntu 18.04
+
+If you have Node.js installed ensure to use 12.22.1.
 ====
 
 === Preparing Lisk Core 2.1.6
@@ -56,7 +68,7 @@ Download the migration script by running the following command in the terminal:
 [subs=attributes+]
 [source,bash]
 ----
-curl -o lisk-migrator.tar.gz {url_lisk_migrator}
+curl -o {lisk-migrator} {url_lisk_migrator}
 ----
 
 ==== Download checksum and verify
@@ -67,23 +79,25 @@ Download the checksum and verify the successful download of lisk-migrator.
 [subs=attributes+]
 [source,bash]
 ----
-curl -o lisk-migrator.tar.gz.SHA256 {url_lisk_migrator}.SHA256
+curl -o {lisk-migrator}.SHA256 {url_lisk_migrator}.SHA256
 ----
 
 {counter:seq3}) Run the following command in the terminal and ensure the output is `sha256sum: <file name>: OK`
 
+[subs=attributes+]
 [source,bash]
 ----
-sha256sum -c lisk-migrator.tar.gz.SHA256
+sha256sum -c {lisk-migrator}.SHA256
 ----
 
 ==== Extract and add to PATH
 
 Unpack it, and then add it to the system path, in order to use it in the terminal:
 
+[subs=attributes+]
 [source,bash]
 ----
-tar -xf ./lisk-migrator.tar.gz
+tar -xf ./{lisk-migrator}
 ----
 
 Make the `lisk-migrator` command available in the PATH, e.g. by executing the following command:
@@ -286,6 +300,44 @@ The snapshot height will be announced separately.
 The absolute path to the directory, where the newly generated genesis block should be saved.
 * `--lisk-core-path`:
 The absolute path to the directory, where the Lisk Core 2.1.6 node is located.
+
+[TIP]
+
+====
+It is possible to use tools like `screen` to run the Lisk migrator in the background.
+
+With `screen` you can detach the current terminal window into the background:
+
+.Example (Mainnet)
+[source,bash]
+----
+screen -dmSL migration lisk-migrator --snapshot-height ${snapshotHeight} --output ~/.lisk/lisk-core/config/mainnet/genesis_block.json --lisk-core-path ~/lisk-main
+----
+
+And then short before the migration you may reattach to it to check if everything is working fine.
+
+First check the name of the detached screen:
+
+[source,bash]
+----
+screen -ls
+----
+
+This returns a list of all detached screens with `screen`:
+
+----
+There is a screen on:
+	1842.migration	(05/07/2021 12:35:59 PM)	(Detached)
+1 Socket in /run/screen/S-lisk.
+----
+
+Use `screen -r` and the name of the detached screen you want to connect to
+
+[source,bash]
+----
+screen -r 1842.migration
+----
+====
 
 === Wait until the network reaches the snapshot height
 

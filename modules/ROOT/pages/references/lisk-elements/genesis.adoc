@@ -3,7 +3,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 :description: Technical references regarding the genesis package of Lisk Elements.
 :toc:
 
-@liskhq/lisk-genesis is a package which contains genesis block creation functions according to the Lisk protocol.
+`@liskhq/lisk-genesis` is a package which contains genesis block creation functions according to the Lisk protocol.
 
 == Installation
 
@@ -25,35 +25,112 @@ npm update @liskhq/lisk-genesis
 
 [source,js]
 ----
-const accountAssetSchemas = { [moduleName: string]: AccountSchema };
+const { TokenModule, DPoSModule, genesis, configDevnet } = require('lisk-sdk');
+
+// Get account schemas of the modules which are registered with the application
+const token = new TokenModule(configDevnet.genesisConfig).accountSchema;
+const dpos = new DPoSModule(configDevnet.genesisConfig).accountSchema;
+// Add fieldNumber starting from 2. Field number 1 is assigned to address of the account
+token.fieldNumber = 2;
+dpos.fieldNumber = 3;
+
+// Pack all account schemas in one big object
+const accountAssetSchemas = {
+  token,
+  dpos
+};
+
+const delegates = [
+    {
+        address: Buffer.from('25d4c1ed2da24ba856b894c209188f70e0caab6e', 'hex'),
+		token: { balance: BigInt(2874239947) },
+		dpos: { delegate: { username: 'ef374a2e8fb9934ad1db0fd5346eb7' } }
+    }
+];
+
+const accounts = [
+    {
+        address: Buffer.from('dedfbd4c6a1ad1ef0d7a95cd6907114548d8c6d8', 'hex'),
+        token: { balance: BigInt(653021139) }
+    }
+];
+
 const genesisBlockParams = {
-	initRounds: 5,
-	height: 5,
-	timestamp: 1591873718,
-	previousBlockID: Buffer.from(
-		'454690a1c37838326007519a7ce1c8a6a495df50898f1ebd69d22fbcedf9689a',
-		'hex',
-	),
-	initDelegates: validDelegateAccounts.map(a => a.address),
-	accounts: [...validAccounts, ...validDelegateAccounts],
+	initDelegates: delegates.map(a => a.address),
+	accounts: [...accounts, ...delegates],
 	accountAssetSchemas,
-}
+};
+
 const genesisBlock = genesis.createGenesisBlock(genesisBlockParams);
-const genesisBlockJSON = genesis.getGenesisBlockJSON({genesisBlock, accountAssetSchemas})
-const genesisBlockSchema = genesis.getGenesisBlockSchema(accountAssetSchemas)
+
+console.log(genesisBlock);
 ----
 
-== Interface
+== Methods
+
+=== createGenesisBlock
+
+Generates a genesis block based on the provided block parameters.
+
+==== Syntax
 
 [source,js]
 ----
-interface Genesis {
-  public createGenesisBlock: (params: GenesisBlockParams) => GenesisBlock,
-  public getGenesisBlockJSON: (params: GenesisBlockJSONParams) => Record<string, unknown>,
-  public getGenesisBlockSchema: (accountSchema: accountAssetSchemas) => Schema,
-  GenesisBlockParams,
-  GenesisBlockJSONParams,
-  accountAssetSchemas,
-  GenesisBlockHeaderWithoutId
+createGenesisBlock(params)
+----
+
+==== Parameters
+
+* `params`(object): The block parameters that shall be used to generate the genesis block.
+
+The following parameters are available:
+
+`accountAssetSchemas`(object)::
+Required. The genesis block needs to contain all account asset schemas for all modules which are registered with the respective blockchain application.
+The different account asset schemas are all grouped together in one big object and added as `accountAssetSchemas` to the genesis block params.
+`accountAssetSchemas` is one of the most important parameters for generating a valid genesis block, so make sure it includes all required account asset schemas.
+
+`accounts`(array)::
+Required. List of initial accounts in the network.
+Minimum required is `address`, but can have other properties like `balance`.
+Addresses are expected to be in `Buffer` format.
+
+`initDelegates`(array)::
+Required. List of initial delegate addresses used during the bootstrap period to forge blocks.
+Addresses are expected to be in `Buffer` format.
+
+`initRounds?`(number)::
+Optional. Number of rounds for bootstrap period, default is 3.
+
+`height?`(number)::
+Optional. Height of the genesis block.
+
+`timestamp?`(number)::
+Optional. Timestamp of the genesis block.
+
+`previousBlockID?`(Buffer)::
+Optional. Previous block ID.
+Can be used for example in case of regenesis.
+
+==== Return value
+
+The generates genesis block object.
+
+[source,json]
+----
+{
+  header: {
+    generatorPublicKey: <Buffer >,
+    height: 0,
+    previousBlockID: <Buffer >,
+    reward: 0n,
+    signature: <Buffer >,
+    timestamp: 1619688502,
+    transactionRoot: <Buffer e3 b0 c4 42 98 fc 1c 14 9a fb f4 c8 99 6f b9 24 27 ae 41 e4 64 9b 93 4c a4 95 99 1b 78 52 b8 55>,
+    version: 0,
+    asset: { initRounds: 3, initDelegates: [Array], accounts: [Array] },
+    id: <Buffer 3d 2a f6 c2 32 7b 63 65 21 06 4b 9e a6 3e af 21 c5 99 18 88 4d 3f 82 11 42 d9 5d 65 08 d8 a4 85>
+  },
+  payload: []
 }
 ----

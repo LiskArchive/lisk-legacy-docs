@@ -1,6 +1,8 @@
 = Monitor plugin
 // Settings
 :toc:
+:idprefix:
+:idseparator: -
 // External URLs
 :url_prometheus: https://prometheus.io/
 
@@ -15,66 +17,26 @@
 The monitor plugin offers {url_prometheus}[Prometheus] endpoints, which are reachable under the endpoint `/api/prometheus/metrics`.
 ====
 
-[cols=",",options="header",stripes="hover"]
+[cols=",",stripes="hover"]
 |===
-|Name
-|Property
-
 |Alias
 |`monitor`
 
 |Actions
-|`getTransactionStats`, `getBlockStats`, `getNetworkStats`, `getForkStats`
+a|
+* <<monitorgetblockstats>>
+* <<monitorgettransactionstats>>
+* <<monitorgetnetworkstats>>
+* <<monitorgetforkstats>>
 
 |Events
 |none
 
 |===
 
-== Default configuration
-
-.Forger options in the configuration
-[source,js]
-----
-{
-  //[...]
-  plugins: {
-    monitor: { <1>
-		port: 4003, <2>
-		whiteList: ['127.0.0.1'], <3>
-		cors: { <4>
-			origin: '*', <5>
-			methods: ['GET', 'POST', 'PUT'], <6>
-		},
-		limits: { <7>
-			max: 0, <8>
-			delayMs: 0, <9>
-			delayAfter: 0, <10>
-			windowMs: 60000, <11>
-			headersTimeout: 5000, <12>
-			serverSetTimeout: 20000, <13>
-		},
-	},
-  }
-}
-----
-
-<1> `monitor`: Contains options for the monitor plugin.
-<2> `port`: HTTP port which the monitor plugin listens on.
-<3> `whiteList`: This parameter allows connections to the monitor plugin by IP.
-<4> `cors`: Contain options for cross-origin ressource sharing xref:{url_cors_glossary}[(CORS)].
-<5> `origin`: Defines the domains that the resource can be accessed by in a cross-site manner.
-Defaults to all domains.
-<6> `methods`(optional): Defines the allowed methods for CORS.
-<7> `limits`: Contains options about time limits.
-<8> `max`: Maximum amount of connections.
-<9> `delayMs`: Minimum delay between API calls in ms.
-<10> `delayAfter`: Minimum delay after an API call in ms.
-<11> `windowMs`: Minimum delay between API calls from the same window.
-<12> `headersTimeout`: Indicates the minimum amount of time an idle connection has to be kept opened, (in seconds).
-<13> `serverSetTimeout`: Time to wait for a response from the server before timing out.
-
 == Registering the plugin
+
+How to register the monitor plugin with the blockchain application.
 
 [source,js]
 ----
@@ -93,9 +55,69 @@ app
   });
 ----
 
+== Default configuration
+
+The monitor plugin can be configured in the configuration of the blockchain application under `plugins.monitor`.
+
+NOTE: The application will use the default values, in case no plugin configuration is provdided.
+
+.Monitor options in the configuration
+[source,js]
+----
+const { Application, HTTPAPIPlugin, genesisBlockDevnet, configDevnet } = require('lisk-sdk');
+
+const appConfig = utils.objects.mergeDeep({}, configDevnet, {
+  plugins: {
+    monitor: { <1>
+		port: 4003, <2>
+		whiteList: ['127.0.0.1'], <3>
+		cors: { <4>
+			origin: '*', <5>
+			methods: ['GET', 'POST', 'PUT'], <6>
+		},
+		limits: { <7>
+			max: 0, <8>
+			delayMs: 0, <9>
+			delayAfter: 0, <10>
+			windowMs: 60000, <11>
+			headersTimeout: 5000, <12>
+			serverSetTimeout: 20000, <13>
+		},
+	},
+  }
+});
+
+const app = Application.defaultApplication(genesisBlockDevnet, appConfig);
+
+app.registerPlugin(HTTPAPIPlugin);
+
+app
+  .run()
+  .then(() => app.logger.info('App started...'))
+  .catch(error => {
+    console.error('Faced error in application', error);
+    process.exit(1);
+  });
+----
+
+<1> `monitor`: Contains options for the monitor plugin.
+<2> `port`: HTTP port which the monitor plugin listens on.
+<3> `whiteList`: This parameter allows connections to the monitor plugin by IP.
+<4> `cors`: Contain options for cross-origin ressource sharing xref:{url_cors_glossary}[(CORS)].
+<5> `origin`: Defines the domains that the resource can be accessed by in a cross-site manner.
+Defaults to all domains.
+<6> `methods`(optional): Defines the allowed methods for CORS.
+<7> `limits`: Contains options about time limits.
+<8> `max`: Maximum amount of connections.
+<9> `delayMs`: Minimum delay between API calls in ms.
+<10> `delayAfter`: Minimum delay after an API call in ms.
+<11> `windowMs`: Minimum delay between API calls from the same window.
+<12> `headersTimeout`: Indicates the minimum amount of time an idle connection has to be kept opened, (in seconds).
+<13> `serverSetTimeout`: Time to wait for a response from the server before timing out.
+
 == Actions
 
-=== getBlockStats
+=== monitor:getBlockStats
 Returns statistics about the blocks that occurred in the network so far.
 
 ==== Input
@@ -111,7 +133,7 @@ none
 }
 ----
 
-=== getForkStats
+=== monitor:getForkStats
 Returns statistics about the forks that occurred in the network so far.
 
 ==== Input
@@ -126,7 +148,7 @@ none
 }
 ----
 
-=== getNetworkStats
+=== monitor:getNetworkStats
 Returns various statistics about the network the node is connected to.
 
 ==== Input
@@ -167,7 +189,7 @@ none
 }
 ----
 
-=== getTransactionStats
+=== monitor:getTransactionStats
 Returns various statistics about transactions in the network.
 
 ==== Input

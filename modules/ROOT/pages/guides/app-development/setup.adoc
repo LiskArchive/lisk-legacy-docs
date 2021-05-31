@@ -5,7 +5,9 @@ Mona Bärenfänger <mona@lightcurve.io>
 :idprefix:
 :idseparator: -
 // Project URLs
+:url_modules_registration: architecture/on-chain-architecture.adoc#how-to-add-a-module-to-the-application
 :url_guide_config: guides/app-development/configuration.adoc
+:url_guide_module: guides/app-development/module.adoc
 
 How to create a new blockchain application with the Lisk SDK.
 
@@ -136,14 +138,6 @@ To run the application CLI, run the following command in the root folder of the 
 ./bin/run
 ----
 
-For convenient usage of the application commands, assign an alias to the CLI command:
-
-[source,bash]
-----
-alias newApp="./bin/run"
-newApp
-----
-
 Running the CLI command without any arguments will display the general command reference:
 
 .Available commands
@@ -175,6 +169,20 @@ COMMANDS
   help          display help for newApp
   start         Start Blockchain Node.
 ----
+
+[TIP]
+
+====
+For convenient usage of the application commands, assign an alias to the CLI command:
+
+.Example
+[source,bash]
+----
+alias newApp="./bin/run"
+newApp
+----
+====
+
 
 === Starting the application
 
@@ -219,7 +227,7 @@ Use the following command to start the blockchain application.
 
 [source,bash]
 ----
-newApp start
+./bin/run start
 ----
 
 The `start` command offers various options, allowing to further configure the application.
@@ -229,11 +237,11 @@ See the full list of available options in the reference below.
 
 [source,bash]
 ----
-$ newApp start --help
+$ ./bin/run start --help
 Start Blockchain Node.
 
 USAGE
-  $ test510 start
+  $ newApp start
 
 OPTIONS
   -c, --config=config                                    File path to a custom config. Environment variable "LISK_CONFIG_FILE" can
@@ -326,269 +334,10 @@ To do this, you need to register additional modules and/or plugins with your app
 
 Either import external modules and plugins, or create completely new modules and plugins with the Lisk SDK.
 
+Find more information on the following pages:
 
-=== Generating skeletons for modules
-
-Use the following command to generate a skeleton for a new module:
-
-[source,bash]
-----
-lisk generate:module hey 1001
-----
-
-. 1st parameter (`hey`): The name of the module.
-. 2nd parameter (`1001`): The ID of the module.
-
-.Output
-----
-Creating module skeleton with module name "hey" and module ID "1001"
-Using template "lisk-ts"
-Generating module skeleton.
-Registering module...
-identical .liskrc.json
-   create src/app/modules/hey/hey_module.ts
-   create test/unit/modules/hey/hey_module.spec.ts
-
-No change to package.json was detected. No package manager install will be executed.
-----
-
-.The skeleton for the new module
-[source,typescript]
-----
-import { BaseModule, AfterBlockApplyContext, TransactionApplyContext, BeforeBlockApplyContext, AfterGenesisBlockApplyContext, GenesisConfig } from 'lisk-sdk';
-
-export class HeyModule extends BaseModule {
-    public actions = {
-        // Example below
-        // getBalance: async (params) => this._dataAccess.account.get(params.address).token.balance,
-        // getBlockByID: async (params) => this._dataAccess.blocks.get(params.id),
-    };
-    public reducers = {
-        // Example below
-        // getBalance: async (
-		// 	params: Record<string, unknown>,
-		// 	stateStore: StateStore,
-		// ): Promise<bigint> => {
-		// 	const { address } = params;
-		// 	if (!Buffer.isBuffer(address)) {
-		// 		throw new Error('Address must be a buffer');
-		// 	}
-		// 	const account = await stateStore.account.getOrDefault<TokenAccount>(address);
-		// 	return account.token.balance;
-		// },
-    };
-    public name = 'hey';
-    public transactionAssets = [];
-    public events = [
-        // Example below
-        // 'hey:newBlock',
-    ];
-    public id = 1001;
-
-    public constructor(genesisConfig: GenesisConfig) {
-        super(genesisConfig);
-    }
-
-    // Lifecycle hooks
-    public async beforeBlockApply(_input: BeforeBlockApplyContext) {
-        // Get any data from stateStore using block info, below is an example getting a generator
-        // const generatorAddress = getAddressFromPublicKey(_input.block.header.generatorPublicKey);
-		// const generator = await _input.stateStore.account.get<TokenAccount>(generatorAddress);
-    }
-
-    public async afterBlockApply(_input: AfterBlockApplyContext) {
-        // Get any data from stateStore using block info, below is an example getting a generator
-        // const generatorAddress = getAddressFromPublicKey(_input.block.header.generatorPublicKey);
-		// const generator = await _input.stateStore.account.get<TokenAccount>(generatorAddress);
-    }
-
-    public async beforeTransactionApply(_input: TransactionApplyContext) {
-        // Get any data from stateStore using transaction info, below is an example
-        // const sender = await _input.stateStore.account.getOrDefault<TokenAccount>(_input.transaction.senderAddress);
-    }
-
-    public async afterTransactionApply(_input: TransactionApplyContext) {
-        // Get any data from stateStore using transaction info, below is an example
-        // const sender = await _input.stateStore.account.getOrDefault<TokenAccount>(_input.transaction.senderAddress);
-    }
-
-    public async afterGenesisBlockApply(_input: AfterGenesisBlockApplyContext) {
-        // Get any data from genesis block, for example get all genesis accounts
-        // const genesisAccoounts = genesisBlock.header.asset.accounts;
-    }
-}
-----
-
-The new module is automatically registered with the application.
-Check that it is included by opening the file `src/app/modules.ts`:
-
-[source,typescript]
-----
-import { Application } from 'lisk-sdk';
-import { HeyModule } from "./modules/hey/hey_module";
-
-export const registerModules = (app: Application): void => {
-
-    app.registerModule(HeyModule);
-};
-----
-
-=== Generating skeletons for transaction assets
-
-[source,bash]
-----
-$ lisk generate:asset hey hey 1
-----
-
-.Output
-----
-Creating asset skeleton with asset name "hey" and asset ID "1" for module "hey"
-Using template "lisk-ts"
-Generating asset skeleton.
-Registering asset...
-identical .liskrc.json
-   create src/app/modules/hey/assets/hey_asset.ts
-   create test/unit/modules/hey/assets/hey_asset.spec.ts
-
-No change to package.json was detected. No package manager install will be executed.
-
-Your asset is created and ready to use.
-----
-
-.The skeleton for the new transaction asset
-[source,typescript]
-----
-import { BaseAsset, ApplyAssetContext, ValidateAssetContext } from 'lisk-sdk';
-
-export class HeyAsset extends BaseAsset {
-  public name = 'hey';
-  public id = 1;
-
-  // Define schema for asset
-  public schema = {
-    $id: 'hey/hey-asset',
-    title: 'HeyAsset transaction asset for hey module',
-    type: 'object',
-    required: [],
-    properties: {},
-  };
-
-  public validate({ asset }: ValidateAssetContext<{}>): void {
-    // Validate your asset
-  }
-
-  public async apply({ asset, transaction, stateStore }: ApplyAssetContext<{}>): Promise<void> {
-    throw new Error('Asset "hey" apply hook is not implemented.');
-  }
-}
-----
-
-The new transaction asset is automatically registered with the corresponding module.
-Check that it is included by opening the file `src/app/modules/hey/hey_module.ts`:
-
-[source,typescript]
-----
-import { HeyAsset } from "./assets/hey_asset";
-
-export class HeyModule extends BaseModule {
-    //...
-    public transactionAssets = [new HeyAsset()];
-    //...
-}
-----
-
-=== Generating skeletons for plugins
-
-[source,bash]
-----
-$ lisk generate:plugin hey
-----
-
-.Output
-----
-Using template "lisk-ts"
-Generating plugin skeleton
-Registering plugin...
-identical .liskrc.json
-   create src/app/plugins/hey/hey_plugin.ts
-   create test/unit/plugins/hey/hey_plugin.spec.ts
-
-No change to package.json was detected. No package manager install will be executed.
-
-Finished creating plugin
-----
-
-.The skeleton for the new plugin
-[source,typescript]
-----
-import { BasePlugin, PluginInfo } from 'lisk-sdk';
-import type { BaseChannel, EventsDefinition, ActionsDefinition, SchemaWithDefault } from 'lisk-sdk';
-
- /* eslint-disable class-methods-use-this */
- /* eslint-disable  @typescript-eslint/no-empty-function */
- export class HeyPlugin extends BasePlugin {
-	// private _channel!: BaseChannel;
-
-	public static get alias(): string {
-		return 'hey';
-	}
-
-	// eslint-disable-next-line @typescript-eslint/class-literal-property-style
-	public static get info(): PluginInfo {
-		return {
-			author: 'mona',
-			version: '0.1.0',
-			name: 'hey',
-		};
-	}
-
-	// eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
-	public get defaults(): SchemaWithDefault {
-		return {
-			$id: '/plugins/plugin-hey/config',
-			type: 'object',
-			properties: {},
-			required: [],
-			default: {},
-		}
-	}
-
-	public get events(): EventsDefinition {
-		return [
-			// 'block:created',
-			// 'block:missed'
-		];
-	}
-
-	public get actions(): ActionsDefinition {
-		return {
-		// 	hello: async () => { hello: 'world' },
-		};
-	}
-
-		public async load(_: BaseChannel): Promise<void> {
-		// this._channel = channel;
-		// this._channel.once('app:ready', () => {});
-	}
-
-	public async unload(): Promise<void> {}
-}
-----
-
-The new plugin is automatically registered with the application.
-Check that it is included by opening the file `src/app/plugins.js`:
-
-[source,typescript]
-----
-import { Application } from 'lisk-sdk';
-import { HeyPlugin } from "./plugins/hey_plugin/hey_plugin";
-
-export const registerPlugins = (app: Application): void => {
-
-    app.registerPlugin(HeyPlugin);
-};
-
-----
+* xref:{url_modules_registration}[How to register a new module with the application]
+* xref:{url_guide_module}[]
 
 == Manual Setup (alternative without Lisk Commander)
 

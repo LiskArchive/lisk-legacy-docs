@@ -1,0 +1,250 @@
+= Faucet plugin
+// Settings
+:toc: preamble
+:idprefix:
+:idseparator: -
+// URLs
+:url_recaptcha_test_keys: https://developers.google.com/recaptcha/docs/faq#id-like-to-run-automated-tests-with-recaptcha.-what-should-i-do
+:url_recaptcha: https://developers.google.com/recaptcha/intro
+// Project URLs
+:url_cryptography_encrypt_pw: references/lisk-elements/cryptography.adoc#encryptpassphrasewithpassword
+
+`@liskhq/lisk-framework-faucet-plugin` is a plugin for the Lisk Framework that provides a user interface to receive an certain amount of tokens on request.
+The faucet plugin is a useful tool during development and also in testing networks.
+
+The faucet plugin includes the following features:
+
+* enables sending tokens to different accounts from a faucet for testing
+* allows customizing the faucet UI with a custom logo and application URL
+
+[cols=",",stripes="hover"]
+|===
+|Alias
+|`faucet`
+
+|Actions
+a|
+* <<faucetauthorize>>
+* <<faucetfundtokens>>
+
+|Events
+|none
+
+|===
+
+== Registering the plugin
+
+How to register the faucet plugin with the blockchain application.
+
+[source,js]
+----
+const { Application, genesisBlockDevnet, configDevnet } = require('lisk-sdk');
+const { FaucetPlugin } = require('@liskhq/lisk-framework-faucet-plugin');
+
+const app = Application.defaultApplication(genesisBlockDevnet, configDevnet);
+
+app.registerPlugin(FaucetPlugin);
+
+app
+  .run()
+  .then(() => app.logger.info('App started...'))
+  .catch(error => {
+    console.error('Faced error in application', error);
+    process.exit(1);
+  });
+----
+
+== Plugin configuration
+
+The faucet plugin can be configured in the configuration of the blockchain application under `plugins.faucet`.
+
+[IMPORTANT]
+====
+There are three required config options that need to be defined in order for the faucet plugin to function correctly:
+
+. `encryptedPassphrase`: The passphrase of the genesis account which is encrypted with xref:{url_cryptography_encrypt_pw}[encryptPassphraseWithPassword()]
+. `captchaSecretkey`: The re-captcha secret key. You can register here to get valid keys for recaptcha: {url_recaptcha}[^].
+ For testing purposes, it is not necessary to use your own keys, simply use the {url_recaptcha_test_keys}[test API keys recaptcha^].
+. `captchaSitekey`: The re-captcha site key.
+====
+
+.Faucet options in the configuration
+[source,js]
+----
+const { Application, genesisBlockDevnet, configDevnet } = require('lisk-sdk');
+const { FaucetPlugin } = require('@liskhq/lisk-framework-faucet-plugin');
+
+const appConfig = utils.objects.mergeDeep({}, configDevnet, {
+    plugins: {
+        faucet: {
+            encryptedPassphrase: "",
+            captchaSitekey: "",
+            captchaSecretkey: "",
+            port: 4004,
+            host: '127.0.0.1',
+            applicationUrl: 'ws://localhost:8080/ws',
+            fee: '0.1',
+            amount: '100',
+            tokenPrefix: 'lsk',
+        }
+    }
+});
+
+const app = Application.defaultApplication(genesisBlockDevnet, appConfig);
+
+app.registerPlugin(FaucetPlugin);
+
+app
+  .run()
+  .then(() => app.logger.info('App started...'))
+  .catch(error => {
+    console.error('Faced error in application', error);
+    process.exit(1);
+  });
+----
+
+=== Available configuration options
+
+[source,js]
+----
+{
+    port: {
+        type: 'integer',
+        minimum: 1,
+        maximum: 65535,
+    },
+    host: {
+        type: 'string',
+        format: 'ip',
+    },
+    encryptedPassphrase: {
+        type: 'string',
+        format: 'encryptedPassphrase',
+        description: 'Encrypted passphrase of the genesis account',
+    },
+    applicationUrl: {
+        type: 'string',
+        format: 'uri',
+        description: 'URL to connect',
+    },
+    fee: {
+        type: 'string',
+        description: 'The transaction fee used to faucet an account',
+    },
+    amount: {
+        type: 'string',
+        description: 'Number of tokens to fund an account per request',
+    },
+    tokenPrefix: {
+        type: 'string',
+        description: 'The token prefix associated with your application',
+    },
+    logoURL: {
+        type: 'string',
+        format: 'uri',
+        description: 'The URL of the logo used on the UI',
+    },
+    captchaSecretkey: {
+        type: 'string',
+        description: 'The re-captcha secret key',
+    },
+    captchaSitekey: {
+        type: 'string',
+        description: 'The re-captcha site key',
+    },
+}
+----
+
+== Actions
+
+=== faucet:authorize
+
+Enables and disables the faucet.
+
+==== Example
+
+
+[source,js]
+----
+const { apiClient } = require('lisk-sdk');
+const getClient = async () => {
+  if (!clientCache) {
+    clientCache = await apiClient.createWSClient('ws://localhost:8080/ws');
+  }
+  return clientCache;
+};
+const useClient = async () => {
+  const client = await getClient();
+  const input = {
+    password: "secretPassword",
+    enable: true
+  };
+  const authorize = await client.invoke('faucet:authorize', input);
+  return authorize;
+};
+useClient().then((val) => {
+  console.log("val:",val);
+});
+/*
+{
+  "result": "Successfully enabled the faucet."
+}
+ */
+----
+
+==== Input
+
+----
+{
+    password: string,
+    enable: boolean
+}
+----
+
+==== Returns
+
+----
+{ result: string }
+----
+
+=== faucet:fundTokens
+
+==== Example
+
+[source,js]
+----
+const { apiClient } = require('lisk-sdk');
+const getClient = async () => {
+  if (!clientCache) {
+    clientCache = await apiClient.createWSClient('ws://localhost:8080/ws');
+  }
+  return clientCache;
+};
+const useClient = async () => {
+  const client = await getClient();
+  const input = {
+    address: ""
+  };
+  const fund = await client.invoke('faucet:fundTokens', input);
+  return fund;
+};
+useClient().then((val) => {
+  console.log("val:",val);
+});
+----
+
+==== Input
+
+----
+{
+    address: string,
+    token: string 
+}
+----
+
+
+==== Returns
+
+----
+{ result: string }
+----

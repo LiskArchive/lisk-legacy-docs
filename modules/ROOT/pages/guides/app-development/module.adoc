@@ -46,47 +46,230 @@ EXAMPLE
 The command `lisk generate:module` expects 2 arguments:
 
 . *Module name*: The name of the module.
-Needs to be a string that only consists of small and capital letters.
-No numbers, hyphen, eetc allowed.
+The name is used for example to subscribe to events, or to invoke actions of the module.
+Needs to be a string that only consists of small and capital letters [a-z,A-Z].
+No numbers, hyphen, etc allowed.
 . *Module ID*: The ID of the module.
 Needs to be unique within the application.
 Minimum value is `1000`.
 
+As example, we use the module name `myModule` and the module ID `1000`:
 
-
-== Creating the module class
-
-Now open `my-module.js` and import the `BaseModule` from the `lisk-sdk` package:
-
-[source,js]
+[source,bash]
 ----
-const { BaseModule } = require('lisk-sdk');
+lisk generate:module nft 1000
 ----
 
-Next, define a new class `MyModule`, which extends from the `BaseModule`:
+This will generate the following files:
 
-Inside of the `myModule` class, define the different properties of the module:
-
-`id`(number)::
-The ID of the module.
-Must be unique in the application.
-The ID is used for example during the creation of transactions of the module.
-Minimum value is `1024`.
-`name`(string)::
-The name of the module.
-Must be unique in the application.
-The name is used for example to subscribe to events, or to invoke actions of the module.
-
-[source,js]
 ----
-const { BaseModule } = require('lisk-sdk');
+Creating module skeleton with module name "nft" and module ID "1000"
+Using template "lisk-ts"
+Generating module skeleton.
+Registering module...
+identical .liskrc.json
+   create src/app/modules/nft/nft_module.ts
+   create test/unit/modules/nft/nft_module.spec.ts
 
-class MyModule extends BaseModule {
-  id = 1024;
-  name = 'myModule';
+No change to package.json was detected. No package manager install will be executed.
+
+
+Your module is created and ready to use.
+----
+
+The file `nft_module.ts` contains the module skeleton.
+The file `nft_module.spec.ts` contains the related unit teest for the new module.
+
+Let's first take a look at the module skeleton in `nft_module.ts`:
+
+[source,typescript]
+----
+import {
+    BaseModule,
+    AfterBlockApplyContext,
+    TransactionApplyContext,
+    BeforeBlockApplyContext,
+    AfterGenesisBlockApplyContext,
+    // GenesisConfig
+} from 'lisk-sdk';
+
+export class NftModule extends BaseModule {
+    public actions = {
+        // Example below
+        // getBalance: async (params) => this._dataAccess.account.get(params.address).token.balance,
+        // getBlockByID: async (params) => this._dataAccess.blocks.get(params.id),
+    };
+    public reducers = {
+        // Example below
+        // getBalance: async (
+		// 	params: Record<string, unknown>,
+		// 	stateStore: StateStore,
+		// ): Promise<bigint> => {
+		// 	const { address } = params;
+		// 	if (!Buffer.isBuffer(address)) {
+		// 		throw new Error('Address must be a buffer');
+		// 	}
+		// 	const account = await stateStore.account.getOrDefault<TokenAccount>(address);
+		// 	return account.token.balance;
+		// },
+    };
+    public name = 'nft';
+    public transactionAssets = [];
+    public events = [
+        // Example below
+        // 'nft:newBlock',
+    ];
+    public id = 1000;
+
+    // public constructor(genesisConfig: GenesisConfig) {
+    //     super(genesisConfig);
+    // }
+
+    // Lifecycle hooks
+    public async beforeBlockApply(_input: BeforeBlockApplyContext) {
+        // Get any data from stateStore using block info, below is an example getting a generator
+        // const generatorAddress = getAddressFromPublicKey(_input.block.header.generatorPublicKey);
+		// const generator = await _input.stateStore.account.get<TokenAccount>(generatorAddress);
+    }
+
+    public async afterBlockApply(_input: AfterBlockApplyContext) {
+        // Get any data from stateStore using block info, below is an example getting a generator
+        // const generatorAddress = getAddressFromPublicKey(_input.block.header.generatorPublicKey);
+		// const generator = await _input.stateStore.account.get<TokenAccount>(generatorAddress);
+    }
+
+    public async beforeTransactionApply(_input: TransactionApplyContext) {
+        // Get any data from stateStore using transaction info, below is an example
+        // const sender = await _input.stateStore.account.getOrDefault<TokenAccount>(_input.transaction.senderAddress);
+    }
+
+    public async afterTransactionApply(_input: TransactionApplyContext) {
+        // Get any data from stateStore using transaction info, below is an example
+        // const sender = await _input.stateStore.account.getOrDefault<TokenAccount>(_input.transaction.senderAddress);
+    }
+
+    public async afterGenesisBlockApply(_input: AfterGenesisBlockApplyContext) {
+        // Get any data from genesis block, for example get all genesis accounts
+        // const genesisAccoounts = genesisBlock.header.asset.accounts;
+    }
+}
+----
+
+Let's now takee a look at the different parts of the module skeleton:
+
+=== The module class
+
+[source,typescript]
+----
+import {
+    BaseModule,
+    AfterBlockApplyContext,
+    TransactionApplyContext,
+    BeforeBlockApplyContext,
+    AfterGenesisBlockApplyContext,
+    // GenesisConfig
+} from 'lisk-sdk';
+
+export class NftModule extends BaseModule {
+
+    public name = 'nft';
+    public id = 1000;
+}
+----
+
+=== Transaction assets
+
+A module can include various custom transaction assets, that provide new transaction types to the application.
+
+Before a new asset can be added, it is first required to create the custom asset as described in the xref:{url_guides_asset}[] guide.
+
+Assuming an asset `myAsset` has been created for the module, then it can be included as shown below:
+
+[source,typescript]
+----
+const { CreateNFT } = require('./assets/create_nft_asset');
+
+export class NftModule extends BaseModule {
+
+    // ...
+
+    public transactionAssets = [CreateNFT];
+
+    // ...
+}
+----
+
+=== Actions
+
+[source,typescript]
+----
+public actions = {
+    // Example below
+    // getBalance: async (params) => this._dataAccess.account.get(params.address).token.balance,
+    // getBlockByID: async (params) => this._dataAccess.blocks.get(params.id),
+};
+----
+
+=== Reducers
+
+[source,typescript]
+----
+public reducers = {
+    // Example below
+    // getBalance: async (
+    // 	params: Record<string, unknown>,
+    // 	stateStore: StateStore,
+    // ): Promise<bigint> => {
+    // 	const { address } = params;
+    // 	if (!Buffer.isBuffer(address)) {
+    // 		throw new Error('Address must be a buffer');
+    // 	}
+    // 	const account = await stateStore.account.getOrDefault<TokenAccount>(address);
+    // 	return account.token.balance;
+    // },
+};
+----
+
+=== Events
+
+[source,typescript]
+----
+public events = [
+    // Example below
+    // 'nft:newBlock',
+];
+----
+
+=== Lifecycle Hooks
+
+[source,typescript]
+----
+public async beforeBlockApply(_input: BeforeBlockApplyContext) {
+    // Get any data from stateStore using block info, below is an example getting a generator
+    // const generatorAddress = getAddressFromPublicKey(_input.block.header.generatorPublicKey);
+    // const generator = await _input.stateStore.account.get<TokenAccount>(generatorAddress);
 }
 
-module.exports = { MyModule };
+public async afterBlockApply(_input: AfterBlockApplyContext) {
+    // Get any data from stateStore using block info, below is an example getting a generator
+    // const generatorAddress = getAddressFromPublicKey(_input.block.header.generatorPublicKey);
+    // const generator = await _input.stateStore.account.get<TokenAccount>(generatorAddress);
+}
+
+public async beforeTransactionApply(_input: TransactionApplyContext) {
+    // Get any data from stateStore using transaction info, below is an example
+    // const sender = await _input.stateStore.account.getOrDefault<TokenAccount>(_input.transaction.senderAddress);
+}
+
+public async afterTransactionApply(_input: TransactionApplyContext) {
+    // Get any data from stateStore using transaction info, below is an example
+    // const sender = await _input.stateStore.account.getOrDefault<TokenAccount>(_input.transaction.senderAddress);
+}
+
+public async afterGenesisBlockApply(_input: AfterGenesisBlockApplyContext) {
+    // Get any data from genesis block, for example get all genesis accounts
+    // const genesisAccoounts = genesisBlock.header.asset.accounts;
+}
 ----
 
 == Defining the account schema

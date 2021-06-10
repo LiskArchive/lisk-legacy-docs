@@ -5,6 +5,7 @@
 :url_guides_setup: guides/app-development/setup.adoc
 :url_guides_module: guides/app-development/module.adoc
 :url_guides_asset: guides/app-development/asset.adoc
+:url_tutorials_nft: tutorials/nft.adoc
 :url_reference_test_suite: references/lisk-framework/test-suite.adoc
 
 
@@ -48,13 +49,41 @@ After generating a new module and asset, the corresponding skeletons for their u
 It is already possible to run the test at this point, though only the most basic tests will be already implemented.
 
 To run all test suites, execute:
-//TODO: running successful test of the test skeleton
 
 ./new_app/
 [source,bash]
 ----
 yarn run test
 ----
+
+If the module and asset skeletons have not been edited yet, it will display the following test results
+
+----
+yarn run v1.22.10
+$ jest --passWithNoTests
+ PASS  test/unit/modules/nft/nft_module.spec.ts
+ PASS  test/commands/account/create.spec.ts
+ FAIL  test/unit/modules/nft/assets/create_n_f_t_asset.spec.ts
+  ● Test suite failed to run
+
+    src/app/modules/nft/assets/create_n_f_t_asset.ts:16:19 - error TS6133: 'asset' is declared but its value is never read.
+
+    16   public validate({ asset }: ValidateAssetContext<Record<string, unknown>>): void {
+                         ~~~~~~~~~
+    src/app/modules/nft/assets/create_n_f_t_asset.ts:21:22 - error TS6198: All destructured elements are unused.
+
+    21   public async apply({ asset, transaction, stateStore }: ApplyAssetContext<Record<string, unknown>>): Promise<void> {
+                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Test Suites: 1 failed, 2 passed, 3 total
+Tests:       7 todo, 5 passed, 12 total
+Snapshots:   0 total
+Time:        4.62 s
+Ran all test suites.
+----
+
+The tests for the asset fail because the parameters in the xref:{}[validate()] and xref:{}[apply()] functions are unused at the moment.
+To get rid of the error, either remove them or implement logic which uses them in the corresponding function.
 
 == The module test skeleton
 
@@ -125,19 +154,19 @@ describe('CreateNFTAsset', () => {
 
 	describe('validate', () => {
 		describe('schema validation', () => {
-      it.todo('should throw errors for invalid schema');
-      it.todo('should be ok for valid schema');
-    });
+            it.todo('should throw errors for invalid schema');
+            it.todo('should be ok for valid schema');
+        });
 	});
 
 	describe('apply', () => {
-    describe('valid cases', () => {
-      it.todo('should update the state store');
-    });
+        describe('valid cases', () => {
+            it.todo('should update the state store');
+        });
 
-    describe('invalid cases', () => {
-      it.todo('should throw error');
-    });
+        describe('invalid cases', () => {
+            it.todo('should throw error');
+        });
 	});
 });
 ----
@@ -145,10 +174,137 @@ describe('CreateNFTAsset', () => {
 //TODO: write appropriate tests for the createNFT assset.
 == Example: Unit test for a transaction asset
 
-In this example, we will use the test suite of the Lisk SDK to write some simple unit tests for a new transaction asset that we created recently.
+In this example, the test suite of the Lisk SDK is used to write some simple unit tests for a new transaction asset that we created recently.
 
 [TIP]
 
 ====
 For more information about the different features of the test suite, check out the reference page xref:{url_reference_test_suite}[]
 ====
+
+=== The createNFT asset
+
+The `createNFT` asset is an example asset from the previous guide xref:{url_guides_asset}[] and comes originally from the NFT app of the xref:{url_tutorials_nft}[NFT tutorial].
+
+[source,js]
+----
+const { BaseAsset } = require("lisk-sdk");
+const {
+  getAllNFTTokens,
+  setAllNFTTokens,
+  createNFTToken,
+} = require("../nft");
+
+// 1.extend base asset to implement your custom asset
+class CreateNFTAsset extends BaseAsset {
+  // 2.define unique asset name and id
+  name = "createNFT";
+  id = 0;
+  // 3.define asset schema for serialization
+  schema = {
+    $id: "lisk/nft/create",
+    type: "object",
+    required: ["minPurchaseMargin", "initValue", "name"],
+    properties: {
+      minPurchaseMargin: {
+        dataType: "uint32",
+        minimum: 0,
+        maximum: 100,
+        fieldNumber: 1,
+      },
+      initValue: {
+        dataType: "uint64",
+        exclusiveMinimum: 0,
+        fieldNumber: 2,
+      },
+      name: {
+        dataType: "string",
+        minLength: 3
+        maxLength: 64
+        fieldNumber: 3,
+      },
+    },
+  };
+  validate({asset}) {
+    if (asset.name === "Mewtwo") {
+      throw new Error("Illegal NFT name: Mewtwo");
+    }
+  };
+  async apply({ asset, stateStore, reducerHandler, transaction }) {
+    // 4.verify if sender has enough balance
+    const senderAddress = transaction.senderAddress;
+    const senderAccount = await stateStore.account.get(senderAddress);
+
+    // 5.create nft
+    const nftToken = createNFTToken({
+      name: asset.name,
+      ownerAddress: senderAddress,
+      nonce: transaction.nonce,
+      value: asset.initValue,
+      minPurchaseMargin: asset.minPurchaseMargin,
+    });
+
+    // 6.update sender account with unique nft id
+    senderAccount.nft.ownNFTs.push(nftToken.id);
+    await stateStore.account.set(senderAddress, senderAccount);
+
+    // 7.debit tokens from sender account to create nft
+    await reducerHandler.invoke("token:debit", {
+      address: senderAddress,
+      amount: asset.initValue,
+    });
+
+    // 8.save nfts
+    const allTokens = await getAllNFTTokens(stateStore);
+    allTokens.push(nftToken);
+    await setAllNFTTokens(stateStore, allTokens);
+  }
+}
+
+module.exports = CreateNFTAsset;
+----
+
+=== Testing the validate() function
+
+[source,typescript]
+----
+describe('validate', () => {
+    describe('schema validation', () => {
+        it.todo('should throw errors for invalid schema');
+        it('should throw error if nft name equals "Mewtwo"', () => {
+            const context = testing.createValidateAssetContext({
+                asset: { name: 'Mewtwo', initValue: 60 * 60 - 1, registerFor: 1 },
+                transaction: { senderAddress: Buffer.alloc(0) } as any,
+            });
+
+            expect(() => transactionAsset.validate(context)).toThrow(
+                'Must set TTL value larger or equal to 3600',
+            );
+        });
+        it.todo('should be ok for valid schema');
+        it('should be ok for valid schema', () => {
+            const context = testing.createValidateAssetContext({
+                asset: { name: 'nazar.lsk', ttl: 60 * 60, registerFor: 1 },
+                transaction: { senderAddress: Buffer.alloc(0) } as any,
+            });
+
+            expect(() => transactionAsset.validate(context)).not.toThrow();
+        });
+    });
+});
+----
+
+=== Testing the apply() function
+
+[source,typescript]
+----
+describe('apply', () => {
+    describe('valid cases', () => {
+        it.todo('should update the state store');
+    });
+
+    describe('invalid cases', () => {
+        it.todo('should throw error');
+    });
+});
+----

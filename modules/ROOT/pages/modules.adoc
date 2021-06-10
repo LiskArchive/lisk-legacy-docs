@@ -3,12 +3,14 @@ Mona Bärenfänger <mona@lightcurve.io>
 :description: Explains what are modules and how to create and use them in a blockchain application.
 //Settings
 :toc:
+:idprefix:
+:idseparator: -
 :imagesdir: ../../assets/images
 //External URLs
-:url_github_dpos: https://github.com/LiskHQ/lisk-sdk/tree/v5.0.1/framework/src/modules/dpos
-:url_github_keys: https://github.com/LiskHQ/lisk-sdk/tree/v5.0.1/framework/src/modules/keys
-:url_github_sequence: https://github.com/LiskHQ/lisk-sdk/tree/v5.0.1/framework/src/modules/sequence
-:url_github_token: https://github.com/LiskHQ/lisk-sdk/tree/v5.0.1/framework/src/modules/token
+:url_github_dpos: https://github.com/LiskHQ/lisk-sdk/tree/v5.1.1/framework/src/modules/dpos
+:url_github_keys: https://github.com/LiskHQ/lisk-sdk/tree/v5.1.1/framework/src/modules/keys
+:url_github_sequence: https://github.com/LiskHQ/lisk-sdk/tree/v5.1.1/framework/src/modules/sequence
+:url_github_token: https://github.com/LiskHQ/lisk-sdk/tree/v5.1.1/framework/src/modules/token
 // Project URLs
 :url_explanations_communication: communication.adoc
 :url_references_framework_application: references/lisk-framework/index.adoc#application
@@ -93,181 +95,31 @@ The *bold* steps are the steps exposed to the developer via the base module and 
 . *After block apply*
 . Save block and updated states
 
-== How to create a custom module with an asset
 
-The module and asset must extend the base module and base asset defined in the Lisk SDK.
+== How to add a module to the application
 
-=== Example: A hello module
+Modules are registered in the file `src/app/modules.ts`.
 
-A simple implementation of a custom module can be seen below:
+[WARNING]
+====
+Registering a new module requires the generation of a new genesis block and therefore always results in a hardfork of the blockchain of the application.
 
-.hello_module.ts
-[source,js]
+Check out the xref:{url_guides_genesis}[Generating a genesis block] guide for more information on how to generate a new genesis block for your application.
+====
+
+.Example: How to register a module with the application in `modules.ts`
+[source,typescript]
 ----
-const { BaseModule, codec } = require('lisk-sdk');
-const { HelloAsset, HelloAssetID } = require('./hello_asset');
-const {
-    helloCounterSchema,
-    helloAssetSchema,
-    CHAIN_STATE_HELLO_COUNTER
-} = require('./schemas');
+import { Application } from 'lisk-sdk';
+import { SomeModule } from "some-module"; <1>
 
-class HelloModule extends BaseModule {
-    name = 'hello'; <1>
-    id = 1024; <2>
-    accountSchema = { <3>
-        type: 'object',
-        properties: {
-            helloMessage: {
-                fieldNumber: 1,
-                dataType: 'string',
-            },
-        },
-        default: {
-            helloMessage: '',
-        },
-    };
-    transactionAssets = [ new HelloAsset() ]; <4>
-    actions = { <5>
-        amountOfHellos: async () => {
-            const res = await this._dataAccess.getChainState(CHAIN_STATE_HELLO_COUNTER);
-            const count = codec.decode(
-                helloCounterSchema,
-                res
-            );
-            return count;
-        },
-    };
-    events = ['newHello']; <6>
-    reducers = {}; <7>
-    async beforeTransactionApply({transaction, stateStore, reducerHandler}) { <8>
-        // Code in here is applied before each transaction is applied.
-    };
-
-    async afterTransactionApply({transaction, stateStore, reducerHandler}) { <9>
-      // Code in here is applied after each transaction is applied.
-      if (transaction.moduleID === this.id && transaction.assetID === HelloAssetID) {
-
-        const helloAsset = codec.decode(
-          helloAssetSchema,
-          transaction.asset
-        );
-
-        this._channel.publish('hello:newHello', {
-          sender: transaction._senderAddress.toString('hex'),
-          hello: helloAsset.helloString
-        });
-      }
-    };
-    async afterGenesisBlockApply({genesisBlock, stateStore, reducerHandler}) { <10>
-      // Set the hello counter to zero after the genesis block is applied
-      await stateStore.chain.set(
-        CHAIN_STATE_HELLO_COUNTER,
-        codec.encode(helloCounterSchema, { helloCounter: 0 })
-      );
-    };
-    async beforeBlockApply(context) { <11>
-        // Code in here is applied before each block is applied.
-    }
-    async afterBlockApply(context) { <12>
-        // Code in here is applied after each block is applied.
-    }
-}
-
-module.exports = { HelloModule };
+export const registerModules = (app: Application): void => {
+    app.registerModule(SomeModule); <2>
+};
 ----
 
-
-<1> `name`(required): will be used for a key of the account schema if defined.
-<2> `id`(required): will be used for a fieldNumber for the account schema, and as `moduleID` when sending a transaction.
-<3> `accountSchema`: defines the account schema for the module.
-Defined properties will be added to every account under the `name` of the module.
-<4> `transactionAssets`: A list of all custom assets that belong to the module.
-<5> `actions`: A list of actions that can be invoked by plugins and external services.
-<6> `events`: A list of events that other plugins and external services can subscribe to.
-<7> `reducers`: A list of actions that can be invoked by other modules.
-<8> `beforeTransactionApply`: Code in here is applied before each transaction is applied.
-<9> `afterTransactionApply`: Code in here is applied after each transaction is applied.
-<10> `afterGenesisBlockApply`: Code in here is applied after the genesis block is applied.
-<11> `beforeBlockApply`: Code in here is applied before each block is applied.
-<12> `afterBlockApply`: Code in here is applied after each block is applied.
-
-=== Example: The hello asset
-
-A simple implementation of a custom asset looks like this:
-
-.hello_asset.ts
-[source,js]
-----
-const {
-    BaseAsset,
-    codec,
-} = require('lisk-sdk');
-const {
-    helloCounterSchema,
-    CHAIN_STATE_HELLO_COUNTER
-} = require('./schemas');
-
-const HelloAssetID = 0;
-
-class HelloAsset extends BaseAsset {
-    name = 'helloAsset'; <1>
-    id = HelloAssetID; <2>
-    schema = { <3>
-        $id: '/hello/asset',
-        type: 'object',
-        required: ["helloString"],
-        properties: {
-            helloString: {
-                dataType: 'string',
-                fieldNumber: 1,
-            },
-        }
-    };
-
-    validate({asset}) { <4>
-        if (!asset.helloString || typeof asset.helloString !== 'string' || asset.helloString.length > 64) {
-          throw new Error(
-                'Invalid "asset.hello" defined on transaction: A string value no longer than 64 characters is expected'
-            );
-        }
-    };
-
-    async apply({ asset, stateStore, reducerHandler, transaction }) { <5>
-        const senderAddress = transaction.senderAddress;
-        const senderAccount = await stateStore.account.get(senderAddress);
-
-        senderAccount.hello.helloMessage = asset.helloString;
-        stateStore.account.set(senderAccount.address, senderAccount);
-
-        let counterBuffer = await stateStore.chain.get(
-            CHAIN_STATE_HELLO_COUNTER
-        );
-
-        let counter = codec.decode(
-            helloCounterSchema,
-            counterBuffer
-        );
-
-        counter.helloCounter++;
-
-        await stateStore.chain.set(
-            CHAIN_STATE_HELLO_COUNTER,
-            codec.encode(helloCounterSchema, counter)
-        );
-    }
-}
-
-module.exports = { HelloAsset, HelloAssetID };
-----
-
-<1> `name`(required): used for UI purpose.
-<2> `id`(required): used as `AssetID` when sending a transaction.
-<3> `schema`(required): defines the `asset` schema for the transaction.
-<4> `validate` is used to validate the asset data before it is applied.
-Throws an error, in case the validation fails.
-<5> `apply`(required): defines a state change induced by this asset.
-In `HelloAsset`, it adds the hello string that was sent in the transaction to the senders account and increments the `helloCounter`.
+<1> Import the module from an NPM package or from a local path.
+<2> Add this line to register the module with the application.
 
 == SDK default modules
 

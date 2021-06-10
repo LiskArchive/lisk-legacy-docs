@@ -10,202 +10,229 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_references_schemas: references/schemas.adoc
 :url_tutorials_hello: tutorials/hello-world.adoc
 
-This guide explains step-by-step, how to create a custom module for a blockchain application built with the Lisk SDK.
+How to create a new module for a blockchain application.
 
 .Prerequisites
 [NOTE]
 ====
 To follow this guide, the following criteria is assumed:
 
-* a basic blockchain application is already initiated as explained in the previous guide xref:{url_guides_setup}[].
+* Lisk Commander is installed, and a basic blockchain application is already initialized, as explained in the previous guide xref:{url_guides_setup}[].
 ====
 
-First, create a new file named after the new module, for example `my-module.js`.
+== Generating the module skeleton
 
+Use Lisk Commander to generate the skeleton for the new module:
+
+[source,bash]
 ----
-├── blockchain_app
-│   ├── index.js
-│   ├── my-module.js
-│   └── package.json
+$ lisk generate:module --help
+Creates a module skeleton for the given name and id.
+
+USAGE
+  $ lisk generate:module MODULENAME MODULEID
+
+ARGUMENTS
+  MODULENAME  Module name.
+  MODULEID    Module Id, should be at least 1000 or more
+
+OPTIONS
+  -t, --template=template  Template to bootstrap the application. It will read from `.liskrc.json` or use `lisk-ts` if not found.
+
+EXAMPLE
+  generate:module nft 5000
 ----
 
-== Creating the module class
+The command `lisk generate:module` expects 2 arguments:
 
-Now open `my-module.js` and import the `BaseModule` from the `lisk-sdk` package:
-
-[source,js]
-----
-const { BaseModule } = require('lisk-sdk');
-----
-
-Next, define a new class `MyModule`, which extends from the `BaseModule`:
-
-Inside of the `myModule` class, define the different properties of the module:
-
-`id`(number)::
-The ID of the module.
-Must be unique in the application.
-The ID is used for example during the creation of transactions of the module.
-Minimum value is `1024`.
-`name`(string)::
-The name of the module.
-Must be unique in the application.
+. *Module name*: The name of the module.
 The name is used for example to subscribe to events, or to invoke actions of the module.
+Needs to be a string that only consists of upper and lower case letters [a-z, A-Z].
+No numbers, hyphens, etc., are allowed.
+. *Module ID*: The ID of the module.
+Needs to be unique within the application.
+Minimum value is `1000`.
 
-[source,js]
+As an example, we use the module name `nft` and the module ID `1000`:
+
+[[generate-module]]
+[source,bash]
 ----
-const { BaseModule } = require('lisk-sdk');
-
-class MyModule extends BaseModule {
-  id = 1024;
-  name = 'myModule';
-}
-
-module.exports = { MyModule };
+lisk generate:module nft 1000
 ----
 
-== Defining the account schema
+This will generate the following files:
 
-The account schema defines which properties are added to user accounts by the module.
-
-TIP: For more information about schemas and how they are used in the Lisk SDK, check out the xref:{url_references_schemas}[].
-
-The new properties will be added under a key that is named after the module name.
-The module-specific properties for every account are saved inside this key.
-
-To achieve a better overview, it is recommended to create a new file `schemas.js`, which will export the account schema for our new module:
-
-.schemas.js
-[source,js]
 ----
-const myAccountSchema = {
-  // Root type must be type object
-  type: "object",
-  // Properties for the object
-  properties: {
-    key1: {
-      dataType: "string",
-      fieldNumber: 1,
-    },
-    key2: {
-      dataType: "boolean",
-      fieldNumber: 2,
-    },
-    key3: {
-      dataType: "uint64",
-      fieldNumber: 3,
-    }
-  },
-  // Default values for the different properties
-  default: {
-    key1 : "",
-    key2 : false,
-    key3 : 0
-  }
-}
+Creating module skeleton with module name "nft" and module ID "1000"
+Using template "lisk-ts"
+Generating module skeleton.
+Registering module...
+identical .liskrc.json
+   create src/app/modules/nft/nft_module.ts
+   create test/unit/modules/nft/nft_module.spec.ts
 
-module.exports = {
-  myAccountSchema
+No change to package.json was detected. No package manager install will be executed.
+
+
+Your module is created and ready to use.
+----
+
+It will also automatically register the module with the application, by adding it to `src/app/modulees.ts`.
+
+.src/app/modules.ts
+[source,typescript]
+----
+import { Application } from 'lisk-sdk';
+import { NftModule } from "./modules/nft/nft_module";
+
+export const registerModules = (app: Application): void => {
+    app.registerModule(NftModule);
 };
+
 ----
 
-Now include the schema in the module:
+The file `nft_module.ts` contains the module skeleton and the file `nft_module.spec.ts` contains the related unit test for the new module.
 
-[source,js]
+The module skeleton can be viewed in `nft_module.ts`:
+
+[source,typescript]
 ----
-const { BaseModule } = require('lisk-sdk');
-const { myAccountSchema } = require('./schemas.js'); <1>
+import {
+    BaseModule,
+    AfterBlockApplyContext,
+    TransactionApplyContext,
+    BeforeBlockApplyContext,
+    AfterGenesisBlockApplyContext,
+    // GenesisConfig
+} from 'lisk-sdk';
 
-class MyModule extends BaseModule {
-  id = 1024;
-  name = 'myModule';
-  accountSchema = myAccountSchema; <2>
+export class NftModule extends BaseModule {
+    public actions = {
+        // Example below
+        // getBalance: async (params) => this._dataAccess.account.get(params.address).token.balance,
+        // getBlockByID: async (params) => this._dataAccess.blocks.get(params.id),
+    };
+    public reducers = {
+        // Example below
+        // getBalance: async (
+		// 	params: Record<string, unknown>,
+		// 	stateStore: StateStore,
+		// ): Promise<bigint> => {
+		// 	const { address } = params;
+		// 	if (!Buffer.isBuffer(address)) {
+		// 		throw new Error('Address must be a buffer');
+		// 	}
+		// 	const account = await stateStore.account.getOrDefault<TokenAccount>(address);
+		// 	return account.token.balance;
+		// },
+    };
+    public name = 'nft';
+    public transactionAssets = [];
+    public events = [
+        // Example below
+        // 'nft:newBlock',
+    ];
+    public id = 1000;
+
+    // public constructor(genesisConfig: GenesisConfig) {
+    //     super(genesisConfig);
+    // }
+
+    // Lifecycle hooks
+    public async beforeBlockApply(_input: BeforeBlockApplyContext) {
+        // Get any data from stateStore using block info, below is an example getting a generator
+        // const generatorAddress = getAddressFromPublicKey(_input.block.header.generatorPublicKey);
+		// const generator = await _input.stateStore.account.get<TokenAccount>(generatorAddress);
+    }
+
+    public async afterBlockApply(_input: AfterBlockApplyContext) {
+        // Get any data from stateStore using block info, below is an example getting a generator
+        // const generatorAddress = getAddressFromPublicKey(_input.block.header.generatorPublicKey);
+		// const generator = await _input.stateStore.account.get<TokenAccount>(generatorAddress);
+    }
+
+    public async beforeTransactionApply(_input: TransactionApplyContext) {
+        // Get any data from stateStore using transaction info, below is an example
+        // const sender = await _input.stateStore.account.getOrDefault<TokenAccount>(_input.transaction.senderAddress);
+    }
+
+    public async afterTransactionApply(_input: TransactionApplyContext) {
+        // Get any data from stateStore using transaction info, below is an example
+        // const sender = await _input.stateStore.account.getOrDefault<TokenAccount>(_input.transaction.senderAddress);
+    }
+
+    public async afterGenesisBlockApply(_input: AfterGenesisBlockApplyContext) {
+        // Get any data from genesis block, for example get all genesis accounts
+        // const genesisAccoounts = genesisBlock.header.asset.accounts;
+    }
 }
-
-module.exports = { MyModule };
 ----
 
-<1> Require the schema.
-<2> Set the `accountSchema` of the module to the imported schema.
+The command `generate:module` already created the class `NftModule` which contains skeletons for the most important components of a module.
+The only properties which are set at this point are the module ID and the module name, which were defined previously.
 
-== Adding transaction assets to the module
+In fact, with these 2 properties, it is already a complete module that can be registered with the application.
+However, this module is not performing any functions yet.
+To give the module a purpose, it is necessary to implement certain logic inside of the module.
+
+The following sections explain, how the different components of a module can be used to implement the desired logic for the module.
+
+== The module class
+
+The module class always extends from the `BaseModule`, which is imported from the `lisk-sdk` package.
+
+The properties `name` and `id` are prefilled by the values we used when <<generate-module,generating the module skeleton>> in the previous step.
+
+[source,typescript]
+----
+import {
+    BaseModule,
+    AfterBlockApplyContext,
+    TransactionApplyContext,
+    BeforeBlockApplyContext,
+    AfterGenesisBlockApplyContext,
+    // GenesisConfig
+} from 'lisk-sdk';
+
+export class NftModule extends BaseModule {
+
+    // ...
+
+    public name = 'nft';
+    public id = 1000;
+
+    // ...
+}
+----
+
+== Transaction assets
 
 A module can include various custom transaction assets, that provide new transaction types to the application.
 
 Before a new asset can be added, it is first required to create the custom asset as described in the xref:{url_guides_asset}[] guide.
 
-Assuming an asset `myAsset` has been created for the module, then it can be included as shown below:
+Assuming an asset `CreateNFT` has been created for the module, then it will be included in the module as shown below:
 
-[source,js]
+[source,typescript]
 ----
-const { BaseModule } = require('lisk-sdk');
-const { myAccountSchema } = require('./schemas.js');
-const { MyAsset } = require('./my-asset.js');
+const { CreateNFT } = require('./assets/create_nft_asset');
 
-class MyModule extends BaseModule {
-  id = 1024;
-  name = 'myModule';
-  accountSchema = myAccountSchema;
-  transactionAssets = [ new myAsset() ];
+export class NftModule extends BaseModule {
+
+    // ...
+
+    public transactionAssets = [new CreateNFT()];
+
+    // ...
 }
-
-module.exports = { MyModule };
 ----
 
-== Adding an interface by providing reducers, actions and events
+== Actions
 
-Each module allows the user to define certain reducers, actions, and events which provide the module with an interface, that allows other modules and plugins or external services to interact with the module.
+A list of actions that plugins and external services can invoke via the API client.
 
 TIP: See the xref:{url_rpc_endpoints}[] page for more information.
-
-`events`::
-A list of events this module emits.
-Plugins and external services can subscribe to these events with the API client.
-`actions`::
-A list of actions that plugins and external services can invoke via the API client.
-`reducers`::
-A list of actions that other modules of the application can invoke.
-
-[source,js]
-----
-const { BaseModule } = require('lisk-sdk');
-const { myAccountSchema } = require('./schemas.js');
-
-class MyModule extends BaseModule {
-  id = 1024;
-  name = 'myModule';
-  accountSchema = myAccountSchema;
-  transactionAssets = [];
-  actions = {
-    myAction: async () => {
-        // Returns some data
-    },
-    anotherAction: async (params) => {
-        // Returns some other data
-    }
-  };
-  events = ['myEvent','anotherEvent'];
-  reducers = {
-    myReducer: async (params, stateStore) => {
-      // Returns some data
-    },
-    anotherReducer: async (params, stateStore) => {
-      // Returns some other data
-    }
-  };
-}
-
-module.exports = { MyModule };
-----
-
-[TIP]
-
-====
-
-What events, actions and reducers are used within a module, or if these interfaces are actually required at all, will be a specific individual requirement for every module; as it is heavily dependant on which functionality the module intends to provide to the application.
-
-The best way to understand the necessary requirements here is to look at existing examples in the Lisk SDK default modules, or examples of other blockchain applications built with the Lisk SDK, for example the xref:{url_tutorials_hello}[] application.
-====
 
 === Data access for actions
 
@@ -223,7 +250,65 @@ interface dataAccess {
 ----
 
 
-== Defining the lifecycle hooks
+[source,typescript]
+----
+public actions = {
+    // Example below
+    // getBalance: async (params) => this._dataAccess.account.get(params.address).token.balance,
+    // getBlockByID: async (params) => this._dataAccess.blocks.get(params.id),
+};
+----
+
+== Reducers
+
+A list of actions that other modules of the application can invoke.
+
+NOTE: Reducers can only be invoked by other modules, *not* by plugins.
+
+[source,typescript]
+----
+public reducers = {
+    // Example below
+    // getBalance: async (
+    // 	params: Record<string, unknown>,
+    // 	stateStore: StateStore,
+    // ): Promise<bigint> => {
+    // 	const { address } = params;
+    // 	if (!Buffer.isBuffer(address)) {
+    // 		throw new Error('Address must be a buffer');
+    // 	}
+    // 	const account = await stateStore.account.getOrDefault<TokenAccount>(address);
+    // 	return account.token.balance;
+    // },
+};
+----
+
+== Events
+
+A list of events that this module is able to emit.
+
+Modules, plugins, and external services can subscribe to these events.
+
+TIP: See the xref:{url_rpc_endpoints}[] page for more information.
+
+[source,typescript]
+----
+public events = [
+    // Example below
+    // 'nft:newBlock',
+];
+----
+
+[TIP]
+
+====
+
+Which events, actions, and reducers are used within a module, or if these interfaces are actually required at all, will be a specific individual requirement for every module; as it is heavily dependant on which functionality the module intends to provide to the application.
+
+The easiest way to understand the necessary requirements here is to look at existing examples in the Lisk SDK default modules, or examples of other blockchain applications built with the Lisk SDK, for example, the xref:{url_tutorials_hello}[] application.
+====
+
+== Lifecycle Hooks
 
 Lifecycle hooks allow a module to execute certain logic, before or after blocks or transactions are applied to the blockchain.
 
@@ -242,66 +327,34 @@ The code here is applied before each block is applied.
 `afterBlockApply()`::
 The code here is applied after each block is applied.
 
-=== Lifecycle hooks
-
-.Lifecycle hooks example
-[source,js]
+[source,typescript]
 ----
-const { BaseModule } = require('lisk-sdk');
-const { myAccountSchema } = require('./schemas.js');
-
-class MyModule extends BaseModule {
-  id = 1024;
-  name = 'myModule';
-  accountSchema = myAccountSchema;
-  transactionAssets = [];
-  actions = {
-    myAction: async () => {
-        // Returns some data
-    },
-    anotherAction: async (params) => {
-        // Returns some other data
-    }
-  };
-  events = ['myEvent','anotherEvent'];
-  reducers = {
-    myReducer: async (params, stateStore) => {
-      // Returns some data
-    },
-    anotherReducer: async (params, stateStore) => {
-      // Returns some other data
-    }
-  };
-  async beforeTransactionApply({transaction, stateStore, reducerHandler}) {
-    // Code in here is applied before each transaction is applied.
-  };
-
-  async afterTransactionApply({transaction, stateStore, reducerHandler}) {
-    // Code in here is applied after each transaction is applied.
-    /*if (transaction.moduleID === this.id && transaction.assetID === MyAssetID) {
-
-      const myAsset = codec.decode(
-        myAssetSchema,
-        transaction.asset
-      );
-
-      this._channel.publish('my-module:myEvent', {
-        sender: transaction._senderAddress.toString('hex')
-      });
-    }*/
-  };
-  async afterGenesisBlockApply({genesisBlock, stateStore, reducerHandler}) {
-    // Code in here is applied after the genesis block is applied.
-  };
-  async beforeBlockApply({block, stateStore, reducerHandler}) {
-    // Code in here is applied before each block is applied.
-  }
-  async afterBlockApply({block, stateStore, reducerHandler, consensus}) {
-    // Code in here is applied after each block is applied.
-  }
+public async beforeBlockApply({block, stateStore, reducerHandler}) {
+    // Get any data from stateStore using block info, below is an example getting a generator
+    // const generatorAddress = getAddressFromPublicKey(_input.block.header.generatorPublicKey);
+    // const generator = await _input.stateStore.account.get<TokenAccount>(generatorAddress);
 }
 
-module.exports = { MyModule };
+public async afterBlockApply({block, consensus, stateStore, reducerHandler}) {
+    // Get any data from stateStore using block info, below is an example getting a generator
+    // const generatorAddress = getAddressFromPublicKey(_input.block.header.generatorPublicKey);
+    // const generator = await _input.stateStore.account.get<TokenAccount>(generatorAddress);
+}
+
+public async beforeTransactionApply({transaction, stateStore, reducerHandler}) {
+    // Get any data from stateStore using transaction info, below is an example
+    // const sender = await _input.stateStore.account.getOrDefault<TokenAccount>(_input.transaction.senderAddress);
+}
+
+public async afterTransactionApply({transaction, stateStore, reducerHandler}) {
+    // Get any data from stateStore using transaction info, below is an example
+    // const sender = await _input.stateStore.account.getOrDefault<TokenAccount>(_input.transaction.senderAddress);
+}
+
+public async afterGenesisBlockApply({genesisBlock, stateStore, reducerHandler}) {
+    // Get any data from genesis block, for example get all genesis accounts
+    // const genesisAccoounts = genesisBlock.header.asset.accounts;
+}
 ----
 
 === stateStore
@@ -340,43 +393,77 @@ interface ReducerHandler {
 }
 ----
 
-== Registering the module with the application
+== Defining an account schema
 
-The final requirement is to register the newly created module in the application:
+In some cases, the new module will require storing some new data in the user accounts.
+If that is the case, it is required to define the corresponding account schema in the module.
 
-.index.js
+The account schema defines which properties are added to user accounts by the module.
+
+TIP: For more information about schemas and how they are used in the Lisk SDK, check out the xref:{url_references_schemas}[].
+
+The module-specific properties will be added under a key that is named after the module name.
+So for example, in case the module name is `nft`, the data will be stored under the key "nft" in each user account.
+
+[IMPORTANT]
+
+====
+If a module includes an account schema, it is necessary to update the genesis block after registering the module with the application.
+
+The application CLI can be used to generate a new genesis block as shown below:
+
+[source,bash]
+----
+./bin/run genesis-block:create
+----
+====
+
+To achieve a better overview, it is recommended to create a new file `schemas.js`, which will export the account schema for our new module:
+
+.schemas.js
 [source,js]
 ----
-const { Application, genesisBlockDevnet, configDevnet } = require('lisk-sdk');
-const { MyModule } = require('./my-module.js');
-
-// Update genesis block accounts to include the config options of myModule
-genesisBlockDevnet.header.asset.accounts = genesisBlockDevnet.header.asset.accounts.map(
-  (a) =>
-    utils.objects.mergeDeep({}, a, {
-      myModule: {
-        key1 : "",
-        key2 : false,
-        key3 : 0
+const nftAccountSchema = {
+    type: "object",
+    required: ["ownNFTs"],
+    properties: {
+      ownNFTs: {
+        type: "array",
+        fieldNumber: 1,
+        items: {
+          dataType: "bytes",
+        },
       },
-    }),
-);
+    },
+    default: {
+      ownNFTs: [],
+    },
+  };
 
-// Set a custom label for the bblockchain app
-configDevnet.label = 'my-app';
 
-const app = Application.defaultApplication(genesisBlockDevnet, configDevnet);
-
-app.registerModule(MyModule);
-
-app
-	.run()
-	.then(() => app.logger.info('App started...'))
-	.catch(error => {
-		console.error('Faced error in application', error);
-		process.exit(1);
-	});
+module.exports = {
+  nftAccountSchema
+};
 ----
 
-Now save and close `index.js`.
-The new module `MyModule` will now be available, the next time the application is started with `node index.js`.
+Now include the schema in the module:
+
+[source,js]
+----
+const { BaseModule } = require('lisk-sdk');
+const { myAccountSchema } = require('./schemas.js'); <1>
+
+class NftModule extends BaseModule {
+
+  // ...
+
+  accountSchema = myAccountSchema; <2>
+
+  // ...
+}
+
+module.exports = { MyModule };
+----
+
+<1> Require the schema.
+<2> Set the `accountSchema` of the module to the imported schema.

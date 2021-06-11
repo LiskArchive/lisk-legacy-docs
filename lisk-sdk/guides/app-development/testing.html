@@ -507,6 +507,7 @@
 <li><a href="#the-asset-test-skeleton">The asset test skeleton</a></li>
 <li><a href="#example-unit-test-for-a-transaction-asset">Example: Unit test for a transaction asset</a>
 <ul class="sectlevel2">
+<li><a href="#importing-the-test-suite">Importing the test suite</a></li>
 <li><a href="#the-createnft-asset">The createNFT asset</a></li>
 <li><a href="#testing-the-validate-function">Testing the validate() function</a></li>
 <li><a href="#testing-the-apply-function">Testing the apply() function</a></li>
@@ -680,6 +681,17 @@ describe('CreateNFTAsset', () =&gt; {
 </table>
 </div>
 <div class="sect2">
+<h3 id="importing-the-test-suite"><a class="anchor" href="#importing-the-test-suite"></a>Importing the test suite</h3>
+<div class="paragraph">
+<p>Add the following line at the top of <code>create_n_f_t_asset.spec.ts</code> to import the test suite of the Lisk SDK.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import { testing } from 'lisk-sdk';</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
 <h3 id="the-createnft-asset"><a class="anchor" href="#the-createnft-asset"></a>The createNFT asset</h3>
 <div class="paragraph">
 <p>The <code>createNFT</code> asset is an example asset from the previous guide <a href="asset.html" class="page">Creating a custom asset</a> and comes originally from the NFT app of the <a href="../../tutorials/nft.html" class="page">NFT tutorial</a>.</p>
@@ -717,8 +729,8 @@ class CreateNFTAsset extends BaseAsset {
       },
       name: {
         dataType: "string",
-        minLength: 3
-        maxLength: 64
+        minLength: 3,
+        maxLength: 64,
         fieldNumber: 3,
       },
     },
@@ -769,21 +781,19 @@ module.exports = CreateNFTAsset;</code></pre>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">describe('validate', () =&gt; {
     describe('schema validation', () =&gt; {
-        it.todo('should throw errors for invalid schema');
         it('should throw error if nft name equals "Mewtwo"', () =&gt; {
             const context = testing.createValidateAssetContext({
-                asset: { name: 'Mewtwo', initValue: 60 * 60 - 1, registerFor: 1 },
+                asset: { name: 'Mewtwo', initValue: 1, minPurchaseMargin: 10 },
                 transaction: { senderAddress: Buffer.alloc(0) } as any,
             });
 
             expect(() =&gt; transactionAsset.validate(context)).toThrow(
-                'Must set TTL value larger or equal to 3600',
+                'Illegal NFT name: Mewtwo',
             );
         });
-        it.todo('should be ok for valid schema');
         it('should be ok for valid schema', () =&gt; {
             const context = testing.createValidateAssetContext({
-                asset: { name: 'nazar.lsk', ttl: 60 * 60, registerFor: 1 },
+                asset: { name: 'Squirtle', initValue: 1, minPurchaseMargin: 10 },
                 transaction: { senderAddress: Buffer.alloc(0) } as any,
             });
 
@@ -799,14 +809,85 @@ module.exports = CreateNFTAsset;</code></pre>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">describe('apply', () =&gt; {
-    describe('valid cases', () =&gt; {
-        it.todo('should update the state store');
+    let stateStore: StateStore;
+    let reducerHandler: ReducerHandler;
+    let account: any;
+    let nftToken;
+    let context;
+
+    beforeEach(() =&gt; {
+        account = testing.fixtures.createDefaultAccount&lt;NFTAccountProps&gt;([NftModule]);
+
+        nftToken = createNFTToken({
+            name: 'Squirtle',
+            ownerAddress: account.address,
+            nonce: BigInt(1),
+            value: BigInt(1),
+            minPurchaseMargin: 10
+        });
+
+        stateStore = new testing.mocks.StateStoreMock({
+            accounts: [account],
+        });
+
+        reducerHandler = testing.mocks.reducerHandlerMock;
+
+        context = testing.createApplyAssetContext({
+            stateStore,
+            asset: { name: 'Squirtle', initValue: BigInt(1), minPurchaseMargin: 10 },
+            transaction: { senderAddress: account.address, nonce: BigInt(1) } as any,
+        });
+
+        jest.spyOn(stateStore.chain, 'get');
+        jest.spyOn(stateStore.chain, 'set');
+        jest.spyOn(reducerHandler, 'invoke');
     });
 
-    describe('invalid cases', () =&gt; {
-        it.todo('should throw error');
+});</code></pre>
+</div>
+</div>
+<div class="sect3">
+<h4 id="valid-cases"><a class="anchor" href="#valid-cases"></a>Valid cases</h4>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">describe('valid cases', () =&gt; {
+    it('should update sender account with unique nft id', async () =&gt; {
+        await transactionAsset.apply(context);
+        const updatedSender = await stateStore.account.get&lt;NFTAccountProps&gt;(account.address);
+
+        expect(updatedSender.nft.ownNFTs.toString()).toEqual(nftToken.id.toString());
+    });
+    it('should debit the initial value from the sender account', async () =&gt; {
+        await transactionAsset.apply(context);
+        expect(reducerHandler.invoke).toHaveBeenCalledWith("token:debit", {
+            address: account.address,
+            amount: BigInt(1),
+        });
+    });
+    it('should save the new NFT to the database', async () =&gt; {
+        await transactionAsset.apply(context);
+        const allTokens = await getAllNFTTokens(stateStore);
+        expect(allTokens).toEqual( [nftToken]);
+    });
+
+});</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="invalid-cases"><a class="anchor" href="#invalid-cases"></a>Invalid cases</h4>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">describe('invalid cases', () =&gt; {
+
+    it('should throw error if name is already registered', async () =&gt; {
+        await transactionAsset.apply(context);
+        await expect(transactionAsset.apply(context)).rejects.toThrow(
+            'The NFT name "Squirtle" is already registered',
+        );
     });
 });</code></pre>
+</div>
 </div>
 </div>
 </div>

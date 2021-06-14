@@ -61,29 +61,30 @@ If the module and asset skeletons have not been edited yet, it will display the 
 ----
 yarn run v1.22.10
 $ jest --passWithNoTests
- PASS  test/unit/modules/nft/nft_module.spec.ts
- PASS  test/commands/account/create.spec.ts
- FAIL  test/unit/modules/nft/assets/create_n_f_t_asset.spec.ts
-  ● Test suite failed to run
+ PASS  test/unit/plugins/nft_api/nft_api_plugin.spec.ts (7.656 s)
+ PASS  test/unit/modules/my_module/my_module_module.spec.ts (7.726 s)
+ PASS  test/unit/modules/nft/nft_module.spec.ts (7.703 s)
+ PASS  test/unit/modules/nft/assets/create_n_f_t_asset.spec.ts (9.282 s)
+ PASS  test/commands/account/create.spec.ts (10.092 s)
 
-    src/app/modules/nft/assets/create_n_f_t_asset.ts:16:19 - error TS6133: 'asset' is declared but its value is never read.
-
-    16   public validate({ asset }: ValidateAssetContext<Record<string, unknown>>): void {
-                         ~~~~~~~~~
-    src/app/modules/nft/assets/create_n_f_t_asset.ts:21:22 - error TS6198: All destructured elements are unused.
-
-    21   public async apply({ asset, transaction, stateStore }: ApplyAssetContext<Record<string, unknown>>): Promise<void> {
-                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Test Suites: 1 failed, 2 passed, 3 total
-Tests:       7 todo, 5 passed, 12 total
-Snapshots:   0 total
-Time:        4.62 s
+Test Suites: 5 passed, 5 total
+Tests:       26 todo, 8 passed, 34 total
+Snapshots:   1 passed, 1 total
+Time:        11.388 s
 Ran all test suites.
+✨  Done in 14.60s.
 ----
 
-The tests for the asset fail because the parameters in the xref:{}[validate()] and xref:{}[apply()] functions are unused at the moment.
-To get rid of the error, either remove them or implement logic which uses them in the corresponding function.
+[TIP]
+
+====
+If the tests of the asset fails, e.g. with the following error:
+
+ 'asset' is declared but its value is never read.
+
+It is most likely, because the xref:{}[validate()] or xref:{}[apply()] function isn't implemented yet.
+To get rid of the error, either remove the unused variables or implement logic which uses them in the corresponding function.
+====
 
 == The module test skeleton
 
@@ -123,7 +124,7 @@ describe('NftModuleModule', () => {
 == The asset test skeleton
 
 The test skeleton for the asset contains already a few simple test right from the beginning.
-They were automatically created during the xref:{url_guides_setup}[initialization of the application].
+They were automatically created during the xref:{url_guides_asset}[generation of the asset].
 The rest of the tests needs to be created by the developer, to test all the custom logic of the asset, which was implemented after the initialization of the application.
 
 .test/unit/modules/nft/create_n_f_t_asset.spec.ts
@@ -173,7 +174,7 @@ describe('CreateNFTAsset', () => {
 
 == Example: Unit test for a transaction asset
 
-In this example, the test suite of the Lisk SDK is used to write some simple unit tests for a new transaction asset that we created recently.
+In this example, we want to write unit tests for the example asset from the previous guide xref:{url_guides_asset}[].
 
 [TIP]
 
@@ -181,10 +182,7 @@ In this example, the test suite of the Lisk SDK is used to write some simple uni
 For more information about the different features of the test suite, check out the reference page xref:{url_reference_test_suite}[]
 ====
 
-=== The createNFT asset
-
-The `createNFT` asset is an example asset from the previous guide xref:{url_guides_asset}[] and comes originally from the NFT app of the xref:{url_tutorials_nft}[NFT tutorial].
-
+//TODO: Update code example in asset guide (and nft tutorial/app?), remove full code example here.
 [source,js]
 ----
 const { BaseAsset } = require("lisk-sdk");
@@ -267,25 +265,51 @@ module.exports = CreateNFTAsset;
 
 Add the following lines at the top of `create_n_f_t_asset.spec.ts` to import the required resources for the tests.
 
+//TODO: Add nft file to asset guide
 [source,typescript]
 ----
-import { CreateNFTAsset } from '../../../../../src/app/modules/nft/assets/create_n_f_t_asset';
-import { StateStore, ReducerHandler, testing, validator } from 'lisk-sdk';
-import { NftModule } from '../../../../../src/app/modules/nft/nft_module';
+import { CreateNFTAsset } from '../../../../../src/app/modules/nft/assets/create_n_f_t_asset'; <1>
+import { StateStore, ReducerHandler, testing } from 'lisk-sdk'; <2>
+import { NftModule } from '../../../../../src/app/modules/nft/nft_module'; <3>
 import {
     getAllNFTTokens,
     createNFTToken,
-}  from "../../../../../src/app/modules/nft/nft"
-
-export interface NFTAccountProps {
-    nft: {
-        ownNFTs: [];
-    };
-}
+}  from "../../../../../src/app/modules/nft/nft"; <4>
 ----
+
+<1> `CreateNFTAsset`: The asset which is tested here.
+<2> `testing` contains the functions of the Lisk SDk test suite.
+<3> `NftModule`: Used in `createDefaultAccount()` to create a default account with the correct accouunt properties.
+<4> `getAllNFTTokens` and `createNFTToken` are utility functions for the NFT module which are also used in thee tests for the `apply()` function.
 
 === Testing the validate() function
 
+As a reminder, the `validate()` function of the createNFT asset looks like this:
+
+.`validate()` function of `create_n_f_t_asset.ts`
+[source,typescript]
+----
+validate({asset}) {
+    if (asset.name === "Mewtwo") {
+        throw new Error("Illegal NFT name: Mewtwo");
+    }
+};
+----
+
+To verify that the function is implemented correctly, write 2 tests to check, if:
+
+. it throws an error if the NFT name equals "Mewtwo"
+. it does not throw any error for a valid schema
+
+The function `createValidateAssetContext()` is used for both tests to create a context for the `validate()` function.
+
+In the first test, where an error is expected, a context with an invalid `asset` parameter with `name: 'Mewtwo'` is created, whereas in the second test a valid `name` property is passed
+
+After the context is created, both tests will call the `validate()` function with the context and the result is checked.
+
+If all tests pass, it is verified that the validate function behaves exactly as expected.
+
+.Tests for `validate()`
 [source,typescript]
 ----
 describe('validate', () => {
@@ -314,6 +338,68 @@ describe('validate', () => {
 
 === Testing the apply() function
 
+As a reminder, the `apply()` function of the createNFT asset looks like this:
+
+.`apply()` function of `create_n_f_t_asset.ts`
+[source,typescript]
+----
+async apply({ asset, stateStore, reducerHandler, transaction }) {
+    // 4.verify if sender has enough balance
+    const senderAddress = transaction.senderAddress;
+    const senderAccount = await stateStore.account.get(senderAddress);
+
+    // 5.create nft
+    const nftToken = createNFTToken({
+      name: asset.name,
+      ownerAddress: senderAddress,
+      nonce: transaction.nonce,
+      value: asset.initValue,
+      minPurchaseMargin: asset.minPurchaseMargin,
+    });
+
+    // 6.update sender account with unique nft id
+    senderAccount.nft.ownNFTs.push(nftToken.id);
+    await stateStore.account.set(senderAddress, senderAccount);
+
+    // 7.debit tokens from sender account to create nft
+    await reducerHandler.invoke("token:debit", {
+      address: senderAddress,
+      amount: asset.initValue,
+    });
+
+    // 8.save nfts
+    const allTokens = await getAllNFTTokens(stateStore);
+    allTokens.push(nftToken);
+    await setAllNFTTokens(stateStore, allTokens);
+}
+----
+
+To verify that the function is implemented correctly, write 4 tests to check, if:
+
+For valid cases:
+
+. it updates sender account with a unique NFT ID
+. it debits the initial value from the sender account
+. it saves the new NFT to the database
+
+For invalid cases:
+
+. it throws an error, if the NFT name is already registered
+
+[source,typescript]
+----
+export interface NFTAccountProps {
+    nft: {
+        ownNFTs: [];
+    };
+}
+----
+
+Similar to the unit tests for the `validate()` function, we prepare a context using `createApplyAssetContext()` for the `apply()` function which can be passed to the function when calling it in each test.
+
+As the context is for every test the same, prepare everything in the `beforeEach()` hook and directly call the `apply()` function with the context in each test.
+
+.create_n_f_t_asset.spec.ts
 [source,typescript]
 ----
 describe('apply', () => {
@@ -324,8 +410,11 @@ describe('apply', () => {
     let context;
 
     beforeEach(() => {
+
+        // Create new account
         account = testing.fixtures.createDefaultAccount<NFTAccountProps>([NftModule]);
 
+        // Create new NFT for account
         nftToken = createNFTToken({
             name: 'Squirtle',
             ownerAddress: account.address,
@@ -334,18 +423,23 @@ describe('apply', () => {
             minPurchaseMargin: 10
         });
 
+        // Create state store mock with account
         stateStore = new testing.mocks.StateStoreMock({
             accounts: [account],
         });
 
+        // Create reducer handler mock
         reducerHandler = testing.mocks.reducerHandlerMock;
 
+        // Create context for the apply() function
         context = testing.createApplyAssetContext({
             stateStore,
+            reducerHandler,
             asset: { name: 'Squirtle', initValue: BigInt(1), minPurchaseMargin: 10 },
             transaction: { senderAddress: account.address, nonce: BigInt(1) } as any,
         });
 
+        // Tracks calls to stateStore.chain and the reducerHandler
         jest.spyOn(stateStore.chain, 'get');
         jest.spyOn(stateStore.chain, 'set');
         jest.spyOn(reducerHandler, 'invoke');

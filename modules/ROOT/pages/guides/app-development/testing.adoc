@@ -172,7 +172,7 @@ describe('CreateNFTAsset', () => {
 });
 ----
 
-== Example: Unit test for a transaction asset
+== Example: Unit tests for a transaction asset
 
 In this example, we want to write unit tests for the example asset from the previous guide xref:{url_guides_asset}[].
 
@@ -182,90 +182,10 @@ In this example, we want to write unit tests for the example asset from the prev
 For more information about the different features of the test suite, check out the reference page xref:{url_reference_test_suite}[]
 ====
 
-//TODO: Update code example in asset guide (and nft tutorial/app?), remove full code example here.
-[source,js]
-----
-const { BaseAsset } = require("lisk-sdk");
-const {
-  getAllNFTTokens,
-  setAllNFTTokens,
-  createNFTToken,
-} = require("../nft");
-
-// 1.extend base asset to implement your custom asset
-class CreateNFTAsset extends BaseAsset {
-  // 2.define unique asset name and id
-  name = "createNFT";
-  id = 0;
-  // 3.define asset schema for serialization
-  schema = {
-    $id: "lisk/nft/create",
-    type: "object",
-    required: ["minPurchaseMargin", "initValue", "name"],
-    properties: {
-      minPurchaseMargin: {
-        dataType: "uint32",
-        minimum: 0,
-        maximum: 100,
-        fieldNumber: 1,
-      },
-      initValue: {
-        dataType: "uint64",
-        exclusiveMinimum: 0,
-        fieldNumber: 2,
-      },
-      name: {
-        dataType: "string",
-        minLength: 3,
-        maxLength: 64,
-        fieldNumber: 3,
-      },
-    },
-  };
-  validate({asset}) {
-    if (asset.name === "Mewtwo") {
-      throw new Error("Illegal NFT name: Mewtwo");
-    }
-  };
-  async apply({ asset, stateStore, reducerHandler, transaction }) {
-    // 4.verify if sender has enough balance
-    const senderAddress = transaction.senderAddress;
-    const senderAccount = await stateStore.account.get(senderAddress);
-
-    // 5.create nft
-    const nftToken = createNFTToken({
-      name: asset.name,
-      ownerAddress: senderAddress,
-      nonce: transaction.nonce,
-      value: asset.initValue,
-      minPurchaseMargin: asset.minPurchaseMargin,
-    });
-
-    // 6.update sender account with unique nft id
-    senderAccount.nft.ownNFTs.push(nftToken.id);
-    await stateStore.account.set(senderAddress, senderAccount);
-
-    // 7.debit tokens from sender account to create nft
-    await reducerHandler.invoke("token:debit", {
-      address: senderAddress,
-      amount: asset.initValue,
-    });
-
-    // 8.save nfts
-    const allTokens = await getAllNFTTokens(stateStore);
-    allTokens.push(nftToken);
-    await setAllNFTTokens(stateStore, allTokens);
-  }
-}
-
-module.exports = CreateNFTAsset;
-----
-
 === Imports
 
 Add the following lines at the top of `create_n_f_t_asset.spec.ts` to import the required resources for the tests.
 
-//TODO: Add nft file to asset guide
 [source,typescript]
 ----
 import { CreateNFTAsset } from '../../../../../src/app/modules/nft/assets/create_n_f_t_asset'; <1>

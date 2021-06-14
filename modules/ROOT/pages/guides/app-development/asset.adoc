@@ -7,6 +7,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 // Project URLs
 :url_guides_setup: guides/app-development/setup.adoc
 :url_guides_module: guides/app-development/module.adoc
+:url_guides_module_nft_utils: guides/app-development/module.adoc#nft-utility-functions
 :url_guides_module_statestore: guides/app-development/module.adoc#statestore
 :url_references_schemas: references/schemas.adoc
 :url_tutorials: tutorials/index.adoc
@@ -84,6 +85,7 @@ The file `create_n_f_t_asset.ts` contains the asset skeleton and the file `creat
 
 Firstly, view the module skeleton in `create_n_f_t_asset.ts`:
 
+.src/app/modules/nft/assets/create_n_f_t_asset.ts
 [source,typescript]
 ----
 import { BaseAsset, ApplyAssetContext, ValidateAssetContext } from 'lisk-sdk';
@@ -132,6 +134,7 @@ The asset class always extends from the `BaseAsset`, which is imported from the 
 
 The properties `name` and `id` are prefilled by the values used when <<generate-asset,generating the asset skeleton>> was completed in the previous step.
 
+.src/app/modules/nft/assets/create_n_f_t_asset.ts
 [source,typescript]
 ----
 import { BaseAsset, ApplyAssetContext, ValidateAssetContext } from 'lisk-sdk';
@@ -158,6 +161,7 @@ We expect the following data in a transaction, to be able to create a new NFT:
 
 Therefore, the asset schema is adjusted accordingly as shown below:
 
+.src/app/modules/nft/assets/create_n_f_t_asset.ts
 [source,typescript]
 ----
 public schema = {
@@ -180,6 +184,7 @@ public schema = {
         name: {
             dataType: "string",
             minLength: 3, <8>
+            maxLength: 64, <9>
             fieldNumber: 3,
         },
     },
@@ -194,6 +199,7 @@ public schema = {
 <6> `uint64` is used as a data type, because the `initValue` can have very high values.
 <7> The exclusive minimum value is set to 0, signifying that the `initValue` needs to be higher than 0 to be valid.
 <8> The minimum length of the NFT name is set to 3.
+<9> The maximum length of the NFT name is set to 64.
 
 == Validating the asset data
 
@@ -201,13 +207,14 @@ The optional function `validate()` validates the data of a transaction asset, be
 
 If one of these conditions is not fulfilled, then the transaction will not be processed, and an error should be thrown.
 
+.src/app/modules/nft/assets/create_n_f_t_asset.ts
 [source,typescript]
 ----
-public validate({ asset }: ValidateAssetContext<{}>): void {
-    if (asset.name === "reservedName") {
-      throw new Error("Illegal NFT name");
+validate({asset}) {
+    if (asset.name === "Mewtwo") {
+        throw new Error("Illegal NFT name: Mewtwo");
     }
-}
+};
 ----
 
 If the validation does not throw any errors, that signifies they been successful and the data will be applied as defined in the `apply()` function.
@@ -221,6 +228,7 @@ In this example, we use the transaction data to create a new NFT token, which is
 
 To get and set the blockchain state, the `stateStore` is used again, which we know already from the xref:{url_guides_module_statestore}[lifecycle hooks] of the module guide.
 
+.src/app/modules/nft/assets/create_n_f_t_asset.ts
 [source,typescript]
 ----
 public async apply({ asset, transaction, stateStore }: ApplyAssetContext<{}>): Promise<void> {
@@ -254,3 +262,78 @@ public async apply({ asset, transaction, stateStore }: ApplyAssetContext<{}>): P
   }
 }
 ----
+
+=== NFT utility functions
+
+The NFT utility functions that we use inside the `apply()` function are imported from the file `../nft.js`.
+
+.src/app/modules/nft/assets/create_n_f_t_asset.ts
+[source,typescript]
+----
+import { BaseAsset, ApplyAssetContext, ValidateAssetContext } from 'lisk-sdk';
+import {
+    getAllNFTTokens,
+    setAllNFTTokens,
+    createNFTToken,
+}  from "../nft";
+----
+
+The file `nft.js` was already used in the guide xref:{url_guides_module_nft_utils}[], the functions `getAllNFTTokens()`, `setAllNFTTokens()`, `createNFTToken()` can simply be added, if not present yet:
+
+.src/app/modules/nft/nft.js
+[source,js]
+----
+const { codec, cryptography } = require("lisk-sdk");
+
+const createNFTToken = ({ name, ownerAddress, nonce, value, minPurchaseMargin }) => {
+  const nonceBuffer = Buffer.alloc(8);
+  nonceBuffer.writeBigInt64LE(nonce);
+  const seed = Buffer.concat([ownerAddress, nonceBuffer]);
+  const id = cryptography.hash(seed);
+
+  return {
+    id,
+    minPurchaseMargin,
+    name,
+    ownerAddress,
+    value,
+  };
+};
+
+const getAllNFTTokens = async (stateStore) => {
+  const registeredTokensBuffer = await stateStore.chain.get(
+    CHAIN_STATE_NFT_TOKENS
+  );
+  if (!registeredTokensBuffer) {
+    return [];
+  }
+
+  const registeredTokens = codec.decode(
+    registeredNFTTokensSchema,
+    registeredTokensBuffer
+  );
+
+  return registeredTokens.registeredNFTTokens;
+};
+
+const setAllNFTTokens = async (stateStore, NFTTokens) => {
+  const registeredTokens = {
+    registeredNFTTokens: NFTTokens.sort((a, b) => a.id.compare(b.id)),
+  };
+
+  await stateStore.chain.set(
+    CHAIN_STATE_NFT_TOKENS,
+    codec.encode(registeredNFTTokensSchema, registeredTokens)
+  );
+};
+
+module.exports = {
+  registeredNFTTokensSchema,
+  CHAIN_STATE_NFT_TOKENS,
+  getAllNFTTokens,
+  setAllNFTTokens,
+  getAllNFTTokensAsJSON,
+  createNFTToken,
+};
+----
+

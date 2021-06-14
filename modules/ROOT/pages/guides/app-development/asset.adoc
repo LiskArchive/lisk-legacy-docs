@@ -1,236 +1,256 @@
-= Creating a custom asset
+= Creating a new transaction asset
 Mona Bärenfänger <mona@lightcurve.io>
 // Settings
 :page-aliases: customize.adoc
-:toc:
+:toc: preamble
+
 // Project URLs
 :url_guides_setup: guides/app-development/setup.adoc
 :url_guides_module: guides/app-development/module.adoc
+:url_guides_module_statestore: guides/app-development/module.adoc#statestore
 :url_references_schemas: references/schemas.adoc
 :url_tutorials: tutorials/index.adoc
 
-This guide explains step-by-step, how to create a custom asset for a module of a blockchain application built with the Lisk SDK.
+How to create a new asset for a module of a blockchain application.
 
 .Prerequisites
 [NOTE]
 ====
 To follow this guide, the following is assumed:
 
-* a basic blockchain application is already initiated, like explained in the guide xref:{url_guides_setup}[].
-* a custom module `MyModule` is created, like explained in the previous guide xref:{url_guides_module}[].
+* Lisk Commander is installed, and a basic blockchain application is already initialized, as explained in the guide xref:{url_guides_setup}[].
+* a custom module `NftModule` is created, as explained in the previous guide xref:{url_guides_module}[].
 ====
 
-First, create a new file named after the new asset, for example `my-asset.js`.
+== Generating the asset skeleton
+
+Use Lisk Commander to generate the skeleton for the new asset:
+
+[source,bash]
+----
+$ lisk generate:asset --help
+Creates an asset skeleton for the given module name, name, and id.
+
+USAGE
+  $ lisk generate:asset MODULENAME ASSETNAME ASSETID
+
+ARGUMENTS
+  MODULENAME  Module name.
+  ASSETNAME   Asset name.
+  ASSETID     Asset Id.
+
+OPTIONS
+  -t, --template=template  Template to bootstrap the application. It will read from `.liskrc.json` or use `lisk-ts` if not found.
+
+EXAMPLES
+  generate:asset nft transfer 1
+----
+
+The command `generate:asset` expects 3 arguments:
+
+. *Module name*: The name of the module the asset belongs to.
+. *Asset name*: The name of the new asset.
+Needs to be a string that only consists of lower case and upper case letters [a-z, A-Z].
+No numbers, hyphens, etc., are allowed.
+. *Asset ID*: The ID of the asset.
+Needs to be unique within the module.
+Minimum value is 0.
+
+As an example, we will add a new asset `createNFT` to the `nft` module:
+
+[[generate-asset]]
+[source,bash]
+----
+lisk generate:asset nft createNFT 0
+----
+
+This will generate the following files:
 
 ----
-├── blockchain_app
-│   ├── index.js
-│   ├── my-asset.js
-│   ├── my-module.js
-│   ├── package.json
-│   └── schemas.js
+Creating asset skeleton with asset name "createNFT" and asset ID "0" for module "nft"
+Using template "lisk-ts"
+Generating asset skeleton.
+Registering asset...
+identical .liskrc.json
+   create src/app/modules/nft/assets/create_n_f_t_asset.ts
+   create test/unit/modules/nft/assets/create_n_f_t_asset.spec.ts
+
+No change to package.json was detected. No package manager install will be executed.
+
+Your asset is created and ready to use.
 ----
 
-== Creating the asset class
+The file `create_n_f_t_asset.ts` contains the asset skeleton and the file `create_n_f_t_asset.spec.ts` contains the related unit tests for the new asset.
 
-Now open `my-asset.js` and import the `BaseAsset` from the `lisk-sdk` package:
+Firstly, view the module skeleton in `create_n_f_t_asset.ts`:
 
-[source,js]
+[source,typescript]
 ----
-const { BaseAsset } = require('lisk-sdk');
-----
+import { BaseAsset, ApplyAssetContext, ValidateAssetContext } from 'lisk-sdk';
 
-Next, define a new class `MyAsset`, which extends from the `BaseAsset`:
+export class CreateNFTAsset extends BaseAsset {
+  public name = 'createNFT';
+  public id = 0;
 
-[source,js]
-----
-const { BaseAsset } = require('lisk-sdk');
+  // Define schema for asset
+	public schema = {
+    $id: 'nft/createNFT-asset',
+		title: 'CreateNFTAsset transaction asset for nft module',
+		type: 'object',
+		required: [],
+		properties: {},
+  };
 
-class MyAsset extends BaseAsset {
+  public validate({ asset }: ValidateAssetContext<{}>): void {
+    // Validate your asset
+  }
 
+  // eslint-disable-next-line @typescript-eslint/require-await
+  public async apply({ asset, transaction, stateStore }: ApplyAssetContext<{}>): Promise<void> {
+      throw new Error('Asset "createNFT" apply hook is not implemented.');
+  }
 }
-
-module.exports = { MyAsset };
 ----
 
-== Setting name and ID of the asset
+The command `generate:asset` previously created the asset `createNFT` which already contains skeletons of all important components of an asset.
+The only properties which are set at this point are the asset ID and the asset name, which were defined when generating the asset.
 
-Inside of the `MyAsset` class, define the different properties of the transaction asset:
 
-`id`(number)::
-The ID of an asset.
-Must be unique within the module.
-The ID is used (combined with the module ID)  for example to create transaction objects.
-`name`(string)::
-The name of an asset.
-Must be unique within the module.
+If the application is started at this point, it is already possible to create a basic `createNFT` transaction with an empty transaction asset, sign it, and send it to the node.
+The node will then throw the following error:
 
-[source,js]
+ Asset "createNFT" apply hook is not implemented.
+
+This is due to the fact that the `apply()` function of the asset is not implemented yet.
+To give the asset a purpose, it is necessary to implement certain logic inside of the asset.
+
+The following sections describe the different components of a transaction asset in detail.
+
+== The asset class
+
+The asset class always extends from the `BaseAsset`, which is imported from the `lisk-sdk` package.
+
+The properties `name` and `id` are prefilled by the values used when <<generate-asset,generating the asset skeleton>> was completed in the previous step.
+
+[source,typescript]
 ----
-const { BaseAsset } = require('lisk-sdk');
+import { BaseAsset, ApplyAssetContext, ValidateAssetContext } from 'lisk-sdk';
 
-class MyAsset extends BaseAsset {
-  id = 0; <1>
-  name = 'myAsset';
+export class CreateNFTAsset extends BaseAsset {
+  public name = 'createNFT';
+  public id = 0;
+
+  // ...
 }
-
-module.exports = { MyAsset };
 ----
 
-<1> The transaction asset `MyAsset` is the first asset of the module `MyModule`, therefore we set the `id` to the lowest possible value, which is `0`.
-
-== Defining the asset schema
+== The asset schema
 
 The asset schema defines in which format data is sent in the transaction asset.
 
 TIP: For more information about schemas and how they are used in the Lisk SDK, check out the xref:{url_references_schemas}[].
 
-If the property is either an object or an array, the `type` property must be used to identify it, instead of `dataType`.
+We expect the following data in a transaction, to be able to create a new NFT:
 
-For better overview, let's add the schema to the file `schemas.js`, which was created in the previous guide xref:{url_guides_module}[].
+* minPurchaseMargin: The % value of the initial value, that is added to the initial value when purchasing the NFT.
+* initValue: The inital value of the NFT.
+* name: The name of the NFT.
 
-.schemas.js
-[source,js]
+Therefore, the asset schema is adjusted accordingly as shown below:
+
+[source,typescript]
 ----
-const myAssetSchema = {
-  // Unique identifier of the schema throughout the system
-  $id: "/unique-id",
-  // Root type must be type object
-  type: "object",
-  // Required properties
-  required: ["key1","key2"],
-  // Properties for the object
-  properties: {
-    key1: {
-      dataType: "string",
-      fieldNumber: 1,
+public schema = {
+    $id: "nft/createNFT-asset",
+    title: 'CreateNFTAsset transaction asset for nft module',
+    type: "object",
+    required: ["minPurchaseMargin", "initValue", "name"], <1>
+    properties: {
+        minPurchaseMargin: {
+            dataType: "uint32", <2>
+            minimum: 0, <3>
+            maximum: 100, <4>
+            fieldNumber: 1, <5>
+        },
+        initValue: {
+            dataType: "uint64", <6>
+            exclusiveMinimum: 0, <7>
+            fieldNumber: 2,
+        },
+        name: {
+            dataType: "string",
+            minLength: 3, <8>
+            fieldNumber: 3,
+        },
     },
-    key2: {
-      dataType: "boolean",
-      fieldNumber: 2,
-    },
-    key3: {
-      dataType: "uint64",
-      fieldNumber: 3,
-    }
-  },
-  // Default values for the different properties
-  default: {
-    key1 : "",
-    key2 : false,
-    key3 : 0
-  }
-};
-
-module.exports = {
-  myAccountSchema,
-  myAssetSchema
 };
 ----
 
-Now include the schema in the asset:
+<1> All 3 properties are required to create a new NFT.
+<2> `uin32` is used as a data type, because the `minPurchaseMargin` is a minimal number between 0 and 100.
+<3> The minimum value is set to 0.
+<4> The maximum value is set to 100.
+<5> The `fieldNumber` increments by +1 for each property in the transaction asset.
+<6> `uint64` is used as a data type, because the `initValue` can have very high values.
+<7> The exclusive minimum value is set to 0, signifying that the `initValue` needs to be higher than 0 to be valid.
+<8> The minimum length of the NFT name is set to 3.
 
-[source,js]
+== Validating the asset data
+
+The optional function `validate()` validates the data of a transaction asset, before it is passed to the `apply()` function.
+
+If one of these conditions is not fulfilled, then the transaction will not be processed, and an error should be thrown.
+
+[source,typescript]
 ----
-const { BaseAsset } = require('lisk-sdk');
-const { myAssetSchema } = require('./schemas'); <1>
-
-class MyAsset extends BaseAsset {
-  id = 0;
-  name = 'myAsset';
-  schema = myAssetSchema; <2>
-}
-
-module.exports = { MyAsset };
-----
-
-<1> Require the schema.
-<2> Set the `schema` of the asset to the imported schema.
-
-== Validating asset inputs
-
-Next, define a function `validate()`, which will validate the data of a transaction asset, to check if the data has the proper format.
-
-In this example, we validate if the data in key1 is present, type `string`, and is no longer than 64 characters.
-If one of these conditions is not fulfilled, the transaction won't be processed, and an error will be thrown.
-
-[source,js]
-----
-const { BaseAsset } = require('lisk-sdk');
-const { myAssetSchema } = require('./schemas');
-
-class MyAsset extends BaseAsset {
-  id = 0;
-  name = 'myAsset';
-  schema = myAssetSchema;
-
-  validate({asset}) {
-    if (!asset.key1 || typeof asset.key1 !== 'string' || asset.key1.length > 64) {
-      throw new Error(
-            'Invalid "asset.key1" defined on transaction: A string value no longer than 64 characters is expected'
-        );
+public validate({ asset }: ValidateAssetContext<{}>): void {
+    if (asset.name === "reservedName") {
+      throw new Error("Illegal NFT name");
     }
-  };
 }
-
-module.exports = { MyAsset };
 ----
 
-If the validation doesn't throw any errors, it means the validations have been successful, and the data will be applied as defined in the `apply()` function.
+If the validation does not throw any errors, that signifies they been successful and the data will be applied as defined in the `apply()` function.
 
-== Applying the transaction asset logic
+== Defining the asset logic
 
-Finally, define a function `apply()`, which contains the logic of how the data in the transaction asset should be applied on tyhe blockchain.
+The most important part of the transaction asset is the `apply()` function.
+It contains the logic of how the data in the transaction asset should be applied on the blockchain.
 
-In this example, we save the provided string in `key1` from the transaction asset into the users account under the `myModule` property.
+In this example, we use the transaction data to create a new NFT token, which is added to the senders account.
 
-[source,js]
+To get and set the blockchain state, the `stateStore` is used again, which we know already from the xref:{url_guides_module_statestore}[lifecycle hooks] of the module guide.
+
+[source,typescript]
 ----
-const { BaseAsset } = require('lisk-sdk');
-const { myAssetSchema } = require('./schemas');
-
-class MyAsset extends BaseAsset {
-  id = 0;
-  name = 'myAsset';
-  schema = myAssetSchema;
-
-  validate({asset}) {
-    if (!asset.key1 || typeof asset.key1 !== 'string' || asset.key1.length > 64) {
-      throw new Error(
-            'Invalid "asset.key1" defined on transaction: A string value no longer than 64 characters is expected'
-        );
-    }
-  };
-
-  async apply({ asset, stateStore, reducerHandler, transaction }) {
+public async apply({ asset, transaction, stateStore }: ApplyAssetContext<{}>): Promise<void> {
+    // 4.verify if sender has enough balance
     const senderAddress = transaction.senderAddress;
     const senderAccount = await stateStore.account.get(senderAddress);
 
-    senderAccount.myModule.key1 = asset.key1;
-    stateStore.account.set(senderAccount.address, senderAccount);
+    // 5.create nft
+    const nftToken = createNFTToken({
+      name: asset.name,
+      ownerAddress: senderAddress,
+      nonce: transaction.nonce,
+      value: asset.initValue,
+      minPurchaseMargin: asset.minPurchaseMargin,
+    });
+
+    // 6.update sender account with unique nft id
+    senderAccount.nft.ownNFTs.push(nftToken.id);
+    await stateStore.account.set(senderAddress, senderAccount);
+
+    // 7.debit tokens from sender account to create nft
+    await reducerHandler.invoke("token:debit", {
+      address: senderAddress,
+      amount: asset.initValue,
+    });
+
+    // 8.save nfts
+    const allTokens = await getAllNFTTokens(stateStore);
+    allTokens.push(nftToken);
+    await setAllNFTTokens(stateStore, allTokens);
   }
 }
-
-module.exports = { MyAsset };
-----
-
-== Adding the asset to the module
-
-The last thing to do is to add the newly created asset to the `transactionAssets` property of the module it belongs to.
-
-[source,js]
-----
-const { BaseModule } = require('lisk-sdk');
-const { myAccountSchema } = require('./schemas.js');
-const { MyAsset } = require('./my-asset.js');
-
-class MyModule extends BaseModule {
-  id = 1024;
-  name = 'myModule';
-  accountSchema = myAccountSchema;
-  transactionAssets = [ new MyAsset() ];
-  //...
-}
-
-module.exports = { MyModule };
 ----

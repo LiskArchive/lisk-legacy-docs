@@ -9,7 +9,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_modules_dpos: dpos-module.adoc
 :url_modules_token: token-module.adoc
 
-How to use `lisk-genesis` to generate a genesis block for a blockchain application.
+How to generate a genesis block for a blockchain application.
 
 .Prerequisites
 [NOTE]
@@ -22,10 +22,105 @@ To use this guide, ensure the the following criteria below has been fulfilled:
 
 Each blockchain application needs a genesis block, which is the very first block of the blockchain.
 
-During development, the `genesisBlockDevnet` was used as the genesis block.
-Once the application will be released, it is important to exchange that genesis block with a customized one for your application.
+If a module includes an account schema, it is necessary to update the genesis block after registering the module with the application, to update the accounts in the genesis block with the new properties..
 
-The genesis library can be used to generate a valid genesis block based on the above parameters.
+== Using the CLI to generate a new genesis block
+
+After the application bootstrap, the default devnet genesis block was generated under `config/default/`.
+
+If then a new module is registered with the application, which includes an account schema, it will fail with the following error:
+
+----
+$ ./bin/run start
+Starting Lisk new_app at /Users/lisk/.lisk/new_app.
+14:03:56 INFO lisk-framework: Starting the app - new_app (module=lisk:app)
+14:03:56 INFO lisk-framework: If you experience any type of error, please open an issue on Lisk GitHub: https://github.com/LiskHQ/lisk-sdk/issues (module=lisk:app)
+14:03:56 INFO lisk-framework: Contribution guidelines can be found at Lisk-sdk: https://github.com/LiskHQ/lisk-sdk/blob/development/docs/CONTRIBUTING.md (module=lisk:app)
+14:03:56 INFO lisk-framework: Booting the application with Lisk Framework(0.1.0) (module=lisk:app)
+14:03:56 INFO lisk-framework: Initializing controller (module=lisk:app)
+14:03:56 INFO lisk-framework: Loading controller (module=lisk:app)
+14:03:56 INFO lisk-framework: Event * was subscribed but not registered to the bus yet. (module=lisk:app)
+    TypeError: Cannot read property 'ownNFTs' of undefined
+14:03:56 INFO lisk-framework: Application shutdown started (module=lisk:app)
+{
+ "errorCode": 2,
+ "message": "process.exit"
+}
+lightcuts
+----
+
+To get rid of this error, it is required to update the genesis block of the application.
+
+The genesis block can be updated with the application CLI:
+
+[source,bash]
+----
+./bin/run genesis-block:create --output  config/defaults
+----
+
+Then wait, until the new genesis block is generated.
+
+----
+Creating genesis block [===========         ] 55% 44.6s
+----
+
+After completion, the new genesis block will be copied to `config/default/`, where it automatically replaces the outdated genesis block.
+
+Then copy the following content to `config/default/config.json`:
+
+* copy the content of `forging_info.json` to under `forging.delegates`
+* copy the content of `password.json` to under `forging.defaultPassword`
+
+After the genesis block and config are updated, the application should start again successfully.
+Try it by running:
+
+[source,bash]
+----
+./bin/run start
+----
+
+For more information about the `create:genesis-block` command, run the help:
+
+----
+$ ./bin/run genesis-block:create --help
+Creates genesis block file.
+
+USAGE
+  $ mft genesis-block:create
+
+OPTIONS
+  -a, --accounts=accounts                                                                    [default: 10] Number of non-validator
+                                                                                             accounts to generate
+
+  -o, --output=output                                                                        [default: config] Output folder path
+                                                                                             of the generated genesis block
+
+  -t, --token-distribution=token-distribution                                                [default: 100000000000] Amount of
+                                                                                             tokens distributed to each account
+
+  -v, --validators=validators                                                                [default: 103] Number of validator
+                                                                                             accounts to generate
+
+  --validators-hash-onion-count=validators-hash-onion-count                                  [default: 100000] Number of hashes to
+                                                                                             produce for each hash-onion
+
+  --validators-hash-onion-distance=validators-hash-onion-distance                            [default: 1000] Distance between each
+                                                                                             hashes for hash-onion
+
+  --validators-passphrase-encryption-iterations=validators-passphrase-encryption-iterations  [default: 1000000] Number of
+                                                                                             iterations to use for passphrase
+                                                                                             encryption
+
+EXAMPLES
+  genesis-block:create --output mydir
+  genesis-block:create --output mydir --accounts 10
+  genesis-block:create --output mydir --accounts 10 --validators 103
+  genesis-block:create --output mydir --accounts 10 --validators 103 --token-distribution 500
+----
+
+== Manual genesis block creation (alternative with Lisk Genesis)
+
+The `genesis` library can be used to generate a valid genesis block based on the above parameters.
 It can be imported directly from the `lisk-sdk` package, or alternatively it can be installed as a separate package `@liskhq/lisk-genesis`.
 
 [source,bash]

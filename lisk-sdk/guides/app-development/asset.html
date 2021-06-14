@@ -484,7 +484,11 @@
 <li><a href="#the-asset-class">The asset class</a></li>
 <li><a href="#the-asset-schema">The asset schema</a></li>
 <li><a href="#validating-the-asset-data">Validating the asset data</a></li>
-<li><a href="#defining-the-asset-logic">Defining the asset logic</a></li>
+<li><a href="#defining-the-asset-logic">Defining the asset logic</a>
+<ul class="sectlevel2">
+<li><a href="#nft-utility-functions">NFT utility functions</a></li>
+</ul>
+</li>
 </ul>
 </div>
 </div>
@@ -567,6 +571,7 @@ Your asset is created and ready to use.</pre>
 <p>Firstly, view the module skeleton in <code>create_n_f_t_asset.ts</code>:</p>
 </div>
 <div class="listingblock">
+<div class="title">src/app/modules/nft/assets/create_n_f_t_asset.ts</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import { BaseAsset, ApplyAssetContext, ValidateAssetContext } from 'lisk-sdk';
 
@@ -626,6 +631,7 @@ To give the asset a purpose, it is necessary to implement certain logic inside o
 <p>The properties <code>name</code> and <code>id</code> are prefilled by the values used when <a href="#generate-asset">generating the asset skeleton</a> was completed in the previous step.</p>
 </div>
 <div class="listingblock">
+<div class="title">src/app/modules/nft/assets/create_n_f_t_asset.ts</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import { BaseAsset, ApplyAssetContext, ValidateAssetContext } from 'lisk-sdk';
 
@@ -677,6 +683,7 @@ For more information about schemas and how they are used in the Lisk SDK, check 
 <p>Therefore, the asset schema is adjusted accordingly as shown below:</p>
 </div>
 <div class="listingblock">
+<div class="title">src/app/modules/nft/assets/create_n_f_t_asset.ts</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public schema = {
     $id: "nft/createNFT-asset",
@@ -698,6 +705,7 @@ For more information about schemas and how they are used in the Lisk SDK, check 
         name: {
             dataType: "string",
             minLength: 3, <i class="conum" data-value="8"></i><b>(8)</b>
+            maxLength: 64, <i class="conum" data-value="9"></i><b>(9)</b>
             fieldNumber: 3,
         },
     },
@@ -738,6 +746,10 @@ For more information about schemas and how they are used in the Lisk SDK, check 
 <td><i class="conum" data-value="8"></i><b>8</b></td>
 <td>The minimum length of the NFT name is set to 3.</td>
 </tr>
+<tr>
+<td><i class="conum" data-value="9"></i><b>9</b></td>
+<td>The maximum length of the NFT name is set to 64.</td>
+</tr>
 </table>
 </div>
 </div>
@@ -752,12 +764,13 @@ For more information about schemas and how they are used in the Lisk SDK, check 
 <p>If one of these conditions is not fulfilled, then the transaction will not be processed, and an error should be thrown.</p>
 </div>
 <div class="listingblock">
+<div class="title">src/app/modules/nft/assets/create_n_f_t_asset.ts</div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public validate({ asset }: ValidateAssetContext&lt;{}&gt;): void {
-    if (asset.name === "reservedName") {
-      throw new Error("Illegal NFT name");
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">validate({asset}) {
+    if (asset.name === "Mewtwo") {
+        throw new Error("Illegal NFT name: Mewtwo");
     }
-}</code></pre>
+};</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -779,6 +792,7 @@ It contains the logic of how the data in the transaction asset should be applied
 <p>To get and set the blockchain state, the <code>stateStore</code> is used again, which we know already from the <a href="module.html#statestore" class="page">lifecycle hooks</a> of the module guide.</p>
 </div>
 <div class="listingblock">
+<div class="title">src/app/modules/nft/assets/create_n_f_t_asset.ts</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async apply({ asset, transaction, stateStore }: ApplyAssetContext&lt;{}&gt;): Promise&lt;void&gt; {
     // 4.verify if sender has enough balance
@@ -810,6 +824,83 @@ It contains the logic of how the data in the transaction asset should be applied
     await setAllNFTTokens(stateStore, allTokens);
   }
 }</code></pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="nft-utility-functions"><a class="anchor" href="#nft-utility-functions"></a>NFT utility functions</h3>
+<div class="paragraph">
+<p>The NFT utility functions that we use inside the <code>apply()</code> function are imported from the file <code>../nft.js</code>.</p>
+</div>
+<div class="listingblock">
+<div class="title">src/app/modules/nft/assets/create_n_f_t_asset.ts</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import { BaseAsset, ApplyAssetContext, ValidateAssetContext } from 'lisk-sdk';
+import {
+    getAllNFTTokens,
+    setAllNFTTokens,
+    createNFTToken,
+}  from "../nft";</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The file <code>nft.js</code> was already used in the guide <a href="module.html#nft-utility-functions" class="page">guides/app-development/module.adoc#nft-utility-functions</a>, the functions <code>getAllNFTTokens()</code>, <code>setAllNFTTokens()</code>, <code>createNFTToken()</code> can simply be added, if not present yet:</p>
+</div>
+<div class="listingblock">
+<div class="title">src/app/modules/nft/nft.js</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { codec, cryptography } = require("lisk-sdk");
+
+const createNFTToken = ({ name, ownerAddress, nonce, value, minPurchaseMargin }) =&gt; {
+  const nonceBuffer = Buffer.alloc(8);
+  nonceBuffer.writeBigInt64LE(nonce);
+  const seed = Buffer.concat([ownerAddress, nonceBuffer]);
+  const id = cryptography.hash(seed);
+
+  return {
+    id,
+    minPurchaseMargin,
+    name,
+    ownerAddress,
+    value,
+  };
+};
+
+const getAllNFTTokens = async (stateStore) =&gt; {
+  const registeredTokensBuffer = await stateStore.chain.get(
+    CHAIN_STATE_NFT_TOKENS
+  );
+  if (!registeredTokensBuffer) {
+    return [];
+  }
+
+  const registeredTokens = codec.decode(
+    registeredNFTTokensSchema,
+    registeredTokensBuffer
+  );
+
+  return registeredTokens.registeredNFTTokens;
+};
+
+const setAllNFTTokens = async (stateStore, NFTTokens) =&gt; {
+  const registeredTokens = {
+    registeredNFTTokens: NFTTokens.sort((a, b) =&gt; a.id.compare(b.id)),
+  };
+
+  await stateStore.chain.set(
+    CHAIN_STATE_NFT_TOKENS,
+    codec.encode(registeredNFTTokensSchema, registeredTokens)
+  );
+};
+
+module.exports = {
+  registeredNFTTokensSchema,
+  CHAIN_STATE_NFT_TOKENS,
+  getAllNFTTokens,
+  setAllNFTTokens,
+  getAllNFTTokensAsJSON,
+  createNFTToken,
+};</code></pre>
+</div>
 </div>
 </div>
 </div>

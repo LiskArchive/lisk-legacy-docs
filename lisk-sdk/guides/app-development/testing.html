@@ -512,7 +512,7 @@
 <li><a href="#running-the-test-suite">Running the test suite</a></li>
 <li><a href="#the-module-test-skeleton">The module test skeleton</a></li>
 <li><a href="#the-asset-test-skeleton">The asset test skeleton</a></li>
-<li><a href="#example-unit-test-for-a-transaction-asset">Example: Unit test for a transaction asset</a>
+<li><a href="#example-unit-tests-for-a-transaction-asset">Example: Unit tests for a transaction asset</a>
 <ul class="sectlevel2">
 <li><a href="#imports">Imports</a></li>
 <li><a href="#testing-the-validate-function">Testing the validate() function</a></li>
@@ -682,7 +682,7 @@ describe('CreateNFTAsset', () =&gt; {
 </div>
 </div>
 <div class="sect1">
-<h2 id="example-unit-test-for-a-transaction-asset"><a class="anchor" href="#example-unit-test-for-a-transaction-asset"></a>Example: Unit test for a transaction asset</h2>
+<h2 id="example-unit-tests-for-a-transaction-asset"><a class="anchor" href="#example-unit-tests-for-a-transaction-asset"></a>Example: Unit tests for a transaction asset</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>In this example, we want to write unit tests for the example asset from the previous guide <a href="asset.html" class="page">Creating a new transaction asset</a>.</p>
@@ -700,84 +700,6 @@ describe('CreateNFTAsset', () =&gt; {
 </td>
 </tr>
 </table>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { BaseAsset } = require("lisk-sdk");
-const {
-  getAllNFTTokens,
-  setAllNFTTokens,
-  createNFTToken,
-} = require("../nft");
-
-// 1.extend base asset to implement your custom asset
-class CreateNFTAsset extends BaseAsset {
-  // 2.define unique asset name and id
-  name = "createNFT";
-  id = 0;
-  // 3.define asset schema for serialization
-  schema = {
-    $id: "lisk/nft/create",
-    type: "object",
-    required: ["minPurchaseMargin", "initValue", "name"],
-    properties: {
-      minPurchaseMargin: {
-        dataType: "uint32",
-        minimum: 0,
-        maximum: 100,
-        fieldNumber: 1,
-      },
-      initValue: {
-        dataType: "uint64",
-        exclusiveMinimum: 0,
-        fieldNumber: 2,
-      },
-      name: {
-        dataType: "string",
-        minLength: 3,
-        maxLength: 64,
-        fieldNumber: 3,
-      },
-    },
-  };
-  validate({asset}) {
-    if (asset.name === "Mewtwo") {
-      throw new Error("Illegal NFT name: Mewtwo");
-    }
-  };
-  async apply({ asset, stateStore, reducerHandler, transaction }) {
-    // 4.verify if sender has enough balance
-    const senderAddress = transaction.senderAddress;
-    const senderAccount = await stateStore.account.get(senderAddress);
-
-    // 5.create nft
-    const nftToken = createNFTToken({
-      name: asset.name,
-      ownerAddress: senderAddress,
-      nonce: transaction.nonce,
-      value: asset.initValue,
-      minPurchaseMargin: asset.minPurchaseMargin,
-    });
-
-    // 6.update sender account with unique nft id
-    senderAccount.nft.ownNFTs.push(nftToken.id);
-    await stateStore.account.set(senderAddress, senderAccount);
-
-    // 7.debit tokens from sender account to create nft
-    await reducerHandler.invoke("token:debit", {
-      address: senderAddress,
-      amount: asset.initValue,
-    });
-
-    // 8.save nfts
-    const allTokens = await getAllNFTTokens(stateStore);
-    allTokens.push(nftToken);
-    await setAllNFTTokens(stateStore, allTokens);
-  }
-}
-
-module.exports = CreateNFTAsset;</code></pre>
-</div>
 </div>
 <div class="sect2">
 <h3 id="imports"><a class="anchor" href="#imports"></a>Imports</h3>

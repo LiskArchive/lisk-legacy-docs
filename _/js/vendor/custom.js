@@ -1,1 +1,1 @@
-!function(){"use strict";document.querySelectorAll(".nav-item:not(.single-page)")[1].classList.add("is-active")}();
+!function(){"use strict";document.querySelectorAll(".nav-item:not(.single-page)")[1].classList.add("is-active");var e=document.querySelectorAll("img");console.log(e),console.log(e[0])}();

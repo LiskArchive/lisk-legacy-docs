@@ -1,1 +1,1 @@
-!function(){"use strict";document.querySelectorAll(".nav-item:not(.single-page)")[1].classList.add("is-active");var e=document.querySelectorAll("img");console.log(e),console.log(e[0])}();
+!function(){"use strict";document.querySelectorAll(".nav-item:not(.single-page)")[1].classList.add("is-active");var e=document.querySelectorAll("img");console.log(e),console.log(e[0]),e[1].setAttribute("data-zoomable","true"),mediumZoom("[data-zoomable]")}();

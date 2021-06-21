@@ -2,13 +2,22 @@
 Mona Bärenfänger <mona@lightcurve.io>
 :toc:
 :sectnums:
+// URLs
+:url_github_hello_module: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/hello-world/blockchain_app/hello_module/hello_module.js
+:url_github_nft_module: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/nft/blockchain_app/nft_module/index.js
+:url_github_srs_module: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/social-recovery/blockchain_app/srs_module/index.js
+
 // Project URLS
 :url_guides_setup: guides/app-development/setup.adoc
 :url_guides_asset: guides/app-development/asset.adoc
+:url_guides_genesis: guides/app-development/genesis-block.adoc
+:url_guides_testing: guides/app-development/testing.adoc
 :url_modules_dpos: references/lisk-framework/dpos-module.adoc
 :url_rpc_endpoints: advanced-explanations/rpc-endpoints.adoc
 :url_references_schemas: advanced-explanations/schemas.adoc
 :url_tutorials_hello: tutorials/hello-world.adoc
+:url_tutorials_nft: tutorials/nft.adoc
+:url_tutorials_srs: tutorials/srs.adoc
 
 How to create a new module for a blockchain application.
 
@@ -18,6 +27,18 @@ How to create a new module for a blockchain application.
 To follow this guide, the following criteria is assumed:
 
 * Lisk Commander is installed, and a basic blockchain application is already initialized, as explained in the previous guide xref:{url_guides_setup}[].
+====
+
+
+[TIP]
+
+====
+This guide describes the components of a module in general.
+If you wish to view an example of a fully implemented module, check out the following examples:
+
+* the {url_github_hello_module}[Hello module] from the xref:{url_tutorials_hello}[] tutorial
+* the {url_github_nft_module}[NFT module] from the xref:{url_tutorials_nft}[] tutorial
+* the {url_github_srs_module}[SRS module] from the xref:{url_tutorials_srs}[] tutorial
 ====
 
 == Generating the module skeleton
@@ -78,7 +99,7 @@ No change to package.json was detected. No package manager install will be execu
 Your module is created and ready to use.
 ----
 
-It will also automatically register the module with the application, by adding it to `src/app/modulees.ts`.
+It will also automatically register the module with the application, by adding it to `src/app/modules.ts`.
 
 .src/app/modules.ts
 [source,typescript]
@@ -92,7 +113,9 @@ export const registerModules = (app: Application): void => {
 
 ----
 
-The file `nft_module.ts` contains the module skeleton and the file `nft_module.spec.ts` contains the related unit test for the new module.
+The file `nft_module.ts` contains the module skeleton and the file `nft_module.spec.ts` contains the related unit tests for the new module.
+
+TIP: For more information on how to write a unit test for the blockchain application, check out the xref:{url_guides_testing}[] guide.
 
 The module skeleton can be viewed in `nft_module.ts`:
 
@@ -216,6 +239,7 @@ Assuming an asset `CreateNFT` has been created for the module, then it will be i
 
 [source,typescript]
 ----
+import { BaseModule,AfterBlockApplyContext,TransactionApplyContext,BeforeBlockApplyContext,AfterGenesisBlockApplyContext } from 'lisk-sdk';
 const { CreateNFT } = require('./assets/create_nft_asset');
 
 export class NftModule extends BaseModule {
@@ -234,6 +258,24 @@ A list of actions that plugins and external services can invoke via the API clie
 
 TIP: See the xref:{url_rpc_endpoints}[] page for more information.
 
+[source,typescript]
+----
+import { BaseModule, AfterBlockApplyContext, TransactionApplyContext, BeforeBlockApplyContext, AfterGenesisBlockApplyContext } from 'lisk-sdk';
+import { CreateNFT } from './assets/create_nft_asset';
+import { getAllNFTTokensAsJSON } from './nft';
+
+export class NftModule extends BaseModule {
+
+    // ...
+
+    public actions = {
+        getAllNFTTokens: async () => getAllNFTTokensAsJSON(this._dataAccess),
+    };
+
+    // ...
+}
+----
+
 === Data access for actions
 
 Blockchain data can be accessed in a module via `this._dataAccess`.
@@ -249,13 +291,80 @@ interface dataAccess {
 }
 ----
 
+=== NFT utility functions
 
-[source,typescript]
+The function `getAllNFTTokensAsJSON()` gets called, every time the action `nft:getAllNFTTokens` is invoked.
+It will return a list of all registered NFTs as JSON.
+
+`getAllNFTTokensAsJSON()` is imported from a new file `nft.js`, which is created manually to store the utility functions for the NFT module.
+The implementation of the function is shown below:
+
+.nft.js
+[source,js]
 ----
-public actions = {
-    // Example below
-    // getBalance: async (params) => this._dataAccess.account.get(params.address).token.balance,
-    // getBlockByID: async (params) => this._dataAccess.blocks.get(params.id),
+const { codec } = require("lisk-sdk");
+
+const registeredNFTTokensSchema = {
+  $id: "lisk/nft/registeredTokens",
+  type: "object",
+  required: ["registeredNFTTokens"],
+  properties: {
+    registeredNFTTokens: {
+      type: "array",
+      fieldNumber: 1,
+      items: {
+        type: "object",
+        required: ["id", "value", "ownerAddress", "minPurchaseMargin", "name"],
+        properties: {
+          id: {
+            dataType: "bytes",
+            fieldNumber: 1,
+          },
+          value: {
+            dataType: "uint64",
+            fieldNumber: 2,
+          },
+          ownerAddress: {
+            dataType: "bytes",
+            fieldNumber: 3,
+          },
+          minPurchaseMargin: {
+            dataType: "uint32",
+            fieldNumber: 4,
+          },
+          name: {
+            dataType: "string",
+            fieldNumber: 5,
+          },
+        },
+      },
+    },
+  },
+};
+
+const CHAIN_STATE_NFT_TOKENS = "nft:registeredNFTTokens";
+
+const getAllNFTTokensAsJSON = async (dataAccess) => {
+  const registeredTokensBuffer = await dataAccess.getChainState(
+    CHAIN_STATE_NFT_TOKENS
+  );
+
+  if (!registeredTokensBuffer) {
+    return [];
+  }
+
+  const registeredTokens = codec.decode(
+    registeredNFTTokensSchema,
+    registeredTokensBuffer
+  );
+
+  return codec.toJSON(registeredNFTTokensSchema, registeredTokens).registeredNFTTokens;
+};
+
+module.exports = {
+  registeredNFTTokensSchema,
+  CHAIN_STATE_NFT_TOKENS,
+  getAllNFTTokensAsJSON,
 };
 ----
 
@@ -299,13 +408,17 @@ public events = [
 ];
 ----
 
+Which events, actions, and reducers are used within a module, or if these interfaces are actually required at all, will be a specific individual requirement for every module; as it is heavily dependant on which functionality the module intends to provide to the application.
+
+In this example, no events for the NFT module will be implemented.
+
 [TIP]
 
 ====
+A list of modules with events:
 
-Which events, actions, and reducers are used within a module, or if these interfaces are actually required at all, will be a specific individual requirement for every module; as it is heavily dependant on which functionality the module intends to provide to the application.
-
-The easiest way to understand the necessary requirements here is to look at existing examples in the Lisk SDK default modules, or examples of other blockchain applications built with the Lisk SDK, for example, the xref:{url_tutorials_hello}[] application.
+* The {url_github_hello_module}[Hello Module^] from the xref:{url_tutorials_hello}[] tutorial
+* The {url_github_srs_module}[SRS Module^] from the xref:{url_tutorials_srs}[] tutorial
 ====
 
 == Lifecycle Hooks
@@ -357,6 +470,17 @@ public async afterGenesisBlockApply({genesisBlock, stateStore, reducerHandler}) 
 }
 ----
 
+In this example, no lifecycle hooks for the NFT module will be implemented.
+
+[TIP]
+
+====
+A list of modules with implemented lifecycle hooks:
+
+* The {url_github_hello_module}[Hello Module^] from the xref:{url_tutorials_hello}[] tutorial
+* The {url_github_srs_module}[SRS Module^] from the xref:{url_tutorials_srs}[] tutorial
+====
+
 === stateStore
 
 The `stateStore` is used to mutate the state of the blockchain data, or to retrieve data from the blockchain.
@@ -405,25 +529,15 @@ TIP: For more information about schemas and how they are used in the Lisk SDK, c
 The module-specific properties will be added under a key that is named after the module name.
 So for example, in case the module name is `nft`, the data will be stored under the key "nft" in each user account.
 
-[IMPORTANT]
+The account schema for the NFT module is defined as follows:
 
-====
-If a module includes an account schema, it is necessary to update the genesis block after registering the module with the application.
-
-The application CLI can be used to generate a new genesis block as shown below:
-
-[source,bash]
+[source,typescript]
 ----
-./bin/run genesis-block:create
-----
-====
+export class NftModule extends BaseModule {
 
-To achieve a better overview, it is recommended to create a new file `schemas.js`, which will export the account schema for our new module:
+  // ...
 
-.schemas.js
-[source,js]
-----
-const nftAccountSchema = {
+  public accountSchema = {
     type: "object",
     required: ["ownNFTs"],
     properties: {
@@ -440,30 +554,14 @@ const nftAccountSchema = {
     },
   };
 
-
-module.exports = {
-  nftAccountSchema
-};
-----
-
-Now include the schema in the module:
-
-[source,js]
-----
-const { BaseModule } = require('lisk-sdk');
-const { myAccountSchema } = require('./schemas.js'); <1>
-
-class NftModule extends BaseModule {
-
-  // ...
-
-  accountSchema = myAccountSchema; <2>
-
   // ...
 }
-
-module.exports = { MyModule };
 ----
 
-<1> Require the schema.
-<2> Set the `accountSchema` of the module to the imported schema.
+[IMPORTANT]
+
+====
+If a module includes an account schema, it is necessary to update the genesis block after registering the module with the application.
+
+For more information, see the xref:{url_guides_genesis}[] guide.
+====

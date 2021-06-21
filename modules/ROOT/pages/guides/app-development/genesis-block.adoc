@@ -1,15 +1,18 @@
 = Generating a genesis block
 Mona Bärenfänger <mona@lightcurve.io>
 // Settings
-:toc:
+:toc: preamble
+:idprefix:
+:idseparator: -
 // Project URLs
-:url_default_modules: advanced-explanations/architecture/on-chain-architecture.adoc#sdk-default-modules
+:url_default_modules: architecture/on-chain-architecture.adoc#sdk-default-modules
+:url_genesis_block: architecture/index.adoc#genesis-block
 :url_guides_setup: guides/app-development/setup.adoc
 :url_guides_module: guides/app-development/module.adoc
 :url_modules_dpos: references/lisk-framework/dpos-module.adoc
 :url_modules_token: references/lisk-framework/token-module.adoc
 
-How to use `lisk-genesis` to generate a genesis block for a blockchain application.
+How to generate a genesis block for a blockchain application.
 
 .Prerequisites
 [NOTE]
@@ -17,15 +20,111 @@ How to use `lisk-genesis` to generate a genesis block for a blockchain applicati
 To use this guide, ensure the the following criteria below has been fulfilled:
 
 * a basic blockchain application is already initiated, as explained in the guide xref:{url_guides_setup}[].
-* a custom module `MyModule` is created, as explained in the previous guide xref:{url_guides_module}[].
+* a custom module `NftModule` is created, as explained in the previous guide xref:{url_guides_module}[].
 ====
 
-Each blockchain application needs a genesis block, which is the very first block of the blockchain.
+Each blockchain application needs a xref:{url_genesis_block}[genesis block], which is the very first block of the blockchain.
 
-During development, the `genesisBlockDevnet` was used as the genesis block.
-Once the application will be released, it is important to exchange that genesis block with a customized one for your application.
+If a module includes an account schema, it is necessary to update the genesis block after registering the module with the application, to update the accounts in the genesis block with the new properties.
 
-The genesis library can be used to generate a valid genesis block based on the above parameters.
+TIP: The recommended and most convenient method to generate a new genesis block is <<using-the-cli-to-generate-a-new-genesis-block>>.
+
+After the application bootstrap, the default devnet genesis block will be generated under `config/default/`.
+
+If a new module is then registered with the application, which includes an account schema, it will fail with an error similar to this:
+
+----
+$ ./bin/run start
+Starting Lisk new_app at /Users/lisk/.lisk/new_app.
+14:03:56 INFO lisk-framework: Starting the app - new_app (module=lisk:app)
+14:03:56 INFO lisk-framework: If you experience any type of error, please open an issue on Lisk GitHub: https://github.com/LiskHQ/lisk-sdk/issues (module=lisk:app)
+14:03:56 INFO lisk-framework: Contribution guidelines can be found at Lisk-sdk: https://github.com/LiskHQ/lisk-sdk/blob/development/docs/CONTRIBUTING.md (module=lisk:app)
+14:03:56 INFO lisk-framework: Booting the application with Lisk Framework(0.1.0) (module=lisk:app)
+14:03:56 INFO lisk-framework: Initializing controller (module=lisk:app)
+14:03:56 INFO lisk-framework: Loading controller (module=lisk:app)
+14:03:56 INFO lisk-framework: Event * was subscribed but not registered to the bus yet. (module=lisk:app)
+    TypeError: Cannot read property 'ownNFTs' of undefined
+14:03:56 INFO lisk-framework: Application shutdown started (module=lisk:app)
+{
+ "errorCode": 2,
+ "message": "process.exit"
+}
+----
+
+To fix this error, it is required to update the genesis block of the application.
+
+== Using the CLI to generate a new genesis block
+
+The genesis block can be updated with the application CLI:
+
+[source,bash]
+----
+./bin/run genesis-block:create --output  config/defaults
+----
+
+Now, wait until the new genesis block is generated.
+
+----
+Creating genesis block [===========         ] 55% 44.6s
+----
+
+After completion, the new genesis block will be copied to `config/default/`, where it automatically replaces the outdated genesis block.
+
+Now, copy the following content to `config/default/config.json`:
+
+* copy the content of `forging_info.json` to under `forging.delegates`
+* copy the content of `password.json` to under `forging.defaultPassword`
+
+After the genesis block and config are updated, the application should start again successfully.
+To start it, run the following command:
+
+[source,bash]
+----
+./bin/run start
+----
+
+For more information about the `genesis-block:create` command, run the help command:
+
+----
+$ ./bin/run genesis-block:create --help
+Creates genesis block file.
+
+USAGE
+  $ new_app genesis-block:create
+
+OPTIONS
+  -a, --accounts=accounts                                                                    [default: 10] Number of non-validator
+                                                                                             accounts to generate
+
+  -o, --output=output                                                                        [default: config] Output folder path
+                                                                                             of the generated genesis block
+
+  -t, --token-distribution=token-distribution                                                [default: 100000000000] Amount of
+                                                                                             tokens distributed to each account
+
+  -v, --validators=validators                                                                [default: 103] Number of validator
+                                                                                             accounts to generate
+
+  --validators-hash-onion-count=validators-hash-onion-count                                  [default: 100000] Number of hashes to
+                                                                                             produce for each hash-onion
+
+  --validators-hash-onion-distance=validators-hash-onion-distance                            [default: 1000] Distance between each
+                                                                                             hashes for hash-onion
+
+  --validators-passphrase-encryption-iterations=validators-passphrase-encryption-iterations  [default: 1000000] Number of
+                                                                                             iterations to use for passphrase
+                                                                                             encryption
+
+EXAMPLES
+  genesis-block:create --output mydir
+  genesis-block:create --output mydir --accounts 10
+  genesis-block:create --output mydir --accounts 10 --validators 103
+  genesis-block:create --output mydir --accounts 10 --validators 103 --token-distribution 500
+----
+
+== Manual genesis block creation (alternative with Lisk Genesis)
+
+The `genesis` library can be used to generate a valid genesis block based on the above parameters.
 It can be imported directly from the `lisk-sdk` package, or alternatively it can be installed as a separate package `@liskhq/lisk-genesis`.
 
 [source,bash]
@@ -35,7 +134,7 @@ npm install lisk-sdk
 npm install @liskhq/lisk-genesis
 ----
 
-== Including the account asset schemas
+=== Including the account asset schemas
 
 It is necessary for the genesis block to include the account schemas of all modules that are registered with the application.
 This also includes all account schemas of the xref:{url_default_modules}[default modules] which are registered with the application by default.
@@ -77,10 +176,10 @@ NOTE: The key of each account schema should equal the `name` property of the res
 ====
 The xref:{url_default_modules}[default modules] are always required to be included in the application for it to function correctly.
 
-If they are not included in the application, other modules need to be included, which replace their functionalities.
+If they are not included in the application, other modules need to be included which replace their functionalities.
 ====
 
-== Generating a list of genesis delegates
+=== Generating a list of genesis delegates
 
 The genesis block includes a list of genesis delegates under the `initDelegates` key.
 
@@ -88,7 +187,7 @@ These delegates will forge during the bootstrap period of the blockchain, which 
 
 TIP: The default length of the bootstrap period can be altered with the `initRounds` property.
 
-=== Generation a fresh list of genesis delegates
+==== Generating a fresh list of genesis delegates
 
 If you don't have a list of already existing account details, it is necessary to newly generate the accounts.
 
@@ -142,7 +241,7 @@ const generateDelegates = (amount) => {
 const delegates = generateDelegates(5);
 ----
 
-== Generating the list of genesis accounts
+=== Generating the list of genesis accounts
 
 All accounts that exist already at the beginning of the network are listed under the property `accounts` of the genesis block.
 
@@ -177,7 +276,7 @@ const genesisAccounts = generateAccounts(3);
 const accounts = [...delegates, ...genesisAccounts];
 ----
 
-== Creating the genesis block
+=== Creating the genesis block
 
 As the final step, use the function `createGenesisBlock()` of the genesis library to generate the genesis block.
 
@@ -208,7 +307,7 @@ const genesisBlock = genesis.createGenesisBlock(genesisBlockParams);
 console.log(genesisBlock);
 ----
 
-== Complete example
+=== Complete example
 
 .Full example: How to generate a genesis block
 [source,js]
@@ -317,7 +416,11 @@ console.log(genesisBlock);
 
 ----
 
-.Example output
+=== The generated genesis block
+
+The above script will create the following output:
+
+.Genesis block
 [source,js]
 ----
 {
@@ -337,7 +440,7 @@ console.log(genesisBlock);
 }
 ----
 
-== Optional parameters for the genesis block
+=== Optional parameters for the genesis block
 
 Besides the three required properties `initDelegates`, `accounts`, and `accountAssetSchemas`, it is possible to set the following optional properties for the genesis block:
 

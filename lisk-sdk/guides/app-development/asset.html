@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Creating a custom asset - Lisk  SDK  Docs</title>
+    <title>Creating a new transaction asset - Lisk  SDK  Docs</title>
     <link rel="canonical" href="https://lisk.com/documentation/lisk-sdk/guides/app-development/asset.html">
     <meta name="generator" content="Antora 2.3.4">
     <link rel="stylesheet" href="../../../_/css/site.css">
@@ -131,7 +131,7 @@
     <a class="nav-link" href="module.html">Creating a new module</a>
   </li>
   <li class="nav-item is-current-page single-page" data-depth="2">
-    <a class="nav-link" href="asset.html">Creating a custom asset</a>
+    <a class="nav-link" href="asset.html">Creating a new transaction asset</a>
   </li>
   <li class="nav-item single-page" data-depth="2">
     <a class="nav-link" href="plugin.html">Creating a new plugin</a>
@@ -412,7 +412,7 @@
   <ul>
     <li><a href="../../index.html">Lisk SDK</a></li>
     <li>Development guides</li>
-    <li><a href="asset.html">Creating a custom asset</a></li>
+    <li><a href="asset.html">Creating a new transaction asset</a></li>
   </ul>
 </nav>
   <div class="page-versions toolbar-versions">
@@ -428,22 +428,11 @@
   </div>
   <div class="content">
 <article class="doc">
-<h1 class="page">Creating a custom asset</h1>
-<div id="toc" class="toc">
-<div id="toctitle">Table of Contents</div>
-<ul class="sectlevel1">
-<li><a href="#creating-the-asset-class">Creating the asset class</a></li>
-<li><a href="#setting-name-and-id-of-the-asset">Setting name and ID of the asset</a></li>
-<li><a href="#defining-the-asset-schema">Defining the asset schema</a></li>
-<li><a href="#validating-asset-inputs">Validating asset inputs</a></li>
-<li><a href="#applying-the-transaction-asset-logic">Applying the transaction asset logic</a></li>
-<li><a href="#adding-the-asset-to-the-module">Adding the asset to the module</a></li>
-</ul>
-</div>
+<h1 class="page">Creating a new transaction asset</h1>
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>This guide explains step-by-step, how to create a custom asset for a module of a blockchain application built with the Lisk SDK.</p>
+<p>How to create a new asset for a module of a blockchain application.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -459,10 +448,10 @@
 <div class="ulist">
 <ul>
 <li>
-<p>a basic blockchain application is already initiated, like explained in the guide <a href="setup.html" class="page">Creating a new blockchain application</a>.</p>
+<p>Lisk Commander is installed, and a basic blockchain application is already initialized, as explained in the guide <a href="setup.html" class="page">Creating a new blockchain application</a>.</p>
 </li>
 <li>
-<p>a custom module <code>MyModule</code> is created, like explained in the previous guide <a href="module.html" class="page">Creating a new module</a>.</p>
+<p>a custom module <code>NftModule</code> is created, as explained in the previous guide <a href="module.html" class="page">Creating a new module</a>.</p>
 </li>
 </ul>
 </div>
@@ -470,93 +459,171 @@
 </tr>
 </table>
 </div>
-<div class="paragraph">
-<p>First, create a new file named after the new asset, for example <code>my-asset.js</code>.</p>
 </div>
-<div class="listingblock">
-<div class="content">
-<pre>├── blockchain_app
-│   ├── index.js
-│   ├── my-asset.js
-│   ├── my-module.js
-│   ├── package.json
-│   └── schemas.js</pre>
-</div>
-</div>
+<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#generating-the-asset-skeleton">Generating the asset skeleton</a></li>
+<li><a href="#the-asset-class">The asset class</a></li>
+<li><a href="#the-asset-schema">The asset schema</a></li>
+<li><a href="#validating-the-asset-data">Validating the asset data</a></li>
+<li><a href="#defining-the-asset-logic">Defining the asset logic</a></li>
+</ul>
 </div>
 </div>
 <div class="sect1">
-<h2 id="creating-the-asset-class"><a class="anchor" href="#creating-the-asset-class"></a>Creating the asset class</h2>
+<h2 id="generating-the-asset-skeleton"><a class="anchor" href="#generating-the-asset-skeleton"></a>Generating the asset skeleton</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Now open <code>my-asset.js</code> and import the <code>BaseAsset</code> from the <code>lisk-sdk</code> package:</p>
+<p>Use Lisk Commander to generate the skeleton for the new asset:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { BaseAsset } = require('lisk-sdk');</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">$ lisk generate:asset --help
+Creates an asset skeleton for the given module name, name, and id.
+
+USAGE
+  $ lisk generate:asset MODULENAME ASSETNAME ASSETID
+
+ARGUMENTS
+  MODULENAME  Module name.
+  ASSETNAME   Asset name.
+  ASSETID     Asset Id.
+
+OPTIONS
+  -t, --template=template  Template to bootstrap the application. It will read from `.liskrc.json` or use `lisk-ts` if not found.
+
+EXAMPLES
+  generate:asset nft transfer 1</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Next, define a new class <code>MyAsset</code>, which extends from the <code>BaseAsset</code>:</p>
+<p>The command <code>generate:asset</code> expects 3 arguments:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Module name</strong>: The name of the module the asset belongs to.</p>
+</li>
+<li>
+<p><strong>Asset name</strong>: The name of the new asset.
+Needs to be a string that only consists of lower case and upper case letters [a-z, A-Z].
+No numbers, hyphens, etc., are allowed.</p>
+</li>
+<li>
+<p><strong>Asset ID</strong>: The ID of the asset.
+Needs to be unique within the module.
+Minimum value is 0.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>As an example, we will add a new asset <code>createNFT</code> to the <code>nft</code> module:</p>
+</div>
+<div id="generate-asset" class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">lisk generate:asset nft createNFT 0</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This will generate the following files:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { BaseAsset } = require('lisk-sdk');
+<pre>Creating asset skeleton with asset name "createNFT" and asset ID "0" for module "nft"
+Using template "lisk-ts"
+Generating asset skeleton.
+Registering asset...
+identical .liskrc.json
+   create src/app/modules/nft/assets/create_n_f_t_asset.ts
+   create test/unit/modules/nft/assets/create_n_f_t_asset.spec.ts
 
-class MyAsset extends BaseAsset {
+No change to package.json was detected. No package manager install will be executed.
 
-}
-
-module.exports = { MyAsset };</code></pre>
+Your asset is created and ready to use.</pre>
 </div>
+</div>
+<div class="paragraph">
+<p>The file <code>create_n_f_t_asset.ts</code> contains the asset skeleton and the file <code>create_n_f_t_asset.spec.ts</code> contains the related unit tests for the new asset.</p>
+</div>
+<div class="paragraph">
+<p>Firstly, view the module skeleton in <code>create_n_f_t_asset.ts</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import { BaseAsset, ApplyAssetContext, ValidateAssetContext } from 'lisk-sdk';
+
+export class CreateNFTAsset extends BaseAsset {
+  public name = 'createNFT';
+  public id = 0;
+
+  // Define schema for asset
+	public schema = {
+    $id: 'nft/createNFT-asset',
+		title: 'CreateNFTAsset transaction asset for nft module',
+		type: 'object',
+		required: [],
+		properties: {},
+  };
+
+  public validate({ asset }: ValidateAssetContext&lt;{}&gt;): void {
+    // Validate your asset
+  }
+
+  // eslint-disable-next-line @typescript-eslint/require-await
+  public async apply({ asset, transaction, stateStore }: ApplyAssetContext&lt;{}&gt;): Promise&lt;void&gt; {
+      throw new Error('Asset "createNFT" apply hook is not implemented.');
+  }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The command <code>generate:asset</code> previously created the asset <code>createNFT</code> which already contains skeletons of all important components of an asset.
+The only properties which are set at this point are the asset ID and the asset name, which were defined when generating the asset.</p>
+</div>
+<div class="paragraph">
+<p>If the application is started at this point, it is already possible to create a basic <code>createNFT</code> transaction with an empty transaction asset, sign it, and send it to the node.
+The node will then throw the following error:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>Asset "createNFT" apply hook is not implemented.</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This is due to the fact that the <code>apply()</code> function of the asset is not implemented yet.
+To give the asset a purpose, it is necessary to implement certain logic inside of the asset.</p>
+</div>
+<div class="paragraph">
+<p>The following sections describe the different components of a transaction asset in detail.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="setting-name-and-id-of-the-asset"><a class="anchor" href="#setting-name-and-id-of-the-asset"></a>Setting name and ID of the asset</h2>
+<h2 id="the-asset-class"><a class="anchor" href="#the-asset-class"></a>The asset class</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Inside of the <code>MyAsset</code> class, define the different properties of the transaction asset:</p>
+<p>The asset class always extends from the <code>BaseAsset</code>, which is imported from the <code>lisk-sdk</code> package.</p>
 </div>
-<div class="dlist">
-<dl>
-<dt class="hdlist1"><code>id</code>(number)</dt>
-<dd>
-<p>The ID of an asset.
-Must be unique within the module.
-The ID is used (combined with the module ID)  for example to create transaction objects.</p>
-</dd>
-<dt class="hdlist1"><code>name</code>(string)</dt>
-<dd>
-<p>The name of an asset.
-Must be unique within the module.</p>
-</dd>
-</dl>
+<div class="paragraph">
+<p>The properties <code>name</code> and <code>id</code> are prefilled by the values used when <a href="#generate-asset">generating the asset skeleton</a> was completed in the previous step.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { BaseAsset } = require('lisk-sdk');
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import { BaseAsset, ApplyAssetContext, ValidateAssetContext } from 'lisk-sdk';
 
-class MyAsset extends BaseAsset {
-  id = 0; <i class="conum" data-value="1"></i><b>(1)</b>
-  name = 'myAsset';
-}
+export class CreateNFTAsset extends BaseAsset {
+  public name = 'createNFT';
+  public id = 0;
 
-module.exports = { MyAsset };</code></pre>
+  // ...
+}</code></pre>
 </div>
-</div>
-<div class="colist arabic">
-<table>
-<tr>
-<td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>The transaction asset <code>MyAsset</code> is the first asset of the module <code>MyModule</code>, therefore we set the <code>id</code> to the lowest possible value, which is <code>0</code>.</td>
-</tr>
-</table>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="defining-the-asset-schema"><a class="anchor" href="#defining-the-asset-schema"></a>Defining the asset schema</h2>
+<h2 id="the-asset-schema"><a class="anchor" href="#the-asset-schema"></a>The asset schema</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>The asset schema defines in which format data is sent in the transaction asset.</p>
@@ -574,180 +641,158 @@ For more information about schemas and how they are used in the Lisk SDK, check 
 </table>
 </div>
 <div class="paragraph">
-<p>If the property is either an object or an array, the <code>type</code> property must be used to identify it, instead of <code>dataType</code>.</p>
+<p>We expect the following data in a transaction, to be able to create a new NFT:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>minPurchaseMargin: The % value of the initial value, that is added to the initial value when purchasing the NFT.</p>
+</li>
+<li>
+<p>initValue: The inital value of the NFT.</p>
+</li>
+<li>
+<p>name: The name of the NFT.</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
-<p>For better overview, let&#8217;s add the schema to the file <code>schemas.js</code>, which was created in the previous guide <a href="module.html" class="page">Creating a new module</a>.</p>
+<p>Therefore, the asset schema is adjusted accordingly as shown below:</p>
 </div>
 <div class="listingblock">
-<div class="title">schemas.js</div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const myAssetSchema = {
-  // Unique identifier of the schema throughout the system
-  $id: "/unique-id",
-  // Root type must be type object
-  type: "object",
-  // Required properties
-  required: ["key1","key2"],
-  // Properties for the object
-  properties: {
-    key1: {
-      dataType: "string",
-      fieldNumber: 1,
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public schema = {
+    $id: "nft/createNFT-asset",
+    title: 'CreateNFTAsset transaction asset for nft module',
+    type: "object",
+    required: ["minPurchaseMargin", "initValue", "name"], <i class="conum" data-value="1"></i><b>(1)</b>
+    properties: {
+        minPurchaseMargin: {
+            dataType: "uint32", <i class="conum" data-value="2"></i><b>(2)</b>
+            minimum: 0, <i class="conum" data-value="3"></i><b>(3)</b>
+            maximum: 100, <i class="conum" data-value="4"></i><b>(4)</b>
+            fieldNumber: 1, <i class="conum" data-value="5"></i><b>(5)</b>
+        },
+        initValue: {
+            dataType: "uint64", <i class="conum" data-value="6"></i><b>(6)</b>
+            exclusiveMinimum: 0, <i class="conum" data-value="7"></i><b>(7)</b>
+            fieldNumber: 2,
+        },
+        name: {
+            dataType: "string",
+            minLength: 3, <i class="conum" data-value="8"></i><b>(8)</b>
+            fieldNumber: 3,
+        },
     },
-    key2: {
-      dataType: "boolean",
-      fieldNumber: 2,
-    },
-    key3: {
-      dataType: "uint64",
-      fieldNumber: 3,
-    }
-  },
-  // Default values for the different properties
-  default: {
-    key1 : "",
-    key2 : false,
-    key3 : 0
-  }
-};
-
-module.exports = {
-  myAccountSchema,
-  myAssetSchema
 };</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Now include the schema in the asset:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { BaseAsset } = require('lisk-sdk');
-const { myAssetSchema } = require('./schemas'); <i class="conum" data-value="1"></i><b>(1)</b>
-
-class MyAsset extends BaseAsset {
-  id = 0;
-  name = 'myAsset';
-  schema = myAssetSchema; <i class="conum" data-value="2"></i><b>(2)</b>
-}
-
-module.exports = { MyAsset };</code></pre>
 </div>
 </div>
 <div class="colist arabic">
 <table>
 <tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>Require the schema.</td>
+<td>All 3 properties are required to create a new NFT.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>Set the <code>schema</code> of the asset to the imported schema.</td>
+<td><code>uin32</code> is used as a data type, because the <code>minPurchaseMargin</code> is a minimal number between 0 and 100.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>The minimum value is set to 0.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>The maximum value is set to 100.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>The <code>fieldNumber</code> increments by +1 for each property in the transaction asset.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td><code>uint64</code> is used as a data type, because the <code>initValue</code> can have very high values.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="7"></i><b>7</b></td>
+<td>The exclusive minimum value is set to 0, signifying that the <code>initValue</code> needs to be higher than 0 to be valid.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="8"></i><b>8</b></td>
+<td>The minimum length of the NFT name is set to 3.</td>
 </tr>
 </table>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="validating-asset-inputs"><a class="anchor" href="#validating-asset-inputs"></a>Validating asset inputs</h2>
+<h2 id="validating-the-asset-data"><a class="anchor" href="#validating-the-asset-data"></a>Validating the asset data</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Next, define a function <code>validate()</code>, which will validate the data of a transaction asset, to check if the data has the proper format.</p>
+<p>The optional function <code>validate()</code> validates the data of a transaction asset, before it is passed to the <code>apply()</code> function.</p>
 </div>
 <div class="paragraph">
-<p>In this example, we validate if the data in key1 is present, type <code>string</code>, and is no longer than 64 characters.
-If one of these conditions is not fulfilled, the transaction won&#8217;t be processed, and an error will be thrown.</p>
+<p>If one of these conditions is not fulfilled, then the transaction will not be processed, and an error should be thrown.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { BaseAsset } = require('lisk-sdk');
-const { myAssetSchema } = require('./schemas');
-
-class MyAsset extends BaseAsset {
-  id = 0;
-  name = 'myAsset';
-  schema = myAssetSchema;
-
-  validate({asset}) {
-    if (!asset.key1 || typeof asset.key1 !== 'string' || asset.key1.length &gt; 64) {
-      throw new Error(
-            'Invalid "asset.key1" defined on transaction: A string value no longer than 64 characters is expected'
-        );
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public validate({ asset }: ValidateAssetContext&lt;{}&gt;): void {
+    if (asset.name === "reservedName") {
+      throw new Error("Illegal NFT name");
     }
-  };
-}
-
-module.exports = { MyAsset };</code></pre>
+}</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>If the validation doesn&#8217;t throw any errors, it means the validations have been successful, and the data will be applied as defined in the <code>apply()</code> function.</p>
+<p>If the validation does not throw any errors, that signifies they been successful and the data will be applied as defined in the <code>apply()</code> function.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="applying-the-transaction-asset-logic"><a class="anchor" href="#applying-the-transaction-asset-logic"></a>Applying the transaction asset logic</h2>
+<h2 id="defining-the-asset-logic"><a class="anchor" href="#defining-the-asset-logic"></a>Defining the asset logic</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Finally, define a function <code>apply()</code>, which contains the logic of how the data in the transaction asset should be applied on tyhe blockchain.</p>
+<p>The most important part of the transaction asset is the <code>apply()</code> function.
+It contains the logic of how the data in the transaction asset should be applied on the blockchain.</p>
 </div>
 <div class="paragraph">
-<p>In this example, we save the provided string in <code>key1</code> from the transaction asset into the users account under the <code>myModule</code> property.</p>
+<p>In this example, we use the transaction data to create a new NFT token, which is added to the senders account.</p>
+</div>
+<div class="paragraph">
+<p>To get and set the blockchain state, the <code>stateStore</code> is used again, which we know already from the <a href="module.html#statestore" class="page">lifecycle hooks</a> of the module guide.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { BaseAsset } = require('lisk-sdk');
-const { myAssetSchema } = require('./schemas');
-
-class MyAsset extends BaseAsset {
-  id = 0;
-  name = 'myAsset';
-  schema = myAssetSchema;
-
-  validate({asset}) {
-    if (!asset.key1 || typeof asset.key1 !== 'string' || asset.key1.length &gt; 64) {
-      throw new Error(
-            'Invalid "asset.key1" defined on transaction: A string value no longer than 64 characters is expected'
-        );
-    }
-  };
-
-  async apply({ asset, stateStore, reducerHandler, transaction }) {
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async apply({ asset, transaction, stateStore }: ApplyAssetContext&lt;{}&gt;): Promise&lt;void&gt; {
+    // 4.verify if sender has enough balance
     const senderAddress = transaction.senderAddress;
     const senderAccount = await stateStore.account.get(senderAddress);
 
-    senderAccount.myModule.key1 = asset.key1;
-    stateStore.account.set(senderAccount.address, senderAccount);
+    // 5.create nft
+    const nftToken = createNFTToken({
+      name: asset.name,
+      ownerAddress: senderAddress,
+      nonce: transaction.nonce,
+      value: asset.initValue,
+      minPurchaseMargin: asset.minPurchaseMargin,
+    });
+
+    // 6.update sender account with unique nft id
+    senderAccount.nft.ownNFTs.push(nftToken.id);
+    await stateStore.account.set(senderAddress, senderAccount);
+
+    // 7.debit tokens from sender account to create nft
+    await reducerHandler.invoke("token:debit", {
+      address: senderAddress,
+      amount: asset.initValue,
+    });
+
+    // 8.save nfts
+    const allTokens = await getAllNFTTokens(stateStore);
+    allTokens.push(nftToken);
+    await setAllNFTTokens(stateStore, allTokens);
   }
-}
-
-module.exports = { MyAsset };</code></pre>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="adding-the-asset-to-the-module"><a class="anchor" href="#adding-the-asset-to-the-module"></a>Adding the asset to the module</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>The last thing to do is to add the newly created asset to the <code>transactionAssets</code> property of the module it belongs to.</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { BaseModule } = require('lisk-sdk');
-const { myAccountSchema } = require('./schemas.js');
-const { MyAsset } = require('./my-asset.js');
-
-class MyModule extends BaseModule {
-  id = 1024;
-  name = 'myModule';
-  accountSchema = myAccountSchema;
-  transactionAssets = [ new MyAsset() ];
-  //...
-}
-
-module.exports = { MyModule };</code></pre>
+}</code></pre>
 </div>
 </div>
 </div>

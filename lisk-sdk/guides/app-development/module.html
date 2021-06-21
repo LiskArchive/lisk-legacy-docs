@@ -131,7 +131,7 @@
     <a class="nav-link" href="module.html">Creating a new module</a>
   </li>
   <li class="nav-item single-page" data-depth="2">
-    <a class="nav-link" href="asset.html">Creating a custom asset</a>
+    <a class="nav-link" href="asset.html">Creating a new transaction asset</a>
   </li>
   <li class="nav-item single-page" data-depth="2">
     <a class="nav-link" href="plugin.html">Creating a new plugin</a>
@@ -432,28 +432,29 @@
 <div id="toc" class="toc">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#creating-the-module-class">1. Creating the module class</a></li>
-<li><a href="#defining-the-account-schema">2. Defining the account schema</a></li>
-<li><a href="#adding-transaction-assets-to-the-module">3. Adding transaction assets to the module</a></li>
-<li><a href="#adding-an-interface-by-providing-reducers-actions-and-events">4. Adding an interface by providing reducers, actions and events</a>
+<li><a href="#generating-the-module-skeleton">1. Generating the module skeleton</a></li>
+<li><a href="#the-module-class">2. The module class</a></li>
+<li><a href="#transaction-assets">3. Transaction assets</a></li>
+<li><a href="#actions">4. Actions</a>
 <ul class="sectlevel2">
 <li><a href="#data-access-for-actions">4.1. Data access for actions</a></li>
 </ul>
 </li>
-<li><a href="#defining-the-lifecycle-hooks">5. Defining the lifecycle hooks</a>
+<li><a href="#reducers">5. Reducers</a></li>
+<li><a href="#events">6. Events</a></li>
+<li><a href="#lifecycle-hooks">7. Lifecycle Hooks</a>
 <ul class="sectlevel2">
-<li><a href="#lifecycle-hooks">5.1. Lifecycle hooks</a></li>
-<li><a href="#statestore">5.2. stateStore</a></li>
-<li><a href="#reducerhandler">5.3. reducerHandler</a></li>
+<li><a href="#statestore">7.1. stateStore</a></li>
+<li><a href="#reducerhandler">7.2. reducerHandler</a></li>
 </ul>
 </li>
-<li><a href="#registering-the-module-with-the-application">6. Registering the module with the application</a></li>
+<li><a href="#defining-an-account-schema">8. Defining an account schema</a></li>
 </ul>
 </div>
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>This guide explains step-by-step, how to create a custom module for a blockchain application built with the Lisk SDK.</p>
+<p>How to create a new module for a blockchain application.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -469,7 +470,7 @@
 <div class="ulist">
 <ul>
 <li>
-<p>a basic blockchain application is already initiated as explained in the previous guide <a href="setup.html" class="page">Creating a new blockchain application</a>.</p>
+<p>Lisk Commander is installed, and a basic blockchain application is already initialized, as explained in the previous guide <a href="setup.html" class="page">Creating a new blockchain application</a>.</p>
 </li>
 </ul>
 </div>
@@ -477,192 +478,251 @@
 </tr>
 </table>
 </div>
-<div class="paragraph">
-<p>First, create a new file named after the new module, for example <code>my-module.js</code>.</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>├── blockchain_app
-│   ├── index.js
-│   ├── my-module.js
-│   └── package.json</pre>
-</div>
-</div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="creating-the-module-class"><a class="anchor" href="#creating-the-module-class"></a>1. Creating the module class</h2>
+<h2 id="generating-the-module-skeleton"><a class="anchor" href="#generating-the-module-skeleton"></a>1. Generating the module skeleton</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Now open <code>my-module.js</code> and import the <code>BaseModule</code> from the <code>lisk-sdk</code> package:</p>
+<p>Use Lisk Commander to generate the skeleton for the new module:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { BaseModule } = require('lisk-sdk');</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">$ lisk generate:module --help
+Creates a module skeleton for the given name and id.
+
+USAGE
+  $ lisk generate:module MODULENAME MODULEID
+
+ARGUMENTS
+  MODULENAME  Module name.
+  MODULEID    Module Id, should be at least 1000 or more
+
+OPTIONS
+  -t, --template=template  Template to bootstrap the application. It will read from `.liskrc.json` or use `lisk-ts` if not found.
+
+EXAMPLE
+  generate:module nft 5000</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Next, define a new class <code>MyModule</code>, which extends from the <code>BaseModule</code>:</p>
+<p>The command <code>lisk generate:module</code> expects 2 arguments:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Module name</strong>: The name of the module.
+The name is used for example to subscribe to events, or to invoke actions of the module.
+Needs to be a string that only consists of upper and lower case letters [a-z, A-Z].
+No numbers, hyphens, etc., are allowed.</p>
+</li>
+<li>
+<p><strong>Module ID</strong>: The ID of the module.
+Needs to be unique within the application.
+Minimum value is <code>1000</code>.</p>
+</li>
+</ol>
 </div>
 <div class="paragraph">
-<p>Inside of the <code>myModule</code> class, define the different properties of the module:</p>
+<p>As an example, we use the module name <code>nft</code> and the module ID <code>1000</code>:</p>
 </div>
-<div class="dlist">
-<dl>
-<dt class="hdlist1"><code>id</code>(number)</dt>
-<dd>
-<p>The ID of the module.
-Must be unique in the application.
-The ID is used for example during the creation of transactions of the module.
-Minimum value is <code>1024</code>.</p>
-</dd>
-<dt class="hdlist1"><code>name</code>(string)</dt>
-<dd>
-<p>The name of the module.
-Must be unique in the application.
-The name is used for example to subscribe to events, or to invoke actions of the module.</p>
-</dd>
-</dl>
+<div id="generate-module" class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">lisk generate:module nft 1000</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This will generate the following files:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { BaseModule } = require('lisk-sdk');
+<pre>Creating module skeleton with module name "nft" and module ID "1000"
+Using template "lisk-ts"
+Generating module skeleton.
+Registering module...
+identical .liskrc.json
+   create src/app/modules/nft/nft_module.ts
+   create test/unit/modules/nft/nft_module.spec.ts
 
-class MyModule extends BaseModule {
-  id = 1024;
-  name = 'myModule';
-}
+No change to package.json was detected. No package manager install will be executed.
 
-module.exports = { MyModule };</code></pre>
+
+Your module is created and ready to use.</pre>
 </div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="defining-the-account-schema"><a class="anchor" href="#defining-the-account-schema"></a>2. Defining the account schema</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>The account schema defines which properties are added to user accounts by the module.</p>
-</div>
-<div class="admonitionblock tip">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-tip" title="Tip"></i>
-</td>
-<td class="content">
-For more information about schemas and how they are used in the Lisk SDK, check out the <a href="../../references/schemas.html" class="page">Schemas</a>.
-</td>
-</tr>
-</table>
 </div>
 <div class="paragraph">
-<p>The new properties will be added under a key that is named after the module name.
-The module-specific properties for every account are saved inside this key.</p>
-</div>
-<div class="paragraph">
-<p>To achieve a better overview, it is recommended to create a new file <code>schemas.js</code>, which will export the account schema for our new module:</p>
+<p>It will also automatically register the module with the application, by adding it to <code>src/app/modulees.ts</code>.</p>
 </div>
 <div class="listingblock">
-<div class="title">schemas.js</div>
+<div class="title">src/app/modules.ts</div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const myAccountSchema = {
-  // Root type must be type object
-  type: "object",
-  // Properties for the object
-  properties: {
-    key1: {
-      dataType: "string",
-      fieldNumber: 1,
-    },
-    key2: {
-      dataType: "boolean",
-      fieldNumber: 2,
-    },
-    key3: {
-      dataType: "uint64",
-      fieldNumber: 3,
-    }
-  },
-  // Default values for the different properties
-  default: {
-    key1 : "",
-    key2 : false,
-    key3 : 0
-  }
-}
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import { Application } from 'lisk-sdk';
+import { NftModule } from "./modules/nft/nft_module";
 
-module.exports = {
-  myAccountSchema
+export const registerModules = (app: Application): void =&gt; {
+    app.registerModule(NftModule);
 };</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Now include the schema in the module:</p>
+<p>The file <code>nft_module.ts</code> contains the module skeleton and the file <code>nft_module.spec.ts</code> contains the related unit test for the new module.</p>
+</div>
+<div class="paragraph">
+<p>The module skeleton can be viewed in <code>nft_module.ts</code>:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { BaseModule } = require('lisk-sdk');
-const { myAccountSchema } = require('./schemas.js'); <i class="conum" data-value="1"></i><b>(1)</b>
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import {
+    BaseModule,
+    AfterBlockApplyContext,
+    TransactionApplyContext,
+    BeforeBlockApplyContext,
+    AfterGenesisBlockApplyContext,
+    // GenesisConfig
+} from 'lisk-sdk';
 
-class MyModule extends BaseModule {
-  id = 1024;
-  name = 'myModule';
-  accountSchema = myAccountSchema; <i class="conum" data-value="2"></i><b>(2)</b>
-}
+export class NftModule extends BaseModule {
+    public actions = {
+        // Example below
+        // getBalance: async (params) =&gt; this._dataAccess.account.get(params.address).token.balance,
+        // getBlockByID: async (params) =&gt; this._dataAccess.blocks.get(params.id),
+    };
+    public reducers = {
+        // Example below
+        // getBalance: async (
+		// 	params: Record&lt;string, unknown&gt;,
+		// 	stateStore: StateStore,
+		// ): Promise&lt;bigint&gt; =&gt; {
+		// 	const { address } = params;
+		// 	if (!Buffer.isBuffer(address)) {
+		// 		throw new Error('Address must be a buffer');
+		// 	}
+		// 	const account = await stateStore.account.getOrDefault&lt;TokenAccount&gt;(address);
+		// 	return account.token.balance;
+		// },
+    };
+    public name = 'nft';
+    public transactionAssets = [];
+    public events = [
+        // Example below
+        // 'nft:newBlock',
+    ];
+    public id = 1000;
 
-module.exports = { MyModule };</code></pre>
+    // public constructor(genesisConfig: GenesisConfig) {
+    //     super(genesisConfig);
+    // }
+
+    // Lifecycle hooks
+    public async beforeBlockApply(_input: BeforeBlockApplyContext) {
+        // Get any data from stateStore using block info, below is an example getting a generator
+        // const generatorAddress = getAddressFromPublicKey(_input.block.header.generatorPublicKey);
+		// const generator = await _input.stateStore.account.get&lt;TokenAccount&gt;(generatorAddress);
+    }
+
+    public async afterBlockApply(_input: AfterBlockApplyContext) {
+        // Get any data from stateStore using block info, below is an example getting a generator
+        // const generatorAddress = getAddressFromPublicKey(_input.block.header.generatorPublicKey);
+		// const generator = await _input.stateStore.account.get&lt;TokenAccount&gt;(generatorAddress);
+    }
+
+    public async beforeTransactionApply(_input: TransactionApplyContext) {
+        // Get any data from stateStore using transaction info, below is an example
+        // const sender = await _input.stateStore.account.getOrDefault&lt;TokenAccount&gt;(_input.transaction.senderAddress);
+    }
+
+    public async afterTransactionApply(_input: TransactionApplyContext) {
+        // Get any data from stateStore using transaction info, below is an example
+        // const sender = await _input.stateStore.account.getOrDefault&lt;TokenAccount&gt;(_input.transaction.senderAddress);
+    }
+
+    public async afterGenesisBlockApply(_input: AfterGenesisBlockApplyContext) {
+        // Get any data from genesis block, for example get all genesis accounts
+        // const genesisAccoounts = genesisBlock.header.asset.accounts;
+    }
+}</code></pre>
 </div>
 </div>
-<div class="colist arabic">
-<table>
-<tr>
-<td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>Require the schema.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>Set the <code>accountSchema</code> of the module to the imported schema.</td>
-</tr>
-</table>
+<div class="paragraph">
+<p>The command <code>generate:module</code> already created the class <code>NftModule</code> which contains skeletons for the most important components of a module.
+The only properties which are set at this point are the module ID and the module name, which were defined previously.</p>
+</div>
+<div class="paragraph">
+<p>In fact, with these 2 properties, it is already a complete module that can be registered with the application.
+However, this module is not performing any functions yet.
+To give the module a purpose, it is necessary to implement certain logic inside of the module.</p>
+</div>
+<div class="paragraph">
+<p>The following sections explain, how the different components of a module can be used to implement the desired logic for the module.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="adding-transaction-assets-to-the-module"><a class="anchor" href="#adding-transaction-assets-to-the-module"></a>3. Adding transaction assets to the module</h2>
+<h2 id="the-module-class"><a class="anchor" href="#the-module-class"></a>2. The module class</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The module class always extends from the <code>BaseModule</code>, which is imported from the <code>lisk-sdk</code> package.</p>
+</div>
+<div class="paragraph">
+<p>The properties <code>name</code> and <code>id</code> are prefilled by the values we used when <a href="#generate-module">generating the module skeleton</a> in the previous step.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import {
+    BaseModule,
+    AfterBlockApplyContext,
+    TransactionApplyContext,
+    BeforeBlockApplyContext,
+    AfterGenesisBlockApplyContext,
+    // GenesisConfig
+} from 'lisk-sdk';
+
+export class NftModule extends BaseModule {
+
+    // ...
+
+    public name = 'nft';
+    public id = 1000;
+
+    // ...
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="transaction-assets"><a class="anchor" href="#transaction-assets"></a>3. Transaction assets</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>A module can include various custom transaction assets, that provide new transaction types to the application.</p>
 </div>
 <div class="paragraph">
-<p>Before a new asset can be added, it is first required to create the custom asset as described in the <a href="asset.html" class="page">Creating a custom asset</a> guide.</p>
+<p>Before a new asset can be added, it is first required to create the custom asset as described in the <a href="asset.html" class="page">Creating a new transaction asset</a> guide.</p>
 </div>
 <div class="paragraph">
-<p>Assuming an asset <code>myAsset</code> has been created for the module, then it can be included as shown below:</p>
+<p>Assuming an asset <code>CreateNFT</code> has been created for the module, then it will be included in the module as shown below:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { BaseModule } = require('lisk-sdk');
-const { myAccountSchema } = require('./schemas.js');
-const { MyAsset } = require('./my-asset.js');
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">const { CreateNFT } = require('./assets/create_nft_asset');
 
-class MyModule extends BaseModule {
-  id = 1024;
-  name = 'myModule';
-  accountSchema = myAccountSchema;
-  transactionAssets = [ new myAsset() ];
-}
+export class NftModule extends BaseModule {
 
-module.exports = { MyModule };</code></pre>
+    // ...
+
+    public transactionAssets = [new CreateNFT()];
+
+    // ...
+}</code></pre>
 </div>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="adding-an-interface-by-providing-reducers-actions-and-events"><a class="anchor" href="#adding-an-interface-by-providing-reducers-actions-and-events"></a>4. Adding an interface by providing reducers, actions and events</h2>
+<h2 id="actions"><a class="anchor" href="#actions"></a>4. Actions</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Each module allows the user to define certain reducers, actions, and events which provide the module with an interface, that allows other modules and plugins or external services to interact with the module.</p>
+<p>A list of actions that plugins and external services can invoke via the API client.</p>
 </div>
 <div class="admonitionblock tip">
 <table>
@@ -672,72 +732,6 @@ module.exports = { MyModule };</code></pre>
 </td>
 <td class="content">
 See the <a href="../../rpc-endpoints.html" class="page">RPC endpoints</a> page for more information.
-</td>
-</tr>
-</table>
-</div>
-<div class="dlist">
-<dl>
-<dt class="hdlist1"><code>events</code></dt>
-<dd>
-<p>A list of events this module emits.
-Plugins and external services can subscribe to these events with the API client.</p>
-</dd>
-<dt class="hdlist1"><code>actions</code></dt>
-<dd>
-<p>A list of actions that plugins and external services can invoke via the API client.</p>
-</dd>
-<dt class="hdlist1"><code>reducers</code></dt>
-<dd>
-<p>A list of actions that other modules of the application can invoke.</p>
-</dd>
-</dl>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { BaseModule } = require('lisk-sdk');
-const { myAccountSchema } = require('./schemas.js');
-
-class MyModule extends BaseModule {
-  id = 1024;
-  name = 'myModule';
-  accountSchema = myAccountSchema;
-  transactionAssets = [];
-  actions = {
-    myAction: async () =&gt; {
-        // Returns some data
-    },
-    anotherAction: async (params) =&gt; {
-        // Returns some other data
-    }
-  };
-  events = ['myEvent','anotherEvent'];
-  reducers = {
-    myReducer: async (params, stateStore) =&gt; {
-      // Returns some data
-    },
-    anotherReducer: async (params, stateStore) =&gt; {
-      // Returns some other data
-    }
-  };
-}
-
-module.exports = { MyModule };</code></pre>
-</div>
-</div>
-<div class="admonitionblock tip">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-tip" title="Tip"></i>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>What events, actions and reducers are used within a module, or if these interfaces are actually required at all, will be a specific individual requirement for every module; as it is heavily dependant on which functionality the module intends to provide to the application.</p>
-</div>
-<div class="paragraph">
-<p>The best way to understand the necessary requirements here is to look at existing examples in the Lisk SDK default modules, or examples of other blockchain applications built with the Lisk SDK, for example the <a href="../../tutorials/hello-world.html" class="page">Hello World</a> application.</p>
-</div>
 </td>
 </tr>
 </table>
@@ -760,11 +754,106 @@ module.exports = { MyModule };</code></pre>
 }</pre>
 </div>
 </div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public actions = {
+    // Example below
+    // getBalance: async (params) =&gt; this._dataAccess.account.get(params.address).token.balance,
+    // getBlockByID: async (params) =&gt; this._dataAccess.blocks.get(params.id),
+};</code></pre>
+</div>
+</div>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="defining-the-lifecycle-hooks"><a class="anchor" href="#defining-the-lifecycle-hooks"></a>5. Defining the lifecycle hooks</h2>
+<h2 id="reducers"><a class="anchor" href="#reducers"></a>5. Reducers</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A list of actions that other modules of the application can invoke.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Reducers can only be invoked by other modules, <strong>not</strong> by plugins.
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public reducers = {
+    // Example below
+    // getBalance: async (
+    // 	params: Record&lt;string, unknown&gt;,
+    // 	stateStore: StateStore,
+    // ): Promise&lt;bigint&gt; =&gt; {
+    // 	const { address } = params;
+    // 	if (!Buffer.isBuffer(address)) {
+    // 		throw new Error('Address must be a buffer');
+    // 	}
+    // 	const account = await stateStore.account.getOrDefault&lt;TokenAccount&gt;(address);
+    // 	return account.token.balance;
+    // },
+};</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="events"><a class="anchor" href="#events"></a>6. Events</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A list of events that this module is able to emit.</p>
+</div>
+<div class="paragraph">
+<p>Modules, plugins, and external services can subscribe to these events.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+See the <a href="../../rpc-endpoints.html" class="page">RPC endpoints</a> page for more information.
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public events = [
+    // Example below
+    // 'nft:newBlock',
+];</code></pre>
+</div>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Which events, actions, and reducers are used within a module, or if these interfaces are actually required at all, will be a specific individual requirement for every module; as it is heavily dependant on which functionality the module intends to provide to the application.</p>
+</div>
+<div class="paragraph">
+<p>The easiest way to understand the necessary requirements here is to look at existing examples in the Lisk SDK default modules, or examples of other blockchain applications built with the Lisk SDK, for example, the <a href="../../tutorials/hello-world.html" class="page">Hello World</a> application.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="lifecycle-hooks"><a class="anchor" href="#lifecycle-hooks"></a>7. Lifecycle Hooks</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Lifecycle hooks allow a module to execute certain logic, before or after blocks or transactions are applied to the blockchain.</p>
@@ -799,71 +888,38 @@ module.exports = { MyModule };</code></pre>
 </dd>
 </dl>
 </div>
-<div class="sect2">
-<h3 id="lifecycle-hooks"><a class="anchor" href="#lifecycle-hooks"></a>5.1. Lifecycle hooks</h3>
 <div class="listingblock">
-<div class="title">Lifecycle hooks example</div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { BaseModule } = require('lisk-sdk');
-const { myAccountSchema } = require('./schemas.js');
-
-class MyModule extends BaseModule {
-  id = 1024;
-  name = 'myModule';
-  accountSchema = myAccountSchema;
-  transactionAssets = [];
-  actions = {
-    myAction: async () =&gt; {
-        // Returns some data
-    },
-    anotherAction: async (params) =&gt; {
-        // Returns some other data
-    }
-  };
-  events = ['myEvent','anotherEvent'];
-  reducers = {
-    myReducer: async (params, stateStore) =&gt; {
-      // Returns some data
-    },
-    anotherReducer: async (params, stateStore) =&gt; {
-      // Returns some other data
-    }
-  };
-  async beforeTransactionApply({transaction, stateStore, reducerHandler}) {
-    // Code in here is applied before each transaction is applied.
-  };
-
-  async afterTransactionApply({transaction, stateStore, reducerHandler}) {
-    // Code in here is applied after each transaction is applied.
-    /*if (transaction.moduleID === this.id &amp;&amp; transaction.assetID === MyAssetID) {
-
-      const myAsset = codec.decode(
-        myAssetSchema,
-        transaction.asset
-      );
-
-      this._channel.publish('my-module:myEvent', {
-        sender: transaction._senderAddress.toString('hex')
-      });
-    }*/
-  };
-  async afterGenesisBlockApply({genesisBlock, stateStore, reducerHandler}) {
-    // Code in here is applied after the genesis block is applied.
-  };
-  async beforeBlockApply({block, stateStore, reducerHandler}) {
-    // Code in here is applied before each block is applied.
-  }
-  async afterBlockApply({block, stateStore, reducerHandler, consensus}) {
-    // Code in here is applied after each block is applied.
-  }
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async beforeBlockApply({block, stateStore, reducerHandler}) {
+    // Get any data from stateStore using block info, below is an example getting a generator
+    // const generatorAddress = getAddressFromPublicKey(_input.block.header.generatorPublicKey);
+    // const generator = await _input.stateStore.account.get&lt;TokenAccount&gt;(generatorAddress);
 }
 
-module.exports = { MyModule };</code></pre>
-</div>
+public async afterBlockApply({block, consensus, stateStore, reducerHandler}) {
+    // Get any data from stateStore using block info, below is an example getting a generator
+    // const generatorAddress = getAddressFromPublicKey(_input.block.header.generatorPublicKey);
+    // const generator = await _input.stateStore.account.get&lt;TokenAccount&gt;(generatorAddress);
+}
+
+public async beforeTransactionApply({transaction, stateStore, reducerHandler}) {
+    // Get any data from stateStore using transaction info, below is an example
+    // const sender = await _input.stateStore.account.getOrDefault&lt;TokenAccount&gt;(_input.transaction.senderAddress);
+}
+
+public async afterTransactionApply({transaction, stateStore, reducerHandler}) {
+    // Get any data from stateStore using transaction info, below is an example
+    // const sender = await _input.stateStore.account.getOrDefault&lt;TokenAccount&gt;(_input.transaction.senderAddress);
+}
+
+public async afterGenesisBlockApply({genesisBlock, stateStore, reducerHandler}) {
+    // Get any data from genesis block, for example get all genesis accounts
+    // const genesisAccoounts = genesisBlock.header.asset.accounts;
+}</code></pre>
 </div>
 </div>
 <div class="sect2">
-<h3 id="statestore"><a class="anchor" href="#statestore"></a>5.2. stateStore</h3>
+<h3 id="statestore"><a class="anchor" href="#statestore"></a>7.1. stateStore</h3>
 <div class="paragraph">
 <p>The <code>stateStore</code> is used to mutate the state of the blockchain data, or to retrieve data from the blockchain.</p>
 </div>
@@ -892,7 +948,7 @@ module.exports = { MyModule };</code></pre>
 </div>
 </div>
 <div class="sect2">
-<h3 id="reducerhandler"><a class="anchor" href="#reducerhandler"></a>5.3. reducerHandler</h3>
+<h3 id="reducerhandler"><a class="anchor" href="#reducerhandler"></a>7.2. reducerHandler</h3>
 <div class="paragraph">
 <p>Reducers of other modules can be <strong>invoked</strong> inside of the lifecycle hooks via the <code>reducerHandler</code>.</p>
 </div>
@@ -908,48 +964,113 @@ module.exports = { MyModule };</code></pre>
 </div>
 </div>
 <div class="sect1">
-<h2 id="registering-the-module-with-the-application"><a class="anchor" href="#registering-the-module-with-the-application"></a>6. Registering the module with the application</h2>
+<h2 id="defining-an-account-schema"><a class="anchor" href="#defining-an-account-schema"></a>8. Defining an account schema</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The final requirement is to register the newly created module in the application:</p>
+<p>In some cases, the new module will require storing some new data in the user accounts.
+If that is the case, it is required to define the corresponding account schema in the module.</p>
+</div>
+<div class="paragraph">
+<p>The account schema defines which properties are added to user accounts by the module.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+For more information about schemas and how they are used in the Lisk SDK, check out the <a href="../../references/schemas.html" class="page">Schemas</a>.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The module-specific properties will be added under a key that is named after the module name.
+So for example, in case the module name is <code>nft</code>, the data will be stored under the key "nft" in each user account.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If a module includes an account schema, it is necessary to update the genesis block after registering the module with the application.</p>
+</div>
+<div class="paragraph">
+<p>The application CLI can be used to generate a new genesis block as shown below:</p>
 </div>
 <div class="listingblock">
-<div class="title">index.js</div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { Application, genesisBlockDevnet, configDevnet } = require('lisk-sdk');
-const { MyModule } = require('./my-module.js');
-
-// Update genesis block accounts to include the config options of myModule
-genesisBlockDevnet.header.asset.accounts = genesisBlockDevnet.header.asset.accounts.map(
-  (a) =&gt;
-    utils.objects.mergeDeep({}, a, {
-      myModule: {
-        key1 : "",
-        key2 : false,
-        key3 : 0
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">./bin/run genesis-block:create</code></pre>
+</div>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>To achieve a better overview, it is recommended to create a new file <code>schemas.js</code>, which will export the account schema for our new module:</p>
+</div>
+<div class="listingblock">
+<div class="title">schemas.js</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const nftAccountSchema = {
+    type: "object",
+    required: ["ownNFTs"],
+    properties: {
+      ownNFTs: {
+        type: "array",
+        fieldNumber: 1,
+        items: {
+          dataType: "bytes",
+        },
       },
-    }),
-);
+    },
+    default: {
+      ownNFTs: [],
+    },
+  };
 
-// Set a custom label for the bblockchain app
-configDevnet.label = 'my-app';
 
-const app = Application.defaultApplication(genesisBlockDevnet, configDevnet);
-
-app.registerModule(MyModule);
-
-app
-	.run()
-	.then(() =&gt; app.logger.info('App started...'))
-	.catch(error =&gt; {
-		console.error('Faced error in application', error);
-		process.exit(1);
-	});</code></pre>
+module.exports = {
+  nftAccountSchema
+};</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Now save and close <code>index.js</code>.
-The new module <code>MyModule</code> will now be available, the next time the application is started with <code>node index.js</code>.</p>
+<p>Now include the schema in the module:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { BaseModule } = require('lisk-sdk');
+const { myAccountSchema } = require('./schemas.js'); <i class="conum" data-value="1"></i><b>(1)</b>
+
+class NftModule extends BaseModule {
+
+  // ...
+
+  accountSchema = myAccountSchema; <i class="conum" data-value="2"></i><b>(2)</b>
+
+  // ...
+}
+
+module.exports = { MyModule };</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Require the schema.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Set the <code>accountSchema</code> of the module to the imported schema.</td>
+</tr>
+</table>
 </div>
 </div>
 </div>
@@ -958,7 +1079,7 @@ The new module <code>MyModule</code> will now be available, the next time the ap
       <a class="bottom-link" href="/documentation/lisk-sdk/guides/app-development/setup.html"><i class="icofont-double-left icofont-3x"></i>Creating a new blockchain application
     </a>
     </div><div>
-      <a class="bottom-link" href="/documentation/lisk-sdk/guides/app-development/asset.html">Creating a custom asset<i class="icofont-double-right icofont-3x"></i>
+      <a class="bottom-link" href="/documentation/lisk-sdk/guides/app-development/asset.html">Creating a new transaction asset<i class="icofont-double-right icofont-3x"></i>
       </a>
     </div>
   </div>

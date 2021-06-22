@@ -454,25 +454,29 @@
   <div class="content">
 <article class="doc">
 <h1 class="page">Communication</h1>
-<div id="toc" class="toc">
-<div id="toctitle">Table of Contents</div>
-<ul class="sectlevel1">
-<li><a href="#action-and-event-interfaces">Action and event interfaces</a>
-<ul class="sectlevel2">
-<li><a href="#the-api-client">The API client</a></li>
-<li><a href="#aliases">Aliases</a></li>
-<li><a href="#how-to-publish-and-subscribe-to-events">How to publish and subscribe to events</a></li>
-<li><a href="#how-to-invoke-actions">How to invoke actions</a></li>
-</ul>
-</li>
-</ul>
-</div>
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>The open Lisk communication architecture is based on <a href="https://en.wikipedia.org/wiki/Unix_domain_socket">IPC Unix Sockets</a> and <a href="https://en.wikipedia.org/wiki/WebSocket">WebSocket</a>.
-The <code>Application</code> can be configured to either expose an IPC or a WebSocket API that can be used by internal components such as modules and plugins, as well as by any external service like other scripts in JS, a tool in Rust, or a Python daemon.
-These external services can connect to this socket and listen to events in the network, or invoke the various actions of the <code>Application</code>.</p>
+<p>The Lisk SDK communicates via <a href="#actions">Actions</a>, <a href="#reducers">Reducers</a> and <a href="#events">Events</a> which can be invoked(actions,reducers) or subscribed(events) to.</p>
+</div>
+<div class="paragraph">
+<p>The open Lisk communication architecture is based on <a href="https://en.wikipedia.org/wiki/Unix_domain_socket" target="_blank" rel="noopener">IPC Unix Sockets</a> and <a href="https://en.wikipedia.org/wiki/WebSocket" target="_blank" rel="noopener">WebSocket (WS)</a>.
+The <a href="architecture.html#application" class="page">Application</a> can be configured to either expose an IPC or a WS API that can be used by internal components such as modules and plugins, as well as by any external service like other scripts in JS, a tool in Rust, or a Python daemon.
+The Lisk SDK offers two different API modes: <code>ipc</code> (Inter-process communication) and <code>ws</code> (WebSocket).
+If the node and the frontend are running on the same machine, it is recommended to use the <code>ipc</code> mode.
+To enable the API to be reachable from remote, use the <code>ws</code> option.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+For more information about the configuration of the RPC endpoints, check out the <a href="../guides/app-development/configuration.html" class="page">configuration guide</a>.
+</td>
+</tr>
+</table>
 </div>
 <div class="imageblock">
 <div class="content">
@@ -480,43 +484,126 @@ These external services can connect to this socket and listen to events in the n
 </div>
 </div>
 </div>
+<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#the-api-client">The API client (external communication)</a></li>
+<li><a href="#channels-internal-communication">Channels (internal communication)</a>
+<ul class="sectlevel2">
+<li><a href="#the-module-channel">The module channel</a></li>
+<li><a href="#the-plugin-channel">The plugin channel</a></li>
+</ul>
+</li>
+<li><a href="#aliases">Aliases</a></li>
+<li><a href="#actions">Actions</a>
+<ul class="sectlevel2">
+<li><a href="#how-to-invoke-actions">How to invoke actions</a></li>
+</ul>
+</li>
+<li><a href="#reducers">Reducers</a></li>
+<li><a href="#events">Events</a>
+<ul class="sectlevel2">
+<li><a href="#how-to-publish-and-subscribe-to-events">How to publish and subscribe to events</a></li>
+</ul>
+</li>
+</ul>
+</div>
 </div>
 <div class="sect1">
-<h2 id="action-and-event-interfaces"><a class="anchor" href="#action-and-event-interfaces"></a>Action and event interfaces</h2>
+<h2 id="the-api-client"><a class="anchor" href="#the-api-client"></a>The API client (external communication)</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The Lisk Framework defines actions and events which can be invoked(actions) or subscribed(events) through a channel.</p>
+<p>The <a href="../references/lisk-elements/api-client.html" class="page">API client</a> simplifies to send API requests to a blockchain application via IPC or WS.</p>
 </div>
 <div class="paragraph">
-<p>All modules and plugins will be given a <code>channel</code> to communicate with the application via actions and events.</p>
-</div>
-<div class="sect2">
-<h3 id="the-api-client"><a class="anchor" href="#the-api-client"></a>The API client</h3>
-<div class="paragraph">
-<p>The API client can be imported in any JS client application.</p>
+<p>It can be imported in any JS client application.</p>
 </div>
 <div class="paragraph">
-<p>It allows sending API requests to a node via IPC or WS.</p>
+<p>It  provides an interface to <strong>subscribe</strong> to all events and to <strong>invoke</strong> actions of the blockchain application and its' modules &amp; plugins.</p>
 </div>
-<div class="paragraph">
-<p>It also provides an interface to <strong>subscribe</strong> to all events and to <strong>invoke</strong> actions of the blockchain application and its' modules &amp; plugins.</p>
-</div>
-<div class="admonitionblock note">
+<div class="admonitionblock tip">
 <table>
 <tr>
 <td class="icon">
-<i class="fa icon-note" title="Note"></i>
+<i class="fa icon-tip" title="Tip"></i>
 </td>
 <td class="content">
-The <code>apiClient</code> can also be imported from the <a href="../references/lisk-elements/client.html" class="page">@liskhq/lisk-client</a> package.
+To conveniently communicate with a blockchain application, use the <code>apiClient</code> which is included in the <a href="../references/lisk-elements/client.html" class="page">@liskhq/lisk-client</a> and the <a href="https://www.npmjs.com/package/lisk-sdk" target="_blank" rel="noopener">lisk-sdk</a> packages.
 </td>
 </tr>
 </table>
 </div>
+<div class="tabset is-loading">
+<div class="ulist tabs">
+<ul>
+<li>
+<p><a id="tabset1_ws-api-client-example"></a>WS API client example</p>
+</li>
+<li>
+<p><a id="tabset1_ipc-api-client-example"></a>IPC API client example</p>
+</li>
+</ul>
+</div>
+<div class="content">
+<div class="tab-pane" aria-labelledby="tabset1_ws-api-client-example">
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { apiClient } = require('lisk-sdk');
+let clientCache;
+
+const getClient = async () =&gt; {
+  if (!clientCache) {
+    clientCache = await apiClient.createWSClient('ws://localhost:8080/ws');
+  }
+  return clientCache;
+};
+
+const useClient = async () =&gt; {
+  const client = await getClient();
+  const blockAtHeight123 = await client.block.getByHeight(123);
+  return blockAtHeight123;
+};
+
+useClient().then((val) =&gt; {
+  console.log("val:",val);
+});</code></pre>
+</div>
+</div>
+</div>
+<div class="tab-pane" aria-labelledby="tabset1_ipc-api-client-example">
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { apiClient } = require('lisk-sdk');
+let clientCache;
+
+const getClient = async () =&gt; {
+    if (!clientCache) {
+        clientCache = await apiClient.createIPCClient('~/.lisk/my-app');
+    }
+    return clientCache;
+};
+
+const useClient = async () =&gt; {
+  const client = await getClient();
+  const blockAtHeight123 = await client.block.getByHeight(123);
+  client.subscribe('app:block:new', ( data ) =&gt; {
+    console.log("new block:",data);
+  });
+  return blockAtHeight123;
+};
+
+useClient().then((val) =&gt; {
+  console.log("val:",val);
+});</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
 <div class="listingblock">
 <div class="title">Websocket API client example</div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { createIPCClient, createWSClient } = require('@liskhq/lisk-api-client');
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { createIPCClient, createWSClient } = require('@liskhq/lis-client');
 let clientCache;
 
 const getClient = async () =&gt; {
@@ -540,21 +627,44 @@ useClient().then((val) =&gt; {
 });</code></pre>
 </div>
 </div>
-<div class="admonitionblock tip">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-tip" title="Tip"></i>
-</td>
-<td class="content">
-More information about the API Client can be found at the <a href="rpc-endpoints.html" class="page">RPC endpoints</a> page.
-</td>
-</tr>
-</table>
 </div>
+</div>
+<div class="sect1">
+<h2 id="channels-internal-communication"><a class="anchor" href="#channels-internal-communication"></a>Channels (internal communication)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>All modules and plugins will be given a <code>channel</code> to communicate with the application via actions and events.</p>
 </div>
 <div class="sect2">
-<h3 id="aliases"><a class="anchor" href="#aliases"></a>Aliases</h3>
+<h3 id="the-module-channel"><a class="anchor" href="#the-module-channel"></a>The module channel</h3>
+
+</div>
+<div class="sect2">
+<h3 id="the-plugin-channel"><a class="anchor" href="#the-plugin-channel"></a>The plugin channel</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { BasePlugin } = require("lisk-sdk");
+const pJSON = require("../package.json");
+
+class MyPlugin extends BasePlugin {
+
+  //[...]
+async load(channel) {
+    channel.subscribe('app:block:new', (block) =&gt; {
+      console.log(block);
+    });
+  }
+
+  //[...]
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="aliases"><a class="anchor" href="#aliases"></a>Aliases</h2>
+<div class="sectionbody">
 <div class="paragraph">
 <p><a href="rpc-endpoints.html#application-events" class="page">Events</a> and <a href="rpc-endpoints.html#application-actions" class="page">actions</a> are identified by their alias.</p>
 </div>
@@ -580,42 +690,10 @@ Prefix and suffix are always separated by a colon <code>:</code>.</p>
 </ol>
 </div>
 </div>
-<div class="sect2">
-<h3 id="how-to-publish-and-subscribe-to-events"><a class="anchor" href="#how-to-publish-and-subscribe-to-events"></a>How to publish and subscribe to events</h3>
-<div class="paragraph">
-<p>Events are published inside lifecycle hooks of the module.
-The <code>channel</code> is available inside the lifecycle hooks, which allows to subscribe and publish to events, as well as invoking actions in the network.</p>
 </div>
-<div class="listingblock">
-<div class="title">Publishing an event</div>
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">channel.publish('pluginAlias:timestamp', { info: 'sample' });</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Subscribe to an event by utilizing <a href="#the-api-client">The API client</a>.</p>
-</div>
-<div class="listingblock">
-<div class="title">Subscribing to an event</div>
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">client.subscribe('pluginAlias:timestamp', ( data ) =&gt; {
-  console.log(data);
-});</code></pre>
-</div>
-</div>
-<div class="admonitionblock tip">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-tip" title="Tip"></i>
-</td>
-<td class="content">
-More information about available events and actions can be found at the <a href="rpc-endpoints.html" class="page">RPC endpoints</a> page.
-</td>
-</tr>
-</table>
-</div>
-</div>
+<div class="sect1">
+<h2 id="actions"><a class="anchor" href="#actions"></a>Actions</h2>
+<div class="sectionbody">
 <div class="sect2">
 <h3 id="how-to-invoke-actions"><a class="anchor" href="#how-to-invoke-actions"></a>How to invoke actions</h3>
 <div class="paragraph">
@@ -645,6 +723,64 @@ client.invoke('monitor:getTransactionStats').then((val) =&gt; { <i class="conum"
 <tr>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
 <td>Example of how to invoke an action of the monitor plugin.</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="reducers"><a class="anchor" href="#reducers"></a>Reducers</h2>
+<div class="sectionbody">
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+Reducers are only used and defined inside of modules.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="events"><a class="anchor" href="#events"></a>Events</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="how-to-publish-and-subscribe-to-events"><a class="anchor" href="#how-to-publish-and-subscribe-to-events"></a>How to publish and subscribe to events</h3>
+<div class="paragraph">
+<p>Events are published inside lifecycle hooks of the module.
+The <code>channel</code> is available inside the lifecycle hooks, which allows to subscribe and publish to events, as well as invoking actions in the network.</p>
+</div>
+<div class="listingblock">
+<div class="title">Publishing an event</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">channel.publish('pluginAlias:timestamp', { info: 'sample' });</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Subscribe to an event by utilizing <a href="#the-api-client">The API client (external communication)</a>.</p>
+</div>
+<div class="listingblock">
+<div class="title">Subscribing to an event</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">client.subscribe('pluginAlias:timestamp', ( data ) =&gt; {
+  console.log(data);
+});</code></pre>
+</div>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+More information about available events and actions can be found at the <a href="rpc-endpoints.html" class="page">RPC endpoints</a> page.
+</td>
 </tr>
 </table>
 </div>

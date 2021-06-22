@@ -2,46 +2,111 @@
 Mona Bärenfänger <mona@lightcurve.io>
 :description: Introduces the Lisk communication architecture, which is based on IPC Unix Sockets and WebSocket.
 //Settings
-:toc:
+:toc: preamble
 :idprefix:
 :idseparator: -
 :imagesdir: ../../assets/images
 //External URLs
+:url_npm_lisk_sdk: https://www.npmjs.com/package/lisk-sdk
 :url_ipc_socket: https://en.wikipedia.org/wiki/Unix_domain_socket
 :url_websocket: https://en.wikipedia.org/wiki/WebSocket
 // Project URLs
+:url_architecture: advanced-explanations/architecture.adoc#application
 :url_rpc_endpoints: advanced-explanations/rpc-endpoints.adoc
 :url_guides_api_access: guides/node-management/api-access.adoc
 :url_rpc_actions: advanced-explanations/rpc-endpoints.adoc#application-actions
 :url_rpc_events: advanced-explanations/rpc-endpoints.adoc#application-events
-:url_elements_client: references/lisk-elements/client.adoc
+:url_elements_apiclient: references/lisk-elements/api-client.adoc
 
-The open Lisk communication architecture is based on {url_ipc_socket}[IPC Unix Sockets] and {url_websocket}[WebSocket].
-The `Application` can be configured to either expose an IPC or a WebSocket API that can be used by internal components such as modules and plugins, as well as by any external service like other scripts in JS, a tool in Rust, or a Python daemon.
-These external services can connect to this socket and listen to events in the network, or invoke the various actions of the `Application`.
+//TODO: Update communication page
+
+The Lisk SDK communicates via <<actions>>, <<reducers>> and <<events>> which can be invoked(actions,reducers) or subscribed(events) to.
+
+The open Lisk communication architecture is based on {url_ipc_socket}[IPC Unix Sockets^] and {url_websocket}[WebSocket (WS)^].
+The xref:{url_architecture}[Application] can be configured to either expose an IPC or a WS API that can be used by internal components such as modules and plugins, as well as by any external service like other scripts in JS, a tool in Rust, or a Python daemon.
+The Lisk SDK offers two different API modes: `ipc` (Inter-process communication) and `ws` (WebSocket).
+If the node and the frontend are running on the same machine, it is recommended to use the `ipc` mode.
+To enable the API to be reachable from remote, use the `ws` option.
+
+TIP: For more information about the configuration of the RPC endpoints, check out the xref:{url_guides_config}[configuration guide].
 
 image::communication-architecture.png[]
 
-== Action and event interfaces
+[[the-api-client]]
+== The API client (external communication)
 
-The Lisk Framework defines actions and events which can be invoked(actions) or subscribed(events) through a channel.
+The xref:{url_elements_apiclient}[] simplifies to send API requests to a blockchain application via IPC or WS.
 
-All modules and plugins will be given a `channel` to communicate with the application via actions and events.
+It can be imported in any JS client application.
 
-=== The API client
+It  provides an interface to *subscribe* to all events and to *invoke* actions of the blockchain application and its' modules & plugins.
 
-The API client can be imported in any JS client application.
+TIP: To conveniently communicate with a blockchain application, use the `apiClient` which is included in the xref:{url_references_elements_client}[@liskhq/lisk-client] and the {url_npm_lisk_sdk}[lisk-sdk^] packages.
 
-It allows sending API requests to a node via IPC or WS.
+[tabs]
 
-It also provides an interface to *subscribe* to all events and to *invoke* actions of the blockchain application and its' modules & plugins.
+=====
+WS API client example::
++
+--
+[source,js]
+----
+const { apiClient } = require('lisk-sdk');
+let clientCache;
 
-NOTE: The `apiClient` can also be imported from the xref:{url_elements_client}[@liskhq/lisk-client] package.
+const getClient = async () => {
+  if (!clientCache) {
+    clientCache = await apiClient.createWSClient('ws://localhost:8080/ws');
+  }
+  return clientCache;
+};
+
+const useClient = async () => {
+  const client = await getClient();
+  const blockAtHeight123 = await client.block.getByHeight(123);
+  return blockAtHeight123;
+};
+
+useClient().then((val) => {
+  console.log("val:",val);
+});
+----
+--
+IPC API client example::
++
+--
+[source,js]
+----
+const { apiClient } = require('lisk-sdk');
+let clientCache;
+
+const getClient = async () => {
+    if (!clientCache) {
+        clientCache = await apiClient.createIPCClient('~/.lisk/my-app');
+    }
+    return clientCache;
+};
+
+const useClient = async () => {
+  const client = await getClient();
+  const blockAtHeight123 = await client.block.getByHeight(123);
+  client.subscribe('app:block:new', ( data ) => {
+    console.log("new block:",data);
+  });
+  return blockAtHeight123;
+};
+
+useClient().then((val) => {
+  console.log("val:",val);
+});
+----
+--
+=====
 
 .Websocket API client example
 [source,js]
 ----
-const { createIPCClient, createWSClient } = require('@liskhq/lisk-api-client');
+const { createIPCClient, createWSClient } = require('@liskhq/lis-client');
 let clientCache;
 
 const getClient = async () => {
@@ -65,9 +130,35 @@ useClient().then((val) => {
 });
 ----
 
-TIP: More information about the API Client can be found at the xref:{url_rpc_endpoints}[] page.
+== Channels (internal communication)
 
-=== Aliases
+All modules and plugins will be given a `channel` to communicate with the application via actions and events.
+
+=== The module channel
+
+
+
+=== The plugin channel
+
+[source,js]
+----
+const { BasePlugin } = require("lisk-sdk");
+const pJSON = require("../package.json");
+
+class MyPlugin extends BasePlugin {
+
+  //[...]
+async load(channel) {
+    channel.subscribe('app:block:new', (block) => {
+      console.log(block);
+    });
+  }
+
+  //[...]
+}
+----
+
+== Aliases
 
 xref:{url_rpc_events}[Events] and xref:{url_rpc_actions}[actions] are identified by their alias.
 
@@ -80,6 +171,33 @@ Equals `app` if it's an application event or action.
 . Separator:
 Prefix and suffix are always separated by a colon `:`.
 . Suffix: The respective name of the event or action.
+
+== Actions
+
+=== How to invoke actions
+
+The first argument is always the alias.
+If input data is required, it is provided as second argument.
+
+.Examples: How to invoke different kind of actions with the API client
+[source,typescript]
+----
+const data = await client.invoke('app:getSchema'); <1>
+const data = await client.invoke('app:actionName', input); <2>
+client.invoke('monitor:getTransactionStats').then((val) => { <3>
+    console.log(val);
+});
+----
+
+<1> How to invoke an action.
+<2> How to invoke an action that needs some input data.
+<3> Example of how to invoke an action of the monitor plugin.
+
+== Reducers
+
+IMPORTANT: Reducers are only used and defined inside of modules.
+
+== Events
 
 === How to publish and subscribe to events
 
@@ -104,21 +222,4 @@ client.subscribe('pluginAlias:timestamp', ( data ) => {
 
 TIP: More information about available events and actions can be found at the xref:{url_rpc_endpoints}[] page.
 
-=== How to invoke actions
 
-The first argument is always the alias.
-If input data is required, it is provided as second argument.
-
-.Examples: How to invoke different kind of actions with the API client
-[source,typescript]
-----
-const data = await client.invoke('app:getSchema'); <1>
-const data = await client.invoke('app:actionName', input); <2>
-client.invoke('monitor:getTransactionStats').then((val) => { <3>
-    console.log(val);
-});
-----
-
-<1> How to invoke an action.
-<2> How to invoke an action that needs some input data.
-<3> Example of how to invoke an action of the monitor plugin.

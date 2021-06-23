@@ -551,18 +551,17 @@ All of the logic implemented using a custom module / asset must be “determinis
 <ul class="sectlevel2">
 <li><a href="#actions">Actions</a></li>
 <li><a href="#events">Events</a></li>
-<li><a href="#reducers">Reducers</a></li>
 </ul>
 </li>
 <li><a href="#state-changes-execution-logic">State changes &amp; execution logic</a>
 <ul class="sectlevel2">
 <li><a href="#the-state-store">The state store</a></li>
+<li><a href="#reducers">Reducers</a></li>
 <li><a href="#assets">Assets</a></li>
 <li><a href="#lifecycle-hooks">Lifecycle Hooks</a></li>
 </ul>
 </li>
 <li><a href="#account-schema">Account schema</a></li>
-<li><a href="#how-to-add-a-module-to-the-application">How to add a module to the application</a></li>
 </ul>
 </div>
 </div>
@@ -590,16 +589,82 @@ It also provides the following 3 properties which are accessible throughout the 
 </div>
 <div class="sect2">
 <h3 id="channel"><a class="anchor" href="#channel"></a>Channel</h3>
-
+<div class="paragraph">
+<p>The channel in modules has one purpose: it allows a module to publish events to the application which were defined in the <a href="#events">Events</a> property of the module.</p>
+</div>
+<div class="paragraph">
+<p>The channel is accessible inside of a module under <code>this._channel</code>.
+It is used especially in the <a href="#lifecycle-hooks">Lifecycle Hooks</a>, to publish the events of the module.</p>
+</div>
+<div class="paragraph">
+<p>This is an example how to use the channel to publish an event:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">this._channel.publish('hello:newHello', {
+  sender: transaction._senderAddress.toString('hex'),
+  hello: helloAsset.helloString
+});</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The above code example will publish the event <code>hello:newHello</code> to the application, and attach an object which is containing the sender address and the hello message of the last sent <a href="../tutorials/hello-world.html#the-hello-asset" class="page">hello transaction</a>.</p>
+</div>
+<div class="paragraph">
+<p>For more information about channels, check out the <a href="../advanced-explanations/communication.html" class="page">Communication</a> page.</p>
+</div>
 </div>
 <div class="sect2">
 <h3 id="logger"><a class="anchor" href="#logger"></a>Logger</h3>
-
+<div class="paragraph">
+<p>The logger is accessible inside of a module under <code>this._logger</code>.
+As the name suggests, the logger enables to create log messages for the module for the different log levels:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>trace</p>
+</li>
+<li>
+<p>debug</p>
+</li>
+<li>
+<p>info</p>
+</li>
+<li>
+<p>warn</p>
+</li>
+<li>
+<p>error</p>
+</li>
+<li>
+<p>fatal</p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">this._logger.debug(nextRound, 'Updating delegate list for');</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The logger expects 2 arguments:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>data of the log message (object)</p>
+</li>
+<li>
+<p>message of the log message (string)</p>
+</li>
+</ol>
+</div>
 </div>
 <div class="sect2">
 <h3 id="dataaccess"><a class="anchor" href="#dataaccess"></a>dataAccess</h3>
 <div class="paragraph">
-<p>Use the property <code>this._dataAccess</code> to access data from the blockchain in the module.</p>
+<p>Use the property <code>this._dataAccess</code> to get data from the blockchain in the module.</p>
 </div>
 <div class="admonitionblock tip">
 <table>
@@ -613,6 +678,40 @@ Updating and changing of data on the blockchain is only allowed inside of <a hre
 </tr>
 </table>
 </div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const res = await this._dataAccess.getChainState('hello:helloCounter');</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The data is encoded in the database, therefore it needs to be decoded after receiving it with <code>this._dataAccess</code>.</p>
+</div>
+<div class="paragraph">
+<p>For more information about this topic, check out the <a href="../advanced-explanations/schemas.html" class="page">Schemas</a> page.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The following functions are available via <code>this._dataAccess</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">export interface BaseModuleDataAccess {
+	getChainState(key: string): Promise&lt;Buffer | undefined&gt;;
+	getAccountByAddress&lt;T&gt;(address: Buffer): Promise&lt;Account&lt;T&gt;&gt;;
+	getLastBlockHeader(): Promise&lt;BlockHeader&gt;;
+}</code></pre>
+</div>
+</div>
 </div>
 </div>
 </div>
@@ -620,31 +719,140 @@ Updating and changing of data on the blockchain is only allowed inside of <a hre
 <h2 id="interfaces"><a class="anchor" href="#interfaces"></a>Interfaces</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Modules can expose interfaces, which allow other components of the application to interact with the module.
-Reducers are actions that can only be invoked by other modules of the application.
-Actions and Events are exposed to the plugins and to external services.
-More information about the exposed interface can be found in the section about the <a href="../advanced-explanations/communication.html" class="page">Communication</a>.</p>
+<p>Modules can expose interfaces (<a href="#actions">Actions</a>, <a href="#events">Events</a> and <a href="#reducers">Reducers</a>), which allow other components of the application to interact with the module.</p>
+</div>
+<div class="paragraph">
+<p>Reducers are actions that can only be invoked by other modules of the application.</p>
+</div>
+<div class="paragraph">
+<p>Actions and Events are exposed to the plugins and to external services.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+View the "Interfaces" section of the <a href="../advanced-explanations/communication.html#interfaces" class="page">Communication</a> page to see an overview about the different interfaces and their accessibility in modules, plugins and external services.
+</td>
+</tr>
+</table>
 </div>
 <div class="sect2">
 <h3 id="actions"><a class="anchor" href="#actions"></a>Actions</h3>
-
+<div class="paragraph">
+<p>Actions are functions which can be invoked via Remote-Procedure-Calls (RPC) by plugins and external services, to request data from the module.</p>
+</div>
 </div>
 <div class="sect2">
 <h3 id="events"><a class="anchor" href="#events"></a>Events</h3>
-
+<div class="paragraph">
+<p>Events are published by the module on relevant occasions.
+Plugins and external services can subscribe to these events and as a result, they will be notified every time a new event is published.</p>
 </div>
-<div class="sect2">
-<h3 id="reducers"><a class="anchor" href="#reducers"></a>Reducers</h3>
-
 </div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="state-changes-execution-logic"><a class="anchor" href="#state-changes-execution-logic"></a>State changes &amp; execution logic</h2>
 <div class="sectionbody">
+<div class="paragraph">
+<p>The most important parts of a module are the parts which contain the logic to do state mutation on the blockchain.</p>
+</div>
+<div class="paragraph">
+<p>The main way to change the state of the blockchain, is to send transactions to the node.</p>
+</div>
+<div class="paragraph">
+<p>A blockchain application can accept many different kinds of transactions, depending on its use case.
+Every transaction type is handled by a specific module in the application.
+The <a href="../advanced-explanations/architecture.html#application" class="page">default application</a> already supports the following transactions:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="../references/lisk-framework/token-module.html" class="page">Token module</a>: Token transfer</p>
+</li>
+<li>
+<p><a href="../references/lisk-framework/dpos-module.html" class="page">DPoS module</a>:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Delegate registration</p>
+</li>
+<li>
+<p>Delegate vote</p>
+</li>
+<li>
+<p>Token unlock</p>
+</li>
+<li>
+<p>Delegate misbehavior report</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><a href="../references/lisk-framework/keys-module.html" class="page">Keys module</a>: Multisignature group registration</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>To add support for a new transaction tot he application, it is required to implement a new <a href="#assets">transaction asset</a> and to add it to the module.</p>
+</div>
+<div class="paragraph">
+<p>Beside sending transactions, it is also possible to change the state of the blockchain in the <a href="#reducers">Reducers</a> and <a href="#lifecycle-hooks">Lifecycle Hooks</a> of a module.</p>
+</div>
 <div class="sect2">
 <h3 id="the-state-store"><a class="anchor" href="#the-state-store"></a>The state store</h3>
-
+<div class="paragraph">
+<p>The <code>stateStore</code> is used to mutate the state of the blockchain data, or to retrieve data from the blockchain.</p>
+</div>
+<div class="paragraph">
+<p>Inside of a module, the <code>stateStore</code> is available for <a href="#reducers">Reducers</a>, <a href="#assets">Assets</a> and all <a href="#lifecycle-hooks">Lifecycle Hooks</a>.</p>
+</div>
+<div class="listingblock">
+<div class="title">Interface of <code>stateStore</code></div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">interface StateStore {
+	readonly account: {
+		get&lt;T = AccountDefaultProps&gt;(address: Buffer): Promise&lt;Account&lt;T&gt;&gt;;
+		getOrDefault&lt;T = AccountDefaultProps&gt;(address: Buffer): Promise&lt;Account&lt;T&gt;&gt;;
+		set&lt;T = AccountDefaultProps&gt;(address: Buffer, updatedElement: Account&lt;T&gt;): Promise&lt;void&gt;;
+		del(address: Buffer): Promise&lt;void&gt;;
+	};
+	readonly chain: {
+		lastBlockHeaders: ReadonlyArray&lt;BlockHeader&gt;;
+		lastBlockReward: bigint;
+		networkIdentifier: Buffer;
+		get(key: string): Promise&lt;Buffer | undefined&gt;;
+		set(key: string, value: Buffer): Promise&lt;void&gt;;
+	};
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="reducers"><a class="anchor" href="#reducers"></a>Reducers</h3>
+<div class="paragraph">
+<p>Reducers are <a href="#actions">Actions</a> which can be invoked exclusively by other modules.</p>
+</div>
+<div class="sect3">
+<h4 id="the-reducer-handler"><a class="anchor" href="#the-reducer-handler"></a>The reducer handler</h4>
+<div class="paragraph">
+<p>The <code>reducerHandler</code> allows modules and <a href="#assets">Assets</a> to invoke reducers of other modules.</p>
+</div>
+<div class="listingblock">
+<div class="title">Invoking the debit reducer of the token module</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">// debit tokens from sender account
+await reducerHandler.invoke("token:debit", {
+  address: senderAddress,
+  amount: asset.initValue,
+});</code></pre>
+</div>
+</div>
+</div>
 </div>
 <div class="sect2">
 <h3 id="assets"><a class="anchor" href="#assets"></a>Assets</h3>
@@ -727,54 +935,6 @@ More information about the exposed interface can be found in the section about t
 <div class="paragraph">
 <p>Modules define an account schema to store the module related data in the account.
 The definition of this schema is totally flexible and it is possible to define very complex data structures as well, if needed.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="how-to-add-a-module-to-the-application"><a class="anchor" href="#how-to-add-a-module-to-the-application"></a>How to add a module to the application</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Modules are registered in the file <code>src/app/modules.ts</code>.</p>
-</div>
-<div class="admonitionblock warning">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-warning" title="Warning"></i>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>Registering a new module requires the generation of a new genesis block and therefore always results in a hardfork of the blockchain of the application.</p>
-</div>
-<div class="paragraph">
-<p>Check out the <a href="../guides/app-development/genesis-block.html" class="page">Generating a genesis block</a> guide for more information on how to generate a new genesis block for your application.</p>
-</div>
-</td>
-</tr>
-</table>
-</div>
-<div class="listingblock">
-<div class="title">Example: How to register a module with the application in <code>modules.ts</code></div>
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import { Application } from 'lisk-sdk';
-import { SomeModule } from "some-module"; <i class="conum" data-value="1"></i><b>(1)</b>
-
-export const registerModules = (app: Application): void =&gt; {
-    app.registerModule(SomeModule); <i class="conum" data-value="2"></i><b>(2)</b>
-};</code></pre>
-</div>
-</div>
-<div class="colist arabic">
-<table>
-<tr>
-<td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>Import the module from an NPM package or from a local path.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>Add this line to register the module with the application.</td>
-</tr>
-</table>
 </div>
 </div>
 </div>

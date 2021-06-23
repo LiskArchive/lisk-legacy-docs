@@ -15,6 +15,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_advanced_communication_interfaces: advanced-explanations/communication.adoc#interfaces
 :url_advanced_schemas: advanced-explanations/schemas.adoc
 :url_intro_bapps_onchain: introduction/blockchain-applications.adoc#on-chain-logic
+:url_guides_setup: guides/app-development/setup.adoc
 :url_guides_genesis: guides/app-development/genesis-block.adoc
 :url_guides_module: guides/app-development/module.adoc
 :url_guides_asset: guides/app-development/asset.adoc
@@ -35,9 +36,9 @@ Modules hold all logic that is changing the state of the blockchain; or in other
 
 Modules can be registered to a blockchain application to extend the xref:{url_intro_bapps_onchain}[on-chain logic].
 
-IMPORTANT: All of the logic implemented using a custom module / asset must be “deterministic” and executable within the block time.
+IMPORTANT: All of the logic implemented in a module / asset must be “deterministic” and executable within the block time.
 
-.When to create a custom module
+.When to create a new module
 [NOTE]
 ====
 Modules enable to...
@@ -58,6 +59,32 @@ If you wish to view an example of a fully implemented module, check out the foll
 * the {url_github_nft_module}[NFT module] from the xref:{url_tutorials_nft}[] tutorial
 * the {url_github_srs_module}[SRS module] from the xref:{url_tutorials_srs}[] tutorial
 ====
+
+== Adding a module to the application
+
+Modules need to be registered to becomee available in the application.
+If the application was xref:{url_guides_setup}[bootstrapped] with Lisk Commander, they are registered in the file `src/app/modules.ts`.
+
+[WARNING]
+====
+Registering a new module requires the generation of a new genesis block and therefore always results in a hardfork of the blockchain of the application.
+
+Check out the xref:{url_guides_genesis}[Generating a genesis block] guide for more information on how to generate a new genesis block for your application.
+====
+
+.Example: How to register a module with the application in `modules.ts`
+[source,typescript]
+----
+import { Application } from 'lisk-sdk';
+import { SomeModule } from "some-module"; <1>
+
+export const registerModules = (app: Application): void => {
+    app.registerModule(SomeModule); <2>
+};
+----
+
+<1> Import the module from an NPM package or from a local path.
+<2> Add this line to register the module with the application.
 
 == Module anatomy
 
@@ -264,61 +291,85 @@ image::intro/asset.png[]
 
 ==== Schema
 
+The asset schema defines the data structure of the transaction.
+
+It defines which properties can be included, if they are optional or required, and also which data types are to expect.
+
+If a transaction object does not match the corresponding schema, the transaction wont be accepted by the node.
+
 ==== Validate
 
+As the name suggests, the `validate()` function validates the posted transaction data, to check it has the expected format.
+
+The following variables are available inside the `validate()` function:
+
+* `asset`:
+* `transaction`:
+
+If the function throws any error, the transaction will not be applied by the node.
+
+If the function does not throw any errors, the transaction will passed to the `apply()` function.
+
 ==== Apply
+
+The `apply()` function of an asset applies the desired business logic on the blockchain, based on the data posted in the transaction.
+
+The following variables are available inside the `apply()` function:
+
+* `asset`:
+* `stateStore`:
+* `reducerHandler`:
+* `transaction`:
 
 === Lifecycle Hooks
 
 ==== beforeTransactionApply()
 This hook is applied before each transaction.
 
-The following parameters are available inside this hook:
+The following variables are available inside this hook:
+
+* `transaction`:
+* `stateStore`:
+* `reducerHandler`:
 
 ==== afterTransactionApply()
 This hook is applied after each transaction.
 
+The following variables are available inside this hook:
+
+* `transaction`:
+* `stateStore`:
+* `reducerHandler`:
+
 ==== afterGenesisBlockApply()
 This hook is applied after the genesis block.
 
+The following variables are available inside this hook:
+
+* `genesisBlock`:
+* `stateStore`:
+* `reducerHandler`:
+
 ==== beforeBlockApply()
-This hookis applied before each block.
+This hook is applied before each block.
+
+The following variables are available inside this hook:
+
+* `block`:
+* `stateStore`:
+* `reducerHandler`:
 
 ==== afterBlockApply()
 This hook is applied after each block.
 
+The following variables are available inside this hook:
 
+* `block`:
+* `stateStore`:
+* `reducerHandler`:
+* `consensus`:
 
 == Account schema
 Modules define an account schema to store the module related data in the account.
 The definition of this schema is totally flexible and it is possible to define very complex data structures as well, if needed.
 
-
-
-
-////
-== How to add a module to the application
-
-Modules are registered in the file `src/app/modules.ts`.
-
-[WARNING]
-====
-Registering a new module requires the generation of a new genesis block and therefore always results in a hardfork of the blockchain of the application.
-
-Check out the xref:{url_guides_genesis}[Generating a genesis block] guide for more information on how to generate a new genesis block for your application.
-====
-
-.Example: How to register a module with the application in `modules.ts`
-[source,typescript]
-----
-import { Application } from 'lisk-sdk';
-import { SomeModule } from "some-module"; <1>
-
-export const registerModules = (app: Application): void => {
-    app.registerModule(SomeModule); <2>
-};
-----
-
-<1> Import the module from an NPM package or from a local path.
-<2> Add this line to register the module with the application.
-////

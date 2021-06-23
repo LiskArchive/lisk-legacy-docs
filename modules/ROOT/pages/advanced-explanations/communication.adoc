@@ -28,7 +28,7 @@ The Lisk SDK communicates via <<actions>>, <<reducers>> and <<events>> which can
 
 The open Lisk communication architecture is based on {url_ipc_socket}[IPC Unix Sockets^] and {url_websocket}[WebSocket (WS)^].
 The xref:{url_architecture}[Application] can be configured to either expose an IPC or a WS API that can be used by internal components such as modules and plugins, as well as by any external service like other scripts in JS, a tool in Rust, or a Python daemon.
-The Lisk SDK offers two different API modes: `ipc` (Inter-process communication) and `ws` (WebSocket).
+The Lisk SDK offers two different RPC API modes: `ipc` (Inter-process communication) and `ws` (WebSocket).
 If the node and the frontend are running on the same machine, it is recommended to use the `ipc` mode.
 To enable the API to be reachable from remote, use the `ws` option.
 
@@ -59,12 +59,12 @@ WS API client example::
 --
 [source,js]
 ----
-const { apiClient } = require('lisk-sdk');
+const { createIPCClient, createWSClient } = require('@liskhq/lis-client');
 let clientCache;
 
 const getClient = async () => {
   if (!clientCache) {
-    clientCache = await apiClient.createWSClient('ws://localhost:8080/ws');
+    clientCache = await createWSClient('ws://localhost:8080/ws');
   }
   return clientCache;
 };
@@ -72,6 +72,9 @@ const getClient = async () => {
 const useClient = async () => {
   const client = await getClient();
   const blockAtHeight123 = await client.block.getByHeight(123);
+  client.subscribe('app:block:new', ( data ) => {
+    console.log("new block:",data);
+  });
   return blockAtHeight123;
 };
 
@@ -111,40 +114,17 @@ useClient().then((val) => {
 --
 =====
 
-.Websocket API client example
-[source,js]
-----
-const { createIPCClient, createWSClient } = require('@liskhq/lis-client');
-let clientCache;
-
-const getClient = async () => {
-  if (!clientCache) {
-    clientCache = await createWSClient('ws://localhost:8080/ws');
-  }
-  return clientCache;
-};
-
-const useClient = async () => {
-  const client = await getClient();
-  const blockAtHeight123 = await client.block.getByHeight(123);
-  client.subscribe('app:block:new', ( data ) => {
-    console.log("new block:",data);
-  });
-  return blockAtHeight123;
-};
-
-useClient().then((val) => {
-  console.log("val:",val);
-});
-----
-
 == Channels (internal communication)
 
 All modules and plugins will be given a `channel` to communicate with the application via actions and events.
 
-=== The module channel
+=== Channel for modules
 
 The channel is used inside of the xref:{url_intro_modules_lifecycle}[lifecycle hooks] of a module to publish events to the application.
+
+The following function is available for a `channel` inside a module:
+
+* `publish(eventName: string, data?: object)`: Publishes an event.
 
 [source,js]
 ----
@@ -154,29 +134,28 @@ this._channel.publish('hello:newHello', {
 });
 ----
 
-=== The plugin channel
+=== Channel for plugins
+
+The channel is used inside of the xref:{url_intro_modules_lifecycle}[load() and unload()] functions of a plugin.
+
+The following function is available for a `channel` inside a plugin:
+
+* `publish(eventName: string, data?: object)`: Publishes an event.
+* `subscribe(eventName: string, cb: EventCallback)`: Subscribes to an event.
+* `invoke(actionName: string, params?: object)`: Invokes an action.
 
 [source,js]
 ----
-const { BasePlugin } = require("lisk-sdk");
-const pJSON = require("../package.json");
-
-class MyPlugin extends BasePlugin {
-
-  //[...]
-async load(channel) {
-    channel.subscribe('app:block:new', (block) => {
-      console.log(block);
-    });
-  }
-
-  //[...]
-}
+channel.subscribe('app:block:new', ({ data }) => {
+    const decodedBlock = this.codec.decodeBlock(data.block);
+    this._knownTimestamps.push(decodedBlock.header.timestamp);
+    channel.publish('myPlugin:timestamp', { timestamp: decodedBlock.header.timestamp });
+});
 ----
 
 == Aliases
 
-xref:{url_rpc_events}[Events] and xref:{url_rpc_actions}[actions] are identified by their alias.
+<<events>> and <<actions>> are identified by their alias.
 
 Example alias: `monitor:getTransactionStats`
 
@@ -190,13 +169,23 @@ Prefix and suffix are always separated by a colon `:`.
 
 == Actions
 
+xref:{url_rpc_actions}[actions]
+
 === How to invoke actions
 
 The first argument is always the alias.
 If input data is required, it is provided as second argument.
 
-.Examples: How to invoke different kind of actions with the API client
-[source,typescript]
+[tabs]
+
+=====
+API client::
++
+--
+Actions can be invoked by <<the-api-client>>.
+
+.How to invoke different kind of actions with the API client
+[source,js]
 ----
 const data = await client.invoke('app:getSchema'); <1>
 const data = await client.invoke('app:actionName', input); <2>
@@ -208,12 +197,27 @@ client.invoke('monitor:getTransactionStats').then((val) => { <3>
 <1> How to invoke an action.
 <2> How to invoke an action that needs some input data.
 <3> Example of how to invoke an action of the monitor plugin.
+--
+Channel::
++
+--
+Actions can be invoked by plugins with the <<channel-for-plugins>>.
+
+.How to invoke an action inside a plugin
+[source,js]
+----
+this._nodeInfo = await this._channel.invoke("app:getNodeInfo");
+----
+--
+=====
 
 == Reducers
 
 IMPORTANT: Reducers are only used and defined inside of modules.
 
 == Events
+
+xref:{url_rpc_events}[Events]
 
 === How to publish and subscribe to events
 

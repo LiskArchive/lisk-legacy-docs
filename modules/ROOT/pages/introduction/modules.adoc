@@ -10,6 +10,10 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_github_nft_module: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/nft/blockchain_app/nft_module/index.js
 :url_github_srs_module: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/social-recovery/blockchain_app/srs_module/index.js
 // Project URLs
+:url_advanced_architecture_defaultapp: advanced-explanations/architecture.adoc#application
+:url_advanced_communication: advanced-explanations/communication.adoc
+:url_advanced_communication_interfaces: advanced-explanations/communication.adoc#interfaces
+:url_advanced_schemas: advanced-explanations/schemas.adoc
 :url_intro_bapps_onchain: introduction/blockchain-applications.adoc#on-chain-logic
 :url_guides_genesis: guides/app-development/genesis-block.adoc
 :url_guides_module: guides/app-development/module.adoc
@@ -86,28 +90,145 @@ this._channel.publish('hello:newHello', {
 });
 ----
 
-The above code example will publish thee event `hello:newHello` to the application, and attach an object which is containing the sender address and the hello message of the last sent xref:{url_tutorials_hello_asset}[hello transaction].
+The above code example will publish the event `hello:newHello` to the application, and attach an object which is containing the sender address and the hello message of the last sent xref:{url_tutorials_hello_asset}[hello transaction].
+
+For more information about channels, check out the xref:{url_advanced_communication}[] page.
 
 === Logger
 
+The logger is accessible inside of a module under `this._logger`.
+As the name suggests, the logger enables to create log messages for the module for the different log levels:
+
+* trace
+* debug
+* info
+* warn
+* error
+* fatal
+
+[source,js]
+----
+this._logger.debug(nextRound, 'Updating delegate list for');
+----
+
+The logger expects 2 arguments:
+
+. data of the log message (object)
+. message of the log message (string)
+
 === dataAccess
-Use the property `this._dataAccess` to access data from the blockchain in the module.
+
+Use the property `this._dataAccess` to get data from the blockchain in the module.
 
 [TIP]
 Updating and changing of data on the blockchain is only allowed inside of <<assets>> and <<lifecycle-hooks>> via <<the-state-store>>.
 
+[source,js]
+----
+const res = await this._dataAccess.getChainState('hello:helloCounter');
+----
+
+[NOTE]
+====
+The data is encoded in the database, therefore it needs to be decoded after receiving it with `this._dataAccess`.
+
+For more information about this topic, check out the xref:{url_advanced_schemas}[] page.
+====
+
+The following functions are available via `this._dataAccess`:
+
+[source,js]
+----
+export interface BaseModuleDataAccess {
+	getChainState(key: string): Promise<Buffer | undefined>;
+	getAccountByAddress<T>(address: Buffer): Promise<Account<T>>;
+	getLastBlockHeader(): Promise<BlockHeader>;
+}
+----
+
 == Interfaces
-Modules can expose interfaces, which allow other components of the application to interact with the module.
+Modules can expose interfaces (<<actions>>, <<events>> and <<reducers>>), which allow other components of the application to interact with the module.
+
 Reducers are actions that can only be invoked by other modules of the application.
+
 Actions and Events are exposed to the plugins and to external services.
-More information about the exposed interface can be found in the section about the xref:{url_explanations_communication}[].
+
+TIP: View the "Interfaces" section of the xref:{url_advanced_communication_interfaces}[Communication] page to see an overview about the different interfaces and their accessibility in modules, plugins and external services.
 
 === Actions
+
+Actions are functions which can be invoked via Remote-Procedure-Calls (RPC) by plugins and external services, to request data from the module.
+
 === Events
-=== Reducers
+
+Events are published by the module on relevant occasions.
+Plugins and external services can subscribe to these events and as a result, they will be notified every time a new event is published.
+
 == State changes & execution logic
 
+The most important parts of a module are the parts which contain the logic to do state mutation on the blockchain.
+
+The main way to change the state of the blockchain, is to send transactions to the node.
+
+A blockchain application can accept many different kinds of transactions, depending on its use case.
+Every transaction type is handled by a specific module in the application.
+The xref:{url_advanced_architecture_defaultapp}[default application] already supports the following transactions:
+
+* xref:{url_token_module}[]: Token transfer
+* xref:{url_dpos_module}[]:
+** Delegate registration
+** Delegate vote
+** Token unlock
+** Delegate misbehavior report
+* xref:{url_keys_module}[]: Multisignature group registration
+
+To add support for a new transaction tot he application, it is required to implement a new <<assets,transaction asset>> and to add it to the module.
+
+Beside sending transactions, it is also possible to change the state of the blockchain in the <<reducers>> and <<lifecycle-hooks>> of a module.
+
 === The state store
+
+The `stateStore` is used to mutate the state of the blockchain data, or to retrieve data from the blockchain.
+
+Inside of a module, the `stateStore` is available for <<reducers>>, <<assets>> and all <<lifecycle-hooks>>.
+
+.Interface of `stateStore`
+[source,typescript]
+----
+interface StateStore {
+	readonly account: {
+		get<T = AccountDefaultProps>(address: Buffer): Promise<Account<T>>;
+		getOrDefault<T = AccountDefaultProps>(address: Buffer): Promise<Account<T>>;
+		set<T = AccountDefaultProps>(address: Buffer, updatedElement: Account<T>): Promise<void>;
+		del(address: Buffer): Promise<void>;
+	};
+	readonly chain: {
+		lastBlockHeaders: ReadonlyArray<BlockHeader>;
+		lastBlockReward: bigint;
+		networkIdentifier: Buffer;
+		get(key: string): Promise<Buffer | undefined>;
+		set(key: string, value: Buffer): Promise<void>;
+	};
+}
+----
+
+=== Reducers
+
+Reducers are <<actions>> which can be invoked exclusively by other modules.
+
+==== The reducer handler
+
+The `reducerHandler` allows modules and <<assets>> to invoke reducers of other modules.
+
+.Invoking the debit reducer of the token module
+[source,js]
+----
+// debit tokens from sender account
+await reducerHandler.invoke("token:debit", {
+  address: senderAddress,
+  amount: asset.initValue,
+});
+----
 
 === Assets
 
@@ -154,6 +275,8 @@ The definition of this schema is totally flexible and it is possible to define v
 
 
 
+
+////
 == How to add a module to the application
 
 Modules are registered in the file `src/app/modules.ts`.
@@ -178,5 +301,4 @@ export const registerModules = (app: Application): void => {
 
 <1> Import the module from an NPM package or from a local path.
 <2> Add this line to register the module with the application.
-
-
+////

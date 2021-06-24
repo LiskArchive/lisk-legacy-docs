@@ -15,9 +15,10 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_advanced_architecture_lifecycle: advanced-explanations/architecture.adoc#life-cycle-of-a-block
 :url_advanced_communication: advanced-explanations/communication.adoc
 :url_advanced_communication_interfaces: advanced-explanations/communication.adoc#interfaces
+:url_advanced_communication_alias: advanced-explanations/communication.adoc#alias
 :url_advanced_schemas: advanced-explanations/schemas.adoc
 :url_intro_bapps_onchain: introduction/blockchain-applications.adoc#on-chain-logic
-:url_intro_bapps_offchain: introduction/plugins.adoc
+:url_intro_plugins: introduction/plugins.adoc
 :url_guides_setup: guides/app-development/setup.adoc
 :url_guides_genesis: guides/app-development/genesis-block.adoc
 :url_guides_module: guides/app-development/module.adoc
@@ -65,9 +66,10 @@ If you wish to view an example of a fully implemented module, check out the foll
 Modules need to be registered to becomee available in the application.
 If the application was xref:{url_guides_setup}[bootstrapped] with Lisk Commander, they are registered in the file `src/app/modules.ts`.
 
-[WARNING]
+[IMPORTANT]
 ====
-Registering a new module requires the generation of a new genesis block and therefore always results in a hardfork of the blockchain of the application.
+Registering a new module requires the generation of a new genesis block, if the module defines an <<account-schema>>.
+This always results in a hardfork of the blockchain of the application.
 
 Check out the xref:{url_guides_genesis}[Generating a genesis block] guide for more information on how to generate a new genesis block for your application.
 ====
@@ -76,10 +78,10 @@ Check out the xref:{url_guides_genesis}[Generating a genesis block] guide for mo
 [source,typescript]
 ----
 import { Application } from 'lisk-sdk';
-import { SomeModule } from "some-module"; <1>
+import { SomeModule } from "some-module"; // <1>
 
 export const registerModules = (app: Application): void => {
-    app.registerModule(SomeModule); <2>
+    app.registerModule(SomeModule); // <2>
 };
 ----
 
@@ -99,32 +101,24 @@ Each module is constructed as a class which extends from the xref:{url_reference
 
 The base module provides an interface which needs to be completed by implementing the below described components of a module.
 
-== Properties
+== Module ID
 
-The following 3 properties are accessible throughout the module:
+The module ID is the unique identifier for a module in the application.
 
-=== Channel
+The module IDs `0`-`999` are reserved for official modules for the Lisk SDK.
+That means, the minimum ID for a new module is `1000`.
+The maximum value for a module ID is `2^32 - 1`(equals 4,294,967,295), because it is stored as `uint32` value.
 
-The channel in modules has one purpose: it allows a module to publish events to the application which were defined in the <<events>> property of the module.
+It is also important to note, that module IDs do not need to be in succession, the only requirement is, that they are unique within the blockchain application.
+So as an example, it is valid to register multiple modules to the application which have the following module IDs: `1003`, `1000`, `2500001` because they are in the allowed number range, and each ID is different.
 
-The channel is accessible inside of a module under `this._channel`.
-It is used especially in the <<lifecycle-hooks>>, to publish the events of the module.
+== Module name
 
-This is an example how to use the channel to publish an event:
+The module name is the human readable unique identifier for the module.
 
-[source,js]
-----
-this._channel.publish('hello:newHello', {
-  sender: transaction._senderAddress.toString('hex'),
-  hello: helloAsset.helloString
-});
-----
+It is used as prefix in the xref:{url_advanced_communication_alias}[alias] of events and actions, and as key label to to add the properties of the <<account-schema>> to the user accounts.
 
-The above code example will publish the event `hello:newHello` to the application, and attach an object which is containing the sender address and the hello message of the last sent xref:{url_tutorials_hello_asset}[hello transaction].
-
-For more information about channels, check out the xref:{url_advanced_communication}[] page.
-
-=== Logger
+== Logger
 
 The logger is accessible inside of a module under `this._logger`.
 As the name suggests, the logger enables to create log messages for the module for the different log levels:
@@ -145,6 +139,24 @@ The logger expects 2 arguments:
 
 . data of the log message (object)
 . message of the log message (string)
+
+== Interfaces
+Modules can expose interfaces (<<actions>>, <<events>> and <<reducers>>), which allow other components of the application to interact with the module.
+
+Actions and Events are exposed to xref:{url_intro_plugins}[] and to external services.
+
+Reducers can only be invoked by other modules of the application.
+
+TIP: View the "Interfaces" section of the xref:{url_advanced_communication_interfaces}[Communication] page to see an overview about the different interfaces and their accessibility in modules, plugins and external services.
+
+=== Actions
+
+Actions are functions which can be invoked via Remote-Procedure-Calls (RPC) by plugins and external services, to request data from the module.
+
+=== Events
+
+Events are published by the module on relevant occasions.
+Plugins and external services can subscribe to these events and as a result, they will be notified every time a new event is published.
 
 === dataAccess
 
@@ -175,24 +187,6 @@ export interface BaseModuleDataAccess {
 	getLastBlockHeader(): Promise<BlockHeader>;
 }
 ----
-
-== Interfaces
-Modules can expose interfaces (<<actions>>, <<events>> and <<reducers>>), which allow other components of the application to interact with the module.
-
-Actions and Events are exposed to the xref:{url_intro_bapps_offchain}[] and to external services.
-
-Reducers can only be invoked by other modules of the application.
-
-TIP: View the "Interfaces" section of the xref:{url_advanced_communication_interfaces}[Communication] page to see an overview about the different interfaces and their accessibility in modules, plugins and external services.
-
-=== Actions
-
-Actions are functions which can be invoked via Remote-Procedure-Calls (RPC) by plugins and external services, to request data from the module.
-
-=== Events
-
-Events are published by the module on relevant occasions.
-Plugins and external services can subscribe to these events and as a result, they will be notified every time a new event is published.
 
 == State changes & execution logic
 
@@ -243,6 +237,27 @@ interface StateStore {
 	};
 }
 ----
+
+=== Channel
+
+The channel in modules has one purpose: it allows a module to publish events to the application which were defined in the <<events>> property of the module.
+
+The channel is accessible inside of a module under `this._channel`.
+It is used especially in the <<lifecycle-hooks>>, to publish the events of the module.
+
+This is an example how to use the channel to publish an event:
+
+[source,js]
+----
+this._channel.publish('hello:newHello', {
+  sender: transaction._senderAddress.toString('hex'),
+  hello: helloAsset.helloString
+});
+----
+
+The above code example will publish the event `hello:newHello` to the application, and attach an object which is containing the sender address and the hello message of the last sent xref:{url_tutorials_hello_asset}[hello transaction].
+
+For more information about channels, check out the xref:{url_advanced_communication}[] page.
 
 === Reducers
 
@@ -359,13 +374,88 @@ The following variables are available inside this hook:
 * `block`: The block after it is applied on the blockchain.
 * `stateStore`: See <<the-state-store>>.
 * `reducerHandler`: See <<the-reducer-handler>>.
-* `consensus`:
+* `consensus`: See <<consensus>>
 
-//TODO: Add description for consensus
+==== Consensus
 
+`consensus` offers different consensus related functions to get and set the list of active delegates, and to get the finalized height of the blockchain.
 
-//TODO: Update description of account schema
+.consensus interface
+[source,typescript]
+----
+{
+	getDelegates: () => Promise<Delegate[]>; // <1>
+	updateDelegates: (delegates: Delegate[]) => Promise<void>; // <2>
+	getFinalizedHeight: () => number; // <3>
+}
+----
+
+<1> Get a list of the actively forging delegates in the current round.
+<2> Update the list of deleegates for the current round.
+<3> Returns the currently finalized height of the blockchain.
+
 == Account schema
-Modules define an account schema to store the module related data in the account.
+
+The account schema allows a module to store module-specific data in the user accounts.
+
 The definition of this schema is totally flexible and it is possible to define very complex data structures as well, if needed.
+
+Account schemas are defined in a modified JSON schema.
+For more information about this topic, check out the xref:{url_advanced_schemas}[] page.
+
+.Example of an account schema
+[source,js]
+----
+accountSchema = {
+    type: 'object',
+    properties: {
+        helloMessage: {
+            fieldNumber: 1,
+            dataType: 'string',
+        },
+    },
+    default: {
+        helloMessage: '',
+    },
+};
+----
+
+The defined properties in the account schema will be available for every user account.
+They will be grouped under a key named after the <<module-name>>.
+
+If a module with module name `hello` is registered in a xref:{url_advanced_architecture_defaultapp}[default application] with the above example of an account schema, the user accounts would look like this:
+
+.Example user account
+[source,js]
+----
+{
+  "address": "ae6fff8b9c9c3a8b38193d2186638f684d64d887",
+  "token": {
+    "balance": "20000000000"
+  },
+  "sequence": {
+    "nonce": "0"
+  },
+  "keys": {
+    "numberOfSignatures": 0,
+    "mandatoryKeys": [],
+    "optionalKeys": []
+  },
+  "dpos": {
+    "delegate": {
+      "username": "",
+      "pomHeights": [],
+      "consecutiveMissedBlocks": 0,
+      "lastForgedHeight": 0,
+      "isBanned": false,
+      "totalVotesReceived": "0"
+    },
+    "sentVotes": [],
+    "unlocking": []
+  },
+  "hello": {
+    "helloMessage": ""
+  }
+}
+----
 

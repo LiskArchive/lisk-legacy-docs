@@ -15,6 +15,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_advanced_architecture_lifecycle: advanced-explanations/architecture.adoc#life-cycle-of-a-block
 :url_advanced_communication: advanced-explanations/communication.adoc
 :url_advanced_communication_interfaces: advanced-explanations/communication.adoc#interfaces
+:url_advanced_communication_invoke_actions: advanced-explanations/communication.adoc#how-to-invoke-actions
 :url_advanced_communication_alias: advanced-explanations/communication.adoc#alias
 :url_advanced_schemas: advanced-explanations/schemas.adoc
 :url_intro_bapps_onchain: introduction/blockchain-applications.adoc#on-chain-logic
@@ -24,6 +25,12 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_guides_module: guides/app-development/module.adoc
 :url_guides_asset: guides/app-development/asset.adoc
 :url_protocol_accounts: protocol:accounts.adoc
+:url_protocol_accounts_transfer: protocol:transactions.adoc#transfer
+:url_protocol_accounts_delegate: protocol:transactions.adoc#delegate
+:url_protocol_accounts_vote: protocol:transactions.adoc#vote
+:url_protocol_accounts_unlock: protocol:transactions.adoc#unlock
+:url_protocol_accounts_multisignature: protocol:transactions.adoc#multisignature
+:url_protocol_accounts_pom: protocol:transactions.adoc#pom
 :url_references_framework_basemodule: references/lisk-framework/index.adoc#the-basemodule
 :url_references_framework_baseasset: references/lisk-framework/index.adoc#the-baseasset
 :url_dpos_module: references/lisk-framework/dpos-module.adoc
@@ -141,19 +148,20 @@ The logger expects 2 arguments:
 == Interfaces
 Modules can expose interfaces (<<actions>>, <<events>> and <<reducers>>), which allow other components of the application to interact with the module.
 
-Actions and Events are exposed to xref:{url_intro_plugins}[] and to external services.
+<<actions>> and <<events>> are exposed to xref:{url_intro_plugins}[] and to external services.
 
-Reducers can only be invoked by other modules of the application.
+<<reducers>> can only be invoked by other modules of the application.
+Therefore, it is also possible to perform state changes inside of reducers, in contrary to events and actions.
 
 TIP: View the "Interfaces" section of the xref:{url_advanced_communication_interfaces}[Communication] page to see an overview about the different interfaces and their accessibility in modules, plugins and external services.
 
 === Actions
 
-Actions are functions which can be invoked via Remote-Procedure-Calls (RPC) by plugins and external services, to request data from the module.
+Actions are functions which can be xref:{url_advanced_communication_invoke_actions}[invoked] via Remote-Procedure-Calls (RPC) by plugins and external services, to request data from the module.
 
 === Events
 
-Events are published by the module on relevant occasions.
+Events are <<channel,published>> by the module on relevant occasions.
 Plugins and external services can subscribe to these events and as a result, they will be notified every time a new event is published.
 
 === dataAccess
@@ -240,10 +248,10 @@ The above code example will publish the event `hello:newHello` to the applicatio
 For more information about channels, check out the xref:{url_advanced_communication}[] page.
 
 === Reducers
+Reducers are functions which can be invoked via Remote-Procedure-Calls (RPC) by other modules.
 
-Reducers are like <<actions>>, but they can only be invoked by other modules.
 
-In contrast to actions, reducers have therefore also access to the <<the-state-store,state store>>.
+Reducers have access to the <<the-state-store,state store>>.
 
 ==== The reducer handler
 
@@ -266,21 +274,18 @@ Assets are responsible for executing logic that introduces state changes on the 
 IMPORTANT: All of the logic implemented in a module / asset must be “deterministic” and executable within the block time.
 
 A blockchain application can accept many different kinds of transactions, depending on its use case.
-Every transaction type is handled by a specific <<asset>> of a module in the application.
+Every transaction type is handled by a specific <<assets,asset>> of a module in the application.
 The xref:{url_advanced_architecture_defaultapp}[default application] already supports the following transactions:
 
-* xref:{url_token_module}[]: Token transfer
+* xref:{url_token_module}[]: xref:{url_protocol_accounts_transfer}[Token transfer]
 * xref:{url_dpos_module}[]:
-** Delegate registration
-** Delegate vote
-** Token unlock
-** Delegate misbehavior report
-* xref:{url_keys_module}[]: Multisignature group registration
+** xref:{url_protocol_accounts_delegate}[Delegate registration]
+** xref:{url_protocol_accounts_vote}[Delegate vote]
+** xref:{url_protocol_accounts_unlock}[Token unlock]
+** xref:{url_protocol_accounts_pom}[Delegate misbehavior report]
+* xref:{url_keys_module}[]: xref:{url_protocol_accounts_multisignature}[Multisignature group registration]
 
-To add support for a new transaction to the application, it is required to implement a new <<assets,asset>> and to add it to the module.
-
-A module can include various transaction assets, that handle new transaction types in the application.
-Assets contain all logic related to transactions that belong to the module.
+To add support for a new transaction to the application, it is required to implement a new <<assets,asset>> and to add it to a module.
 
 TIP: To learn how to create a new asset, check out the xref:{url_guides_asset}[] guide.
 
@@ -292,7 +297,7 @@ The base asset provides an interface which needs to be completed by implementing
 
 image::intro/asset.png[]
 
-==== Schema
+==== Transaction asset schema
 
 The asset schema defines the *custom data structure of the transaction*.
 
@@ -300,13 +305,36 @@ It defines which properties can be included, if they are optional or required, a
 
 If a transaction object does not match the corresponding schema, the transaction wont be accepted by the node.
 
+Asset schemas are defined in a modified JSON schema.
+For more information about this topic, check out the xref:{url_advanced_schemas}[] page.
+
+.Example of an asset schema
+[source,js]
+----
+schema = {
+    $id: 'lisk/hello/asset', // <1>
+    type: 'object',
+    required: ["helloString"], // <2>
+    properties: { // <3>
+        helloString: {
+            dataType: 'string',
+            fieldNumber: 1,
+        },
+    }
+};
+----
+
+<1> The ID under which assets are saved in the database.
+<2> The required properties of the transaction asset.
+<3> Contains the properties of the transaction asset.
+
 ==== Validate
 
 As the name suggests, the `validate()` function validates the posted transaction data, to check it has the expected format.
 
 The following variables are available inside the `validate()` function:
 
-* `asset`: The custom data of the transaction (defined in <<schema>>) posted to the node.
+* `asset`: The custom data of the transaction (defined in <<transaction-asset-schema>>) posted to the node.
 * `transaction`: The complete transaction object which was posted to the node.
 
 If the function throws any error, the transaction will not be applied by the node.
@@ -319,7 +347,7 @@ The `apply()` function of an asset applies the desired business logic on the blo
 
 The following variables are available inside the `apply()` function:
 
-* `asset`: The custom data of the transaction (defined in <<schema>>) posted to the node.
+* `asset`: The custom data of the transaction (defined in <<transaction-asset-schema>>) posted to the node.
 * `stateStore`: See <<the-state-store>>.
 * `reducerHandler`: See <<the-reducer-handler>>.
 * `transaction`: The complete transaction object which was posted to the node.
@@ -389,7 +417,7 @@ The following variables are available inside this hook:
 ----
 
 <1> Get a list of the actively forging delegates in the current round.
-<2> Update the list of deleegates for the current round.
+<2> Update the list of delegates for the current round.
 <3> Returns the currently finalized height of the blockchain.
 
 == Account schema

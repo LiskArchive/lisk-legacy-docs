@@ -389,9 +389,6 @@
         <li class="version">
           <a href="../../lisk-core/v3/index.html">3.0.0-rc.0</a>
         </li>
-        <li class="version">
-          <a href="../../lisk-core/v3-beta.1/index.html">3.0.0-beta.1</a>
-        </li>
       </ul>
     </li>
     <li class="component">
@@ -523,22 +520,20 @@
 <li><a href="#adding-a-module-to-the-application">Adding a module to the application</a></li>
 <li><a href="#module-anatomy">Module anatomy</a></li>
 <li><a href="#the-module-class">The module class</a></li>
-<li><a href="#properties">Properties</a>
-<ul class="sectlevel2">
-<li><a href="#channel">Channel</a></li>
+<li><a href="#module-id">Module ID</a></li>
+<li><a href="#module-name">Module name</a></li>
 <li><a href="#logger">Logger</a></li>
-<li><a href="#dataaccess">dataAccess</a></li>
-</ul>
-</li>
 <li><a href="#interfaces">Interfaces</a>
 <ul class="sectlevel2">
 <li><a href="#actions">Actions</a></li>
 <li><a href="#events">Events</a></li>
+<li><a href="#dataaccess">dataAccess</a></li>
 </ul>
 </li>
 <li><a href="#state-changes-execution-logic">State changes &amp; execution logic</a>
 <ul class="sectlevel2">
 <li><a href="#the-state-store">The state store</a></li>
+<li><a href="#channel">Channel</a></li>
 <li><a href="#reducers">Reducers</a></li>
 <li><a href="#assets">Assets</a></li>
 <li><a href="#lifecycle-hooks">Lifecycle Hooks</a></li>
@@ -555,15 +550,16 @@
 <p>Modules need to be registered to becomee available in the application.
 If the application was <a href="../guides/app-development/setup.html" class="page">bootstrapped</a> with Lisk Commander, they are registered in the file <code>src/app/modules.ts</code>.</p>
 </div>
-<div class="admonitionblock warning">
+<div class="admonitionblock important">
 <table>
 <tr>
 <td class="icon">
-<i class="fa icon-warning" title="Warning"></i>
+<i class="fa icon-important" title="Important"></i>
 </td>
 <td class="content">
 <div class="paragraph">
-<p>Registering a new module requires the generation of a new genesis block and therefore always results in a hardfork of the blockchain of the application.</p>
+<p>Registering a new module requires the generation of a new genesis block, if the module defines an <a href="#account-schema">Account schema</a>.
+This always results in a hardfork of the blockchain of the application.</p>
 </div>
 <div class="paragraph">
 <p>Check out the <a href="../guides/app-development/genesis-block.html" class="page">Generating a genesis block</a> guide for more information on how to generate a new genesis block for your application.</p>
@@ -621,40 +617,36 @@ export const registerModules = (app: Application): void =&gt; {
 </div>
 </div>
 <div class="sect1">
-<h2 id="properties"><a class="anchor" href="#properties"></a>Properties</h2>
+<h2 id="module-id"><a class="anchor" href="#module-id"></a>Module ID</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The following 3 properties are accessible throughout the module:</p>
-</div>
-<div class="sect2">
-<h3 id="channel"><a class="anchor" href="#channel"></a>Channel</h3>
-<div class="paragraph">
-<p>The channel in modules has one purpose: it allows a module to publish events to the application which were defined in the <a href="#events">Events</a> property of the module.</p>
+<p>The module ID is the unique identifier for a module in the application.</p>
 </div>
 <div class="paragraph">
-<p>The channel is accessible inside of a module under <code>this._channel</code>.
-It is used especially in the <a href="#lifecycle-hooks">Lifecycle Hooks</a>, to publish the events of the module.</p>
+<p>The module IDs <code>0</code>-<code>999</code> are reserved for official modules for the Lisk SDK.
+That means, the minimum ID for a new module is <code>1000</code>.
+The maximum value for a module ID is <code>2^32 - 1</code>(equals 4,294,967,295), because it is stored as <code>uint32</code> value.</p>
 </div>
 <div class="paragraph">
-<p>This is an example how to use the channel to publish an event:</p>
+<p>It is also important to note, that module IDs do not need to be in succession, the only requirement is, that they are unique within the blockchain application.
+So as an example, it is valid to register multiple modules to the application which have the following module IDs: <code>1003</code>, <code>1000</code>, <code>2500001</code> because they are in the allowed number range, and each ID is different.</p>
 </div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">this._channel.publish('hello:newHello', {
-  sender: transaction._senderAddress.toString('hex'),
-  hello: helloAsset.helloString
-});</code></pre>
 </div>
+</div>
+<div class="sect1">
+<h2 id="module-name"><a class="anchor" href="#module-name"></a>Module name</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The module name is the human readable unique identifier for the module.</p>
 </div>
 <div class="paragraph">
-<p>The above code example will publish the event <code>hello:newHello</code> to the application, and attach an object which is containing the sender address and the hello message of the last sent <a href="../tutorials/hello-world.html#the-hello-asset" class="page">hello transaction</a>.</p>
-</div>
-<div class="paragraph">
-<p>For more information about channels, check out the <a href="../advanced-explanations/communication.html" class="page">Communication</a> page.</p>
+<p>It is used as prefix in the <a href="../advanced-explanations/communication.html#alias" class="page">alias</a> of events and actions, and as key label to to add the properties of the <a href="#account-schema">Account schema</a> to the user accounts.</p>
 </div>
 </div>
-<div class="sect2">
-<h3 id="logger"><a class="anchor" href="#logger"></a>Logger</h3>
+</div>
+<div class="sect1">
+<h2 id="logger"><a class="anchor" href="#logger"></a>Logger</h2>
+<div class="sectionbody">
 <div class="paragraph">
 <p>The logger is accessible inside of a module under <code>this._logger</code>.
 As the name suggests, the logger enables to create log messages for the module for the different log levels:</p>
@@ -698,6 +690,44 @@ As the name suggests, the logger enables to create log messages for the module f
 <p>message of the log message (string)</p>
 </li>
 </ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="interfaces"><a class="anchor" href="#interfaces"></a>Interfaces</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Modules can expose interfaces (<a href="#actions">Actions</a>, <a href="#events">Events</a> and <a href="#reducers">Reducers</a>), which allow other components of the application to interact with the module.</p>
+</div>
+<div class="paragraph">
+<p>Actions and Events are exposed to <a href="plugins.html" class="page">Plugins</a> and to external services.</p>
+</div>
+<div class="paragraph">
+<p>Reducers can only be invoked by other modules of the application.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+View the "Interfaces" section of the <a href="../advanced-explanations/communication.html#interfaces" class="page">Communication</a> page to see an overview about the different interfaces and their accessibility in modules, plugins and external services.
+</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="actions"><a class="anchor" href="#actions"></a>Actions</h3>
+<div class="paragraph">
+<p>Actions are functions which can be invoked via Remote-Procedure-Calls (RPC) by plugins and external services, to request data from the module.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="events"><a class="anchor" href="#events"></a>Events</h3>
+<div class="paragraph">
+<p>Events are published by the module on relevant occasions.
+Plugins and external services can subscribe to these events and as a result, they will be notified every time a new event is published.</p>
 </div>
 </div>
 <div class="sect2">
@@ -750,45 +780,6 @@ Updating and changing of data on the blockchain is only allowed inside of <a hre
 	getLastBlockHeader(): Promise&lt;BlockHeader&gt;;
 }</code></pre>
 </div>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="interfaces"><a class="anchor" href="#interfaces"></a>Interfaces</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Modules can expose interfaces (<a href="#actions">Actions</a>, <a href="#events">Events</a> and <a href="#reducers">Reducers</a>), which allow other components of the application to interact with the module.</p>
-</div>
-<div class="paragraph">
-<p>Actions and Events are exposed to the <a href="plugins.html" class="page">Plugins</a> and to external services.</p>
-</div>
-<div class="paragraph">
-<p>Reducers can only be invoked by other modules of the application.</p>
-</div>
-<div class="admonitionblock tip">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-tip" title="Tip"></i>
-</td>
-<td class="content">
-View the "Interfaces" section of the <a href="../advanced-explanations/communication.html#interfaces" class="page">Communication</a> page to see an overview about the different interfaces and their accessibility in modules, plugins and external services.
-</td>
-</tr>
-</table>
-</div>
-<div class="sect2">
-<h3 id="actions"><a class="anchor" href="#actions"></a>Actions</h3>
-<div class="paragraph">
-<p>Actions are functions which can be invoked via Remote-Procedure-Calls (RPC) by plugins and external services, to request data from the module.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="events"><a class="anchor" href="#events"></a>Events</h3>
-<div class="paragraph">
-<p>Events are published by the module on relevant occasions.
-Plugins and external services can subscribe to these events and as a result, they will be notified every time a new event is published.</p>
 </div>
 </div>
 </div>
@@ -881,6 +872,33 @@ The <a href="../advanced-explanations/architecture.html#application" class="page
 	};
 }</code></pre>
 </div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="channel"><a class="anchor" href="#channel"></a>Channel</h3>
+<div class="paragraph">
+<p>The channel in modules has one purpose: it allows a module to publish events to the application which were defined in the <a href="#events">Events</a> property of the module.</p>
+</div>
+<div class="paragraph">
+<p>The channel is accessible inside of a module under <code>this._channel</code>.
+It is used especially in the <a href="#lifecycle-hooks">Lifecycle Hooks</a>, to publish the events of the module.</p>
+</div>
+<div class="paragraph">
+<p>This is an example how to use the channel to publish an event:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">this._channel.publish('hello:newHello', {
+  sender: transaction._senderAddress.toString('hex'),
+  hello: helloAsset.helloString
+});</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The above code example will publish the event <code>hello:newHello</code> to the application, and attach an object which is containing the sender address and the hello message of the last sent <a href="../tutorials/hello-world.html#the-hello-asset" class="page">hello transaction</a>.</p>
+</div>
+<div class="paragraph">
+<p>For more information about channels, check out the <a href="../advanced-explanations/communication.html" class="page">Communication</a> page.</p>
 </div>
 </div>
 <div class="sect2">
@@ -1116,9 +1134,41 @@ To learn how to create a new asset, check out the <a href="../guides/app-develop
 <p><code>reducerHandler</code>: See <a href="#the-reducer-handler">The reducer handler</a>.</p>
 </li>
 <li>
-<p><code>consensus</code>:</p>
+<p><code>consensus</code>: See <a href="#consensus">Consensus</a></p>
 </li>
 </ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="consensus"><a class="anchor" href="#consensus"></a>Consensus</h4>
+<div class="paragraph">
+<p><code>consensus</code> offers different consensus related functions to get and set the list of active delegates, and to get the finalized height of the blockchain.</p>
+</div>
+<div class="listingblock">
+<div class="title">consensus interface</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">{
+	getDelegates: () =&gt; Promise&lt;Delegate[]&gt;; <i class="conum" data-value="1"></i><b>(1)</b>
+	updateDelegates: (delegates: Delegate[]) =&gt; Promise&lt;void&gt;; <i class="conum" data-value="2"></i><b>(2)</b>
+	getFinalizedHeight: () =&gt; number; <i class="conum" data-value="3"></i><b>(3)</b>
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Get a list of the actively forging delegates in the current round.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Update the list of deleegates for the current round.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Returns the currently finalized height of the blockchain.</td>
+</tr>
+</table>
 </div>
 </div>
 </div>
@@ -1128,8 +1178,72 @@ To learn how to create a new asset, check out the <a href="../guides/app-develop
 <h2 id="account-schema"><a class="anchor" href="#account-schema"></a>Account schema</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Modules define an account schema to store the module related data in the account.
-The definition of this schema is totally flexible and it is possible to define very complex data structures as well, if needed.</p>
+<p>The account schema allows a module to store module-specific data in the user accounts.</p>
+</div>
+<div class="paragraph">
+<p>The definition of this schema is totally flexible and it is possible to define very complex data structures as well, if needed.</p>
+</div>
+<div class="paragraph">
+<p>Account schemas are defined in a modified JSON schema.
+For more information about this topic, check out the <a href="../advanced-explanations/schemas.html" class="page">Schemas</a> page.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example of an account schema</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">accountSchema = {
+    type: 'object',
+    properties: {
+        helloMessage: {
+            fieldNumber: 1,
+            dataType: 'string',
+        },
+    },
+    default: {
+        helloMessage: '',
+    },
+};</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The defined properties in the account schema will be available for every user account.
+They will be grouped under a key named after the <a href="#module-name">Module name</a>.</p>
+</div>
+<div class="paragraph">
+<p>If a module with module name <code>hello</code> is registered in a <a href="../advanced-explanations/architecture.html#application" class="page">default application</a> with the above example of an account schema, the user accounts would look like this:</p>
+</div>
+<div class="listingblock">
+<div class="title">Example user account</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">{
+  "address": "ae6fff8b9c9c3a8b38193d2186638f684d64d887",
+  "token": {
+    "balance": "20000000000"
+  },
+  "sequence": {
+    "nonce": "0"
+  },
+  "keys": {
+    "numberOfSignatures": 0,
+    "mandatoryKeys": [],
+    "optionalKeys": []
+  },
+  "dpos": {
+    "delegate": {
+      "username": "",
+      "pomHeights": [],
+      "consecutiveMissedBlocks": 0,
+      "lastForgedHeight": 0,
+      "isBanned": false,
+      "totalVotesReceived": "0"
+    },
+    "sentVotes": [],
+    "unlocking": []
+  },
+  "hello": {
+    "helloMessage": ""
+  }
+}</code></pre>
+</div>
 </div>
 </div>
 </div>

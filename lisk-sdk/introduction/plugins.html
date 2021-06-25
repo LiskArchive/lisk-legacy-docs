@@ -457,40 +457,18 @@
 <div id="toc" class="toc">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#what-is-a-plugin">What is a plugin?</a></li>
-<li><a href="#how-to-create-a-custom-plugin">How to create a custom plugin</a>
-<ul class="sectlevel2">
-<li><a href="#example-a-timestamp-plugin">Example: A timestamp plugin</a></li>
-</ul>
-</li>
-<li><a href="#default-plugins">Default plugins</a></li>
+<li><a href="#plugin-anatomy">Plugin anatomy</a></li>
 </ul>
 </div>
-<div class="sect1">
-<h2 id="what-is-a-plugin"><a class="anchor" href="#what-is-a-plugin"></a>What is a plugin?</h2>
+<div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
 <p>Plugins offer useful features to the application and external services, which are part of the off-chain logic of the blockchain application.
 In other words, a plugin will never change the state of the blockchain itself, contrary to the <a href="modules.html" class="page">modules</a>, which hold the on-chain logic of the blockchain application.</p>
 </div>
-<div class="imageblock">
+<div class="sidebarblock">
 <div class="content">
-<img src="../_images/off-chain-architecture.png" alt="off chain architecture">
-</div>
-</div>
-<div class="paragraph">
-<p>Plugins expose an interface, similar to the interface for modules.
-This interface allows external services to interact with the plugin.
-More information about the exposed interface can be found in the section about the <a href="../advanced-explanations/communication.html" class="page">Communication</a>.</p>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-<div class="title">When to create a custom plugin</div>
+<div class="title">When to create a plugin</div>
 <div class="paragraph">
 <p>Plugins are able to&#8230;&#8203;</p>
 </div>
@@ -513,199 +491,26 @@ More information about the exposed interface can be found in the section about t
 </li>
 </ul>
 </div>
-</td>
-</tr>
-</table>
+</div>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="how-to-create-a-custom-plugin"><a class="anchor" href="#how-to-create-a-custom-plugin"></a>How to create a custom plugin</h2>
+<h2 id="plugin-anatomy"><a class="anchor" href="#plugin-anatomy"></a>Plugin anatomy</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>All custom plugins must extend the <code>BasePlugin</code> exposed by the SDK.
 The interface for the <code>BasePlugin</code> is described in the <a href="../references/lisk-framework/index.html#the-baseplugin" class="page">Lisk Framework reference</a>.</p>
 </div>
 <div class="paragraph">
+<p>Plugins expose an interface, similar to the interface for modules.
+This interface allows external services to interact with the plugin.
+More information about the exposed interface can be found in the section about the <a href="../advanced-explanations/communication.html" class="page">Communication</a>.</p>
+</div>
+<div class="paragraph">
 <p>Plugins and the application can interact with each other by using a channel.
-Each plugin is given one channel through the <code>load</code> function as shown below:</p>
+Each plugin is given one channel through the <code>load</code> function</p>
 </div>
-<div class="sect2">
-<h3 id="example-a-timestamp-plugin"><a class="anchor" href="#example-a-timestamp-plugin"></a>Example: A timestamp plugin</h3>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { BasePlugin } = require('lisk-sdk');
-
-class TimestampPlugin extends BasePlugin {
-  static get alias() { <i class="conum" data-value="1"></i><b>(1)</b>
-    return 'timestampPlugin';
-  };
-
-  static get info(){ <i class="conum" data-value="2"></i><b>(2)</b>
-    return {
-      author: 'authorName',
-      version: '0.0.1',
-      name: 'packageName',
-    };
-  };
-
-  _knownTimestamps = [];
-
-  get defaults() { <i class="conum" data-value="3"></i><b>(3)</b>
-    return {
-      type: 'object',
-      properties: {
-        enable: {
-          type: 'boolean',
-        }
-      },
-    }
-  };
-
-  get events() { <i class="conum" data-value="4"></i><b>(4)</b>
-    return ['timestamp'];
-  };
-
-  get actions() {
-    return { <i class="conum" data-value="5"></i><b>(5)</b>
-      getKnownTimestamp: () =&gt; this._knownTimestamps
-    }
-  };
-
-  async load(channel) { <i class="conum" data-value="6"></i><b>(6)</b>
-    // initialize plugin
-    if (!this.options.enable) { <i class="conum" data-value="7"></i><b>(7)</b>
-      return;
-    }
-    channel.subscribe('app:block:new', ({ data }) =&gt; { <i class="conum" data-value="8"></i><b>(8)</b>
-      const decodedBlock = this.codec.decodeBlock(data.block); <i class="conum" data-value="9"></i><b>(9)</b>
-      this._knownTimestamps.push(decodedBlock.header.timestamp); <i class="conum" data-value="10"></i><b>(10)</b>
-      channel.publish('timestampPlugin:timestamp', { timestamp: decodedBlock.header.timestamp }); <i class="conum" data-value="11"></i><b>(11)</b>
-    });
-  };
-
-  async unload() { <i class="conum" data-value="12"></i><b>(12)</b>
-    this._knownTimestamps = [];
-  };
-};
-
-module.exports = { TimestampPlugin };</code></pre>
-</div>
-</div>
-<div class="colist arabic">
-<table>
-<tr>
-<td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>The unique plugin identifier for this plugin is <code>timestampPlugin</code>.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>Package meta information.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>The configuration schema for this plugin.
-After registering the plugin with the application, it can be configured in the <a href="../references/lisk-framework/config.html" class="page">application configuration</a>.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="4"></i><b>4</b></td>
-<td>The plugin registers the event <code>timestampPlugin:timestamp</code> with the application.
-Other plugins and modules can subscribe to this event.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="5"></i><b>5</b></td>
-<td>Defines the action <code>timestampPlugin:getKnownTimestamp</code>, which can be invoked by other plugins and modules in the application.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="6"></i><b>6</b></td>
-<td>Method which will be invoked by the controller to load the plugin.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="7"></i><b>7</b></td>
-<td>Doesn&#8217;t load the plugin, if it is disabled in the config.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="8"></i><b>8</b></td>
-<td>Subscribes to the event <code>app:block:new</code>.
-For every new block that is forged, it will perform the following commands.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="9"></i><b>9</b></td>
-<td>Decodes the received block.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="10"></i><b>10</b></td>
-<td>Pushes the timestamp of the new block into the <code>_knownTimestamps</code> array.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="11"></i><b>11</b></td>
-<td>Publishes a new event <code>timestampPlugin:timestamp</code> with the latest block timestamp to the application.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="12"></i><b>12</b></td>
-<td>Method to be invoked by controller to perform the cleanup.
-Deletes all timestamps in the <code>_knownTimestamps</code> array.</td>
-</tr>
-</table>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="default-plugins"><a class="anchor" href="#default-plugins"></a>Default plugins</h2>
-<div class="sectionbody">
-<table class="tableblock frame-all grid-all stripes-hover stretch">
-<colgroup>
-<col style="width: 30%;">
-<col style="width: 70%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">Name</th>
-<th class="tableblock halign-left valign-top">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../references/lisk-framework/http-api-plugin.html" class="page">HTTP API plugin</a></p></td>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p>Provides a RESTful HTTP API for a Lisk node.
-The API serves information related to accounts, blocks, transactions, node info and more.</p>
-</div></div></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../references/lisk-framework/forger-plugin.html" class="page">Forger plugin</a></p></td>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p>The forger plugin is mainly responsible for:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Enabling and disabling forging</p>
-</li>
-<li>
-<p>Tracking forging and voters information</p>
-</li>
-<li>
-<p>Forger plugin also provides webhook functionality, one could configure a webhook to monitor remote nodes.</p>
-</li>
-</ul>
-</div></div></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../references/lisk-framework/report-misbehavior-plugin.html" class="page">Report misbehavior plugin</a></p></td>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p>A plugin that provides automatic detection of delegate misbehavior and sends a <code>reportDelegateMisbehaviorTransaction</code> to the running node.</p>
-</div></div></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../references/lisk-framework/monitor-plugin.html" class="page">Monitor plugin</a></p></td>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p>A plugin that provides network statistics of the running node.</p>
-</div></div></td>
-</tr>
-</tbody>
-</table>
 </div>
 </div>
     <div class="bottom-links">

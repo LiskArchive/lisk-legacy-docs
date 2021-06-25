@@ -13,6 +13,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_eda: https://en.wikipedia.org/wiki/Event-driven_architecture
 // Project URLs
 :url_advanced_architecture: advanced-explanations/architecture.adoc#application
+:url_advanced_rpc: advanced-explanations/rpc-endpoints.adoc
 :url_glossary_rpc: references/glossary.adoc
 :url_guides_api_access: guides/node-management/api-access.adoc
 :url_guides_config: guides/app-development/configuration.adoc
@@ -22,11 +23,10 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_intro_plugins: introduction/plugins.adoc
 :url_references_elements_apiclient: references/lisk-elements/api-client.adoc
 :url_references_elements_client: references/lisk-elements/client.adoc
+:url_references_plugins_monitor: references/lisk-framework/monitor-plugin.adoc
 :url_advanced_rpc_endpoints: advanced-explanations/rpc-endpoints.adoc
 :url_advanced_rpc_actions: advanced-explanations/rpc-endpoints.adoc#application-actions
 :url_advanced_rpc_events: advanced-explanations/rpc-endpoints.adoc#application-events
-
-The Lisk SDK communicates via <<actions>>, <<reducers>> and <<events>> which can be invoked(actions,reducers) or subscribed(events) to.
 
 The open Lisk communication architecture is based on {url_ipc_socket}[IPC Unix Sockets^] and {url_websocket}[WebSocket (WS)^].
 The xref:{url_advanced_architecture}[Application] can be configured to either expose an IPC or a WS API that can be used by internal components such as modules and plugins, as well as by any external service like other scripts in JS, a tool in Rust, or a Python daemon.
@@ -34,23 +34,26 @@ The Lisk SDK offers two different RPC API modes: `ipc` (Inter-process communicat
 If the node and the frontend are running on the same machine, it is recommended to use the `ipc` mode.
 To enable the API to be reachable from remote, use the `ws` option.
 
-.some description
-[%collapsible]
-====
-this
-is
-going
-to be
-folded
-====
-
-TIP: For more information about the configuration of the RPC endpoints, check out the xref:{url_guides_config}[configuration guide].
-
 image::communication-architecture.png[]
 
 == Interfaces
 
+A blockchain application communicates via <<actions>>, <<reducers>> and <<events>> which can be invoked via RPC request (actions, reducers) or subscribed to (events).
+
+The different components of the application each have access to different parts of these interfaces.
+This is summarized in the following talbe:
+
 image::intro/sdk-interfaces.png[]
+
+In the above table, a green..
+
+* ... `reply` means, the component can reply to this kind of RPC request.
+* ... `invoke` means, the component can invoke this kind of RPC request.
+* ... `publish` means, the component can publish events.
+* ... `subscribe` means, the component can subscribe to events.
+
+TIP: For more information about the configuration of the RPC endpoints, check out the xref:{url_guides_config}[configuration guide].
+
 
 [[the-api-client]]
 == The API client (external communication)
@@ -150,7 +153,7 @@ this._channel.publish('hello:newHello', {
 
 The channel is used inside of the xref:{url_intro_modules_lifecycle}[load() and unload()] functions of a plugin.
 
-The following function is available for a `channel` inside a plugin:
+The following functions are available for a `channel` inside a plugin:
 
 * `publish(eventName: string, data?: object)`: Publishes an event.
 * `subscribe(eventName: string, cb: EventCallback)`: Subscribes to an event.
@@ -165,16 +168,31 @@ channel.subscribe('app:block:new', ({ data }) => {
 });
 ----
 
+=== The reducerHandler (module-intern communication)
+
+<<reducers>> of modules can be invoked inside of the xref:{url_intro_modules_lifecycle}[lifecycle hooks] of another module via the reducerHandler.
+
+[source,js]
+----
+// debit tokens from sender account
+await reducerHandler.invoke("token:debit", {
+  address: senderAddress,
+  amount: asset.initValue,
+});
+----
+
 == Aliases
 
 <<events>> and <<actions>> are identified by their alias.
 
-Example alias: `"monitor:getTransactionStats"`
+Example alias:
+
+ "monitor:getTransactionStats"
 
 The alias always consists of the following parts:
 
 . *Prefix:* Consists of the module or plugin name that provides the respective action or event.
-Equals `app` if it's an application event or action.
+Equals `app` if it's an xref:{url_advanced_rpc}[application event or action]. The prefix `monitor` in this example is referring the the xref:{url_references_plugins_monitor}[].
 . *Separator:*
 Prefix and suffix are always separated by a colon `:`.
 . *Suffix:* The respective name of the event or action.
@@ -271,8 +289,6 @@ client.subscribe('pluginAlias:timestamp', ( data ) => {
   console.log(data);
 });
 ----
-
-TIP: More information about available events and actions can be found at the xref:{url_advanced_rpc_endpoints}[] page.
 
 == Reducers
 

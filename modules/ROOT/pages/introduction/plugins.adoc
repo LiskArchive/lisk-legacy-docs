@@ -10,25 +10,12 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_introduction_modules: introduction/modules.adoc
 :url_references_config: references/lisk-framework/config.adoc
 :url_references_framework_baseplugin: references/lisk-framework/index.adoc#the-baseplugin
-:url_references_forger_plugin: references/lisk-framework/forger-plugin.adoc
-:url_references_http_plugin: references/lisk-framework/http-api-plugin.adoc
-:url_references_monitor_plugin: references/lisk-framework/monitor-plugin.adoc
-:url_references_report_misbbehavior_plugin: references/lisk-framework/report-misbehavior-plugin.adoc
-
-== What is a plugin?
 
 Plugins offer useful features to the application and external services, which are part of the off-chain logic of the blockchain application.
 In other words, a plugin will never change the state of the blockchain itself, contrary to the xref:{url_introduction_modules}[modules], which hold the on-chain logic of the blockchain application.
 
-image::off-chain-architecture.png[]
-
-Plugins expose an interface, similar to the interface for modules.
-This interface allows external services to interact with the plugin.
-More information about the exposed interface can be found in the section about the xref:{url_advanced_communication}[].
-
-.When to create a custom plugin
-[NOTE]
-====
+.When to create a plugin
+****
 Plugins are able to...
 
 * search the blockchain data.
@@ -36,121 +23,26 @@ Plugins are able to...
 * provide a UI for the blockchain application.
 * automate the blockchain logic, such as automatically seeding transactions.
 * add a proxy to the application interfaces.
-====
+****
 
-== How to create a custom plugin
+//== Standalone plugins vs internal plugins
+
+== Plugin anatomy
+
+//TODO: Update diagram
+//image::off-chain-architecture.png[]
 
 All custom plugins must extend the `BasePlugin` exposed by the SDK.
 The interface for the `BasePlugin` is described in the xref:{url_references_framework_baseplugin}[Lisk Framework reference].
 
+
+Plugins expose an interface, similar to the interface for modules.
+This interface allows external services to interact with the plugin.
+More information about the exposed interface can be found in the section about the xref:{url_advanced_communication}[].
+
+
+
+
 Plugins and the application can interact with each other by using a channel.
-Each plugin is given one channel through the `load` function as shown below:
+Each plugin is given one channel through the `load` function
 
-=== Example: A timestamp plugin
-
-[source,js]
-----
-const { BasePlugin } = require('lisk-sdk');
-
-class TimestampPlugin extends BasePlugin {
-  static get alias() { <1>
-    return 'timestampPlugin';
-  };
-
-  static get info(){ <2>
-    return {
-      author: 'authorName',
-      version: '0.0.1',
-      name: 'packageName',
-    };
-  };
-
-  _knownTimestamps = [];
-
-  get defaults() { <3>
-    return {
-      type: 'object',
-      properties: {
-        enable: {
-          type: 'boolean',
-        }
-      },
-    }
-  };
-
-  get events() { <4>
-    return ['timestamp'];
-  };
-
-  get actions() {
-    return { <5>
-      getKnownTimestamp: () => this._knownTimestamps
-    }
-  };
-
-  async load(channel) { <6>
-    // initialize plugin
-    if (!this.options.enable) { <7>
-      return;
-    }
-    channel.subscribe('app:block:new', ({ data }) => { <8>
-      const decodedBlock = this.codec.decodeBlock(data.block); <9>
-      this._knownTimestamps.push(decodedBlock.header.timestamp); <10>
-      channel.publish('timestampPlugin:timestamp', { timestamp: decodedBlock.header.timestamp }); <11>
-    });
-  };
-
-  async unload() { <12>
-    this._knownTimestamps = [];
-  };
-};
-
-module.exports = { TimestampPlugin };
-----
-
-<1> The unique plugin identifier for this plugin is `timestampPlugin`.
-<2> Package meta information.
-<3> The configuration schema for this plugin.
-After registering the plugin with the application, it can be configured in the xref:{url_references_config}[application configuration].
-<4> The plugin registers the event `timestampPlugin:timestamp` with the application.
-Other plugins and modules can subscribe to this event.
-<5> Defines the action `timestampPlugin:getKnownTimestamp`, which can be invoked by other plugins and modules in the application.
-<6> Method which will be invoked by the controller to load the plugin.
-<7> Doesn't load the plugin, if it is disabled in the config.
-<8> Subscribes to the event `app:block:new`.
-For every new block that is forged, it will perform the following commands.
-<9> Decodes the received block.
-<10> Pushes the timestamp of the new block into the `_knownTimestamps` array.
-<11> Publishes a new event `timestampPlugin:timestamp` with the latest block timestamp to the application.
-<12> Method to be invoked by controller to perform the cleanup.
-Deletes all timestamps in the `_knownTimestamps` array.
-
-== Default plugins
-
-[cols="30,70",options="header",stripes="hover"]
-|===
-|Name
-|Description
-
-|xref:{url_references_http_plugin}[]
-a|
-Provides a RESTful HTTP API for a Lisk node.
-The API serves information related to accounts, blocks, transactions, node info and more.
-
-|xref:{url_references_forger_plugin}[]
-a|
-The forger plugin is mainly responsible for:
-
-* Enabling and disabling forging
-* Tracking forging and voters information
-* Forger plugin also provides webhook functionality, one could configure a webhook to monitor remote nodes.
-
-|xref:{url_references_report_misbbehavior_plugin}[]
-a|
-A plugin that provides automatic detection of delegate misbehavior and sends a `reportDelegateMisbehaviorTransaction` to the running node.
-
-|xref:{url_references_monitor_plugin}[]
-a|
-A plugin that provides network statistics of the running node.
-
-|===

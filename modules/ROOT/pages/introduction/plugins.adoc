@@ -1,16 +1,27 @@
 = Plugins
 Mona Bärenfänger <mona@lightcurve.io>
 //Settings
-:toc:
+:toc: preamble
+:idprefix:
+:idseparator: -
 :imagesdir: ../../assets/images
-//External URLs
-:url_github_httpapi: https://github.com/LiskHQ/lisk-sdk/tree/v5.1.1/framework-plugins/lisk-framework-http-api-plugin
+// URLs
+:url_github_hello_plugin: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/hello-world/blockchain_app/hello_plugin/index.js
+:url_github_nft_plugin: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/nft/blockchain_app/nft_api_plugin/index.js
+:url_github_srs_api_plugin: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/social-recovery/blockchain_app/plugins/srs_api_plugin/index.js
+:url_github_srs_data_plugin: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/social-recovery/blockchain_app/plugins/srs_data_plugin/index.js
 // Project URLs
+:url_advanced_architecture_config: advanced-explanations/architecture.adoc#configuration
 :url_advanced_communication: advanced-explanations/communication.adoc
+:url_advanced_communication_pluginschannel: advanced-explanations/communication.adoc#channel-for-plugins
 :url_guides_setup: guides/app-development/setup.adoc
+:url_guides_plugin: guides/app-development/plugin.adoc
 :url_introduction_modules: introduction/modules.adoc
 :url_references_config: references/lisk-framework/config.adoc
 :url_references_framework_baseplugin: references/lisk-framework/index.adoc#the-baseplugin
+:url_tutorials_hello: tutorials/hello-world.adoc
+:url_tutorials_nft: tutorials/nft.adoc
+:url_tutorials_srs: tutorials/srs.adoc
 
 Plugins offer useful features to the application and external services, which are part of the off-chain logic of the blockchain application.
 In other words, a plugin will never change the state of the blockchain itself, contrary to the xref:{url_introduction_modules}[modules], which hold the on-chain logic of the blockchain application.
@@ -26,7 +37,19 @@ Plugins are able to...
 * add a proxy to the application interfaces.
 ****
 
-//== Standalone plugins vs internal plugins
+[TIP]
+
+====
+For a more practical guide how to create a new plugin, check out the guide xref:{url_guides_plugin}[].
+
+If you wish to view an example of a fully implemented module, check out the following examples:
+
+* the {url_github_hello_plugin}[Hello plugin] from the xref:{url_tutorials_hello}[] tutorial
+* the {url_github_nft_plugin}[NFT plugin] from the xref:{url_tutorials_nft}[] tutorial
+* the {url_github_srs_api_plugin}[SRS API plugin] and the {url_github_srs_data_plugin}[SRS data plugin] from the xref:{url_tutorials_srs}[] tutorial
+====
+
+//TODO: Mention standalone plugins vs internal plugins
 
 == Adding a plugin to the application
 
@@ -51,17 +74,120 @@ export const registerPlugins = (app: Application): void => {
 
 image::intro/plugin-diagram.png[]
 
+== The plugin class
+
 All custom plugins must extend the `BasePlugin` exposed by the SDK.
 The interface for the `BasePlugin` is described in the xref:{url_references_framework_baseplugin}[Lisk Framework reference].
 
+== Plugin Alias
 
-Plugins expose an interface, similar to the interface for modules.
-This interface allows external services to interact with the plugin.
-More information about the exposed interface can be found in the section about the xref:{url_advanced_communication}[].
+The unique identifier of the plugin.
+
+It is used as prefix in the xref:{url_advanced_communication_alias}[alias] of events and actions, and as key label to to add the properties of the <<plugin-defaults>> to the xref:{url_advanced_architecture_config}[application configuration].
 
 
+== Plugin info
 
+Plugin meta information.
+
+== Plugin defaults
+
+The configuration schema for this plugin.
+After registering the plugin with the application, it can be configured in the xref:{url_advanced_architecture_config}[application configuration].
+
+.Example: Config schema of the Dashboard plugin
+[source,js]
+----
+get defaults() {
+    return {
+        $id: '#/plugins/lisk-dashboard/config',
+        type: 'object',
+        properties: {
+            applicationName: {
+                type: 'string',
+                description: 'Application name to be shown near Logo',
+            },
+            applicationUrl: {
+                type: 'string',
+                format: 'uri',
+                description: 'URL to connect',
+            },
+            port: {
+                type: 'integer',
+                minimum: 1,
+                maximum: 65535,
+            },
+            host: {
+                type: 'string',
+                format: 'ip',
+            },
+        },
+        required: [],
+        default: {
+            applicationUrl: 'ws://localhost:8080/ws',
+            port: 4005,
+            host: '127.0.0.1',
+            applicationName: 'Lisk',
+        },
+    }
+};
+----
+
+== Interfaces
+
+Plugins can expose interfaces (<<actions>> and <<events>>), which allow other plugins and external tools to interact with the plugin.
+
+TIP: View the "Interfaces" section of the xref:{url_advanced_communication_interfaces}[Communication] page to see an overview about the different interfaces and their accessibility in modules, plugins and external services.
+
+=== Actions
+
+Actions are functions which can be xref:{url_advanced_communication_invoke_actions}[invoked] via Remote-Procedure-Calls (RPC) by plugins and external services, to request data from the plugin.
+
+=== Events
+
+Events are <<channel,published>> by the plugin on relevant occasions.
+Other plugins and external services can subscribe to these events and as a result, they will be notified immediately, every time a new event is published.
+
+=== dataAccess
+
+Use the property `this._dataAccess` to access data from the blockchain in the plugin.
+
+[source,js]
+----
+const res = await this._dataAccess.getChainState('hello:helloCounter');
+----
+
+[NOTE]
+====
+The data is encoded in the database, therefore it needs to be decoded after receiving it with `this._dataAccess`.
+
+For more information about this topic, check out the xref:{url_advanced_schemas}[] page.
+====
+
+The following functions are available via `this._dataAccess`:
+
+[source,js]
+----
+export interface BaseModuleDataAccess {
+	getChainState(key: string): Promise<Buffer | undefined>;
+	getAccountByAddress<T>(address: Buffer): Promise<Account<T>>;
+	getLastBlockHeader(): Promise<BlockHeader>;
+}
+----
+
+
+== Execution logic
 
 Plugins and the application can interact with each other by using a channel.
-Each plugin is given one channel through the `load` function
 
+=== load()
+
+The `load()` method will be invoked by the controller to load the plugin.
+
+The following variables are accessible in the `load()` function:
+
+* `channel`: See xref:{url_advanced_communication_publishsubscribe}[Channel for plugins].
+
+=== unload()
+
+The `unload()` method will be invoked by controller to perform the cleanup on application shutdown.

@@ -454,13 +454,6 @@
   <div class="content">
 <article class="doc">
 <h1 class="page">Plugins</h1>
-<div id="toc" class="toc">
-<div id="toctitle">Table of Contents</div>
-<ul class="sectlevel1">
-<li><a href="#adding-a-plugin-to-the-application">Adding a plugin to the application</a></li>
-<li><a href="#plugin-anatomy">Plugin anatomy</a></li>
-</ul>
-</div>
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
@@ -494,6 +487,60 @@ In other words, a plugin will never change the state of the blockchain itself, c
 </div>
 </div>
 </div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>For a more practical guide how to create a new plugin, check out the guide <a href="../guides/app-development/plugin.html" class="page">Creating a plugin</a>.</p>
+</div>
+<div class="paragraph">
+<p>If you wish to view an example of a fully implemented module, check out the following examples:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>the <a href="https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/hello-world/blockchain_app/hello_plugin/index.js">Hello plugin</a> from the <a href="../tutorials/hello-world.html" class="page">Hello World</a> tutorial</p>
+</li>
+<li>
+<p>the <a href="https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/nft/blockchain_app/nft_api_plugin/index.js">NFT plugin</a> from the <a href="../tutorials/nft.html" class="page">Non-fungible token (NFT)</a> tutorial</p>
+</li>
+<li>
+<p>the <a href="https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/social-recovery/blockchain_app/plugins/srs_api_plugin/index.js">SRS API plugin</a> and the <a href="https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/social-recovery/blockchain_app/plugins/srs_data_plugin/index.js">SRS data plugin</a> from the <a href="../tutorials/srs.html" class="page">Social Recovery System (SRS)</a> tutorial</p>
+</li>
+</ul>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#adding-a-plugin-to-the-application">Adding a plugin to the application</a></li>
+<li><a href="#plugin-anatomy">Plugin anatomy</a></li>
+<li><a href="#the-plugin-class">The plugin class</a></li>
+<li><a href="#plugin-alias">Plugin Alias</a></li>
+<li><a href="#plugin-info">Plugin info</a></li>
+<li><a href="#plugin-defaults">Plugin defaults</a></li>
+<li><a href="#interfaces">Interfaces</a>
+<ul class="sectlevel2">
+<li><a href="#actions">Actions</a></li>
+<li><a href="#events">Events</a></li>
+<li><a href="#dataaccess">dataAccess</a></li>
+</ul>
+</li>
+<li><a href="#execution-logic">Execution logic</a>
+<ul class="sectlevel2">
+<li><a href="#load">load()</a></li>
+<li><a href="#unload">unload()</a></li>
+</ul>
+</li>
+</ul>
 </div>
 </div>
 <div class="sect1">
@@ -536,18 +583,183 @@ export const registerPlugins = (app: Application): void =&gt; {
 <img src="../_images/intro/plugin-diagram.png" alt="plugin diagram">
 </div>
 </div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="the-plugin-class"><a class="anchor" href="#the-plugin-class"></a>The plugin class</h2>
+<div class="sectionbody">
 <div class="paragraph">
 <p>All custom plugins must extend the <code>BasePlugin</code> exposed by the SDK.
 The interface for the <code>BasePlugin</code> is described in the <a href="../references/lisk-framework/index.html#the-baseplugin" class="page">Lisk Framework reference</a>.</p>
 </div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="plugin-alias"><a class="anchor" href="#plugin-alias"></a>Plugin Alias</h2>
+<div class="sectionbody">
 <div class="paragraph">
-<p>Plugins expose an interface, similar to the interface for modules.
-This interface allows external services to interact with the plugin.
-More information about the exposed interface can be found in the section about the <a href="../advanced-explanations/communication.html" class="page">Communication</a>.</p>
+<p>The unique identifier of the plugin.</p>
 </div>
 <div class="paragraph">
-<p>Plugins and the application can interact with each other by using a channel.
-Each plugin is given one channel through the <code>load</code> function</p>
+<p>It is used as prefix in the <a href="../advanced-explanations/communication.html#alias" class="page">alias</a> of events and actions, and as key label to to add the properties of the <a href="#plugin-defaults">Plugin defaults</a> to the <a href="../advanced-explanations/architecture.html#configuration" class="page">application configuration</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="plugin-info"><a class="anchor" href="#plugin-info"></a>Plugin info</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Plugin meta information.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="plugin-defaults"><a class="anchor" href="#plugin-defaults"></a>Plugin defaults</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The configuration schema for this plugin.
+After registering the plugin with the application, it can be configured in the <a href="../advanced-explanations/architecture.html#configuration" class="page">application configuration</a>.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example: Config schema of the Dashboard plugin</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">get defaults() {
+    return {
+        $id: '#/plugins/lisk-dashboard/config',
+        type: 'object',
+        properties: {
+            applicationName: {
+                type: 'string',
+                description: 'Application name to be shown near Logo',
+            },
+            applicationUrl: {
+                type: 'string',
+                format: 'uri',
+                description: 'URL to connect',
+            },
+            port: {
+                type: 'integer',
+                minimum: 1,
+                maximum: 65535,
+            },
+            host: {
+                type: 'string',
+                format: 'ip',
+            },
+        },
+        required: [],
+        default: {
+            applicationUrl: 'ws://localhost:8080/ws',
+            port: 4005,
+            host: '127.0.0.1',
+            applicationName: 'Lisk',
+        },
+    }
+};</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="interfaces"><a class="anchor" href="#interfaces"></a>Interfaces</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Plugins can expose interfaces (<a href="#actions">Actions</a> and <a href="#events">Events</a>), which allow other plugins and external tools to interact with the plugin.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+View the "Interfaces" section of the <a href="../advanced-explanations/communication.html#interfaces" class="page">Communication</a> page to see an overview about the different interfaces and their accessibility in modules, plugins and external services.
+</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="actions"><a class="anchor" href="#actions"></a>Actions</h3>
+<div class="paragraph">
+<p>Actions are functions which can be <a href="../advanced-explanations/communication.html#how-to-invoke-actions" class="page">invoked</a> via Remote-Procedure-Calls (RPC) by plugins and external services, to request data from the plugin.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="events"><a class="anchor" href="#events"></a>Events</h3>
+<div class="paragraph">
+<p>Events are <a href="#channel">published</a> by the plugin on relevant occasions.
+Other plugins and external services can subscribe to these events and as a result, they will be notified immediately, every time a new event is published.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="dataaccess"><a class="anchor" href="#dataaccess"></a>dataAccess</h3>
+<div class="paragraph">
+<p>Use the property <code>this._dataAccess</code> to access data from the blockchain in the plugin.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const res = await this._dataAccess.getChainState('hello:helloCounter');</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The data is encoded in the database, therefore it needs to be decoded after receiving it with <code>this._dataAccess</code>.</p>
+</div>
+<div class="paragraph">
+<p>For more information about this topic, check out the <a href="../advanced-explanations/schemas.html" class="page">Schemas</a> page.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The following functions are available via <code>this._dataAccess</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">export interface BaseModuleDataAccess {
+	getChainState(key: string): Promise&lt;Buffer | undefined&gt;;
+	getAccountByAddress&lt;T&gt;(address: Buffer): Promise&lt;Account&lt;T&gt;&gt;;
+	getLastBlockHeader(): Promise&lt;BlockHeader&gt;;
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="execution-logic"><a class="anchor" href="#execution-logic"></a>Execution logic</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Plugins and the application can interact with each other by using a channel.</p>
+</div>
+<div class="sect2">
+<h3 id="load"><a class="anchor" href="#load"></a>load()</h3>
+<div class="paragraph">
+<p>The <code>load()</code> method will be invoked by the controller to load the plugin.</p>
+</div>
+<div class="paragraph">
+<p>The following variables are accessible in the <code>load()</code> function:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>channel</code>: See <a href="../advanced-explanations/communication.html#how-to-publish-and-subscribe-to-events" class="page">Channel for plugins</a>.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="unload"><a class="anchor" href="#unload"></a>unload()</h3>
+<div class="paragraph">
+<p>The <code>unload()</code> method will be invoked by controller to perform the cleanup on application shutdown.</p>
+</div>
 </div>
 </div>
 </div>

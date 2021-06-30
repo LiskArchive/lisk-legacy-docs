@@ -109,6 +109,15 @@ Each module is constructed as a class which extends from the xref:{url_reference
 
 The base module provides an interface which needs to be completed by implementing the below described components of a module.
 
+[source,js]
+----
+const { BaseModule } = require('lisk-sdk');
+
+class HelloModule extends BaseModule {
+
+}
+----
+
 == Module ID
 
 The module ID is the unique identifier for a module in the application.
@@ -120,11 +129,23 @@ The maximum value for a module ID is `2^32 - 1`(equals 4,294,967,295), because i
 It is also important to note, that module IDs do not need to be in succession, the only requirement is, that they are unique within the blockchain application.
 So as an example, it is valid to register multiple modules to the application which have the following module IDs: `1003`, `1000`, `2500001` because they are in the allowed number range, and each ID is different.
 
+.Example: ID of the Hello module from the Hello World app
+[source,js]
+----
+id = 1000;
+----
+
 == Module name
 
 The module name is the human readable unique identifier for the module.
 
 It is used as prefix in the xref:{url_advanced_communication_alias}[alias] of events and actions, and as key label to to add the properties of the <<account-schema>> to the user accounts.
+
+.Example: Name of the Hello module from the Hello World app
+[source,js]
+----
+name = 'hello';
+----
 
 == Logger
 
@@ -162,10 +183,31 @@ TIP: View the "Interfaces" section of the xref:{url_advanced_communication_inter
 
 Actions are functions which can be xref:{url_advanced_communication_invoke_actions}[invoked] via Remote-Procedure-Calls (RPC) by plugins and external services, to request data from the module.
 
+.Example: Actions of the Hello module from the Hello World app
+[source,js]
+----
+actions = {
+    amountOfHellos: async () => {
+        const res = await this._dataAccess.getChainState(CHAIN_STATE_HELLO_COUNTER);
+        const count = codec.decode(
+            helloCounterSchema,
+            res
+        );
+        return count;
+    },
+};
+----
+
 === Events
 
 Events are xref:{url_advanced_communication_moduleschannel}[published] by the module on relevant occasions.
 Plugins and external services can xref:{url_advanced_communication_publishsubscribe}[subscribe] to these events and as a result, they will be notified immediately, every time a new event is published.
+
+.Example: Events of the Hello module from the Hello World app
+[source,js]
+----
+events = ['newHello'];
+----
 
 === dataAccess
 
@@ -236,6 +278,69 @@ Reducers have access to the <<the-state-store,state store>>.
 
 Modules and Assets can invoke reducers through the xref:{url_advanced_communication_reducerhandler}[reducerHandler].
 
+.Example: Reducers of the Token module
+[source,js]
+----
+public reducers = {
+    // Credit tokens to an account
+    credit: async (params: Record<string, unknown>, stateStore: StateStore): Promise<void> => {
+        const { address, amount } = params;
+        if (!Buffer.isBuffer(address)) {
+            throw new Error('Address must be a buffer');
+        }
+        if (typeof amount !== 'bigint') {
+            throw new Error('Amount must be a bigint');
+        }
+        if (amount <= BigInt(0)) {
+            throw new Error('Amount must be a positive bigint.');
+        }
+        const account = await stateStore.account.getOrDefault<TokenAccount>(address);
+        account.token.balance += amount;
+        if (account.token.balance < this._minRemainingBalance) {
+            throw new Error(
+                `Remaining balance must be greater than ${this._minRemainingBalance.toString()}`,
+            );
+        }
+        await stateStore.account.set(address, account);
+    },
+    // Debit tokens from an account
+    debit: async (params: Record<string, unknown>, stateStore: StateStore): Promise<void> => {
+        const { address, amount } = params;
+        if (!Buffer.isBuffer(address)) {
+            throw new Error('Address must be a buffer');
+        }
+        if (typeof amount !== 'bigint') {
+            throw new Error('Amount must be a bigint');
+        }
+        if (amount <= BigInt(0)) {
+            throw new Error('Amount must be a positive bigint.');
+        }
+        const account = await stateStore.account.getOrDefault<TokenAccount>(address);
+        account.token.balance -= amount;
+        if (account.token.balance < this._minRemainingBalance) {
+            throw new Error(
+                `Remaining balance must be greater than ${this._minRemainingBalance.toString()}`,
+            );
+        }
+        await stateStore.account.set(address, account);
+    },
+    // Get the balance of an specific account
+    getBalance: async (
+        params: Record<string, unknown>,
+        stateStore: StateStore,
+    ): Promise<bigint> => {
+        const { address } = params;
+        if (!Buffer.isBuffer(address)) {
+            throw new Error('Address must be a buffer');
+        }
+        const account = await stateStore.account.getOrDefault<TokenAccount>(address);
+        return account.token.balance;
+    },
+    // Returns the minimum remaining balance for accounts
+    getMinRemainingBalance: async (): Promise<bigint> => this._minRemainingBalance,
+};
+----
+
 === Assets
 
 Assets are responsible for executing logic that introduces state changes on the blockchain, based on input parameters which are provided by the users as trasnactions.
@@ -255,6 +360,12 @@ The xref:{url_advanced_architecture_defaultapp}[default application] already sup
 * xref:{url_references_keys_module}[]: xref:{url_protocol_accounts_multisignature}[Multisignature group registration]
 
 To add support for a new transaction to the application, it is required to implement a new asset, and to add the asset to a module.
+
+.Example: Assets of the Hello module from the Hello World app
+[source,js]
+----
+transactionAssets = [ new HelloAsset() ];
+----
 
 TIP: To learn how to create a new asset, check out the xref:{url_guides_asset}[] guide.
 
@@ -310,6 +421,16 @@ If the function throws any error, the transaction will not be applied by the nod
 
 If the function does not throw any errors, the transaction will passed to the `apply()` function.
 
+.Example: validate() function of the CreateNFT asset of the NFT example app
+[source,js]
+----
+validate({asset}) {
+    if (asset.name === "Mewtwo") {
+        throw new Error("Illegal NFT name: Mewtwo");
+    }
+};
+----
+
 ==== Apply
 
 The `apply()` function of an asset applies the desired business logic on the blockchain, based on the data posted in the transaction.
@@ -321,11 +442,61 @@ The following variables are available inside the `apply()` function:
 * `reducerHandler`: See xref:{url_advanced_communication_reducerhandler}[reducerHandler].
 * `transaction`: The complete transaction object which was posted to the node.
 
+.Example: apply() function of the Hello asset of the Hello World example app
+[source,js]
+----
+async apply({ asset, stateStore, reducerHandler, transaction }) {
+    // Get sender account details
+    const senderAddress = transaction.senderAddress;
+    const senderAccount = await stateStore.account.get(senderAddress);
+    // Add the hello string to the sender account
+    senderAccount.hello.helloMessage = asset.helloString;
+    stateStore.account.set(senderAccount.address, senderAccount);
+    // Get the hello counter and decode it
+    let counterBuffer = await stateStore.chain.get(
+        CHAIN_STATE_HELLO_COUNTER
+    );
+    let counter = codec.decode(
+        helloCounterSchema,
+        counterBuffer
+    );
+    // Increment the hello counter by +1
+    counter.helloCounter++;
+    // Save the updated counter on the chain
+    await stateStore.chain.set(
+        CHAIN_STATE_HELLO_COUNTER,
+        codec.encode(helloCounterSchema, counter)
+    );
+}
+----
+
 === Lifecycle Hooks
 
 Lifecycle hooks allow to execute logic at distinct moments in the xref:{url_advanced_architecture_lifecycle}[block lifecycle] of the application.
 
 image::intro/lifecycle-hooks.png[]
+
+.Example: afterTransactionApply() of the Hello module from the Hello World app
+[source,js]
+----
+async afterTransactionApply({transaction, stateStore, reducerHandler}) {
+  // If the transaction is a hello transaction
+  if (transaction.moduleID === this.id && transaction.assetID === HelloAssetID) {
+    // Decode the transaction asset
+    const helloAsset = codec.decode(
+      helloAssetSchema,
+      transaction.asset
+    );
+
+    // And publish a new hello:newHello event,
+    // including the latest hello message and the sender.
+    this._channel.publish('hello:newHello', {
+      sender: transaction._senderAddress.toString('hex'),
+      hello: helloAsset.helloString
+    });
+  }
+};
+----
 
 ==== beforeTransactionApply()
 This hook is applied before each transaction.
@@ -411,7 +582,7 @@ For more information about accounts, check the xref:{url_protocol_accounts}[] pa
 Account schemas are defined in a modified JSON schema.
 For more information about this topic, check out the xref:{url_advanced_schemas}[] page.
 
-.Example of an account schema
+.Example: Account schema of the Hello module from the Hello World app
 [source,js]
 ----
 accountSchema = {

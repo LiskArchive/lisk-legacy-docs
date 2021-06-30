@@ -47,7 +47,7 @@ Plugins are able to...
 ====
 For a more practical guide how to create a new plugin, check out the guide xref:{url_guides_plugin}[].
 
-If you wish to view an example of a fully implemented module, check out the following examples:
+If you wish to view an example of a fully implemented plugin, check out the following examples:
 
 * the {url_github_hello_plugin}[Hello plugin] from the xref:{url_tutorials_hello}[] tutorial
 * the {url_github_nft_plugin}[NFT plugin] from the xref:{url_tutorials_nft}[] tutorial
@@ -84,21 +84,50 @@ image::intro/plugin-diagram.png[]
 All custom plugins must extend the `BasePlugin` exposed by the SDK.
 The interface for the `BasePlugin` is described in the xref:{url_references_framework_baseplugin}[Lisk Framework reference].
 
+[source,js]
+----
+const { BasePlugin } = require("lisk-sdk");
+
+class ForgerPlugin extends BasePlugin {
+
+}
+----
+
 == Plugin Alias
 
 The unique identifier of the plugin.
 
 It is used as prefix in the xref:{url_advanced_communication_alias}[alias] of events and actions, and as key label to to add the properties of the <<plugin-defaults>> to the xref:{url_advanced_architecture_config}[application configuration].
 
+.Example: Alias of the forger plugin
+[source,typescript]
+----
+public static get alias(): string {
+    return 'forger';
+}
+----
+
 
 == Plugin info
 
 Plugin meta information.
 
+.Example: Info of the forger plugin
+[source,typescript]
+----
+public static get info(): PluginInfo {
+		return {
+			author: packageJSON.author,
+			version: packageJSON.version,
+			name: packageJSON.name,
+		};
+	}
+----
+
 == Plugin defaults
 
 The configuration schema for this plugin.
-After registering the plugin with the application, it can be configured in the xref:{url_advanced_architecture_config}[application configuration].
+After registering the plugin with the application, it can be configured in the xref:{url_advanced_architecture_config}[application configuration], using the here defined schema.
 
 .Example: Config schema of the Dashboard plugin
 [source,js]
@@ -148,38 +177,31 @@ TIP: View the "Interfaces" section of the xref:{url_advanced_communication_inter
 
 Actions are functions which can be xref:{url_advanced_communication_invoke_actions}[invoked] via Remote-Procedure-Calls (RPC) by plugins and external services, to request data from the plugin.
 
+.Example: Actions of the forger plugin
+[source,typescript]
+----
+public get actions(): ActionsDefinition {
+    return {
+        getVoters: async () =>
+            controllers.voters.getVoters(this._channel, this.codec, this._forgerPluginDB),
+        getForgingInfo: async () =>
+            controllers.forgingInfo.getForgingInfo(this._channel, this.codec, this._forgerPluginDB),
+    };
+}
+----
+
 === Events
 
 Events are <<channel,published>> by the plugin on relevant occasions.
 Other plugins and external services can subscribe to these events and as a result, they will be notified immediately, every time a new event is published.
 
-=== dataAccess
-
-Use the property `this._dataAccess` to access data from the blockchain in the plugin.
-
-[source,js]
+.Example: Events of the forger plugin
+[source,typescript]
 ----
-const res = await this._dataAccess.getChainState('hello:helloCounter');
-----
-
-[NOTE]
-====
-The data is encoded in the database, therefore it needs to be decoded after receiving it with `this._dataAccess`.
-
-For more information about this topic, check out the xref:{url_advanced_schemas}[] page.
-====
-
-The following functions are available via `this._dataAccess`:
-
-[source,js]
-----
-export interface BaseModuleDataAccess {
-	getChainState(key: string): Promise<Buffer | undefined>;
-	getAccountByAddress<T>(address: Buffer): Promise<Account<T>>;
-	getLastBlockHeader(): Promise<BlockHeader>;
+public get events(): EventsDefinition {
+    return ['block:created', 'block:missed'];
 }
 ----
-
 
 == Execution logic
 
@@ -192,7 +214,44 @@ The `load()` method will be invoked by the controller to load the plugin.
 The following variables are accessible in the `load()` function:
 
 * `channel`: See xref:{url_advanced_communication_publishsubscribe}[Channel for plugins].
+* `this.options`: The <<plugin-defaults>>, as defined in the xref:{url_advanced_architecture_config}[application configuration].
+
+.Example: load() function of the forger plugin
+[source,typescript]
+----
+public async load(channel: BaseChannel): Promise<void> {
+    // Merge custom plugin configuration with default options
+    const options = objects.mergeDeep({}, config.defaultConfig.default, this.options) as Options;
+    this._channel = channel;
+
+    this._forgerPluginDB = await getDBInstance(options.dataPath);
+
+    this._channel.once('app:ready', async () => {
+        // Fetch and set forger list from the app
+        await this._setForgersList();
+
+        // Fetch and set transactions fees
+        await this._setTransactionFees();
+
+        // Sync the information
+        this._syncingWithNode = true;
+        await this._syncForgerInfo();
+        this._syncingWithNode = false;
+
+        // Listen to new block and delete block events
+        this._subscribeToChannel();
+    });
+}
+----
 
 === unload()
 
 The `unload()` method will be invoked by controller to perform the cleanup on application shutdown.
+
+.Example: unload() function of the forger plugin
+[source,typescript]
+----
+public async unload(): Promise<void> {
+    await this._forgerPluginDB.close();
+}
+----

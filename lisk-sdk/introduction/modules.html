@@ -525,16 +525,16 @@
 <li><a href="#logger">Logger</a></li>
 <li><a href="#interfaces">Interfaces</a>
 <ul class="sectlevel2">
+<li><a href="#dataaccess">dataAccess</a></li>
 <li><a href="#actions">Actions</a></li>
 <li><a href="#events">Events</a></li>
-<li><a href="#dataaccess">dataAccess</a></li>
 </ul>
 </li>
 <li><a href="#state-changes-execution-logic">State changes &amp; execution logic</a>
 <ul class="sectlevel2">
 <li><a href="#the-state-store">The state store</a></li>
-<li><a href="#reducers">Reducers</a></li>
 <li><a href="#assets">Assets</a></li>
+<li><a href="#reducers">Reducers</a></li>
 <li><a href="#lifecycle-hooks">Lifecycle Hooks</a></li>
 </ul>
 </li>
@@ -739,40 +739,6 @@ View the "Interfaces" section of the <a href="../advanced-explanations/communica
 </table>
 </div>
 <div class="sect2">
-<h3 id="actions"><a class="anchor" href="#actions"></a>Actions</h3>
-<div class="paragraph">
-<p>Actions are functions which can be <a href="../advanced-explanations/communication.html#how-to-invoke-actions" class="page">invoked</a> via Remote-Procedure-Calls (RPC) by plugins and external services, to request data from the module.</p>
-</div>
-<div class="listingblock">
-<div class="title">Example: Actions of the Hello module from the Hello World app</div>
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">actions = {
-    amountOfHellos: async () =&gt; {
-        const res = await this._dataAccess.getChainState(CHAIN_STATE_HELLO_COUNTER);
-        const count = codec.decode(
-            helloCounterSchema,
-            res
-        );
-        return count;
-    },
-};</code></pre>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="events"><a class="anchor" href="#events"></a>Events</h3>
-<div class="paragraph">
-<p>Events are <a href="../advanced-explanations/communication.html#channel-for-modules" class="page">published</a> by the module on relevant occasions.
-Plugins and external services can <a href="../advanced-explanations/communication.html#how-to-publish-and-subscribe-to-events" class="page">subscribe</a> to these events and as a result, they will be notified immediately, every time a new event is published.</p>
-</div>
-<div class="listingblock">
-<div class="title">Example: Events of the Hello module from the Hello World app</div>
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">events = ['newHello'];</code></pre>
-</div>
-</div>
-</div>
-<div class="sect2">
 <h3 id="dataaccess"><a class="anchor" href="#dataaccess"></a>dataAccess</h3>
 <div class="paragraph">
 <p>Use the property <code>this._dataAccess</code> to access data from the blockchain in the module.</p>
@@ -824,6 +790,40 @@ Updating and changing of data on the blockchain is only allowed inside of <a hre
 </div>
 </div>
 </div>
+<div class="sect2">
+<h3 id="actions"><a class="anchor" href="#actions"></a>Actions</h3>
+<div class="paragraph">
+<p>Actions are functions which can be <a href="../advanced-explanations/communication.html#how-to-invoke-actions" class="page">invoked</a> via Remote-Procedure-Calls (RPC) by plugins and external services, to request data from the module.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example: Actions of the Hello module from the Hello World app</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">actions = {
+    amountOfHellos: async () =&gt; {
+        const res = await this._dataAccess.getChainState(CHAIN_STATE_HELLO_COUNTER);
+        const count = codec.decode(
+            helloCounterSchema,
+            res
+        );
+        return count;
+    },
+};</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="events"><a class="anchor" href="#events"></a>Events</h3>
+<div class="paragraph">
+<p>Events are <a href="../advanced-explanations/communication.html#channel-for-modules" class="page">published</a> by the module on relevant occasions.
+Plugins and external services can <a href="../advanced-explanations/communication.html#how-to-publish-and-subscribe-to-events" class="page">subscribe</a> to these events and as a result, they will be notified immediately, every time a new event is published.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example: Events of the Hello module from the Hello World app</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">events = ['newHello'];</code></pre>
+</div>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -861,81 +861,6 @@ Updating and changing of data on the blockchain is only allowed inside of <a hre
 		set(key: string, value: Buffer): Promise&lt;void&gt;;
 	};
 }</code></pre>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="reducers"><a class="anchor" href="#reducers"></a>Reducers</h3>
-<div class="paragraph">
-<p>Reducers are functions which can be invoked via Remote-Procedure-Calls (RPC) by other modules.</p>
-</div>
-<div class="paragraph">
-<p>Reducers have access to the <a href="#the-state-store">state store</a>.</p>
-</div>
-<div class="paragraph">
-<p>Modules and Assets can invoke reducers through the <a href="../advanced-explanations/communication.html#the-reducerhandler-module-intern-communication" class="page">reducerHandler</a>.</p>
-</div>
-<div class="listingblock">
-<div class="title">Example: Reducers of the Token module</div>
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">public reducers = {
-    // Credit tokens to an account
-    credit: async (params: Record&lt;string, unknown&gt;, stateStore: StateStore): Promise&lt;void&gt; =&gt; {
-        const { address, amount } = params;
-        if (!Buffer.isBuffer(address)) {
-            throw new Error('Address must be a buffer');
-        }
-        if (typeof amount !== 'bigint') {
-            throw new Error('Amount must be a bigint');
-        }
-        if (amount &lt;= BigInt(0)) {
-            throw new Error('Amount must be a positive bigint.');
-        }
-        const account = await stateStore.account.getOrDefault&lt;TokenAccount&gt;(address);
-        account.token.balance += amount;
-        if (account.token.balance &lt; this._minRemainingBalance) {
-            throw new Error(
-                `Remaining balance must be greater than ${this._minRemainingBalance.toString()}`,
-            );
-        }
-        await stateStore.account.set(address, account);
-    },
-    // Debit tokens from an account
-    debit: async (params: Record&lt;string, unknown&gt;, stateStore: StateStore): Promise&lt;void&gt; =&gt; {
-        const { address, amount } = params;
-        if (!Buffer.isBuffer(address)) {
-            throw new Error('Address must be a buffer');
-        }
-        if (typeof amount !== 'bigint') {
-            throw new Error('Amount must be a bigint');
-        }
-        if (amount &lt;= BigInt(0)) {
-            throw new Error('Amount must be a positive bigint.');
-        }
-        const account = await stateStore.account.getOrDefault&lt;TokenAccount&gt;(address);
-        account.token.balance -= amount;
-        if (account.token.balance &lt; this._minRemainingBalance) {
-            throw new Error(
-                `Remaining balance must be greater than ${this._minRemainingBalance.toString()}`,
-            );
-        }
-        await stateStore.account.set(address, account);
-    },
-    // Get the balance of an specific account
-    getBalance: async (
-        params: Record&lt;string, unknown&gt;,
-        stateStore: StateStore,
-    ): Promise&lt;bigint&gt; =&gt; {
-        const { address } = params;
-        if (!Buffer.isBuffer(address)) {
-            throw new Error('Address must be a buffer');
-        }
-        const account = await stateStore.account.getOrDefault&lt;TokenAccount&gt;(address);
-        return account.token.balance;
-    },
-    // Returns the minimum remaining balance for accounts
-    getMinRemainingBalance: async (): Promise&lt;bigint&gt; =&gt; this._minRemainingBalance,
-};</code></pre>
 </div>
 </div>
 </div>
@@ -1159,6 +1084,81 @@ For more information about this topic, check out the <a href="../advanced-explan
     );
 }</code></pre>
 </div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="reducers"><a class="anchor" href="#reducers"></a>Reducers</h3>
+<div class="paragraph">
+<p>Reducers are functions which can be invoked via Remote-Procedure-Calls (RPC) by other modules.</p>
+</div>
+<div class="paragraph">
+<p>Reducers have access to the <a href="#the-state-store">state store</a>.</p>
+</div>
+<div class="paragraph">
+<p>Modules and Assets can invoke reducers through the <a href="../advanced-explanations/communication.html#the-reducerhandler-module-intern-communication" class="page">reducerHandler</a>.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example: Reducers of the Token module</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">public reducers = {
+    // Credit tokens to an account
+    credit: async (params: Record&lt;string, unknown&gt;, stateStore: StateStore): Promise&lt;void&gt; =&gt; {
+        const { address, amount } = params;
+        if (!Buffer.isBuffer(address)) {
+            throw new Error('Address must be a buffer');
+        }
+        if (typeof amount !== 'bigint') {
+            throw new Error('Amount must be a bigint');
+        }
+        if (amount &lt;= BigInt(0)) {
+            throw new Error('Amount must be a positive bigint.');
+        }
+        const account = await stateStore.account.getOrDefault&lt;TokenAccount&gt;(address);
+        account.token.balance += amount;
+        if (account.token.balance &lt; this._minRemainingBalance) {
+            throw new Error(
+                `Remaining balance must be greater than ${this._minRemainingBalance.toString()}`,
+            );
+        }
+        await stateStore.account.set(address, account);
+    },
+    // Debit tokens from an account
+    debit: async (params: Record&lt;string, unknown&gt;, stateStore: StateStore): Promise&lt;void&gt; =&gt; {
+        const { address, amount } = params;
+        if (!Buffer.isBuffer(address)) {
+            throw new Error('Address must be a buffer');
+        }
+        if (typeof amount !== 'bigint') {
+            throw new Error('Amount must be a bigint');
+        }
+        if (amount &lt;= BigInt(0)) {
+            throw new Error('Amount must be a positive bigint.');
+        }
+        const account = await stateStore.account.getOrDefault&lt;TokenAccount&gt;(address);
+        account.token.balance -= amount;
+        if (account.token.balance &lt; this._minRemainingBalance) {
+            throw new Error(
+                `Remaining balance must be greater than ${this._minRemainingBalance.toString()}`,
+            );
+        }
+        await stateStore.account.set(address, account);
+    },
+    // Get the balance of an specific account
+    getBalance: async (
+        params: Record&lt;string, unknown&gt;,
+        stateStore: StateStore,
+    ): Promise&lt;bigint&gt; =&gt; {
+        const { address } = params;
+        if (!Buffer.isBuffer(address)) {
+            throw new Error('Address must be a buffer');
+        }
+        const account = await stateStore.account.getOrDefault&lt;TokenAccount&gt;(address);
+        return account.token.balance;
+    },
+    // Returns the minimum remaining balance for accounts
+    getMinRemainingBalance: async (): Promise&lt;bigint&gt; =&gt; this._minRemainingBalance,
+};</code></pre>
 </div>
 </div>
 </div>

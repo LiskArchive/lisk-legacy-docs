@@ -420,7 +420,7 @@
       <span class="title">Lisk Service</span>
       <ul class="versions">
         <li class="version is-latest">
-          <a href="../../lisk-service/index.html">0.3.0 (latest)</a>
+          <a href="../../lisk-service/index.html">0.4.0 (latest)</a>
         </li>
       </ul>
     </li>
@@ -613,6 +613,15 @@ export const registerModules = (app: Application): void =&gt; {
 <div class="paragraph">
 <p>The base module provides an interface which needs to be completed by implementing the below described components of a module.</p>
 </div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { BaseModule } = require('lisk-sdk');
+
+class HelloModule extends BaseModule {
+
+}</code></pre>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -630,6 +639,12 @@ The maximum value for a module ID is <code>2^32 - 1</code>(equals 4,294,967,295)
 <p>It is also important to note, that module IDs do not need to be in succession, the only requirement is, that they are unique within the blockchain application.
 So as an example, it is valid to register multiple modules to the application which have the following module IDs: <code>1003</code>, <code>1000</code>, <code>2500001</code> because they are in the allowed number range, and each ID is different.</p>
 </div>
+<div class="listingblock">
+<div class="title">Example: ID of the Hello module from the Hello World app</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">id = 1000;</code></pre>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -640,6 +655,12 @@ So as an example, it is valid to register multiple modules to the application wh
 </div>
 <div class="paragraph">
 <p>It is used as prefix in the <a href="../advanced-explanations/communication.html#alias" class="page">alias</a> of events and actions, and as key label to to add the properties of the <a href="#account-schema">Account schema</a> to the user accounts.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example: Name of the Hello module from the Hello World app</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">name = 'hello';</code></pre>
+</div>
 </div>
 </div>
 </div>
@@ -722,12 +743,33 @@ View the "Interfaces" section of the <a href="../advanced-explanations/communica
 <div class="paragraph">
 <p>Actions are functions which can be <a href="../advanced-explanations/communication.html#how-to-invoke-actions" class="page">invoked</a> via Remote-Procedure-Calls (RPC) by plugins and external services, to request data from the module.</p>
 </div>
+<div class="listingblock">
+<div class="title">Example: Actions of the Hello module from the Hello World app</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">actions = {
+    amountOfHellos: async () =&gt; {
+        const res = await this._dataAccess.getChainState(CHAIN_STATE_HELLO_COUNTER);
+        const count = codec.decode(
+            helloCounterSchema,
+            res
+        );
+        return count;
+    },
+};</code></pre>
+</div>
+</div>
 </div>
 <div class="sect2">
 <h3 id="events"><a class="anchor" href="#events"></a>Events</h3>
 <div class="paragraph">
 <p>Events are <a href="../advanced-explanations/communication.html#channel-for-modules" class="page">published</a> by the module on relevant occasions.
 Plugins and external services can <a href="../advanced-explanations/communication.html#how-to-publish-and-subscribe-to-events" class="page">subscribe</a> to these events and as a result, they will be notified immediately, every time a new event is published.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example: Events of the Hello module from the Hello World app</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">events = ['newHello'];</code></pre>
+</div>
 </div>
 </div>
 <div class="sect2">
@@ -833,6 +875,69 @@ Updating and changing of data on the blockchain is only allowed inside of <a hre
 <div class="paragraph">
 <p>Modules and Assets can invoke reducers through the <a href="../advanced-explanations/communication.html#the-reducerhandler-module-intern-communication" class="page">reducerHandler</a>.</p>
 </div>
+<div class="listingblock">
+<div class="title">Example: Reducers of the Token module</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">public reducers = {
+    // Credit tokens to an account
+    credit: async (params: Record&lt;string, unknown&gt;, stateStore: StateStore): Promise&lt;void&gt; =&gt; {
+        const { address, amount } = params;
+        if (!Buffer.isBuffer(address)) {
+            throw new Error('Address must be a buffer');
+        }
+        if (typeof amount !== 'bigint') {
+            throw new Error('Amount must be a bigint');
+        }
+        if (amount &lt;= BigInt(0)) {
+            throw new Error('Amount must be a positive bigint.');
+        }
+        const account = await stateStore.account.getOrDefault&lt;TokenAccount&gt;(address);
+        account.token.balance += amount;
+        if (account.token.balance &lt; this._minRemainingBalance) {
+            throw new Error(
+                `Remaining balance must be greater than ${this._minRemainingBalance.toString()}`,
+            );
+        }
+        await stateStore.account.set(address, account);
+    },
+    // Debit tokens from an account
+    debit: async (params: Record&lt;string, unknown&gt;, stateStore: StateStore): Promise&lt;void&gt; =&gt; {
+        const { address, amount } = params;
+        if (!Buffer.isBuffer(address)) {
+            throw new Error('Address must be a buffer');
+        }
+        if (typeof amount !== 'bigint') {
+            throw new Error('Amount must be a bigint');
+        }
+        if (amount &lt;= BigInt(0)) {
+            throw new Error('Amount must be a positive bigint.');
+        }
+        const account = await stateStore.account.getOrDefault&lt;TokenAccount&gt;(address);
+        account.token.balance -= amount;
+        if (account.token.balance &lt; this._minRemainingBalance) {
+            throw new Error(
+                `Remaining balance must be greater than ${this._minRemainingBalance.toString()}`,
+            );
+        }
+        await stateStore.account.set(address, account);
+    },
+    // Get the balance of an specific account
+    getBalance: async (
+        params: Record&lt;string, unknown&gt;,
+        stateStore: StateStore,
+    ): Promise&lt;bigint&gt; =&gt; {
+        const { address } = params;
+        if (!Buffer.isBuffer(address)) {
+            throw new Error('Address must be a buffer');
+        }
+        const account = await stateStore.account.getOrDefault&lt;TokenAccount&gt;(address);
+        return account.token.balance;
+    },
+    // Returns the minimum remaining balance for accounts
+    getMinRemainingBalance: async (): Promise&lt;bigint&gt; =&gt; this._minRemainingBalance,
+};</code></pre>
+</div>
+</div>
 </div>
 <div class="sect2">
 <h3 id="assets"><a class="anchor" href="#assets"></a>Assets</h3>
@@ -887,6 +992,12 @@ The <a href="../advanced-explanations/architecture.html#application" class="page
 </div>
 <div class="paragraph">
 <p>To add support for a new transaction to the application, it is required to implement a new asset, and to add the asset to a module.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example: Assets of the Hello module from the Hello World app</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">transactionAssets = [ new HelloAsset() ];</code></pre>
+</div>
 </div>
 <div class="admonitionblock tip">
 <table>
@@ -986,6 +1097,16 @@ For more information about this topic, check out the <a href="../advanced-explan
 <div class="paragraph">
 <p>If the function does not throw any errors, the transaction will passed to the <code>apply()</code> function.</p>
 </div>
+<div class="listingblock">
+<div class="title">Example: validate() function of the CreateNFT asset of the NFT example app</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">validate({asset}) {
+    if (asset.name === "Mewtwo") {
+        throw new Error("Illegal NFT name: Mewtwo");
+    }
+};</code></pre>
+</div>
+</div>
 </div>
 <div class="sect3">
 <h4 id="apply"><a class="anchor" href="#apply"></a>Apply</h4>
@@ -1011,6 +1132,34 @@ For more information about this topic, check out the <a href="../advanced-explan
 </li>
 </ul>
 </div>
+<div class="listingblock">
+<div class="title">Example: apply() function of the Hello asset of the Hello World example app</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">async apply({ asset, stateStore, reducerHandler, transaction }) {
+    // Get sender account details
+    const senderAddress = transaction.senderAddress;
+    const senderAccount = await stateStore.account.get(senderAddress);
+    // Add the hello string to the sender account
+    senderAccount.hello.helloMessage = asset.helloString;
+    stateStore.account.set(senderAccount.address, senderAccount);
+    // Get the hello counter and decode it
+    let counterBuffer = await stateStore.chain.get(
+        CHAIN_STATE_HELLO_COUNTER
+    );
+    let counter = codec.decode(
+        helloCounterSchema,
+        counterBuffer
+    );
+    // Increment the hello counter by +1
+    counter.helloCounter++;
+    // Save the updated counter on the chain
+    await stateStore.chain.set(
+        CHAIN_STATE_HELLO_COUNTER,
+        codec.encode(helloCounterSchema, counter)
+    );
+}</code></pre>
+</div>
+</div>
 </div>
 </div>
 <div class="sect2">
@@ -1021,6 +1170,28 @@ For more information about this topic, check out the <a href="../advanced-explan
 <div class="imageblock">
 <div class="content">
 <img src="../_images/intro/lifecycle-hooks.png" alt="lifecycle hooks">
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Example: afterTransactionApply() of the Hello module from the Hello World app</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">async afterTransactionApply({transaction, stateStore, reducerHandler}) {
+  // If the transaction is a hello transaction
+  if (transaction.moduleID === this.id &amp;&amp; transaction.assetID === HelloAssetID) {
+    // Decode the transaction asset
+    const helloAsset = codec.decode(
+      helloAssetSchema,
+      transaction.asset
+    );
+
+    // And publish a new hello:newHello event,
+    // including the latest hello message and the sender.
+    this._channel.publish('hello:newHello', {
+      sender: transaction._senderAddress.toString('hex'),
+      hello: helloAsset.helloString
+    });
+  }
+};</code></pre>
 </div>
 </div>
 <div class="sect3">
@@ -1214,7 +1385,7 @@ For more information about this topic, check out the <a href="../advanced-explan
 For more information about this topic, check out the <a href="../advanced-explanations/schemas.html" class="page">Schemas</a> page.</p>
 </div>
 <div class="listingblock">
-<div class="title">Example of an account schema</div>
+<div class="title">Example: Account schema of the Hello module from the Hello World app</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">accountSchema = {
     type: 'object',

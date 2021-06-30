@@ -420,7 +420,7 @@
       <span class="title">Lisk Service</span>
       <ul class="versions">
         <li class="version is-latest">
-          <a href="../../lisk-service/index.html">0.3.0 (latest)</a>
+          <a href="../../lisk-service/index.html">0.4.0 (latest)</a>
         </li>
       </ul>
     </li>
@@ -498,7 +498,7 @@ In other words, a plugin will never change the state of the blockchain itself, c
 <p>For a more practical guide how to create a new plugin, check out the guide <a href="../guides/app-development/plugin.html" class="page">Creating a plugin</a>.</p>
 </div>
 <div class="paragraph">
-<p>If you wish to view an example of a fully implemented module, check out the following examples:</p>
+<p>If you wish to view an example of a fully implemented plugin, check out the following examples:</p>
 </div>
 <div class="ulist">
 <ul>
@@ -531,7 +531,6 @@ In other words, a plugin will never change the state of the blockchain itself, c
 <ul class="sectlevel2">
 <li><a href="#actions">Actions</a></li>
 <li><a href="#events">Events</a></li>
-<li><a href="#dataaccess">dataAccess</a></li>
 </ul>
 </li>
 <li><a href="#execution-logic">Execution logic</a>
@@ -592,6 +591,15 @@ export const registerPlugins = (app: Application): void =&gt; {
 <p>All custom plugins must extend the <code>BasePlugin</code> exposed by the SDK.
 The interface for the <code>BasePlugin</code> is described in the <a href="../references/lisk-framework/index.html#the-baseplugin" class="page">Lisk Framework reference</a>.</p>
 </div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { BasePlugin } = require("lisk-sdk");
+
+class ForgerPlugin extends BasePlugin {
+
+}</code></pre>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -603,6 +611,14 @@ The interface for the <code>BasePlugin</code> is described in the <a href="../re
 <div class="paragraph">
 <p>It is used as prefix in the <a href="../advanced-explanations/communication.html#alias" class="page">alias</a> of events and actions, and as key label to to add the properties of the <a href="#plugin-defaults">Plugin defaults</a> to the <a href="../advanced-explanations/architecture.html#configuration" class="page">application configuration</a>.</p>
 </div>
+<div class="listingblock">
+<div class="title">Example: Alias of the forger plugin</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public static get alias(): string {
+    return 'forger';
+}</code></pre>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -611,6 +627,18 @@ The interface for the <code>BasePlugin</code> is described in the <a href="../re
 <div class="paragraph">
 <p>Plugin meta information.</p>
 </div>
+<div class="listingblock">
+<div class="title">Example: Info of the forger plugin</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public static get info(): PluginInfo {
+		return {
+			author: packageJSON.author,
+			version: packageJSON.version,
+			name: packageJSON.name,
+		};
+	}</code></pre>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -618,7 +646,7 @@ The interface for the <code>BasePlugin</code> is described in the <a href="../re
 <div class="sectionbody">
 <div class="paragraph">
 <p>The configuration schema for this plugin.
-After registering the plugin with the application, it can be configured in the <a href="../advanced-explanations/architecture.html#configuration" class="page">application configuration</a>.</p>
+After registering the plugin with the application, it can be configured in the <a href="../advanced-explanations/architecture.html#configuration" class="page">application configuration</a>, using the here defined schema.</p>
 </div>
 <div class="listingblock">
 <div class="title">Example: Config schema of the Dashboard plugin</div>
@@ -683,6 +711,19 @@ View the "Interfaces" section of the <a href="../advanced-explanations/communica
 <div class="paragraph">
 <p>Actions are functions which can be <a href="../advanced-explanations/communication.html#how-to-invoke-actions" class="page">invoked</a> via Remote-Procedure-Calls (RPC) by plugins and external services, to request data from the plugin.</p>
 </div>
+<div class="listingblock">
+<div class="title">Example: Actions of the forger plugin</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public get actions(): ActionsDefinition {
+    return {
+        getVoters: async () =&gt;
+            controllers.voters.getVoters(this._channel, this.codec, this._forgerPluginDB),
+        getForgingInfo: async () =&gt;
+            controllers.forgingInfo.getForgingInfo(this._channel, this.codec, this._forgerPluginDB),
+    };
+}</code></pre>
+</div>
+</div>
 </div>
 <div class="sect2">
 <h3 id="events"><a class="anchor" href="#events"></a>Events</h3>
@@ -690,43 +731,11 @@ View the "Interfaces" section of the <a href="../advanced-explanations/communica
 <p>Events are <a href="#channel">published</a> by the plugin on relevant occasions.
 Other plugins and external services can subscribe to these events and as a result, they will be notified immediately, every time a new event is published.</p>
 </div>
-</div>
-<div class="sect2">
-<h3 id="dataaccess"><a class="anchor" href="#dataaccess"></a>dataAccess</h3>
-<div class="paragraph">
-<p>Use the property <code>this._dataAccess</code> to access data from the blockchain in the plugin.</p>
-</div>
 <div class="listingblock">
+<div class="title">Example: Events of the forger plugin</div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const res = await this._dataAccess.getChainState('hello:helloCounter');</code></pre>
-</div>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>The data is encoded in the database, therefore it needs to be decoded after receiving it with <code>this._dataAccess</code>.</p>
-</div>
-<div class="paragraph">
-<p>For more information about this topic, check out the <a href="../advanced-explanations/schemas.html" class="page">Schemas</a> page.</p>
-</div>
-</td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-<p>The following functions are available via <code>this._dataAccess</code>:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">export interface BaseModuleDataAccess {
-	getChainState(key: string): Promise&lt;Buffer | undefined&gt;;
-	getAccountByAddress&lt;T&gt;(address: Buffer): Promise&lt;Account&lt;T&gt;&gt;;
-	getLastBlockHeader(): Promise&lt;BlockHeader&gt;;
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public get events(): EventsDefinition {
+    return ['block:created', 'block:missed'];
 }</code></pre>
 </div>
 </div>
@@ -752,13 +761,52 @@ Other plugins and external services can subscribe to these events and as a resul
 <li>
 <p><code>channel</code>: See <a href="../advanced-explanations/communication.html#how-to-publish-and-subscribe-to-events" class="page">Channel for plugins</a>.</p>
 </li>
+<li>
+<p><code>this.options</code>: The <a href="#plugin-defaults">Plugin defaults</a>, as defined in the <a href="../advanced-explanations/architecture.html#configuration" class="page">application configuration</a>.</p>
+</li>
 </ul>
+</div>
+<div class="listingblock">
+<div class="title">Example: load() function of the forger plugin</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async load(channel: BaseChannel): Promise&lt;void&gt; {
+    // Merge custom plugin configuration with default options
+    const options = objects.mergeDeep({}, config.defaultConfig.default, this.options) as Options;
+    this._channel = channel;
+
+    this._forgerPluginDB = await getDBInstance(options.dataPath);
+
+    this._channel.once('app:ready', async () =&gt; {
+        // Fetch and set forger list from the app
+        await this._setForgersList();
+
+        // Fetch and set transactions fees
+        await this._setTransactionFees();
+
+        // Sync the information
+        this._syncingWithNode = true;
+        await this._syncForgerInfo();
+        this._syncingWithNode = false;
+
+        // Listen to new block and delete block events
+        this._subscribeToChannel();
+    });
+}</code></pre>
+</div>
 </div>
 </div>
 <div class="sect2">
 <h3 id="unload"><a class="anchor" href="#unload"></a>unload()</h3>
 <div class="paragraph">
 <p>The <code>unload()</code> method will be invoked by controller to perform the cleanup on application shutdown.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example: unload() function of the forger plugin</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async unload(): Promise&lt;void&gt; {
+    await this._forgerPluginDB.close();
+}</code></pre>
+</div>
 </div>
 </div>
 </div>

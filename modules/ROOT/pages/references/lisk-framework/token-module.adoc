@@ -1,4 +1,8 @@
 = Token module
+// Settings
+:toc: preamble
+:idprefix:
+:idseparator: -
 
 The token module handles all logic related to balance.
 Specifically:
@@ -8,11 +12,8 @@ Specifically:
 * Giving block rewards to the block generator
 * Transferring account balances
 
-[cols=",",options="header",stripes="hover"]
+[cols=",",stripes="hover"]
 |===
-|Name
-|Property
-
 |Name
 |`token`
 
@@ -21,15 +22,21 @@ Specifically:
 
 |Assets
 a|
-* `TransferAsset`
-** `AssetID: 0`
+[cols=",",options="header",stripes="hover"]
+!===
+!ID
+!Name
+
+!0
+!<<transferasset>>
+!===
 
 |Reducers
 a|
-* `credit()`
-* `debit()`
-* `getBalance()`
-* `getMinRemainingBalance()`
+* <<credit>>
+* <<debit>>
+* <<getbalance>>
+* <<getminremainingbalance>>
 
 |Actions
 | none
@@ -94,4 +101,94 @@ Allows to send a transfer transaction, which transfers token from one account to
         },
     },
 }
+----
+
+== Reducers
+
+=== `credit()`
+
+Credits a specific amount of tokens to an account.
+
+.credit()
+[source,typescript]
+----
+async (params: Record<string, unknown>, stateStore: StateStore): Promise<void> => {
+    const { address, amount } = params;
+    if (!Buffer.isBuffer(address)) {
+        throw new Error('Address must be a buffer');
+    }
+    if (typeof amount !== 'bigint') {
+        throw new Error('Amount must be a bigint');
+    }
+    if (amount <= BigInt(0)) {
+        throw new Error('Amount must be a positive bigint.');
+    }
+    const account = await stateStore.account.getOrDefault<TokenAccount>(address);
+    account.token.balance += amount;
+    if (account.token.balance < this._minRemainingBalance) {
+        throw new Error(
+            `Remaining balance must be greater than ${this._minRemainingBalance.toString()}`,
+        );
+    }
+    await stateStore.account.set(address, account);
+},
+----
+
+=== `debit()`
+
+Debits a specific amount of tokens from an account.
+
+.debit()
+[source,typescript]
+----
+async (params: Record<string, unknown>, stateStore: StateStore): Promise<void> => {
+    const { address, amount } = params;
+    if (!Buffer.isBuffer(address)) {
+        throw new Error('Address must be a buffer');
+    }
+    if (typeof amount !== 'bigint') {
+        throw new Error('Amount must be a bigint');
+    }
+    if (amount <= BigInt(0)) {
+        throw new Error('Amount must be a positive bigint.');
+    }
+    const account = await stateStore.account.getOrDefault<TokenAccount>(address);
+    account.token.balance -= amount;
+    if (account.token.balance < this._minRemainingBalance) {
+        throw new Error(
+            `Remaining balance must be greater than ${this._minRemainingBalance.toString()}`,
+        );
+    }
+    await stateStore.account.set(address, account);
+},
+----
+
+=== `getBalance()`
+
+Get the balance of an specific account.
+
+.getBalance()
+[source,typescript]
+----
+async (
+    params: Record<string, unknown>,
+    stateStore: StateStore,
+): Promise<bigint> => {
+    const { address } = params;
+    if (!Buffer.isBuffer(address)) {
+        throw new Error('Address must be a buffer');
+    }
+    const account = await stateStore.account.getOrDefault<TokenAccount>(address);
+    return account.token.balance;
+},
+----
+
+=== `getMinRemainingBalance()`
+
+Returns the minimum remaining balance for accounts.
+
+.getMinRemainingBalance()
+[source,typescript]
+----
+async (): Promise<bigint> => this._minRemainingBalance,
 ----

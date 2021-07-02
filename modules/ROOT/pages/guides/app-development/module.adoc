@@ -12,7 +12,10 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_guides_asset: guides/app-development/asset.adoc
 :url_guides_genesis: guides/app-development/genesis-block.adoc
 :url_guides_testing: guides/app-development/testing.adoc
+:url_intro_modules_id: introduction/modules.adoc#module-id
+:url_intro_modules_name: introduction/modules.adoc#module-name
 :url_modules_dpos: references/lisk-framework/dpos-module.adoc
+:url_advanced_communication: advanced-explanations/communication.adoc
 :url_rpc_endpoints: advanced-explanations/rpc-endpoints.adoc
 :url_references_schemas: advanced-explanations/schemas.adoc
 :url_tutorials_hello: tutorials/hello-world.adoc
@@ -29,14 +32,11 @@ To follow this guide, the following criteria is assumed:
 * Lisk Commander is installed, and a basic blockchain application is already initialized, as explained in the previous guide xref:{url_guides_setup}[].
 ====
 
-
 [TIP]
 
 ====
-This guide describes the components of a module in general.
-If you wish to view an example of a fully implemented module, check out the following examples:
+If you wish to view an example of a module in a more complex blockchain application, check out the following examples:
 
-* the {url_github_hello_module}[Hello module] from the xref:{url_tutorials_hello}[] tutorial
 * the {url_github_nft_module}[NFT module] from the xref:{url_tutorials_nft}[] tutorial
 * the {url_github_srs_module}[SRS module] from the xref:{url_tutorials_srs}[] tutorial
 ====
@@ -66,35 +66,31 @@ EXAMPLE
 
 The command `lisk generate:module` expects 2 arguments:
 
-. *Module name*: The name of the module.
-The name is used for example to subscribe to events, or to invoke actions of the module.
-Needs to be a string that only consists of upper and lower case letters [a-z, A-Z].
-No numbers, hyphens, etc., are allowed.
-. *Module ID*: The ID of the module.
+. The xref:{url_intro_modules_name}[module name].
+. The xref:{url_intro_modules_id}[module ID].
 Needs to be unique within the application.
 Minimum value is `1000`.
 
-As an example, we use the module name `nft` and the module ID `1000`:
+As an example, we use the module name `hello` and the module ID `1000`:
 
 [[generate-module]]
 [source,bash]
 ----
-lisk generate:module nft 1000
+lisk generate:module hello 1000
 ----
 
 This will generate the following files:
 
 ----
-Creating module skeleton with module name "nft" and module ID "1000"
+Creating module skeleton with module name "hello" and module ID "1000"
 Using template "lisk-ts"
 Generating module skeleton.
 Registering module...
 identical .liskrc.json
-   create src/app/modules/nft/nft_module.ts
-   create test/unit/modules/nft/nft_module.spec.ts
+   create src/app/modules/hello/hello_module.ts
+   create test/unit/modules/hello/hello_module.spec.ts
 
 No change to package.json was detected. No package manager install will be executed.
-
 
 Your module is created and ready to use.
 ----
@@ -105,20 +101,21 @@ It will also automatically register the module with the application, by adding i
 [source,typescript]
 ----
 import { Application } from 'lisk-sdk';
-import { NftModule } from "./modules/nft/nft_module";
+import { HelloModule } from "./modules/hello/hello_module";
 
 export const registerModules = (app: Application): void => {
-    app.registerModule(NftModule);
-};
 
+    app.registerModule(HelloModule);
+};
 ----
 
-The file `nft_module.ts` contains the module skeleton and the file `nft_module.spec.ts` contains the related unit tests for the new module.
+The file `hello_module.ts` contains the module skeleton and the file `hello_module.spec.ts` contains the related unit tests for the new module.
 
 TIP: For more information on how to write a unit test for the blockchain application, check out the xref:{url_guides_testing}[] guide.
 
-The module skeleton can be viewed in `nft_module.ts`:
+The module skeleton can be viewed in `hello_module.ts`:
 
+.src/app/modules/hello/hello_module.ts
 [source,typescript]
 ----
 import {
@@ -130,7 +127,7 @@ import {
     // GenesisConfig
 } from 'lisk-sdk';
 
-export class NftModule extends BaseModule {
+export class HelloModule extends BaseModule {
     public actions = {
         // Example below
         // getBalance: async (params) => this._dataAccess.account.get(params.address).token.balance,
@@ -150,11 +147,11 @@ export class NftModule extends BaseModule {
 		// 	return account.token.balance;
 		// },
     };
-    public name = 'nft';
+    public name = 'hello';
     public transactionAssets = [];
     public events = [
         // Example below
-        // 'nft:newBlock',
+        // 'hello:newBlock',
     ];
     public id = 1000;
 
@@ -192,8 +189,8 @@ export class NftModule extends BaseModule {
 }
 ----
 
-The command `generate:module` already created the class `NftModule` which contains skeletons for the most important components of a module.
-The only properties which are set at this point are the module ID and the module name, which were defined previously.
+The command `generate:module` already created the class `HelloModule` which contains skeletons for the most important components of a module.
+The only properties which are set at this point are the module ID and the module name, which were defined previously while <<generate-module,generating the module skeleton>>.
 
 In fact, with these 2 properties, it is already a complete module that can be registered with the application.
 However, this module is not performing any functions yet.
@@ -207,6 +204,7 @@ The module class always extends from the `BaseModule`, which is imported from th
 
 The properties `name` and `id` are prefilled by the values we used when <<generate-module,generating the module skeleton>> in the previous step.
 
+.src/app/modules/hello/hello_module.ts
 [source,typescript]
 ----
 import {
@@ -218,11 +216,11 @@ import {
     // GenesisConfig
 } from 'lisk-sdk';
 
-export class NftModule extends BaseModule {
+export class HelloModule extends BaseModule {
 
     // ...
 
-    public name = 'nft';
+    public name = 'hello';
     public id = 1000;
 
     // ...
@@ -235,18 +233,23 @@ A module can include various custom transaction assets, that provide new transac
 
 Before a new asset can be added, it is first required to create the custom asset as described in the xref:{url_guides_asset}[] guide.
 
-Assuming an asset `CreateNFT` has been created for the module, then it will be included in the module as shown below:
+Assuming an asset `HelloAsset` has been created for the module, then it will be included in the module as shown below:
 
+.src/app/modules/hello/hello_module.ts
 [source,typescript]
 ----
-import { BaseModule,AfterBlockApplyContext,TransactionApplyContext,BeforeBlockApplyContext,AfterGenesisBlockApplyContext } from 'lisk-sdk';
-const { CreateNFT } = require('./assets/create_nft_asset');
+import { BaseModule } from 'lisk-sdk';
+// Uncomment once the asset is implemented
+// const { HelloAsset } = require('./assets/hello_asset');
 
-export class NftModule extends BaseModule {
+export class HelloModule extends BaseModule {
 
     // ...
 
-    public transactionAssets = [new CreateNFT()];
+    public transactionAssets = [
+       // Uncomment once the asset is implemented
+       // new HelloAsset()
+    ];
 
     // ...
 }
@@ -254,10 +257,11 @@ export class NftModule extends BaseModule {
 
 == Actions
 
-A list of actions that plugins and external services can invoke via the API client.
+A list of actions that plugins and external services can invoke.
 
-TIP: See the xref:{url_rpc_endpoints}[] page for more information.
+TIP: See the xref:{url_advanced_communication}[] page for more information.
 
+.src/app/modules/hello/hello_module.ts
 [source,typescript]
 ----
 import { BaseModule, AfterBlockApplyContext, TransactionApplyContext, BeforeBlockApplyContext, AfterGenesisBlockApplyContext } from 'lisk-sdk';

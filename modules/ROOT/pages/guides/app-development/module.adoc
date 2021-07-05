@@ -9,9 +9,12 @@ Mona Bärenfänger <mona@lightcurve.io>
 
 // Project URLS
 :url_guides_setup: guides/app-development/setup.adoc
+:url_guides_setup_helloapp: guides/app-development/setup.adocl#the-hello-world-application
 :url_guides_asset: guides/app-development/asset.adoc
 :url_guides_genesis: guides/app-development/genesis-block.adoc
 :url_guides_testing: guides/app-development/testing.adoc
+:url_intro_modules_accountschema: introduction/modules.adoc#account-schema
+:url_intro_modules_events: introduction/modules.adoc#events
 :url_intro_modules_id: introduction/modules.adoc#module-id
 :url_intro_modules_name: introduction/modules.adoc#module-name
 :url_modules_dpos: references/lisk-framework/dpos-module.adoc
@@ -227,6 +230,52 @@ export class HelloModule extends BaseModule {
 }
 ----
 
+== Defining an account schema
+
+In some cases, the new module will require storing some new data in the user accounts.
+If that is the case, it is required to define the corresponding account schema in the module.
+
+TIP: For more information about the account schema in modules, check out the section about account schemas on the xref:{url_intro_modules_accountschema}[Modules] introduction page.
+
+For the Hello application, we want to store a hello message in each user account, as defined in the application overview of the guide xref:{url_guides_setup_helloapp}[Creating a new blockchain application].
+The hello message should be of type `string` and it should have a minium length of 3, and a maximum length of 64 characters.
+All of this can be defined in the account schema.
+
+The account schema for the Hello module is defined as follows:
+
+[source,typescript]
+----
+export class HelloModule extends BaseModule {
+
+    // ...
+
+    public accountSchema = {
+        type: 'object',
+        properties: {
+            helloMessage: {
+                fieldNumber: 1,
+                dataType: 'string',
+                minLength: 3,
+                maxLength: 64,
+            },
+        },
+        default: {
+            helloMessage: '',
+        },
+    };
+
+    // ...
+}
+----
+
+[IMPORTANT]
+
+====
+If a module includes an account schema, it is necessary to update the genesis block after registering the module with the application.
+
+For more information, see the xref:{url_guides_genesis}[] guide.
+====
+
 == Transaction assets
 
 A module can include various custom transaction assets, that provide new transaction types to the application.
@@ -255,6 +304,119 @@ export class HelloModule extends BaseModule {
 }
 ----
 
+== Events
+
+A list of events that this module is able to emit.
+
+Modules, plugins, and external services can subscribe to these events.
+
+TIP: See the "Events" section of the xref:{url_intro_modules_events}[Modules] introduction page for more information.
+
+Add a new event `newHello`.
+This event shall be published, every time some one is updating their hello message.
+The under `events` defined events can be published to the application in the <<lifecycle-hooks>> of the module.
+
+[source,typescript]
+----
+public events = ['newHello'];
+----
+
+== Lifecycle Hooks
+
+Lifecycle hooks allow a module to execute certain logic, before or after blocks or transactions are applied to the blockchain.
+
+Inside of the lifecycle hooks, it's possible to *publish* the above defined events to the application and to filter for certain transactions and blocks, before applying the logic.
+
+The following lifecycle hooks are available for each module:
+
+`beforeTransactionApply()`::
+The code here is applied before each transaction is applied.
+`afterTransactionApply()`::
+The code here is applied after each transaction is applied.
+`afterGenesisBlockApply()`::
+The code here is applied after the genesis block is applied.
+`beforeBlockApply()`::
+The code here is applied before each block is applied.
+`afterBlockApply()`::
+The code here is applied after each block is applied.
+
+[source,typescript]
+----
+public async beforeBlockApply({block, stateStore, reducerHandler}) {
+    // Get any data from stateStore using block info, below is an example getting a generator
+    // const generatorAddress = getAddressFromPublicKey(_input.block.header.generatorPublicKey);
+    // const generator = await _input.stateStore.account.get<TokenAccount>(generatorAddress);
+}
+
+public async afterBlockApply({block, consensus, stateStore, reducerHandler}) {
+    // Get any data from stateStore using block info, below is an example getting a generator
+    // const generatorAddress = getAddressFromPublicKey(_input.block.header.generatorPublicKey);
+    // const generator = await _input.stateStore.account.get<TokenAccount>(generatorAddress);
+}
+
+public async beforeTransactionApply({transaction, stateStore, reducerHandler}) {
+    // Get any data from stateStore using transaction info, below is an example
+    // const sender = await _input.stateStore.account.getOrDefault<TokenAccount>(_input.transaction.senderAddress);
+}
+
+public async afterTransactionApply({transaction, stateStore, reducerHandler}) {
+    // Get any data from stateStore using transaction info, below is an example
+    // const sender = await _input.stateStore.account.getOrDefault<TokenAccount>(_input.transaction.senderAddress);
+}
+
+public async afterGenesisBlockApply({genesisBlock, stateStore, reducerHandler}) {
+    // Get any data from genesis block, for example get all genesis accounts
+    // const genesisAccoounts = genesisBlock.header.asset.accounts;
+}
+----
+
+In this example, no lifecycle hooks for the NFT module will be implemented.
+
+[TIP]
+
+====
+A list of modules with implemented lifecycle hooks:
+
+* The {url_github_hello_module}[Hello Module^] from the xref:{url_tutorials_hello}[] tutorial
+* The {url_github_srs_module}[SRS Module^] from the xref:{url_tutorials_srs}[] tutorial
+====
+
+=== stateStore
+
+The `stateStore` is used to mutate the state of the blockchain data, or to retrieve data from the blockchain.
+
+Inside of a module, the `stateStore` is available for reducers and all lifecycle hooks.
+
+.Interface of `stateStore`
+----
+interface StateStore {
+	readonly account: {
+		get<T = AccountDefaultProps>(address: Buffer): Promise<Account<T>>;
+		getOrDefault<T = AccountDefaultProps>(address: Buffer): Promise<Account<T>>;
+		set<T = AccountDefaultProps>(address: Buffer, updatedElement: Account<T>): Promise<void>;
+		del(address: Buffer): Promise<void>;
+	};
+	readonly chain: {
+		lastBlockHeaders: ReadonlyArray<BlockHeader>;
+		lastBlockReward: bigint;
+		networkIdentifier: Buffer;
+		get(key: string): Promise<Buffer | undefined>;
+		set(key: string, value: Buffer): Promise<void>;
+	};
+}
+----
+
+=== reducerHandler
+
+Reducers of other modules can be *invoked* inside of the lifecycle hooks via the `reducerHandler`.
+
+.Interface of `reducerHandler`
+----
+interface ReducerHandler {
+	invoke: <T = unknown>(name: string, params?: Record<string, unknown>) => Promise<T>;
+}
+----
+
 == Actions
 
 A list of actions that plugins and external services can invoke.
@@ -273,7 +435,14 @@ export class NftModule extends BaseModule {
     // ...
 
     public actions = {
-        getAllNFTTokens: async () => getAllNFTTokensAsJSON(this._dataAccess),
+        amountOfHellos: async () => {
+            const res = await this._dataAccess.getChainState(CHAIN_STATE_HELLO_COUNTER);
+            const count = codec.decode(
+                helloCounterSchema,
+                res
+            );
+            return count;
+        },
     };
 
     // ...
@@ -395,177 +564,3 @@ public reducers = {
     // },
 };
 ----
-
-== Events
-
-A list of events that this module is able to emit.
-
-Modules, plugins, and external services can subscribe to these events.
-
-TIP: See the xref:{url_rpc_endpoints}[] page for more information.
-
-[source,typescript]
-----
-public events = [
-    // Example below
-    // 'nft:newBlock',
-];
-----
-
-Which events, actions, and reducers are used within a module, or if these interfaces are actually required at all, will be a specific individual requirement for every module; as it is heavily dependant on which functionality the module intends to provide to the application.
-
-In this example, no events for the NFT module will be implemented.
-
-[TIP]
-
-====
-A list of modules with events:
-
-* The {url_github_hello_module}[Hello Module^] from the xref:{url_tutorials_hello}[] tutorial
-* The {url_github_srs_module}[SRS Module^] from the xref:{url_tutorials_srs}[] tutorial
-====
-
-== Lifecycle Hooks
-
-Lifecycle hooks allow a module to execute certain logic, before or after blocks or transactions are applied to the blockchain.
-
-Inside of the lifecycle hooks, it's possible to *publish* the above defined events to the application and to filter for certain transactions and blocks, before applying the logic.
-
-The following lifecycle hooks are available for each module:
-
-`beforeTransactionApply()`::
-The code here is applied before each transaction is applied.
-`afterTransactionApply()`::
-The code here is applied after each transaction is applied.
-`afterGenesisBlockApply()`::
-The code here is applied after the genesis block is applied.
-`beforeBlockApply()`::
-The code here is applied before each block is applied.
-`afterBlockApply()`::
-The code here is applied after each block is applied.
-
-[source,typescript]
-----
-public async beforeBlockApply({block, stateStore, reducerHandler}) {
-    // Get any data from stateStore using block info, below is an example getting a generator
-    // const generatorAddress = getAddressFromPublicKey(_input.block.header.generatorPublicKey);
-    // const generator = await _input.stateStore.account.get<TokenAccount>(generatorAddress);
-}
-
-public async afterBlockApply({block, consensus, stateStore, reducerHandler}) {
-    // Get any data from stateStore using block info, below is an example getting a generator
-    // const generatorAddress = getAddressFromPublicKey(_input.block.header.generatorPublicKey);
-    // const generator = await _input.stateStore.account.get<TokenAccount>(generatorAddress);
-}
-
-public async beforeTransactionApply({transaction, stateStore, reducerHandler}) {
-    // Get any data from stateStore using transaction info, below is an example
-    // const sender = await _input.stateStore.account.getOrDefault<TokenAccount>(_input.transaction.senderAddress);
-}
-
-public async afterTransactionApply({transaction, stateStore, reducerHandler}) {
-    // Get any data from stateStore using transaction info, below is an example
-    // const sender = await _input.stateStore.account.getOrDefault<TokenAccount>(_input.transaction.senderAddress);
-}
-
-public async afterGenesisBlockApply({genesisBlock, stateStore, reducerHandler}) {
-    // Get any data from genesis block, for example get all genesis accounts
-    // const genesisAccoounts = genesisBlock.header.asset.accounts;
-}
-----
-
-In this example, no lifecycle hooks for the NFT module will be implemented.
-
-[TIP]
-
-====
-A list of modules with implemented lifecycle hooks:
-
-* The {url_github_hello_module}[Hello Module^] from the xref:{url_tutorials_hello}[] tutorial
-* The {url_github_srs_module}[SRS Module^] from the xref:{url_tutorials_srs}[] tutorial
-====
-
-=== stateStore
-
-The `stateStore` is used to mutate the state of the blockchain data, or to retrieve data from the blockchain.
-
-Inside of a module, the `stateStore` is available for reducers and all lifecycle hooks.
-
-.Interface of `stateStore`
-----
-interface StateStore {
-	readonly account: {
-		get<T = AccountDefaultProps>(address: Buffer): Promise<Account<T>>;
-		getOrDefault<T = AccountDefaultProps>(address: Buffer): Promise<Account<T>>;
-		set<T = AccountDefaultProps>(address: Buffer, updatedElement: Account<T>): Promise<void>;
-		del(address: Buffer): Promise<void>;
-	};
-	readonly chain: {
-		lastBlockHeaders: ReadonlyArray<BlockHeader>;
-		lastBlockReward: bigint;
-		networkIdentifier: Buffer;
-		get(key: string): Promise<Buffer | undefined>;
-		set(key: string, value: Buffer): Promise<void>;
-	};
-}
-----
-
-=== reducerHandler
-
-Reducers of other modules can be *invoked* inside of the lifecycle hooks via the `reducerHandler`.
-
-.Interface of `reducerHandler`
-----
-interface ReducerHandler {
-	invoke: <T = unknown>(name: string, params?: Record<string, unknown>) => Promise<T>;
-}
-----
-
-== Defining an account schema
-
-In some cases, the new module will require storing some new data in the user accounts.
-If that is the case, it is required to define the corresponding account schema in the module.
-
-The account schema defines which properties are added to user accounts by the module.
-
-TIP: For more information about schemas and how they are used in the Lisk SDK, check out the xref:{url_references_schemas}[].
-
-The module-specific properties will be added under a key that is named after the module name.
-So for example, in case the module name is `nft`, the data will be stored under the key "nft" in each user account.
-
-The account schema for the NFT module is defined as follows:
-
-[source,typescript]
-----
-export class NftModule extends BaseModule {
-
-  // ...
-
-  public accountSchema = {
-    type: "object",
-    required: ["ownNFTs"],
-    properties: {
-      ownNFTs: {
-        type: "array",
-        fieldNumber: 1,
-        items: {
-          dataType: "bytes",
-        },
-      },
-    },
-    default: {
-      ownNFTs: [],
-    },
-  };
-
-  // ...
-}
-----
-
-[IMPORTANT]
-
-====
-If a module includes an account schema, it is necessary to update the genesis block after registering the module with the application.
-
-For more information, see the xref:{url_guides_genesis}[] guide.
-====

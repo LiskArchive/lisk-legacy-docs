@@ -474,22 +474,17 @@
 <ul class="sectlevel1">
 <li><a href="#generating-the-module-skeleton">1. Generating the module skeleton</a></li>
 <li><a href="#the-module-class">2. The module class</a></li>
-<li><a href="#transaction-assets">3. Transaction assets</a></li>
-<li><a href="#actions">4. Actions</a>
+<li><a href="#defining-an-account-schema">3. Defining an account schema</a></li>
+<li><a href="#transaction-assets">4. Transaction assets</a></li>
+<li><a href="#events">5. Events</a></li>
+<li><a href="#lifecycle-hooks">6. Lifecycle Hooks</a></li>
+<li><a href="#actions">7. Actions</a>
 <ul class="sectlevel2">
-<li><a href="#data-access-for-actions">4.1. Data access for actions</a></li>
-<li><a href="#nft-utility-functions">4.2. NFT utility functions</a></li>
+<li><a href="#data-access-for-actions">7.1. Data access for actions</a></li>
+<li><a href="#nft-utility-functions">7.2. NFT utility functions</a></li>
 </ul>
 </li>
-<li><a href="#reducers">5. Reducers</a></li>
-<li><a href="#events">6. Events</a></li>
-<li><a href="#lifecycle-hooks">7. Lifecycle Hooks</a>
-<ul class="sectlevel2">
-<li><a href="#statestore">7.1. stateStore</a></li>
-<li><a href="#reducerhandler">7.2. reducerHandler</a></li>
-</ul>
-</li>
-<li><a href="#defining-an-account-schema">8. Defining an account schema</a></li>
+<li><a href="#reducers">8. Reducers</a></li>
 </ul>
 </div>
 <div id="preamble">
@@ -767,7 +762,78 @@ export class HelloModule extends BaseModule {
 </div>
 </div>
 <div class="sect1">
-<h2 id="transaction-assets"><a class="anchor" href="#transaction-assets"></a>3. Transaction assets</h2>
+<h2 id="defining-an-account-schema"><a class="anchor" href="#defining-an-account-schema"></a>3. Defining an account schema</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In some cases, the new module will require storing some new data in the user accounts.
+If that is the case, it is required to define the corresponding account schema in the module.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+For more information about the account schema in modules, check out the section about account schemas on the <a href="../../introduction/modules.html#account-schema" class="page">Modules</a> introduction page.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>For the Hello application, we want to store a hello message in each user account, as defined in the application overview of the guide <a href="#guides/app-development/setup.adocl#the-hello-world-application" class="page unresolved">Creating a new blockchain application</a>.
+The hello message should be of type <code>string</code> and it should have a minium length of 3, and a maximum length of 64 characters.
+All of this can be defined in the account schema.</p>
+</div>
+<div class="paragraph">
+<p>The account schema for the Hello module is defined as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export class HelloModule extends BaseModule {
+
+    // ...
+
+    public accountSchema = {
+        type: 'object',
+        properties: {
+            helloMessage: {
+                fieldNumber: 1,
+                dataType: 'string',
+                minLength: 3,
+                maxLength: 64,
+            },
+        },
+        default: {
+            helloMessage: '',
+        },
+    };
+
+    // ...
+}</code></pre>
+</div>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If a module includes an account schema, it is necessary to update the genesis block after registering the module with the application.</p>
+</div>
+<div class="paragraph">
+<p>For more information, see the <a href="genesis-block.html" class="page">Generating a genesis block</a> guide.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="transaction-assets"><a class="anchor" href="#transaction-assets"></a>4. Transaction assets</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>A module can include various custom transaction assets, that provide new transaction types to the application.</p>
@@ -801,7 +867,171 @@ export class HelloModule extends BaseModule {
 </div>
 </div>
 <div class="sect1">
-<h2 id="actions"><a class="anchor" href="#actions"></a>4. Actions</h2>
+<h2 id="events"><a class="anchor" href="#events"></a>5. Events</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A list of events that this module is able to emit.</p>
+</div>
+<div class="paragraph">
+<p>Modules, plugins, and external services can subscribe to these events.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+See the "Events" section of the <a href="../../introduction/modules.html#events" class="page">Modules</a> introduction page for more information.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Add a new event <code>newHello</code>.
+This event shall be published, every time some one is updating their hello message.
+The under <code>events</code> defined events can be published to the application in the <a href="#lifecycle-hooks">Lifecycle Hooks</a> of the module.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public events = ['newHello'];</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="lifecycle-hooks"><a class="anchor" href="#lifecycle-hooks"></a>6. Lifecycle Hooks</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Lifecycle hooks allow a module to execute certain logic, before or after blocks or transactions are applied to the blockchain.</p>
+</div>
+<div class="paragraph">
+<p>Inside of the lifecycle hooks, it&#8217;s possible to <strong>publish</strong> the above defined events to the application and to filter for certain transactions and blocks, before applying the logic.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>See the "Lifecycle Hooks" section of the <a href="../../introduction/modules.html#lifecycle-hooks" class="page">Modules</a> introduction page for more information.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>In the hello module, 2 different lifecycle hooks are defined.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">afterTransactionApply</dt>
+<dd>
+<p>Publishes for every applied hello transaction a new event <code>hello:newHello</code>, and adds information about the sender of the transaction, and the corresponding hello message.</p>
+</dd>
+<dt class="hdlist1">afterGenesisBlockApply</dt>
+<dd>
+<p>If the geenesis block is applied, it will set the counter for posted hello transactions to zero.</p>
+</dd>
+</dl>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+Go to the <a href="asset.html" class="page">Creating a module asset</a> guide for more information about the hello asset and the hello transaction.
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async afterTransactionApply({transaction, stateStore, reducerHandler}) {
+    // Publish a `newHello` event for every received hello transaction
+    if (transaction.moduleID === this.id &amp;&amp; transaction.assetID === HelloAssetID) {
+
+        const helloAsset = codec.decode(
+          helloAssetSchema,
+          transaction.asset
+        );
+
+        this._channel.publish('hello:newHello', {
+          sender: transaction._senderAddress.toString('hex'),
+          hello: helloAsset.helloString
+        });
+
+    };
+}
+
+public async afterGenesisBlockApply({genesisBlock, stateStore, reducerHandler}) {
+    // Set the hello counter to zero after the genesis block is applied
+    await stateStore.chain.set(
+        CHAIN_STATE_HELLO_COUNTER,
+        codec.encode(helloCounterSchema, { helloCounter: 0 })
+    );
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>It is recommended to store the different schemas in a separate file, e.g. <code>schemas.js</code>, and import them in the module and asset where needed.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+For more information about schemas, check out the <a href="../../advanced-explanations/schemas.html" class="page">Schemas</a> page.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The following schemas are used in the lifecycle hooks:</p>
+</div>
+<div class="listingblock">
+<div class="title">Schemas</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">// This key is used to save the data for the hello counter in the database
+const CHAIN_STATE_HELLO_COUNTER = "hello:helloCounter";
+
+// This schema is used to decode/encode the data of the hello counter from/for the database
+const helloCounterSchema = {
+    $id: "lisk/hello/counter",
+    type: "object",
+    required: ["helloCounter"],
+    properties: {
+        helloCounter: {
+            dataType: "uint32",
+            fieldNumber: 1,
+        },
+    },
+};
+
+// This schema is used to decode/encode the data of the asset of the hello transaction from/for the database
+const helloAssetSchema = {
+  $id: "lisk/hello/asset",
+  type: "object",
+  required: ["helloString"],
+  properties: {
+    helloString: {
+      dataType: "string",
+      fieldNumber: 1,
+    },
+  },
+};</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="actions"><a class="anchor" href="#actions"></a>7. Actions</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>A list of actions that plugins and external services can invoke.</p>
@@ -830,7 +1060,14 @@ export class NftModule extends BaseModule {
     // ...
 
     public actions = {
-        getAllNFTTokens: async () =&gt; getAllNFTTokensAsJSON(this._dataAccess),
+        amountOfHellos: async () =&gt; {
+            const res = await this._dataAccess.getChainState(CHAIN_STATE_HELLO_COUNTER);
+            const count = codec.decode(
+                helloCounterSchema,
+                res
+            );
+            return count;
+        },
     };
 
     // ...
@@ -838,7 +1075,7 @@ export class NftModule extends BaseModule {
 </div>
 </div>
 <div class="sect2">
-<h3 id="data-access-for-actions"><a class="anchor" href="#data-access-for-actions"></a>4.1. Data access for actions</h3>
+<h3 id="data-access-for-actions"><a class="anchor" href="#data-access-for-actions"></a>7.1. Data access for actions</h3>
 <div class="paragraph">
 <p>Blockchain data can be accessed in a module via <code>this._dataAccess</code>.</p>
 </div>
@@ -857,7 +1094,7 @@ export class NftModule extends BaseModule {
 </div>
 </div>
 <div class="sect2">
-<h3 id="nft-utility-functions"><a class="anchor" href="#nft-utility-functions"></a>4.2. NFT utility functions</h3>
+<h3 id="nft-utility-functions"><a class="anchor" href="#nft-utility-functions"></a>7.2. NFT utility functions</h3>
 <div class="paragraph">
 <p>The function <code>getAllNFTTokensAsJSON()</code> gets called, every time the action <code>nft:getAllNFTTokens</code> is invoked.
 It will return a list of all registered NFTs as JSON.</p>
@@ -939,7 +1176,7 @@ module.exports = {
 </div>
 </div>
 <div class="sect1">
-<h2 id="reducers"><a class="anchor" href="#reducers"></a>5. Reducers</h2>
+<h2 id="reducers"><a class="anchor" href="#reducers"></a>8. Reducers</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>A list of actions that other modules of the application can invoke.</p>
@@ -973,280 +1210,6 @@ Reducers can only be invoked by other modules, <strong>not</strong> by plugins.
     // },
 };</code></pre>
 </div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="events"><a class="anchor" href="#events"></a>6. Events</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>A list of events that this module is able to emit.</p>
-</div>
-<div class="paragraph">
-<p>Modules, plugins, and external services can subscribe to these events.</p>
-</div>
-<div class="admonitionblock tip">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-tip" title="Tip"></i>
-</td>
-<td class="content">
-See the <a href="../../advanced-explanations/rpc-endpoints.html" class="page">RPC endpoints</a> page for more information.
-</td>
-</tr>
-</table>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public events = [
-    // Example below
-    // 'nft:newBlock',
-];</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Which events, actions, and reducers are used within a module, or if these interfaces are actually required at all, will be a specific individual requirement for every module; as it is heavily dependant on which functionality the module intends to provide to the application.</p>
-</div>
-<div class="paragraph">
-<p>In this example, no events for the NFT module will be implemented.</p>
-</div>
-<div class="admonitionblock tip">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-tip" title="Tip"></i>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>A list of modules with events:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>The <a href="https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/hello-world/blockchain_app/hello_module/hello_module.js" target="_blank" rel="noopener">Hello Module</a> from the <a href="../../tutorials/hello-world.html" class="page">Hello World</a> tutorial</p>
-</li>
-<li>
-<p>The <a href="https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/social-recovery/blockchain_app/srs_module/index.js" target="_blank" rel="noopener">SRS Module</a> from the <a href="../../tutorials/srs.html" class="page">Social Recovery System (SRS)</a> tutorial</p>
-</li>
-</ul>
-</div>
-</td>
-</tr>
-</table>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="lifecycle-hooks"><a class="anchor" href="#lifecycle-hooks"></a>7. Lifecycle Hooks</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Lifecycle hooks allow a module to execute certain logic, before or after blocks or transactions are applied to the blockchain.</p>
-</div>
-<div class="paragraph">
-<p>Inside of the lifecycle hooks, it&#8217;s possible to <strong>publish</strong> the above defined events to the application and to filter for certain transactions and blocks, before applying the logic.</p>
-</div>
-<div class="paragraph">
-<p>The following lifecycle hooks are available for each module:</p>
-</div>
-<div class="dlist">
-<dl>
-<dt class="hdlist1"><code>beforeTransactionApply()</code></dt>
-<dd>
-<p>The code here is applied before each transaction is applied.</p>
-</dd>
-<dt class="hdlist1"><code>afterTransactionApply()</code></dt>
-<dd>
-<p>The code here is applied after each transaction is applied.</p>
-</dd>
-<dt class="hdlist1"><code>afterGenesisBlockApply()</code></dt>
-<dd>
-<p>The code here is applied after the genesis block is applied.</p>
-</dd>
-<dt class="hdlist1"><code>beforeBlockApply()</code></dt>
-<dd>
-<p>The code here is applied before each block is applied.</p>
-</dd>
-<dt class="hdlist1"><code>afterBlockApply()</code></dt>
-<dd>
-<p>The code here is applied after each block is applied.</p>
-</dd>
-</dl>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async beforeBlockApply({block, stateStore, reducerHandler}) {
-    // Get any data from stateStore using block info, below is an example getting a generator
-    // const generatorAddress = getAddressFromPublicKey(_input.block.header.generatorPublicKey);
-    // const generator = await _input.stateStore.account.get&lt;TokenAccount&gt;(generatorAddress);
-}
-
-public async afterBlockApply({block, consensus, stateStore, reducerHandler}) {
-    // Get any data from stateStore using block info, below is an example getting a generator
-    // const generatorAddress = getAddressFromPublicKey(_input.block.header.generatorPublicKey);
-    // const generator = await _input.stateStore.account.get&lt;TokenAccount&gt;(generatorAddress);
-}
-
-public async beforeTransactionApply({transaction, stateStore, reducerHandler}) {
-    // Get any data from stateStore using transaction info, below is an example
-    // const sender = await _input.stateStore.account.getOrDefault&lt;TokenAccount&gt;(_input.transaction.senderAddress);
-}
-
-public async afterTransactionApply({transaction, stateStore, reducerHandler}) {
-    // Get any data from stateStore using transaction info, below is an example
-    // const sender = await _input.stateStore.account.getOrDefault&lt;TokenAccount&gt;(_input.transaction.senderAddress);
-}
-
-public async afterGenesisBlockApply({genesisBlock, stateStore, reducerHandler}) {
-    // Get any data from genesis block, for example get all genesis accounts
-    // const genesisAccoounts = genesisBlock.header.asset.accounts;
-}</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>In this example, no lifecycle hooks for the NFT module will be implemented.</p>
-</div>
-<div class="admonitionblock tip">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-tip" title="Tip"></i>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>A list of modules with implemented lifecycle hooks:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>The <a href="https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/hello-world/blockchain_app/hello_module/hello_module.js" target="_blank" rel="noopener">Hello Module</a> from the <a href="../../tutorials/hello-world.html" class="page">Hello World</a> tutorial</p>
-</li>
-<li>
-<p>The <a href="https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/social-recovery/blockchain_app/srs_module/index.js" target="_blank" rel="noopener">SRS Module</a> from the <a href="../../tutorials/srs.html" class="page">Social Recovery System (SRS)</a> tutorial</p>
-</li>
-</ul>
-</div>
-</td>
-</tr>
-</table>
-</div>
-<div class="sect2">
-<h3 id="statestore"><a class="anchor" href="#statestore"></a>7.1. stateStore</h3>
-<div class="paragraph">
-<p>The <code>stateStore</code> is used to mutate the state of the blockchain data, or to retrieve data from the blockchain.</p>
-</div>
-<div class="paragraph">
-<p>Inside of a module, the <code>stateStore</code> is available for reducers and all lifecycle hooks.</p>
-</div>
-<div class="listingblock">
-<div class="title">Interface of <code>stateStore</code></div>
-<div class="content">
-<pre>interface StateStore {
-	readonly account: {
-		get&lt;T = AccountDefaultProps&gt;(address: Buffer): Promise&lt;Account&lt;T&gt;&gt;;
-		getOrDefault&lt;T = AccountDefaultProps&gt;(address: Buffer): Promise&lt;Account&lt;T&gt;&gt;;
-		set&lt;T = AccountDefaultProps&gt;(address: Buffer, updatedElement: Account&lt;T&gt;): Promise&lt;void&gt;;
-		del(address: Buffer): Promise&lt;void&gt;;
-	};
-	readonly chain: {
-		lastBlockHeaders: ReadonlyArray&lt;BlockHeader&gt;;
-		lastBlockReward: bigint;
-		networkIdentifier: Buffer;
-		get(key: string): Promise&lt;Buffer | undefined&gt;;
-		set(key: string, value: Buffer): Promise&lt;void&gt;;
-	};
-}</pre>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="reducerhandler"><a class="anchor" href="#reducerhandler"></a>7.2. reducerHandler</h3>
-<div class="paragraph">
-<p>Reducers of other modules can be <strong>invoked</strong> inside of the lifecycle hooks via the <code>reducerHandler</code>.</p>
-</div>
-<div class="listingblock">
-<div class="title">Interface of <code>reducerHandler</code></div>
-<div class="content">
-<pre>interface ReducerHandler {
-	invoke: &lt;T = unknown&gt;(name: string, params?: Record&lt;string, unknown&gt;) =&gt; Promise&lt;T&gt;;
-}</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="defining-an-account-schema"><a class="anchor" href="#defining-an-account-schema"></a>8. Defining an account schema</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>In some cases, the new module will require storing some new data in the user accounts.
-If that is the case, it is required to define the corresponding account schema in the module.</p>
-</div>
-<div class="paragraph">
-<p>The account schema defines which properties are added to user accounts by the module.</p>
-</div>
-<div class="admonitionblock tip">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-tip" title="Tip"></i>
-</td>
-<td class="content">
-For more information about schemas and how they are used in the Lisk SDK, check out the <a href="../../advanced-explanations/schemas.html" class="page">Schemas</a>.
-</td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-<p>The module-specific properties will be added under a key that is named after the module name.
-So for example, in case the module name is <code>nft</code>, the data will be stored under the key "nft" in each user account.</p>
-</div>
-<div class="paragraph">
-<p>The account schema for the NFT module is defined as follows:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export class NftModule extends BaseModule {
-
-  // ...
-
-  public accountSchema = {
-    type: "object",
-    required: ["ownNFTs"],
-    properties: {
-      ownNFTs: {
-        type: "array",
-        fieldNumber: 1,
-        items: {
-          dataType: "bytes",
-        },
-      },
-    },
-    default: {
-      ownNFTs: [],
-    },
-  };
-
-  // ...
-}</code></pre>
-</div>
-</div>
-<div class="admonitionblock important">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-important" title="Important"></i>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>If a module includes an account schema, it is necessary to update the genesis block after registering the module with the application.</p>
-</div>
-<div class="paragraph">
-<p>For more information, see the <a href="genesis-block.html" class="page">Generating a genesis block</a> guide.</p>
-</div>
-</td>
-</tr>
-</table>
 </div>
 </div>
 </div>

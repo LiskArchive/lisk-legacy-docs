@@ -16,6 +16,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_intro_modules_accountschema: introduction/modules.adoc#account-schema
 :url_intro_modules_events: introduction/modules.adoc#events
 :url_intro_modules_id: introduction/modules.adoc#module-id
+:url_intro_modules_lifecyclehooks: introduction/modules.adoc#lifecycle-hooks
 :url_intro_modules_name: introduction/modules.adoc#module-name
 :url_modules_dpos: references/lisk-framework/dpos-module.adoc
 :url_advanced_communication: advanced-explanations/communication.adoc
@@ -327,94 +328,86 @@ Lifecycle hooks allow a module to execute certain logic, before or after blocks 
 
 Inside of the lifecycle hooks, it's possible to *publish* the above defined events to the application and to filter for certain transactions and blocks, before applying the logic.
 
-The following lifecycle hooks are available for each module:
+[TIP]
+====
+See the "Lifecycle Hooks" section of the xref:{url_intro_modules_lifecyclehooks}[Modules] introduction page for more information.
+====
 
-`beforeTransactionApply()`::
-The code here is applied before each transaction is applied.
-`afterTransactionApply()`::
-The code here is applied after each transaction is applied.
-`afterGenesisBlockApply()`::
-The code here is applied after the genesis block is applied.
-`beforeBlockApply()`::
-The code here is applied before each block is applied.
-`afterBlockApply()`::
-The code here is applied after each block is applied.
+In the hello module, 2 different lifecycle hooks are defined.
+
+afterTransactionApply::
+Publishes for every applied hello transaction a new event `hello:newHello`, and adds information about the sender of the transaction, and the corresponding hello message.
+
+afterGenesisBlockApply::
+If the geenesis block is applied, it will set the counter for posted hello transactions to zero.
+
+TIP: Go to the xref:{url_guides_asset}[] guide for more information about the hello asset and the hello transaction.
 
 [source,typescript]
 ----
-public async beforeBlockApply({block, stateStore, reducerHandler}) {
-    // Get any data from stateStore using block info, below is an example getting a generator
-    // const generatorAddress = getAddressFromPublicKey(_input.block.header.generatorPublicKey);
-    // const generator = await _input.stateStore.account.get<TokenAccount>(generatorAddress);
-}
-
-public async afterBlockApply({block, consensus, stateStore, reducerHandler}) {
-    // Get any data from stateStore using block info, below is an example getting a generator
-    // const generatorAddress = getAddressFromPublicKey(_input.block.header.generatorPublicKey);
-    // const generator = await _input.stateStore.account.get<TokenAccount>(generatorAddress);
-}
-
-public async beforeTransactionApply({transaction, stateStore, reducerHandler}) {
-    // Get any data from stateStore using transaction info, below is an example
-    // const sender = await _input.stateStore.account.getOrDefault<TokenAccount>(_input.transaction.senderAddress);
-}
-
 public async afterTransactionApply({transaction, stateStore, reducerHandler}) {
-    // Get any data from stateStore using transaction info, below is an example
-    // const sender = await _input.stateStore.account.getOrDefault<TokenAccount>(_input.transaction.senderAddress);
+    // Publish a `newHello` event for every received hello transaction
+    if (transaction.moduleID === this.id && transaction.assetID === HelloAssetID) {
+
+        const helloAsset = codec.decode(
+          helloAssetSchema,
+          transaction.asset
+        );
+
+        this._channel.publish('hello:newHello', {
+          sender: transaction._senderAddress.toString('hex'),
+          hello: helloAsset.helloString
+        });
+
+    };
 }
 
 public async afterGenesisBlockApply({genesisBlock, stateStore, reducerHandler}) {
-    // Get any data from genesis block, for example get all genesis accounts
-    // const genesisAccoounts = genesisBlock.header.asset.accounts;
+    // Set the hello counter to zero after the genesis block is applied
+    await stateStore.chain.set(
+        CHAIN_STATE_HELLO_COUNTER,
+        codec.encode(helloCounterSchema, { helloCounter: 0 })
+    );
 }
 ----
 
-In this example, no lifecycle hooks for the NFT module will be implemented.
+It is recommended to store the different schemas in a separate file, e.g. `schemas.js`, and import them in the module and asset where needed.
 
-[TIP]
+TIP: For more information about schemas, check out the xref:{url_references_schemas}[] page.
 
-====
-A list of modules with implemented lifecycle hooks:
+The following schemas are used in the lifecycle hooks:
 
-* The {url_github_hello_module}[Hello Module^] from the xref:{url_tutorials_hello}[] tutorial
-* The {url_github_srs_module}[SRS Module^] from the xref:{url_tutorials_srs}[] tutorial
-====
-
-=== stateStore
-
-The `stateStore` is used to mutate the state of the blockchain data, or to retrieve data from the blockchain.
-
-Inside of a module, the `stateStore` is available for reducers and all lifecycle hooks.
-
-.Interface of `stateStore`
+.Schemas
+[source,js]
 ----
-interface StateStore {
-	readonly account: {
-		get<T = AccountDefaultProps>(address: Buffer): Promise<Account<T>>;
-		getOrDefault<T = AccountDefaultProps>(address: Buffer): Promise<Account<T>>;
-		set<T = AccountDefaultProps>(address: Buffer, updatedElement: Account<T>): Promise<void>;
-		del(address: Buffer): Promise<void>;
-	};
-	readonly chain: {
-		lastBlockHeaders: ReadonlyArray<BlockHeader>;
-		lastBlockReward: bigint;
-		networkIdentifier: Buffer;
-		get(key: string): Promise<Buffer | undefined>;
-		set(key: string, value: Buffer): Promise<void>;
-	};
-}
-----
+// This key is used to save the data for the hello counter in the database
+const CHAIN_STATE_HELLO_COUNTER = "hello:helloCounter";
 
-=== reducerHandler
+// This schema is used to decode/encode the data of the hello counter from/for the database
+const helloCounterSchema = {
+    $id: "lisk/hello/counter",
+    type: "object",
+    required: ["helloCounter"],
+    properties: {
+        helloCounter: {
+            dataType: "uint32",
+            fieldNumber: 1,
+        },
+    },
+};
 
-Reducers of other modules can be *invoked* inside of the lifecycle hooks via the `reducerHandler`.
-
-.Interface of `reducerHandler`
-----
-interface ReducerHandler {
-	invoke: <T = unknown>(name: string, params?: Record<string, unknown>) => Promise<T>;
-}
+// This schema is used to decode/encode the data of the asset of the hello transaction from/for the database
+const helloAssetSchema = {
+  $id: "lisk/hello/asset",
+  type: "object",
+  required: ["helloString"],
+  properties: {
+    helloString: {
+      dataType: "string",
+      fieldNumber: 1,
+    },
+  },
+};
 ----
 
 == Actions

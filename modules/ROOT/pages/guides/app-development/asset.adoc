@@ -3,14 +3,13 @@ Mona Bärenfänger <mona@lightcurve.io>
 // Settings
 :page-aliases: customize.adoc
 :toc: preamble
-
+:idseparator: -
+:idprefix:
 // Project URLs
 :url_guides_setup: guides/app-development/setup.adoc
 :url_guides_module: guides/app-development/module.adoc
-:url_guides_module_nft_utils: guides/app-development/module.adoc#nft-utility-functions
-:url_guides_module_statestore: guides/app-development/module.adoc#statestore
+:url_intro_modules_statestore: introduction/modules.adoc#the-state-store
 :url_references_schemas: advanced-explanations/schemas.adoc
-:url_tutorials: tutorials/index.adoc
 
 How to create a new asset for a module of a blockchain application.
 
@@ -20,7 +19,7 @@ How to create a new asset for a module of a blockchain application.
 To follow this guide, the following is assumed:
 
 * Lisk Commander is installed, and a basic blockchain application is already initialized, as explained in the guide xref:{url_guides_setup}[].
-* a custom module `NftModule` is created, as explained in the previous guide xref:{url_guides_module}[].
+* a new module `HelloModule` is created, as explained in the previous guide xref:{url_guides_module}[].
 ====
 
 == Generating the asset skeleton
@@ -62,42 +61,42 @@ As an example, we will add a new asset `createNFT` to the `nft` module:
 [[generate-asset]]
 [source,bash]
 ----
-lisk generate:asset nft createNFT 0
+lisk generate:asset hello createHello 0
 ----
 
 This will generate the following files:
 
 ----
-Creating asset skeleton with asset name "createNFT" and asset ID "0" for module "nft"
+Creating asset skeleton with asset name "createHello" and asset ID "0" for module "hello"
 Using template "lisk-ts"
 Generating asset skeleton.
 Registering asset...
 identical .liskrc.json
-   create src/app/modules/nft/assets/create_n_f_t_asset.ts
-   create test/unit/modules/nft/assets/create_n_f_t_asset.spec.ts
+   create src/app/modules/hello/assets/create_hello_asset.ts
+   create test/unit/modules/hello/assets/create_hello_asset.spec.ts
 
 No change to package.json was detected. No package manager install will be executed.
 
 Your asset is created and ready to use.
 ----
 
-The file `create_n_f_t_asset.ts` contains the asset skeleton and the file `create_n_f_t_asset.spec.ts` contains the related unit tests for the new asset.
+The file `create_hello_asset.ts` contains the asset skeleton and the file `create_hello_asset.spec.ts` contains the related unit tests for the new asset.
 
-Firstly, view the module skeleton in `create_n_f_t_asset.ts`:
+Firstly, view the module skeleton in `create_hello_asset.ts`:
 
-.src/app/modules/nft/assets/create_n_f_t_asset.ts
+.src/app/modules/hello/assets/create_hello_asset.ts
 [source,typescript]
 ----
 import { BaseAsset, ApplyAssetContext, ValidateAssetContext } from 'lisk-sdk';
 
-export class CreateNFTAsset extends BaseAsset {
-  public name = 'createNFT';
+export class CreateHelloAsset extends BaseAsset {
+  public name = 'createHello';
   public id = 0;
 
   // Define schema for asset
 	public schema = {
-    $id: 'nft/createNFT-asset',
-		title: 'CreateNFTAsset transaction asset for nft module',
+    $id: 'hello/createHello-asset',
+		title: 'CreateHelloAsset transaction asset for hello module',
 		type: 'object',
 		required: [],
 		properties: {},
@@ -107,24 +106,23 @@ export class CreateNFTAsset extends BaseAsset {
     // Validate your asset
   }
 
-  // eslint-disable-next-line @typescript-eslint/require-await
+	// eslint-disable-next-line @typescript-eslint/require-await
   public async apply({ asset, transaction, stateStore }: ApplyAssetContext<{}>): Promise<void> {
-      throw new Error('Asset "createNFT" apply hook is not implemented.');
-  }
+		throw new Error('Asset "createHello" apply hook is not implemented.');
+	}
 }
 ----
 
-The command `generate:asset` previously created the asset `createNFT` which already contains skeletons of all important components of an asset.
+The command `generate:asset` previously created the asset `createHello` which already contains skeletons of all important components of an asset.
 The only properties which are set at this point are the asset ID and the asset name, which were defined when generating the asset.
 
-
-If the application is started at this point, it is already possible to create a basic `createNFT` transaction with an empty transaction asset, sign it, and send it to the node.
+If the application is started at this point, it is already possible to create a basic `createHello` transaction with an empty transaction asset, sign it, and send it to the node.
 The node will then throw the following error:
 
- Asset "createNFT" apply hook is not implemented.
+ Asset "createHello" apply hook is not implemented.
 
 This is due to the fact that the `apply()` function of the asset is not implemented yet.
-To give the asset a purpose, it is necessary to implement certain logic inside of the asset.
+To give the asset a purpose, it is necessary to implement certain logic inside of the `apply()` function of an asset.
 
 The following sections describe the different components of a module asset in detail.
 
@@ -134,13 +132,13 @@ The asset class always extends from the `BaseAsset`, which is imported from the 
 
 The properties `name` and `id` are prefilled by the values used when <<generate-asset,generating the asset skeleton>> was completed in the previous step.
 
-.src/app/modules/nft/assets/create_n_f_t_asset.ts
+.src/app/modules/hello/assets/create_hello_asset.ts
 [source,typescript]
 ----
 import { BaseAsset, ApplyAssetContext, ValidateAssetContext } from 'lisk-sdk';
 
-export class CreateNFTAsset extends BaseAsset {
-  public name = 'createNFT';
+export class CreateHelloAsset extends BaseAsset {
+  public name = 'createHello';
   public id = 0;
 
   // ...
@@ -153,53 +151,35 @@ The asset schema defines in which format data is sent in the transaction asset.
 
 TIP: For more information about schemas and how they are used in the Lisk SDK, check out the xref:{url_references_schemas}[].
 
-We expect the following data in a transaction, to be able to create a new NFT:
+We expect the following data in a transaction, to be able to create a new hello message:
 
-* minPurchaseMargin: The % value of the initial value, that is added to the initial value when purchasing the NFT.
-* initValue: The inital value of the NFT.
-* name: The name of the NFT.
+* helloString: The string which will be saved under `helloMessage` in the senders user account.
 
 Therefore, the asset schema is adjusted accordingly as shown below:
 
-.src/app/modules/nft/assets/create_n_f_t_asset.ts
+.src/app/modules/hello/assets/create_hello_asset.ts
 [source,typescript]
 ----
 public schema = {
-    $id: "nft/createNFT-asset",
-    title: 'CreateNFTAsset transaction asset for nft module',
-    type: "object",
-    required: ["minPurchaseMargin", "initValue", "name"], <1>
+    $id: 'lisk/hello/asset',
+    type: 'object',
+    required: ["helloString"], // <1>
     properties: {
-        minPurchaseMargin: {
-            dataType: "uint32", <2>
-            minimum: 0, <3>
-            maximum: 100, <4>
-            fieldNumber: 1, <5>
+        helloString: {
+            dataType: 'string', // <2>
+            fieldNumber: 1, // <3>
+            minLength: 3, // <4>
+            maxLength: 64, // <5>
         },
-        initValue: {
-            dataType: "uint64", <6>
-            exclusiveMinimum: 0, <7>
-            fieldNumber: 2,
-        },
-        name: {
-            dataType: "string",
-            minLength: 3, <8>
-            maxLength: 64, <9>
-            fieldNumber: 3,
-        },
-    },
+    }
 };
 ----
 
-<1> All 3 properties are required to create a new NFT.
-<2> `uin32` is used as a data type, because the `minPurchaseMargin` is a minimal number between 0 and 100.
-<3> The minimum value is set to 0.
-<4> The maximum value is set to 100.
+<1> The property `helloString` is required to create a hello message.
+<2> `string` is defined as a data type for `helloString`.
+<3> The minimum length of the `helloString` is set to 3 characters.
+<4> The maximum length of the `helloString` is set to 64 characters.
 <5> The `fieldNumber` increments by +1 for each property in the transaction asset.
-<6> `uint64` is used as a data type, because the `initValue` can have very high values.
-<7> The exclusive minimum value is set to 0, signifying that the `initValue` needs to be higher than 0 to be valid.
-<8> The minimum length of the NFT name is set to 3.
-<9> The maximum length of the NFT name is set to 64.
 
 == Validating the asset data
 
@@ -207,22 +187,22 @@ The optional function `validate()` validates the data of a transaction asset, be
 
 If one of these conditions is not fulfilled, then the transaction will not be processed, and an error should be thrown.
 
-TIP: The minimum and maximum values for the different properties of the schema do not need to be validated again in the `validate()` function.
+NOTE: The minimum and maximum values for the different properties which are defined in the schema do not need to be validated again in the `validate()` function.
 
-In this example, we want to validate that it is not possible to create an NFT with the name "Mewtwo".
-Consequently, exactly what to validate here is up to the developer.
-The name "Mewtwo" has been chosen randomly for the example.
+In this example, we want to validate that it is not possible to create a hello message with some illegal statement.
 
-If any account sends a `createNFT` transaction, with `asset.name` equal to `Mewtwo`, it will throw the error `Illegal NFT name: Mewtwo`
+If any account sends a `createHello` transaction, with `asset.name` equal to `Mewtwo`, it will throw the error `Illegal NFT name: Mewtwo`
 
-.src/app/modules/nft/assets/create_n_f_t_asset.ts
+.src/app/modules/hello/assets/create_hello_asset.ts
 [source,typescript]
 ----
-validate({asset}) {
-    if (asset.name === "Mewtwo") {
-        throw new Error("Illegal NFT name: Mewtwo");
-    }
-};
+public validate({ asset }: ValidateAssetContext<{}>): void {
+  if (asset.helloString == "Some illegal statement") {
+      throw new Error(
+          'Illegal hello message: ${asset.helloString}'
+      );
+  }
+}
 ----
 
 If the validation does not throw any errors, that signifies they been successful and the data will be applied as defined in the `apply()` function.
@@ -232,115 +212,41 @@ If the validation does not throw any errors, that signifies they been successful
 The most important part of the module asset is the `apply()` function.
 It contains the logic of how the data in the transaction asset should be applied on the blockchain.
 
-In this example, we use the transaction data to create a new NFT token, which is added to the senders account.
+In this example, we use the transaction data to create a new hello message, which is added to the senders account.
+Additionally, the hello counter is incremented by +1 for each applied hello transaction.
 
-To get and set the blockchain state, the `stateStore` is used again, which we already know from the lifecycle hooks of the xref:{url_guides_module_statestore}[module guide].
+To get and set the blockchain state, the xref:{url_intro_modules_statestore}[stateStore] is used again, which we already know from the lifecycle hooks of the xref:{url_guides_module}[module guide].
 
-.src/app/modules/nft/assets/create_n_f_t_asset.ts
+.src/app/modules/hello/assets/create_hello_asset.ts
 [source,typescript]
 ----
 public async apply({ asset, transaction, stateStore }: ApplyAssetContext<{}>): Promise<void> {
-    // 4.verify if sender has enough balance
+    // 1. Get account data of the sender of the hello transaction
     const senderAddress = transaction.senderAddress;
     const senderAccount = await stateStore.account.get(senderAddress);
 
-    // 5.create nft
-    const nftToken = createNFTToken({
-      name: asset.name,
-      ownerAddress: senderAddress,
-      nonce: transaction.nonce,
-      value: asset.initValue,
-      minPurchaseMargin: asset.minPurchaseMargin,
-    });
+    // 2. Update hello message in the senders account with thehelloString of the transaction asset
+    senderAccount.hello.helloMessage = asset.helloString;
+    stateStore.account.set(senderAccount.address, senderAccount);
 
-    // 6.update sender account with unique nft id
-    senderAccount.nft.ownNFTs.push(nftToken.id);
-    await stateStore.account.set(senderAddress, senderAccount);
+    // 3. Get the hello counter from the database
+    let counterBuffer = await stateStore.chain.get(
+        CHAIN_STATE_HELLO_COUNTER
+    );
 
-    // 7.debit tokens from sender account to create nft
-    await reducerHandler.invoke("token:debit", {
-      address: senderAddress,
-      amount: asset.initValue,
-    });
+    // 4. Decode the hello counter
+    let counter = codec.decode(
+        helloCounterSchema,
+        counterBuffer
+    );
 
-    // 8.save nfts
-    const allTokens = await getAllNFTTokens(stateStore);
-    allTokens.push(nftToken);
-    await setAllNFTTokens(stateStore, allTokens);
-  }
+    // 5. Increment the hello counter +1
+    counter.helloCounter++;
+
+    // 6. Encode the hello counter and save it back to the database
+    await stateStore.chain.set(
+        CHAIN_STATE_HELLO_COUNTER,
+        codec.encode(helloCounterSchema, counter)
+    );
 }
-----
-
-=== NFT utility functions
-
-The NFT utility functions that we use inside the `apply()` function are imported from the file `../nft.js`.
-
-.src/app/modules/nft/assets/create_n_f_t_asset.ts
-[source,typescript]
-----
-import { BaseAsset, ApplyAssetContext, ValidateAssetContext } from 'lisk-sdk';
-import {
-    getAllNFTTokens,
-    setAllNFTTokens,
-    createNFTToken,
-}  from "../nft";
-----
-
-The file `nft.js` was already used in the guide xref:{url_guides_module_nft_utils}[Creating a new module], the functions `getAllNFTTokens()`, `setAllNFTTokens()`, `createNFTToken()` can simply be added, if they are not present yet:
-
-.src/app/modules/nft/nft.js
-[source,js]
-----
-const { codec, cryptography } = require("lisk-sdk");
-
-const createNFTToken = ({ name, ownerAddress, nonce, value, minPurchaseMargin }) => {
-  const nonceBuffer = Buffer.alloc(8);
-  nonceBuffer.writeBigInt64LE(nonce);
-  const seed = Buffer.concat([ownerAddress, nonceBuffer]);
-  const id = cryptography.hash(seed);
-
-  return {
-    id,
-    minPurchaseMargin,
-    name,
-    ownerAddress,
-    value,
-  };
-};
-
-const getAllNFTTokens = async (stateStore) => {
-  const registeredTokensBuffer = await stateStore.chain.get(
-    CHAIN_STATE_NFT_TOKENS
-  );
-  if (!registeredTokensBuffer) {
-    return [];
-  }
-
-  const registeredTokens = codec.decode(
-    registeredNFTTokensSchema,
-    registeredTokensBuffer
-  );
-
-  return registeredTokens.registeredNFTTokens;
-};
-
-const setAllNFTTokens = async (stateStore, NFTTokens) => {
-  const registeredTokens = {
-    registeredNFTTokens: NFTTokens.sort((a, b) => a.id.compare(b.id)),
-  };
-
-  await stateStore.chain.set(
-    CHAIN_STATE_NFT_TOKENS,
-    codec.encode(registeredNFTTokensSchema, registeredTokens)
-  );
-};
-
-module.exports = {
-  registeredNFTTokensSchema,
-  CHAIN_STATE_NFT_TOKENS,
-  getAllNFTTokens,
-  setAllNFTTokens,
-  getAllNFTTokensAsJSON,
-  createNFTToken,
-};
 ----

@@ -23,6 +23,8 @@ How to create a new plugin for a blockchain application.
 To use this guide, it is assumed that the following criteria have been met:
 
 * Lisk Commander is installed, and a basic blockchain application is already initialized, as explained in the guide xref:{url_guides_setup}[].
+* a new module `HelloModule` is created, as explained in the guide xref:{url_guides_module}[].
+* a new asset `HelloAsset` is created, as explained in the previous guide xref:{url_guides_asset}[].
 ====
 
 == Generating the plugin skeleton
@@ -69,9 +71,11 @@ This will generate the following files:
 Using template "lisk-ts"
 Generating plugin skeleton
 Registering plugin...
-identical .liskrc.json
-   create src/app/plugins/nft_api/nft_api_plugin.ts
-   create test/unit/plugins/nft_api/nft_api_plugin.spec.ts
+ conflict .liskrc.json
+? Overwrite .liskrc.json? overwrite
+    force .liskrc.json
+   create src/app/plugins/latest_hello/latest_hello_plugin.ts
+   create test/unit/plugins/latest_hello/latest_hello_plugin.spec.ts
 
 No change to package.json was detected. No package manager install will be executed.
 
@@ -85,18 +89,18 @@ It will also automatically register the plugin with the application by adding it
 ----
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { Application } from 'lisk-sdk';
-import { NftApiPlugin } from "./plugins/nft_api/nft_api_plugin";
+import { LatestHelloPlugin } from "./plugins/latest_hello/latest_hello_plugin";
 
 // @ts-expect-error Unused variable error happens here until at least one module is registered
 export const registerPlugins = (app: Application): void => {
 
-    app.registerPlugin(NftApiPlugin);
+    app.registerPlugin(LatestHelloPlugin);
 };
 ----
 
-The file `nft_api_plugin.ts` contains the plugin skeleton and the file `nft_api_plugin.spec.ts` contains the related unit tests for the new plugin.
+The file `latest_hello_plugin.ts` contains the plugin skeleton and the file `latest_hello_plugin.spec.ts` contains the related unit tests for the new plugin.
 
-The plugin skeleton can be viewed in `nft_api_plugin.ts`:
+The plugin skeleton can be viewed in `latest_hello_plugin.ts`:
 
 [source,typescript]
 ----
@@ -105,11 +109,11 @@ import type { BaseChannel, EventsDefinition, ActionsDefinition, SchemaWithDefaul
 
  /* eslint-disable class-methods-use-this */
  /* eslint-disable  @typescript-eslint/no-empty-function */
- export class NftApiPlugin extends BasePlugin {
+ export class LatestHelloPlugin extends BasePlugin {
 	// private _channel!: BaseChannel;
 
 	public static get alias(): string {
-		return 'nftApi';
+		return 'latestHello';
 	}
 
 	// eslint-disable-next-line @typescript-eslint/class-literal-property-style
@@ -117,14 +121,14 @@ import type { BaseChannel, EventsDefinition, ActionsDefinition, SchemaWithDefaul
 		return {
 			author: 'mona',
 			version: '0.1.0',
-			name: 'nftApi',
+			name: 'latestHello',
 		};
 	}
 
 	// eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
 	public get defaults(): SchemaWithDefault {
 		return {
-			$id: '/plugins/plugin-nftApi/config',
+			$id: '/plugins/plugin-latestHello/config',
 			type: 'object',
 			properties: {},
 			required: [],
@@ -154,7 +158,7 @@ import type { BaseChannel, EventsDefinition, ActionsDefinition, SchemaWithDefaul
 }
 ----
 
-The command `generate:plugin` already created the plugin `NftApiPlugin` which contains skeletons of all the important components of a plugin.
+The command `generate:plugin` already created the plugin `LatestHelloPlugin` which contains skeletons of all the important components of a plugin.
 The only properties currently set at this point are the auto-generated plugin info, and the plugin alias which was defined when generating the plugin.
 
 The plugin can already be used like this with the application, however, it is not performing any functions yet.
@@ -173,17 +177,17 @@ The properties `alias` and `info` are pre-filled when <<generate-plugin,generati
 import { BasePlugin, PluginInfo } from 'lisk-sdk';
 import type { BaseChannel, EventsDefinition, ActionsDefinition, SchemaWithDefault } from 'lisk-sdk';
 
- export class NftApiPlugin extends BasePlugin {
+ export class LatestHelloPlugin extends BasePlugin {
 
 	public static get alias(): string {
-		return 'nftApi';
+		return 'latestHello';
 	}
 
 	public static get info(): PluginInfo {
 		return {
 			author: 'mona',
 			version: '0.1.0',
-			name: 'nftApi',
+			name: 'latestHello',
 		};
 	}
 
@@ -192,96 +196,37 @@ import type { BaseChannel, EventsDefinition, ActionsDefinition, SchemaWithDefaul
  }
 ----
 
-== Actions
+== Actions & events
 
 Similar to modules, plugins expose `actions` and `events`, which are interfaces that allow other plugins or external services to interact with the plugin.
 
-[source,typescript]
-----
-public get actions(): ActionsDefinition {
-    return {
-    // 	hello: async () => { hello: 'world' },
-    };
-}
-----
+In this example, one actions is added:
 
-In this example, two actions are added:
-
-* If `getKnownTimestamp` is invoked, it returns the list of timestamps of the blocks that were added to the chain, while the plugin was active.
-* If `getLatestDelegate` is invoked, it returns the last delegate name that was registered in the network.
+* If `latestHello:getLatestHello` is invoked, it returns the last hello message that was posted in the network.
 
 [source,typescript]
 ----
 public get actions(): ActionsDefinition {
     return {
-      getKnownTimestamp: () => this._knownTimestamps,
-      getLatestDelegate: () => this._latestDelegate
+      getLatestHello: () => this._hello,
     };
 }
 ----
-
-== Events
-
-[source,typescript]
-----
-public get events(): EventsDefinition {
-    return [
-        'newDelegate',
-        'timestamp'
-    ];
-}
-----
-
-In this example, two events are added:
-
-* `newDelegate`, which is published in the `load()` function, when a new delegate is registered in the network.
-* `timestamp`, which is published in the `load()` function, when a new block is added to the blockchain.
 
 == Defining the plugin logic
 
-The `load()` function of a plugin contains the plugin logic that is executed when the plugin is loaded in the application.
-
-It can be used to retrieve, mutate, store and/or publish data in a specific manner, depending on the purpose of the plugin.
-
-The `unload()` method contains the logic that needs to be executed to unload the plugin correctly.
-For example, it is executed on application shutdown.
-
-The `channel`, which is available inside of the `load()` function, allows access to the xref:{url_rpc_endpoints}[] in order to subscribe to events or to invoke certain actions within the application, to retrieve the desired data.
-
-In this example, we subscribe to the event `app:transaction:new`, which is published every time a new transaction is added to the application.
-Next, the transaction is decoded and checked for it's `moduleID` and `assetID`.
-If the transaction is a register delegate transaction, the delegate name is saved under `this._latestDelegate` and a new event `nftApi:newDelegate` is published, which is announcing the new delegate to the application.
-
-Additionally, we subscribe to the event `app:block:new`, which is published everytime a new block is added to the blockchain.
-Next, the block is decoded and the timestamp of the block is pushed into the `_knownTimestamps` array.
-Then a new event `nftApi:timestamp` is published, which returns the updated timestamp array.
+The plugin subscribes to the event `hello:newHello`.
+If a new event `latestHello:newHello` is published, it saves the latest hello message to `this._hello`.
 
 [source,typescript]
 ----
-async load(channel) {
-  this._api = await apiClient.createIPCClient('~/.lisk/my-app');
-
-  channel.subscribe('app:transaction:new', (data) => {
-    const txBuffer = Buffer.from(data.transaction, 'hex');
-    const transaction = this._api.transaction.decode(txBuffer);
-    if ( transaction.moduleID === 5 && transaction.assetID === 0 ) {
-      this._latestDelegate = transaction.username;
-      channel.publish('nftApi:newDelegate', {
-        name: transaction.username,
-      });
-    }
-  });
-  channel.subscribe('app:block:new', ({ data }) => {
-    const decodedBlock = this.codec.decodeBlock(data.block);
-    this._knownTimestamps.push(decodedBlock.header.timestamp);
-    channel.publish('nftApi:timestamp', { timestamp: decodedBlock.header.timestamp });
-  });
+public async load(channel): Promise<void> {
+  channel.subscribe('hello:newHello', (info) => {
+      this._hello = info;
+    });
 }
 
-public async unload(): Promise<void> {
-  this._latestDelegate = undefined;
-  this._knownTimestamps = [];
-}
+public async unload(): Promise<void> {}
 ----
 
 == Defining the plugin configuration
@@ -292,12 +237,11 @@ The `defaults()` getter defines which properties are available in the xref:{url_
 
 The config options shown below are not really required in this example, however, they provide a good example of how to structure the configuration of a plugin.
 
-.defaults.js
 [source,js]
 ----
 public get defaults(): SchemaWithDefault {
     return {
-        $id: '/plugins/plugin-nftApi/config',
+        $id: '/plugins/plugin-latestHello/config',
         type: 'object',
         properties: {
             enable: {

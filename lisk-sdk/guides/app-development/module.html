@@ -807,10 +807,7 @@ All of this can be defined in the account schema.</p>
 </td>
 <td class="content">
 <div class="paragraph">
-<p>If a module includes an account schema, it is necessary to update the genesis block after registering the module with the application.</p>
-</div>
-<div class="paragraph">
-<p>For more information, see the <a href="genesis-block.html" class="page">Generating a genesis block</a> guide.</p>
+<p>If a module includes an account schema, it is necessary to <a href="#updating-the-genesis-block">update the genesis block</a> after registering the module to the application.</p>
 </div>
 </td>
 </tr>
@@ -822,7 +819,7 @@ All of this can be defined in the account schema.</p>
 <h2 id="transaction-assets"><a class="anchor" href="#transaction-assets"></a>4. Transaction assets</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>A module can include various custom transaction assets, that provide new transaction types to the application.</p>
+<p>A module can include various assets, each allowing the module to handle a new transaction type.</p>
 </div>
 <div class="paragraph">
 <p>Before a new asset can be added, it is first required to create the custom asset as described in the <a href="asset.html" class="page">Creating a module asset</a> guide.</p>
@@ -834,16 +831,14 @@ All of this can be defined in the account schema.</p>
 <div class="title">src/app/modules/hello/hello_module.ts</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import { BaseModule } from 'lisk-sdk';
-// Uncomment once the asset is implemented
-// const { HelloAsset } = require('./assets/hello_asset');
+const { HelloAsset } = require('./assets/hello_asset');
 
 export class HelloModule extends BaseModule {
 
     // ...
 
     public transactionAssets = [
-       // Uncomment once the asset is implemented
-       // new HelloAsset()
+       new HelloAsset()
     ];
 
     // ...
@@ -875,7 +870,7 @@ See the <a href="../../introduction/modules.html#events" class="page">Events</a>
 </div>
 <div class="paragraph">
 <p>Add a new event <code>newHello</code>.
-This event shall be published, every time some one is updating their hello message.
+This event shall be published, every time someone is updating their hello message.
 The under <code>events</code> defined events can be published to the application in the <a href="#lifecycle-hooks">Lifecycle Hooks</a> of the module.</p>
 </div>
 <div class="listingblock">
@@ -919,25 +914,13 @@ See the "Lifecycle Hooks" section of the <a href="../../introduction/modules.htm
 <dl>
 <dt class="hdlist1">afterTransactionApply</dt>
 <dd>
-<p>Publishes for every applied hello transaction a new event <code>hello:newHello</code>, and adds information about the sender of the transaction, and the corresponding hello message.</p>
+<p>Publishes for every applied <code>hello</code> transaction asset a new event <code>hello:newHello</code>, and adds information about the sender of the transaction, and the corresponding hello message.</p>
 </dd>
 <dt class="hdlist1">afterGenesisBlockApply</dt>
 <dd>
-<p>If the geenesis block is applied, it will set the counter for posted hello transactions to zero.</p>
+<p>If the genesis block is applied, it will set the counter for posted hello transactions to zero.</p>
 </dd>
 </dl>
-</div>
-<div class="admonitionblock tip">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-tip" title="Tip"></i>
-</td>
-<td class="content">
-Go to the <a href="asset.html" class="page">Creating a module asset</a> guide for more information about the hello asset and the hello transaction.
-</td>
-</tr>
-</table>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -947,20 +930,18 @@ Go to the <a href="asset.html" class="page">Creating a module asset</a> guide fo
 
     public async afterTransactionApply({transaction, stateStore, reducerHandler}) {
         // Publish a `newHello` event for every received hello transaction
-        if (transaction.moduleID === this.id &amp;&amp; transaction.assetID === HelloAssetID) {
-            // Decode the transaction asset
-            // The codec library can be imported directly from the lisk-sdk package
-            const helloAsset = codec.decode(
-              helloAssetSchema,
-              transaction.asset
-            );
-            // Publish a new event 'hello:newHello'
-            this._channel.publish('hello:newHello', {
-              sender: transaction._senderAddress.toString('hex'),
-              hello: helloAsset.helloString
-            });
+        if (_input.transaction.moduleID === this.id &amp;&amp; _input.transaction.assetID === HelloAssetID) {
 
-        };
+          const helloAsset = codec.decode(
+            helloAssetSchema,
+            _input.transaction.asset
+          );
+
+          this._channel.publish('hello:newHello', {
+            sender: _input.transaction._senderAddress.toString('hex'),
+            hello: helloAsset.helloString
+          });
+        }
     }
 
     public async afterGenesisBlockApply({genesisBlock, stateStore, reducerHandler}) {
@@ -1045,6 +1026,14 @@ See the "Actions" section of the <a href="../../introduction/modules.html#action
 </td>
 </tr>
 </table>
+</div>
+<div class="paragraph">
+<p>Add a new action <code>amountOfHellos</code>.</p>
+</div>
+<div class="paragraph">
+<p>If the action is invoked, it will return the total amount of sent hello messages in the network.
+The hello counter is set to zero after applying the genesis block in the <a href="#lifecycle-hooks">Lifecycle Hooks</a>, and incremented in the <a href="#transaction-assets">asset</a>.
+The action simply returns the current value of the hello counter, which is retrieved from the database.</p>
 </div>
 <div class="listingblock">
 <div class="title">src/app/modules/hello/hello_module.ts</div>

@@ -198,6 +198,54 @@ import type { BaseChannel, EventsDefinition, ActionsDefinition, SchemaWithDefaul
  }
 ----
 
+== Defining the plugin configuration
+
+A plugin can be configured by setting the related properties in the application configuration.
+
+The `defaults()` getter defines which properties are available in the xref:{url_architecture_config}[application configuration] for the plugin.
+
+[source,js]
+----
+public get defaults(): SchemaWithDefault {
+    return {
+        $id: '/plugins/plugin-latestHello/config',
+        type: 'object',
+        properties: {
+            enable: {
+                type: 'boolean',
+            },
+        },
+        required: [ 'enable'],
+        default: {
+            enable: true,
+        },
+    }
+}
+----
+
+The plugin configuration is accessible in the plugin under the variable `this.options`.
+
+For example,
+
+== Defining the plugin logic
+
+The plugin subscribes to the event `hello:newHello`.
+
+If a new event `hello:newHello` is published, it saves the latest hello message to `this._hello`.
+
+[source,typescript]
+----
+public async load(channel): Promise<void> {
+    if (this.options.enable) {
+        channel.subscribe('hello:newHello', (info) => {
+            this._hello = info;
+        });
+    }
+}
+
+public async unload(): Promise<void> {}
+----
+
 == Actions & events
 
 Similar to modules, plugins expose `actions` and `events`, which are interfaces that allow other plugins or external services to interact with the plugin.
@@ -212,81 +260,5 @@ public get actions(): ActionsDefinition {
     return {
       getLatestHello: () => this._hello,
     };
-}
-----
-
-== Defining the plugin logic
-
-The plugin subscribes to the event `hello:newHello`.
-If a new event `latestHello:newHello` is published, it saves the latest hello message to `this._hello`.
-
-[source,typescript]
-----
-public async load(channel): Promise<void> {
-  channel.subscribe('hello:newHello', (info) => {
-      this._hello = info;
-    });
-}
-
-public async unload(): Promise<void> {}
-----
-
-== Defining the plugin configuration
-
-A plugin can be configured by setting the related properties in the application configuration.
-
-The `defaults()` getter defines which properties are available in the xref:{url_architecture_config}[application configuration] for the plugin.
-
-The config options shown below are not really required in this example, however, they provide a good example of how to structure the configuration of a plugin.
-
-[source,js]
-----
-public get defaults(): SchemaWithDefault {
-    return {
-        $id: '/plugins/plugin-latestHello/config',
-        type: 'object',
-        properties: {
-            enable: {
-                type: 'boolean',
-            },
-            port: {
-                type: 'integer',
-                minimum: 1,
-                maximum: 65535,
-            },
-            host: {
-                type: 'string',
-                format: 'ip',
-            },
-            whiteList: {
-                type: 'array',
-                items: {
-                    type: 'string',
-                },
-            },
-            cors: {
-                type: 'object',
-                properties: {
-                    origin: {
-                        anyOf: [{ type: 'string' }, { type: 'boolean' }],
-                    },
-                    methods: {
-                        type: 'array',
-                    },
-                },
-                required: ['origin'],
-            },
-        },
-        required: ['port', 'whiteList', 'cors', 'enable'],
-        default: {
-            enable: true,
-            port: 5000,
-            whitelist: ['127.0.0.1'],
-            cors: {
-                origin: '*',
-                methods: ['GET', 'POST', 'PUT'],
-            }
-        },
-    }
 }
 ----

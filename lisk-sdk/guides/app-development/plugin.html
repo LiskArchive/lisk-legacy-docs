@@ -521,9 +521,9 @@
 <ul class="sectlevel1">
 <li><a href="#generating-the-plugin-skeleton">1. Generating the plugin skeleton</a></li>
 <li><a href="#the-plugin-class">2. The plugin class</a></li>
-<li><a href="#actions-events">3. Actions &amp; events</a></li>
+<li><a href="#defining-the-plugin-configuration">3. Defining the plugin configuration</a></li>
 <li><a href="#defining-the-plugin-logic">4. Defining the plugin logic</a></li>
-<li><a href="#defining-the-plugin-configuration">5. Defining the plugin configuration</a></li>
+<li><a href="#actions-events">5. Actions &amp; events</a></li>
 </ul>
 </div>
 </div>
@@ -719,7 +719,67 @@ import type { BaseChannel, EventsDefinition, ActionsDefinition, SchemaWithDefaul
 </div>
 </div>
 <div class="sect1">
-<h2 id="actions-events"><a class="anchor" href="#actions-events"></a>3. Actions &amp; events</h2>
+<h2 id="defining-the-plugin-configuration"><a class="anchor" href="#defining-the-plugin-configuration"></a>3. Defining the plugin configuration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A plugin can be configured by setting the related properties in the application configuration.</p>
+</div>
+<div class="paragraph">
+<p>The <code>defaults()</code> getter defines which properties are available in the <a href="../../advanced-explanations/architecture.html#configuration" class="page">application configuration</a> for the plugin.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">public get defaults(): SchemaWithDefault {
+    return {
+        $id: '/plugins/plugin-latestHello/config',
+        type: 'object',
+        properties: {
+            enable: {
+                type: 'boolean',
+            },
+        },
+        required: [ 'enable'],
+        default: {
+            enable: true,
+        },
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The plugin configuration is accessible in the plugin under the variable <code>this.options</code>.</p>
+</div>
+<div class="paragraph">
+<p>For example,</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="defining-the-plugin-logic"><a class="anchor" href="#defining-the-plugin-logic"></a>4. Defining the plugin logic</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The plugin subscribes to the event <code>hello:newHello</code>.</p>
+</div>
+<div class="paragraph">
+<p>If a new event <code>hello:newHello</code> is published, it saves the latest hello message to <code>this._hello</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async load(channel): Promise&lt;void&gt; {
+    if (this.options.enable) {
+        channel.subscribe('hello:newHello', (info) =&gt; {
+            this._hello = info;
+        });
+    }
+}
+
+public async unload(): Promise&lt;void&gt; {}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="actions-events"><a class="anchor" href="#actions-events"></a>5. Actions &amp; events</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Similar to modules, plugins expose <code>actions</code> and <code>events</code>, which are interfaces that allow other plugins or external services to interact with the plugin.</p>
@@ -740,92 +800,6 @@ import type { BaseChannel, EventsDefinition, ActionsDefinition, SchemaWithDefaul
     return {
       getLatestHello: () =&gt; this._hello,
     };
-}</code></pre>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="defining-the-plugin-logic"><a class="anchor" href="#defining-the-plugin-logic"></a>4. Defining the plugin logic</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>The plugin subscribes to the event <code>hello:newHello</code>.
-If a new event <code>latestHello:newHello</code> is published, it saves the latest hello message to <code>this._hello</code>.</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async load(channel): Promise&lt;void&gt; {
-  channel.subscribe('hello:newHello', (info) =&gt; {
-      this._hello = info;
-    });
-}
-
-public async unload(): Promise&lt;void&gt; {}</code></pre>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="defining-the-plugin-configuration"><a class="anchor" href="#defining-the-plugin-configuration"></a>5. Defining the plugin configuration</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>A plugin can be configured by setting the related properties in the application configuration.</p>
-</div>
-<div class="paragraph">
-<p>The <code>defaults()</code> getter defines which properties are available in the <a href="../../advanced-explanations/architecture.html#configuration" class="page">application configuration</a> for the plugin.</p>
-</div>
-<div class="paragraph">
-<p>The config options shown below are not really required in this example, however, they provide a good example of how to structure the configuration of a plugin.</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">public get defaults(): SchemaWithDefault {
-    return {
-        $id: '/plugins/plugin-latestHello/config',
-        type: 'object',
-        properties: {
-            enable: {
-                type: 'boolean',
-            },
-            port: {
-                type: 'integer',
-                minimum: 1,
-                maximum: 65535,
-            },
-            host: {
-                type: 'string',
-                format: 'ip',
-            },
-            whiteList: {
-                type: 'array',
-                items: {
-                    type: 'string',
-                },
-            },
-            cors: {
-                type: 'object',
-                properties: {
-                    origin: {
-                        anyOf: [{ type: 'string' }, { type: 'boolean' }],
-                    },
-                    methods: {
-                        type: 'array',
-                    },
-                },
-                required: ['origin'],
-            },
-        },
-        required: ['port', 'whiteList', 'cors', 'enable'],
-        default: {
-            enable: true,
-            port: 5000,
-            whitelist: ['127.0.0.1'],
-            cors: {
-                origin: '*',
-                methods: ['GET', 'POST', 'PUT'],
-            }
-        },
-    }
 }</code></pre>
 </div>
 </div>

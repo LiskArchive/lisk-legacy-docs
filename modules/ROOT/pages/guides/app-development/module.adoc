@@ -269,14 +269,12 @@ export class HelloModule extends BaseModule {
 [IMPORTANT]
 
 ====
-If a module includes an account schema, it is necessary to update the genesis block after registering the module with the application.
-
-For more information, see the xref:{url_guides_genesis}[] guide.
+If a module includes an account schema, it is necessary to <<updating-the-genesis-block,update the genesis block>> after registering the module to the application.
 ====
 
 == Transaction assets
 
-A module can include various custom transaction assets, that provide new transaction types to the application.
+A module can include various assets, each allowing the module to handle a new transaction type.
 
 Before a new asset can be added, it is first required to create the custom asset as described in the xref:{url_guides_asset}[] guide.
 
@@ -286,16 +284,14 @@ Assuming an asset `HelloAsset` has been created for the module, then it will be 
 [source,typescript]
 ----
 import { BaseModule } from 'lisk-sdk';
-// Uncomment once the asset is implemented
-// const { HelloAsset } = require('./assets/hello_asset');
+const { HelloAsset } = require('./assets/hello_asset');
 
 export class HelloModule extends BaseModule {
 
     // ...
 
     public transactionAssets = [
-       // Uncomment once the asset is implemented
-       // new HelloAsset()
+       new HelloAsset()
     ];
 
     // ...
@@ -311,7 +307,7 @@ Modules, plugins, and external services can subscribe to these events.
 TIP: See the xref:{url_intro_modules_events}[Events] section of the "Modules" introduction page and the xref:{url_advanced_communication_aliases}[Aliases] section of the "Communication" page for more information.
 
 Add a new event `newHello`.
-This event shall be published, every time some one is updating their hello message.
+This event shall be published, every time someone is updating their hello message.
 The under `events` defined events can be published to the application in the <<lifecycle-hooks>> of the module.
 
 [source,typescript]
@@ -336,12 +332,10 @@ TIP: See the "Lifecycle Hooks" section of the xref:{url_intro_modules_lifecycleh
 In the hello module, two different lifecycle hooks are defined.
 
 afterTransactionApply::
-Publishes for every applied hello transaction a new event `hello:newHello`, and adds information about the sender of the transaction, and the corresponding hello message.
+Publishes for every applied `hello` transaction asset a new event `hello:newHello`, and adds information about the sender of the transaction, and the corresponding hello message.
 
 afterGenesisBlockApply::
-If the geenesis block is applied, it will set the counter for posted hello transactions to zero.
-
-TIP: Go to the xref:{url_guides_asset}[] guide for more information about the hello asset and the hello transaction.
+If the genesis block is applied, it will set the counter for posted hello transactions to zero.
 
 [source,typescript]
 ----
@@ -351,20 +345,18 @@ export class HelloModule extends BaseModule {
 
     public async afterTransactionApply({transaction, stateStore, reducerHandler}) {
         // Publish a `newHello` event for every received hello transaction
-        if (transaction.moduleID === this.id && transaction.assetID === HelloAssetID) {
-            // Decode the transaction asset
-            // The codec library can be imported directly from the lisk-sdk package
-            const helloAsset = codec.decode(
-              helloAssetSchema,
-              transaction.asset
-            );
-            // Publish a new event 'hello:newHello'
-            this._channel.publish('hello:newHello', {
-              sender: transaction._senderAddress.toString('hex'),
-              hello: helloAsset.helloString
-            });
+        if (_input.transaction.moduleID === this.id && _input.transaction.assetID === HelloAssetID) {
 
-        };
+          const helloAsset = codec.decode(
+            helloAssetSchema,
+            _input.transaction.asset
+          );
+
+          this._channel.publish('hello:newHello', {
+            sender: _input.transaction._senderAddress.toString('hex'),
+            hello: helloAsset.helloString
+          });
+        }
     }
 
     public async afterGenesisBlockApply({genesisBlock, stateStore, reducerHandler}) {
@@ -423,6 +415,12 @@ const helloAssetSchema = {
 A list of actions that plugins and external services can invoke.
 
 TIP: See the "Actions" section of the xref:{url_intro_modules_actions}[Modules] introduction page for more information.
+
+Add a new action `amountOfHellos`.
+
+If the action is invoked, it will return the total amount of sent hello messages in the network.
+The hello counter is set to zero after applying the genesis block in the <<lifecycle-hooks>>, and incremented in the <<transaction-assets,asset>>.
+The action simply returns the current value of the hello counter, which is retrieved from the database.
 
 .src/app/modules/hello/hello_module.ts
 [source,typescript]

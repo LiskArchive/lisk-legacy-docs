@@ -2,6 +2,8 @@
 Mona Bärenfänger <mona@lightcurve.io>
 :toc:
 :sectnums:
+:idseparator: -
+:idprefix:
 :imagesdir: ../../../assets/images
 // External URLs
 :url_reactjs: https://reactjs.org/
@@ -9,16 +11,11 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_guides_asset: guides/app-development/asset.adoc
 :url_guides_module: guides/app-development/module.adoc
 :url_guides_setup: guides/app-development/setup.adoc
+:url_guides_config: guides/app-development/configuration.adoc
+:url_guides_genesisblock: guides/app-development/genesis-block.adoc
+:url_guides_plugin: guides/app-development/plugin.adoc
 
-This guide explains step-by-step, how to build a simple frontend that communicates with a blockchain application built with the Lisk SDK.
-
-.Prerequisites
-[NOTE]
-====
-To follow this guide, the following criteria is assumed:
-
-* a basic blockchain application is already initiated, as explained in the previous guide xref:{url_guides_setup}[].
-====
+How to build a simple frontend that communicates with a blockchain application built with the Lisk SDK.
 
 To interact with the blockchain application conveniently through a browser, it is possible to build a simple frontend application.
 This frontend can be built with any technology stack of your choice.
@@ -26,30 +23,31 @@ In this example, {url_reactjs}[React.js] is used.
 
 We will use the `@liskhq/lisk-client` package in the frontend application to communicate with the blockchain application.
 
+.Prerequisites
+[NOTE]
+====
+To use this guide, it is assumed that the following criteria have been met:
+
+. Lisk Commander is installed, and a basic blockchain application is already initialized, as explained in the guide xref:{url_guides_setup}[].
+. a new module `HelloModule` is created, as explained in the guide xref:{url_guides_module}[].
+. a new asset `HelloAsset` is created, as explained in the guide xref:{url_guides_asset}[].
+. a new plugin `LatestHelloPlugin` is created, as explained in the guide xref:{url_guides_plugin}[].
+. The Hello World blockchain application has been configured to successfully connect with the dahsboard plugin, as explained in the previous guide xref:{url_guides_config}[].
+====
+
 == Create a new React app
 
-The current file structure of the project can be seen below:
-
-----
-├── blockchain-app
-│   ├── index.js
-│   └── package.json
-----
-
-Create a new folder for the frontend on the root level of your project:
+Bootstrap the React app with the following command:
 
 [source,bash]
 ----
-npx create-react-app frontend-app
+npx create-react-app hello_frontend
 ----
 
 This will automatically set up a React project for you with default configurations in a newly created `frontend-app` folder.
 
 ----
-├── blockchain-app
-│   ├── index.js
-│   └── package.json
-├── frontend-app
+├── hello_frontend
 │   ├── public/
 │   ├── src/
 │   ├── README.md
@@ -60,17 +58,22 @@ It is already possible to start the frontend at this point:
 
 [source,bash]
 ----
-cd frontend-app
+cd hello_frontend
 npm start
 ----
 
 == Install dependencies
 
+To build the frontend, install these two additional dependencies:
+
 [source,bash]
 ----
-npm i react-router-dom
-npm i @liskhq/lisk-client
+npm i react-router-dom # <1>
+npm i @liskhq/lisk-client # <2>
 ----
+
+<1> Handles the routing between pages.
+<2> A collection of Lisk-related libraries which can be used in the frontend.
 
 To use `BigInt` in the frontend, it may be required to add the following options to the `package.json` file:
 
@@ -99,10 +102,10 @@ To use `BigInt` in the frontend, it may be required to add the following options
 
 This simple app can be customized by creating different components for the first basic functions of the frontend as shown below:
 
-* New account: Generates new account credentials.
-* Faucet: A component that sends funds to a specified account from the genesis account.
-* Send transfer transaction: A component that allows sending tokens from one account to another.
-* Account details: Returns details of a user account by address.
+. <<new-account>>: Generates new account credentials.
+. <<faucet>>: A component that sends funds to a specified account from the genesis account.
+. <<send-transaction>>: A component that allows sending tokens from one account to another.
+. <<account-details>>: Returns details of a user account by address.
 
 === New account
 
@@ -110,8 +113,10 @@ A page for generating new accounts that conveniently allows the creation of cred
 
 Import `passphrase` and `cryptography` from the `lisk-client` package to create new account credentials.
 
+.src/components/NewAccount.js
 [source,jsx]
 ----
+import React, { Component } from 'react';
 import { passphrase, cryptography } from '@liskhq/lisk-client';
 
 const newCredentials = () => {
@@ -146,11 +151,11 @@ The faucet is a component that allows accounts to receive tokens from the genesi
 
 In a new file `api.js`, the `apiClient` from package `lisk-client` provides an interface for the faucet and other React components to connect to the blockchain application via a websocket on port 8888.
 
-.api.js
+.src/api.js
 [source,js]
 ----
 const { apiClient } = require('@liskhq/lisk-client');
-const RPC_ENDPOINT = 'ws://localhost:8888/ws';
+const RPC_ENDPOINT = 'ws://localhost:8080/ws';
 
 let clientCache;
 
@@ -164,14 +169,18 @@ export const getClient = async () => {
 
 Next, create a new file `Faucet.js`, which will store the React component of the faucet.
 
-.Faucet.js
+.src/components/Faucet.js
 [source,jsx]
 ----
 import React, { useState } from 'react';
-import * as api from './api.js'; <1>
-import { cryptography, transactions } from '@liskhq/lisk-client'; <2>
+// `transactions` and `cryptography` from the `lisk-client` package are used to convert the data of the transaction into the correct format.
+import { cryptography, transactions } from '@liskhq/lisk-client';
+// Inside `Faucet.js`, import the previously defined API client from `api.js`.
+import * as api from '../api.js';
+import accounts from '../accounts.json';
 
-const accounts = { <3>
+// The passphrase for the genesis account of the Devnet.
+const accounts = {
   "genesis": {
     "passphrase": "peanut hundred pen hawk invite exclude brain chunk gadget wait wrong ready"
   }
@@ -198,7 +207,8 @@ const Faucet = () => {
 
         const client = await api.getClient();
         const address = cryptography.getAddressFromBase32Address(state.address);
-        const tx = await client.transaction.create({ <4>
+        // The API client is used to create the transaction object based on the inputs in the form below.
+        const tx = await client.transaction.create({
             moduleID: 2,
             assetID: 0,
             fee: BigInt(transactions.convertLSKToBeddows('0.01')),
@@ -208,8 +218,10 @@ const Faucet = () => {
                 data: '',
             },
         }, accounts.genesis.passphrase);
-        const response = await client.transaction.send(tx); <5>
-        updateState({ <6>
+        // After creation, the transaction is submitted to the blockchain application.
+        const response = await client.transaction.send(tx);
+        // After submitting the transaction and receiving the response, the state of the Faucet component is updated with the transaction object and the API response.
+        updateState({
             transaction: client.transaction.toJSON(tx),
             address: '',
             amount: '',
@@ -245,14 +257,6 @@ const Faucet = () => {
 export default Faucet;
 ----
 
-<1> Inside `Faucet.js`, we import the previously defined API client from `api.js`.
-<2> `transactions` and `cryptography` from the `lisk-client` package are used to convert the data of the transaction into the correct format.
-<3> The passphrase for the genesis account of the Devnet.
-<4> The API client is used to create the transaction object based on the inputs in the form below.
-<5> After creation, the transaction is submitted to the blockchain application.
-<6> After submitting the transaction and receiving the response, the state of the Faucet component is updated with the transaction object and the API response.
-<7> If the transaction object is present in the state, it is displayed below the form on the same page.
-
 === Send transaction
 
 Now that we are able to create a new account and receive some initial tokens, let's build a new component that allows to send tokens from an account to another.
@@ -261,12 +265,12 @@ To do this, create a new file `Transfer.js`.
 The contents of `Transfer.js` are similar to `Faucet.js`, as a transfer transaction will be sent on both pages.
 The only difference is, that the sender is not essentially a genesis account, but can be any account in the network.
 
-.Transfer.js
+.src/components/Transfer.js
 [source,jsx]
 ----
 import React, { useState } from 'react';
 import { cryptography, transactions } from '@liskhq/lisk-client';
-import * as api from './api.js';
+import * as api from '../api.js';
 
 const Transfer = () => {
     const [state, updateState] = useState({
@@ -291,6 +295,7 @@ const Transfer = () => {
 
         const client = await api.getClient();
         const address = cryptography.getAddressFromBase32Address(state.address);
+        // Here the transaction gets signed with the passphrase provided in the form.
         const tx = await client.transaction.create({
             moduleID: 2,
             assetID: 0,
@@ -300,7 +305,7 @@ const Transfer = () => {
                 recipientAddress: address,
                 data: '',
             },
-        }, state.passphrase); <1>
+        }, state.passphrase);
         let res;
         try {
             res = await client.transaction.send(tx);
@@ -353,20 +358,18 @@ const Transfer = () => {
 export default Transfer;
 ----
 
-<1> Here the transaction gets signed with the passphrase provided in the form.
-
 === Account details
 
 For the final component, we can add a page that displays the account details by address.
 
 The API client is imported again from `api.js`, in order to communicate with the blockchain application.
 
-.Account.js
+.src/components/Account.js
 [source,jsx]
 ----
 import { cryptography } from '@liskhq/lisk-client';
 import React, { useState } from 'react';
-import * as api from './api.js';
+import * as api from '../api.js';
 
 const Account = () => {
     const [state, updateState] = useState({
@@ -385,7 +388,8 @@ const Account = () => {
     const handleSubmit = async (event) => {
         event.preventDefault();
         const client = await api.getClient();
-        const account = await client.account.get(cryptography.getAddressFromBase32Address(state.address)); <1>
+        // Retrieves the account details from the blockchain application, based on the address provided.
+        const account = await client.account.get(cryptography.getAddressFromBase32Address(state.address));
         updateState({
             ...state,
             account: client.account.toJSON(account),
@@ -404,7 +408,7 @@ const Account = () => {
                 <input type="submit" value="Submit" />
             </form>
             <div>
-                <pre>Account: {JSON.stringify(state.account, null, 2)}</pre> <2>
+                <pre>Account: {JSON.stringify(state.account, null, 2)}</pre>
             </div>
         </div>
     );
@@ -412,86 +416,129 @@ const Account = () => {
 export default Account;
 ----
 
-<1> Retrieves the account details from the blockchain application, based on the address provided.
-<2> If `state.account` is not empty, it will display the account details on the same page.
-
 === Index and navigation
 
 Now that all the basic components for the frontend are created, a small component for the landing page can be added.
 
-.Home.js
+.src/components/Home.js
 [source,jsx]
 ----
-import React from "react";
+import React, { Component } from 'react';
+import { fetchHelloCounter, fetchLatestHello } from '../api.js';
 
-const Home = () => {
-  return (
-    <div>
-      <h2>Hello Lisk!</h2>
-      <p>A simple frontend for blockchain applications built with the Lisk SDK.</p>
-    </div>
-  );
-};
+class Home extends Component {
+
+    constructor(props) {
+      super(props);
+
+      this.state = {
+        data: {
+          helloCounter: 0,
+        },
+        latestHello: {
+          message: 'N/A',
+          sender: 'N/A'
+        }
+      };
+    }
+
+    async componentDidMount() {
+        const helloData = await fetchHelloCounter() ;
+        const latestHello = await fetchLatestHello() ;
+
+        this.setState({
+          data: {
+            helloCounter: helloData.helloCounter
+          },
+          latestHello: {
+            message: latestHello ? latestHello.hello: '',
+            sender: latestHello ? latestHello.sender : '',
+        }});
+    }
+
+    render() {
+        return (
+            <div>
+                <h2>Hello Lisk!</h2>
+                <p>A simple frontend for blockchain applications built with the Lisk SDK.</p>
+                <p>Hello counter:</p>
+                <pre>{this.state.data.helloCounter}</pre>
+                <p>Latest Hello:</p>
+                <p>Message:</p>
+                <pre>{this.state.latestHello.message}</pre>
+                <p>Sender:</p>
+                <pre>{this.state.latestHello.sender}</pre>
+            </div>
+        );
+    }
+}
 
 export default Home;
 ----
 
-Now modify the already existing `App.js` file to include the above defined React components and to build a basic navigation.
+Move the file `App.js` into the `src/components/` folder.
+Now update the file to include the above defined React components and to build a basic navigation.
 
-.App.js
+.src/components/App.js
 [source,jsx]
 ----
 import React from "react";
 import {
-  BrowserRouter as Router,
-  Switch,
-  Route,
-  Link
+    BrowserRouter as Router,
+    Switch,
+    Route,
+    Link
 } from "react-router-dom";
-import Home from './Home';
+import "regenerator-runtime/runtime.js";
+import Home from './home';
 import NewAccount from './NewAccount';
 import Faucet from './Faucet';
+import SendHello from './Hello';
 import Account from './Account';
 import Transfer from './Transfer';
 
 export const app = () => {
-  return (
-    <Router>
-      <div>
-        <Route>
-          <ul>
-            <li><Link to="/">Home</Link></li>
-            <hr />
-            <h3> Interact </h3>
-            <li><Link to="/new-account">New Account</Link></li>
-            <li><Link to="/faucet">Faucet</Link></li>
-            <li><Link to="/send-transfer">Send Transfer</Link></li>
-            <hr />
-            <h3> Explore </h3>
-            <li><Link to="/account">Account</Link></li>
-          </ul>
-        </Route>
+    return (
+        <Router>
+            <div>
+                <Route>
+                    <ul>
+                        <li><Link to="/">Home</Link></li>
+                        <hr />
+                        <h3> Interact </h3>
+                        <li><Link to="/new-account">New Account</Link></li>
+                        <li><Link to="/faucet">Faucet</Link></li>
+                        <li><Link to="/send-hello">Send Hello</Link></li>
+                        <li><Link to="/send-transfer">Send Transfer</Link></li>
+                        <hr />
+                        <h3> Explore </h3>
+                        <li><Link to="/account">Account</Link></li>
+                    </ul>
+                </Route>
 
-        <Switch>
-          <Route exact path="/">
-            <Home />
-          </Route>
-          <Route path="/new-account">
-            <NewAccount />
-          </Route>
-          <Route path="/faucet">
-            <Faucet />
-          </Route>
-          <Route path="/send-transfer">
-            <Transfer />
-          </Route>
-          <Route path="/account">
-            <Account />
-          </Route>
-        </Switch>
-      </div>
-    </Router>
-  );
+                <Switch>
+                    <Route exact path="/">
+                        <Home />
+                    </Route>
+                    <Route path="/send-hello">
+                        <SendHello />
+                    </Route>
+                    <Route path="/new-account">
+                        <NewAccount />
+                    </Route>
+                    <Route path="/faucet">
+                        <Faucet />
+                    </Route>
+                    <Route path="/send-transfer">
+                        <Transfer />
+                    </Route>
+                    <Route path="/account">
+                        <Account />
+                    </Route>
+                </Switch>
+            </div>
+        </Router>
+    );
 }
 
 export default app;
@@ -505,7 +552,7 @@ In the already existing `index.js` file, the `App.js` component is finally inclu
 import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
-import App from './App';
+import App from './components/App';
 
 ReactDOM.render(
   <React.StrictMode>
@@ -525,6 +572,8 @@ npm start
 ----
 
 This should open the app in browser under the URL http://localhost:3000 .
+
+NOTE: It is also needed to start the corresponding blockchain application, if it is not running already.
 
 It is now possible to use the app in a browser to create new accounts, fund accounts, view the account details of a specific account, and send tokens from one account to another.
 

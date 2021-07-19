@@ -22,6 +22,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_intro_modules_lifecycle: introduction/modules.adoc#lifecycle-hooks
 :url_intro_modules_statestore: introduction/modules.adoc#the-state-store
 :url_intro_plugins: introduction/plugins.adoc
+:url_intro_plugins_load: introduction/plugins.adoc#defining-the-plugin-logic
 :url_references_elements_apiclient: references/lisk-elements/api-client.adoc
 :url_references_elements_client: references/lisk-elements/client.adoc
 :url_references_plugins_monitor: references/lisk-framework/monitor-plugin.adoc
@@ -69,7 +70,7 @@ const getClient = async () => {
   return clientCache;
 };
 
-const useClient = async () => {
+const apiRequest = async () => {
   const client = await getClient();
   const blockAtHeight123 = await client.block.getByHeight(123);
   client.subscribe('app:block:new', ( data ) => {
@@ -78,7 +79,7 @@ const useClient = async () => {
   return blockAtHeight123;
 };
 
-useClient().then((val) => {
+apiRequest().then((val) => {
   console.log("val:",val);
 });
 ----
@@ -98,7 +99,7 @@ const getClient = async () => {
     return clientCache;
 };
 
-const useClient = async () => {
+const apiRequest = async () => {
   const client = await getClient();
   const blockAtHeight123 = await client.block.getByHeight(123);
   client.subscribe('app:block:new', ( data ) => {
@@ -107,14 +108,14 @@ const useClient = async () => {
   return blockAtHeight123;
 };
 
-useClient().then((val) => {
+apiRequest().then((val) => {
   console.log("val:",val);
 });
 ----
 --
 =====
 
-== Channels (internal communication)
+== Channels
 
 All modules and plugins have access to a `channel` to communicate with the application via actions and events.
 
@@ -143,7 +144,7 @@ The above code example will publish the event `hello:newHello` to the applicatio
 
 === Channel for plugins
 
-The channel is used inside of the xref:{url_intro_modules_lifecycle}[load() and unload()] functions of a plugin.
+The channel is used inside of the xref:{url_intro_plugins_load}[load()] function of a plugin.
 
 The following functions are available for a `channel` inside a plugin:
 
@@ -158,20 +159,6 @@ channel.subscribe('app:block:new', ({ data }) => {
     const decodedBlock = this.codec.decodeBlock(data.block);
     this._knownTimestamps.push(decodedBlock.header.timestamp);
     channel.publish('myPlugin:timestamp', { timestamp: decodedBlock.header.timestamp });
-});
-----
-
-== The reducerHandler (module-intern communication)
-
-<<reducers>> of modules can be invoked inside of the xref:{url_intro_modules_lifecycle}[lifecycle hooks] and xref:{url_intro_modules_assets}[Assets] of another modules via the `reducerHandler`.
-
-.Example: Invoking the "debit" reducer of the Token module
-[source,js]
-----
-// debit tokens from sender account
-await reducerHandler.invoke("token:debit", {
-  address: senderAddress,
-  amount: asset.initValue,
 });
 ----
 

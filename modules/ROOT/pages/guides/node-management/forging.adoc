@@ -3,27 +3,30 @@ Mona Bärenfänger <mona@lightcurve.io>
 :description: How to enable, disable and check forging on the respective user's node.
 :toc:
 :v_protocol: master
+:idprefix:
+:idseparator: -
 :sectnums:
-:sectnumlevels: 1
+:sectnumlevels: 2
 // URLs
 :url_lisk_wallet: https://lisk.com/wallet
+:url_wikipedia_password_strength: https://en.wikipedia.org/wiki/Password_strength#Guidelines_for_strong_passwords
 // Project URLs
 :url_guides_api_access: guides/node-management/api-access.adoc
 :url_guides_config: guides/app-development/configuration.adoc
+:url_guides_setup_bootstrap: guides/app-development/setup.adoc#bootstrapping-a-new-blockchain-application-with-lisk-commander
 :url_commander_commands: references/lisk-commander/commands.adoc
 :url_framework_dashbobardplugin: references/lisk-framework/dashboard-plugin.adoc
 :url_elements: references/lisk-elements/index.adoc
 :url_elements_crytpography: references/lisk-elements/cryptography.adoc
 :url_explanations_consensus: references/lisk-framework/dpos-module.adoc#forging
 :url_explanations_consensus_register: references/lisk-framework/dpos-module.adoc#delegate_registration
-
+:url_references_cli_forgingconfig: references/application-cli.adoc#forgingconfig
+:url_references_cli_forgingenable: references/application-cli.adoc#forgingenable
 :url_protocol_block_forgers: protocol:blocks.adoc#forgers
 :url_protocol_dpos: protocol:consensus-algorithm.adoc
 :url_protocol_delegate_selection: protocol:consensus-algorithm.adoc#delegate_selection
 :url_protocol_blocks_punishment: protocol:consensus-algorithm.adoc#punishment
 :url_protocol_tx_registerdelegegate: protocol:transactions.adoc#delegate-registration
-
-:url_wikipedia_password_strength: https://en.wikipedia.org/wiki/Password_strength#Guidelines_for_strong_passwords
 
 How to enable forging on a node as a delegate.
 For more information about forging, please check the xref:{url_explanations_consensus}[forging] explanations on the DPoS module page.
@@ -44,22 +47,66 @@ To enable your node to forge for a particular delegate, firstly it is required t
 * `encryptedPassphrase`: The symmetrically encrypted 12 word mnemonic passphrase of the delegate account.
 * `hashOnion`: The hash onion stores the random seeds of the delegate for each forging round.
 
-To encrypt your passphrase, it is recommended to use one of the following alternatives listed below:
+To create the forging configuration data, it is recommended to use one of the following alternatives listed below:
 
-* xref:{url_commander_commands}[Lisk Commander] via `encrypt passphrase` command.
-* xref:{url_elements_crytpography}[Cryptography package of Lisk Elements]
+[tabs]
 
-The first alternative with the Lisk Commander is described in detail below.
-Please ensure the Lisk Commander is installed in a secure environment.
+=====
+Option A: Creating the data with the application CLI::
++
+--
+If the blockchain application was xref:{url_guides_setup_bootstrap}[bootstrapepd with Lisk Commander], it is possible to generate the relevant forging data conveniently with the command xref:{url_references_cli_forgingconfig}[forging:config].
+
+[source,bash]
+----
+$ ./bin/run forging:config --count=4000 --output ./forging_config.json
+? Please enter passphrase:  [hidden] # <1>
+? Please re-enter passphrase:  [hidden]
+? Please enter password:  [hidden] # <2>
+? Please re-enter password:  [hidden]
+----
+
+<1> Passphrase of the delegate account.
+<2> Password to encrypt the passphrase of the delegate account.
+
+[NOTE]
+
+For this example, we reduce the value of `count` to  4000, with a default distance of `1000` this will only produce 5 hashes in the hash onion.
+Generally though, it is recommended to use high values for `count`, so the delegate has enough hashes to forge for a long time.
+
+.forging_data.json
+[source,json]
+----
+{
+ "address": "92ff111dfc904d1d8b077bf6e815fd21d881b005",
+ "encryptedPassphrase": "iterations=1000000&cipherText=75e886380f60687b4bc12879236cd58ffbc5aa8b99855bd69e6957f1c278f02c6cd759ea11614f85d353502eeae3abb622ca118b403d4670674403314ce3ade57c69df5c157c506303e950&iv=8e375e50e2a66fb71a25cd40&salt=739f615c7502b880e94fa79c8228a8a9&tag=1138f01b695fad6ff60352c83cd34a6c&version=1",
+ "hashOnion": {
+  "count": 4000,
+  "distance": 1000,
+  "hashes": [
+   "2ca1380a0f8c123d9e7c2bcbe7a25aa0",
+   "4cab4f42f6b36d2e7003556001f18d93",
+   "03d5229b74873e6b14436e568bb65756",
+   "99212decf3ff2c0e31059f63e596a135",
+   "1c46b49528b6793ff4a1bd9859d00b7c"
+  ]
+ }
+}
+----
+--
+Option B: Creating the data with Lisk Commander::
++
+--
+Please ensure the xref:{url_commander_commands}[Lisk Commander] is installed in a secure environment.
 Upon completion, please follow these commands to generate the encrypted passphrase:
 
 [source,bash]
 ----
 $ lisk
 lisk passphrase:encrypt --json
-Please enter your secret passphrase: ***** <1>
+Please enter your secret passphrase: ***** # <1>
 Please re-enter your secret passphrase: *****
-Please enter your password: *** <2>
+Please enter your password: *** # <2>
 Please re-enter your password: ***
 {
         "encryptedPassphrase": "iterations=1000000&cipherText=30a3c8&iv=b0d7322bf24e0dfe08462f4f&salt=aa7e26c9f4317b61b4f45b5c6909f941&tag=a2e0eadaf1f11a10b342965bc3bafc68&version=1",
@@ -91,7 +138,7 @@ lisk hash-onion --json
 {
   "forging": {
     "force": false,
-    "delegates": [ <1>
+    "delegates": [ // <1>
         {
             "address": "86555265f0110b4ed5a8cb95dbc732e77732c474",
             "encryptedPassphrase": "iterations=1&salt=476d4299531718af8c88156aab0bb7d6&cipherText=663dde611776d87029ec188dc616d96d813ecabcef62ed0ad05ffe30528f5462c8d499db943ba2ded55c3b7c506815d8db1c2d4c35121e1d27e740dc41f6c405ce8ab8e3120b23f546d8b35823a30639&iv=1a83940b72adc57ec060a648&tag=b5b1e6c6e225c428a4473735bc8f1fc9&version=1",
@@ -117,6 +164,8 @@ lisk hash-onion --json
 Now restart the node to apply the changes in the config.
 
 For more information about the configuration of the Lisk SDK check out the xref:{url_guides_config}[configuration guide].
+--
+=====
 
 [[forging_enable_disable]]
 == Enable/Disable Forging
@@ -128,6 +177,33 @@ This behavior will be xref:{url_protocol_blocks_punishment}[punished] by the net
 . Ensure the node is **fully synchronized** with the network, before enabling forging on that node.
 ====
 
+[tabs]
+
+=====
+Option A: Updating the forging status with the application CLI::
++
+--
+If the blockchain application was xref:{url_guides_setup_bootstrap}[bootstrapepd with Lisk Commander], it is possible to generate the relevant forging data conveniently with the command xref:{url_references_cli_forgingenable}[forging:enable].
+
+NOTE: The blockchain application needs to be running to successfully enable forging on the node.
+
+.Enable forging
+[source,bash]
+----
+$ ./bin/run forging:enable ab0041a7d3f7b2c290b5b834d46bdc7b7eb85815 100 100 10
+----
+
+.Disable forging
+[source,bash]
+----
+$ ./bin/run forging:disable ab0041a7d3f7b2c290b5b834d46bdc7b7eb85815
+----
+
+
+--
+Option B: Updating the forging status via application action::
++
+--
 Invoke the following action to *enable the forging* for a delegate:
 
 .Enable forging
@@ -140,13 +216,13 @@ export const enableForging = async () => {
     let response;
 
     const { data } = await apiClient.invoke('app:updateForgingStatus', {
-      address: string, <1>
-      password: string, <2>
-      forging: true, <3>
-      height?: number, <4>
-      maxHeightPrevoted?: number, <5>
-      maxHeightPreviouslyForged?: number, <6>
-      override?: boolean <7>
+      address: string, // <1>
+      password: string, // <2>
+      forging: true, // <3>
+      height?: number, // <4>
+      maxHeightPrevoted?: number, // <5>
+      maxHeightPreviouslyForged?: number, // <6>
+      override?: boolean // <7>
     });
 
     try {
@@ -183,12 +259,15 @@ export const disableForging = async () => {
     const { data } = await apiClient.invoke('app:updateForgingStatus', {
       address: string,
       password: string,
-      forging: false <1>
+      forging: false // <1>
     });
 };
 ----
 
 <1> Change forging to `false` to disable forging for a delegate on the node.
+--
+=====
+
 
 //@TODO: Add guide how to enable forging on another node, once app bootstrapping is added
 //=== Safely enabling forging on another node

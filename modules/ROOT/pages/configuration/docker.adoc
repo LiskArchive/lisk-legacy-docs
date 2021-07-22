@@ -39,16 +39,17 @@ services:
     environment:
       ENABLE_FEE_ESTIMATOR_FULL: "false"
       ENABLE_FEE_ESTIMATOR_QUICK: "true"
+      ENABLE_JOB_MISSING_BLOCKS: "true"
       ENABLE_TRANSACTION_STATS: "true"
+      FEE_EST_DEFAULT_START_BLOCK_HEIGHT: ''
+      GENESIS_BLOCK_URL: ''
+      GENESIS_HEIGHT: ''
       GEOIP_JSON: https://geoip.lisk.io/json
+      INDEX_MISSING_BLOCKS_RANGE: '1080'
       INDEX_N_BLOCKS: '0'
-      LISK_CORE_HTTP: https://mainnet.lisk.io
-      LISK_CORE_WS: wss://mainnet.lisk.io
+      LISK_CORE_HTTP: ''
+      LISK_CORE_WS: ws://localhost:8080
       LISK_STATIC: https://static-data.lisk.io
-      MYSQL_DATABASE: lisk
-      MYSQL_PASSWORD: password
-      MYSQL_ROOT_PASSWORD: password
-      MYSQL_USER: lisk
       SERVICE_BROKER: redis://redis_common:6379/0
       SERVICE_CORE_MYSQL: mysql://lisk:password@mysql_core:3306/lisk
       SERVICE_CORE_REDIS: redis://redis_core:6379/0
@@ -57,6 +58,9 @@ services:
       SERVICE_LOG_GELF: "false"
       SERVICE_LOG_LEVEL: debug
       SERVICE_LOG_STDOUT: "true"
+      TRANSACTION_STATS_HISTORY_LENGTH_DAYS: ''
+    extra_hosts:
+      host.docker.internal: host-gateway
     image: lisk/service_core
     networks:
       core_network: {}
@@ -67,9 +71,11 @@ services:
       core:
         condition: service_started
     environment:
-      ENABLE_HTTP_API: 'http-version1,http-version1-compat,http-status'
-      ENABLE_WS_API: 'rpc,rpc-v1,blockchain'
+      ENABLE_HTTP_API: http-status,http-version
+      ENABLE_HTTP_CACHE_CONTROL: "false"
+      ENABLE_WS_API: ''
       HOST: 0.0.0.0
+      HTTP_CACHE_CONTROL_DIRECTIVES: public,max-age=10
       PORT: '9901'
       SERVICE_BROKER: redis://redis_common:6379/0
       SERVICE_LOG_CONSOLE: "false"
@@ -85,20 +91,30 @@ services:
     ports:
     - 127.0.0.1:9901:9901/tcp
     restart: always
+  market:
+    depends_on:
+      redis_common:
+        condition: service_started
+      redis_market:
+        condition: service_started
+    environment:
+      SERVICE_BROKER: redis://redis_common:6379/0
+      SERVICE_LOG_CONSOLE: "false"
+      SERVICE_LOG_FILE: "false"
+      SERVICE_LOG_GELF: "false"
+      SERVICE_LOG_LEVEL: debug
+      SERVICE_LOG_STDOUT: "true"
+      SERVICE_MARKET_REDIS: redis://redis_market:6379/0
+    image: lisk/service_market
+    networks:
+      services_network: {}
+    restart: always
   mysql_core:
     environment:
-      ENABLE_FEE_ESTIMATOR_FULL: "false"
-      ENABLE_FEE_ESTIMATOR_QUICK: "true"
-      ENABLE_TRANSACTION_STATS: "true"
-      GEOIP_JSON: https://geoip.lisk.io/json
-      INDEX_N_BLOCKS: '0'
-      LISK_STATIC: https://static-data.lisk.io
       MYSQL_DATABASE: lisk
       MYSQL_PASSWORD: password
       MYSQL_ROOT_PASSWORD: password
       MYSQL_USER: lisk
-      SERVICE_CORE_MYSQL: mysql://lisk:password@mysql_core:3306/lisk
-      SERVICE_CORE_REDIS: redis://redis_core:6379/0
     healthcheck:
       retries: 10
       test:
@@ -123,7 +139,7 @@ services:
       services_network: {}
     restart: always
     volumes:
-    - /path/to/lisk-service/docker/redis/redis.volatile.conf:/etc/redis/redis.conf:ro
+    - /home/lisk/lisk-service/docker/redis/redis.volatile.conf:/etc/redis/redis.conf:ro
   redis_core:
     command: redis-server /etc/redis/redis.conf
     healthcheck:
@@ -133,12 +149,24 @@ services:
       core_network: {}
     restart: always
     volumes:
-    - /path/to/lisk-service/docker/redis/redis.persistent.conf:/etc/redis/redis.conf:ro
+    - /home/lisk/lisk-service/docker/redis/redis.persistent.conf:/etc/redis/redis.conf:ro
+  redis_market:
+    command: redis-server /etc/redis/redis.conf
+    healthcheck:
+      test: redis-cli ping
+    image: redis:5-alpine
+    networks:
+      services_network: {}
+    restart: always
+    volumes:
+    - /home/lisk/lisk-service/docker/redis/redis.persistent.conf:/etc/redis/redis.conf:ro
 version: '3'
 volumes:
   mysql-data: {}
 ----
 
+
+////
 [[default_configs]]
 == Default configurations
 
@@ -241,3 +269,4 @@ make up
 ----
 
 :!sectnums:
+////

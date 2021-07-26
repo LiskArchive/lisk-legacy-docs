@@ -242,7 +242,7 @@
     <a class="version" href="../v0.3/configuration/docker.html">0.3.0</a>
   </div>
 </div>
-  <div class="edit-this-page"><a href="https://github.com/LiskHQ/lisk-docs/edit/docs-service/modules/ROOT/pages/configuration/docker.adoc"><i class="icofont-ui-edit"></i>Edit this Page</a></div>
+  <div class="edit-this-page"><a href="https://github.com/LiskHQ/lisk-docs/edit/1144-update-service-docs/modules/ROOT/pages/configuration/docker.adoc"><i class="icofont-ui-edit"></i>Edit this Page</a></div>
   </div>
   <div class="content">
 <article class="doc">
@@ -251,14 +251,6 @@
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
 <li><a href="#show-current-configuration">Show current configuration</a></li>
-<li><a href="#default_configs">Default configurations</a></li>
-<li><a href="#custom-configuration">Custom configuration</a>
-<ul class="sectlevel2">
-<li><a href="#the-custom-env-file">.1. The custom.env file</a></li>
-<li><a href="#update-the-makefile">.2. Update the Makefile</a></li>
-<li><a href="#start-lisk-service">.3. Start Lisk Service</a></li>
-</ul>
-</li>
 </ul>
 </div>
 <div id="preamble">
@@ -297,16 +289,17 @@ services:
     environment:
       ENABLE_FEE_ESTIMATOR_FULL: "false"
       ENABLE_FEE_ESTIMATOR_QUICK: "true"
+      ENABLE_JOB_MISSING_BLOCKS: "true"
       ENABLE_TRANSACTION_STATS: "true"
+      FEE_EST_DEFAULT_START_BLOCK_HEIGHT: ''
+      GENESIS_BLOCK_URL: ''
+      GENESIS_HEIGHT: ''
       GEOIP_JSON: https://geoip.lisk.io/json
+      INDEX_MISSING_BLOCKS_RANGE: '1080'
       INDEX_N_BLOCKS: '0'
-      LISK_CORE_HTTP: https://mainnet.lisk.io
-      LISK_CORE_WS: wss://mainnet.lisk.io
+      LISK_CORE_HTTP: ''
+      LISK_CORE_WS: ws://localhost:8080
       LISK_STATIC: https://static-data.lisk.io
-      MYSQL_DATABASE: lisk
-      MYSQL_PASSWORD: password
-      MYSQL_ROOT_PASSWORD: password
-      MYSQL_USER: lisk
       SERVICE_BROKER: redis://redis_common:6379/0
       SERVICE_CORE_MYSQL: mysql://lisk:password@mysql_core:3306/lisk
       SERVICE_CORE_REDIS: redis://redis_core:6379/0
@@ -315,6 +308,9 @@ services:
       SERVICE_LOG_GELF: "false"
       SERVICE_LOG_LEVEL: debug
       SERVICE_LOG_STDOUT: "true"
+      TRANSACTION_STATS_HISTORY_LENGTH_DAYS: ''
+    extra_hosts:
+      host.docker.internal: host-gateway
     image: lisk/service_core
     networks:
       core_network: {}
@@ -325,9 +321,11 @@ services:
       core:
         condition: service_started
     environment:
-      ENABLE_HTTP_API: 'http-version1,http-version1-compat,http-status'
-      ENABLE_WS_API: 'rpc,rpc-v1,blockchain'
+      ENABLE_HTTP_API: http-status,http-version
+      ENABLE_HTTP_CACHE_CONTROL: "false"
+      ENABLE_WS_API: ''
       HOST: 0.0.0.0
+      HTTP_CACHE_CONTROL_DIRECTIVES: public,max-age=10
       PORT: '9901'
       SERVICE_BROKER: redis://redis_common:6379/0
       SERVICE_LOG_CONSOLE: "false"
@@ -343,20 +341,30 @@ services:
     ports:
     - 127.0.0.1:9901:9901/tcp
     restart: always
+  market:
+    depends_on:
+      redis_common:
+        condition: service_started
+      redis_market:
+        condition: service_started
+    environment:
+      SERVICE_BROKER: redis://redis_common:6379/0
+      SERVICE_LOG_CONSOLE: "false"
+      SERVICE_LOG_FILE: "false"
+      SERVICE_LOG_GELF: "false"
+      SERVICE_LOG_LEVEL: debug
+      SERVICE_LOG_STDOUT: "true"
+      SERVICE_MARKET_REDIS: redis://redis_market:6379/0
+    image: lisk/service_market
+    networks:
+      services_network: {}
+    restart: always
   mysql_core:
     environment:
-      ENABLE_FEE_ESTIMATOR_FULL: "false"
-      ENABLE_FEE_ESTIMATOR_QUICK: "true"
-      ENABLE_TRANSACTION_STATS: "true"
-      GEOIP_JSON: https://geoip.lisk.io/json
-      INDEX_N_BLOCKS: '0'
-      LISK_STATIC: https://static-data.lisk.io
       MYSQL_DATABASE: lisk
       MYSQL_PASSWORD: password
       MYSQL_ROOT_PASSWORD: password
       MYSQL_USER: lisk
-      SERVICE_CORE_MYSQL: mysql://lisk:password@mysql_core:3306/lisk
-      SERVICE_CORE_REDIS: redis://redis_core:6379/0
     healthcheck:
       retries: 10
       test:
@@ -381,7 +389,7 @@ services:
       services_network: {}
     restart: always
     volumes:
-    - /path/to/lisk-service/docker/redis/redis.volatile.conf:/etc/redis/redis.conf:ro
+    - /home/lisk/lisk-service/docker/redis/redis.volatile.conf:/etc/redis/redis.conf:ro
   redis_core:
     command: redis-server /etc/redis/redis.conf
     healthcheck:
@@ -391,153 +399,20 @@ services:
       core_network: {}
     restart: always
     volumes:
-    - /path/to/lisk-service/docker/redis/redis.persistent.conf:/etc/redis/redis.conf:ro
+    - /home/lisk/lisk-service/docker/redis/redis.persistent.conf:/etc/redis/redis.conf:ro
+  redis_market:
+    command: redis-server /etc/redis/redis.conf
+    healthcheck:
+      test: redis-cli ping
+    image: redis:5-alpine
+    networks:
+      services_network: {}
+    restart: always
+    volumes:
+    - /home/lisk/lisk-service/docker/redis/redis.persistent.conf:/etc/redis/redis.conf:ro
 version: '3'
 volumes:
   mysql-data: {}</code></pre>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="default_configs"><a class="anchor" href="#default_configs"></a>Default configurations</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Lisk Service provides different ready-to-use configuration files, which are located in the <code>docker/</code> folder of Lisk Service.</p>
-</div>
-<div class="listingblock">
-<div class="title">lisk-service/docker/</div>
-<div class="content">
-<pre>├── custom.env
-├── docker-compose.betanet.yml
-├── docker-compose.custom.yml
-├── docker-compose.devnet.yml
-├── docker-compose.mainnet.yml
-└── docker-compose.testnet.yml</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>To connect to any of the networks displayed in the snippet above, simply change line 9 in the <code>Makefile</code> file:</p>
-</div>
-<div class="listingblock">
-<div class="title">Example: How to update the <code>Makefile</code>, to connect to the Betanet with Lisk Service</div>
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">.PHONY: clean coldstart mrproper up
-all: up
-
-compose := docker-compose \
-	-f docker-compose.yml \
-	-f lisk_service/docker-compose.core.yml \
-	-f lisk_service/docker-compose.gateway.yml \
-	-f lisk_service/docker-compose.gateway-ports.yml \
-	-f docker-compose.betanet.yml <i class="conum" data-value="1"></i><b>(1)</b></code></pre>
-</div>
-</div>
-<div class="colist arabic">
-<table>
-<tr>
-<td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>Update this line from <code>-f docker-compose.mainnet.yml</code> to <code>-f docker-compose.NETWORK.yml</code>, where <code>NETWORK</code> can be either:
-<div class="ulist">
-<ul>
-<li>
-<p><code>betanet</code></p>
-</li>
-<li>
-<p><code>custom</code></p>
-</li>
-<li>
-<p><code>devnet</code></p>
-</li>
-<li>
-<p><code>mainnet</code></p>
-</li>
-<li>
-<p><code>testnet</code></p>
-</li>
-</ul>
-</div></td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-<p>After updating the <code>Makefile</code> as described above, start Lisk Service again:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">make up</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Lisk Service should now be connected to the desired network.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="custom-configuration"><a class="anchor" href="#custom-configuration"></a>Custom configuration</h2>
-<div class="sectionbody">
-<div class="sect2">
-<h3 id="the-custom-env-file"><a class="anchor" href="#the-custom-env-file"></a>.1. The custom.env file</h3>
-<div class="paragraph">
-<p>First, open the file <code>docker/custom.env</code> .</p>
-</div>
-<div class="paragraph">
-<p>The following contents below will be displayed:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">## Lisk Service custom configuration
-
-# Lisk Core node
-LISK_CORE_HTTP=https://mainnet.lisk.io
-LISK_CORE_WS=wss://mainnet.lisk.io</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>The two existing options <code>LISK_CORE_HTTP</code> and <code>LISK_CORE_WS</code> are examples of how to set config options in this file.</p>
-</div>
-<div class="paragraph">
-<p>To see a list of the most important options, check out the preconfigured <code>env</code> files in the <code>docker/lisk-service/env/network</code> folder.</p>
-</div>
-<div class="paragraph">
-<p>To check and view the complete list of all available config options of Lisk Service, go to the <a href="../references/configuration.html" class="page">configuration reference</a>.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="update-the-makefile"><a class="anchor" href="#update-the-makefile"></a>.2. Update the Makefile</h3>
-<div class="listingblock">
-<div class="title">How to update the <code>Makefile</code> to use a custom configuration</div>
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">.PHONY: clean coldstart mrproper up
-all: up
-
-compose := docker-compose \
-	-f docker-compose.yml \
-	-f lisk_service/docker-compose.core.yml \
-	-f lisk_service/docker-compose.gateway.yml \
-	-f lisk_service/docker-compose.gateway-ports.yml \
-	-f docker-compose.custom.yml <i class="conum" data-value="1"></i><b>(1)</b></code></pre>
-</div>
-</div>
-<div class="colist arabic">
-<table>
-<tr>
-<td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>Update this line from <code>-f docker-compose.mainnet.yml</code> to <code>-f docker-compose.custom.yml</code>.</td>
-</tr>
-</table>
-</div>
-</div>
-<div class="sect2">
-<h3 id="start-lisk-service"><a class="anchor" href="#start-lisk-service"></a>.3. Start Lisk Service</h3>
-<div class="paragraph">
-<p>All that is now remaining is to start Lisk Service again:</p>
-</div>
-<div class="listingblock">
-<div class="title">In the <code>lisk-service</code> root folder</div>
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">make up</code></pre>
-</div>
 </div>
 </div>
 </div>

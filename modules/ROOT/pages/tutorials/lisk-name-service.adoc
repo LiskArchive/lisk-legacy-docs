@@ -71,83 +71,113 @@ cd lisk-name-service
 lisk init
 ----
 
+This will generate a lot of new files and folders, resulting in the following structure:
+
 ----
 .
 ├── README.md
-├── bin
-│   ├── run
-│   └── run.cmd
-├── config
-│   └── default
-│       ├── config.json
-│       └── genesis_block.json
+├── bin <1>
+├── config <2>
 ├── jest.config.js
 ├── package-lock.json
 ├── package.json
 ├── src
-│   ├── app
-│   │   ├── app.ts
+│   ├── app <3>
+│   │   ├── app.ts <4>
 │   │   ├── index.ts
-│   │   ├── modules
-│   │   │   └── hello
-│   │   ├── modules.ts
-│   │   ├── plugins
-│   │   └── plugins.ts
-│   └── commands
-│       ├── account
-│       │   ├── create.ts
-│       │   ├── get.ts
-│       │   ├── show.ts
-│       │   └── validate.ts
-│       ├── block
-│       │   └── get.ts
-│       ├── blockchain
-│       │   ├── export.ts
-│       │   ├── hash.ts
-│       │   ├── import.ts
-│       │   └── reset.ts
-│       ├── config
-│       │   ├── create.ts
-│       │   └── show.ts
-│       ├── console.ts
-│       ├── forger-info
-│       │   ├── export.ts
-│       │   └── import.ts
-│       ├── forging
-│       │   ├── config.ts
-│       │   ├── disable.ts
-│       │   ├── enable.ts
-│       │   └── status.ts
-│       ├── genesis-block
-│       │   └── create.ts
-│       ├── hash-onion.ts
-│       ├── node
-│       │   └── info.ts
-│       ├── passphrase
-│       │   ├── decrypt.ts
-│       │   └── encrypt.ts
-│       ├── start.ts
-│       └── transaction
-│           ├── create.ts
-│           ├── get.ts
-│           ├── send.ts
-│           └── sign.ts
-├── test
+│   │   ├── modules <5>
+│   │   ├── modules.ts <6>
+│   │   ├── plugins <7>
+│   │   └── plugins.ts <8>
+│   └── commands <9>
+├── test <10>
 └── tsconfig.json
 ----
 
-[source,bash]
+<1> `bin/` contains the `run` script which starts the application CLI.
+<2> `config/` contains the default configuration and genesis block for the application.
+<3> `app/` contains the files of the blockchain application.
+<4> `app.ts` creates the `Application` instance.
+<5> `modules/` contains the application modules (currently empty).
+<6> `modules.ts` registers the modules with the application.
+<7> `plugins/` contains the application plugins (currently empty).
+<8> `plugins.ts` registers the plugins with the application.
+<9> `commannds/` contains the application CLI commands.
+<10> `tests/` contains functional, network and unit tests for the blockchain application.
+
+This creates a ready-to-start blockchain application, configured for a local devnet, which uses only the default modules of the Lisk SDK.
+
+The application is created in the file `app.ts`:
+
+.lisk-name-service/src/app/app.ts
+[source,typescript]
 ----
-lisk generate:module hello 1000
+import { Application, PartialApplicationConfig, utils } from 'lisk-sdk';
+import { registerModules } from './modules';
+import { registerPlugins } from './plugins';
+
+export const getApplication = (
+	genesisBlock: Record<string, unknown>,
+	config: PartialApplicationConfig,
+): Application => {
+	const app = Application.defaultApplication(genesisBlock, config); // <1>
+
+	registerModules(app); // <2>
+	registerPlugins(app); // <3>
+
+	return app;
+};
 ----
 
+<1> Creates blockchain application with the default modules.
+<2> Will register additionnal modules to the application.
+Currently, no additionnal modules are available for the application.
+To add new modules update the `modules.ts` file.
+<3> Will register additionnal plugins to the application.
+Currently, no plugins are available for the application.
+To add new plugins update the `plugins.ts` file.
+
+To verify the successful bootstrap of the blockchain application, start it with the following command:
+
+.lisk-name-service/
 [source,bash]
 ----
-lisk generate:asset hello createHello 0
+./bin/run start
 ----
+
+And observe the displayed log messages in the console.
+If on errors are thrown, the application will start to add new locks every 10 seconds after the initial startup.
+
+Once it is veerified that the application runs correctly, stop the node again with kbd:[Ctrl] + kbd:[C].
+
+To customize the default blockchain application to suit our desired use case, we will now generate the LNS module.
+
+Create the module skeleton by using the command `lisk generate:module` like shown below:
+
+.lisk-name-service/
+[source,bash]
+----
+lisk generate:module lns 1000
+----
+
+The command expects two arguments:
+ . The module name
+ . The module ID
+
+This will information will be used to create the corresponding module skeleton.
+
+Read the following sections to learn how to further extend the LNS module to suit the desired use case.
 
 == Creating the LNS module assets
+
+The first part of the module that we implement here are the assets to handle thee different transaction types `register`, `reverse lookup` and `update records`.
+
 === Register Domain
+
+[source,bash]
+----
+lisk generate:asset lns register 1
+----
 
 ==== Schema
 
@@ -388,8 +418,13 @@ export const lnsNodeRecordSchema = {
 	},
 };
 ----
-
 === Update reverse lookup
+
+[source,bash]
+----
+lisk generate:asset lns reverse_lookup 2
+----
+
 ==== Schema
 [source,typescript]
 ----
@@ -428,6 +463,11 @@ public async apply({
 }
 ----
 === Update records
+
+[source,bash]
+----
+lisk generate:asset lns update_records 3
+----
 
 ==== Schema
 .src/app/modules/lns/data/assets/update_records.ts

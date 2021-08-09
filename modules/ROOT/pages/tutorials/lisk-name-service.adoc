@@ -9,6 +9,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 :experimental:
 // URLs
 :url_wikipedia_dns: https://en.wikipedia.org/wiki/Domain_Name_System
+:url_wikipedia_cname: https://en.wikipedia.org/wiki/CNAME_record
 :url_ens: https://docs.ens.domains/
 
 How to create a blockchain application that offers a domain name service for blockchain accounts, similar to {url_wikipedia_dns}[DNS^] and {url_ens}[ENS^].
@@ -775,6 +776,10 @@ Create a new file und the path `lisk-name-service/src/app/modules/lns/data/asset
 
 [source,typescript]
 ----
+export interface ReverseLookupAssetProps {
+	name: string;
+}
+
 export const reverseLookupAssetPropsSchema = {
   $id: 'lns/assets/set-lookup',
   title: 'SetLookup transaction asset for lns module',
@@ -791,7 +796,7 @@ export const reverseLookupAssetPropsSchema = {
 
 Add the interface and asset schema to the file and save it.
 
-Now,  just include the schema in the asset file:
+Now include the schema in the asset file:
 
 .lisk-name-service/src/app/modules/lns/assets/reverse_lookup.ts
 [source,typescript]
@@ -813,7 +818,7 @@ export class ReverseLookupAsset extends BaseAsset<ReverseLookupAssetProps> {
 
 ==== State change
 
-The validation is not required for the reveerse lookup transaction asset, so we can directly move on to implement the apply()` function.
+The validation is not required for the reverse lookup transaction asset, so we can directly move on to implement the apply()` function.
 
 The following logic is implemented:
 
@@ -844,15 +849,70 @@ public async apply({
 
 === Update records
 
+Finally, create the asset for updating the records of a domain.
+This is the last of the three assets in the LNS module.
+
+//TODO: update descriptions
+CNAME::
+A {url_wikipedia_cname}[CNAME record^] can be added to
+
+TXT::
+The idea of text records is it’s a generic field users can use for whatever they want.
+This way, it's possible to store a wide range of information without us the need to implement a new record type for each new use case.
+Each text record has a “label” that identifies what the data in a particular text record is for.
+For example, you can have a text record with the key “URL” with a URL in the data field.
+
 [source,bash]
 ----
 lisk generate:asset lns update_records 3
 ----
 
 ==== Schema
+
+.src/app/modules/lns/data/lns_node_record.ts
+[source,typescript]
+----
+export interface LNSNodeRecord {
+	type: number;
+	label: string;
+	value: string;
+}
+
+export type LNSNodeRecordJSON = LNSNodeRecord;
+
+export const lnsNodeRecordSchema = {
+	$id: 'lisk/lns/lnsNodeRecord',
+	type: 'object',
+	required: ['type', 'label', 'value'],
+	properties: {
+		type: {
+			dataType: 'uint32',
+			fieldNumber: 1,
+		},
+		label: {
+			dataType: 'string',
+			fieldNumber: 2,
+		},
+		value: {
+			dataType: 'string',
+			fieldNumber: 3,
+		}
+	},
+};
+----
+
+Create a new file under the path `lisk-name-service/src/app/modules/lns/data/assets/update_records.ts` and add the asset schema for the "update records" transaction.
+
 .src/app/modules/lns/data/assets/update_records.ts
 [source,typescript]
 ----
+import { LNSNodeRecord, lnsNodeRecordSchema } from "../lns_node_record";
+
+export interface UpdateRecordsAssetProps {
+  name: string;
+  records: LNSNodeRecord[];
+}
+
 export const updateRecordsAssetPropsSchema = {
   $id: 'lns/assets/update-records',
   title: 'Update Records transaction asset for lns module',

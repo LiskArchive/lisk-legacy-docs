@@ -752,7 +752,7 @@ export const getLNSObject = async (
 
 === Update reverse lookup
 
-Now that the first asset is prepared, and first utility function to store and get LNS pbjbeects from the database are implemented, let's move onn to implement the second required asset for updating the reverse lookup of a domain for an account.
+Now that the first asset is prepared, and first utility function to store and get LNS objects from the database are implemented, let's move on to implement the second required asset for updating the reverse lookup of a domain for an account.
 
 While 'regular' lookup involves mapping from a name to an address, reverse lookup maps from an address back to a domain.
 This allows applications to display LNS names in place of hexadecimal addresses.
@@ -762,7 +762,7 @@ Because an account can register multiple domains, it is important to define, to 
 To do this, the account owner needs to send a reverse lookup transaction to update the default domain, their account address should default to.
 
 Similar to the register asset, use Lisk Commander to first generate the asset skeleton.
-Use `reverse_lookup` and `2` as asset ID.
+Use `reverse_lookup`  as asset name and `2` as asset ID.
 
 [source,bash]
 ----
@@ -770,6 +770,9 @@ lisk generate:asset lns reverse_lookup 2
 ----
 
 ==== Schema
+
+Create a new file und the path `lisk-name-service/src/app/modules/lns/data/assets/reverse_lookup.ts` and add the asset schema for the reverse lookup transaction.
+
 [source,typescript]
 ----
 export const reverseLookupAssetPropsSchema = {
@@ -785,7 +788,39 @@ export const reverseLookupAssetPropsSchema = {
   },
 }
 ----
+
+Add the interface and asset schema to the file and save it.
+
+Now,  just include the schema in the asset file:
+
+.lisk-name-service/src/app/modules/lns/assets/reverse_lookup.ts
+[source,typescript]
+----
+import { ApplyAssetContext, BaseAsset } from 'lisk-sdk';
+import { LNSAccountProps, ReverseLookupAssetProps, reverseLookupAssetPropsSchema } from '../data';
+import { getNodeForName } from '../storage';
+
+export class ReverseLookupAsset extends BaseAsset<ReverseLookupAssetProps> {
+	public name = 'reverse-lookup';
+	public id = 2;
+
+	// Define schema for asset
+	public schema = reverseLookupAssetPropsSchema;
+
+  // ...
+}
+----
+
 ==== State change
+
+The validation is not required for the reveerse lookup transaction asset, so we can directly move on to implement the apply()` function.
+
+The following logic is implemented:
+
+* Check, if the domain name was already registered and if the transactionn sender owns this domain, and throw an error if not.
+* Add the hash value of the domain as reverse lookup domain to the senders account under the key `lns.reverseLookup`.
+
+.lisk-name-service/src/app/modules/lns/assets/reverse_lookup.ts
 [source,typescript]
 ----
 public async apply({
@@ -806,6 +841,7 @@ public async apply({
     await stateStore.account.set(sender.address, sender);
 }
 ----
+
 === Update records
 
 [source,bash]

@@ -2,6 +2,7 @@
 Mona Bärenfänger <mona@lightcurve.io>
 // Settings
 :toc: preamble
+:toclevels: 3
 :idprefix:
 :idseparator: -
 :imagesdir: ../../assets/images
@@ -322,10 +323,9 @@ It describes in a straight-forward way, what data is expected to be in the trans
 
 The following information is required for a successful registration:
 
-* `name`(string): The domain name to register for the sendinng account.
+* `name`(string): The domain name to register for the sending account.
 * `ttl`(number): Time-To-Live: Time which needs to pass, until the records for the domain can be updated again.
 * `registerFor`(number): The duration to reserve this domain for the sender account.
-
 
 The corresponding interface looks like this:
 
@@ -406,7 +406,7 @@ Now import the constants into the `register` asset, and use them to check the va
 
 We want to validate the following:
 
-. The TTL value needs to be above the minnimum defined TTL value (60 * 60).
+. The TTL value needs to be above the minimum defined TTL value (60 * 60).
 . The `registerFor` value needs to be between 1 and 5.
 . Only second level domain names can bbe registered.
 . Only domains with valid TLDs can be registered.
@@ -454,40 +454,88 @@ export class RegisterAsset extends BaseAsset<RegisterAssetProps> {
 
 ==== State change
 
+If the validation of the transaction asset doesn't throw any errors, the `apply()` function is executed, which allows state changes on the blockchain, based on the received transaction data.
+
+The following logic is implemented in the `apply()` function:
+
+* Checks, if the domain name was already registered, and throws an error in this case.
+* Creates a new LNS object based on the asset data of the received transaction and saves it in the blockchain.
+* Adds the namehash output of the domain name to the sender account under the key `lns.ownNodes`.
+
 .src/app/modules/lns/assets/register.ts
 [source,typescript]
 ----
-public async apply({
-		asset,
-		stateStore,
-		transaction,
-	}: ApplyAssetContext<RegisterAssetProps>): Promise<void> {
-		const node = getNodeForName(asset.name);
-		const existingDomain = await getLNSObject(stateStore, node);
+import { addYears } from 'date-fns';
+import { BaseAsset, ApplyAssetContext, ValidateAssetContext } from 'lisk-sdk';
+import { LNSAccountProps, RegisterAssetProps, registerAssetPropsSchema } from '../data';
+import { createLNSObject, getLNSObject, getNodeForName } from '../storage';
+import { MIN_TTL_VALUE, VALID_TLDS } from '../constants';
 
-		if (existingDomain) {
-			throw new Error(`The name "${asset.name}" already registered`);
-		}
+export class RegisterAsset extends BaseAsset<RegisterAssetProps> {
 
-		const lnsObject = {
-			name: asset.name,
-			ttl: asset.ttl,
-			expiry: Math.ceil(addYears(new Date(), asset.registerFor).getTime() / 1000),
-			ownerAddress: transaction.senderAddress,
-			records: [],
-		};
+    // ...
 
-		await createLSNObject(stateStore, lnsObject);
+    public async apply({
+            asset,
+            stateStore,
+            transaction,
+        }: ApplyAssetContext<RegisterAssetProps>): Promise<void> {
+            // Get namehash output of the domain anme
+            const node = getNodeForName(asset.name);
 
-		const sender = await stateStore.account.get<LNSAccountProps>(transaction.senderAddress);
-		sender.lns.ownNodes = [...sender.lns.ownNodes, node];
-		await stateStore.account.set(sender.address, sender);
-	}
+            // Check if this domain is already registered on the blockchain
+            const existingDomain = await getLNSObject(stateStore, node);
+            if (existingDomain) {
+                throw new Error(`The name "${asset.name}" already registered`);
+            }
+
+            // Create the LNS object and save it on the blockchain
+            const lnsObject = {
+                name: asset.name,
+                ttl: asset.ttl,
+                expiry: Math.ceil(addYears(new Date(), asset.registerFor).getTime() / 1000),
+                ownerAddress: transaction.senderAddress,
+                records: [],
+            };
+            await createLNSObject(stateStore, lnsObject);
+
+            // Get the sender account
+            const sender = await stateStore.account.get<LNSAccountProps>(transaction.senderAddress);
+
+            // Add the namehash output of the domain to the sender account
+            sender.lns.ownNodes = [...sender.lns.ownNodes, node];
+
+            // Save the updated sender account on the blockchain
+            await stateStore.account.set(sender.address, sender);
+        }
+    }
+
+    // ...
 }
 ----
 
+Several utility functions are used inside of the apply function, which are implemented in a new file under the path `src/app/modules/lns/storage.ts`.
+The implementation of these functions is explained in the next question in detail.
+
 ==== Utility functions
 
+Create a new file `storage.ts` in the LNS module folder.
+
+Implement the following interfaces and schemas:
+
+* Interface and schema for an LNS node.
+* Interface and schema for an LNS node record.
+
+Implement the following functions:
+
+* createLNSObject: A function to create a new LNS object in the database.
+* getLNSObject: A function to get a specific LNS object from the database.
+* getNodeForName: Construct a node(namehash output) based on the domain name.
+* getKeyForNode: Get the unique database key for a specific LNS object.
+
+Paste the following contents:
+
+===== getNodeForName(name)
 .src/app/modules/lns/storage.ts
 [source,typescript]
 ----
@@ -504,44 +552,10 @@ export const getNodeForName = (name: string): Buffer =>
 	Buffer.from(namehash.hash(name).slice(2), 'hex');
 ----
 
-.src/app/modules/lns/storage.ts
-[source,typescript]
-----
-export const getLNSObject = async (
-	stateStore: StateStore,
-	node: Buffer,
-): Promise<LNSNode | undefined> => {
-	const result = await stateStore.chain.get(getKeyForNode(node));
+For the creation of the namehash output of the domain, aka node, reuse the `namehash.hash()` function of the `eth-ens-namehash` NPM package.
 
-	if (!result) {
-		return;
-	}
+===== LNS node schema
 
-	// eslint-disable-next-line consistent-return
-	return codec.decode<LNSNode>(lnsNodeSchema, result);
-};
-----
-
-.src/app/modules/lns/storage.ts
-[source,typescript]
-----
-export const createLSNObject = async (
-	stateStore: StateStore,
-	params: Omit<LNSNode, 'createdAt' | 'updatedAt' | 'node'> & { name: string },
-): Promise<void> => {
-	const { name, ...lnsObject } = params;
-	const node = getNodeForName(name);
-
-	const input: LNSNode = {
-		...lnsObject,
-		name,
-		createdAt: Math.ceil(Date.now() / 1000),
-		updatedAt: Math.ceil(Date.now() / 1000),
-	};
-
-	await stateStore.chain.set(getKeyForNode(node), codec.encode(lnsNodeSchema, input));
-};
-----
 
 .src/app/modules/lns/data/lns_node.ts
 [source,typescript]
@@ -600,6 +614,60 @@ export const lnsNodeSchema = {
 };
 ----
 
+===== createLNSObject(stateStore, params)
+
+The function  `createLNSObject()` expects
+.src/app/modules/lns/storage.ts
+[source,typescript]
+----
+export const createLNSObject = async (
+	stateStore: StateStore,
+	params: Omit<LNSNode, 'createdAt' | 'updatedAt' | 'node'> & { name: string },
+): Promise<void> => {
+	const { name, ...lnsObject } = params;
+	const node = getNodeForName(name);
+
+	const input: LNSNode = {
+		...lnsObject,
+		name,
+		createdAt: Math.ceil(Date.now() / 1000),
+		updatedAt: Math.ceil(Date.now() / 1000),
+	};
+
+	await stateStore.chain.set(getKeyForNode(node), codec.encode(lnsNodeSchema, input));
+};
+----
+
+===== getLNSObject(stateStore, node)
+
+Next, implement the function `getLNSObject()`, which gets a specific LNS object from the database, based on the provided node value.
+
+The function `getKeyForNode()` is used to get a unique key for the LNS object in the database.
+
+.src/app/modules/lns/storage.ts
+[source,typescript]
+----
+import { chain, codec, StateStore } from 'lisk-sdk';
+import * as namehash from 'eth-ens-namehash';
+
+// ...
+
+export const getLNSObject = async (
+	stateStore: StateStore,
+	node: Buffer,
+): Promise<LNSNode | undefined> => {
+	const result = await stateStore.chain.get(getKeyForNode(node));
+
+	if (!result) {
+		return;
+	}
+
+	// eslint-disable-next-line consistent-return
+	return codec.decode<LNSNode>(lnsNodeSchema, result);
+};
+----
+
+===== LNS node record schema
 .src/app/modules/lns/data/lns_node_records.ts
 [source,typescript]
 ----
@@ -633,6 +701,7 @@ export const lnsNodeRecordSchema = {
 	},
 };
 ----
+
 === Update reverse lookup
 
 [source,bash]

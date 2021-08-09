@@ -1571,7 +1571,7 @@ export const getLNSObject = async (
 <div class="sect2">
 <h3 id="update-reverse-lookup"><a class="anchor" href="#update-reverse-lookup"></a>3.2. Update reverse lookup</h3>
 <div class="paragraph">
-<p>Now that the first asset is prepared, and first utility function to store and get LNS pbjbeects from the database are implemented, let&#8217;s move onn to implement the second required asset for updating the reverse lookup of a domain for an account.</p>
+<p>Now that the first asset is prepared, and first utility function to store and get LNS objects from the database are implemented, let&#8217;s move on to implement the second required asset for updating the reverse lookup of a domain for an account.</p>
 </div>
 <div class="paragraph">
 <p>While 'regular' lookup involves mapping from a name to an address, reverse lookup maps from an address back to a domain.
@@ -1585,7 +1585,7 @@ This allows applications to display LNS names in place of hexadecimal addresses.
 </div>
 <div class="paragraph">
 <p>Similar to the register asset, use Lisk Commander to first generate the asset skeleton.
-Use <code>reverse_lookup</code> and <code>2</code> as asset ID.</p>
+Use <code>reverse_lookup</code>  as asset name and <code>2</code> as asset ID.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -1594,6 +1594,9 @@ Use <code>reverse_lookup</code> and <code>2</code> as asset ID.</p>
 </div>
 <div class="sect3">
 <h4 id="schema-2"><a class="anchor" href="#schema-2"></a>3.2.1. Schema</h4>
+<div class="paragraph">
+<p>Create a new file und the path <code>lisk-name-service/src/app/modules/lns/data/assets/reverse_lookup.ts</code> and add the asset schema for the reverse lookup transaction.</p>
+</div>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export const reverseLookupAssetPropsSchema = {
@@ -1610,10 +1613,51 @@ Use <code>reverse_lookup</code> and <code>2</code> as asset ID.</p>
 }</code></pre>
 </div>
 </div>
+<div class="paragraph">
+<p>Add the interface and asset schema to the file and save it.</p>
+</div>
+<div class="paragraph">
+<p>Now,  just include the schema in the asset file:</p>
+</div>
+<div class="listingblock">
+<div class="title">lisk-name-service/src/app/modules/lns/assets/reverse_lookup.ts</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import { ApplyAssetContext, BaseAsset } from 'lisk-sdk';
+import { LNSAccountProps, ReverseLookupAssetProps, reverseLookupAssetPropsSchema } from '../data';
+import { getNodeForName } from '../storage';
+
+export class ReverseLookupAsset extends BaseAsset&lt;ReverseLookupAssetProps&gt; {
+	public name = 'reverse-lookup';
+	public id = 2;
+
+	// Define schema for asset
+	public schema = reverseLookupAssetPropsSchema;
+
+  // ...
+}</code></pre>
+</div>
+</div>
 </div>
 <div class="sect3">
 <h4 id="state-change-2"><a class="anchor" href="#state-change-2"></a>3.2.2. State change</h4>
+<div class="paragraph">
+<p>The validation is not required for the reveerse lookup transaction asset, so we can directly move on to implement the apply()` function.</p>
+</div>
+<div class="paragraph">
+<p>The following logic is implemented:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Check, if the domain name was already registered and if the transactionn sender owns this domain, and throw an error if not.</p>
+</li>
+<li>
+<p>Add the hash value of the domain as reverse lookup domain to the senders account under the key <code>lns.reverseLookup</code>.</p>
+</li>
+</ul>
+</div>
 <div class="listingblock">
+<div class="title">lisk-name-service/src/app/modules/lns/assets/reverse_lookup.ts</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async apply({
     asset,

@@ -533,43 +533,33 @@ Implement the following functions:
 * getNodeForName: Construct a node(namehash output) based on the domain name.
 * getKeyForNode: Get the unique database key for a specific LNS object.
 
-Paste the following contents:
-
-===== getNodeForName(name)
-.src/app/modules/lns/storage.ts
-[source,typescript]
-----
-import * as namehash from 'eth-ens-namehash';
-
-// constants
-export const LNS_PREFIX = 'LNS';
-export const VALID_TLDS = ['lsk'];
-
-// Get a unique key for each LNS object
-export const getKeyForNode = (node: Buffer): string => `${LNS_PREFIX}:${node.toString('hex')}`;
-// Create a hash from the domain name and return it as Buffer
-export const getNodeForName = (name: string): Buffer =>
-	Buffer.from(namehash.hash(name).slice(2), 'hex');
-----
-
-For the creation of the namehash output of the domain, aka node, reuse the `namehash.hash()` function of the `eth-ens-namehash` NPM package.
-
 ===== LNS node schema
 
+First, define an interface, which illustrates, how the LNS object will look like:
 
 .src/app/modules/lns/data/lns_node.ts
 [source,typescript]
 ----
 export interface LNSNode {
-	ownerAddress: Buffer;
-	name: string;
-	ttl: number;
-	expiry: number;
-	records: LNSNodeRecord[];
-	createdAt: number;
-	updatedAt: number;
+	ownerAddress: Buffer; // <1>
+	name: string;// <2>
+	ttl: number;// <3>
+	expiry: number;// <4>
+	records: LNSNodeRecord[];// <5>
+	createdAt: number;// <6>
+	updatedAt: number;// <7>
 }
 ----
+
+<1> `ownerAddress`: The address of the domain owner as Buffer.
+<2> `name`: The domain name as String.
+<3> `ttl`: The TTL in seconds as number.
+<4> `expiry`: The amount of years until the domain registration expires as number.
+<5> `records`: A list of all existing records for this domain as <<LNS node record schema, LNSNodeRecord>>.
+<6> `createdAt`: Date of the domain registration as number.
+<7> `updatedAt`: Date of the last update of the domain and its' records as number.
+
+Based on this interface, we can create the corresponding schema, which looks like this:
 
 .src/app/modules/lns/data/lns_node.ts
 [source,typescript]
@@ -614,69 +604,26 @@ export const lnsNodeSchema = {
 };
 ----
 
-===== createLNSObject(stateStore, params)
-
-The function  `createLNSObject()` expects
-.src/app/modules/lns/storage.ts
-[source,typescript]
-----
-export const createLNSObject = async (
-	stateStore: StateStore,
-	params: Omit<LNSNode, 'createdAt' | 'updatedAt' | 'node'> & { name: string },
-): Promise<void> => {
-	const { name, ...lnsObject } = params;
-	const node = getNodeForName(name);
-
-	const input: LNSNode = {
-		...lnsObject,
-		name,
-		createdAt: Math.ceil(Date.now() / 1000),
-		updatedAt: Math.ceil(Date.now() / 1000),
-	};
-
-	await stateStore.chain.set(getKeyForNode(node), codec.encode(lnsNodeSchema, input));
-};
-----
-
-===== getLNSObject(stateStore, node)
-
-Next, implement the function `getLNSObject()`, which gets a specific LNS object from the database, based on the provided node value.
-
-The function `getKeyForNode()` is used to get a unique key for the LNS object in the database.
-
-.src/app/modules/lns/storage.ts
-[source,typescript]
-----
-import { chain, codec, StateStore } from 'lisk-sdk';
-import * as namehash from 'eth-ens-namehash';
-
-// ...
-
-export const getLNSObject = async (
-	stateStore: StateStore,
-	node: Buffer,
-): Promise<LNSNode | undefined> => {
-	const result = await stateStore.chain.get(getKeyForNode(node));
-
-	if (!result) {
-		return;
-	}
-
-	// eslint-disable-next-line consistent-return
-	return codec.decode<LNSNode>(lnsNodeSchema, result);
-};
-----
-
 ===== LNS node record schema
+
+Thee innterface for an LNS node record looks llike this:
+
 .src/app/modules/lns/data/lns_node_records.ts
 [source,typescript]
 ----
 export interface LNSNodeRecord {
-	type: number;
-	label: string;
-	value: string;
+	type: number; // <1>
+	label: string; // <2>
+	value: string; // <3>
 }
 ----
+
+<1> `type`: Type of the records as number.
+1 stands for a CNAME record, 2 stands for a TXT record.
+<2> `label`: Label for the record.
+<3> `value`: Value for the record.
+
+Based on this interface, we can create the corresponding schema, which looks like this:
 
 .src/app/modules/lns/data/lns_node_records.ts
 [source,typescript]
@@ -702,7 +649,120 @@ export const lnsNodeRecordSchema = {
 };
 ----
 
+===== getNodeForName(name)
+
+Next, import the `eth-ens-namehash` package and create the following functions:
+
+* getNodeForName: Construct a node(namehash output) based on the domain name.
+* getKeyForNode: Get the unique database key for a specific LNS object.
+
+.src/app/modules/lns/storage.ts
+[source,typescript]
+----
+import * as namehash from 'eth-ens-namehash';
+
+// constants
+export const LNS_PREFIX = 'LNS';
+export const VALID_TLDS = ['lsk'];
+
+// Get a unique key for each LNS object
+export const getKeyForNode = (node: Buffer): string => `${LNS_PREFIX}:${node.toString('hex')}`;
+// Create a hash from the domain name and return it as Buffer
+export const getNodeForName = (name: string): Buffer =>
+	Buffer.from(namehash.hash(name).slice(2), 'hex');
+----
+
+For the creation of the namehash output of the domain, aka node, reuse the `hash()` function of the `eth-ens-namehash` NPM package.
+
+===== createLNSObject(stateStore, params)
+
+Now implement the function to save a new LNS object in the database by reusing the above defined `lnsNodeSchema` and the functions `getNodeForName` and `getKeyForNode`.
+
+The function  `createLNSObject()` expects thee following two arguments:
+
+. `stateStore`: the stateStore which is passed from the LNS module later.
+The stateStore allows to perform state changes on the blockchain.
+. `params`: the parameters which will be used to create the new LNS object.
+** ownerAddress
+** name
+** ttl
+** expiry
+** records
+
+.src/app/modules/lns/storage.ts
+[source,typescript]
+----
+import { chain, codec, StateStore } from 'lisk-sdk';
+import * as namehash from 'eth-ens-namehash';
+
+// ...
+
+export const createLNSObject = async (
+	stateStore: StateStore,
+	params: Omit<LNSNode, 'createdAt' | 'updatedAt' | 'node'> & { name: string },
+): Promise<void> => {
+	const { name, ...lnsObject } = params;
+	const node = getNodeForName(name);
+
+	const input: LNSNode = {
+		...lnsObject,
+		name,
+		createdAt: Math.ceil(Date.now() / 1000),
+		updatedAt: Math.ceil(Date.now() / 1000),
+	};
+
+	await stateStore.chain.set(getKeyForNode(node), codec.encode(lnsNodeSchema, input));
+};
+----
+
+===== getLNSObject(stateStore, node)
+
+Next, implement the function `getLNSObject()`, which gets a specific LNS object from the database, based on the provided node value.
+
+The function `getKeyForNode()` is used to get a unique key for the LNS object in the database.
+
+The function  `createLNSObject()` expects thee following two arguments:
+
+. `stateStore`: the stateStore which is passed from the LNS module later.
+The stateStore allows to perform state changes on the blockchain.
+. `node`: The name hash of the LNS object which is requested from the database.
+
+.src/app/modules/lns/storage.ts
+[source,typescript]
+----
+import { chain, codec, StateStore } from 'lisk-sdk';
+import * as namehash from 'eth-ens-namehash';
+
+// ...
+
+export const getLNSObject = async (
+	stateStore: StateStore,
+	node: Buffer,
+): Promise<LNSNode | undefined> => {
+	const result = await stateStore.chain.get(getKeyForNode(node));
+
+	if (!result) {
+		return;
+	}
+
+	// eslint-disable-next-line consistent-return
+	return codec.decode<LNSNode>(lnsNodeSchema, result);
+};
+----
+
 === Update reverse lookup
+
+Now that the first asset is prepared, and first utility function to store and get LNS pbjbeects from the database are implemented, let's move onn to implement the second required asset for updating the reverse lookup of a domain for an account.
+
+While 'regular' lookup involves mapping from a name to an address, reverse lookup maps from an address back to a domain.
+This allows applications to display LNS names in place of hexadecimal addresses.
+
+Because an account can register multiple domains, it is important to define, to which domain the address should resolve to by default.
+
+To do this, the account owner needs to send a reverse lookup transaction to update the default domain, their account address should default to.
+
+Similar to the register asset, use Lisk Commander to first generate the asset skeleton.
+Use `reverse_lookup` and `2` as asset ID.
 
 [source,bash]
 ----

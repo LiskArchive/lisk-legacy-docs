@@ -1,0 +1,171 @@
+= Creating transactions and signing them offline
+
+== Signing transactions offline
+
+=== Creating unsigned transactions online
+
+==== Option A: the API client
+
+[source,typescript]
+----
+import { apiClient } from '@liskhq/lisk-client';
+
+const RPC_ENDPOINT = 'ws://localhost:8888/ws';
+let clientCache;
+
+export const getClient = async () => {
+    if (!clientCache) {
+        clientCache = await apiClient.createWSClient(RPC_ENDPOINT);
+    }
+    return clientCache;
+};
+
+getClient().then(async client => {
+    const unsignedTransaction = await client.transaction.create({
+        moduleID: 2,
+        assetID: 0,
+        fee: BigInt(transactions.convertLSKToBeddows(0.1)),
+        asset: {
+            amount: BigInt(transactions.convertLSKToBeddows(20)),
+            recipientAddress: '3e565c6f2d22e0a3c1e4717672ec8ac61c2660f2',
+            data: 'Happy birthday!',
+        },
+    });
+
+    console.log(unsignedTransaction);
+});
+----
+
+==== Option B: the blockchain application CLI
+==== Option C: the Lisk Core CLI
+
+=== Signing the unsigned transaction offline
+
+
+v
+
+== Creating and signing transactions offline
+
+.schemas.js
+[source,typescript]
+----
+export const transactionSchema = {
+     "$id":"lisk/transaction",
+     "type":"object",
+     "required":[
+        "moduleID",
+        "assetID",
+        "nonce",
+        "fee",
+        "senderPublicKey",
+        "asset"
+     ],
+     "properties":{
+        "moduleID":{
+           "dataType":"uint32",
+           "fieldNumber":1,
+           "minimum":2
+        },
+        "assetID":{
+           "dataType":"uint32",
+           "fieldNumber":2
+        },
+        "nonce":{
+           "dataType":"uint64",
+           "fieldNumber":3
+        },
+        "fee":{
+           "dataType":"uint64",
+           "fieldNumber":4
+        },
+        "senderPublicKey":{
+           "dataType":"bytes",
+           "fieldNumber":5,
+           "minLength":32,
+           "maxLength":32
+        },
+        "asset":{
+           "dataType":"bytes",
+           "fieldNumber":6
+        },
+        "signatures":{
+           "type":"array",
+           "items":{
+              "dataType":"bytes"
+           },
+           "fieldNumber":7
+        }
+     }
+};
+
+export const transferAssetSchema = {
+    $id: 'lisk/transfer-asset',
+    title: 'Transfer transaction asset',
+    type: 'object',
+    required: ['amount', 'recipientAddress', 'data'],
+    properties: {
+        amount: {
+            dataType: 'uint64',
+            fieldNumber: 1,
+        },
+        recipientAddress: {
+            dataType: 'bytes',
+            fieldNumber: 2,
+            minLength: 20,
+            maxLength: 20,
+        },
+        data: {
+            dataType: 'string',
+            fieldNumber: 3,
+            minLength: 0,
+            maxLength: 64,
+        },
+    },
+};
+----
+
+[source,typescript]
+----
+import { codec } from '@liskhq/lisk-codec';
+import * as validator from '@liskhq/lisk-validator';
+import { transactionSchema, transferAssetSchema } from 'schemas';
+
+const unsignedTransaction = {
+    moduleID: Number(2),
+    assetID: Number(0),
+    fee: BigInt(10000000),
+    nonce: BigInt(23),
+    senderPublicKey: Buffer.from('1dc86a88278ee6db12ff671318677ec23b9ee6231cfca71a2c99c2ab78338cb1'),
+    asset: Buffer.alloc(0),
+    signatures: [],
+};
+
+const transactionErrors = validator.validator.validate(transactionSchema, unsignedTransaction);
+
+if (transactionErrors.length) {
+    throw new validator.LiskValidationError([...transactionErrors]);
+}
+
+const rawTransferAsset = {
+    amount: BigInt(2000000000),
+    recipientAddress: Buffer.from('3e565c6f2d22e0a3c1e4717672ec8ac61c2660f2'),
+    data: 'Happy birthday!'
+};
+
+const encodedTransferAsset = codec.fromJSON(transferAssetSchema, rawTransferAsset);
+
+unsignedTransaction.asset = encodedTransferAsset;
+
+const networkIdTestnet = '15f0dacc1060e91818224a94286b13aa04279c640bd5d6f193182031d133df7c';
+
+const passphrase = "The mnemonnic passphrase of the account who sends the transaction"
+
+transactions.signTransaction(
+    transferAssetSchema,
+    encodedTransferAsset,
+    Buffer.from(networkIdTestnet, 'hex'),
+    passphrase,
+);
+----
+
+

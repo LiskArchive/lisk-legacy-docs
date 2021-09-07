@@ -12,6 +12,11 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_wikipedia_cname: https://en.wikipedia.org/wiki/CNAME_record
 :url_wikipedia_txt: https://en.wikipedia.org/wiki/TXT_record
 :url_ens: https://docs.ens.domains/
+// Project URLs
+:url_guide_dashboard: guides/app-development/dashboard.adoc
+:url_reference_dashboard: references/lisk-framework/dashboard-plugin.adoc
+:url_reference_faucet: references/lisk-framework/faucet-plugin.adoc
+
 
 How to create a blockchain application that offers a domain name service for blockchain accounts, similar to {url_wikipedia_dns}[DNS^] and {url_ens}[ENS^].
 
@@ -606,7 +611,7 @@ For the creation of the namehash output of the domain, aka node, reuse the `hash
 
 Now implement the function to save a new LNS object in the database by reusing the above defined `lnsNodeSchema` and the functions `getNodeForName` and `getKeyForNode`.
 
-The function  `createLNSObject()` expects thee following two arguments:
+The function  `createLNSObject()` expects the following two arguments:
 
 . `stateStore`: the stateStore which is passed from the LNS module later.
 The stateStore allows to perform state changes on the blockchain.
@@ -649,7 +654,7 @@ Next, implement the function `getLNSObject()`, which gets a specific LNS object 
 
 The function `getKeyForNode()` is used to get a unique key for the LNS object in the database.
 
-The function  `createLNSObject()` expects thee following two arguments:
+The function  `createLNSObject()` expects the following two arguments:
 
 . `stateStore`: the stateStore which is passed from the LNS module later.
 The stateStore allows to perform state changes on the blockchain.
@@ -1272,9 +1277,9 @@ The LNS module should have the following actions:
 * `resolveName`: returns an LNS object based on a domain name.
 * `resolveNode`: returns an LNS object based on a node hash value.
 
-All three actions are returning an <<lns-node-schema, LNS object>>, based on differeent input parameters like the address it os registered to, the domain name that is registered in the LNS object, or a hash of the LNS object, which is typically stored in user account under `lns.ownNodes`.
+All three actions are returning an <<lns-node-schema, LNS object>>, based on different input parameters like the address it is registered to, the domain name that is registered in the LNS object, or a hash of the LNS object, which is typically stored in user account under the key `lns.ownNodes`.
 
-The main logic of the different actions is imported from the file `storage.ts`, and is explained in detail in step <<utility-functions-3>>.
+The main logic of the different actions is imported from the file `storage.ts`, and is explained in detail in step <<utility-functions-3>> below.
 
 .lns/lns_module.ts
 [source,typescript]
@@ -1504,10 +1509,94 @@ export interface LNSNodeJSON {
 With this last step, all required parts of the LNS module are implemented.
 Before we go on with developing the frontend part, let's quickly check if the blockchain application is working as expected by enabling the Dashboard plugin in the next chapter.
 
-== Connecting the Dashboard plugin
+== Connecting the Dashboard and Faucet plugins
+
+The Dashboard plugin provides a web interface that allows developers to innteract with their blockchain application during development.
+
+More information about the Dashboard plugin can be found in the development guide xref:{url_guide_dashboard}[] or on the reference page of the xref:{url_reference_dashboard}[].
+
+The Faucet plugin provides a web interface with a faucet, allowing account in the network to receive free tokens conveniently.
+
+More information about the Dashboard plugin can be found on the reference page of the xref:{url_reference_faucet}[].
+
+=== Registering the Dashboard plugin
+
+Install the dashboard plugin:
+
+.lisk-name-service/
+[source,bash]
+----
+npm i @liskhq/lisk-framework-dashboard-plugin
+----
+
+Now open `plugins.ts`, import the Dashboard plugin, and register it with the application as shown below:
+
+.lisk-name-service/src/app/plugins.ts
 [source,typescript]
 ----
+/* eslint-disable @typescript-eslint/no-empty-function */
+import { Application } from 'lisk-sdk';
+import { DashboardPlugin } from "@liskhq/lisk-framework-dashboard-plugin";
+
+// @ts-expect-error Unused variable error happens here until at least one module is registered
+export const registerPlugins = (app: Application): void => {
+
+    app.registerPlugin(DashboardPlugin);
+};
 ----
+
+Save and close `plugins.ts` and start the blockchain application again:
+
+[source,bash]
+----
+./bin/run start
+----
+
+Wait until the application start is completed.
+Now it is possible to access the dashboard on the browser under `localhost: 4005`
+
+=== Registering the Faucet plugin
+
+Choose one of the genesis delegate to be the faucet account, e.g. the first account in `lisk-name-service/.secret/accounts.json`.
+
+Use Lisk Commander to encrypt the passphrase of the account with a password.
+Save the password somewhere, it is needed to enable and disable the faucet later.
+
+[source,bash]
+----
+$ lisk passphrase:encrypt
+? Please enter passphrase:  [hidden]
+? Please re-enter passphrase:  [hidden]
+? Please enter password:  [hidden]
+? Please re-enter password:  [hidden]
+{"encryptedPassphrase":"iterations=1000000&cipherText=643bfbf1b6f1dc0ce740dd9fc9f27a682e476dc5de4e6c023deded4d3efe2822346226541106b42638db5ba46e0ae0a338cb78fb40bce67fdec7abbca68e20624fa6b0d7&iv=8a9c461744b9e70a8ba65edd&salt=3fe00b03d10b7002841857c1f028196e&tag=c57a798ef65f5a7be617d8737828fd58&version=1"}
+----
+
+The following free sitekey and secretkey for reCaptcha can be used for testing purposes: https://developers.google.com/recaptcha/docs/faq#id-like-to-run-automated-tests-with-recaptcha.-what-should-i-do
+
+.~/.lisk/lns/config/default/config.json
+[source,json]
+----
+"plugins": {
+    "faucet": {
+        "encryptedPassphrase": "iterations=1000000&cipherText=643bfbf1b6f1dc0ce740dd9fc9f27a682e476dc5de4e6c023deded4d3efe2822346226541106b42638db5ba46e0ae0a338cb78fb40bce67fdec7abbca68e20624fa6b0d7&iv=8a9c461744b9e70a8ba65edd&salt=3fe00b03d10b7002841857c1f028196e&tag=c57a798ef65f5a7be617d8737828fd58&version=1",
+        "captchaSecretkey": "6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe",
+        "captchaSitekey": "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"
+    }
+}
+----
+
+=== Checking the functionality of the LNS module
+
+Go to http://localhost:4005 to access the dashboard.
+
+==== Create new account
+==== Fund new account
+==== Register new domain
+==== Test actions
+==== Update records for a name
+==== Perform a reverse lookup for an address
+
 
 == Extending the application CLI
 [source,typescript]

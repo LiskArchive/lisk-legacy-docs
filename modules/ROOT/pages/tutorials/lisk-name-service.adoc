@@ -2,7 +2,7 @@
 Mona Bärenfänger <mona@lightcurve.io>
 // Settings
 :toc: preamble
-:toclevels: 3
+:toclevels: 4
 :idprefix:
 :idseparator: -
 :imagesdir: ../../assets/images
@@ -678,13 +678,13 @@ export const getLNSObject = async (
 };
 ----
 
-===== Schemas
+==== Schemas
 Implement the following interfaces and schemas, which are be used inside the utility functions:
 
 * <<lns-node-record-schema>>: Interface and schema for an LNS node record.
 * <<lns-node-schema>>: Interface and schema for an LNS node.
 
-====== LNS node record schema
+===== LNS node record schema
 
 Create a new file `data/lns_node_records.ts` in the LNS module folder.
 
@@ -733,7 +733,7 @@ export const lnsNodeRecordSchema = {
 };
 ----
 
-====== LNS node schema
+===== LNS node schema
 
 Create a new file `data/lns_node.ts` in the LNS module folder.
 
@@ -1224,7 +1224,25 @@ export class LnsModule extends BaseModule {
 }
 ----
 
+As you can see, the following values have been pre-filled when creating the LNS module with Lisk Commander in step <<bootstrapping-the-default-application>>.
+
+* `name`: The module name (here: `lns`).
+* `id`: The module ID (here: `1000`).
+
+We will now implement the following parts of the skeleton:
+
+. <<assets>>
+. <<actions>>
+. <<reducers>>
+
+The events and lifecycle hooks are not required in this use case, so you can leave the skeletons as they are.
+
 === Assets
+
+Now, let's add the assets we created before in step <<creating-the-lns-module-assets>>.
+Import the different assets to the LNS module as shown in the snippet below.
+
+Then, create a new instance of each asset and add them as array to the `transactionAssets` property of the LNS module.
 
 .lns/lns_module.ts
 [source,typescript]
@@ -1244,7 +1262,19 @@ export class LnsModule extends BaseModule {
 }
 ----
 
+That's all that is needed to add new assets to the LNS module.
+
 === Actions
+
+The LNS module should have the following actions:
+
+* `lookupAddress`: returns an LNS object based on a provided account address.
+* `resolveName`: returns an LNS object based on a domain name.
+* `resolveNode`: returns an LNS object based on a node hash value.
+
+All three actions are returning an <<lns-node-schema, LNS object>>, based on differeent input parameters like the address it os registered to, the domain name that is registered in the LNS object, or a hash of the LNS object, which is typically stored in user account under `lns.ownNodes`.
+
+The main logic of the different actions is imported from the file `storage.ts`, and is explained in detail in step <<utility-functions-3>>.
 
 .lns/lns_module.ts
 [source,typescript]
@@ -1296,21 +1326,66 @@ export class LnsModule extends BaseModule {
 }
 ----
 
-.src/app/modules/lns/data/lns_node.ts
+=== Reducers
+
+The methods needed in reducers are very similar to the methods in <<actions>> above.
+The only difference is, that the `StateStore` is available inside of reducers, so let's use it instead of `dataAccess` to query the database:
+
+.lns/lns_module.ts
 [source,typescript]
 ----
-// ...
-export interface LNSNodeJSON {
-	ownerAddress: string;
-	name: string;
-	ttl: number;
-	expiry: number;
-	records: LNSNodeRecordJSON[];
-	createdAt: number;
-	updatedAt: number;
+import {
+    BaseModule,
+    codec,
+    StateStore,
+    AfterBlockApplyContext,
+    TransactionApplyContext,
+    BeforeBlockApplyContext,
+    AfterGenesisBlockApplyContext,
+    // GenesisConfig
+} from 'lisk-sdk';
+import { RegisterAsset } from './assets/register';
+import { UpdateRecordsAsset } from './assets/update_records';
+import { ReverseLookupAsset } from './assets/reverse_lookup';
+import { LNSNode, LNSNodeJSON, lnsNodeSchema, lsnAccountPropsSchema } from './data';
+import { lookupAddress, resolveName, resolveNode } from './storage';
+
+export class LnsModule extends BaseModule {
+    // ...
+    public reducers = {
+		lookupAddress: async (
+			params: Record<string, unknown>,
+			stateStore: StateStore,
+		): Promise<LNSNode> =>
+			lookupAddress({
+				accountGetter: stateStore.account.get.bind(this),
+				chainGetter: stateStore.chain.get.bind(this),
+				address: (params as { address: Buffer }).address,
+			}),
+		resolveName: async (
+			params: Record<string, unknown>,
+			stateStore: StateStore,
+		): Promise<LNSNode> =>
+			resolveName({
+				chainGetter: stateStore.chain.get.bind(this),
+				name: (params as { name: string }).name,
+			}),
+		resolveNode: async (
+			params: Record<string, unknown>,
+			stateStore: StateStore,
+		): Promise<LNSNode> =>
+			resolveNode({
+				chainGetter: stateStore.chain.get.bind(this),
+				node: (params as { node: Buffer }).node,
+			}),
+	};
+    // ...
 }
-// ...
 ----
+
+=== Utility functions
+
+Add the code of the functions `resolveNode()`, resolveName()` and `lookupAddress()` to the file `storage.ts`, to complete the implementation of the actions and reducers of the LNS module.
 
 .src/app/modules/lns/storage.ts
 [source,typescript]
@@ -1408,59 +1483,26 @@ export const lookupAddress = async ({
 // ...
 ----
 
-=== Reducers
+Don't forget to add a new interface for `LNSNodeJSON` to the file `data/lns_node.ts`.
 
-.lns/lns_module.ts
+.src/app/modules/lns/data/lns_node.ts
 [source,typescript]
 ----
-import {
-    BaseModule,
-    codec,
-    StateStore,
-    AfterBlockApplyContext,
-    TransactionApplyContext,
-    BeforeBlockApplyContext,
-    AfterGenesisBlockApplyContext,
-    // GenesisConfig
-} from 'lisk-sdk';
-import { RegisterAsset } from './assets/register';
-import { UpdateRecordsAsset } from './assets/update_records';
-import { ReverseLookupAsset } from './assets/reverse_lookup';
-import { LNSNode, LNSNodeJSON, lnsNodeSchema, lsnAccountPropsSchema } from './data';
-import { lookupAddress, resolveName, resolveNode } from './storage';
-
-export class LnsModule extends BaseModule {
-    // ...
-    public reducers = {
-		lookupAddress: async (
-			params: Record<string, unknown>,
-			stateStore: StateStore,
-		): Promise<LNSNode> =>
-			lookupAddress({
-				accountGetter: stateStore.account.get.bind(this),
-				chainGetter: stateStore.chain.get.bind(this),
-				address: (params as { address: Buffer }).address,
-			}),
-		resolveName: async (
-			params: Record<string, unknown>,
-			stateStore: StateStore,
-		): Promise<LNSNode> =>
-			resolveName({
-				chainGetter: stateStore.chain.get.bind(this),
-				name: (params as { name: string }).name,
-			}),
-		resolveNode: async (
-			params: Record<string, unknown>,
-			stateStore: StateStore,
-		): Promise<LNSNode> =>
-			resolveNode({
-				chainGetter: stateStore.chain.get.bind(this),
-				node: (params as { node: Buffer }).node,
-			}),
-	};
-    // ...
+// ...
+export interface LNSNodeJSON {
+	ownerAddress: string;
+	name: string;
+	ttl: number;
+	expiry: number;
+	records: LNSNodeRecordJSON[];
+	createdAt: number;
+	updatedAt: number;
 }
+// ...
 ----
+
+With this last step, all required parts of the LNS module are implemented.
+Before we go on with developing the frontend part, let's quickly check if the blockchain application is working as expected by enabling the Dashboard plugin in the next chapter.
 
 == Connecting the Dashboard plugin
 [source,typescript]

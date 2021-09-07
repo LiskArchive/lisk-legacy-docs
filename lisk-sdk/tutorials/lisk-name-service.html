@@ -397,7 +397,7 @@
       <span class="title">Lisk Core</span>
       <ul class="versions">
         <li class="version is-latest">
-          <a href="../../lisk-core/index.html">3.0.0</a>
+          <a href="../../lisk-core/index.html">3.0.1</a>
         </li>
         <li class="version">
           <a href="../../lisk-core/v2/index.html">2.1.7</a>
@@ -1466,7 +1466,9 @@ export const getLNSObject = async (
 	type: number; <i class="conum" data-value="1"></i><b>(1)</b>
 	label: string; <i class="conum" data-value="2"></i><b>(2)</b>
 	value: string; <i class="conum" data-value="3"></i><b>(3)</b>
-}</code></pre>
+}
+
+export type LNSNodeRecordJSON = LNSNodeRecord;</code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -1520,7 +1522,7 @@ export const getLNSObject = async (
 <p>Create a new file <code>data/lns_node.ts</code> in the LNS module folder.</p>
 </div>
 <div class="paragraph">
-<p>First, define an interface, which illustrates, how the LNS object will look like:</p>
+<p>First define an interface which illustrates, how the LNS object will look like:</p>
 </div>
 <div class="listingblock">
 <div class="title">src/app/modules/lns/data/lns_node.ts</div>
@@ -2075,7 +2077,7 @@ export class LnsModule extends BaseModule {
 
     public async afterGenesisBlockApply(_input: AfterGenesisBlockApplyContext) {
         // Get any data from genesis block, for example get all genesis accounts
-        // const genesisAccoounts = genesisBlock.header.asset.accounts;
+        // const genesisAccounts = genesisBlock.header.asset.accounts;
     }
 }</code></pre>
 </div>
@@ -2083,30 +2085,241 @@ export class LnsModule extends BaseModule {
 <div class="sect2">
 <h3 id="assets"><a class="anchor" href="#assets"></a>4.1. Assets</h3>
 <div class="listingblock">
+<div class="title">lns/lns_module.ts</div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript"></code></pre>
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import { RegisterAsset } from './assets/register';
+import { UpdateRecordsAsset } from './assets/update_records';
+import { ReverseLookupAsset } from './assets/reverse_lookup';
+
+export class LnsModule extends BaseModule {
+    // ...
+    public transactionAssets = [
+		new RegisterAsset(),
+		new ReverseLookupAsset(),
+		new UpdateRecordsAsset(),
+	];
+    // ...
+}</code></pre>
 </div>
 </div>
 </div>
 <div class="sect2">
 <h3 id="actions"><a class="anchor" href="#actions"></a>4.2. Actions</h3>
 <div class="listingblock">
+<div class="title">lns/lns_module.ts</div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript"></code></pre>
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import {
+    BaseModule,
+    codec,
+    AfterBlockApplyContext,
+    TransactionApplyContext,
+    BeforeBlockApplyContext,
+    AfterGenesisBlockApplyContext,
+    // GenesisConfig
+} from 'lisk-sdk';
+import { RegisterAsset } from './assets/register';
+import { UpdateRecordsAsset } from './assets/update_records';
+import { ReverseLookupAsset } from './assets/reverse_lookup';
+import { LNSNode, LNSNodeJSON, lnsNodeSchema, lsnAccountPropsSchema } from './data';
+import { lookupAddress, resolveName, resolveNode } from './storage';
+
+export class LnsModule extends BaseModule {
+    public actions = {
+		lookupAddress: async (params: Record&lt;string, unknown&gt;): Promise&lt;LNSNodeJSON&gt; =&gt; {
+			const lnsObject = await lookupAddress({
+				accountGetter: this._dataAccess.getAccountByAddress.bind(this),
+				chainGetter: this._dataAccess.getChainState.bind(this),
+				address: Buffer.from((params as { address: string }).address, 'hex'),
+			});
+
+			return codec.toJSON(lnsNodeSchema, lnsObject);
+		},
+		resolveName: async (params: Record&lt;string, unknown&gt;): Promise&lt;LNSNodeJSON&gt; =&gt; {
+			const lnsObject = await resolveName({
+				chainGetter: this._dataAccess.getChainState.bind(this),
+				name: (params as { name: string }).name,
+			});
+
+			return codec.toJSON(lnsNodeSchema, lnsObject);
+		},
+		resolveNode: async (params: Record&lt;string, unknown&gt;): Promise&lt;LNSNodeJSON&gt; =&gt; {
+			const lnsObject = await resolveNode({
+				chainGetter: this._dataAccess.getChainState.bind(this),
+				node: Buffer.from((params as { node: string }).node, 'hex'),
+			});
+
+			return codec.toJSON(lnsNodeSchema, lnsObject);
+		},
+	};
+    // ...
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">src/app/modules/lns/data/lns_node.ts</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">// ...
+export interface LNSNodeJSON {
+	ownerAddress: string;
+	name: string;
+	ttl: number;
+	expiry: number;
+	records: LNSNodeRecordJSON[];
+	createdAt: number;
+	updatedAt: number;
+}
+// ...</code></pre>
 </div>
 </div>
 <div class="listingblock">
 <div class="title">src/app/modules/lns/storage.ts</div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript"></code></pre>
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import * as namehash from 'eth-ens-namehash';
+import { chain, codec, StateStore } from 'lisk-sdk';
+import { EMPTY_BUFFER, LNS_PREFIX } from './constants';
+import { LNSAccountProps, LNSNode, lnsNodeSchema } from './data';
+import { isExpired } from './utils';
+
+export const getKeyForNode = (node: Buffer): string =&gt; `${LNS_PREFIX}:${node.toString('hex')}`;
+export const getNodeForName = (name: string): Buffer =&gt;
+	Buffer.from(namehash.hash(name).slice(2), 'hex');
+
+export const resolveNode = async ({
+	chainGetter,
+	node,
+}: {
+	chainGetter: (address: string) =&gt; Promise&lt;Buffer | undefined&gt;;
+	node: Buffer;
+}): Promise&lt;LNSNode&gt; =&gt; {
+	const result = await chainGetter(getKeyForNode(node));
+
+	if (!result) {
+		throw new Error(`Node "${node.toString('hex')}" could not resolve.`);
+	}
+
+	const lnsNode = codec.decode&lt;LNSNode&gt;(lnsNodeSchema, result);
+
+	if (isExpired(lnsNode)) {
+		throw new Error(`Node "${node.toString('hex')}" is associated to an expired LNS object.`);
+	}
+
+	return lnsNode;
+};
+
+export const resolveName = async ({
+	chainGetter,
+	name,
+}: {
+	chainGetter: (address: string) =&gt; Promise&lt;Buffer | undefined&gt;;
+	name: string;
+}): Promise&lt;LNSNode&gt; =&gt; {
+	const result = await chainGetter(getKeyForNode(getNodeForName(name)));
+
+	if (!result) {
+		throw new Error(`Name "${name}" could not resolve.`);
+	}
+
+	const lnsNode = codec.decode&lt;LNSNode&gt;(lnsNodeSchema, result);
+
+	if (isExpired(lnsNode)) {
+		throw new Error(`Name "${name}" is associated to an expired LNS object.`);
+	}
+
+	return lnsNode;
+};
+
+export const lookupAddress = async ({
+	accountGetter,
+	chainGetter,
+	address,
+}: {
+	accountGetter: (address: Buffer) =&gt; Promise&lt;chain.Account&lt;LNSAccountProps&gt;&gt;;
+	chainGetter: (address: string) =&gt; Promise&lt;Buffer | undefined&gt;;
+	address: Buffer;
+}): Promise&lt;LNSNode&gt; =&gt; {
+	let account: chain.Account&lt;LNSAccountProps&gt;;
+
+	try {
+		account = await accountGetter(address);
+	} catch {
+		throw new Error(`Lookup account "${address.toString('hex')}" not found.`);
+	}
+
+	if (account.lns.reverseLookup === EMPTY_BUFFER) {
+		throw new Error(`Account "${address.toString('hex')}" is not associated with any LNS object.`);
+	}
+
+	const result = await chainGetter(getKeyForNode(account.lns.reverseLookup));
+
+	if (!result) {
+		throw new Error(`Problem looking up node "${account.lns.reverseLookup.toString('hex')}"`);
+	}
+
+	const lnsNode = codec.decode&lt;LNSNode&gt;(lnsNodeSchema, result);
+
+	if (isExpired(lnsNode)) {
+		throw new Error(`Account "${address.toString('hex')}" is associated to an expired LNS object.`);
+	}
+
+	return lnsNode;
+};
+
+// ...</code></pre>
 </div>
 </div>
 </div>
 <div class="sect2">
 <h3 id="reducers"><a class="anchor" href="#reducers"></a>4.3. Reducers</h3>
 <div class="listingblock">
+<div class="title">lns/lns_module.ts</div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript"></code></pre>
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import {
+    BaseModule,
+    codec,
+    StateStore,
+    AfterBlockApplyContext,
+    TransactionApplyContext,
+    BeforeBlockApplyContext,
+    AfterGenesisBlockApplyContext,
+    // GenesisConfig
+} from 'lisk-sdk';
+import { RegisterAsset } from './assets/register';
+import { UpdateRecordsAsset } from './assets/update_records';
+import { ReverseLookupAsset } from './assets/reverse_lookup';
+import { LNSNode, LNSNodeJSON, lnsNodeSchema, lsnAccountPropsSchema } from './data';
+import { lookupAddress, resolveName, resolveNode } from './storage';
+
+export class LnsModule extends BaseModule {
+    // ...
+    public reducers = {
+		lookupAddress: async (
+			params: Record&lt;string, unknown&gt;,
+			stateStore: StateStore,
+		): Promise&lt;LNSNode&gt; =&gt;
+			lookupAddress({
+				accountGetter: stateStore.account.get.bind(this),
+				chainGetter: stateStore.chain.get.bind(this),
+				address: (params as { address: Buffer }).address,
+			}),
+		resolveName: async (
+			params: Record&lt;string, unknown&gt;,
+			stateStore: StateStore,
+		): Promise&lt;LNSNode&gt; =&gt;
+			resolveName({
+				chainGetter: stateStore.chain.get.bind(this),
+				name: (params as { name: string }).name,
+			}),
+		resolveNode: async (
+			params: Record&lt;string, unknown&gt;,
+			stateStore: StateStore,
+		): Promise&lt;LNSNode&gt; =&gt;
+			resolveNode({
+				chainGetter: stateStore.chain.get.bind(this),
+				node: (params as { node: Buffer }).node,
+			}),
+	};
+    // ...
+}</code></pre>
 </div>
 </div>
 </div>

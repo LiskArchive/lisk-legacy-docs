@@ -698,6 +698,8 @@ export interface LNSNodeRecord {
 	label: string; // <2>
 	value: string; // <3>
 }
+
+export type LNSNodeRecordJSON = LNSNodeRecord;
 ----
 
 <1> `type`: Type of the records as number.
@@ -735,7 +737,7 @@ export const lnsNodeRecordSchema = {
 
 Create a new file `data/lns_node.ts` in the LNS module folder.
 
-First, define an interface, which illustrates, how the LNS object will look like:
+First define an interface which illustrates, how the LNS object will look like:
 
 .src/app/modules/lns/data/lns_node.ts
 [source,typescript]
@@ -1217,38 +1219,263 @@ export class LnsModule extends BaseModule {
 
     public async afterGenesisBlockApply(_input: AfterGenesisBlockApplyContext) {
         // Get any data from genesis block, for example get all genesis accounts
-        // const genesisAccoounts = genesisBlock.header.asset.accounts;
+        // const genesisAccounts = genesisBlock.header.asset.accounts;
     }
 }
 ----
 
 === Assets
+
+.lns/lns_module.ts
 [source,typescript]
 ----
+import { RegisterAsset } from './assets/register';
+import { UpdateRecordsAsset } from './assets/update_records';
+import { ReverseLookupAsset } from './assets/reverse_lookup';
+
+export class LnsModule extends BaseModule {
+    // ...
+    public transactionAssets = [
+		new RegisterAsset(),
+		new ReverseLookupAsset(),
+		new UpdateRecordsAsset(),
+	];
+    // ...
+}
 ----
+
 === Actions
+
+.lns/lns_module.ts
 [source,typescript]
 ----
+import {
+    BaseModule,
+    codec,
+    AfterBlockApplyContext,
+    TransactionApplyContext,
+    BeforeBlockApplyContext,
+    AfterGenesisBlockApplyContext,
+    // GenesisConfig
+} from 'lisk-sdk';
+import { RegisterAsset } from './assets/register';
+import { UpdateRecordsAsset } from './assets/update_records';
+import { ReverseLookupAsset } from './assets/reverse_lookup';
+import { LNSNode, LNSNodeJSON, lnsNodeSchema, lsnAccountPropsSchema } from './data';
+import { lookupAddress, resolveName, resolveNode } from './storage';
+
+export class LnsModule extends BaseModule {
+    public actions = {
+		lookupAddress: async (params: Record<string, unknown>): Promise<LNSNodeJSON> => {
+			const lnsObject = await lookupAddress({
+				accountGetter: this._dataAccess.getAccountByAddress.bind(this),
+				chainGetter: this._dataAccess.getChainState.bind(this),
+				address: Buffer.from((params as { address: string }).address, 'hex'),
+			});
+
+			return codec.toJSON(lnsNodeSchema, lnsObject);
+		},
+		resolveName: async (params: Record<string, unknown>): Promise<LNSNodeJSON> => {
+			const lnsObject = await resolveName({
+				chainGetter: this._dataAccess.getChainState.bind(this),
+				name: (params as { name: string }).name,
+			});
+
+			return codec.toJSON(lnsNodeSchema, lnsObject);
+		},
+		resolveNode: async (params: Record<string, unknown>): Promise<LNSNodeJSON> => {
+			const lnsObject = await resolveNode({
+				chainGetter: this._dataAccess.getChainState.bind(this),
+				node: Buffer.from((params as { node: string }).node, 'hex'),
+			});
+
+			return codec.toJSON(lnsNodeSchema, lnsObject);
+		},
+	};
+    // ...
+}
 ----
+
+.src/app/modules/lns/data/lns_node.ts
+[source,typescript]
+----
+// ...
+export interface LNSNodeJSON {
+	ownerAddress: string;
+	name: string;
+	ttl: number;
+	expiry: number;
+	records: LNSNodeRecordJSON[];
+	createdAt: number;
+	updatedAt: number;
+}
+// ...
+----
+
 .src/app/modules/lns/storage.ts
 [source,typescript]
 ----
+import * as namehash from 'eth-ens-namehash';
+import { chain, codec, StateStore } from 'lisk-sdk';
+import { EMPTY_BUFFER, LNS_PREFIX } from './constants';
+import { LNSAccountProps, LNSNode, lnsNodeSchema } from './data';
+import { isExpired } from './utils';
+
+export const getKeyForNode = (node: Buffer): string => `${LNS_PREFIX}:${node.toString('hex')}`;
+export const getNodeForName = (name: string): Buffer =>
+	Buffer.from(namehash.hash(name).slice(2), 'hex');
+
+export const resolveNode = async ({
+	chainGetter,
+	node,
+}: {
+	chainGetter: (address: string) => Promise<Buffer | undefined>;
+	node: Buffer;
+}): Promise<LNSNode> => {
+	const result = await chainGetter(getKeyForNode(node));
+
+	if (!result) {
+		throw new Error(`Node "${node.toString('hex')}" could not resolve.`);
+	}
+
+	const lnsNode = codec.decode<LNSNode>(lnsNodeSchema, result);
+
+	if (isExpired(lnsNode)) {
+		throw new Error(`Node "${node.toString('hex')}" is associated to an expired LNS object.`);
+	}
+
+	return lnsNode;
+};
+
+export const resolveName = async ({
+	chainGetter,
+	name,
+}: {
+	chainGetter: (address: string) => Promise<Buffer | undefined>;
+	name: string;
+}): Promise<LNSNode> => {
+	const result = await chainGetter(getKeyForNode(getNodeForName(name)));
+
+	if (!result) {
+		throw new Error(`Name "${name}" could not resolve.`);
+	}
+
+	const lnsNode = codec.decode<LNSNode>(lnsNodeSchema, result);
+
+	if (isExpired(lnsNode)) {
+		throw new Error(`Name "${name}" is associated to an expired LNS object.`);
+	}
+
+	return lnsNode;
+};
+
+export const lookupAddress = async ({
+	accountGetter,
+	chainGetter,
+	address,
+}: {
+	accountGetter: (address: Buffer) => Promise<chain.Account<LNSAccountProps>>;
+	chainGetter: (address: string) => Promise<Buffer | undefined>;
+	address: Buffer;
+}): Promise<LNSNode> => {
+	let account: chain.Account<LNSAccountProps>;
+
+	try {
+		account = await accountGetter(address);
+	} catch {
+		throw new Error(`Lookup account "${address.toString('hex')}" not found.`);
+	}
+
+	if (account.lns.reverseLookup === EMPTY_BUFFER) {
+		throw new Error(`Account "${address.toString('hex')}" is not associated with any LNS object.`);
+	}
+
+	const result = await chainGetter(getKeyForNode(account.lns.reverseLookup));
+
+	if (!result) {
+		throw new Error(`Problem looking up node "${account.lns.reverseLookup.toString('hex')}"`);
+	}
+
+	const lnsNode = codec.decode<LNSNode>(lnsNodeSchema, result);
+
+	if (isExpired(lnsNode)) {
+		throw new Error(`Account "${address.toString('hex')}" is associated to an expired LNS object.`);
+	}
+
+	return lnsNode;
+};
+
+// ...
 ----
+
 === Reducers
+
+.lns/lns_module.ts
 [source,typescript]
 ----
+import {
+    BaseModule,
+    codec,
+    StateStore,
+    AfterBlockApplyContext,
+    TransactionApplyContext,
+    BeforeBlockApplyContext,
+    AfterGenesisBlockApplyContext,
+    // GenesisConfig
+} from 'lisk-sdk';
+import { RegisterAsset } from './assets/register';
+import { UpdateRecordsAsset } from './assets/update_records';
+import { ReverseLookupAsset } from './assets/reverse_lookup';
+import { LNSNode, LNSNodeJSON, lnsNodeSchema, lsnAccountPropsSchema } from './data';
+import { lookupAddress, resolveName, resolveNode } from './storage';
+
+export class LnsModule extends BaseModule {
+    // ...
+    public reducers = {
+		lookupAddress: async (
+			params: Record<string, unknown>,
+			stateStore: StateStore,
+		): Promise<LNSNode> =>
+			lookupAddress({
+				accountGetter: stateStore.account.get.bind(this),
+				chainGetter: stateStore.chain.get.bind(this),
+				address: (params as { address: Buffer }).address,
+			}),
+		resolveName: async (
+			params: Record<string, unknown>,
+			stateStore: StateStore,
+		): Promise<LNSNode> =>
+			resolveName({
+				chainGetter: stateStore.chain.get.bind(this),
+				name: (params as { name: string }).name,
+			}),
+		resolveNode: async (
+			params: Record<string, unknown>,
+			stateStore: StateStore,
+		): Promise<LNSNode> =>
+			resolveNode({
+				chainGetter: stateStore.chain.get.bind(this),
+				node: (params as { node: Buffer }).node,
+			}),
+	};
+    // ...
+}
 ----
+
 == Connecting the Dashboard plugin
 [source,typescript]
 ----
 ----
+
 == Extending the application CLI
 [source,typescript]
 ----
 ----
+
 == Using a plugin as frontend
 [source,typescript]
 ----
 ----
+
 == Writing unit tests
 == Writing network tests

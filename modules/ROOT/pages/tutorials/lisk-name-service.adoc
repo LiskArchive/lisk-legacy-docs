@@ -11,12 +11,14 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_wikipedia_dns: https://en.wikipedia.org/wiki/Domain_Name_System
 :url_wikipedia_cname: https://en.wikipedia.org/wiki/CNAME_record
 :url_wikipedia_txt: https://en.wikipedia.org/wiki/TXT_record
+:url_recaptcha_keys: https://developers.google.com/recaptcha/docs/faq#id-like-to-run-automated-tests-with-recaptcha.-what-should-i-do
 :url_ens: https://docs.ens.domains/
+:url_faucet: http://localhost:4004
+:url_dashboard: http://localhost:4005
 // Project URLs
 :url_guide_dashboard: guides/app-development/dashboard.adoc
 :url_reference_dashboard: references/lisk-framework/dashboard-plugin.adoc
 :url_reference_faucet: references/lisk-framework/faucet-plugin.adoc
-
 
 How to create a blockchain application that offers a domain name service for blockchain accounts, similar to {url_wikipedia_dns}[DNS^] and {url_ens}[ENS^].
 
@@ -1509,15 +1511,50 @@ export interface LNSNodeJSON {
 With this last step, all required parts of the LNS module are implemented.
 Before we go on with developing the frontend part, let's quickly check if the blockchain application is working as expected by enabling the Dashboard plugin in the next chapter.
 
+== First start of the LNS application
+
+Start the LNS blockchain application with the following command:
+
+.lisk-name-service/lns/
+[source,bash]
+----
+./bin/run start
+----
+
+This should start the LNS blockchain application, which is currently running with a local single-node development network.
+
+If the application start is successfull, you will see
+
 == Connecting the Dashboard and Faucet plugins
 
 The Dashboard plugin provides a web interface that allows developers to innteract with their blockchain application during development.
 
-More information about the Dashboard plugin can be found in the development guide xref:{url_guide_dashboard}[] or on the reference page of the xref:{url_reference_dashboard}[].
-
 The Faucet plugin provides a web interface with a faucet, allowing account in the network to receive free tokens conveniently.
 
-More information about the Dashboard plugin can be found on the reference page of the xref:{url_reference_faucet}[].
+By enabling the Dashboard and Faucet plugins in the blockchain application, we are able to test the functionality of the application by interacting with it through the browser.
+
+Among other things, it will be possible to ...
+
+* ... create new accounts with the Dashboard
+* ... fund accounts with tokens via the Faucet
+* ... send transactions to the LNS application to ...
+** ... register new domain names.
+** ... set the domain name for a reverse lookup.
+** ... update the records of a domain name.
+* ... send actions to the LNS application to ...
+** ... perform a reverse lookup for an account address.
+** ... return an LNS object based on the domain name.
+** ... return an LNS object based on the LNS object hash.
+** ... perform a reverse lookup for an account address.
+
+Before the Dashboard and Faucet plugins can be used for this purpose, it is first needed to install them and to register them with the LNS application, which is done in the next step.
+
+[NOTE]
+====
+More information about the Dashboard plugin can be found in the development guide xref:{url_guide_dashboard}[] or on the reference page of the xref:{url_reference_dashboard}[].
+
+More information about the Faucet plugin can be found on the reference page of the xref:{url_reference_faucet}[].
+====
 
 === Registering the Dashboard plugin
 
@@ -1534,30 +1571,58 @@ Now open `plugins.ts`, import the Dashboard plugin, and register it with the app
 .lisk-name-service/src/app/plugins.ts
 [source,typescript]
 ----
-/* eslint-disable @typescript-eslint/no-empty-function */
 import { Application } from 'lisk-sdk';
 import { DashboardPlugin } from "@liskhq/lisk-framework-dashboard-plugin";
 
-// @ts-expect-error Unused variable error happens here until at least one module is registered
 export const registerPlugins = (app: Application): void => {
 
     app.registerPlugin(DashboardPlugin);
 };
 ----
 
-Save and close `plugins.ts` and start the blockchain application again:
-
-[source,bash]
-----
-./bin/run start
-----
-
-Wait until the application start is completed.
-Now it is possible to access the dashboard on the browser under `localhost: 4005`
+Save and close `plugins.ts`.
 
 === Registering the Faucet plugin
 
+Install the faucet plugin:
+
+.lisk-name-service/
+[source,bash]
+----
+npm i @liskhq/lisk-framework-dashboard-plugin
+----
+
+Now open `plugins.ts`, import the Dashboard plugin, and register it with the application as shown below:
+
+.lisk-name-service/src/app/plugins.ts
+[source,typescript]
+----
+import { Application } from 'lisk-sdk';
+import { DashboardPlugin } from "@liskhq/lisk-framework-dashboard-plugin";
+import { FaucetPlugin } from "@liskhq/lisk-framework-faucet-plugin";
+
+export const registerPlugins = (app: Application): void => {
+
+    app.registerPlugin(DashboardPlugin);
+    app.registerPlugin(FaucetPlugin);
+};
+----
+
+Save and close `plugins.ts`.
+
 Choose one of the genesis delegate to be the faucet account, e.g. the first account in `lisk-name-service/.secret/accounts.json`.
+
+.lisk-name-service/.secret/accounts.json
+[source,js]
+----
+[
+	{
+		"passphrase": "brush swamp sign omit cabin review menu tent spend shy plug strategy",
+		"address": "49e8b0411cd96a17a72f88dfe802179b4113924f"
+	},
+	// ...
+]
+----
 
 Use Lisk Commander to encrypt the passphrase of the account with a password.
 Save the password somewhere, it is needed to enable and disable the faucet later.
@@ -1567,12 +1632,22 @@ Save the password somewhere, it is needed to enable and disable the faucet later
 $ lisk passphrase:encrypt
 ? Please enter passphrase:  [hidden]
 ? Please re-enter passphrase:  [hidden]
-? Please enter password:  [hidden]
+? Please enter password:  [hidden] # <1>
 ? Please re-enter password:  [hidden]
 {"encryptedPassphrase":"iterations=1000000&cipherText=643bfbf1b6f1dc0ce740dd9fc9f27a682e476dc5de4e6c023deded4d3efe2822346226541106b42638db5ba46e0ae0a338cb78fb40bce67fdec7abbca68e20624fa6b0d7&iv=8a9c461744b9e70a8ba65edd&salt=3fe00b03d10b7002841857c1f028196e&tag=c57a798ef65f5a7be617d8737828fd58&version=1"}
 ----
 
-The following free sitekey and secretkey for reCaptcha can be used for testing purposes: https://developers.google.com/recaptcha/docs/faq#id-like-to-run-automated-tests-with-recaptcha.-what-should-i-do
+<1> Choose a simple password to encrypt the passphrasee symmetrically.
+The password will be needed later to enable the faucet plugin through the action `faucet:authorize`.
+
+Open the config file of the LNS application which is located under the path `~/.lisk/lns/config/default/config.json` and scroll down to the bottom of the file.
+Add the required configuration options for the faucet plugin under the key `plugins.faucet`:
+
+* `encryptedPassphrase`: The encrypted passphrase of the account that will provide the tokens for the faucet.
+* `captchaSecretkey`: The secret API key for the captcha.
+* `captchaSitekey`: The API site key for the captcha.
+
+The xref:{url_recaptcha_keys}[free site key and secret key for reCAPTCHA^] are used below for testing purposes.
 
 .~/.lisk/lns/config/default/config.json
 [source,json]
@@ -1586,24 +1661,108 @@ The following free sitekey and secretkey for reCaptcha can be used for testing p
 }
 ----
 
+The last step to use the Faucet plugin is to enable it via the action `faucet:authorize`.
+This can be achieved with the Dashboard plugin.
+
+Start the blockchain application again:
+
+[source,bash]
+----
+./bin/run start
+----
+
+Wait until the application start is completed.
+
+Go to {url_dashboard} to access the dashboard.
+
+image:tutorials/lns/dashboard.png[]
+
+Now go to the `Call actions` section on the Dashboard, and select the action `faucet:authorize`.
+
+image:tutorials/lns/faucet-authorize-action.png[]
+
+The actions expects as input a boolean, if the plugin should be enabled, and a password the decrypt the encrypted passphrase that was saved in `config.json` above.
+
+Add the following JSON object to the field for the asset data:
+
+[source,json]
+----
+{
+    "enable": true,
+    "password": "myPassword" // <1>
+}
+----
+
+<1> Change this to the password you used above to encrypt the passphrase in the Faucet plugin configuration.
+
+Hit the kbd:[Submit] button to invoke the action.
+You should see a confirmation that the action was invoked successfully.
+
+image:tutorials/lns/faucet-authorize-success.png[]
+
+It is now possible to use the faucet under {url_faucet} .
+
+image:tutorials/lns/faucet.png[]
+
 === Checking the functionality of the LNS module
 
-Go to http://localhost:4005 to access the dashboard.
+Now let's use the dashboard under {url_dashboard} .
 
 ==== Create new account
+
+image:tutorials/lns/new-account.png[]
+
 ==== Fund new account
+
+image:tutorials/lns/faucet-send.png[]
+
+image:tutorials/lns/faucet-fund-success.png[]
+
+image:tutorials/lns/transactions1.png[]
+
 ==== Register new domain
-==== Test actions
+
+image:tutorials/lns/send-tx-lns-register-dropdown.png[]
+
+image:tutorials/lns/send-tx-lns-register.png[]
+
+image:tutorials/lns/send-tx-lns-register-success.png[]
+
+==== Test resolveName and resolveNode
+
+image:tutorials/lns/call-action-lns-resolvename.png[]
+image:tutorials/lns/call-action-lns-resolvename-success.png[]
+
+---
+
+image:tutorials/lns/call-action-lns-resolvenode.png[]
+
+=== Define a reverse lookup address
+
+image:tutorials/lns/send-tx-lns-reverselookup-dropdown.png[]
+image:tutorials/lns/send-tx-lns-reverselookup.png[]
+image:tutorials/lns/send-tx-lns-reverselookup-success.png[]
+image:tutorials/lns/transactions2.png[]
+
 ==== Update records for a name
+
+image:tutorials/lns/send-tx-lns-update-records.png[]
+image:tutorials/lns/send-tx-lns-update-records-success.png[]
+image:tutorials/lns/transactions3.png[]
+
 ==== Perform a reverse lookup for an address
 
+image:tutorials/lns/call-action-lns-lookupaddress.png[]
+image:tutorials/lns/call-action-lns-resolvenode-success.png[]
 
 == Extending the application CLI
+
 [source,typescript]
 ----
 ----
 
 == Using a plugin as frontend
+
 [source,typescript]
 ----
 ----

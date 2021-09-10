@@ -2059,8 +2059,74 @@ image:tutorials/lns/ui-reach-reserved.png[UI search for reserved name,200,100]
 
 == Extending the application CLI
 
+=== lns:lookup
+
+./lisk-name-service/lns/src/commands/lns/
 [source,typescript]
 ----
+import { BaseIPCClientCommand } from 'lisk-commander';
+
+export class LNSLookupCommand extends BaseIPCClientCommand {
+	static args = [
+		{
+			name: 'address',
+			required: true,
+			description: 'Address to lookup',
+		},
+	];
+
+	static examples = ['lns:lookup <hex-address>', 'lns:lookup afe179fa12a988c1244444479c --pretty'];
+
+	public async run(): Promise<void> {
+		const { args } = this.parse(LNSLookupCommand);
+		const { address } = args as { address: string };
+
+		if (address !== Buffer.from(address, 'hex').toString('hex')) {
+			this.error('Invalid address format');
+		}
+
+		const result = await this._client?.invoke('lns:lookupAddress', { address });
+
+		if (result) {
+			return this.printJSON(result);
+		}
+
+		return this.log(`Can not find account with address "${address}"`);
+	}
+}
+----
+
+=== lns:resolve
+
+./lisk-name-service/lns/src/commands/lns/
+[source,typescript]
+----
+import { BaseIPCClientCommand } from 'lisk-commander';
+
+export class LNSResolveCommand extends BaseIPCClientCommand {
+	static args = [
+		{
+			name: 'name',
+			required: true,
+			description: 'Name to resolve.',
+		},
+	];
+
+	static examples = ['lns:resolve jhon.lisk', 'lns:resolve jhon.lisk --pretty'];
+
+	public async run(): Promise<void> {
+		const { args } = this.parse(LNSResolveCommand);
+		const { name } = args as { name: string };
+
+		const result = await this._client?.invoke('lns:resolveName', { name });
+
+		if (result) {
+			return this.printJSON(result);
+		}
+
+		return this.log(`Can not resolve name "${name}"`);
+	}
+}
 ----
 
 == Writing unit tests

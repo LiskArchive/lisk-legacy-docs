@@ -568,6 +568,7 @@
 <ul class="sectlevel2">
 <li><a href="#lnsresolve">7.1. lns:resolve</a></li>
 <li><a href="#lnslookup">7.2. lns:lookup</a></li>
+<li><a href="#trying-out-the-new-cli-commands">7.3. Trying out the new CLI commands</a></li>
 </ul>
 </li>
 <li><a href="#writing-unit-tests">8. Writing unit tests</a></li>
@@ -3324,10 +3325,8 @@ COMMANDS
 </div>
 </div>
 <div class="paragraph">
-<p>As you see, we already used the CLI in this tutorial to start the LNS application.</p>
-</div>
-<div class="paragraph">
-<p>Now, the plan is to create a new topic <code>lns</code>, and to define the two new commands <code>lns:resolve</code> and <code>lns:lookup</code> to be part of it.</p>
+<p>We already used the CLI in this tutorial to start the LNS application.
+Now, the plan is to create a new topic <code>lns</code>, and to define the two new commands <code>lns:resolve</code> and <code>lns:lookup</code> to be part of it.</p>
 </div>
 <div class="paragraph">
 <p>Navigate to <code>lisk-name-service/lns/commands/</code> and create a new folder <code>lns</code>, which will contain the files for the new commands.</p>
@@ -3359,7 +3358,7 @@ cd lns</code></pre>
 <div class="sect2">
 <h3 id="lnsresolve"><a class="anchor" href="#lnsresolve"></a>7.1. lns:resolve</h3>
 <div class="paragraph">
-<p>Create a new file ` resolve.ts` and import the <code>BaseIPCClientCommand</code> from Lisk Commander.</p>
+<p>Create a new file <code>resolve.ts</code> and import the <code>BaseIPCClientCommand</code> from Lisk Commander.</p>
 </div>
 <div class="paragraph">
 <p>Create a new class <code>LNSResolveCommand</code>, which extends the class <a href="https://github.com/LiskHQ/lisk-sdk/blob/v5.1.4/commander/src/bootstrapping/commands/base_ipc_client.ts" target="_blank" rel="noopener">BaseIPCClientCommand</a> of Lisk Commander.</p>
@@ -3374,12 +3373,26 @@ export class LNSResolveCommand extends BaseIPCClientCommand {
 }</code></pre>
 </div>
 </div>
+<div class="paragraph">
+<p>The <code>BaseIPCClientCommand</code> already contains two optional default flags for the command: <code>pretty</code> and <code>data-path</code>.
+It also contains an API client to the node which we will use to invoke actions in the LNS application via the CLI.</p>
+</div>
+<div class="paragraph">
+<p>The only method required for a new command is the <code>.run()</code> function.</p>
+</div>
+<div class="paragraph">
+<p>In this particular use case, we also need one argument, the namee to resolve.</p>
+</div>
+<div class="paragraph">
+<p>You may also add some examples about the usage of the command, which will be added to the auto-generated command reference.</p>
+</div>
 <div class="listingblock">
 <div class="title">/lisk-name-service/lns/src/commands/lns/resolve.ts</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import { BaseIPCClientCommand } from 'lisk-commander';
 
 export class LNSResolveCommand extends BaseIPCClientCommand {
+    // Available command arguments
 	static args = [
 		{
 			name: 'name',
@@ -3388,18 +3401,25 @@ export class LNSResolveCommand extends BaseIPCClientCommand {
 		},
 	];
 
-	static examples = ['lns:resolve jhon.lisk', 'lns:resolve jhon.lisk --pretty'];
+	// Command usage examples
+	static examples = ['lns:resolve jhon.lsk', 'lns:resolve jhon.lsk --pretty'];
 
+	// Executed every time the respective command is executed in the CLI.
 	public async run(): Promise&lt;void&gt; {
+	    // Parses the provided command arguments
 		const { args } = this.parse(LNSResolveCommand);
+		// Get the name argument from the arguments object
 		const { name } = args as { name: string };
 
+		// Invoke the action 'lns:resolveName' on the node via the API client.
 		const result = await this._client?.invoke('lns:resolveName', { name });
 
+		// If the node returns a result, print it to the console as JSON.
 		if (result) {
 			return this.printJSON(result);
 		}
 
+		// Display this message, if the name couldn't be resolved successfully.
 		return this.log(`Can not resolve name "${name}"`);
 	}
 }</code></pre>
@@ -3408,9 +3428,20 @@ export class LNSResolveCommand extends BaseIPCClientCommand {
 <div class="paragraph">
 <p>This is all code needed to add the new command to the LNS blockchain application.</p>
 </div>
+<div class="paragraph">
+<p>As you see, there is not much logic needed to implement.
+We can reuse the action <a href="#actions">lns:resolveName</a> to get the address, based on the address that was provided as command argument.</p>
+</div>
 </div>
 <div class="sect2">
 <h3 id="lnslookup"><a class="anchor" href="#lnslookup"></a>7.2. lns:lookup</h3>
+<div class="paragraph">
+<p>Create a new file <code>lookup.ts</code> and paste the code snippet below.
+This is all code needed to add the <code>lns:lookup</code> command to the LNS blockchain application.</p>
+</div>
+<div class="paragraph">
+<p>The implementation is analog to the previous command, but now use the corresponding action <code>lns:lookup</code> to get the domain name for the provided account address.</p>
+</div>
 <div class="listingblock">
 <div class="title">/lisk-name-service/lns/src/commands/lns/lookup.ts</div>
 <div class="content">
@@ -3447,12 +3478,187 @@ export class LNSLookupCommand extends BaseIPCClientCommand {
 </div>
 </div>
 </div>
+<div class="sect2">
+<h3 id="trying-out-the-new-cli-commands"><a class="anchor" href="#trying-out-the-new-cli-commands"></a>7.3. Trying out the new CLI commands</h3>
+<div class="paragraph">
+<p>Display the CLI reference once again.
+The new topic <code>lns</code> should now show up under <code>TOPICS</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">./bin/run</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>Lisk-SDK Application
+
+VERSION
+  lns/0.1.0 darwin-x64 node-v12.22.3
+
+USAGE
+  $ lisk-name-service [COMMAND]
+
+TOPICS
+  account        Commands relating to lisk-name-service accounts.
+  block          Commands relating to lisk-name-service blocks.
+  blockchain     Commands relating to lisk-name-service blockchain data.
+  config         Commands relating to lisk-name-service node configuration.
+  forger-info    Commands relating to lisk-name-service forger-info data.
+  forging        Commands relating to lisk-name-service forging.
+  genesis-block  Creates genesis block file.
+  lns
+  node           Commands relating to lisk-name-service node.
+  passphrase     Commands relating to lisk-name-service passphrases.
+  transaction    Commands relating to lisk-name-service transactions.
+
+COMMANDS
+  autocomplete  display autocomplete installation instructions
+  console       Lisk interactive REPL session to run commands.
+  hash-onion    Create hash onions to be used by the forger.
+  help          display help for lisk-name-service
+  start         Start Blockchain Node.</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the LNS application os not already running, start it again:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">$ ./bin/run start</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now resolve the domain name <code>my-name.lsk</code>, which we registered before.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">./bin/run lns:resolve my-name.lsk</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This will return the corresponding LNS object:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "ownerAddress":"39cdb96af23eaf431ef3fb8e5da58d9950c3bc96",
+  "name":"my-name.lsk",
+  "ttl":4000,
+  "expiry":1694173170,
+  "createdAt":1631101170,
+  "updatedAt":1631105400,
+  "records":[{
+    "type":2,
+    "label":"my-twitter",
+    "value":"@followMe"
+  }]
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When the resolve command works as expected, copy the <code>ownerAdress</code> from the returned LNS object and provide it as argument for the <code>lns;lookup</code> command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">$ ./bin/run lns:lookup 39cdb96af23eaf431ef3fb8e5da58d9950c3bc96</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This will return the corresponding LNS object:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "ownerAddress":"39cdb96af23eaf431ef3fb8e5da58d9950c3bc96",
+  "name":"awesome.lsk",
+  "ttl":3600,
+  "expiry":1662734230,
+  "createdAt":1631198230,
+  "updatedAt":1631198230,
+  "records":[]
+}</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Each account can register multiple domain names to their account.
+The address lookup returns a different object for the provided address, because the account has set <code>awesome.lsk</code> to be the default domain name for this account.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>How to display the topic reference:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">./bin/run lns</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>USAGE
+  $ lisk-name-service lns:COMMAND
+
+COMMANDS
+  lns:lookup
+  lns:resolve</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>How to display the command reference:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">$ ./bin/run lns:resolve --help</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>USAGE
+  $ lisk-name-service lns:resolve NAME
+
+ARGUMENTS
+  NAME  Name to resolve.
+
+OPTIONS
+  -d, --data-path=data-path  Directory path to specify where node data is stored. Environment variable "LISK_DATA_PATH" can also be
+                             used.
+
+  --pretty                   Prints JSON in pretty format rather than condensed.
+
+EXAMPLES
+  lns:resolve jhon.lisk
+  lns:resolve jhon.lisk --pretty</pre>
+</div>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="writing-unit-tests"><a class="anchor" href="#writing-unit-tests"></a>8. Writing unit tests</h2>
 <div class="sectionbody">
-
+<div class="paragraph">
+<p>Now as last topic of this tutorial, we&#8217;ll explore how the application can be tested with unit and network tests.</p>
+</div>
+<div class="paragraph">
+<p>Writing tests for the application gets more and more important, the more complex the blockchain application gets.
+Once it reaches a certain complexity, it won&#8217;t be convenient anymore to test the application functionality with the dashboard plugin, the CLI or via a frontend, and writing tests becomes a crucial part to verify the correct behavior of the blockchain application.</p>
+</div>
+<div class="paragraph">
+<p>For this purpose, we will first add a couple of unit tests to the application in this chapter, and then a couple of network tests in the next chapter.</p>
+</div>
+<div class="paragraph">
+<p>To make the creation of tests convenient, we will make use of <a href="../references/lisk-framework/test-suite.html" class="page">The Lisk SDK testing utilities</a>.</p>
+</div>
 </div>
 </div>
 <div class="sect1">

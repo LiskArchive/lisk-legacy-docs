@@ -15,7 +15,9 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_ens: https://docs.ens.domains/
 :url_faucet: http://localhost:4004
 :url_dashboard: http://localhost:4005
-:url_sdk_dashboardplugin: https://github.com/LiskHQ/lisk-sdk/tree/development/framework-plugins/lisk-framework-dashboard-plugin
+:url_oclif: https://oclif.io/
+:url_sdk_dashboardplugin: https://github.com/LiskHQ/lisk-sdk/tree/v5.1.4/framework-plugins/lisk-framework-dashboard-plugin
+:url_sdk_baseipcclient: https://github.com/LiskHQ/lisk-sdk/blob/v5.1.4/commander/src/bootstrapping/commands/base_ipc_client.ts
 :url_sdkexamples_lns_secret: https://github.com/LiskHQ/lisk-sdk-examples/tree/development/tutorials/lisk-name-service/lns/.secret
 :url_sdkexamples_lns_uiplugin: https://github.com/LiskHQ/lisk-sdk-examples/tree/development/tutorials/lisk-name-service/lns-dashboard-plugin
 :url_reactjs: https://reactjs.org/docs/create-a-new-react-app.html#create-react-app
@@ -2056,12 +2058,136 @@ The search results should now inform you that this domain name is already reserv
 
 image:tutorials/lns/ui-reach-reserved.png[UI search for reserved name,200,100]
 
+Play around as much as you like with the LNS application UI.
+
+The development of frontend and backend of the LNS application is now complete, and the application has all the features that were described in chapter <<lns-application-overview>> at the top.
+
+In the next chapter, the LNS application CLI will be enhanced with commands specific to the LNS module.
+This allows to interact with the blockchain application directly via the command-line, which can be beneficial for developers and/or node operators.
 
 == Extending the application CLI
 
+To further enhance the LNS blockchain application, let's create two new LNS specific commands, which can be exeecuted directly from the command line:
+
+* <<lnsresolve>> Command to resolve a provided domain name to an account address.
+* <<lnslookup>>: Command to perform a reverse lookup for a provided account address.
+Returns the default domain name of an account.
+
+The application CLI already contains a lot of general commands by default.
+They are directly created when the application isa bootstrapped with Lisk Commander with `lisk init`.
+
+You can see an overview of all existing CLI commands by navigating to the root folder of the blockchain application, and running
+
+[source,bash]
+----
+./bin/run
+----
+
+This will return the command reference for the application CLI:
+
+----
+Lisk-SDK Application
+
+VERSION
+  lns/0.1.0 darwin-x64 node-v12.22.3
+
+USAGE
+  $ lisk-name-service [COMMAND]
+
+TOPICS
+  account        Commands relating to lisk-name-service accounts.
+  block          Commands relating to lisk-name-service blocks.
+  blockchain     Commands relating to lisk-name-service blockchain data.
+  config         Commands relating to lisk-name-service node configuration.
+  forger-info    Commands relating to lisk-name-service forger-info data.
+  forging        Commands relating to lisk-name-service forging.
+  genesis-block  Creates genesis block file.
+  node           Commands relating to lisk-name-service node.
+  passphrase     Commands relating to lisk-name-service passphrases.
+  transaction    Commands relating to lisk-name-service transactions.
+
+COMMANDS
+  autocomplete  display autocomplete installation instructions
+  console       Lisk interactive REPL session to run commands.
+  hash-onion    Create hash onions to be used by the forger.
+  help          display help for lisk-name-service
+  start         Start Blockchain Node.
+----
+
+As you see, we already used the CLI in this tutorial to start the LNS application.
+
+Now, the plan is to create a new topic `lns`, and to define the two new commands `lns:resolve` and `lns:lookup` to be part of it.
+
+Navigate to `lisk-name-service/lns/commands/` and create a new folder `lns`, which will contain the files for the new commands.
+
+.lisk-name-service/lns/commands/
+[source,bash]
+----
+mkdir lns
+cd lns
+----
+
+[TIP]
+
+====
+The application CLI commands are based on {url_oclif}[oclif^].
+
+Check out their documentation to get a deeper understanding on how the CLI commands are constructed.
+====
+
+=== lns:resolve
+
+Create a new file ` resolve.ts` and import the `BaseIPCClientCommand` from Lisk Commander.
+
+Create a new class `LNSResolveCommand`, which extends the class {url_sdk_baseipcclient}[BaseIPCClientCommand^] of Lisk Commander.
+
+./lisk-name-service/lns/src/commands/lns/resolve.ts
+[source,typescript]
+----
+import { BaseIPCClientCommand } from 'lisk-commander';
+
+export class LNSResolveCommand extends BaseIPCClientCommand {
+
+}
+----
+
+./lisk-name-service/lns/src/commands/lns/resolve.ts
+[source,typescript]
+----
+import { BaseIPCClientCommand } from 'lisk-commander';
+
+export class LNSResolveCommand extends BaseIPCClientCommand {
+	static args = [
+		{
+			name: 'name',
+			required: true,
+			description: 'Name to resolve.',
+		},
+	];
+
+	static examples = ['lns:resolve jhon.lisk', 'lns:resolve jhon.lisk --pretty'];
+
+	public async run(): Promise<void> {
+		const { args } = this.parse(LNSResolveCommand);
+		const { name } = args as { name: string };
+
+		const result = await this._client?.invoke('lns:resolveName', { name });
+
+		if (result) {
+			return this.printJSON(result);
+		}
+
+		return this.log(`Can not resolve name "${name}"`);
+	}
+}
+----
+
+This is all code needed to add the new command to the LNS blockchain application.
+
+
 === lns:lookup
 
-./lisk-name-service/lns/src/commands/lns/
+./lisk-name-service/lns/src/commands/lns/lookup.ts
 [source,typescript]
 ----
 import { BaseIPCClientCommand } from 'lisk-commander';
@@ -2096,38 +2222,7 @@ export class LNSLookupCommand extends BaseIPCClientCommand {
 }
 ----
 
-=== lns:resolve
 
-./lisk-name-service/lns/src/commands/lns/
-[source,typescript]
-----
-import { BaseIPCClientCommand } from 'lisk-commander';
-
-export class LNSResolveCommand extends BaseIPCClientCommand {
-	static args = [
-		{
-			name: 'name',
-			required: true,
-			description: 'Name to resolve.',
-		},
-	];
-
-	static examples = ['lns:resolve jhon.lisk', 'lns:resolve jhon.lisk --pretty'];
-
-	public async run(): Promise<void> {
-		const { args } = this.parse(LNSResolveCommand);
-		const { name } = args as { name: string };
-
-		const result = await this._client?.invoke('lns:resolveName', { name });
-
-		if (result) {
-			return this.printJSON(result);
-		}
-
-		return this.log(`Can not resolve name "${name}"`);
-	}
-}
-----
 
 == Writing unit tests
 == Writing network tests

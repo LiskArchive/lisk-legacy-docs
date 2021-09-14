@@ -29,6 +29,8 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_reference_testsuite: references/lisk-framework/test-suite.adoc
 :url_reference_faucet: references/lisk-framework/faucet-plugin.adoc
 :url_bapps_frontend: introduction/blockchain-applications.adoc#frontend-backend
+:url_test_suite_createvalidatecontext: references/lisk-framework/test-suite.adoc#returns-25
+:url_test_suite_createapplycontext: references/lisk-framework/test-suite.adoc#returns-26
 
 How to create a blockchain application that offers a domain name service for blockchain accounts, similar to {url_wikipedia_dns}[DNS^] and {url_ens}[ENS^].
 
@@ -2432,6 +2434,67 @@ The existing test files already contain test skeletons, providing a rough struct
 
 === Testing the Register asset
 
+The complete code of the tests for the Register asset is described below.
+Most of the code is self-explanatory, but the most important parts of the tests are summarized here for a better overview:
+
+==== Testing the validate() function
+
+Tests for the <<validation,validate() function>> of the Register asset.
+
+Write tests to check the following:
+
+* It should not be possible to set the TTL in the asset to a value lower than 3600 seconds (1 hour).
+* It should throw error if name is registered for less than a year.
+* It should throw error if name is registered for more than 5 years
+* It should throw error if domain contains invalid tld.
+* It not throw any error, if all asset parameters are valid.
+
+Before each test:
+
+* Create a new instance of the Register asset.
+
+Use of the SDK testing utilities:
+
+* `testing.createValidateAssetContext()`: Returns valid parameters for the `validate()` function.
+If the function is called with an empty object, it xref:{url_test_suite_createvalidatecontext}[returns the default parameters] for the `validate()` function.
+For the test, overwrite the default `asset` value (`undefined`) with a valid transaction asset for the Register asset.
+For the function to be called successfully, overwrite the default transaction value of the context (`undefined`) with a transaction containing a property `senderAddress` with a Buffer of size 0.
+No need to put a real address here in this case, as it isn't used in the tests.
+
+==== Testing the apply() function
+
+Tests for the <<state-change,apply() function>> of the Register asset.
+
+Write tests to check the following:
+
+* Valid cases:
+** It should update the state store with the name hash key.
+** It should update the state store with updated sender account.
+** It should update the state store with correct ttl value.
+** It should update the state store with correct expiry date.
+* Invalid cases:
+** It should throw error if name is already registered.
+
+Before each test:
+
+* Create a new default account for the LNS application.
+* Add the newly created account to the `accounts` list of the `StateStore` mock.
+* Spy on the functions `stateStore.chain.get` and `stateStore.chain.set`.
+This allows to check in the tests, if the respective functions have been called or not.
+
+Use of the SDK testing utilities:
+
+* testing.createApplyAssetContext(): Returns valid parameters for the `apply()` function.
+If the function is called with an empty object, it xref:{url_test_suite_createapplycontext}[returns the default parameters] for the `apply()` function.
+For the test, overwrite the default `asset` value (`undefined`) with a valid transaction asset for the Register asset.
+Additionally, overwrite the default transaction value of the context (`undefined`) with a transaction containing a property `senderAddress` which equals the address of the newly created account.
+* testing.fixtures.createDefaultAccount<LNSAccountProps>([LnsModule]):
+Used to create a default account for the LNS application.
+* new testing.mocks.StateStoreMock({accounts: [account]}):
+Creates a mock for the StateStore.
+
+==== Unit tests for the Register asset
+
 .lisk-name-service/lns/test/unit/modules/lns/assets/register.ts
 [source,typescript]
 ----
@@ -2446,6 +2509,7 @@ import {
 	getNodeForName,
 } from '../../../../../src/app/modules/lns/storage';
 
+// Tests for the Register asset
 describe('RegisterAsset', () => {
 	let transactionAsset: RegisterAsset;
 
@@ -2453,15 +2517,19 @@ describe('RegisterAsset', () => {
 		transactionAsset = new RegisterAsset();
 	});
 
+	// Tests for the constructor of the Register asset
 	describe('constructor', () => {
+	    // Verify that the asset ID is equal to 1.
 		it('should have valid id', () => {
 			expect(transactionAsset.id).toEqual(1);
 		});
 
+		// Verify that the asset name equals `'register'`
 		it('should have valid name', () => {
 			expect(transactionAsset.name).toEqual('register');
 		});
 
+		// Verify that the correct asset schema is used
 		it('should have valid schema', () => {
 			expect(transactionAsset.schema).toMatchSnapshot();
 		});
@@ -2469,6 +2537,7 @@ describe('RegisterAsset', () => {
 
 	describe('validate', () => {
 		describe('schema validation', () => {
+
 			it('should throw error if ttl is set less than an hour', () => {
 				const context = testing.createValidateAssetContext({
 					asset: { name: 'nazar.hussain', ttl: 60 * 60 - 1, registerFor: 1 },
@@ -2549,6 +2618,7 @@ describe('RegisterAsset', () => {
 					asset: { name: 'nazar.lsk', ttl: 60 * 60, registerFor: 1 },
 					transaction: { senderAddress: account.address } as any,
 				});
+
 				await transactionAsset.apply(context);
 
 				expect(stateStore.chain.set).toHaveBeenCalledWith(key, expect.any(Buffer));
@@ -2622,6 +2692,42 @@ describe('RegisterAsset', () => {
 ----
 
 === Testing the Reverse Lookup asset
+
+The complete code of the tests for the Reverse Lookup asset is described below.
+Most of the code is self-explanatory, but the most important parts of the tests are summarized here for a better overview:
+
+==== Testing the apply() function
+
+Tests for the <<state-change,apply() function>> of the Reverse Lookup asset.
+
+Write tests to check the following:
+
+* Valid cases:
+** It should update the lns reverse-lookup of the sender account with given node if not already set.
+** It should update the lns reverse-lookup of the sender account with given node even if already set.
+* Invalid cases:
+** It should throw error if node to set-lookup is not owned by sender.
+
+Before each test:
+
+* Create a new default account for the LNS application.
+* Add two registered names to the account: `john.lsk` and `doe.lsk`.
+* Add the newly created account to the `accounts` list of the `StateStore` mock.
+* Spy on the functions `stateStore.chain.get` and `stateStore.chain.set`.
+This allows to check in the tests, if the respective functions have been called or not.
+
+Use of the SDK testing utilities:
+
+* testing.createApplyAssetContext(): Returns valid parameters for the `apply()` function.
+If the function is called with an empty object, it xref:{url_test_suite_createapplycontext}[returns the default parameters] for the `apply()` function.
+For the test, overwrite the default `asset` value (`undefined`) with a valid transaction asset for the Reverse Lookup asset.
+Additionally, overwrite the default transaction value of the context (`undefined`) with a transaction containing a property `senderAddress` which equals the address of the newly created account.
+* testing.fixtures.createDefaultAccount<LNSAccountProps>([LnsModule]):
+Used to create a default account for the LNS application.
+* new testing.mocks.StateStoreMock({accounts: [account]}):
+Creates a mock for the StateStore.
+
+==== Unit tests for the Reverse Lookup asset
 
 .lisk-name-service/lns/test/unit/modules/lns/assets/reverse_lookup.ts
 [source,typescript]
@@ -2722,7 +2828,9 @@ describe('ReverseLookupAsset', () => {
 
 == Writing network tests
 
-[source,bash]
+
+.lisk-name-service/lns/test/network/lns_modules.spec.ts
+[source,typescript]
 ----
 import { cryptography, passphrase, testing, transactions } from 'lisk-sdk';
 import { LnsModule } from '../../src/app/modules/lns/lns_module';

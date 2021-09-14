@@ -8,6 +8,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 :imagesdir: ../../assets/images
 :experimental:
 // URLs
+:url_wikipedia_functionaltesting: https://en.wikipedia.org/wiki/Functional_testing
 :url_wikipedia_dns: https://en.wikipedia.org/wiki/Domain_Name_System
 :url_wikipedia_cname: https://en.wikipedia.org/wiki/CNAME_record
 :url_wikipedia_txt: https://en.wikipedia.org/wiki/TXT_record
@@ -31,6 +32,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_bapps_frontend: introduction/blockchain-applications.adoc#frontend-backend
 :url_test_suite_createvalidatecontext: references/lisk-framework/test-suite.adoc#returns-25
 :url_test_suite_createapplycontext: references/lisk-framework/test-suite.adoc#returns-26
+:url_test_suite_createdefaultapplicationenv: references/lisk-framework/test-suite.html#createdefaultapplicationenv
 
 How to create a blockchain application that offers a domain name service for blockchain accounts, similar to {url_wikipedia_dns}[DNS^] and {url_ens}[ENS^].
 
@@ -2727,7 +2729,7 @@ Used to create a default account for the LNS application.
 * new testing.mocks.StateStoreMock({accounts: [account]}):
 Creates a mock for the StateStore.
 
-==== Unit tests for the Reverse Lookup asset
+=== Unit tests for the Reverse Lookup asset
 
 .lisk-name-service/lns/test/unit/modules/lns/assets/reverse_lookup.ts
 [source,typescript]
@@ -2826,8 +2828,56 @@ describe('ReverseLookupAsset', () => {
 });
 ----
 
-== Writing network tests
+== Writing functional tests
 
+{url_wikipedia_functionaltesting}[Functional testing] is a quality assurance (QA) process and a type of black-box testing that bases its test cases on the specifications of the software component under test. Functions are tested by feeding them input and examining the output, and internal program structure is rarely considered (unlike white-box testing).
+Functional testing is conducted to evaluate the compliance of a system or component with specified functional requirements.
+Functional testing usually describes what the system does.
+
+As a last exercise, write a functional test, that checks if a domain name was correctly resolved after calling the action `lns:resolveName`.
+
+Create a new file `lns_modules.spec.ts` in the `test/network/` folder:
+
+----
+.
+├── _setup.js
+├── commands
+├── integration
+├── network
+│   └── lns_modules.spec.ts
+├── tsconfig.json
+├── unit
+│   └── modules
+│       └── lns
+│           ├── assets
+│           │   ├── register.spec.ts
+│           │   └── reverse_lookup.spec.ts
+│           └── lns.spec.ts
+└── utils
+----
+
+The functional test should verify the following:
+
+* `resolveName` action of the LNS module
+** It should throw error on resolving non-registered name.
+** It should resolve name after registration.
+
+Before all tests:
+
+* Create a new default environment for the LNS application.
+* Start the application of the application environment.
+
+Use of the SDK testing utilities:
+
+* testing.createDefaultApplicationEnv({ modules: [LnsModule] }):
+Create a xref:{url_test_suite_createdefaultapplicationenv}[default application environment] for the functional test.
+* testing.fixtures.createDefaultAccount([LnsModule], { address }):
+Creates a default account for the LNS application.
+* testing.fixtures.defaultFaucetAccount.passphrase:
+Use the passphrase of the default faucet account to send tokens from the faucet to the newly created default account.
+
+
+=== Functional tests for the action `resolveName` of the LNS module
 
 .lisk-name-service/lns/test/network/lns_modules.spec.ts
 [source,typescript]
@@ -2911,27 +2961,4 @@ describe('LnsModule', () => {
 		});
 	});
 });
-----
-
-
-----
-$ tree -L 5 -I 'node_modules|test'
-.
-├── _setup.js
-├── commands
-│   └── account
-│       └── create.spec.ts
-├── integration
-├── network
-│   └── lns_modules.spec.ts
-├── tsconfig.json
-├── unit
-│   └── modules
-│       └── lns
-│           ├── assets
-│           │   ├── register.spec.ts
-│           │   └── reverse_lookup.spec.ts
-│           └── lns.spec.ts
-└── utils
-    └── config.ts
 ----

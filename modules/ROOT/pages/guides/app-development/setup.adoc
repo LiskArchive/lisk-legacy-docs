@@ -278,30 +278,66 @@ The blockchain application will have the following file structure after the firs
 ├── package-lock.json
 ├── package.json
 ├── src/
-│   ├── app/
-│   │   ├── app.ts
+│   ├── app/ <3>
+│   │   ├── app.ts <4>
 │   │   ├── index.ts
-│   │   ├── modules/ <3>
-│   │   ├── modules.ts
-│   │   ├── plugins/ <4>
-│   │   └── plugins.ts
-│   └── commands/ <5>
-└── test/ <6>
+│   │   ├── modules/ <5>
+│   │   ├── modules.ts <6>
+│   │   ├── plugins/ <7>
+│   │   └── plugins.ts <8>
+│   └── commands/ <9>
+└── test/ <10>
 ----
 
 <1> `bin/`: Contains the script to run the CLI of the application.
 <2> `config/`: Contains the configuration and the genesis block used by the application.
-<3> `modules/`: Contains internal modules of the application.
+<3> `app/`: Contains the files of the blockchain application.
+<4> `app.ts`: Creates the `Application` instance.
+<5> `modules/`: Contains internal modules of the application.
 This folder is empty after the first initialization with `lisk init`.
 The command `lisk generate:module` creates new modules in this folder.
-<4> `plugins/`: Contains internal plugins of the application.
+<6> `modules.ts` registers the modules with the application.
+<7> `plugins/`: Contains internal plugins of the application.
 This folder is empty after the first initialization with `lisk init`.
 The command `lisk generate:plugin` creates new modules in this folder.
-<5> `commands/`: Contains the logic for the CLI commands of the application.
+<8> `plugins.ts` registers the plugins with the application.
+<9> `commands/`: Contains the logic for the CLI commands of the application.
 The files for the different commands can be adjusted and extended as desired, for example, to include new flags and commands.
-<6> `test/`: Contains the test files for unit, functional and integration tests.
+<10> `test/`: Contains the test files for unit, functional, and integration tests.
 
-Use the following command to start the blockchain application.
+These files create a ready-to-start blockchain application, configured for a local devnet, which uses only the default modules of the Lisk SDK.
+
+The application is created in the file `app.ts`:
+
+.src/app/app.ts
+[source,typescript]
+----
+import { Application, PartialApplicationConfig, utils } from 'lisk-sdk';
+import { registerModules } from './modules';
+import { registerPlugins } from './plugins';
+
+export const getApplication = (
+	genesisBlock: Record<string, unknown>,
+	config: PartialApplicationConfig,
+): Application => {
+	const app = Application.defaultApplication(genesisBlock, config); // <1>
+
+	registerModules(app); // <2>
+	registerPlugins(app); // <3>
+
+	return app;
+};
+----
+
+<1> Creates a blockchain application with the default modules.
+<2> Will register additional modules to the application.
+Currently, no additional modules are available for the application.
+To add new modules update the `modules.ts` file.
+<3> Will register additional plugins to the application.
+Currently, no plugins are available for the application.
+To add new plugins update the `plugins.ts` file.
+
+To verify the successful bootstrap of the blockchain application, start it with the following command:
 
 [source,bash]
 ----
@@ -312,10 +348,42 @@ The `start` command offers various options, allowing further configuration of th
 For example, it is possible to define ports or to enable plugins that will be used by the application.
 For a complete list of all available start options, visit the xref:{url_references_cli_start}[application CLI reference].
 
-.How to reset the database of an application
-[TIP]
+This should start the blockchain application, which is currently running with a local single-node development network.
 
-====
+Observe the displayed log messages in the console.
+If no errors are thrown, the application will start to add new logs every 10 seconds after the initial startup.
+
+Once it is verified that the application is functioning correctly, stop the node again with kbd:[Ctrl] + kbd:[C].
+
+After the application was started for the first time, the corresponding application data can be found under the path `~/.lisk/hello_app/`
+
+.~/.lisk/hello_app/
+----
+.
+├── config
+│   └── default
+│       ├── config.json <1>
+│       └── genesis_block.json <2>
+├── data  <3>
+│   ├── blockchain.db
+│   ├── forger.db
+│   ├── genesis_block_compiled
+│   └── node.db
+├── logs  <4>
+├── plugins <5>
+└── tmp <6>
+----
+
+<1> `config.json` is the configuration file of the blockchain application.
+<2> `genesis_block.json` is the genesis block of the blockchain application.
+<3> `data` contains all on-chain data of the blockchain, stored in key-value stores.
+<4> `logs` contains the file logs of the application and its' plugins.
+<5> `plugins` contains all off-chain data of the application, stored in key-value-stores.
+<6> `tmp` contains temporary application data.
+
+
+==== How to reset the database of an application
+
 Once the application is started for the first time, it will save the application-specific data under the path `~/.lisk/hello_app/`.
 
 To reset the database of the application, simply delete the folder with the application data:
@@ -324,7 +392,6 @@ To reset the database of the application, simply delete the folder with the appl
 ----
 rm -r ~/.lisk/hello_app/data/
 ----
-====
 
 === Next steps
 

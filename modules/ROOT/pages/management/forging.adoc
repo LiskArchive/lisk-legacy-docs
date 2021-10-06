@@ -2,7 +2,7 @@
 Mona Bärenfänger <mona@lightcurve.io>
 :description: How to check, enable and disable forging on a Lisk node.
 // Settings
-:toc:
+:toc: preamble
 :idprefix:
 :idseparator: -
 :sectnums:
@@ -19,6 +19,8 @@ Mona Bärenfänger <mona@lightcurve.io>
 How to enable forging on a node for a particular delegate, and how to safely re-enable forging on another node.
 
 == Adding the delegate info to the config
+
+This step only needs to be done when enabling forging on a node for a delegate the first time.
 
 To enable your node to forge for a particular delegate, firstly it is required to insert some data into the config file under the `forging.delegates` array as described below:
 
@@ -71,15 +73,29 @@ Add the JSON object to the config under `forging.delegates` as shown below:
 
 <1>  The list of delegates who are allowed to forge on this node.
 
-IMPORTANT: Restart the node to apply the changes in the config.
+[IMPORTANT]
+====
+Restart the node to apply the changes in the config.
+====
 
-== Checking the forging status
+== The forger info data
 
-These three variables are required for enabling forging for the corresponding delegate.
+The forger_info data contains the following three properties:
 
 * `height`: Last forged block height.
 * `maxHeightPreviouslyForged`: Delegates largest previously forged height.
 * `maxHeightPrevoted`: Delegates largest prevoted height for a block.
+
+For each of these properties, the forger config contains the value used in the last block forged by the node.
+
+
+The  three variables are required for enabling forging for the corresponding delegate.
+
+
+
+
+== Checking the forging status
+
 
 To get the correct values for the above variables, check the forging status of a Lisk Core node execute the following command:
 
@@ -100,10 +116,10 @@ The command returns also the hexadecimal representation of the delegate address 
 [CAUTION]
 ====
 . Ensure the node is **fully synchronized** with the network, before enabling forging on that node.
-. If a delegate enables forging for the first time, the value for `HEIGHT`, `MAXHEIGHTPREVIOUSLYFORGED` and `MAXHEIGHTPREVOTED` is `0` for each.
+. If forging is enabled for a delegate for the **first time**, use `0` as value for `HEIGHT`, `MAXHEIGHTPREVIOUSLYFORGED` and `MAXHEIGHTPREVOTED`.
 Afterwards, it is always required to use the latest values of the `forger_info` info data.
 . The following behavior will be xref:{url_sdk_protocol_puninshment}[punished]:
-.. Afterwards, it is always needed to use the latest values of the `forger_info` info data
+.. It is always needed to use the latest values of the `forger_info` info data
 .. Do not activate forging for the same delegate on two or more nodes at the same time.
 ====
 
@@ -112,13 +128,14 @@ Afterwards, it is always required to use the latest values of the `forger_info` 
 ====
 The following tools can be used to simplify the process of enabling forging:
 
-* Use the {url_forger_sync}[forger-sync^] tool by delegate Gr33nDrag0n as alternative to enable forging for a delegate.
-* Use the {url_backup_plugin}[backup plugin] by delegate JesusTheHun to automatically backup the `forging_info` data after each block that the respective delegate has forged.
+* The {url_forger_sync}[forger-sync^] tool by delegate Gr33nDrag0n.
+Tool to enable forging for a delegate.
+* The {url_backup_plugin}[backup plugin] by delegate JesusTheHun to automatically backup the `forging_info` data after each block that the respective delegate has forged.
 
 Additional info about enabling forging can be found in the SDK documentation in the guide xref:{url_sdk_guides_forging}[]
 ====
 
-Once you have <<adding-the-delegate-info-to-the-config, added the delegate info to the config>>, and know the <<checking-the-forging-status,correct values>> for `HEIGHT`, `MAXHEIGHTPREVIOUSLYFORGED` and `MAXHEIGHTPREVOTED`, enable forging with the following command:"
+Enable forging with the following command:
 
 [source,bash]
 ----
@@ -151,6 +168,8 @@ EXAMPLES
   forging:enable ab0041a7d3f7b2c290b5b834d46bdc7b7eb85815 100 100 10 --data-path ./data --password your_password
 ----
 
+//TODO: Add examples/description on the --overwrite flag
+
 == Disable forging
 
 [source,bash]
@@ -179,6 +198,8 @@ EXAMPLES
   forging:disable ab0041a7d3f7b2c290b5b834d46bdc7b7eb85815 --data-path ./data
   forging:disable ab0041a7d3f7b2c290b5b834d46bdc7b7eb85815 --data-path ./data --password your_password
 ----
+
+//TODO: Check with devs: what is the reason vor overwrite flag in disable forging command?
 
 == Safely enabling forging on another node
 
@@ -211,32 +232,37 @@ The height of your node should be equal to the current network height.
 ----
 lisk-core node:info
 ----
-. Please double check again, that forging for this delegate is not enabled on other nodes.
 . Fetch the forging data needed to enable forging by <<checking-the-forging-status>>.
-. <<forgingenable,Enable forging>>.
+. <<enable-forging>>.
 
 == Safely enabling forging without forger_info data
 
-In case the `forger_info` data is lost or outdated, forging can be enabled without the forger_info data, by following the following steps:
+=== Configurable Constants
 
-* Assuming that your node was stopped at time `T`.
-* Wait for the new node to synchronize, and the chain to finalize a block with `timestamp > T`.
-The height of this particular block represented by the variable `finalHeight`.
-* Count how many blocks the chain missed since your last forged block (the last that you can see on chain).
-If the network is healthy, this number should be small.
-The number of missed blocks is represented by the variable `missedBlocks`.
-If you don't see a last forged block, choose a safe estimate here.
-For example, the number of missed blocks during the last month.
-* Only then, enable forging with
-** `HEIGHT` = `finalHeight` + `missedBlocks`
-** `MAXHEIGHTPREVOTED` = `finalHeight` + `missedBlocks`
-** `MAXHEIGHTPREVIOUSLYFORGED` = `finalHeight` + `missedBlocks`
-* If the network is running smoothly (no forks, no multiple missed blocks and new blocks are being finalized) it is mostly safe to just wait for a small safety buffer (a few hours) after stopping the old node and then enable forging using the latest finalized height for all three values.
-This value should be large enough to ensure that your node did not forge a block with height higher than this.
+* `BLOCK_TIME = 10`: The block time of the considered blockchain in seconds, i.e., 10 for Lisk Mainnet.
+* `MAX_FORK_DEPTH = 8640`: An upper bound on the largest chain of off-chain blocks for which the validator generator a block, i.e., for every block at height `h` generated by the validator, the parent block at height `h - MAX_FORK_DEPTH` must be contained in the canonical chain that is eventually finalized.
+It is recommended to use `MAX_FORK_DEPTH` = 8640 = 24*60 *6 (number of blocks generated in 24 h).
 
-[NOTE]
-====
-The last quantity, `MAXHEIGHTPREVIOUSLYFORGED` , is the most important one, the first 2 (`HEIGHT` and `MAXHEIGHTPREVOTED`) will be overwritten by your node to the correct values automatically.
+=== Required Delegate Input
 
-Also, if you are unsure about the time at which the previous node was stopped (or crashed), use an upper bound for `T`, to be on the safe side.
-====
+* `lastHeightActive`: Unix timestamp of the last height when the validator node could have been possibly active and forging (overestimate with a larger number when uncertain about the exact time).
+
+=== Instructions
+
+* Start a new node with forging deactivated and synchronize with the Lisk blockchain until there is a block `finalizedBlock` that is
+** finalized and
+** `finalizedBlock.header.timestamp > lastHeightActive`
+* Obtain a block `parentBlock` which is a parent block of `finalizedBlock` at height `finalizedBlock.header.height - MAX_FORK_DEPTH`.
+```
+parentBlock.height = finalizedBlock.header.height - MAX_FORK_DEPTH
+```
+* Compute the number of missed blocks in the current chain between `B` and `B_0`, i.e.,
+```
+missedBlocks = ceil((finalizedBlock.header.timestamp - parentBlock.header.timestamp)/BLOCK_TIME) - (finalizedBlock.header.height - parentBlock.header.height)
+```
+* Use the following forging configuration and activate forging
+```
+height = finalizedBlock.header.height
+maxHeightPreviouslyForged = finalizedBlock.header.height + missedBlocks
+heightPrevoted = finalizedBlock.header.height
+```

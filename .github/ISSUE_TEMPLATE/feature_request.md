@@ -7,14 +7,11 @@ assignees: ''
 
 ---
 
-**Is your feature request related to a problem? Please describe.**
-A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+**Description**
+Please describe what functionality is needed.
 
-**Describe the solution/ feature request you'd like**
-A clear and concise description of what documentation content should be added.
+**Motivation**
+Please describe why it is needed.
 
-**Additional context**
-Add any other context or screenshots about the feature request here.
+**Additional information**
 
-**Affected branch(es)**
-- docs-sdk

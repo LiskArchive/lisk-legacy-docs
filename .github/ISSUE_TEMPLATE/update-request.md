@@ -7,14 +7,11 @@ assignees: ''
 
 ---
 
-**Link to the outdated documentation content**
-A clear and concise description of what the outdated is. 
+**Description**
+What is outdated and how should it be updated?
 
-**How to update the outdated content?**
-A clear and concise description of what the outdated content is and how to update it.
+**URL**
+Link to the outdated documentation content.
 
-**Additional context**
-Add any other context about the update request here.
+**Additional information**
 
-**Affected branch(es)**
-- docs-sdk

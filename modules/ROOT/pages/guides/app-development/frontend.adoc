@@ -5,8 +5,10 @@ Mona Bärenfänger <mona@lightcurve.io>
 :idseparator: -
 :idprefix:
 :imagesdir: ../../../assets/images
-// External URLs
+// External URL
+:url_github_guides_frontend: https://github.com/LiskHQ/lisk-sdk-examples/tree/development/guides/06-frontend/hello_frontend
 :url_reactjs: https://reactjs.org/
+:url_frontend: http://localhost:3000
 // Project URLS
 :url_guides_asset: guides/app-development/asset.adoc
 :url_guides_module: guides/app-development/module.adoc
@@ -22,6 +24,12 @@ This frontend can be built with any technology stack of your choice.
 In this example, {url_reactjs}[React.js] is used.
 
 We will use the `@liskhq/lisk-client` package in the frontend application to communicate with the blockchain application.
+
+.Sample code
+[NOTE]
+====
+View the complete sample code of this guide on GitHub in the {url_github_guides_frontend}[Lisk SDK examples repository^].
+====
 
 .Prerequisites
 [NOTE]
@@ -54,7 +62,8 @@ This will automatically set up a React project for you with default configuratio
 │   └── package.json
 ----
 
-It is already possible to start the frontend at this point:
+It is already possible to start the frontend at this point.
+It should display the React.js logo in the browser under {url_frontend} :
 
 [source,bash]
 ----
@@ -64,7 +73,7 @@ npm start
 
 == Install dependencies
 
-To build the frontend, install these two additional dependencies:
+To build the frontend for the Hello blockchain application, install these two additional dependencies:
 
 [source,bash]
 ----
@@ -165,6 +174,16 @@ export const getClient = async () => {
     }
     return clientCache;
 };
+
+export const fetchHelloCounter = async () => {
+    const client = await getClient();
+    return client.invoke('hello:amountOfHellos');
+};
+
+export const fetchLatestHello = async () => {
+    const client = await getClient();
+    return client.invoke('latestHello:getLatestHello');
+};
 ----
 
 Next, create a new file `Faucet.js`, which will store the React component of the faucet.
@@ -257,7 +276,7 @@ const Faucet = () => {
 export default Faucet;
 ----
 
-=== Send transaction
+=== Send Transfer transaction
 
 Now that it is possible to create a new account and receive some initial tokens, we can build a new component that allows the possibility to be able to send tokens from an account to another.
 
@@ -356,6 +375,93 @@ const Transfer = () => {
     );
 }
 export default Transfer;
+----
+
+=== Send Hello transaction
+
+Now that we defined a component for posting one of the default transaction types, the Transfer transaction, create another component for posting the custom Hello transaction, which was implemented before in the guide xref:{url_guides_asset}[].
+
+Create a new file `Hello.js` inside of thee `components/` folder, and add the following code to it:
+
+.src/components/Hello.js
+[source,jsx]
+----
+import { cryptography, transactions } from '@liskhq/lisk-client';
+import React, { Component, useState } from 'react';
+import * as api from '../api.js';
+
+const Hello = () => {
+    const [state, updateState] = useState({
+        hello: '',
+        fee: '',
+        passphrase: '',
+        transaction: {},
+        response: {}
+    });
+
+    const handleChange = (event) => {
+        const { name, value } = event.target;
+        updateState({
+            ...state,
+            [name]: value,
+        });
+    };
+
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+
+        const client = await api.getClient();
+        const tx = await client.transaction.create({
+            moduleID: 1000,
+            assetID: 0,
+            fee: BigInt(transactions.convertLSKToBeddows(state.fee)),
+            asset: {
+                helloString: state.hello,
+            },
+        }, state.passphrase);
+
+        let res = '';
+        try {
+          res = await client.transaction.send(tx);
+        } catch (error) {
+          res = error;
+        }
+        updateState({
+          transaction: client.transaction.toJSON(tx),
+          response: res,
+          hello: '',
+          fee: '',
+          passphrase: '',
+        });
+    };
+
+    return (
+        <div>
+            <h2>Hello</h2>
+            <p>Send a Hello transaction.</p>
+            <form onSubmit={handleSubmit}>
+                <label>
+                    Hello message:
+                        <input type="text" id="hello" name="hello" onChange={handleChange} value={state.hello} />
+                </label>
+                <label>
+                    Fee:
+                        <input type="text" id="fee" name="fee" onChange={handleChange} value={state.fee} />
+                </label>
+                <label>
+                    Passphrase:
+                        <input type="text" id="passphrase" name="passphrase" onChange={handleChange} value={state.passphrase} />
+                </label>
+                <input type="submit" value="Submit" />
+            </form>
+            <div>
+                <pre>Transaction: {JSON.stringify(state.transaction, null, 2)}</pre>
+                <pre>Response: {JSON.stringify(state.response, null, 2)}</pre>
+            </div>
+        </div>
+    );
+}
+export default Hello;
 ----
 
 === Account details
@@ -490,7 +596,7 @@ import {
     Link
 } from "react-router-dom";
 import "regenerator-runtime/runtime.js";
-import Home from './home';
+import Home from './Home';
 import NewAccount from './NewAccount';
 import Faucet from './Faucet';
 import SendHello from './Hello';
@@ -571,7 +677,7 @@ After completing all the steps above, start the app again:
 npm start
 ----
 
-This should open the app in browser under the URL http://localhost:3000 .
+This should open the app in browser under the URL {url_frontend} .
 
 NOTE: It is also necessary to start the corresponding blockchain application if it is not running already.
 

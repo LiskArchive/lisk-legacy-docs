@@ -23,16 +23,10 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_bapps_network: introduction/blockchain-applications.adoc#architecture-of-blockchain-applications
 :url_commander_commands_createaccount: references/lisk-commander/commands.adoc#create-account
 :url_references_cli_createaccount: references/application-cli.html#accountcreate
-////
-:url_comander_commands_registerdelegate: references/lisk-commander/commands.adoc#_delegate_registration_transaction
-:url_guides_config: guides/app-development/configuration.adoc#intro
-:url_guides_api: guides/node-management/api-access.adoc
 :url_guides_forging: guides/node-management/forging.adoc
+:url_guides_forging_register: guides/node-management/forging.adoc#registering-a-delegate
+:url_guides_forging_enable: guides/node-management/forging.adoc
 :url_reference_config: references/config.adoc
-:url_setup_ports: setup.adoc#ports
-
-:url_protocol_genesis_block: protocol:blocks.adoc#_genesis_block
-////
 
 == Introduction
 
@@ -75,13 +69,7 @@ Therefore it is required to generate a **new genesis block** for the blockchain 
 This new genesis block should create new genesis accounts, and the created passphrases need to be kept private in order to ensure that the genesis accounts cannot be hijacked.
 ====
 
-[IMPORTANT]
-====
-The current version of the Lisk SDK does not yet support the possibility to create its own xref:{url_protocol_genesis_block}[genesis blocks].
-This feature will be added in future releases.
-
-In the case whereby it is required to create a new genesis block with the current release, please see the {url_lisk_community}[community^] tools, for example the {url_github_corbifex}[Genesis block generator by Corbifex^].
-====
+//TODO: add steps how to create thee genesis block, refer to genesis block guide
 
 [[seed_node]]
 === Define seed nodes
@@ -137,8 +125,7 @@ const app = new Application(genesisBlockDevnet, myConfig);
 
 [NOTE]
 ====
-By default, the forging delegates list in the config is empty.
-Only the exposed `configDevnet` object includes forging data for all 101 genesis delegates.
+By default, the `forging.delegates` list in the config should be empty.
 The user who will later deploy the node on a server can then add the credentials to the config, to xref:{url_guides_forging}[enable forging] for a particular delegate on this node.
 ====
 
@@ -158,66 +145,6 @@ The minimum amount of files required for a node application can be seen listed b
 
 The client application should be distributed in a separate project, and may contain any desired structure as required.
 
-////
-== Add an API node
-
-This new node will not have any forging activated.
-The API node is communicating via the API with the `client` app, and over the WebSocket connection to other peer nodes.
-
-In this example, the only other node in the network is the seed node.
-Therefore, the seed node is the only node at this point that can forge new blocks, because all the genesis delegates are actively forging on it.
-
-TIP: How to replace the genesis delegates with real delegates is covered in the next section <<more_nodes, Add more nodes>>.
-
-To set up the node, install the node application on a new server.
-Just follow the instructions of the `README` file, that was created in the previous step.
-
-IMPORTANT: Do not forget to open the corresponding xref:{url_setup_ports}[ports] for HTTP and WS communication!
-
-By default, the API access of a node is disabled.
-So after successful setup of the node, it is required to xref:{url_guides_config}[whitelist specific clients] in the config, or to make the xref:{url_guides_config}[API access public] for everyone alternatively.
-
-Once a new node is set up, update the API endpoint in the <<client_app,client app>>, to target the new node:
-
-.Snippet of client/app.js
-[source,js]
-----
-// Constants
-const API_BASEURL = 'http://localhost:4000'; <1>
-----
-
-<1> Add the correct IP and port here to the newly added node.
-
-At this point the new API node will now receive transactions from the client app and vice versa.
-The received transactions will be visible in the logs of the client node, (assuming the log level is at least `info`).
-
-.Logs of the newly added API node
-image:synching_node.png[Synching non forging node]
-
-In the logs shown above it can be seen that the seed node was already 3 blocks ahead when the second node was started.
-It first synchronises the missing blocks up to the current height, and then broadcasts the received transactions from the client app to the seed node, whereby the delegates can then add the transactions to blocks and forge them.
-
-These new blocks are broadcasted again to the new node, and the client app can display the data based on the API calls that it sends to the new node.
-
-.Log of the seed node with the forging genesis delegates:
-image:forging_node.png[Forging node logs]
-
-[NOTE]
-.Broadcast irregularities are no concern.
-====
-Sometimes errors occur when broadcasting transactions between the nodes.
-There is no cause for concern here as the node will re-start the sync process again; and in the majority of cases it is successful on the next attempt.
-image:common-sync-issue.png[Common sync issue]
-In the above image the block at height 284 is not accepted because of an invalid block timestamp.
-As a result, the following blocks are also discarded by the node.
-Anomalies like this can occur within the network.
-The node can usually resolve these issues on its own by starting a new sync process, whereby it requests the missing blocks from one of its' peer nodes.
-As shown in the logs above, the blocks at height 284, 285 and 286 are displayed as discarded.
-At this point the node realizes it is not in sync with the other nodes and starts the sync process.
-This can also be seen in the above logs, `Starting sync`.
-During the sync process the missing blocks are received from the peers and added to the database of the node.
-====
-////
 [[more_nodes]]
 == Become validator for the Testnet
 
@@ -235,31 +162,12 @@ To join the network as a new delegate, follow the steps listed below:
 . Create an own, private account on the network.
 .. xref:{url_references_cli_createaccount}[Generate the account credentials]
 .. Send some funds, (which must be an adequate amount in order to register as a delegate) to the newly generated address.
-. Register a delegate.
-.. Create the delegate registration transaction:
-+
-[source,bash]
-----
-
-----
-.. Broadcast the delegate registration to the network:
-+
-.Example: Registers a delegate with username "lightcurve"
-[source,bash]
-----
-export SECRET_PASSPHRASE=123456 <1>
-lisk transaction:create:delegate lightcurve -p=env:SECRET_PASSPHRASE | tee >(curl -X POST -H "Content-Type: application/json" -d @- 1.2.3.4:4000/api/transactions) <2>
-----
-<1> Replace `123456` with the secret passphrase.
-<2> Replace `1.2.3.4` with the IP of a node with a reachable API.
-+
-. Set up a <<node_app,node>>: Follow the steps in the `README` file of the app, (alternatively read the Lisk tutorials, as this process is basically identical).
-. xref:{url_guides_forging}[Enable forging for the newly created delegate on the node]
-. People become convinced to vote for a delegate in the network, if the delegate has the following attributes:
-** Is helpful.
-** Is accountable.
-** Is sharing rewards.
-** Is offering useful services or tools.
+. xref:{url_guides_forging_register}[Register a delegate].
+. Set up a <<node_app,node>>: Follow the steps in the `README` file or docs of the app.
+Normally it involves downloading the application code from a public source, connfiguring it (via config or flags on startup), and starting the application.
+. xref:{url_guides_forging}[Enable forging] for the newly registered delegate.
+. Perform self-vote
+. Optional: Convince other accounts to vote for the delegate, to increase the delegate vote weight.
 
 .How to replace a genesis delegate
 [NOTE]

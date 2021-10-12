@@ -1,6 +1,6 @@
 ---
 name: Update request
-about: Describe this issue template's purpose here.
+about: Report outdated content in the documentation.
 title: ''
 labels: 'type: update'
 assignees: ''

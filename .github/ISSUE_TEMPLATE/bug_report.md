@@ -6,12 +6,12 @@ labels: 'type: bug'
 assignees: ''
 
 ---
-**Expected content**
+### Expected content
 A clear and concise description of what content you expect to see.
 
-**Actual content**
+### Actual content
 Describe the specific content of the documentation that you feel could be improved.
 
-**Link**
+### Link
 URL to the corresponding content in the documentation.
 

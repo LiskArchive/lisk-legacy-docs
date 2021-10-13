@@ -7,11 +7,11 @@ assignees: ''
 
 ---
 
-**Description**
+### Description
 What is outdated and how should it be updated?
 
-**URL**
+### URL
 Link to the outdated documentation content.
 
-**Additional information**
+### Additional information
 

@@ -7,11 +7,11 @@ assignees: ''
 
 ---
 
-**Description**
+### Description
 Please describe what functionality is required.
 
-**Motivation**
+### Motivation
 Please describe why it is required.
 
-**Additional information**
+### Additional information
 

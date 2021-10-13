@@ -34,6 +34,13 @@ How to turn your local 1-node Devnet into an actual blockchain network.
 
 This guide describes how to distribute a blockchain application by establishing a decentralized network of nodes and validators who together are maintaining and securing the blockchain application.
 
+[NOTE]
+====
+This guide describes only the most important steps for releasing a blockchain application for a public Testnet.
+
+Additional steps might be required for more complex blockchain applications (e.g. releasing additional software like Middllewares beetween frontend and blockchain application)
+====
+
 == Initial state: Devnet
 
 During development it is both necessary and convenient to have a rather centralized network with only one node connected.
@@ -46,17 +53,17 @@ image:guides/launch/devnet-node.png[One node diagram]
 
 == Prepare the Testnet
 
+To turn the Devnet into a public Testnet, the following thinngs should be considered:
+
+* Create new genesis delegates & keep their credentials private and secure.
+* Create a new unique genesis block for the Testnet
+** Update community identifier here?
+* Create config for seed node
+* Create public default config.json
+* Connect another node with API enabled
+* Release the code to the public
+
 The next step is to create a <<genesis_block, genesis block>> and one <<seed_node, seed node>> and to add one API node to the network that communicates with the seed node:
-
-image:guides/launch/testnet-node.png[Two nodes diagram]
-
-As shown in the diagram above, the plan is to connect a second node with public API which has forging disabled.
-
-With this type of setup, the client application communicates through the HTTP API with the new node.
-The seed node communicates simultaneously with the new node via WebSockets.
-This in turn ensures that the seed node is informed by the API node, each time a new transaction is sent to the network.
-
-TIP: Using this architecture it is convenient to test if the WebSocket connection between the seed node and the new node is established.
 
 [[genesis_block]]
 === Create a new genesis block
@@ -74,8 +81,9 @@ This new genesis block should create new genesis accounts, and the created passp
 [[seed_node]]
 === Define seed nodes
 
-When setting up a new node, each new node will initially connect to the seed nodes when booting for the first time.
-Starting from the seed node, a new node will discover the rest of the network by requesting their peer list. This is then followed by the peer lists of the newly discovered peers and so on.
+Each node that is connecting to the network for the first time, will initially connect to the seed nodes.
+Starting from a seed node, the new node will discover the rest of the network by requesting their peer list.
+This is then followed by the peer lists of the newly discovered peers and so on.
 
 To define a node as a seed node, simply add it to the config as described in section <<config,create a configuration object>>.
 
@@ -85,42 +93,40 @@ It is convenient to have the genesis delegates actively forging on the seed node
 
 CAUTION: It is recommended to keep the config of the seed nodes to yourself, especially if it contains the `defaultpassword` to decrypt the passphrases of the genesis delegates.
 
-Include the data of the new genesis delegates in the config(see xref:{url_guides_forging}[enable forging]), that were created in the <<genesis_block, genesis block>>.
-
-//TODO: Please see the xref:{}[Best practices: seed nodes] section for further recommendations how to configure a seed node.
+Include the data of the new genesis delegates in the config(see xref:{url_guides_forging}[enable forging]).
 
 [[config]]
-=== Create a configuration object
+=== Create a default configuration object
 
-Exchange the {url_github_sdk_configDevnet}[configDevnet^] object that was passed to the node during the development with the customized version.
+Update configuration that was passed to the node during the development to be prepared for the public Testnet.
 
-[TIP]
 
-====
-It is recommended to create a config object with all the options that differ from the default config options.
-To check the default config options, go to the xref:{url_reference_config}[configuration page] or check it directly in the code.
-Default options for modules: +
-`framework/src/modules/MODULE_NAME/defaults/config.js`. +
-Default options for components: +
-`framework/src/components/COMPONENT_NAME/defaults/config.js`.
-====
-
-Most of the configurations can remain the same as those already defined in the default config options.
+Most of the configurations can remain the same as those already defined in the Devnet config options.
 However, please note that there is one option that should be updated: **The seed node(s)**.
 
-For example to add `1.2.3.4:5000` as a seed node, add an object with the 2 properties `ip` and `wsPort` to the `seedPeers` list as displayed below:
+For example to add `1.2.3.4:5000` as a seed node, add an object with the 2 properties `ip` and `port` to the `network.seedPeers` list as displayed below:
 
+.config.json
 [source,js]
 ----
-const myConfig = {
-     modules: {
-         network: {
-             seedPeers: [{ ip: '1.2.3.4', wsPort: 5000}]
-         }
-     }
- };
-
-const app = new Application(genesisBlockDevnet, myConfig);
+{
+  // ...
+  "forging": {
+    "force": false,
+    "waitThreshold": 2,
+    "delegates": [],
+  },
+  "network": {
+    "seedPeers": [
+        {
+            "ip": "1.2.3.4",
+            "port": 5000
+        }
+    ],
+    "port": 5000
+  },
+  // ...
+}
 ----
 
 [NOTE]
@@ -129,7 +135,7 @@ By default, the `forging.delegates` list in the config should be empty.
 The user who will later deploy the node on a server can then add the credentials to the config, to xref:{url_guides_forging}[enable forging] for a particular delegate on this node.
 ====
 
-=== Publish source code
+=== Releasing the Testnet
 
 Add the code for the customized `node` application (including the custom transactions), to a public code repository.
 For example, on  {url_github}[Github^] or {url_gitlab}[Gitlab^].
@@ -145,12 +151,22 @@ The minimum amount of files required for a node application can be seen listed b
 
 The client application should be distributed in a separate project, and may contain any desired structure as required.
 
+image:guides/launch/testnet-node.png[Two nodes diagram]
+
+As shown in the diagram above, the plan is to connect a second node with public API which has forging disabled.
+
+With this type of setup, the client application communicates through the HTTP API with the new node.
+The seed node communicates simultaneously with the new node via WebSockets.
+This in turn ensures that the seed node is informed by the API node, each time a new transaction is sent to the network.
+
+TIP: Using this architecture it is convenient to test if the WebSocket connection between the seed node and the new node is established.
+
 [[more_nodes]]
 == Become validator for the Testnet
 
 During development of the blockchain application, one node was enabled for forging for all 103 genesis delegates.
 
-After the release of the first version of the blockchain application, it is necessary that real, independent delegate accounts take the forging slots of the genesis delegates.
+After the Testnet-release of the blockchain application, it is necessary that real, independent delegate accounts take the forging slots of the genesis delegates.
 
 NOTE: The network will become decentralized for the first time when at least 52 individual delegates are actively forging in the network.
 

@@ -12,10 +12,116 @@ Mona Bärenfänger <mona@lightcurve.io>
 
 How to configure Lisk Service.
 
+== Configuring Lisk Service
+
+Copy the example configuration options to `lisk-service/.env`:
+
+.lisk-service/
+[source,bash]
+----
+cp docker/example.env .env
+vim .env
+----
+
+Open the `.env` file to change thee default configuration options of Lisk Service:
+
+.lisk-service/.env
+[source,bash]
+----
+## Common Docker configuration
+
+# Service broker
+# SERVICE_BROKER=redis://redis_common:6379/0
+
+# Lisk Service log config
+# SERVICE_LOG_CONSOLE=false
+# SERVICE_LOG_FILE=false
+# SERVICE_LOG_GELF=false
+# SERVICE_LOG_LEVEL=debug
+# SERVICE_LOG_STDOUT=true
+
+## Lisk Service Core
+# SERVICE_CORE_REDIS=redis://redis_core_persistent:6379/0
+# SERVICE_CORE_REDIS_VOLATILE=redis://redis_core_volatile:6379/0
+# SERVICE_CORE_MYSQL=mysql://lisk:password@mysql_core:3306/lisk
+
+# Lisk static assets, ie. known account lists
+LISK_STATIC=https://static-data.lisk.com
+
+# Lisk Service geolocation backend (empty = disabled)
+GEOIP_JSON=
+
+# Create search index (0 = full index)
+INDEX_N_BLOCKS=0
+
+# Use default genesis block height
+# GENESIS_HEIGHT=0
+# FEE_EST_DEFAULT_START_BLOCK_HEIGHT=0
+
+# Fee estimator
+ENABLE_FEE_ESTIMATOR_QUICK=true
+ENABLE_FEE_ESTIMATOR_FULL=false
+
+# Transaction statistics
+ENABLE_TRANSACTION_STATS=true
+
+# Missing blocks job
+ENABLE_JOB_MISSING_BLOCKS=true
+INDEX_MISSING_BLOCKS_RANGE=0
+
+# Log debug messages
+#DEBUG=*dynamicFees*
+
+# Lisk ecosystem configuration
+LISK_CORE_WS=ws://host.docker.internal:8080
+
+# Websocket rate limit config
+WS_RATE_LIMIT_ENABLE=false
+WS_RATE_LIMIT_CONNECTIONS=5
+WS_RATE_LIMIT_DURATION=1 # in seconds
+
+# HTTP rate limit config
+HTTP_RATE_LIMIT_ENABLE=false
+HTTP_RATE_LIMIT_CONNECTIONS=200
+HTTP_RATE_LIMIT_WINDOW=10 # in seconds
+
+## Lisk Service Gateway
+# PORT=9901
+# HOST=0.0.0.0
+
+# Enabled Gateway APIs
+ENABLE_HTTP_API=http-status,http-version2
+ENABLE_WS_API=blockchain,rpc-v2
+
+# HTTP API caching config
+ENABLE_HTTP_CACHE_CONTROL=false
+HTTP_CACHE_CONTROL_DIRECTIVES=public,max-age=10
+
+# SERVICE_GATEWAY_REDIS_VOLATILE=redis://redis_gateway_volatile:6379/1
+
+# Websocket rate limit config
+ENABLE_WS_RATELIMIT=false
+WS_RATELIMIT_POINTS=5
+WS_RATELIMIT_DURATION=1 # in seconds
+
+## Lisk Service Market
+# SERVICE_MARKET_REDIS=redis://redis_market:6379/0
+
+# MySQL install
+MYSQL_ROOT_PASSWORD=password
+MYSQL_DATABASE=lisk
+MYSQL_USER=lisk
+MYSQL_PASSWORD=password
+
+## Lisk Service Newsfeed
+SERVICE_NEWSFEED_MYSQL=mysql://lisk:password@mysql_newsfeed:3306/lisk
+----
+
 == Show current configuration
 
 To show the current configuration of Lisk Service, execute the following command:
 
+.lisk-service/
 [source,bash]
 ----
 make print-config
@@ -164,109 +270,3 @@ version: '3'
 volumes:
   mysql-data: {}
 ----
-
-
-////
-[[default_configs]]
-== Default configurations
-
-Lisk Service provides different ready-to-use configuration files, which are located in the `docker/` folder of Lisk Service.
-
-.lisk-service/docker/
-----
-├── custom.env
-├── docker-compose.betanet.yml
-├── docker-compose.custom.yml
-├── docker-compose.devnet.yml
-├── docker-compose.mainnet.yml
-└── docker-compose.testnet.yml
-----
-
-To connect to any of the networks displayed in the snippet above, simply change line 9 in the `Makefile` file:
-
-.Example: How to update the `Makefile`, to connect to the Betanet with Lisk Service
-[source,bash]
-----
-
-.PHONY: clean coldstart mrproper up
-all: up
-
-compose := docker-compose \
-	-f docker-compose.yml \
-	-f lisk_service/docker-compose.core.yml \
-	-f lisk_service/docker-compose.gateway.yml \
-	-f lisk_service/docker-compose.gateway-ports.yml \
-	-f docker-compose.betanet.yml <1>
-----
-
-<1> Update this line from `-f docker-compose.mainnet.yml` to `-f docker-compose.NETWORK.yml`, where `NETWORK` can be either:
-* `betanet`
-* `custom`
-* `devnet`
-* `mainnet`
-* `testnet`
-
-After updating the `Makefile` as described above, start Lisk Service again:
-
-[source,bash]
-----
-make up
-----
-
-Lisk Service should now be connected to the desired network.
-
-== Custom configuration
-:sectnums:
-
-=== The custom.env file
-
-First, open the file `docker/custom.env` .
-
-The following contents below will be displayed:
-
-[source,bash]
-----
-## Lisk Service custom configuration
-
-# Lisk Core node
-LISK_CORE_HTTP=https://mainnet.lisk.io
-LISK_CORE_WS=wss://mainnet.lisk.io
-----
-
-The two existing options `LISK_CORE_HTTP` and `LISK_CORE_WS` are examples of how to set config options in this file.
-
-To see a list of the most important options, check out the preconfigured `env` files in the `docker/lisk-service/env/network` folder.
-
-To check and view the complete list of all available config options of Lisk Service, go to the xref:{url_references_config}[configuration reference].
-
-=== Update the Makefile
-
-.How to update the `Makefile` to use a custom configuration
-[source,bash]
-----
-
-.PHONY: clean coldstart mrproper up
-all: up
-
-compose := docker-compose \
-	-f docker-compose.yml \
-	-f lisk_service/docker-compose.core.yml \
-	-f lisk_service/docker-compose.gateway.yml \
-	-f lisk_service/docker-compose.gateway-ports.yml \
-	-f docker-compose.custom.yml <1>
-----
-
-<1> Update this line from `-f docker-compose.mainnet.yml` to `-f docker-compose.custom.yml`.
-
-=== Start Lisk Service
-
-All that is now remaining is to start Lisk Service again:
-
-.In the `lisk-service` root folder
-[source,bash]
-----
-make up
-----
-
-:!sectnums:
-////

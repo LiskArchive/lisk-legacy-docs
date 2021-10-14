@@ -25,6 +25,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_commander_commands_createaccount: references/lisk-commander/commands.adoc#create-account
 :url_references_cli_createaccount: references/application-cli.html#accountcreate
 :url_guides_forging: guides/node-management/forging.adoc
+:url_guides_securenonforging: guides/node-management/non-forging-node-protection.html
 :url_guides_setup: guides/app-development/setup.adoc
 :url_guides_forging_register: guides/node-management/forging.adoc#registering-a-delegate
 :url_guides_forging_enable: guides/node-management/forging.adoc
@@ -229,6 +230,9 @@ CAUTION: It is very important to not share the config of the seed nodes with the
 
 Include the data of the new genesis delegates in the config (see xref:{url_guides_genesisblock_enableforging}[Enabling forging for the new genesis delegates]).
 
+Beside this, seed nodes require no further special config options.
+Especially, it is recommended to leave the public API disabled on a seed node.
+
 === Releasing the Testnet to the public
 
 Add the code for the customized `node` application (including the custom transactions), to a public code repository.
@@ -236,33 +240,57 @@ For example, on  {url_github}[Github^] or {url_gitlab}[Gitlab^].
 
 This provides all users with the opportunity to download the application, and deploy it on a server in order to connect with the network.
 
-The minimum amount of files required for a node application can be seen listed below:
+The code of the blockchain application can be released as is to enable external users to spin up their own node.
 
-* {url_github_hello_index}[index.js^] :  The code that initializes and starts the node application.
-* {url_github_hello_package}[package.json^]: A project file that lists all needed dependencies, (this should include `lisk-sdk` as a dependency).
-* {url_github_hello_transaction}[transactions^]: A folder containing all required custom transactions.
-* `README` : A Readme file which describes the most important steps to setup the node.
+.Example file structure
+----
+.
+├── bin/
+├── config/
+│   └── default/
+│       ├── config.json
+│       └── genesis_block.json
+├── package-lock.json
+├── package.json
+├── src/
+│   ├── app/
+│   │   ├── app.ts
+│   │   ├── index.ts
+│   │   ├── modules/
+│   │   ├── modules.ts
+│   │   ├── plugins/
+│   │   └── plugins.ts
+│   └── commands/
+├── test/
+└── README.md
+----
 
-The client application should be distributed in a separate project, and may contain any desired structure as required.
+It is recommended to provide additional application specific documentation for users, for example by updating the README.md with all important steps to spin up a node.
+
 
 image:guides/launch/testnet-node.png[Two nodes diagram]
 
-As shown in the diagram above, the plan is to connect a second node with public API which has forging disabled.
+=== Add a node with enabled API
 
-With this type of setup, the client application communicates through the HTTP API with the new node.
-The seed node communicates simultaneously with the new node via WebSockets.
-This in turn ensures that the seed node is informed by the API node, each time a new transaction is sent to the network.
+As the seed node should have RPC API disabled, add a new node to the network with API enabled.
+This node has mainly the purpose of providing blockchain data to external tools and services via the API.
+Forging should bbe disabled on this node.
 
-TIP: Using this architecture it is convenient to test if the WebSocket connection between the seed node and the new node is established.
+To restrict the node API to specific IPs, see the guide xref:{url_guides_securenonforging}[]
+
+TIP: Using this initial architecture it is convenient to test if the WebSocket connection between the seed node and the new node is established correctly.
+
+
+=== Enable the Faucet plugin
+
+//TODO
 
 [[more_nodes]]
 == Become validator for the Testnet
 
-During development of the blockchain application, one node was enabled for forging for all 103 genesis delegates.
-
 After the Testnet-release of the blockchain application, it is necessary that real, independent delegate accounts take the forging slots of the genesis delegates.
 
-NOTE: The network will become decentralized for the first time when at least 52 individual delegates are actively forging in the network.
+NOTE: The network will become decentralized for the first time when at least 51% of the delegates are actively forging in the network are independent delegates.
 
 .Forging nodes join the network
 image:guides/launch/testnet-delegate-nodes.png[3 nodes diagram]
@@ -272,20 +300,10 @@ To join the network as a new delegate, follow the steps listed below:
 . Create an own, private account on the network.
 .. xref:{url_references_cli_createaccount}[Generate the account credentials]
 .. Send some funds, (which must be an adequate amount in order to register as a delegate) to the newly generated address.
+For the testnet
 . xref:{url_guides_forging_register}[Register a delegate].
 . Set up a <<node_app,node>>: Follow the steps in the `README` file or docs of the app.
-Normally it involves downloading the application code from a public source, connfiguring it (via config or flags on startup), and starting the application.
+Normally it involves downloading the application code from a public source, configuring it (via config or flags on startup), and starting the application.
 . xref:{url_guides_forging}[Enable forging] for the newly registered delegate.
-. Perform self-vote
-. Optional: Convince other accounts to vote for the delegate, to increase the delegate vote weight.
-
-.How to replace a genesis delegate
-[NOTE]
-====
-If a delegate joins the network at a very early stage, it is likely they will probably replace one of the genesis delegates.
-The genesis delegates are voted in by the genesis account which holds all the tokens on the initial network start.
-The genesis account votes with these tokens for the genesis delegates, in order to stabilize the network during the development.
-
-Therefore, when replacing a genesis delegate, the new delegate will need to convince the person who controls the genesis account of the network; which will most likely be the app developer.
-Later, when the majority of the existing tokens are distributed amongst the different private accounts, the new delegate needs to gain the trust of the community in order to be voted into a forging position.
-====
+. Perform a self-vote.
+. Optional: Convince other accounts to vote for your delegate, to increase the delegate vote weight if necessary.

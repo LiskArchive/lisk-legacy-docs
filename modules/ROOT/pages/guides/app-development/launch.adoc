@@ -21,31 +21,42 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_lisk_community: https://lisk.io/community
 // Project URLs
 :url_bapps_network: introduction/blockchain-applications.adoc#architecture-of-blockchain-applications
+:url_bapps_frontend: introduction/blockchain-applications.adoc#frontend-backend
 :url_commander_commands_createaccount: references/lisk-commander/commands.adoc#create-account
 :url_references_cli_createaccount: references/application-cli.html#accountcreate
 :url_guides_forging: guides/node-management/forging.adoc
+:url_guides_setup: guides/app-development/setup.adoc
 :url_guides_forging_register: guides/node-management/forging.adoc#registering-a-delegate
 :url_guides_forging_enable: guides/node-management/forging.adoc
+:url_guides_genesisblock: guides/app-development/genesis-block.adoc
+:url_guides_genesisblock_enableforging: guides/app-development/genesis-block.adoc#enabling-forging-for-the-new-genesis-delegates
 :url_reference_config: references/config.adoc
+:url_references_cli_genesis: references/application-cli.adoc#genesis-blockcreate
 
 == Introduction
 
 How to turn your local 1-node Devnet into an actual blockchain network.
 
-This guide describes how to distribute a blockchain application by establishing a decentralized network of nodes and validators who together are maintaining and securing the blockchain application.
+This guide describes how to release a blockchain application to the public and how to establisha decentralized network of nodes and validators who together are maintaining and securing the blockchain application.
 
+////
 [NOTE]
 ====
-This guide describes only the most important steps for releasing a blockchain application for a public Testnet.
+This guide describes only the most important steps for releasing a basic blockchain application with one connected frontend for a public Testnet.
 
-Additional steps might be required for more complex blockchain applications (e.g. releasing additional software like Middllewares beetween frontend and blockchain application)
+Additional steps might be required for more complex blockchain applications (e.g. releasing additional software like Middllewares beetween frontend and blockchain application).
+See xref:{url_bapps_frontend}[Blockchain applications: Frontend & Backend]
 ====
+////
 
 == Initial state: Devnet
 
+The Devnet is used as default network to connect to during the development of a blockchainn application.
+Starting the node after xref:{url_guides_setup}[Bootstrappinng the blockchain application] will always connect to a local Devnet.
+
 During development it is both necessary and convenient to have a rather centralized network with only one node connected.
 
-Once the development has reached a proof of concept or a usable product stage, it will be necessary to add more nodes to the network, and hence offer other potential users the opportunity to join the newly created blockchain network.
+Once the development has reached a certain maturity, it will be necessary to add more nodes to the network, and hence offer other potential users the opportunity to join the newly created blockchain network.
 
 This is how the setup looks during development:
 
@@ -53,64 +64,137 @@ image:guides/launch/devnet-node.png[One node diagram]
 
 == Prepare the Testnet
 
-To turn the Devnet into a public Testnet, the following thinngs should be considered:
+To turn the Devnet into a public Testnet, the following steps should be considered:
 
-* Create new genesis delegates & keep their credentials private and secure.
-* Create a new unique genesis block for the Testnet
-** Update community identifier here?
-* Create config for seed node
-* Create public default config.json
-* Connect another node with API enabled
-* Release the code to the public
+* <<create-a-new-genesis-block,Create a new unique genesis block>> for the Testnet
+** Create new genesis delegates & keep their credentials private and secure.
+* <<update-the-configuration-file>>
+** Update community identifier here
+* <<define-seed-nodes>>
+* <<releasing-the-testnet-to-the-public,Release the Testnet to the public>>
 
-The next step is to create a <<genesis_block, genesis block>> and one <<seed_node, seed node>> and to add one API node to the network that communicates with the seed node:
+.Example file structure
+----
+.
+├── bin/
+├── config/
+│   └── default/
+│       ├── config.json
+│       └── genesis_block.json
+├── package-lock.json
+├── package.json
+├── src/
+│   ├── app/
+│   │   ├── app.ts
+│   │   ├── index.ts
+│   │   ├── modules/
+│   │   ├── modules.ts
+│   │   ├── plugins/
+│   │   └── plugins.ts
+│   └── commands/
+└── test/
+----
 
-[[genesis_block]]
 === Create a new genesis block
+
+The genesis block for the Testnet is created by using the xref:{url_references_cli_genesis}[genesis-block:create] command of the application CLI.
+
+The new genesis block shall have the following properties:
+
+* 23 genesis delegate accounts (default: 103).
+* 5 genesis accounts (default: 10).
+* 2000 tokens are distributed initially to each genesis account (default: 1000).
+
+NOTE: The above variables for the genesis block can be adjusted as desired.
+If no flags are set, the default values will be used.
+
+IMPORTANT: In case a custom value is used for the number of validators, don't forget to <<update-the-configuration-file, update the genesis configuration>> accordingly.
+
+To create the custom genesis block, set the following flags:
+
+[source,bash]
+----
+./bin/run genesis-block:create --validators 23 --accounts 5 --token-distribution 200000000000
+----
+
+For more information about generating a genesis block, check out the guide xref:{url_guides_genesisblock}[].
+
+Replace the old genesis block under `config/default` with the new one.
 
 [CAUTION]
 ====
-The exposed `genesisBlockDevnet` and `configDevnet` should only be used during development in a local Devnet, as all the credentials of the Devnet genesis delegates and genesis account are public.
+The following files should be kept private and not shared with the public:
 
-Therefore it is required to generate a **new genesis block** for the blockchain application.
-This new genesis block should create new genesis accounts, and the created passphrases need to be kept private in order to ensure that the genesis accounts cannot be hijacked.
+* `forging_info.json`
+* `password.json`
+* `accounts.json`
 ====
 
-//TODO: add steps how to create thee genesis block, refer to genesis block guide
+=== Update the configuration file
 
-[[seed_node]]
-=== Define seed nodes
+The following config options are most interesting to update:
 
-Each node that is connecting to the network for the first time, will initially connect to the seed nodes.
-Starting from a seed node, the new node will discover the rest of the network by requesting their peer list.
-This is then followed by the peer lists of the newly discovered peers and so on.
+* `label`: Defines the process name and folder within the root path.
+* `version`: Version of the application.
+* `networkVersion`: Defines a P2P network version.
+* `genesisConfig.bftThreshold`: Defines a threshold for pre-vote and pre-commit of delegates.
+* `genesisConfig.communityIdentifier`: Defines a community identifier used to create the network identifier.
+* `genesisConfig.blockTime`: Defines the frequency of blocks to be created in seconds.
+* `genesisConfig.rewards`: Defines a block reward schedule.
+* `genesisConfig.baseFees`:	Defines an additional base fee to be included in the calculation of the minimum fee for a transaction.
+* `genesisConfig.activeDelegates`: Number of actively forging delegates.
+* `genesisConfig.standbyDelegates`:	Number of random standby delegates that are allowed to forge each round.
+* `forging.force`: Force enabling forging by using the default password.
+Should be always `false` in the default config.
+* `forging.defaultPassword`: Password to automatically decrypt the encrypted passphrase of one or multiple delegates specified in `forging.delegates`.
+This is only used for enabling forging for genesis delegates.
+Should be removed in the default config.
+* `forging.delegates`: Contains the delegate information for forging.
+Should be empty in the default config.
+* `network.seedPeers`: Defines one or multiple entry node(s) to the network.
 
-To define a node as a seed node, simply add it to the config as described in section <<config,create a configuration object>>.
+[TIP]
 
-==== Seed node config
+====
+The sum of `genesisConfig.activeDelegates` and `genesisConfig.standbyDelegates` should be lower or equal to the amount of genesis delegates used to <<create-a-new-genesis-block>>.
 
-It is convenient to have the genesis delegates actively forging on the seed node, in case the network does not yet have enough real delegates who can take the forging spots.
-
-CAUTION: It is recommended to keep the config of the seed nodes to yourself, especially if it contains the `defaultpassword` to decrypt the passphrases of the genesis delegates.
-
-Include the data of the new genesis delegates in the config(see xref:{url_guides_forging}[enable forging]).
-
-[[config]]
-=== Create a default configuration object
-
-Update configuration that was passed to the node during the development to be prepared for the public Testnet.
-
-
-Most of the configurations can remain the same as those already defined in the Devnet config options.
-However, please note that there is one option that should be updated: **The seed node(s)**.
-
-For example to add `1.2.3.4:5000` as a seed node, add an object with the 2 properties `ip` and `port` to the `network.seedPeers` list as displayed below:
+The `genesisConfig.bftThreshold` should be around 2/3 of the total forging delegates during each forging round.
+====
 
 .config.json
 [source,js]
 ----
 {
-  // ...
+  "label": "my-app",
+  "version": "0.1.0",
+  "networkVersion": "1.0",
+  "genesisConfig": {
+    "bftThreshold": 16,
+    "communityIdentifier": "hello",
+    "blockTime": 6,
+    "maxPayloadLength": 19000,
+    "rewards":{
+        "milestones": [
+            "1000000000",
+            "700000000",
+            "500000000",
+            "200000000",
+            "100000000"
+        ],
+        "offset": 100,
+        "distance": 100000
+    },
+    "minFeePerByte": 500,
+    "baseFees": [
+        {
+            "moduleID": 2,
+            "assetID": 0,
+            "baseFee": 1000000
+        }
+    ],
+    "activeDelegates": 19,
+    "standbyDelegates": 4
+  },
   "forging": {
     "force": false,
     "waitThreshold": 2,
@@ -129,13 +213,23 @@ For example to add `1.2.3.4:5000` as a seed node, add an object with the 2 prope
 }
 ----
 
-[NOTE]
-====
-By default, the `forging.delegates` list in the config should be empty.
-The user who will later deploy the node on a server can then add the credentials to the config, to xref:{url_guides_forging}[enable forging] for a particular delegate on this node.
-====
+=== Define seed nodes
 
-=== Releasing the Testnet
+Each node that is connecting to the network for the first time, will initially connect to the seed nodes.
+Starting from a seed node, the new node will discover the rest of the network by requesting their peer list.
+This is then followed by the peer lists of the newly discovered peers and so on.
+
+To define a node as a seed node, simply add the IP and port of the seed node to the config as described in section <<config,create a configuration object>>.
+
+==== Seed node config
+
+It is convenient to have the genesis delegates actively forging on the seed node, in case the network does not yet have enough real delegates who can take the forging spots.
+
+CAUTION: It is very important to not share the config of the seed nodes with the public, especially if it contains the `defaultPassword` to decrypt the passphrases of the genesis delegates.
+
+Include the data of the new genesis delegates in the config (see xref:{url_guides_genesisblock_enableforging}[Enabling forging for the new genesis delegates]).
+
+=== Releasing the Testnet to the public
 
 Add the code for the customized `node` application (including the custom transactions), to a public code repository.
 For example, on  {url_github}[Github^] or {url_gitlab}[Gitlab^].

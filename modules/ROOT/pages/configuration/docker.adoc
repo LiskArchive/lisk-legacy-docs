@@ -41,9 +41,6 @@ Open the `.env` file to change thee default configuration options of Lisk Servic
 # SERVICE_LOG_STDOUT=true
 
 ## Lisk Service Core
-# SERVICE_CORE_REDIS=redis://redis_core_persistent:6379/0
-# SERVICE_CORE_REDIS_VOLATILE=redis://redis_core_volatile:6379/0
-# SERVICE_CORE_MYSQL=mysql://lisk:password@mysql_core:3306/lisk
 
 # Lisk static assets, ie. known account lists
 LISK_STATIC=https://static-data.lisk.com
@@ -64,10 +61,7 @@ ENABLE_FEE_ESTIMATOR_FULL=false
 
 # Transaction statistics
 ENABLE_TRANSACTION_STATS=true
-
-# Missing blocks job
-ENABLE_JOB_MISSING_BLOCKS=true
-INDEX_MISSING_BLOCKS_RANGE=0
+TRANSACTION_STATS_HISTORY_LENGTH_DAYS=366
 
 # Log debug messages
 #DEBUG=*dynamicFees*
@@ -86,6 +80,7 @@ HTTP_RATE_LIMIT_CONNECTIONS=200
 HTTP_RATE_LIMIT_WINDOW=10 # in seconds
 
 ## Lisk Service Gateway
+
 # PORT=9901
 # HOST=0.0.0.0
 
@@ -97,24 +92,27 @@ ENABLE_WS_API=blockchain,rpc-v2
 ENABLE_HTTP_CACHE_CONTROL=false
 HTTP_CACHE_CONTROL_DIRECTIVES=public,max-age=10
 
-# SERVICE_GATEWAY_REDIS_VOLATILE=redis://redis_gateway_volatile:6379/1
-
 # Websocket rate limit config
 ENABLE_WS_RATELIMIT=false
 WS_RATELIMIT_POINTS=5
 WS_RATELIMIT_DURATION=1 # in seconds
 
 ## Lisk Service Market
-# SERVICE_MARKET_REDIS=redis://redis_market:6379/0
 
-# MySQL install
-MYSQL_ROOT_PASSWORD=password
-MYSQL_DATABASE=lisk
-MYSQL_USER=lisk
-MYSQL_PASSWORD=password
+# Currency pairs
+SERVICE_MARKET_FIAT_CURRENCIES=USD
+SERVICE_MARKET_TARGET_PAIRS=LSK_BTC,LSK_USD
 
 ## Lisk Service Newsfeed
-SERVICE_NEWSFEED_MYSQL=mysql://lisk:password@mysql_newsfeed:3306/lisk
+
+# Sources
+#SERVICE_NEWSFEED_ENABLE_SOURCES=drupal_lisk_general,drupal_lisk_announcements,twitter_lisk
+
+# Twitter authentication
+TWITTER_CONSUMER_KEY=
+TWITTER_CONSUMER_SECRET=
+TWITTER_ACCESS_TOKEN_KEY=
+TWITTER_ACCESS_TOKEN_SECRET=
 ----
 
 == Show current configuration
@@ -127,11 +125,15 @@ To show the current configuration of Lisk Service, execute the following command
 make print-config
 ----
 
-.Result for the default config, which will connect Lisk Service to the Lisk Mainnet
+.Result for the default config, which will connect Lisk Service to a locally running Lisk Core node.
 [source,yaml]
 ----
+docker-compose config
 networks:
   core_network: {}
+  gateway_network: {}
+  market_network: {}
+  newsfeed_network: {}
   services_network: {}
 services:
   core:
@@ -140,62 +142,55 @@ services:
         condition: service_started
       redis_common:
         condition: service_started
-      redis_core:
+      redis_core_persistent:
+        condition: service_started
+      redis_core_volatile:
         condition: service_started
     environment:
       ENABLE_FEE_ESTIMATOR_FULL: "false"
       ENABLE_FEE_ESTIMATOR_QUICK: "true"
-      ENABLE_JOB_MISSING_BLOCKS: "true"
       ENABLE_TRANSACTION_STATS: "true"
-      FEE_EST_DEFAULT_START_BLOCK_HEIGHT: ''
-      GENESIS_BLOCK_URL: ''
-      GENESIS_HEIGHT: ''
-      GEOIP_JSON: https://geoip.lisk.com/json
-      INDEX_MISSING_BLOCKS_RANGE: '1080'
+      GEOIP_JSON: ''
       INDEX_N_BLOCKS: '0'
-      LISK_CORE_HTTP: ''
-      LISK_CORE_WS: ''
+      LISK_CORE_WS: ws://host.docker.internal:8080
       LISK_STATIC: https://static-data.lisk.com
       SERVICE_BROKER: redis://redis_common:6379/0
       SERVICE_CORE_MYSQL: mysql://lisk:password@mysql_core:3306/lisk
-      SERVICE_CORE_REDIS: redis://redis_core:6379/0
-      SERVICE_LOG_CONSOLE: "false"
-      SERVICE_LOG_FILE: "false"
-      SERVICE_LOG_GELF: "false"
-      SERVICE_LOG_LEVEL: debug
-      SERVICE_LOG_STDOUT: "true"
-      TRANSACTION_STATS_HISTORY_LENGTH_DAYS: ''
+      SERVICE_CORE_REDIS: redis://redis_core_persistent:6379/0
+      SERVICE_CORE_REDIS_VOLATILE: redis://redis_core_volatile:6379/0
+      TRANSACTION_STATS_HISTORY_LENGTH_DAYS: '366'
     extra_hosts:
-      host.docker.internal: host-gateway
+    - host.docker.internal:host-gateway
     image: lisk/service_core
     networks:
-      core_network: {}
-      services_network: {}
+      core_network: null
+      services_network: null
     restart: always
   gateway:
     depends_on:
       core:
         condition: service_started
+      redis_gateway_volatile:
+        condition: service_started
     environment:
-      ENABLE_HTTP_API: ''
+      ENABLE_HTTP_API: http-status,http-version2
       ENABLE_HTTP_CACHE_CONTROL: "false"
-      ENABLE_WS_API: ''
-      HOST: 0.0.0.0
+      ENABLE_WS_API: blockchain,rpc-v2
+      ENABLE_WS_RATELIMIT: "false"
       HTTP_CACHE_CONTROL_DIRECTIVES: public,max-age=10
-      PORT: '9901'
       SERVICE_BROKER: redis://redis_common:6379/0
-      SERVICE_LOG_CONSOLE: "false"
-      SERVICE_LOG_FILE: "false"
-      SERVICE_LOG_GELF: "false"
-      SERVICE_LOG_LEVEL: debug
-      SERVICE_LOG_STDOUT: "true"
+      SERVICE_GATEWAY_REDIS_VOLATILE: redis://redis_gateway_volatile:6379/0
+      WS_RATELIMIT_DURATION: '1'
+      WS_RATELIMIT_POINTS: '5'
     healthcheck:
-      test: curl --fail http://gateway:9901/api/v1/transactions
+      test: curl --fail http://gateway:9901/api/v2/transactions
     image: lisk/service_gateway
     networks:
-      services_network: {}
+      gateway_network: null
+      services_network: null
     ports:
-    - 127.0.0.1:9901:9901/tcp
+    - published: 9901
+      target: 9901
     restart: always
   market:
     depends_on:
@@ -205,17 +200,16 @@ services:
         condition: service_started
     environment:
       SERVICE_BROKER: redis://redis_common:6379/0
-      SERVICE_LOG_CONSOLE: "false"
-      SERVICE_LOG_FILE: "false"
-      SERVICE_LOG_GELF: "false"
-      SERVICE_LOG_LEVEL: debug
-      SERVICE_LOG_STDOUT: "true"
+      SERVICE_MARKET_FIAT_CURRENCIES: USD
       SERVICE_MARKET_REDIS: redis://redis_market:6379/0
+      SERVICE_MARKET_TARGET_PAIRS: LSK_BTC,LSK_USD
     image: lisk/service_market
     networks:
-      services_network: {}
+      market_network: null
+      services_network: null
     restart: always
   mysql_core:
+    command: mysqld --default-authentication-plugin=mysql_native_password
     environment:
       MYSQL_DATABASE: lisk
       MYSQL_PASSWORD: password
@@ -227,47 +221,112 @@ services:
       - CMD
       - mysqladmin
       - ping
-      - -h
-      - localhost
+      - -hlocalhost
+      - -ppassword
       timeout: 20s
-    image: mysql:5.7
+    image: mysql:8
     networks:
-      core_network: {}
+      core_network: null
     restart: always
     volumes:
-    - mysql-data:/var/lib/mysql:rw
+    - mysql-data-core:/var/lib/mysql:rw
+  mysql_newsfeed:
+    command: mysqld --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_DATABASE: lisk
+      MYSQL_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_USER: lisk
+    healthcheck:
+      retries: 10
+      test:
+      - CMD
+      - mysqladmin
+      - ping
+      - -hlocalhost
+      - -ppassword
+      timeout: 20s
+    image: mysql:8
+    networks:
+      newsfeed_network: null
+    restart: always
+    volumes:
+    - mysql-data-newsfeed:/var/lib/mysql:rw
+  newsfeed:
+    depends_on:
+      mysql_newsfeed:
+        condition: service_started
+      redis_common:
+        condition: service_started
+    environment:
+      SERVICE_BROKER: redis://redis_common:6379/0
+      SERVICE_NEWSFEED_MYSQL: mysql://lisk:password@mysql_newsfeed:3306/lisk
+      TWITTER_ACCESS_TOKEN_KEY: ''
+      TWITTER_ACCESS_TOKEN_SECRET: ''
+      TWITTER_CONSUMER_KEY: ''
+      TWITTER_CONSUMER_SECRET: ''
+    image: lisk/service_newsfeed
+    networks:
+      newsfeed_network: null
+      services_network: null
+    restart: always
   redis_common:
     command: redis-server /etc/redis/redis.conf
     healthcheck:
       test: redis-cli ping
     image: redis:5-alpine
     networks:
-      services_network: {}
+      services_network: null
     restart: always
     volumes:
-    - /home/michal/lisk-service/docker/redis/redis.volatile.conf:/etc/redis/redis.conf:ro
-  redis_core:
+    - /Users/mona/git/lisk-service/docker/redis.volatile.conf:/etc/redis/redis.conf:ro
+  redis_core_persistent:
     command: redis-server /etc/redis/redis.conf
     healthcheck:
       test: redis-cli ping
     image: redis:5-alpine
     networks:
-      core_network: {}
+      core_network: null
     restart: always
     volumes:
-    - /home/michal/lisk-service/docker/redis/redis.persistent.conf:/etc/redis/redis.conf:ro
+    - /Users/mona/git/lisk-service/docker/redis.persistent.conf:/etc/redis/redis.conf:ro
+    - redis-data-core:/data:rw
+  redis_core_volatile:
+    command: redis-server /etc/redis/redis.conf
+    healthcheck:
+      test: redis-cli ping
+    image: redis:5-alpine
+    networks:
+      core_network: null
+    restart: always
+    volumes:
+    - /Users/mona/git/lisk-service/docker/redis.volatile.conf:/etc/redis/redis.conf:ro
+  redis_gateway_volatile:
+    command: redis-server /etc/redis/redis.conf
+    healthcheck:
+      test: redis-cli ping
+    image: redis:5-alpine
+    networks:
+      gateway_network: null
+    restart: always
+    volumes:
+    - /Users/mona/git/lisk-service/docker/redis.volatile.conf:/etc/redis/redis.conf:ro
   redis_market:
     command: redis-server /etc/redis/redis.conf
     healthcheck:
       test: redis-cli ping
     image: redis:5-alpine
     networks:
-      services_network: {}
+      market_network: null
     restart: always
     volumes:
-    - /home/michal/lisk-service/docker/redis/redis.persistent.conf:/etc/redis/redis.conf:ro
+    - /Users/mona/git/lisk-service/docker/redis.persistent.conf:/etc/redis/redis.conf:ro
+    - redis-data-market:/data:rw
 version: '3'
 volumes:
-  mysql-data: {}
+  mysql-data-core: {}
+  mysql-data-newsfeed: {}
+  redis-data-core: {}
+  redis-data-market: {}
 ----
 

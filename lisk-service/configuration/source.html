@@ -157,7 +157,7 @@
 <div class="nav-panel-explore" data-panel="explore">
   <div class="context">
     <span class="title">Lisk Service</span>
-    <span class="version">0.4.5 (latest)</span>
+    <span class="version">0.5.0 (latest)</span>
   </div>
   <ul class="components">
     <li class="component">
@@ -208,7 +208,7 @@
       <span class="title">Lisk Service</span>
       <ul class="versions">
         <li class="version is-current is-latest">
-          <a href="../index.html">0.4.5 (latest)</a>
+          <a href="../index.html">0.5.0 (latest)</a>
         </li>
       </ul>
     </li>
@@ -228,7 +228,7 @@
     <li><a href="source.html">Configuration with PM2</a></li>
   </ul>
 </nav>
-    <div class="edit-this-page"><a href="https://github.com/LiskHQ/lisk-docs/edit/docs-service/modules/ROOT/pages/configuration/source.adoc"><i class="icofont-ui-edit"></i>Edit this Page</a></div>
+    <div class="edit-this-page"><a href="https://github.com/LiskHQ/lisk-docs/edit/1203-update-to-v0.5/modules/ROOT/pages/configuration/source.adoc"><i class="icofont-ui-edit"></i>Edit this Page</a></div>
   </div>
   <div class="content">
 <article class="doc">
@@ -248,7 +248,7 @@
 <h2 id="the-ecosystem-config-files"><a class="anchor" href="#the-ecosystem-config-files"></a>The ecosystem config files</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The <a href="https://pm2.keymetrics.io/docs/usage/application-declaration/" target="_blank" rel="noopener">ecosystem file</a> provides the possibility to configure behavior, options, environment variables and the logs files of each application with <a href="https://pm2.keymetrics.io/" target="_blank" rel="noopener">PM2</a>.</p>
+<p>The <a href="https://pm2.keymetrics.io/docs/usage/application-declaration/" target="_blank" rel="noopener">ecosystem file</a> provides the possibility to configure behavior, options, environment variables and the logs files of Lisk Service with PM2.</p>
 </div>
 <div class="listingblock">
 <div class="title">Starts Lisk Service with the specified configuration</div>
@@ -259,20 +259,19 @@
 <div class="sect2">
 <h3 id="default-configurations"><a class="anchor" href="#default-configurations"></a>Default configurations</h3>
 <div class="paragraph">
-<p>There are 2 default ecosystem files in the root folder of <code>lisk-service</code>:</p>
+<p>The default ecosystem file <code>ecosystem.core3.config.js</code> is in the root folder of <code>lisk-service</code>:
+It contains a configuration to connect to a local Lisk Core node.</p>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p><code>ecosystem.mainnet.config.js</code> contains a configuration to connect to the Lisk Mainnet (default).</p>
-</li>
-<li>
-<p><code>ecosystem.testnet.config.js</code> contains a configuration to connect to the Lisk Testnet.</p>
-</li>
-</ul>
+<div class="paragraph">
+<p>This config will be used by default when starting Lisk Seervice with:</p>
 </div>
 <div class="listingblock">
-<div class="title">Contents of <code>ecosystem.mainnet.config.js</code></div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">pm2 start</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Contents of <code>ecosystem.core3.config.js</code></div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-javascript hljs" data-lang="javascript">module.exports = {
 	apps: [
@@ -287,11 +286,21 @@
 			watch: false,
 			kill_timeout: 10000,
 			max_memory_restart: '512M',
-			instances: 1,
 			autorestart: true,
 			env: {
 				PORT: '9901',
+				// --- Remember to set the properties below
 				SERVICE_BROKER: 'redis://localhost:6379/0',
+				WS_RATE_LIMIT_ENABLE: false,
+				WS_RATE_LIMIT_CONNECTIONS: 5,
+				WS_RATE_LIMIT_DURATION: 1, // in seconds
+				HTTP_RATE_LIMIT_ENABLE: false,
+				HTTP_RATE_LIMIT_CONNECTIONS: 200,
+				HTTP_RATE_LIMIT_WINDOW: 10, // in seconds
+				// ENABLE_HTTP_API: 'http-status,http-version2',
+				// ENABLE_WS_API: 'blockchain,rpc-v2',
+				// HTTP_CACHE_CONTROL_DIRECTIVES: 'public, max-age=10',
+				// ENABLE_HTTP_CACHE_CONTROL: 'true'
 			},
 		},
 		{
@@ -304,16 +313,25 @@
 			log_date_format: 'YYYY-MM-DD HH:mm:ss SSS',
 			watch: false,
 			kill_timeout: 10000,
-			max_memory_restart: '512M',
-			instances: 1,
+			max_memory_restart: '1G',
 			autorestart: true,
 			env: {
+				// --- Remember to set the properties below
 				SERVICE_BROKER: 'redis://localhost:6379/0',
-				LISK_CORE_HTTP: 'https://mainnet.lisk.com',
-				LISK_CORE_WS: 'wss://mainnet.lisk.com',
+				LISK_CORE_WS: 'ws://localhost:8080',
 				SERVICE_CORE_REDIS: 'redis://localhost:6379/1',
+				SERVICE_CORE_REDIS_VOLATILE: 'redis://localhost:6379/8',
+				SERVICE_CORE_MYSQL: 'mysql://root:password@localhost:3306/lisk',
 				LISK_STATIC: 'https://static-data.lisk.com',
-				GEOIP_JSON: 'https://geoip.lisk.com/json',
+				GEOIP_JSON: '',
+				INDEX_N_BLOCKS: '0',
+				ENABLE_TRANSACTION_STATS: 'true',
+				ENABLE_JOB_MISSING_BLOCKS: 'true',
+				INDEX_MISSING_BLOCKS_RANGE: '0',
+				TRANSACTION_STATS_HISTORY_LENGTH_DAYS: '366',
+				TRANSACTION_STATS_UPDATE_INTERVAL: '3600',
+				ENABLE_FEE_ESTIMATOR_QUICK: 'true',
+				ENABLE_FEE_ESTIMATOR_FULL: 'false',
 			},
 		},
 		{
@@ -327,10 +345,31 @@
 			watch: false,
 			kill_timeout: 10000,
 			max_memory_restart: '512M',
-			instances: 1,
+			autorestart: true,
+			env: {
+				// --- Remember to set the properties below
+				SERVICE_BROKER: 'redis://localhost:6379/0',
+				SERVICE_MARKET_REDIS: 'redis://localhost:6379/2',
+				// SERVICE_MARKET_FIAT_CURRENCIES: 'EUR,USD,CHF,GBP,RUB',
+				// SERVICE_MARKET_TARGET_PAIRS: 'LSK_BTC,LSK_EUR,LSK_USD,LSK_CHF,BTC_EUR,BTC_USD,BTC_CHF',
+				// EXCHANGERATESAPI_IO_API_KEY: ''
+			},
+		},
+		{
+			name: 'lisk-service-newsfeed',
+			script: 'app.js',
+			cwd: './services/newsfeed',
+			pid_file: './pids/service_newsfeed.pid',
+			out_file: './logs/service_newsfeed.log',
+			error_file: './logs/service_newsfeed.err',
+			log_date_format: 'YYYY-MM-DD HH:mm:ss SSS',
+			watch: false,
+			kill_timeout: 10000,
+			max_memory_restart: '512M',
 			autorestart: true,
 			env: {
 				SERVICE_BROKER: 'redis://localhost:6379/0',
+				SERVICE_NEWSFEED_MYSQL: 'mysql://lisk:password@localhost:3306/lisk?charset=utf8mb4',
 			},
 		},
 	],
@@ -345,14 +384,14 @@
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cp ecosystem.mainnet.config.js ecosystem.custom.config.js <i class="conum" data-value="1"></i><b>(1)</b></code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cp ecosystem.core3.config.js ecosystem.custom.config.js <i class="conum" data-value="1"></i><b>(1)</b></code></pre>
 </div>
 </div>
 <div class="colist arabic">
 <table>
 <tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>Copies the file <code>ecosystem.mainnet.config.js</code> and renames it to <code>ecosystem.custom.config.js</code>.</td>
+<td>Copies the file <code>ecosystem.core3.config.js</code> and renames it to <code>ecosystem.custom.config.js</code>.</td>
 </tr>
 </table>
 </div>

@@ -1,0 +1,173 @@
+= Docker setup
+Mona Bärenfänger <mona@lightcurve.io>
+:description: How to install and setup up a Lisk Core node with Docker.
+:toc:
+// Settings
+// External URLs
+:url_core_releases: https://github.com/LiskHQ/lisk-core/releases
+:url_podman: https://github.com/containers/podman/
+:url_nodejs: https://nodejs.org/
+:url_node_permission_errors: https://docs.npmjs.com/resolving-eacces-permissions-errors-when-installing-packages-globally
+:url_nvm: https://github.com/creationix/nvm
+:url_nvm_instructions: https://github.com/creationix/nvm#install--update-script
+:url_docker_install: https://docs.docker.com/engine/installation/#desktop
+:url_docker_install_linux: https://docs.docker.com/engine/installation/#server
+:url_docker_install_linux_compose: https://docs.docker.com/compose/install/
+:url_docker_install_mac: https://docs.docker.com/docker-for-mac/install/
+:url_docker_install_windows: https://docs.docker.com/docker-for-windows/install/
+:url_docker_linux_post_install: https://docs.docker.com/install/linux/linux-postinstall
+// Project URLs
+:url_config: management/configuration.adoc
+
+This document covers how to prepare a system to run Lisk Core as a Docker image-based container.
+Lisk Core version 3 does not have any external dependencies and thus does not require using `docker-compose`.
+
+== Pre-installation
+
+=== Create a new user `lisk`
+
+[source,bash]
+----
+adduser lisk
+----
+
+Add the `lisk` user to the `sudo` user group:
+
+[source,bash]
+----
+sudo usermod -aG sudo lisk
+----
+
+=== Install Docker
+To run Lisk in Docker a user must first install the Docker engine.
+Determine if your platform can run Docker as described below.
+
+Please refer to {url_docker_install}[https://docs.docker.com/engine/installation]
+
+[tabs]
+====
+Ubuntu::
++
+--
+Please refer to {url_docker_install_linux}[Docker installation for ubuntu]
+
+IMPORTANT: Configure Docker, in order that it can be run without `sudo` rights: {url_docker_linux_post_install}[linux post install]
+
+Install `make` using your package manager.
+For example, use `apt-get` if running Ubuntu as shown below:
+
+[source,bash]
+----
+sudo apt-get install curl make
+----
+--
+MacOS::
++
+--
+Please refer to {url_docker_install_mac}[Docker installation for Mac^].
+Install `make` using {url_xcode}[XCode].
+--
+
+Windows::
++
+--
+Please refer to {url_docker_install_windows}[Docker installation for Windows^]
+--
+====
+
+
+
+== Lisk Core download
+
+[source,bash]
+----
+git clone https://github.com/LiskHQ/lisk-core.git #<1>
+cd lisk-core/docker                  #<2>
+git checkout v3.0.2 -b v3.0.2 #<3>
+----
+
+<1> Clone the repository.
+<2> Navigate into the lisk-core root folder.
+<3> Check out the latest release tag.
+
+NOTE: Please check for the latest release in the {url_core_releases}[Lisk Core releases^] list.
+
+== Run
+
+.Podman
+[NOTE]
+====
+{url_podman}[podman] can be used.
+Simply replace occurrences of `docker` with `podman` or `alias docker=podman`.
+====
+
+Create a "lisk-core" container:
+
+[tabs]
+====
+Mainnet::
++
+--
+
+[source,bash]
+----
+docker run --volume lisk-data:/home/lisk/.lisk \
+           --publish 5001:5001 \
+           --name lisk-core \
+           lisk/core:3.0.2 \
+             start --network=mainnet
+----
+--
+Testnet::
++
+--
+
+[source,bash]
+----
+docker run --volume lisk-data:/home/lisk/.lisk \
+           --publish 5001:5001 \
+           --name lisk-core \
+           lisk/core:3.0.2 \
+             start --network=testnet
+----
+--
+====
+
+== Configuration
+
+Further parameters can be passed after `--network`, e.g.:
+
+[source,bash]
+----
+docker run --volume lisk-data:/home/lisk/.lisk \
+           --publish 5001:5001 \
+           --publish 127.0.0.1:5000:5000 \
+           --name lisk-core \
+           lisk/core:3.0.2 \
+             start --network=testnet --enable-http-api-plugin
+----
+
+Environment variables can be set with `--env`:
+
+[source,bash]
+----
+docker run --volume lisk-data:/home/lisk/.lisk \
+           --publish 5001:5001 \
+           --env LISK_CONSOLE_LOG_LEVEL=debug \
+           --name lisk-core \
+           lisk/core:3.0.2 \
+             start --network=testnet
+----
+
+See {url_config}[] for a reference of more configuration options.
+
+== Import blockchain snapshot
+
+[source,bash]
+----
+docker run --volume lisk-data:/home/lisk/.lisk -it --rm lisk/core:3.0.2 blockchain:download --network=betanet --output=/home/lisk/.lisk/tmp/
+docker run --volume lisk-data:/home/lisk/.lisk -it --rm lisk/core:3.0.2 blockchain:import /home/lisk/.lisk/tmp/blockchain.db.tar.gz
+docker run --volume lisk-data:/home/lisk/.lisk -it --rm --entrypoint rm lisk/core:3.0.2 -f /home/lisk/.lisk/tmp/blockchain.db.tar.gz
+docker start lisk-core
+docker logs -f lisk-core
+----

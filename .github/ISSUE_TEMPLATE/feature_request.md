@@ -14,4 +14,3 @@ Please describe what functionality is required.
 Please describe why it is required.
 
 ### Additional information
-

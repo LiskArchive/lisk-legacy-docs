@@ -6,6 +6,7 @@ labels: 'type: bug'
 assignees: ''
 
 ---
+
 ### Expected content
 A clear and concise description of what content you expect to see.
 
@@ -14,4 +15,3 @@ Describe the specific content of the documentation that you feel could be improv
 
 ### Link
 URL to the corresponding content in the documentation.
-

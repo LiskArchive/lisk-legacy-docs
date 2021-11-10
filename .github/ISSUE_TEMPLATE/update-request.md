@@ -14,4 +14,3 @@ What is outdated and how should it be updated?
 Link to the outdated documentation content.
 
 ### Additional information
-

@@ -2,7 +2,7 @@
 name: Improvement
 about: Suggest to improve existing content.
 title: ''
-labels: ''
+labels: type:improvement
 assignees: ''
 
 ---

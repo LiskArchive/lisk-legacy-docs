@@ -1,6 +1,6 @@
 ---
 name: Feature request
-about: Suggest a recommendation for improving the Lisk documentation.
+about: Suggest to add new content to the Lisk documentation.
 title: ''
 labels: 'type: feature'
 assignees: ''
@@ -8,7 +8,7 @@ assignees: ''
 ---
 
 ### Description
-Please describe what functionality is required.
+Please describe what content is required.
 
 ### Motivation
 Please describe why it is required.

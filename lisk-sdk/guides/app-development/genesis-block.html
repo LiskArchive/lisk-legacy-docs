@@ -489,11 +489,7 @@
 <div id="toc" class="toc">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#using-the-cli-to-generate-a-new-genesis-block">Using the CLI to generate a new genesis block</a>
-<ul class="sectlevel2">
-<li><a href="#enabling-forging-for-the-new-genesis-delegates">Enabling forging for the new genesis delegates</a></li>
-</ul>
-</li>
+<li><a href="#using-the-cli-to-generate-a-new-genesis-block">Using the CLI to generate a new genesis block</a></li>
 <li><a href="#manual-genesis-block-creation-alternative-with-lisk-genesis">Manual genesis block creation (alternative with Lisk Genesis)</a>
 <ul class="sectlevel2">
 <li><a href="#including-the-account-asset-schemas">Including the account asset schemas</a></li>
@@ -537,12 +533,6 @@
 </tr>
 </table>
 </div>
-<div class="paragraph">
-<p>Each blockchain application needs a <a href="../../advanced-explanations/architecture.html#genesis-block" class="page">genesis block</a>, which is the very first block of the blockchain.</p>
-</div>
-<div class="paragraph">
-<p>If a module includes an account schema, it is necessary to update the genesis block after registering the module with the application, to update the accounts in the genesis block with the new properties.</p>
-</div>
 <div class="admonitionblock tip">
 <table>
 <tr>
@@ -556,10 +546,13 @@ The recommended and most convenient method to generate a new genesis block is <a
 </table>
 </div>
 <div class="paragraph">
-<p>After the application bootstrap, the default devnet genesis block will be generated under <code>/home/USERNAME/.lisk/APPNAME/config/default/</code>.</p>
+<p>Each blockchain application needs a <a href="../../advanced-explanations/architecture.html#genesis-block" class="page">genesis block</a>, which is the very first block of the blockchain.</p>
 </div>
 <div class="paragraph">
-<p>If a new module that includes an account schema is then registered with the application, it will fail with an error similar to this:</p>
+<p>If a module includes an account schema, it is necessary to update the genesis block after registering the module with the application, to update the accounts in the genesis block with the new properties.</p>
+</div>
+<div class="paragraph">
+<p>If a new module that includes an account schema is then registered with the application, it will fail and an error similar to this one will be displayed:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -593,7 +586,7 @@ Starting Lisk hello_app at /Users/mona/.lisk/hello_app.
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">./bin/run genesis-block:create --output  /home/USERNAME/.lisk/&lt;YOUR-APP&gt;/config/default</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">./bin/run genesis-block:create --output config/default</code></pre>
 </div>
 </div>
 <div class="admonitionblock note">
@@ -611,16 +604,21 @@ For more information about the <code>genesis-block:create</code> command, check 
 <div class="paragraph">
 <p>Now, wait until the new genesis block is generated.</p>
 </div>
-<div class="listingblock">
+<div class="literalblock">
 <div class="content">
 <pre>Creating genesis block [===========         ] 55% 44.6s</pre>
 </div>
 </div>
 <div class="paragraph">
-<p>After completion, the new genesis block will be copied to <code>config/default/</code>, whereby it automatically replaces the outdated genesis block.</p>
+<p>When asked to overwrite the existing genesis block, reply with <code>yes</code>.</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>? A genesis_block file already exists at the given location. Do you want to overwrite it? Yes</pre>
+</div>
 </div>
 <div class="paragraph">
-<p>After running the above command, the following 4 files should be generated:</p>
+<p>After the genesis block creation is complete, the following 4 files should be generated under <code>config/default/</code>:</p>
 </div>
 <div class="ulist">
 <ul>
@@ -639,24 +637,34 @@ Keep this file somewhere secure/private.</p>
 </li>
 </ul>
 </div>
-<div class="sect2">
-<h3 id="enabling-forging-for-the-new-genesis-delegates"><a class="anchor" href="#enabling-forging-for-the-new-genesis-delegates"></a>Enabling forging for the new genesis delegates</h3>
 <div class="paragraph">
-<p>Update the configuration file of the node where you wish to enable forging for the genesis delegates of the network.
-The configuration can be found under <code>~/.lisk/&lt;YOUR-APP&gt;/config/default/config.json</code> if no custom configuration file is used.</p>
+<p>The <code>config.json</code> is required to be updated as well, with the forging information of the new genesis delegates:</p>
 </div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Set <code>forging.force</code> to <code>true</code>.</p>
-</li>
-<li>
-<p>Copy the contents of <code>forging_info.json</code> to under <code>forging.delegates</code></p>
-</li>
-<li>
-<p>Copy the contents of <code>password.json</code> to under <code>forging.defaultPassword</code></p>
-</li>
-</ol>
+<div class="paragraph">
+<p>Assuming no custom config is used, the following commands can be used to update the configuration (please update <code>&lt;YOUR_APP&gt;</code> to the corresponding application name).</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>tmp=$(mktemp)
+jq '.forging.delegates = input' config/default/config.json config/default/forging_info.json &gt; "$tmp" &amp;&amp; mv "$tmp" config/default/config.json
+jq '.forging += input' config/default/config.json config/default/password.json &gt; "$tmp" &amp;&amp; mv "$tmp" config/default/config.json</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Remove the old application data:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>rm -r ~/.lisk/&lt;YOUR_APP&gt;</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now start the node again:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>./bin/run start</pre>
+</div>
 </div>
 <div class="admonitionblock important">
 <table>
@@ -665,8 +673,7 @@ The configuration can be found under <code>~/.lisk/&lt;YOUR-APP&gt;/config/defau
 <i class="fa icon-important" title="Important"></i>
 </td>
 <td class="content">
-Ensure the file <code>accounts.json</code> is securely stored somewhere safe.
-It reveals the passphrases of all genesis delegates.
+Ensure the file <code>accounts.json</code> is securely stored somewhere safe, as it contains the passphrases of all the genesis delegates.
 </td>
 </tr>
 </table>
@@ -719,25 +726,6 @@ It reveals the passphrases of all genesis delegates.
     },
 	// ...
 }</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>After the genesis block and config are updated, delete the <code>data/</code> folder of the application, to reset the database:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">rm -r ~/.lisk/&lt;YOUR-APP&gt;/data/</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>The application should now start again successfully.
-To start it, run the following command:</p>
-</div>
-<div class="listingblock">
-<div class="title">Starting the application</div>
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">./bin/run start</code></pre>
-</div>
 </div>
 </div>
 </div>

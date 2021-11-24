@@ -165,15 +165,20 @@ Lisk Testnet::
 
 ==== Example: Emit to remote-procedure calls with socket.io
 
-Use the {url_npm_socketio_client}[socket.io-client^] to connect to the RPC API.
-
 [source,bash]
 ----
-npm i socket.io-client@2
+node --version
+# v12.22.7
+npm i socket.io-client@2 #<1>
+npm i jsome #<2>
 ----
+
+<1> Use the {url_npm_socketio_client}[socket.io-client^] to connect to the RPC API.
+<2> Optionally install `jsome` to prettify the API response.
 
 IMPORTANT: Specify version 2 of the socket.io client, as the current version 3 is not compatible with Lisk Service.
 
+.rpc.js
 [source,js]
 ----
 // 1. Require the dependencies
@@ -182,8 +187,13 @@ const jsome = require('jsome'); // Prettifies the JSON output
 
 jsome.params.colored = true;
 
+// Use local Service node
+const WS_RPC_ENDPOINT = 'ws://localhost:9901/rpc-v2';
+//Use public Service node
+//const WS_RPC_ENDPOINT = "wss://service.lisk.com/rpc-v2";
+
 // 2. Connect to Lisk Service via WebSockets
-const socket = io('ws://localhost:9901/rpc-v2', {
+const socket = io(WS_RPC_ENDPOINT, {
   forceNew: true,
   transports: ['websocket']
 });
@@ -191,12 +201,20 @@ const socket = io('ws://localhost:9901/rpc-v2', {
 // 3. Emit the remote procedure call
 socket.emit('request', {
   jsonrpc: '2.0',
-  method: 'get.delegates.next_forgers',
-  params: {limit: "20", offset: "50"} },
+  method: 'get.forgers',
+  params: {limit: "5", offset: "0"} },
   answer => {
+    // console.log(answer);
     jsome(answer);
     process.exit(0);
 });
+----
+
+Run the above script with Node.js to receive the API response in the terminal:
+
+[source,bash]
+----
+node rpc.js
 ----
 
 === The Subscribe API
@@ -222,6 +240,7 @@ npm i socket.io-client@2
 
 IMPORTANT: Specify version 2 of the socket.io client, as the current version 3 is not compatible with Lisk Service.
 
+.subscribe.js
 [source,js]
 ----
 const io = require('socket.io-client');
@@ -229,7 +248,12 @@ const jsome = require('jsome');
 
 jsome.params.colored = true;
 
-const socket = io('ws://localhost:9901/blockchain', {
+// Uses local Service node
+const WS_SUBSCRIBE_ENDPOINT = 'ws://localhost:9901/blockchain';
+// Uses public Service node
+//const WS_SUBSCRIBE_ENDPOINT = "wss://service.lisk.com/blockchain";
+
+const socket = io(WS_SUBSCRIBE_ENDPOINT, {
 	forceNew: true,
 	transports: ['websocket'],
 });
@@ -268,4 +292,11 @@ subscribe('update.fee_estimates');
 		);
 	});
 });
+----
+
+Run the above script with Node.js to receive all published events from the Subscribe API:
+
+[source,bash]
+----
+node subscribe.js
 ----

@@ -1,0 +1,182 @@
+= Resetting and synchronizing a node
+Mona Bärenfänger <mona@lightcurve.io>
+// Settings
+:toc:
+// Project URLs
+:url_lisk_snapshots: https://snapshots.lisk.com
+:url_lisk_snapshots_testnet: https://snapshots.lisk.com/testnet/
+:url_lisk_snapshots_mainnet: https://snapshots.lisk.com/mainnet/
+
+== Synchronizing a node
+
+If a node is started for the first time, it will synchronize to the latest block height of the network, starting from the genesis block.
+The synchronization from genesis block can take a long time, depending on how many blocks have to be synchronized from the genesis block, to reach the latest block height of the network.
+
+To speed up the process, a snapshot of the blockchain can be used. A snapshot is basically a database export of the blockchain from a certain time, including all blocks and transactions that are added to the blockchain so far.
+
+=== Downloading a snapshot
+
+Official snapshots are stored downloaded under the following URL: {url_lisk_snapshots}.
+
+* Snapshots for the Lisk Mainnet: {url_lisk_snapshots_mainnet}
+* Snapshots for the Lisk Testnet: {url_lisk_snapshots_testnet}
+
+The Lisk Core CLI provides a command `blockchain:download`, which supports in downloading the correct snapshot. It also verifies the correct download by verifying the checksum of the snapshot.
+
+----
+$ lisk-core blockchain:download --help
+Download snapshot from <URL>.
+
+USAGE
+  $ lisk-core blockchain:download
+
+OPTIONS
+  -n, --network=network  [default: mainnet] Default network config to use. Environment variable "LISK_NETWORK" can
+                         also be used.
+
+  -o, --output=output    Directory path to specify where snapshot is downloaded. By default outputs the files to
+                         current working directory.
+
+  -u, --url=url          The url to the snapshot.
+
+EXAMPLES
+  download
+  download --network betanet
+  download --url https://snapshots.lisk.io/mainnet/blockchain.db.tar.gz --output ./downloads
+----
+
+How to download a snapshot of the Lisk blockchain:
+
+[tabs]
+====
+Mainnet::
++
+--
+*Linux:*
+
+[source,bash]
+----
+lisk-core blockchain:download --network=mainnet
+----
+--
+Testnet::
++
+--
+*Linux:*
+
+[source,bash]
+----
+lisk-core blockchain:download --network=testnet
+----
+--
+====
+
+=== Importing a snapshot
+
+Stop Lisk Core before importing the snapshot:
+
+[source,bash]
+----
+pm2 start lisk-core
+----
+
+Import the snapshot to Lisk Core, by using the `blockchain:import` command:
+
+[source,bash]
+----
+lisk-core blockchain:import ./path/to/blockchain.db.tar.gz --force
+----
+
+Now start Lisk Core again:
+
+[source,bash]
+----
+pm2 start lisk-core
+----
+
+When Lisk Core is started now, it will start the synchronization from the block height of the snapshot to the current height of the blockchain.
+
+A command reference can be viewed by adding the `--help` parameter:
+
+----
+$ lisk-core blockchain:import --help
+Import from <FILE>.
+
+USAGE
+  $ lisk-core blockchain:import FILEPATH
+
+ARGUMENTS
+  FILEPATH  Path to the gzipped blockchain data.
+
+OPTIONS
+  -d, --data-path=data-path  Specifies which data path the application should use. Environment variable
+                             "LISK_DATA_PATH" can also be used.
+
+  -f, --force                Delete and overwrite existing blockchain data
+
+EXAMPLES
+  blockchain:import ./path/to/blockchain.db.tar.gz
+  blockchain:import ./path/to/blockchain.db.tar.gz --data-path ./lisk/
+  blockchain:import ./path/to/blockchain.db.tar.gz --data-path ./lisk/ --force
+----
+
+
+
+== Creating own snapshots
+
+To create own snapshots of the blockchain, use the `blockchain:export` command:
+
+[source,bash]
+----
+lisk-core blockchain:import ./path/to/blockchain.db.tar.gz --force
+----
+
+A command reference can be viewed by adding the `--help` parameter:
+
+----
+$ lisk-core blockchain:export --help
+Export to <FILE>.
+
+USAGE
+  $ lisk-core blockchain:export
+
+OPTIONS
+  -d, --data-path=data-path  Directory path to specify where node data is stored. Environment variable
+                             "LISK_DATA_PATH" can also be used.
+
+  -o, --output=output        The output directory. Default will set to current working directory.
+
+EXAMPLES
+  blockchain:export
+  blockchain:export --data-path ./data --output ./my/path/
+----
+
+== Resetting the blockchain data
+
+In case the blockchain should synchronize from the genesis block, it is possible to simply reset the existing blockchain data with the `blockchain:reset` command:
+
+[source,bash]
+----
+lisk-core blockchain:reset
+----
+
+A command reference can be viewed by adding the `--help` parameter:
+
+----
+$ lisk-core blockchain:reset --help
+Reset the blockchain data.
+
+USAGE
+  $ lisk-core blockchain:reset
+
+OPTIONS
+  -d, --data-path=data-path  Directory path to specify where node data is stored. Environment variable
+                             "LISK_DATA_PATH" can also be used.
+
+  -y, --yes                  Skip confirmation prompt.
+
+EXAMPLES
+  blockchain:reset
+  blockchain:reset --data-path ./lisk
+  blockchain:reset --yes
+----

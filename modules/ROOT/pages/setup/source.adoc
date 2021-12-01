@@ -2,17 +2,18 @@
 Mona Bärenfänger <mona@lightcurve.io>
 :description: Describes all necessary steps and requirements to install Lisk Service from source.
 :toc:
-:page-previous: /lisk-service/setup/index.html
+:page-previous: /lisk-service/index.html
 :page-previous-title: Setup
 :page-next: /lisk-service/configuration/source.html
 :page-next-title: Configuration with PM2
-
+// URLs
 :url_docker_install_linux: https://docs.docker.com/engine/install
 :url_docker_install_linux_compose: https://docs.docker.com/compose/install/
 :url_docker_install_mac: https://docs.docker.com/docker-for-mac/install/
 :url_docker_install_windows: https://docs.docker.com/docker-for-windows/install/
 :url_docker_linux_post_install: https://docs.docker.com/install/linux/linux-postinstall/
 :url_mysql: https://dev.mysql.com/downloads/mysql/5.7.html
+:url_mysql_ubuntu20: https://rm-rf.medium.com/how-to-install-mysql-5-7-on-ubuntu-20-04-6c237116df5d
 :url_xcode: https://developer.apple.com/xcode/features/
 :url_geojs: https://www.geojs.io/
 :url_git: https://github.com/git/git
@@ -22,13 +23,13 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_nvm_instructions: https://github.com/creationix/nvm#install&#45;&#45;update-script
 :url_pm2: https://github.com/Unitech/pm2
 :url_redis: http://redis.io
-
-
+// Project URLs
 :url_index_usage: index.adoc#usage
 :url_setup: setup/index.adoc
 :url_setup_docker_docker: setup/docker.adoc#docker
 :url_config: configuration/source.adoc
 :url_management_pm2: management/source.adoc
+:url_references_config: references/configuration.adoc
 
 TIP: Install from source code if you want to customize the codebase of Lisk Service, e.g. if you want to adjust the API to be fully compatible with your blockchain application.
 
@@ -95,7 +96,6 @@ xcode-select --install
 
 === Node.js
 
-We recommend to use the latest LTS version.
 {url_nodejs}[Node.js^] serves as the underlying engine for code execution.
 There are several different methods and version managers used to install Node.js on your system.
 It is recommended to use one of the following two options:
@@ -109,27 +109,28 @@ It is recommended to use a Node version manager such as {url_nvm}[NVM^].
 NVM is a bash script that enables the management of multiple active Node.js versions.
 
 . Install nvm following the {url_nvm_instructions}[official instructions^].
-. Install the latest LTS version of Node.js using NVM:
+. Install v12 of Node.js using NVM:
 
 .Check for the latest LTS version
 [source,bash]
 ----
 nvm ls-remote
 [...]
-v12.17.0   (LTS: Erbium)
-v12.18.0   (LTS: Erbium)
-v12.18.1   (LTS: Erbium)
-v12.18.2   (LTS: Erbium)
-v12.18.3   (Latest LTS: Erbium)
-v13.0.0
-v13.0.1
+       v12.22.3   (LTS: Erbium)
+       v12.22.4   (LTS: Erbium)
+       v12.22.5   (LTS: Erbium)
+       v12.22.6   (LTS: Erbium)
+->     v12.22.7   (Latest LTS: Erbium)
+        v13.0.0
+        v13.0.1
+        v13.1.0
 [...]
 ----
 
 .Install the latest LTS version
 [source,bash]
 ----
-nvm install 12.22.1
+nvm install 12.22.7
 ----
 --
 Option B - Node.js package::
@@ -157,7 +158,16 @@ brew install node@12
 ====
 
 === MYSQL
-{url_mysql}[MySQL 5.7^] is used for storing persistent data.
+MySQL is used for storing persistent data.
+
+[NOTE]
+====
+Lisk Service expects a MySQL user `lisk` with password `password` and a database `lisk`.
+
+**The MySQL user `lisk` needs to be manually created** after installing MySQL.
+
+These values can be updated by setting the environment variable `SERVICE_CORE_MYSQL`, see the xref:{url_references_config}[]
+====
 
 [tabs]
 ====
@@ -170,6 +180,7 @@ sudo apt update
 sudo apt install mysql-server
 sudo mysql_secure_installation
 ----
+
 --
 macOS::
 +
@@ -177,9 +188,41 @@ macOS::
 [source,bash]
 ----
 brew tap homebrew/services
-brew install mysql@5.7
-brew services start mysql@5.7
+brew install mysql@8.0
+brew services start mysql@8.0
 ----
+
+.Authentication
+****
+If you encounter issues to authenticate, and received the following error:
+
+ caching_sha2_password' cannot be loaded: dlopen(/usr/local/lib/plugin/caching_sha2_password.so, 2): image not found
+
+Try the following: Change the `default_authentication_plugin` using `mysql_native_password`.
+
+Open up `my.cnf` .
+
+If you are unsure where to find your `my.cnf`, use the following command:
+
+ $ mysql --verbose --help | grep my.cnf
+
+Add the following at the end of the file:
+
+ default_authentication_plugin=mysql_native_password
+
+Save and exit.
+
+Next, you need to login via the terminal:
+
+ $ mysql -uroot
+
+Then run the following command to update the root password:
+
+ ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '';
+
+Now you should be able to login to your MySQL 8 via your MySQL Client.
+****
+
 --
 ====
 
@@ -204,7 +247,7 @@ Follow the steps described in the xref:{url_setup_docker_docker}[Prerequisites >
 # Clone the Lisk Service repository
 git clone https://github.com/LiskHQ/lisk-service.git
 cd lisk-service/docker/redis
-git checkout v0.3.0
+git checkout v0.5.0
 make up # to start Redis
 ----
 
@@ -263,6 +306,11 @@ npm install -g pm2
 
 == Installation
 
+[IMPORTANT]
+====
+It is strongly recommended that you synchronize your Lisk Core node with the network **before** starting the Lisk Service.
+====
+
 If you have not already done so, clone the {url_github_service}[lisk-service^] GitHub repository and then navigate into the project folder and check out the latest release.
 
 [source,bash]
@@ -274,7 +322,7 @@ git clone https://github.com/LiskHQ/lisk-service.git
 cd lisk-service
 
 # Switch to the recent stable as a base
-git checkout v0.3.0
+git checkout v0.5.0
 
 # ...or use the development branch
 git checkout development
@@ -289,10 +337,11 @@ make build-local
 
 Now it is possible to start Lisk Service:
 
+
 .Start Lisk Service from Source code
 [source,bash]
 ----
-npm start
+npm run start
 ----
 
 This will use the default configuration and connect Lisk Service to the Lisk Mainnet.

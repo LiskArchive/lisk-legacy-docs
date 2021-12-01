@@ -2,6 +2,8 @@
 Mona Bärenfänger <mona@lightcurve.io>
 :description: Describes the general purpose, architecture and usage of Lisk Service.
 :toc:
+:idseparator: -
+:idprefix:
 :imagesdir: ../assets/images
 :page-no-previous: true
 
@@ -11,16 +13,13 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_electrumx_docs: https://electrumx.readthedocs.io/en/latest/
 :url_github_lisk_explorer: https://github.com/LiskHQ/lisk-explorer
 :url_github_lisk_service: https://github.com/LiskHQ/lisk-service
-:url_github_lisk_service_gateway: https://github.com/LiskHQ/lisk-service/blob/development/services/gateway
-:url_github_lisk_service_lisk: https://github.com/LiskHQ/lisk-service/blob/development/services/core
-:url_github_lisk_service_template: https://github.com/LiskHQ/lisk-service/blob/development/services/template
 :url_github_leveldb: https://github.com/google/leveldb
-:url_lisk_wallet: https://lisk.io/wallet
+:url_lisk_wallet: https://lisk.com/wallet
 :url_moleculer: https://moleculer.services/
 :url_nats: http://nats.io/
 :url_npm_socketio_client: https://www.npmjs.com/package/socket.io-client
 
-:url_apiv1_http:  references/apiv1.adoc
+:url_api_http_testnet:  references/api-testnet.adoc
 :url_api_http:  references/api.adoc
 :url_api_rpc:  references/rpc-api.adoc
 :url_api_subscribe:  references/subscribe-api.adoc
@@ -51,18 +50,25 @@ image::architecture.png[Architecture]
 |===
 |Microservice |Description
 
-|[[gateway]]{url_github_lisk_service_gateway}[Gateway^]
+|*Gateway*
 |The Gateway component provides a RESTful xref:{url_api_http}[HTTP API], which all users of Lisk Service can access and use.
 Its main purpose is to proxy API requests from users to other components provided by Lisk Service.
 It also maintains backwards compatibility when its public API is changed or replaced by a new version.
 This provides users with a **central point of data access** that never breaks existing application compatibility.
 
-|{url_github_lisk_service_lisk}[Lisk^]
+|*Lisk*
 |The REST client component acts as a bridge between the Lisk SDK and the <<gateway,Lisk Service Gateway>>.
 Its main purpose is to provide enriched data from the Lisk SDK API.
-This component is designed to provide high availability, efficient and reliable access to the Lisk SDK API.
+This component is designed to provide high availability, together with efficient and reliable access to the Lisk SDK API.
 
-|{url_github_lisk_service_template}[Template^]
+|*Market*
+|The Market service allows price data retrieval.
+It supports multiple sources to maintain the current up-to-date Lisk token price, and ensures this is available to the clients in real time.
+
+|*Newsfeed*
+|The Newsfeed service is a single-purpose microservice that aggregates content sharing platforms and shares collected data with UI clients such as Lisk Desktop.
+
+|*Template*
 |The Template service is an abstract service whereby all of the services from Lisk Service are inherited from.
 It allows all services to share a similar interface and design pattern.
 The purpose here is to reduce code duplication and increase consistency between each service, hence simplifying code maintenance and testing.
@@ -86,10 +92,9 @@ This API can be utilized to build powerful wallets and user interfaces for block
 
 There is a public HTTP API for every public Lisk blockchain network, which can be used to query the desired information from the network.
 
-Lisk Mainnet: `{url_api_mainnet}` xref:{}[Lisk Service HTTP API reference]
-
-Lisk Testnet: `{url_api_testnet}` xref:{}[Lisk Service HTTP API reference]
-
+Lisk Mainnet::
+* Public URL: `{url_api_mainnet}`
+* API specification: xref:{url_api_http}[Lisk Service HTTP API reference (Mainnet)]
 
 
 ==== Example: Request data with curl
@@ -97,7 +102,7 @@ Lisk Testnet: `{url_api_testnet}` xref:{}[Lisk Service HTTP API reference]
 .Example request: Obtain a list of all 101 currently forging delegates
 [source,bash]
 ----
-curl -X GET "http://localhost:9901/api/v2/delegates/active?limit=101&offset=0" -H  "accept: application/json"
+curl -X GET "http://localhost:9901/api/v2/forgers" -H  "accept: application/json"
 ----
 
 .Example response
@@ -106,25 +111,36 @@ curl -X GET "http://localhost:9901/api/v2/delegates/active?limit=101&offset=0" -
 {
   "data": [
     {
-      "address": "4935562234363081651L",
-      "approval": "35.77",
-      "missedBlocks": 157,
-      "producedBlocks": 55222,
-      "productivity": "99.72",
-      "publicKey": "6122ac1fd71b437014ddbc4ec01e07879f5af1853536efaa0233bc12907c684b",
-      "secondPublicKey": "6122ac1fd71b437014ddbc4ec01e07879f5af1853536efaa0233bc12907c684b",
-      "rank": 93,
-      "rewards": "109000000000",
-      "username": "genesis_84",
-      "vote": "4630668157412954"
+      "username": "spaceone_pool",
+      "totalVotesReceived": "24200000000000",
+      "address": "lsk52ox9f8t7oghqtbtytvpkqzv4wf2srjsvoaff7",
+      "minActiveHeight": 16357328,
+      "isConsensusParticipant": true,
+      "nextForgingTime": 1635159800
+    },
+    {
+      "username": "btf",
+      "totalVotesReceived": "17250000000000",
+      "address": "lsk49cfgah7bz84ncoqkhsvg5o2bsmj23x3vqo9y5",
+      "minActiveHeight": 16486490,
+      "isConsensusParticipant": true,
+      "nextForgingTime": 1635159810
+    },
+    // ...
+    {
+      "username": "gregoryh",
+      "totalVotesReceived": "21998000000000",
+      "address": "lskfkvo54opxs7cn6aefjhuupbr6zv7yegyow9sb4",
+      "minActiveHeight": 16467538,
+      "isConsensusParticipant": true,
+      "nextForgingTime": 1635160820
     }
   ],
   "meta": {
-    "count": 100,
-    "offset": 25,
-    "total": 43749
-  },
-  "links": {}
+    "count": 103,
+    "offset": 0,
+    "total": 103
+  }
 }
 ----
 

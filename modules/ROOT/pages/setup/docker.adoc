@@ -5,6 +5,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 :experimental:
 :page-next: /lisk-service/configuration/docker.html
 :page-next-title: Configuration with Docker
+:sectnums:
 
 :url_github_service: https://github.com/LiskHQ/lisk-service
 :url_docker_hub: https://hub.docker.com/
@@ -17,10 +18,12 @@ Mona Bärenfänger <mona@lightcurve.io>
 
 :url_index_usage: index.adoc#usage
 :url_setup: setup/index.adoc
-:url_core_setup_npm: v3@lisk-core::setup/npm.adoc
+:url_core_setup_npm: master@lisk-core::setup/npm.adoc
 :url_config: configuration/docker.adoc
 :url_management: management/docker.adoc
-:sectnums:
+:url_references_config: references/configuration.adoc
+
+:url_core_setup_binary: master@lisk-core::setup/binary.adoc
 
 How to set up Lisk Service and connect it to a local Lisk Core node.
 
@@ -41,22 +44,55 @@ Check out the xref:{url_core_setup_npm}[Lisk Core NPM setup] guide for more info
 
 == Configuring Lisk Core
 
+Update the RPC configuration to enable the WebSocket API of Lisk Core.
+To accomplish this, create a custom configuration file, for example by copying one of the default config files:
+
+./home/lisk/lisk-core/
+[source,bash]
+----
+cp config/mainnet/config.json custom-config.json
+----
+
+Add the following option to `custom-config.json`:
+
+.custom-config.json
+[source,js]
+----
+{
+    // ...
+    "rpc": {
+        "enable": true,
+        "mode": "ws",
+        "port": 8080,
+        "host": "0.0.0.0" // <1>
+    },
+    // ...
+}
+----
+
+<1> Allows remote servers to connect to the Lisk Core WS API.
+If this option is not set, it defaults to `127.0.0.1`.
+
 Use the Lisk Core CLI to start Lisk Core with the desired configurations.
 
-The `--network` flag defines which blockchain network Lisk Core will connect to.
+The `--network` flag determines the blockchain network Lisk Core connects to.
 
-`--api-ws` enables the WebSocket API of the node.
-
-`--api-ws-port` allows the user to define the port for the WebSocket connection.
+`--api-ws` enables the WebSocket API of the node, if not already enabled in the config.json file.
 
 [source,bash]
 ----
-lisk-core start --network betanet --api-ws --api-ws-port=8080 --overwrite-config
+lisk-core start --network mainnet --api-ws --config=/home/lisk/lisk-core/custom-config.json --overwrite-config
 ----
 
-NOTE: To connect to a different network, replace `betanet` with either `mainnet`, `testnet` or `devnet`.
+To connect to a different network, replace `mainnet` with either `testnet` or `devnet`.
+
 
 == Setting up Lisk Service
+
+[IMPORTANT]
+====
+It is strongly recommended to synchronize your Lisk Core node with the network **before** starting the Lisk Service.
+====
 
 === Prerequisites
 
@@ -105,34 +141,36 @@ xcode-select --install
 --
 ====
 
-==== Docker
+==== Docker & Docker compose
 
 [tabs]
 ====
 Ubuntu / Debian::
 +
 --
-Please refer to {url_docker_install_linux}[docker installation for ubuntu^].
-
-To install Docker Compose, please refer to {url_docker_install_linux_compose}[install docker compose^].
-
-TIP: To configure Docker so it can be run without `sudo` rights, follow: {url_docker_linux_post_install}[linux post install^].
+. Please refer to {url_docker_install_linux}[docker installation for ubuntu^].
+. To install Docker Compose, please refer to {url_docker_install_linux_compose}[install docker compose^].
+. To configure Docker so it can be run without `sudo` rights, follow: {url_docker_linux_post_install}[linux post install^].
 --
 MacOS::
 +
 --
-Please refer to {url_docker_install_mac}[Docker installation for Mac^].
-Please note that Docker for Mac already includes Docker Compose.
-Install `make` using {url_xcode}[XCode^].
+. Please refer to {url_docker_install_mac}[Docker installation for Mac^]. Please note that Docker for Mac already includes Docker Compose.
+. Install `make` using {url_xcode}[XCode^].
 --
 ====
-
 
 ==== Open necessary ports
 
 Ensure the port which allows external services communication with the Lisk Service APIs is open.
 
 - 9901: Default API port (HTTP & WebSocket)
+
+.Example: Opening the port 9001 with ufw on Ubuntu
+[source,bash]
+----
+sudo ufw allow 9901
+----
 
 === Installation of Lisk Service
 
@@ -143,7 +181,7 @@ Clone the {url_github_service}[lisk-service^] GitHub repository and then navigat
 ----
 git clone https://github.com/LiskHQ/lisk-service.git
 cd lisk-service
-git checkout v0.3.0
+git checkout v0.5.0
 ----
 
 == Build Lisk Service
@@ -158,65 +196,45 @@ make build
 
 Lisk Service is now ready to use on your machine.
 
+TIP: If you skipped the step to configure Docker to run without `sudo` rights, you need to prepend `sudo`: `sudo make build`
+
 == Connecting Lisk Service to Lisk Core
 
-To connect Lisk Service to a local Lisk Core node, set the environment variable `LISK_CORE_WS` before starting Lisk Service as shown below:
+Before running the application copy the default docker-compose environment file:
 
-.Inside of the `lisk-service` root folder
 [source,bash]
 ----
-export LISK_CORE_WS=ws://localhost:8080
-#export ENABLE_HTTP_API=http-status,http-version2
-#export ENABLE_WS_API=blockchain,rpc-v2
-# Command to start Lisk Service
-make up
+cp docker/example.env .env
 ----
 
-It's possible to configure Lisk Service by exporting environment variables which override the default option which are located under `docker/network/core3-default.env`.
+In the next step, open `.env` and set the required environment variables.
 
-The three available environment variables are:
-
-* `LISK_CORE_WS`: Path to the Lisk Core WS port.
-* `ENABLE_HTTP_API`: List of HTTP APIs that will be enabled in Lisk Service.
-* `ENABLE_WS_API`: List of WebSocket APIs that will be enabled in Lisk Service.
-
-////
-Alternatively, it is possible to define a file with all the desired environment variables and use it to start Lisk Service as shown below:
-
-./lisk-service/
 [source,bash]
 ----
-cd docker/network
-vim my-env.env
+vim .env
 ----
 
-Define key-value pairs of all desired environment variables, for example:
 
-TIP: Press kbd:[i] to enter the insert mode in vim.
-
-./lisk-service/docker/network/my-env.env
+..env
 [source,bash]
 ----
 # Lisk ecosystem configuration
-LISK_CORE_WS=ws://localhost:8080
-
-# Enabled Gateway APIs
-ENABLE_HTTP_API=http-status,http-version2
-ENABLE_WS_API=blockchain,rpc-v2
+export LISK_CORE_WS="ws://host.docker.internal:8080" #<1>
 ----
 
-TIP: Save and quit vim again by first leaving the insert mode with kbd:[Esc] and then by typing kbd:[:wq] and kbd:[Enter].
+<1> The example assumes that the Lisk Core node is running on the host machine, and not inside of a Docker container.
+When running Lisk Core inside of a Docker container, the variable needs to refer to the container: `LISK_CORE_WS="ws://<your_docker_container>:8080"`.
 
-Now start Lisk Service with the following command:
+TIP: For a complete list of supported environment variables check the xref:{url_references_config}[].
 
-./lisk-service/
+== Starting Lisk Service
+
+Run the following command to start Lisk Service:
+
 [source,bash]
 ----
-make up-custom-my-env
+make up
 ----
-
-This will start Lisk Service with all the environment variables previously defined in `my-env.env`.
-////
 
 == Stopping Lisk Service
 You can stop Lisk Service again with the following command:

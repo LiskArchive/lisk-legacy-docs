@@ -44,6 +44,8 @@ docker ps
 
 == Reset Lisk Service database
 
+To reset the database of Lisk Service, drop the respective MYSQL and Redis databases.
+
 Before resetting the database, stop Lisk Service:
 
  make down
@@ -53,7 +55,15 @@ Now connect to the Docker container in which you wish to reset the database. If 
 [source,bash]
 ----
 $ docker exec -it lisk-service_mysql_core_1 bash # <1>
-root@f1413b535254:/# mysql -u lisk -ppassword # <2>
+----
+
+<1> Connect to the interactive shell of the MYSQL Docker container in which you wish to reset the MYSQL database.
+
+=== Drop MYSQL DB
+
+[source,bash]
+----
+root@f1413b535254:/# mysql -u lisk -ppassword # <1>
 mysql: [Warning] Using a password on the command line interface can be insecure.
 Welcome to the MySQL monitor.  Commands end with ; or \g.
 Your MySQL connection id is 2044
@@ -66,18 +76,52 @@ affiliates. Other names may be trademarks of their respective
 owners.
 
 Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
-mysql> drop database lisk; # <3>
-mysql> create database lisk; # <4>
-mysql> quit; # <5>
+mysql> drop database lisk; # <2>
+mysql> create database lisk; # <3>
+mysql> quit; # <4>
 ----
 
-<1> Connect to the interactive shell of the MYSQL Docker container in which you wish to reset the MYSQL database.
-<2> Login to MYSQL with the `lisk` user.
-<3> Drop the `lisk` database.
-<4> Create a fresh database `lisk`.
-<5> Log out from MYSQL by typing `quit;`. Log out of the docker container by pressing kbd:[CRTL] + kbd:[D].
 
-After the database was dumped and recreated, start Lisk Service as usual:
+<1> Login to MYSQL with the `lisk` user.
+<2> Drop the `lisk` database.
+<3> Create a fresh database `lisk`.
+<4> Log out from MYSQL by typing `quit;`. Log out of the docker container by pressing kbd:[CRTL] + kbd:[D].
+
+=== Flush Redis DB
+
+Reset the databases for Redis after dropping the MYSQL database:
+
+[source,bash]
+----
+sudo docker exec -it lisk-service_redis_core_persistent_1 /bin/sh
+redis-cli flushall
+----
+
+[source,bash]
+----
+sudo docker exec -it lisk-service_redis_core_volatile_1 /bin/sh
+redis-cli flushall
+----
+
+TIP: Log out of the docker containers again by pressing kbd:[CRTL] + kbd:[D].
+
+[NOTE]
+====
+The `flushall` command removes all existing redis databases:
+
+> Deletes all the keys of all the existing databases, not just the currently selected one. This command never fails.
+
+For more information check the Redis documentation: https://redis.io/commands/FLUSHALL[FLUSHALL]
+
+To flush only a particular DB in Redis, run instead:
+----
+ redis-cli -n <db_number> flushdb
+----
+====
+
+=== Start Lisk Service
+
+After the databases are reset, start Lisk Service again as usual:
 
  make up
 

@@ -14,24 +14,20 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_management_pm2: management/source.adoc
 :url_references_config: references/configuration.adoc
 
-== The ecosystem config files
+== Default configuration
 
-The {url_pm2_ecosystem_file}[ecosystem file^] provides the possibility to configure behavior, options, environment variables and the logs files of each application with {url_pm2}[PM2^].
+The {url_pm2_ecosystem_file}[PM2 ecosystem file^] provides the possibility to configure behavior, options, environment variables, and the log files of Lisk Service with PM2.
+The default configuration file is `ecosystem.core3.config.js`, and is located in the root folder of `lisk-service`:
+It contains a configuration to connect to a local Lisk Core node.
 
-.Starts Lisk Service with the specified configuration
+This config will be used by default when starting Lisk Service with the following:
+
 [source,bash]
 ----
-pm2 start ecosystem.mainnet.config.js
+pm2 start ecosystem.core3.config.js
 ----
 
-=== Default configurations
-
-There are 2 default ecosystem files in the root folder of `lisk-service`:
-
-* `ecosystem.mainnet.config.js` contains a configuration to connect to the Lisk Mainnet (default).
-* `ecosystem.testnet.config.js` contains a configuration to connect to the Lisk Testnet.
-
-.Contents of `ecosystem.mainnet.config.js`
+.Contents of `ecosystem.core3.config.js`
 [source,javascript]
 ----
 module.exports = {
@@ -47,11 +43,21 @@ module.exports = {
 			watch: false,
 			kill_timeout: 10000,
 			max_memory_restart: '512M',
-			instances: 1,
 			autorestart: true,
 			env: {
 				PORT: '9901',
+				// --- Remember to set the properties below
 				SERVICE_BROKER: 'redis://localhost:6379/0',
+				WS_RATE_LIMIT_ENABLE: false,
+				WS_RATE_LIMIT_CONNECTIONS: 5,
+				WS_RATE_LIMIT_DURATION: 1, // in seconds
+				HTTP_RATE_LIMIT_ENABLE: false,
+				HTTP_RATE_LIMIT_CONNECTIONS: 200,
+				HTTP_RATE_LIMIT_WINDOW: 10, // in seconds
+				// ENABLE_HTTP_API: 'http-status,http-version2',
+				// ENABLE_WS_API: 'blockchain,rpc-v2',
+				// HTTP_CACHE_CONTROL_DIRECTIVES: 'public, max-age=10',
+				// ENABLE_HTTP_CACHE_CONTROL: 'true'
 			},
 		},
 		{
@@ -64,32 +70,79 @@ module.exports = {
 			log_date_format: 'YYYY-MM-DD HH:mm:ss SSS',
 			watch: false,
 			kill_timeout: 10000,
+			max_memory_restart: '1G',
+			autorestart: true,
+			env: {
+				// --- Remember to set the properties below
+				SERVICE_BROKER: 'redis://localhost:6379/0',
+				LISK_CORE_WS: 'ws://localhost:8080',
+				SERVICE_CORE_REDIS: 'redis://localhost:6379/1',
+				SERVICE_CORE_REDIS_VOLATILE: 'redis://localhost:6379/8',
+				SERVICE_CORE_MYSQL: 'mysql://root:password@localhost:3306/lisk',
+				LISK_STATIC: 'https://static-data.lisk.com',
+				GEOIP_JSON: '',
+				INDEX_N_BLOCKS: '0',
+				ENABLE_TRANSACTION_STATS: 'true',
+				ENABLE_JOB_MISSING_BLOCKS: 'true',
+				INDEX_MISSING_BLOCKS_RANGE: '0',
+				TRANSACTION_STATS_HISTORY_LENGTH_DAYS: '366',
+				TRANSACTION_STATS_UPDATE_INTERVAL: '3600',
+				ENABLE_FEE_ESTIMATOR_QUICK: 'true',
+				ENABLE_FEE_ESTIMATOR_FULL: 'false',
+			},
+		},
+		{
+			name: 'lisk-service-market',
+			script: 'app.js',
+			cwd: './services/market',
+			pid_file: './pids/service_market.pid',
+			out_file: './logs/service_market.log',
+			error_file: './logs/service_market.err',
+			log_date_format: 'YYYY-MM-DD HH:mm:ss SSS',
+			watch: false,
+			kill_timeout: 10000,
 			max_memory_restart: '512M',
-			instances: 1,
+			autorestart: true,
+			env: {
+				// --- Remember to set the properties below
+				SERVICE_BROKER: 'redis://localhost:6379/0',
+				SERVICE_MARKET_REDIS: 'redis://localhost:6379/2',
+				// SERVICE_MARKET_FIAT_CURRENCIES: 'EUR,USD,CHF,GBP,RUB',
+				// SERVICE_MARKET_TARGET_PAIRS: 'LSK_BTC,LSK_EUR,LSK_USD,LSK_CHF,BTC_EUR,BTC_USD,BTC_CHF',
+				// EXCHANGERATESAPI_IO_API_KEY: ''
+			},
+		},
+		{
+			name: 'lisk-service-newsfeed',
+			script: 'app.js',
+			cwd: './services/newsfeed',
+			pid_file: './pids/service_newsfeed.pid',
+			out_file: './logs/service_newsfeed.log',
+			error_file: './logs/service_newsfeed.err',
+			log_date_format: 'YYYY-MM-DD HH:mm:ss SSS',
+			watch: false,
+			kill_timeout: 10000,
+			max_memory_restart: '512M',
 			autorestart: true,
 			env: {
 				SERVICE_BROKER: 'redis://localhost:6379/0',
-				LISK_CORE_HTTP: 'https://mainnet.lisk.io',
-				LISK_CORE_WS: 'wss://mainnet.lisk.io',
-				SERVICE_CORE_REDIS: 'redis://localhost:6379/1',
-				LISK_STATIC: 'https://static-data.lisk.io',
-				GEOIP_JSON: 'https://geoip.lisk.io/json',
+				SERVICE_NEWSFEED_MYSQL: 'mysql://lisk:password@localhost:3306/lisk?charset=utf8mb4',
 			},
 		},
 	],
 };
 ----
 
-=== Custom configuration
+== Custom configuration
 
-To create a custom configuration, it is recommended to copy one of the default configurations.
+To create a custom configuration, it is recommended to copy the default configuration.
 
 [source,bash]
 ----
-cp ecosystem.mainnet.config.js ecosystem.custom.config.js <1>
+cp ecosystem.core3.config.js ecosystem.custom.config.js #<1>
 ----
 
-<1> Copies the file `ecosystem.mainnet.config.js` and renames it to `ecosystem.custom.config.js`.
+<1> Copies the file `ecosystem.core3.config.js` and renames it to `ecosystem.custom.config.js`.
 
 Now it is possible to open the new file `ecosystem.custom.config.js` and adjust it as desired.
 

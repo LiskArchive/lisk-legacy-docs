@@ -218,7 +218,7 @@
     <li><a href="docker.html">Docker commands</a></li>
   </ul>
 </nav>
-    <div class="edit-this-page"><a href="https://github.com/LiskHQ/lisk-docs/edit/docs-service/modules/ROOT/pages/management/docker.adoc"><i class="icofont-ui-edit"></i>Edit this Page</a></div>
+    <div class="edit-this-page"><a href="https://github.com/LiskHQ/lisk-docs/edit/1270-reset-db/modules/ROOT/pages/management/docker.adoc"><i class="icofont-ui-edit"></i>Edit this Page</a></div>
   </div>
   <div class="content">
 <article class="doc">
@@ -229,6 +229,13 @@
 <li><a href="#start">Start</a></li>
 <li><a href="#stop">Stop</a></li>
 <li><a href="#show-status-of-docker-containers">Show status of Docker containers</a></li>
+<li><a href="#reset-lisk-service-database">Reset Lisk Service database</a>
+<ul class="sectlevel2">
+<li><a href="#drop-mysql-db">Drop MYSQL DB</a></li>
+<li><a href="#flush-redis-db">Flush Redis DB</a></li>
+<li><a href="#start-lisk-service">Start Lisk Service</a></li>
+</ul>
+</li>
 <li><a href="#logging">Logging</a></li>
 </ul>
 </div>
@@ -269,6 +276,166 @@
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">docker ps</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="reset-lisk-service-database"><a class="anchor" href="#reset-lisk-service-database"></a>Reset Lisk Service database</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To reset the database of Lisk Service, drop the respective MYSQL and Redis databases.</p>
+</div>
+<div class="paragraph">
+<p>Before resetting the database, stop Lisk Service:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>make down</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now connect to the Docker container in which you wish to reset the database. If you are not sure what to pick here, check the available containers via <a href="#show-status-of-docker-containers">Show status of Docker containers</a>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">$ docker exec -it lisk-service_mysql_core_1 bash <i class="conum" data-value="1"></i><b>(1)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Connect to the interactive shell of the MYSQL Docker container in which you wish to reset the MYSQL database.</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="drop-mysql-db"><a class="anchor" href="#drop-mysql-db"></a>Drop MYSQL DB</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">root@f1413b535254:/# mysql -u lisk -ppassword <i class="conum" data-value="1"></i><b>(1)</b>
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Welcome to the MySQL monitor.  Commands end with ; or \g.
+Your MySQL connection id is 2044
+Server version: 8.0.27 MySQL Community Server - GPL
+
+Copyright (c) 2000, 2021, Oracle and/or its affiliates.
+
+Oracle is a registered trademark of Oracle Corporation and/or its
+affiliates. Other names may be trademarks of their respective
+owners.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+mysql&gt; drop database lisk; <i class="conum" data-value="2"></i><b>(2)</b>
+mysql&gt; create database lisk; <i class="conum" data-value="3"></i><b>(3)</b>
+mysql&gt; quit; <i class="conum" data-value="4"></i><b>(4)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Login to MYSQL with the <code>lisk</code> user.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Drop the <code>lisk</code> database.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Create a fresh database <code>lisk</code>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Log out from MYSQL by typing <code>quit;</code>. Log out of the docker container by pressing <kbd>CRTL</kbd> + <kbd>D</kbd>.</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="flush-redis-db"><a class="anchor" href="#flush-redis-db"></a>Flush Redis DB</h3>
+<div class="paragraph">
+<p>Reset the databases for Redis after dropping the MYSQL database:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo docker exec -it lisk-service_redis_core_persistent_1 /bin/sh
+redis-cli flushall</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">sudo docker exec -it lisk-service_redis_core_volatile_1 /bin/sh
+redis-cli flushall</code></pre>
+</div>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+Log out of the docker containers again by pressing <kbd>CRTL</kbd> + <kbd>D</kbd>.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The <code>flushall</code> command removes all existing redis databases:</p>
+</div>
+<div class="quoteblock">
+<blockquote>
+<div class="paragraph">
+<p>Deletes all the keys of all the existing databases, not just the currently selected one. This command never fails.</p>
+</div>
+</blockquote>
+</div>
+<div class="paragraph">
+<p>For more information check the Redis documentation: <a href="https://redis.io/commands/FLUSHALL">FLUSHALL</a></p>
+</div>
+<div class="paragraph">
+<p>To flush only a particular DB in Redis, run instead:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre> redis-cli -n &lt;db_number&gt; flushdb</pre>
+</div>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="start-lisk-service"><a class="anchor" href="#start-lisk-service"></a>Start Lisk Service</h3>
+<div class="paragraph">
+<p>After the databases are reset, start Lisk Service again as usual:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>make up</pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+When Lisk Service is started again after a database reset, it takes a long time to reindex all the data. Currently, this might take up to 2 hours.
+</td>
+</tr>
+</table>
 </div>
 </div>
 </div>

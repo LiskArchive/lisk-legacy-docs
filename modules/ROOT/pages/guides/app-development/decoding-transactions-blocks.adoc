@@ -7,21 +7,26 @@ Mona Bärenfänger <mona@lightcurve.io>
 :idseparator: -
 :experimental:
 // URLs
+:url_example_helloapp: https://github.com/LiskHQ/lisk-sdk-examples/tree/development/guides/04-plugin/hello_app
 // Project URLS
 :url_references_client: references/lisk-elements/client.adoc
 :url_references_apiclient: references/lisk-elements/api-client.adoc
 :url_guides_config: guides/app-development/configuration.adoc#rpc
 
+
+
+The API of a blockchain node typically returns all requested transactions and blocks encoded as Buffer.
+To be readable, they need to be decoded into JS or JSON objects.
+
 Blocks and transactions can be decoded conveniently with the The xref:{url_references_apiclient}[apiClient] library of the Lisk SDK.
 
-TIP: `apiClient` is also included in the NPM package xref:{url_references_client}[`@liskhq/lisk-client`]
+TIP: The `apiClient` is also included in the NPM package xref:{url_references_client}[`@liskhq/lisk-client`].
 
 == Connecting a node with the API client
 
 Before the API client can be used, it needs to connect to a blockchain node. This can be achieved either via a WebSocket (on the same server and remote) or an IPC (only the same server) connection.
 
-In most scenarios it is beneficial to have a local node running to which the client can send the API requests. The RPC options in the config should be enabled and configured accordingly, see xref:{url_guides_config}[RPC configuration of a node].
-
+In most scenarios it is beneficial to have a local node running (for example the {url_example_helloapp}[Hello World application^]) to which the client can send the API requests. The RPC options in the config should be enabled and configured accordingly, see xref:{url_guides_config}[RPC configuration of a node].
 
 [source,js]
 ----
@@ -39,9 +44,7 @@ const getClient = async () => {
 
 == Decoding a block
 
-The transaction ID is returned evey time a transaction is sent to the node.
-
-Write a simple script that decodes the block. Create a new file `getBlockById.js`:
+Write a simple script to decode the blocks. Create a new file `getBlockById.js`:
 
 .Simple script for decoding a block by a given ID
 [source,js]
@@ -67,17 +70,22 @@ const blockId = process.argv[2];
 getClient().then((client) => {
 	client.invoke("app:getBlockByID", {
 		id: blockId
-	}).then(res => {
-		const block = client.block.decode(res);
-		console.log(block);
-		if (block.payload && block.payload.length > 0) {
-			console.log(block.payload[0].asset);
+    }).then(res => {
+        // Block as Buffer
+		console.log(res);
+		const blockObject = client.block.decode(res);
+		const blockJSON = client.block.toJSON(blockObject);
+        // Block as JSON object
+		console.log(blockJSON);
+		if (blockJSON.payload && blockJSON.payload.length > 0) {
+			console.log(blockJSON.payload[0].asset);
 		}
 		process.exit(0);
 	});
 });
 ----
 
+If you already have the block as Buffer,
 Assuming you want to decode a block with the ID `52303f33684f5ffae4d307747db36d86bde6e14d76958e197cb82eeab5ca6f92`, then execute the script the block ID as parameter:
 
 [source,bash]

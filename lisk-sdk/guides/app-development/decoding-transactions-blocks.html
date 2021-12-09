@@ -497,26 +497,18 @@
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>Blocks and transactions can be decoded conveniently with the The <a href="../../references/lisk-elements/api-client.html" class="page">apiClient</a> library of the Lisk SDK.</p>
+<p>The API of a blockchain node typically returns all requested transactions and blocks encoded as Buffer.
+To be readable, they need to be decoded into JS or JSON objects.</p>
 </div>
-<div class="admonitionblock tip">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-tip" title="Tip"></i>
-</td>
-<td class="content">
-<code>apiClient</code> is also included in the NPM package <a href="../../references/lisk-elements/client.html" class="page"><code>@liskhq/lisk-client</code></a>
-</td>
-</tr>
-</table>
+<div class="paragraph">
+<p>Blocks and transactions can be decoded conveniently with the The <a href="../../references/lisk-elements/api-client.html" class="page">apiClient</a> library of the Lisk SDK.</p>
 </div>
 </div>
 <div id="toc" class="toc">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
 <li><a href="#connecting-a-node-with-the-api-client">Connecting a node with the API client</a></li>
-<li><a href="#decoding-a-block">Decoding a block</a></li>
+<li><a href="#decoding-a-block-and-all-its-included-transactions">Decoding a block and all its' included transactions</a></li>
 <li><a href="#decoding-a-transaction">Decoding a transaction</a></li>
 </ul>
 </div>
@@ -528,7 +520,19 @@
 <p>Before the API client can be used, it needs to connect to a blockchain node. This can be achieved either via a WebSocket (on the same server and remote) or an IPC (only the same server) connection.</p>
 </div>
 <div class="paragraph">
-<p>In most scenarios it is beneficial to have a local node running to which the client can send the API requests. The RPC options in the config should be enabled and configured accordingly, see <a href="configuration.html#rpc" class="page">RPC configuration of a node</a>.</p>
+<p>In most scenarios it is beneficial to have a local node running (for example the <a href="https://github.com/LiskHQ/lisk-sdk-examples/tree/development/guides/04-plugin/hello_app" target="_blank" rel="noopener">Hello World application</a>) to which the client can send the API requests. The RPC options in the config should be enabled and configured accordingly, see <a href="configuration.html#rpc" class="page">RPC configuration of a node</a>.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+The <code>apiClient</code> is also included in the NPM package <a href="../../references/lisk-elements/client.html" class="page"><code>@liskhq/lisk-client</code></a>.
+</td>
+</tr>
+</table>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -538,6 +542,7 @@ const nodeAPI = 'ws://localhost:8080/ws';
 
 const getClient = async () =&gt; {
 	if (!clientCache) {
+        // Connect to the specified blockchain node
 		clientCache = await apiClient.createWSClient(nodeAPI);
 	}
 	return clientCache;
@@ -547,13 +552,11 @@ const getClient = async () =&gt; {
 </div>
 </div>
 <div class="sect1">
-<h2 id="decoding-a-block"><a class="anchor" href="#decoding-a-block"></a>Decoding a block</h2>
+<h2 id="decoding-a-block-and-all-its-included-transactions"><a class="anchor" href="#decoding-a-block-and-all-its-included-transactions"></a>Decoding a block and all its' included transactions</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The transaction ID is returned evey time a transaction is sent to the node.</p>
-</div>
-<div class="paragraph">
-<p>Write a simple script that decodes the block. Create a new file <code>getBlockById.js</code>:</p>
+<p>Write a simple script to decode the blocks.
+Create a new file <code>getBlockById.js</code>:</p>
 </div>
 <div class="listingblock">
 <div class="title">Simple script for decoding a block by a given ID</div>
@@ -579,11 +582,15 @@ const blockId = process.argv[2];
 getClient().then((client) =&gt; {
 	client.invoke("app:getBlockByID", {
 		id: blockId
-	}).then(res =&gt; {
-		const block = client.block.decode(res);
-		console.log(block);
-		if (block.payload &amp;&amp; block.payload.length &gt; 0) {
-			console.log(block.payload[0].asset);
+    }).then(res =&gt; {
+        // Block as Buffer
+		console.log(res);
+		const blockObject = client.block.decode(res);
+		const blockJSON = client.block.toJSON(blockObject);
+        // Block as JSON object
+		console.log(blockJSON);
+		if (blockJSON.payload &amp;&amp; blockJSON.payload.length &gt; 0) {
+			console.log(blockJSON.payload[0].asset);
 		}
 		process.exit(0);
 	});
@@ -641,10 +648,11 @@ getClient().then((client) =&gt; {
 <h2 id="decoding-a-transaction"><a class="anchor" href="#decoding-a-transaction"></a>Decoding a transaction</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The transaction ID is returned evey time a transaction is sent to the node.</p>
+<p>The transaction ID is returned every time a transaction is sent to the node.</p>
 </div>
 <div class="paragraph">
-<p>Write a simple script that decodes the transaction. Create a new file <code>getTxById.js</code>:</p>
+<p>Write a simple script that decodes the transaction.
+Create a new file <code>getTxById.js</code>:</p>
 </div>
 <div class="listingblock">
 <div class="title">Example for decoding a transaction by a given ID</div>
@@ -670,9 +678,11 @@ getClient().then((client) =&gt; {
 	client.invoke("app:getTransactionByID", {
 		id: txId
 	}).then(res =&gt; {
+        // Transaction as Buffer
 		console.log(res);
 		const txObject = client.transaction.decode(res);
 		const txJSON = client.transaction.toJSON(txObject);
+        // Transaction as JSON object
 		console.log(txJSON);
 		process.exit(0);
 	});
@@ -688,7 +698,7 @@ getClient().then((client) =&gt; {
 </div>
 </div>
 <div class="paragraph">
-<p>The decoded transaction object is then returned in the terminal:</p>
+<p>The decoded transaction object is then returned to the terminal:</p>
 </div>
 <div class="listingblock">
 <div class="content">

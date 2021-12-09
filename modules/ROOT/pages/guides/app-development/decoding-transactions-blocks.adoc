@@ -9,22 +9,34 @@ Mona Bärenfänger <mona@lightcurve.io>
 // URLs
 // Project URLS
 :url_references_client: references/lisk-elements/client.adoc
+:url_guides_config: guides/app-development/configuration.adoc#rpc
 
 Blocks and transactions can be decoded conveniently with the `apiClient` library of the Lisk SDK.
 
 TIP: The `apiClient` is also included in the NPM package xref:{url_references_client}[`@liskhq/lisk-client`]
 
+== Connecting a node
+
+Before you can use the API client, it needs to connect to a blockchain node. This can be achieved either via WebSocket (on the same server and remote) or IPC (only the same server).
+
+In most scenarios, it is beneficial to have a local node running to which the client can send the API requests. The RPC options in the config should be enabled and configured accordingly, see xref:{url_guides_config}[RPC configuration of a node].
+
+If there are APIs of remote nodes available, then they can be used with the API client as well.
+
 == Decoding a block
+
+
 
 .Simple script for decoding a block by a given ID
 [source,js]
 ----
 const { apiClient } = require('@liskhq/lisk-client');
 let clientCache;
+const nodeAPI = 'ws://localhost:8080/ws';
 
 const getClient = async () => {
 	if (!clientCache) {
-		clientCache = await apiClient.createWSClient('ws://localhost:8080/ws');
+		clientCache = await apiClient.createWSClient(nodeAPI);
 	}
 	return clientCache;
 };
@@ -50,6 +62,48 @@ getClient().then((client) => {
 });
 ----
 
+Assuming you want to decode a block with the ID `130227fa63ac60edbbacb6dae709cf9304ab0181ef7ea28105764f6240d012f2`, then execute the following:
+
+[source,bash]
+----
+node getBlockById.js 52303f33684f5ffae4d307747db36d86bde6e14d76958e197cb82eeab5ca6f92
+----
+
+The decoded block object is then displayed in the terminal:
+
+----
+{
+  header: {
+    version: 2,
+    timestamp: 1639054812,
+    height: 1552,
+    previousBlockID: '27c9fb40b2710052e6261b7433f56550bcc2eefdabd32c9a81dc1452ac004d81',
+    transactionRoot: 'b7ec27cb8fd9b542efa4bdd3f4e6a0654dbb9488fa663d2558db60e6a9fb10cd',
+    generatorPublicKey: '75578bd534f1c12c08e371a4ffdb697395e0d35f0beddec97354b9ed63ca4798',
+    reward: '0',
+    signature: '13ccd72ea09c89bb7f076c4e3658dd5fb9fdb30168a89d91f5d58f86bd3906f8bfe54b1fd69e9347626bf8c5bfea7345be477323fe3c12a2f3809d46d7dbb908',
+    asset: {
+      maxHeightPreviouslyForged: 1539,
+      maxHeightPrevoted: 1478,
+      seedReveal: '78bea5a107b317f6d3621b88a49ccc6f'
+    },
+    id: '52303f33684f5ffae4d307747db36d86bde6e14d76958e197cb82eeab5ca6f92'
+  },
+  payload: [
+    {
+      moduleID: 1000,
+      assetID: 0,
+      nonce: '7',
+      fee: '100000000',
+      senderPublicKey: 'bad983c72bed43fd274f852658c298b74c71ab6fc50508879fef309e3836384b',
+      signatures: [Array],
+      id: '6a50f991566f8516084ce53c2f71feb8d4dc6b7724061b8e6292af730479b398',
+      asset: [Object]
+    }
+  ]
+}
+----
+
 == Decoding a transaction
 
 The transaction ID is returned evey time a transaction is sent to the node.
@@ -61,10 +115,11 @@ Write a simple script that decodes the transaction by providing the respective t
 ----
 const { apiClient } = require('@liskhq/lisk-client');
 let clientCache;
+const nodeAPI = 'ws://localhost:8080/ws';
 
 const getClient = async () => {
 	if (!clientCache) {
-		clientCache = await apiClient.createWSClient('ws://localhost:8080/ws');
+		clientCache = await apiClient.createWSClient(nodeAPI);
 	}
 	return clientCache;
 };
@@ -80,7 +135,9 @@ getClient().then((client) => {
 		id: txId
 	}).then(res => {
 		console.log(res);
-		console.log(client.transaction.decode(res));
+		const txObject = client.transaction.decode(res);
+		const txJSON = client.transaction.toJSON(txObject);
+		console.log(txJSON);
 		process.exit(0);
 	});
 });
@@ -99,13 +156,13 @@ The decoded transaction object is then returned in the terminal:
 {
   moduleID: 1000,
   assetID: 0,
-  nonce: 6n,
-  fee: 100000000n,
-  senderPublicKey: <Buffer ba d9 83 c7 2b ed 43 fd 27 4f 85 26 58 c2 98 b7 4c 71 ab 6f c5 05 08 87 9f ef 30 9e 38 36 38 4b>,
-  asset: { helloString: 'Greetings! :-)' },
+  nonce: '6',
+  fee: '100000000',
+  senderPublicKey: 'bad983c72bed43fd274f852658c298b74c71ab6fc50508879fef309e3836384b',
   signatures: [
-    <Buffer 26 c7 24 8a 01 e1 ff 60 4d 93 28 0b 52 0b 13 d7 81 4d ff b4 ae 3f 28 ca 66 d3 0f 6d ca d7 de 89 1c 22 e6 8f f2 b5 3b c9 18 6c e8 07 d1 2e 96 f5 31 96 ... 14 more bytes>
+    '26c7248a01e1ff604d93280b520b13d7814dffb4ae3f28ca66d30f6dcad7de891c22e68ff2b53bc9186ce807d12e96f5319673a9866dd6f5828908fb33c86409'
   ],
-  id: <Buffer 13 02 27 fa 63 ac 60 ed bb ac b6 da e7 09 cf 93 04 ab 01 81 ef 7e a2 81 05 76 4f 62 40 d0 12 f2>
+  asset: { helloString: 'hurrsa' },
+  id: '130227fa63ac60edbbacb6dae709cf9304ab0181ef7ea28105764f6240d012f2'
 }
 ----

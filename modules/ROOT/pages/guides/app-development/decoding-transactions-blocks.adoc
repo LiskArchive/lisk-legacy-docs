@@ -1,0 +1,83 @@
+= Decoding transactions and blocks
+Mona Bärenfänger <mona@lightcurve.io>
+// Settings
+:toc: preamble
+:imagesdir: ../../../assets/images
+:idprefix:
+:idseparator: -
+:experimental:
+// URLs
+// Project URLS
+:url_references_client: references/lisk-elements/client.adoc
+
+Blocks and transactions can be decoded conveniently with the `apiClient` library of the Lisk SDK.
+
+TIP: The `apiClient` is also included in the NPM package xref:{url_references_client}[`@liskhq/lisk-client`]
+
+== Decoding a block
+
+[source,js]
+----
+const { apiClient } = require('@liskhq/lisk-client');
+let clientCache;
+
+const getClient = async () => {
+	if (!clientCache) {
+		clientCache = await apiClient.createWSClient('ws://localhost:8080/ws');
+	}
+	return clientCache;
+};
+
+if (process.argv.length < 3) {
+	console.error("Please provide the block ID to be decoded.")
+	process.exit(1);
+}
+const blockId = process.argv[2];
+
+
+getClient().then((client) => {
+	client.invoke("app:getBlockByID", {
+		id: blockId
+	}).then(res => {
+		console.log(res);
+		const block = client.block.decode(res);
+		console.log(block);
+		if (block.payload && block.payload.length > 0) {
+			console.log(block.payload[0].asset);
+			console.log(block.payload[0].signatures);
+		}
+		process.exit(0);
+	});
+});
+----
+
+== Decoding a transaction
+
+[source,js]
+----
+const { apiClient } = require('@liskhq/lisk-client');
+let clientCache;
+
+const getClient = async () => {
+	if (!clientCache) {
+		clientCache = await apiClient.createWSClient('ws://localhost:8080/ws');
+	}
+	return clientCache;
+};
+
+if (process.argv.length < 3) {
+	console.error("Please provide the transaction ID to be decoded.")
+	process.exit(1);
+}
+const txId = process.argv[2];
+
+getClient().then((client) => {
+	client.invoke("app:getTransactionByID", {
+		id: txId
+	}).then(res => {
+		console.log(res);
+		console.log(client.transaction.decode(res));
+		process.exit(0);
+	});
+});
+----

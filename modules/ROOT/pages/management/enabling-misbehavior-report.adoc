@@ -1,0 +1,82 @@
+= How to enable the "Report Misbehavior" plugin
+Mona Bärenfänger <mona@lightcurve.io>
+// Settings
+:toc:
+:sectnums:
+:v_sdk: master
+// External URLs
+// Project URLs
+:url_plugin_report_misbehavior: {v_sdk}@lisk-sdk::references/lisk-framework/report-misbehavior-plugin.adoc
+
+The xref:{url_plugin_report_misbehavior}["Report Misbehavior" plugin] provides automatic detection of delegate misbehavior and sends a `reportDelegateMisbehavior` transaction to the running node.
+
+To enable the plugin on your node, perform the following actions:
+
+== Enabling the plugin on node startup
+
+Start Lisk Core with the flag `--enable-report-misbehavior-plugin `:
+
+[source,bash]
+----
+lisk-core start --enable-report-misbehavior-plugin
+----
+
+== Choose sender account
+
+The plugin will use a specified sender account to sign the `reportDelegateMisbehavior` transactions.
+To automatically sign the transaction, the encrypted passphrase of the account must be added to the plugin configuration.
+
+NOTE: Please note that the respective account should have a high enough account balance to be able to send a misbehavior report.
+
+Encrypt the passphrase of the sender account before adding it to the configuration:
+
+[source,bash]
+----
+$ lisk-core passphrase:encrypt
+? Please enter passphrase:  [hidden]
+? Please re-enter passphrase:  [hidden]
+? Please enter password:  [hidden]
+? Please re-enter password:  [hidden]
+{"encryptedPassphrase":"iterations=1000000&cipherText=643bfbf1b6f1dc0ce740dd9fc9f27a682e476dc5de4e6c023deded4d3efe2822346226541106b42638db5ba46e0ae0a338cb78fb40bce67fdec7abbca68e20624fa6b0d7&iv=8a9c461744b9e70a8ba65edd&salt=3fe00b03d10b7002841857c1f028196e&tag=c57a798ef65f5a7be617d8737828fd58&version=1"}
+----
+
+== Plugin configuration
+
+Add the encrypted passphrase to the configuration under `plugins.reportMisbehavior.encryptedPassphrase`:
+
+.config.json
+[source,js]
+----
+{
+    //...
+     "plugins": {
+    "reportMisbehavior": {
+		"encryptedPassphrase": "iterations=1000000&cipherText=643bfbf1b6f1dc0ce740dd9fc9f27a682e476dc5de4e6c023deded4d3efe2822346226541106b42638db5ba46e0ae0a338cb78fb40bce67fdec7abbca68e20624fa6b0d7&iv=8a9c461744b9e70a8ba65edd&salt=3fe00b03d10b7002841857c1f028196e&tag=c57a798ef65f5a7be617d8737828fd58&version=1",
+	},
+  }
+}
+----
+
+== Authorization
+
+[source,bash]
+----
+const { apiClient } = require('@liskhq/lisk-client');
+let clientCache;
+
+const getClient = async () => {
+  if (!clientCache) {
+    clientCache = await apiClient.createWSClient('ws://localhost:8080/ws');
+  }
+  return clientCache;
+};
+
+getClient().then((client) => {
+	client.invoke("reportMisbehavior:authorize", {
+		password: "myPassword"
+    }).then(res => {
+		console.log(res);
+		process.exit(0);
+	});
+});
+----

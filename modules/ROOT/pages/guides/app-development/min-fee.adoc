@@ -2,24 +2,33 @@
 :toc:
 :sectnums:
 
+The minimum allowed fee is calculated the following way for every transaction:
+
+ minFee = transactionBytes.length * minFeePerByte + baseFee
+
+The minimum fee allowed is directly connected to the size of the transaction object in bytes, after it has been encoded.
+
 == Create & sign the transaction
 
 [source,js]
 ----
-const { id, ...rest } = transactions.signTransaction(
+import { transactions } from "@liskhq/lisk-client";
+import { assetSchema } from "schemas";
+
+const txWithSomeFee = {
+    moduleID: 1000,
+    assetID: 0,
+    nonce: BigInt(nonce),
+    fee: BigInt(transactions.convertLSKToBeddows("1")),
+    senderPublicKey: publicKey,
+    asset: {
+        helloString: "Hello World!"
+    }
+};
+
+const signedTxWithSomeFee = transactions.signTransaction(
     assetSchema,
-    {
-        moduleID: 1024,
-        assetID: 0,
-        nonce: BigInt(nonce),
-        fee: BigInt(transactions.convertLSKToBeddows(fee)),
-        senderPublicKey: publicKey,
-        asset: {
-            name,
-            initValue: BigInt(transactions.convertLSKToBeddows(initValue)),
-            minPurchaseMargin: parseInt(minPurchaseMargin),
-        },
-    },
+    txWithSomeFee,
     Buffer.from(networkIdentifier, "hex"),
     passphrase
 );
@@ -29,26 +38,42 @@ const { id, ...rest } = transactions.signTransaction(
 
 [source,js]
 ----
-export const calcMinTxFee = (assetSchema, minFeePerByte, tx) => {
-	const assetBytes = codec.encode(assetSchema, tx.asset);
-	const bytes = codec.encode(baseAssetSchema, { ...tx, asset: assetBytes });
-	return BigInt(bytes.length * minFeePerByte);
-};
-----
-
-[source,js]
-----
 import {transactions} from "@liskhq/lisk-client";
 
-const minFee = transactions.computeMinFee(schema, {
-  moduleID: options.moduleID,
-  assetID: options.assetID,
-  nonce: BigInt(nonce),
-  fee: BigInt(transactions.convertLSKToBeddows(options.fee.toString())),
-  senderPublicKey: publicKey,
-  asset: options.asset
-});
+// ...
+
+const minFee = transactions.computeMinFee(schema, signedTxWithSomeFee);
 ----
 
 
 == Recreate transaction with minimumFee
+
+[source,js]
+----
+import {transactions} from "@liskhq/lisk-client";
+import {apiClient} from "api";
+
+// ...
+
+const transaction = {
+    moduleID: 1000,
+    assetID: 0,
+    nonce: BigInt(nonce),
+    fee: minFee,
+    senderPublicKey: publicKey,
+    asset: {
+        helloString: "Hello World!"
+    }
+};
+
+const signedTx = transactions.signTransaction(
+    assetSchema,
+    transaction,
+    Buffer.from(networkIdentifier, "hex"),
+    passphrase
+);
+
+apiClient.sendTransactions(signedTx).then(res => {
+    console.log(res);
+});
+----

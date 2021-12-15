@@ -1,6 +1,8 @@
 = Calculating the minimum fee for a transaction
 :toc:
 :sectnums:
+// Project URLs
+:url_hello_world: guides/app-development/setup.adoc
 
 The minimum allowed fee is calculated the following way for every transaction:
 
@@ -15,6 +17,12 @@ Luckily, the `apiClient` is capable of doing all necessary steps of the calculat
 All needed to calculate the fee of a transaction, which is passed as parameter to the `computeMinFee()` function.
 
 == Connect the API client to a node
+
+First, create a function `getClient()`, which will return an instance of the API client.
+
+The API client connects to a local node, having the RPC API enabled via WebSockets at port `8080`.
+
+If you wish to connect to a different node, simply update the API URL defined in `nodeAPIURL`.
 
 .index.js
 [source,js]
@@ -34,14 +42,19 @@ const getClient = async () => {
 
 == Calculate minimumFee
 
-[NOTE]
-====
+A new transaction can be created with the API client in a convenient way, assuming that the respective transaction asset type known to the respective blockchain application.
+Generally, a blockchain application knows only about the assets that are part modules registered to the application.
+
+In this example, we connect to the xref:{url_hello_world}[Hello World blockchain application], so we can use the Hello transaction asset in this example.
+The Hello asset is part of the Hello module which is registered in the 'Hello World' application.
+
+To calculate the minimum fee of a transaction, first create the respective transaction and sign it.
+
 A value for the transaction fee is already required to create and sign a transaction.
 
 Therefore, just use some arbitrary default value.
 In this example, we use 1 LSK.
 This value will be overwritten with the calculated minimum fee for the transaction in the next step.
-====
 
 .index.js
 [source,js]
@@ -64,8 +77,11 @@ const calcMinFee = async (client) => {
 }
 ----
 
-
 == Post the transaction with minimumFee
+
+In the next function, the minimum fee is directly used as fee for the transaction that is sent to the node.
+
+As last step, all above defined functions are called and the calculated minimum fee and the node API response are logged in the terminal.
 
 .index.js
 [source,js]
@@ -78,7 +94,7 @@ const postTx = async (client, minFee) => {
 	const signedTx = await client.transaction.create({
 		moduleID: 1000,
 		assetID: 0,
-		fee: minFee-BigInt("1"),
+		fee: minFee,
 		asset: {
 			helloString: "Hello World!"
 		}
@@ -103,7 +119,7 @@ getClient().then(client => {
 == Execute
 
 If the script is now executed in the terminal, it will display the minimum fee for the created transaction.
-Also it will directly try to send the transaction with the minimum fee.
+Also, it will directly try to send the transaction with the minimum fee.
 
 [source,bash]
 ----
@@ -114,6 +130,7 @@ Minimum fee for the current transaction:  127000n
 }
 ----
 
+If the transaction was accepted by the node, the respective trasnaction ID will be returned in the terminal.
 
 [TIP]
 ====
@@ -125,5 +142,4 @@ To verify that this is in fact the minimum fee, try to send a transaction with a
 Then, when executing the script again, you should see the following error in the terminal
 
  (node:14890) UnhandledPromiseRejectionWarning: Error: Error: Insufficient transaction fee. Minimum required fee is: 127000
-
 ====

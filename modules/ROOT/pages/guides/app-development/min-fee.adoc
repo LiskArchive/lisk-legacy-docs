@@ -8,72 +8,122 @@ The minimum allowed fee is calculated the following way for every transaction:
 
 The minimum fee allowed is directly connected to the size of the transaction object in bytes, after it has been encoded.
 
-== Create & sign the transaction
+Luckily, the `apiClient` is capable of doing all necessary steps of the calculation:
 
+ client.transaction.computeMinFee(signedTxWithSomeFee);
+
+All needed to calculate the fee of a transaction, which is passed as parameter to the `computeMinFee()` function.
+
+== Connect the API client to a node
+
+.index.js
 [source,js]
 ----
-import { transactions } from "@liskhq/lisk-client";
-import { assetSchema } from "schemas";
+const { apiClient, transactions } = require('@liskhq/lisk-client');
 
-const txWithSomeFee = {
-    moduleID: 1000,
-    assetID: 0,
-    nonce: BigInt(nonce),
-    fee: BigInt(transactions.convertLSKToBeddows("1")),
-    senderPublicKey: publicKey,
-    asset: {
-        helloString: "Hello World!"
-    }
+let clientCache;
+const nodeAPIURL = 'ws://localhost:8080/ws'
+
+const getClient = async () => {
+	if (!clientCache) {
+		clientCache = await apiClient.createWSClient(nodeAPIURL);
+	}
+	return clientCache;
 };
-
-const signedTxWithSomeFee = transactions.signTransaction(
-    assetSchema,
-    txWithSomeFee,
-    Buffer.from(networkIdentifier, "hex"),
-    passphrase
-);
 ----
 
 == Calculate minimumFee
 
+[NOTE]
+====
+A value for the transaction fee is already required to create and sign a transaction.
+
+Therefore, just use some arbitrary default value.
+In this example, we use 1 LSK.
+This value will be overwritten with the calculated minimum fee for the transaction in the next step.
+====
+
+.index.js
 [source,js]
 ----
-import {transactions} from "@liskhq/lisk-client";
+const { apiClient, transactions } = require('@liskhq/lisk-client');
 
 // ...
 
-const minFee = transactions.computeMinFee(schema, signedTxWithSomeFee);
+const calcMinFee = async (client) => {
+	const signedTxWithSomeFee = await client.transaction.create({
+		moduleID: 1000,
+		assetID: 0,
+		fee: BigInt(transactions.convertLSKToBeddows("1")),
+		asset: {
+			helloString: "Hello World!"
+		}
+	}, passphrase);
+
+	return client.transaction.computeMinFee(signedTxWithSomeFee);
+}
 ----
 
 
-== Recreate transaction with minimumFee
+== Post the transaction with minimumFee
 
+.index.js
 [source,js]
 ----
-import {transactions} from "@liskhq/lisk-client";
-import {apiClient} from "api";
+const { apiClient, transactions } = require('@liskhq/lisk-client');
 
 // ...
 
-const transaction = {
-    moduleID: 1000,
-    assetID: 0,
-    nonce: BigInt(nonce),
-    fee: minFee,
-    senderPublicKey: publicKey,
-    asset: {
-        helloString: "Hello World!"
-    }
-};
+const postTx = async (client, minFee) => {
+	const signedTx = await client.transaction.create({
+		moduleID: 1000,
+		assetID: 0,
+		fee: minFee-BigInt("1"),
+		asset: {
+			helloString: "Hello World!"
+		}
+	}, passphrase);
 
-const signedTx = transactions.signTransaction(
-    assetSchema,
-    transaction,
-    Buffer.from(networkIdentifier, "hex"),
-    passphrase
-);
+	return client.transaction.send(signedTx).then(res => {
+		return res;
+	});
+}
 
-apiClient.sendTransactions(signedTx).then(res => {
-    console.log(res);
-});
+getClient().then(client => {
+	calcMinFee(client).then(minFee => {
+		console.log("Minimum fee for the current transaction: ", minFee);
+		postTx(client, minFee).then((res) => {
+			console.log(res);
+			process.exit(0);
+		});
+	})
+})
 ----
+
+== Execute
+
+If the script is now executed in the terminal, it will display the minimum fee for the created transaction.
+Also it will directly try to send the transaction with the minimum fee.
+
+[source,bash]
+----
+% node index.js
+Minimum fee for the current transaction:  127000n
+{
+  transactionId: '85d90e6ac5c76538ce0b8625adf5c1db40b6209caceabc4e25cb41232cd1fdd1'
+}
+----
+
+
+[TIP]
+====
+To verify that this is in fact the minimum fee, try to send a transaction with a slightly smaller transaction fee:
+
+.Reducing the fee by 1 Beddow
+ fee: minFee-BigInt("1"),
+
+Then, when executing the script again, you should see the following error in the terminal
+
+ (node:14890) UnhandledPromiseRejectionWarning: Error: Error: Insufficient transaction fee. Minimum required fee is: 127000
+
+====

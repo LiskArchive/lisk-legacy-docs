@@ -1,7 +1,7 @@
 = Chapter 1: Blockchain
 Mona Bärenfänger <mona@lightcurve.io>
 // Settings
-:toc: preamble
+:toc:
 :toclevels: 4
 :idprefix:
 :idseparator: -
@@ -1099,11 +1099,57 @@ As can be seen, the following values have been pre-filled when creating the LNS 
 
 Now the following parts of the skeleton can be implemented:
 
+. <<account-schema>>
 . <<assets>>
 . <<actions>>
 . <<reducers>>
 
 The events and lifecycle hooks are not required in this use case, so the skeletons can remain as they are.
+
+=== Account schema
+
+Add the account schema for the module-specific account data:
+
+[source,js]
+----
+import { lnsAccountPropsSchema } from './data';
+
+export class LnsModule extends BaseModule {
+    // ...
+    public accountSchema = lnsAccountPropsSchema;
+    // ...
+}
+----
+
+Don't forget to add the `lnsAccountPropsSchema` to the file `data/account_props.ts`.
+
+.account_props.ts
+[source,js]
+----
+export const lnsAccountPropsSchema = {
+	$id: 'lisk/lns/lnsAccount',
+	type: 'object',
+	required: ['ownNodes', 'reverseLookup'],
+	properties: {
+		reverseLookup: {
+			dataType: 'bytes',
+			fieldNumber: 1,
+		},
+		ownNodes: {
+			type: 'array',
+			fieldNumber: 2,
+			items: {
+				dataType: 'bytes',
+			},
+		},
+	},
+	default: {
+		ownNodes: [],
+		reverseLookup: EMPTY_BUFFER,
+	},
+};
+----
+
 
 === Assets
 
@@ -1194,6 +1240,24 @@ export class LnsModule extends BaseModule {
 }
 ----
 
+Don't forget to add a new interface for `LNSNodeJSON` to the file `data/lns_node.ts`.
+
+.src/app/modules/lns/data/lns_node.ts
+[source,typescript]
+----
+// ...
+export interface LNSNodeJSON {
+	ownerAddress: string;
+	name: string;
+	ttl: number;
+	expiry: number;
+	records: LNSNodeRecordJSON[];
+	createdAt: number;
+	updatedAt: number;
+}
+// ...
+----
+
 === Reducers
 
 The methods required in the reducers are very similar to the methods in the <<actions>> above.
@@ -1249,24 +1313,6 @@ export class LnsModule extends BaseModule {
 	};
     // ...
 }
-----
-
-Don't forget to add a new interface for `LNSNodeJSON` to the file `data/lns_node.ts`.
-
-.src/app/modules/lns/data/lns_node.ts
-[source,typescript]
-----
-// ...
-export interface LNSNodeJSON {
-	ownerAddress: string;
-	name: string;
-	ttl: number;
-	expiry: number;
-	records: LNSNodeRecordJSON[];
-	createdAt: number;
-	updatedAt: number;
-}
-// ...
 ----
 
 === Utility functions

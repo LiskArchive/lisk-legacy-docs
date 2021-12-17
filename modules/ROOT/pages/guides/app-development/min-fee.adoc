@@ -1,0 +1,145 @@
+= Calculating the minimum fee for a transaction
+:toc:
+:sectnums:
+// Project URLs
+:url_hello_world: guides/app-development/setup.adoc
+
+For every transaction it is possible to calculate the minimum fee required by using the short formula listed below:
+
+ minFee = transactionBytes.length * minFeePerByte + baseFee
+
+It is directly connected to the size of the transaction object in bytes after it has been encoded, and also to the optional `baseFee` of a transaction.
+
+Fortunately, the `apiClient` is capable of performing all the necessary steps of the calculation:
+
+ client.transaction.computeMinFee(signedTxWithSomeFee);
+
+All that is required to calculate the fee of a transaction is the transaction itself, which is passed as a parameter to the `computeMinFee()` function of the API client.
+
+== Connect the API client to a node
+
+First, create a function `getClient()`, which will return an instance of the API client.
+
+The API client connects to a local node, having the RPC API enabled via WebSockets at port `8080`.
+
+If you wish to connect to a different node, simply update the API URL defined in `nodeAPIURL`.
+
+.index.js
+[source,js]
+----
+const { apiClient, transactions } = require('@liskhq/lisk-client');
+
+let clientCache;
+const nodeAPIURL = 'ws://localhost:8080/ws'
+
+const getClient = async () => {
+	if (!clientCache) {
+		clientCache = await apiClient.createWSClient(nodeAPIURL);
+	}
+	return clientCache;
+};
+----
+
+== Calculate minimumFee
+
+A new transaction can be created with the API client in a convenient manner, assuming that the respective transaction asset type is known to the respective blockchain application.
+Generally, a blockchain application is only aware of the assets that are part of modules registered to the application.
+
+In this example, connect to the xref:{url_hello_world}[Hello World blockchain application], so we can use the Hello transaction asset.
+The Hello asset is part of the Hello module which is registered to the 'Hello World' application.
+
+To calculate the minimum fee of a transaction, first create the respective transaction and sign it.
+
+A value for the transaction fee is already required to create and sign the transaction.
+
+Therefore, just use an arbitrary default value.
+In this example below, we have used 1 LSK.
+This value will be replaced with the calculated minimum fee for the transaction in the next step.
+
+.index.js
+[source,js]
+----
+const { apiClient, transactions } = require('@liskhq/lisk-client');
+
+// ...
+
+const calcMinFee = async (client) => {
+	const signedTxWithSomeFee = await client.transaction.create({
+		moduleID: 1000,
+		assetID: 0,
+		fee: BigInt(transactions.convertLSKToBeddows("1")),
+		asset: {
+			helloString: "Hello World!"
+		}
+	}, passphrase);
+
+	return client.transaction.computeMinFee(signedTxWithSomeFee);
+}
+----
+
+== Post the transaction with minimumFee
+
+In the next function, the minimum fee is directly used as the fee for the transaction that is sent to the node.
+
+For the final step, all the above defined functions are called and the calculated minimum fee and the node API response are logged in the terminal.
+
+.index.js
+[source,js]
+----
+const { apiClient, transactions } = require('@liskhq/lisk-client');
+
+// ...
+
+const postTx = async (client, minFee) => {
+	const signedTx = await client.transaction.create({
+		moduleID: 1000,
+		assetID: 0,
+		fee: minFee,
+		asset: {
+			helloString: "Hello World!"
+		}
+	}, passphrase);
+
+	return client.transaction.send(signedTx).then(res => {
+		return res;
+	});
+}
+
+getClient().then(client => {
+	calcMinFee(client).then(minFee => {
+		console.log("Minimum fee for the current transaction: ", minFee);
+		postTx(client, minFee).then((res) => {
+			console.log(res);
+			process.exit(0);
+		});
+	})
+})
+----
+
+== Execute
+
+If the script is now executed in the terminal, it will display the minimum fee for the created transaction.
+In addition, it will try to send the transaction with the minimum fee.
+
+[source,bash]
+----
+% node index.js
+Minimum fee for the current transaction:  127000n
+{
+  transactionId: '85d90e6ac5c76538ce0b8625adf5c1db40b6209caceabc4e25cb41232cd1fdd1'
+}
+----
+
+If the transaction was accepted by the node, the respective transaction ID will be logged in the terminal.
+
+[TIP]
+====
+To verify that this is in fact the minimum fee, try to send a transaction with a slightly smaller transaction fee:
+
+.Reducing the fee by 1 Beddow
+ fee: minFee-BigInt("1"),
+
+Then when executing the script again, you should see the following error in the terminal:
+
+ (node:14890) UnhandledPromiseRejectionWarning: Error: Error: Insufficient transaction fee. Minimum required fee is: 127000
+====

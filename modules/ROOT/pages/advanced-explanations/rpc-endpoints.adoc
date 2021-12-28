@@ -43,29 +43,22 @@ To see a full list of all available actions and events of your blockchain applic
 === `app:ready`
 Fired when the application starts.
 
-////
 ==== Returns
 .Example output
 [source,json]
 ----
-{
-   "module":"app",
-   "name":"ready",
-   "data":{}
-}
+{}
 ----
-////
 
 === `app:shutdown`
 Fired when the application stops.
-////
+
 ==== Returns
 .Example output
 [source,json]
 ----
-
+{}
 ----
-////
 
 === `app:network:ready`
 Fired when the network has at least one outbound connection.
@@ -117,14 +110,28 @@ Fired when the node received a block from the forked chain.
 
 === `app:chain:validators:change`
 Fired when the node updates the validator set.
-////
+
 ==== Returns
+
 .Example output
-[source,json]
+[source,js]
+----
+{ validators: [
+    {
+      address: 'b42580bf7501c6c69a37603b0d010077abb20ab6',
+      isConsensusParticipant: true,
+      minActiveHeight: 1
+    },
+    // ...
+    {
+      address: '8d146ccb9835beccd3b5646ba04c3942ec11636b',
+      isConsensusParticipant: true,
+      minActiveHeight: 1
+    }
+  ]
+}
 ----
 
-----
-////
 
 === `app:block:new`
 Fired when a new block is added to the blockchain.
@@ -161,30 +168,6 @@ Emitted when a block is deleted from the blockchain.
 Returns a list of all actions known to the application.
 
 Includes actions from registered modules and plugins.
-
-==== Example
-
-[source,js]
-----
-const { apiClient } = require('lisk-sdk');
-
-const getClient = async () => {
-  if (!clientCache) {
-    clientCache = await apiClient.createWSClient('ws://localhost:8080/ws');
-  }
-  return clientCache;
-};
-
-const useClient = async () => {
-  const client = await getClient();
-  const actions = await client.invoke('app:getRegisteredActions');
-  return actions;
-};
-
-useClient().then((val) => {
-  console.log("val:",val);
-});
-----
 
 ==== Input
 none
@@ -227,30 +210,6 @@ none
 Returns a list of all events known to the application.
 
 Includes events from registered modules and plugins.
-
-==== Example
-
-[source,js]
-----
-const { apiClient } = require('lisk-sdk');
-
-const getClient = async () => {
-  if (!clientCache) {
-    clientCache = await apiClient.createWSClient('ws://localhost:8080/ws');
-  }
-  return clientCache;
-};
-
-const useClient = async () => {
-  const client = await getClient();
-  const events = await client.invoke('app:getRegisteredEvents');
-  return events;
-};
-
-useClient().then((val) => {
-  console.log("val:",val);
-});
-----
 
 ==== Input
 none
@@ -521,18 +480,34 @@ Height of the previously last forged block.
 Must match the value in the `forger_info` data.
 <7> Optional: If true, overrides `maxHeightPreviouslyForged` and `maxHeightPrevoted` values in the forger_info data.
 
-////
+
 ==== Returns
 
-.Example output
+.Example output after disabling forging
 [source,json]
 ----
-
+{
+  "address": "d6a79b4f59f7da027405277b55783ba7dd255aa9"
+}
 ----
-////
+
 
 === `app:getAccount`
 Gets information about an account based on its address.
+
+==== Example
+
+[source,js]
+----
+client.invoke("app:getAccount", {
+    address: "d6a79b4f59f7da027405277b55783ba7dd255aa9"
+}).then(res => {
+    console.log(res);
+    const accObject = client.account.decode(res);
+    const accJSON = client.account.toJSON(accObject);
+    console.log(accJSON);
+});
+----
 
 ==== Input
 [source,typescript]
@@ -544,10 +519,34 @@ Gets information about an account based on its address.
 <1> Address as hex string.
 
 ==== Returns
-.Example output
+.Account binary example output
 [source,js]
 ----
-"0a147c1facd5a55044f4b2ec3329b8ae8382959d4d7e1206088099e6e1301a020801220208002a0c0a0a0a001800200028003000c23e0c0a0a48656c6c6f204c69736b"
+0a14d6a79b4f59f7da027405277b55783ba7dd255aa912070880d6d2c881031a020800220208002a190a170a0c64656c65676174655f313031180120ac1628003000c23e0e0a0c48656c6c6f20576f726c6421
+----
+
+.Account JSON example output
+[source,js]
+----
+{
+  address: 'd6a79b4f59f7da027405277b55783ba7dd255aa9',
+  token: { balance: '103500000000' },
+  sequence: { nonce: '0' },
+  keys: { numberOfSignatures: 0, mandatoryKeys: [], optionalKeys: [] },
+  dpos: {
+    delegate: {
+      username: 'delegate_101',
+      pomHeights: [],
+      consecutiveMissedBlocks: 1,
+      lastForgedHeight: 2860,
+      isBanned: false,
+      totalVotesReceived: '0'
+    },
+    sentVotes: [],
+    unlocking: []
+  },
+  hello: { helloMessage: 'Hello World!' }
+}
 ----
 
 === `app:getAccounts`
@@ -567,6 +566,7 @@ Gets information about multiple accounts based on their address.
 [source,json]
 ----
 [
+  "0a14d6a79b4f59f7da027405277b55783ba7dd255aa912070880d6d2c881031a020800220208002a190a170a0c64656c65676174655f313031180120ac1628003000c23e0e0a0c48656c6c6f20576f726c6421",
   "0a147c1facd5a55044f4b2ec3329b8ae8382959d4d7e1206088099e6e1301a020801220208002a0c0a0a0a001800200028003000c23e0c0a0a48656c6c6f204c69736b"
 ]
 ----
@@ -742,7 +742,7 @@ none
 
 ==== Returns
 .Example output
-[source,json]
+[source,js]
 ----
 [
   {
@@ -753,406 +753,7 @@ none
      "address":"dcb5bf35b6d521195e613c42483f520139e2331d",
      "nextForgingTime":1607606337
   },
-  {
-     "address":"df0e187bb3895806261c87cf66e1772566ee8e58",
-     "nextForgingTime":1607606347
-  },
-  {
-     "address":"e2950a9f07b44e724df2129360cc140293c08308",
-     "nextForgingTime":1607606357
-  },
-  {
-     "address":"e39316cc020089ea7a5614bcf69a8931c10630a7",
-     "nextForgingTime":1607606367
-  },
-  {
-     "address":"e9355152c117c9e1fad8be86e9abea961cef4a36",
-     "nextForgingTime":1607606377
-  },
-  {
-     "address":"f730cb929a1c45032387c345e10d2427bea55a5e",
-     "nextForgingTime":1607606387
-  },
-  {
-     "address":"fa526a1611ccc66dec815cb963174118074b736e",
-     "nextForgingTime":1607606397
-  },
-  {
-     "address":"ffce8ce225c5d80098f50e877125b655aef6d101",
-     "nextForgingTime":1607606407
-  },
-  {
-     "address":"03f6d90b7dbd0497dc3a52d1c27e23bb8c75897f",
-     "nextForgingTime":1607606417
-  },
-  {
-     "address":"0903f4c5cb599a7928aef27e314e98291d1e3888",
-     "nextForgingTime":1607606427
-  },
-  {
-     "address":"0ada6a2f6c8f891769366fc9aa6fd9f1facb36cf",
-     "nextForgingTime":1607606437
-  },
-  {
-     "address":"0bc3bec2fdb565996fd316e368e66e5d8e830808",
-     "nextForgingTime":1607606447
-  },
-  {
-     "address":"0d2c377e936b68c70066613b10c0fdad537f90da",
-     "nextForgingTime":1607606457
-  },
-  {
-     "address":"0f33a5033b750e6c4dca47e38ba020e912df143e",
-     "nextForgingTime":1607606467
-  },
-  {
-     "address":"1ac73bff74924ad9b74236c4962be27174ae87d0",
-     "nextForgingTime":1607606477
-  },
-  {
-     "address":"1c194c2be1cc53f663a93c64899cbaa34016f415",
-     "nextForgingTime":1607606487
-  },
-  {
-     "address":"2159f75e5440c36431aedbc7dc29a65a327778b8",
-     "nextForgingTime":1607606497
-  },
-  {
-     "address":"246fba5c519576d93c5fac899c44b29b72f526ae",
-     "nextForgingTime":1607606507
-  },
-  {
-     "address":"24c130eb6cc0d8f663a8f6d16ffc61f935a2e02e",
-     "nextForgingTime":1607606517
-  },
-  {
-     "address":"27843a60a1e044c1e6e3cf119fdf64eb2b3e0d94",
-     "nextForgingTime":1607606527
-  },
-  {
-     "address":"290abc4a2244bf0ecf5aa1ccee8ac8f60f8bce48",
-     "nextForgingTime":1607606537
-  },
-  {
-     "address":"2cf52c08cc76091d884e800c1c697b13f69907d4",
-     "nextForgingTime":1607606547
-  },
-  {
-     "address":"308a95d1d3f7bb556f48da4f4344566e59f6f1cb",
-     "nextForgingTime":1607606557
-  },
-  {
-     "address":"31204ad5b95dd922c2899aa5bf8e7ee5b7546af3",
-     "nextForgingTime":1607606567
-  },
-  {
-     "address":"31fe789b43277e35ab410f2afcfb574280af2dd8",
-     "nextForgingTime":1607606577
-  },
-  {
-     "address":"328d0f546695c5fa02105deb055cf2801d9b8ba1",
-     "nextForgingTime":1607606587
-  },
-  {
-     "address":"3b3e137b1bec6f20c9a8b2ad4f5784661fb0fa79",
-     "nextForgingTime":1607606597
-  },
-  {
-     "address":"3b96d8565569421f43684b2c4eaa0639cbb5e011",
-     "nextForgingTime":1607606607
-  },
-  {
-     "address":"3c80e7d9964a1c83a6dd5dc64e105e0e634bd58a",
-     "nextForgingTime":1607606617
-  },
-  {
-     "address":"3de95e18f18a54e2269bbf8f1a38ea70762c73fa",
-     "nextForgingTime":1607606627
-  },
-  {
-     "address":"3deeb0a7426a028b435b4ddd8d35ac85cf567237",
-     "nextForgingTime":1607606637
-  },
-  {
-     "address":"436b40f58c0c27ed133f6001a019ff25561efad4",
-     "nextForgingTime":1607606647
-  },
-  {
-     "address":"463e7e879b7bdc6a97ec02a2a603aa1a46a04c80",
-     "nextForgingTime":1607606657
-  },
-  {
-     "address":"4b6126597881cb6ba1a45c1f6286769e7a094fb4",
-     "nextForgingTime":1607606667
-  },
-  {
-     "address":"4e874bcfb6f5896fe9e5dab3b26f59b2e2a9c09b",
-     "nextForgingTime":1607606677
-  },
-  {
-     "address":"4f4422eb61c45edb4d76f10cd871c9f983f2ebaa",
-     "nextForgingTime":1607606687
-  },
-  {
-     "address":"4fd52f67f151fbbdda9dd92a714884a399830eca",
-     "nextForgingTime":1607606697
-  },
-  {
-     "address":"4fd8cc4e27a3489b57ed986efe3d327d3de40d92",
-     "nextForgingTime":1607606707
-  },
-  {
-     "address":"52f9cdcff0605241c78278690ae36eb0136a30ff",
-     "nextForgingTime":1607606717
-  },
-  {
-     "address":"5853a3f24990deecced49d6bc15990102ec0c33a",
-     "nextForgingTime":1607606727
-  },
-  {
-     "address":"58d907d26508603e838423daa2061c29c7a84950",
-     "nextForgingTime":1607606737
-  },
-  {
-     "address":"5ade564399e670bd1d429583059067f3a6ca2b7f",
-     "nextForgingTime":1607606747
-  },
-  {
-     "address":"5cd1d0ccf98f2bd5a4bfaa770d55f16498af0bcc",
-     "nextForgingTime":1607606757
-  },
-  {
-     "address":"5fbd442a4647b079cda1229ecf6d8f44f361c8ca",
-     "nextForgingTime":1607606767
-  },
-  {
-     "address":"6174515fa66c91bff1128913edd4e0f1de37cee0",
-     "nextForgingTime":1607606777
-  },
-  {
-     "address":"61f396d2a4a13ab7a39ba791fac4b921b54a208e",
-     "nextForgingTime":1607606787
-  },
-  {
-     "address":"6330fd8ae91df4a5d7fbc2390c182ec6676dc5a6",
-     "nextForgingTime":1607606797
-  },
-  {
-     "address":"657f610728eef97d55e50212871f0993bb7cc700",
-     "nextForgingTime":1607606807
-  },
-  {
-     "address":"65f927187bf96aac5d968fcc9351e5492b5f9356",
-     "nextForgingTime":1607606817
-  },
-  {
-     "address":"6b9895c31bcdb2d9c929b9da7e389ed91de672a0",
-     "nextForgingTime":1607606827
-  },
-  {
-     "address":"6e12e4498ae69fb07ff2d8aab036a911229d6c62",
-     "nextForgingTime":1607606837
-  },
-  {
-     "address":"6ffcd8ad547d8a549a31b25236e322c781a52d85",
-     "nextForgingTime":1607606847
-  },
-  {
-     "address":"70abf056bd92e8f77cfc551748fa54a4e3018d5f",
-     "nextForgingTime":1607606857
-  },
-  {
-     "address":"79f30c1cbc1b9c4949c8b85acc24a7578e01558b",
-     "nextForgingTime":1607606867
-  },
-  {
-     "address":"7d2c6781d873ed2ba7a87f46f735f5e15a41a6f1",
-     "nextForgingTime":1607606877
-  },
-  {
-     "address":"7d60db187337cbd881140d69d84c9246eda8382e",
-     "nextForgingTime":1607606887
-  },
-  {
-     "address":"8074f0d02f748fc55448a4bf200f1dade8517059",
-     "nextForgingTime":1607606897
-  },
-  {
-     "address":"82cbc7b39d35af358f9e2513af13b2f77b647a00",
-     "nextForgingTime":1607606907
-  },
-  {
-     "address":"8459b8870fcefff59f172d716b7bfe9fcc28d408",
-     "nextForgingTime":1607606917
-  },
-  {
-     "address":"8506f3c10f75044946f1a23a7caf578253649471",
-     "nextForgingTime":1607606927
-  },
-  {
-     "address":"8722453383f781d5427a4ee211020e49bf34a2b9",
-     "nextForgingTime":1607606937
-  },
-  {
-     "address":"89b144ecfdd5ea352083bf624d3cf842ec06a5e3",
-     "nextForgingTime":1607606947
-  },
-  {
-     "address":"8ac800124d5b16afd57b5cf7245edfcd5885ea3b",
-     "nextForgingTime":1607606957
-  },
-  {
-     "address":"8b1c221a030cf720736d9fb7d0499dd7276fc1b3",
-     "nextForgingTime":1607606967
-  },
-  {
-     "address":"8eceffd5a41e678b6467c9bc80ce35d2e8543d98",
-     "nextForgingTime":1607606977
-  },
-  {
-     "address":"9139c91f8a0aa1fb385770feaf299b99883aec2d",
-     "nextForgingTime":1607606987
-  },
-  {
-     "address":"936f3a0f4d776b6a7722ed126e8ff17b44d7e7b8",
-     "nextForgingTime":1607606997
-  },
-  {
-     "address":"94146c9889748c7b727eb3ac8c20e53c52effd32",
-     "nextForgingTime":1607607007
-  },
-  {
-     "address":"9b42e4264020f3c3dcaaed806578ccd469205060",
-     "nextForgingTime":1607607017
-  },
-  {
-     "address":"9cabee3d27426676b852ce6b804cb2fdff7cd0b5",
-     "nextForgingTime":1607607027
-  },
-  {
-     "address":"9d0149b0962d44bfc08a9f64d5afceb6281d7fb5",
-     "nextForgingTime":1607607037
-  },
-  {
-     "address":"a0620472cde03e77caece701ab7bc5928a5d367c",
-     "nextForgingTime":1607607047
-  },
-  {
-     "address":"a0bc50b27e7ac39060ed015a55f2f4508c84f0c2",
-     "nextForgingTime":1607607057
-  },
-  {
-     "address":"a28d5e34007fd8fe6d7903044eb23a60fdad3c00",
-     "nextForgingTime":1607607067
-  },
-  {
-     "address":"a6f6a0543ae470c6b056021cb2ac153368eafeec",
-     "nextForgingTime":1607607077
-  },
-  {
-     "address":"a9c66694dd65b2fdf40cdf45a0c308cbd38004fc",
-     "nextForgingTime":1607607087
-  },
-  {
-     "address":"ab0041a7d3f7b2c290b5b834d46bdc7b7eb85815",
-     "nextForgingTime":1607607097
-  },
-  {
-     "address":"abd2ed5ad35b3a0870aadae6dceacc988ba63895",
-     "nextForgingTime":1607607107
-  },
-  {
-     "address":"acfbdbaeb93d587170c7cd9c0b5ffdeb7ff9daec",
-     "nextForgingTime":1607607117
-  },
-  {
-     "address":"ad42f8e867d618171bf4982e64269442148f6e11",
-     "nextForgingTime":1607607127
-  },
-  {
-     "address":"aebd99f07218109162a905d0e0c91e58bedc83c5",
-     "nextForgingTime":1607607137
-  },
-  {
-     "address":"b11c5811ea074a30142d824b6e8cfd3df14b2688",
-     "nextForgingTime":1607607147
-  },
-  {
-     "address":"b485becd88db1ab3d556d405204451ba00adaa7d",
-     "nextForgingTime":1607607157
-  },
-  {
-     "address":"b543e2e592200beb38235f6e48f8abe1d87ad872",
-     "nextForgingTime":1607607167
-  },
-  {
-     "address":"b56c55b9a70c8e2f07979b862374aed0e92a6dda",
-     "nextForgingTime":1607607177
-  },
-  {
-     "address":"b7580969dd56151f608931f126f793bbf45d8fa0",
-     "nextForgingTime":1607607187
-  },
-  {
-     "address":"b76a0f1819c4be0a1482567ca9b9fbed3eda444c",
-     "nextForgingTime":1607607197
-  },
-  {
-     "address":"bd175729d4177259c71cf13fd4ecfb5d01542706",
-     "nextForgingTime":1607607207
-  },
-  {
-     "address":"be89f4e983dfb04e2b58a12eb9ed18149e108b07",
-     "nextForgingTime":1607607217
-  },
-  {
-     "address":"c3ab2ac23512d9bf62b02775e22cf80df814eb1b",
-     "nextForgingTime":1607607227
-  },
-  {
-     "address":"c697b620c7c4015e32dd7bdd7d0430b33404e107",
-     "nextForgingTime":1607607237
-  },
-  {
-     "address":"c98554123062ac5795a3ee905b081e863db5a818",
-     "nextForgingTime":1607607247
-  },
-  {
-     "address":"ca309a5f4bbf11ca86592febb6d2ccc78309f69e",
-     "nextForgingTime":1607607257
-  },
-  {
-     "address":"ca5f6d76eab6e4f5aacee2864c79034d7111b986",
-     "nextForgingTime":1607607267
-  },
-  {
-     "address":"cb579ee537b34926d47129a0b54c0e6d00ef3004",
-     "nextForgingTime":1607607277
-  },
-  {
-     "address":"d06fe6d3e5f7facb5855eca839422fe3824a5d6e",
-     "nextForgingTime":1607607287
-  },
-  {
-     "address":"d0a0e45b950e3871d8783b973409042b4ab382d4",
-     "nextForgingTime":1607607297
-  },
-  {
-     "address":"d2c9a93755aed20c4d8f55c1e92b812d2c7d49d2",
-     "nextForgingTime":1607607307
-  },
-  {
-     "address":"d3c8064d011ef853e3be506b95a045f41f78e72a",
-     "nextForgingTime":1607607317
-  },
-  {
-     "address":"d5bd2050b74b309d54819ca17add173c6fca1e16",
-     "nextForgingTime":1607607327
-  },
-  {
-     "address":"d5c4e380b1ec2f7f2068cfba9a90cb3ae7816110",
-     "nextForgingTime":1607607337
-  },
+  // ...
   {
      "address":"d5e1f52cbe4a11a3730b98f52109b57602a9c4a1",
      "nextForgingTime":1607607347

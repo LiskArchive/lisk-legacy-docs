@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Schemas - Lisk  SDK  Docs</title>
     <link rel="canonical" href="https://lisk.com/documentation/lisk-sdk/advanced-explanations/schemas.html">
-    <meta name="generator" content="Antora 2.3.4">
+    <meta name="generator" content="Antora 3.0.0">
     <link rel="stylesheet" href="../../_/css/site.css">
     <link rel="stylesheet" href="../../_/css/site-extra.css">
       <link rel="stylesheet" href="../../_/css/vendor/docsearch.min.css">
@@ -37,7 +37,6 @@
     <a class="version is-current" href="schemas.html">5.2.0 (latest)</a>
     <a class="version is-missing" href="../v4/index.html">4.0.0</a>
     <a class="version is-missing" href="../v3/index.html">3.0.2</a>
-    <a class="version is-missing" href="../v2/index.html">2.3.9</a>
   </div>
 </div>
           <button class="navbar-burger" data-target="topbar-nav">
@@ -432,7 +431,7 @@
     <li class="component">
       <span class="title">Lisk Core</span>
       <ul class="versions">
-        <li class="version is-latest">
+        <li class="version">
           <a href="../../lisk-core/index.html">3.0.2 (latest)</a>
         </li>
         <li class="version">
@@ -443,7 +442,7 @@
     <li class="component is-current">
       <span class="title">Lisk SDK</span>
       <ul class="versions">
-        <li class="version is-current is-latest">
+        <li class="version is-current">
           <a href="../index.html">5.2.0 (latest)</a>
         </li>
         <li class="version">
@@ -452,15 +451,12 @@
         <li class="version">
           <a href="../v3/index.html">3.0.2</a>
         </li>
-        <li class="version">
-          <a href="../v2/index.html">2.3.9</a>
-        </li>
       </ul>
     </li>
     <li class="component">
       <span class="title">Lisk Service</span>
       <ul class="versions">
-        <li class="version is-latest">
+        <li class="version">
           <a href="../../lisk-service/index.html">0.5.0 (latest)</a>
         </li>
       </ul>
@@ -487,7 +483,6 @@
     <a class="version is-current" href="schemas.html">5.2.0 (latest)</a>
     <a class="version is-missing" href="../v4/index.html">4.0.0</a>
     <a class="version is-missing" href="../v3/index.html">3.0.2</a>
-    <a class="version is-missing" href="../v2/index.html">2.3.9</a>
   </div>
 </div>
   <div class="edit-this-page"><a href="https://github.com/LiskHQ/lisk-docs/edit/docs-sdk/modules/ROOT/pages/advanced-explanations/schemas.adoc"><i class="icofont-ui-edit"></i>Edit this Page</a></div>
@@ -498,7 +493,7 @@
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>Schemas are used in various places in the <a href="../glossary.html#lisk-sdk" class="page">Lisk SDK</a> to encode and decode the data that is retrieved or pushed to the database.</p>
+<p>Schemas are used in various places in the Lisk SDK to encode and decode the data that is retrieved or pushed to the database.</p>
 </div>
 <div class="paragraph">
 <p>Schemas are specifically used in the following:</p>
@@ -506,10 +501,10 @@
 <div class="ulist">
 <ul>
 <li>
-<p><strong>modules</strong> to define the <a href="../introduction/modules.html#account-schema" class="page">accountSchema</a>, which consists of module-specific properties that are added to each account by the module.</p>
+<p><strong>modules</strong> to define the <a href="../introduction/modules.html#account-schema" class="xref page">accountSchema</a>, which consists of module-specific properties that are added to each account by the module.</p>
 </li>
 <li>
-<p><strong>assets</strong>, for the <a href="../introduction/modules.html#transaction-asset-schema" class="page">schema</a>, which defines the data structure and formats of the transaction asset.</p>
+<p><strong>assets</strong>, for the <a href="../introduction/modules.html#transaction-asset-schema" class="xref page">schema</a>, which defines the data structure and formats of the transaction asset.</p>
 </li>
 <li>
 <p>modules and/or assets, to <a href="#decoding-and-encoding-data">decode/encode</a> other specific data from the database, such as blocks, transactions, account state, and chain state data.</p>
@@ -520,9 +515,22 @@
 <div id="toc" class="toc">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#schema-format">Schema Format</a></li>
+<li><a href="#schema-format">Schema Format</a>
+<ul class="sectlevel2">
+<li><a href="#id">$id</a></li>
+<li><a href="#type">type</a></li>
+<li><a href="#required">required</a></li>
+<li><a href="#properties">properties</a></li>
+<li><a href="#default">default</a></li>
+</ul>
+</li>
 <li><a href="#data-types">Data types</a></li>
-<li><a href="#decoding-and-encoding-data">Decoding and encoding data</a></li>
+<li><a href="#decoding-and-encoding-data">Decoding and encoding data</a>
+<ul class="sectlevel2">
+<li><a href="#with-the-api-client">With the API client</a></li>
+<li><a href="#with-lisk-codec">With lisk-codec</a></li>
+</ul>
+</li>
 <li><a href="#converting-between-formats">Converting between formats</a>
 <ul class="sectlevel2">
 <li><a href="#string-to-buffer">String to Buffer</a></li>
@@ -562,72 +570,112 @@ If the data type of a property is either an <code>object</code> or an <code>arra
 </tr>
 </table>
 </div>
-<div class="admonitionblock warning">
+<div class="listingblock">
+<div class="title">Example of an account schema of a module</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">export const lnsAccountPropsSchema = {
+	$id: 'lisk/lns/lnsAccount',
+	type: 'object',
+	required: ['ownNodes', 'reverseLookup'],
+	properties: {
+		reverseLookup: {
+			dataType: 'bytes',
+			fieldNumber: 1,
+		},
+		ownNodes: {
+			type: 'array',
+			fieldNumber: 2,
+			items: {
+				dataType: 'bytes',
+			},
+		},
+	},
+	default: {
+		ownNodes: [],
+		reverseLookup: EMPTY_BUFFER,
+	},
+};</code></pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="id"><a class="anchor" href="#id"></a>$id</h3>
+<div class="paragraph">
+<p>Unique identifier of the schema throughout the system.</p>
+</div>
+<div class="paragraph">
+<p>The $id property is directly inherited from the JSON-schema.
+You can read more about the <code>id</code> property on <a href="https://json-schema.org/understanding-json-schema/structuring.html#id" class="bare" target="_blank" rel="noopener">https://json-schema.org/understanding-json-schema/structuring.html#id</a>.</p>
+</div>
+<div class="paragraph">
+<p>In general, adhere to the following criteria:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Use unique IDs across the system.</p>
+</li>
+<li>
+<p>Use path like format for easy readability, (it is not an actual requirement).</p>
+</li>
+<li>
+<p>in order to ensure no mixing of any schema with other registered schemas occurs, use one fixed identifier for your app in each ID.</p>
+</li>
+<li>
+<p><code>`</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="type"><a class="anchor" href="#type"></a>type</h3>
+<div class="paragraph">
+<p>Root type of the schema must be type <code>object</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="required"><a class="anchor" href="#required"></a>required</h3>
+<div class="paragraph">
+<p>Required schema properties.</p>
+</div>
+<div class="paragraph">
+<p>Regarding account and asset schemas:</p>
+</div>
+<div class="admonitionblock important">
 <table>
 <tr>
 <td class="icon">
-<i class="fa icon-warning" title="Warning"></i>
+<i class="fa icon-important" title="Important"></i>
 </td>
 <td class="content">
-<div class="paragraph">
-<p>If the schema is used for serialization it is recommended to put all properties as <code>required</code> to guarantee the <a href="https://github.com/LiskHQ/lips/blob/master/proposals/lip-0027.md#uniqueness-of-encoding" target="_blank" rel="noopener">uniqueness of encoding</a>.</p>
-</div>
+If the schema is used for serialization it is recommended to put all properties as <code>required</code> to guarantee the <a href="https://github.com/LiskHQ/lips/blob/master/proposals/lip-0027.md#uniqueness-of-encoding" target="_blank" rel="noopener">uniqueness of encoding</a>.
 </td>
 </tr>
 </table>
 </div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const myAssetSchema = {
-    $id: "lisk/nft/create", <i class="conum" data-value="1"></i><b>(1)</b>
-    type: "object", <i class="conum" data-value="2"></i><b>(2)</b>
-    required: ["minPurchaseMargin", "initValue", "name"], <i class="conum" data-value="3"></i><b>(3)</b>
-    properties: { <i class="conum" data-value="4"></i><b>(4)</b>
-      minPurchaseMargin: {
-        dataType: "uint32",
-        fieldNumber: 1,
-      },
-      initValue: {
-        dataType: "uint64",
-        fieldNumber: 2,
-      },
-      name: {
-        dataType: "string",
-        fieldNumber: 3,
-      },
-    },
-    default: { <i class="conum" data-value="5"></i><b>(5)</b>
-      minPurchaseMargin: 0,
-      initValue: 1,
-      name: "",
-    },
-  };</code></pre>
+</div>
+<div class="sect2">
+<h3 id="properties"><a class="anchor" href="#properties"></a>properties</h3>
+<div class="paragraph">
+<p>Properties of the schema.</p>
 </div>
 </div>
-<div class="colist arabic">
+<div class="sect2">
+<h3 id="default"><a class="anchor" href="#default"></a>default</h3>
+<div class="paragraph">
+<p>Default property values.</p>
+</div>
+<div class="admonitionblock important">
 <table>
 <tr>
-<td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>Unique identifier of the schema throughout the system.
-The <code>$id</code> doesn&#8217;t need to follow a particular format, except that it needs to be unique throughout the application.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>Root type must be type <code>object</code>.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>Required properties.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="4"></i><b>4</b></td>
-<td>Properties of the schema.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="5"></i><b>5</b></td>
-<td>Default property values.</td>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+Do not define any <code>default</code> properties for asset schemas.
+</td>
 </tr>
 </table>
+</div>
 </div>
 </div>
 </div>
@@ -710,6 +758,14 @@ When the data is retrieved from the database by a module or plugin of the blockc
 <div class="sect1">
 <h2 id="decoding-and-encoding-data"><a class="anchor" href="#decoding-and-encoding-data"></a>Decoding and encoding data</h2>
 <div class="sectionbody">
+<div class="sect2">
+<h3 id="with-the-api-client"><a class="anchor" href="#with-the-api-client"></a>With the API client</h3>
+<div class="paragraph">
+<p>Please refer to the dedicated guide <a href="../guides/app-development/decoding-transactions-blocks.html" class="xref page">Decoding transactions and blocks with the API Client</a>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="with-lisk-codec"><a class="anchor" href="#with-lisk-codec"></a>With lisk-codec</h3>
 <div class="paragraph">
 <p>To conveniently decode and encode the data structures stored on the blockchain, such as blocks, transactions, account state, and chain state, use the <code>codec</code> library.
 The library can be imported from the following NPM packages:</p>
@@ -775,14 +831,19 @@ await stateStore.chain.set(
 </div>
 </div>
 </div>
+</div>
 <div class="sect1">
 <h2 id="converting-between-formats"><a class="anchor" href="#converting-between-formats"></a>Converting between formats</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Some data is stored as <code>Buffer</code> in the database, but in other parts of the application, the data is expected as a hexadecimal string.</p>
+<p>Account addresses are stored as binary data in the database.
+However, in other parts of the application, the data is expected as a hexadecimal string, which is more human-readable.</p>
 </div>
 <div class="paragraph">
-<p>In these cases, it is necessary to convert between <code>Buffer</code> and <code>string</code> as described below:</p>
+<p>On the other hand, the node API always returns the data such as blocks and transactions in hex string. However, please be aware that to decode transactions or blocks, they need to be in <code>Buffer</code> format.</p>
+</div>
+<div class="paragraph">
+<p>In these cases, it is necessary to convert between <code>Buffer</code> and <code>String</code> as described below:</p>
 </div>
 <div class="sect2">
 <h3 id="string-to-buffer"><a class="anchor" href="#string-to-buffer"></a>String to Buffer</h3>

@@ -1,4 +1,4 @@
-= Decoding transactions and blocks with the API Client
+= Decoding & encoding transactions and blocks with the API Client
 Mona Bärenfänger <mona@lightcurve.io>
 // Settings
 :toc: preamble
@@ -6,6 +6,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 :idprefix:
 :idseparator: -
 :experimental:
+:source-highlighter: highlight.js
 // URLs
 :url_example_helloapp: https://github.com/LiskHQ/lisk-sdk-examples/tree/development/guides/04-plugin/hello_app
 // Project URLS
@@ -41,13 +42,12 @@ const getClient = async () => {
 };
 ----
 
-== Decoding a block and all its' included transactions
+== Decoding & encoding blocks and their included transactions
 
-Write a simple script to decode the blocks.
-Create a new file `getBlockById.js`:
+The following script shows how to decode & encode a block by a given ID.
 
-.Simple script for decoding a block by a given ID
-[source,js]
+.`getBlockById.js`:
+[source%linenums,js,highlight='1..9|2..4|6..8']
 ----
 const { apiClient } = require('@liskhq/lisk-client');
 let clientCache;
@@ -70,16 +70,22 @@ const blockId = process.argv[2];
 getClient().then((client) => {
 	client.invoke("app:getBlockByID", {
 		id: blockId
-    }).then(res => {
-        // Block as Buffer
-		console.log(res);
-		const blockObject = client.block.decode(res);
-		const blockJSON = client.block.toJSON(blockObject);
-        // Block as JSON object
-		console.log(blockJSON);
+	}).then(res => {
+		const decodedBlock = client.block.decode(res);
+		const blockJSON = client.block.toJSON(decodedBlock);
+		const blockObject = client.block.fromJSON(blockJSON);
+		const encodedBlockObject = client.block.encode(blockBuffer);
+		const encodedBlockAsHexString = encodedBlockAsBuffer.toString('hex');
+		console.log("Encoded block: ", res)
+		console.log("Decoded block: ", decodedBlock);
+		console.log("Block as JSON: ", blockJSON);
 		if (blockJSON.payload && blockJSON.payload.length > 0) {
 			console.log(blockJSON.payload[0].asset);
 		}
+		console.log("Block from JSON to Object: ", blockObject);
+		console.log("Encoded block object: ", encodedBlockObject);
+		console.log("Encoded block as hex string: ", encodedBlockAsHexString)
+		console.log("res = encodedBlockAsHexString? - ", (res == encodedBlockAsHexString));
 		process.exit(0);
 	});
 });
@@ -92,43 +98,52 @@ Assuming you wish to decode a block with the ID `52303f33684f5ffae4d307747db36d8
 node getBlockById.js 52303f33684f5ffae4d307747db36d86bde6e14d76958e197cb82eeab5ca6f92
 ----
 
-The decoded block object is then displayed in the terminal:
+The decoded block JSON will look similar to the following, as shown below:
 
-[source,js]
+.Block and transaction payload as JSON
+[%collapsible]
+====
+[source,json]
 ----
 {
   header: {
     version: 2,
-    timestamp: 1639054812,
-    height: 1552,
-    previousBlockID: '27c9fb40b2710052e6261b7433f56550bcc2eefdabd32c9a81dc1452ac004d81',
-    transactionRoot: 'b7ec27cb8fd9b542efa4bdd3f4e6a0654dbb9488fa663d2558db60e6a9fb10cd',
-    generatorPublicKey: '75578bd534f1c12c08e371a4ffdb697395e0d35f0beddec97354b9ed63ca4798',
-    reward: '0',
-    signature: '13ccd72ea09c89bb7f076c4e3658dd5fb9fdb30168a89d91f5d58f86bd3906f8bfe54b1fd69e9347626bf8c5bfea7345be477323fe3c12a2f3809d46d7dbb908',
+    timestamp: 1641301752,
+    height: 3445,
+    previousBlockID: 'ac4d1c2af42f7c596c65e172d5ac68cd47e7c3d539979b648b0778910181cb7a',
+    transactionRoot: 'eb3dc80f04a469b9c6224c2e69c3b22b01a81e8986cf42037dc5b8ff768f0e8c',
+    generatorPublicKey: 'e8a9c5bb058377aee7ba833fe9f5cf4de3bd02fd9ec6fe749b00542d93b44ca0',
+    reward: '500000000',
+    signature: '3a0bdd57baa6a79d80c6004dcfa96420398fcb2da9fe75f5883ce9f7767692c290dd1f3f70509d0f5c62970567dc496fe7491f5c88f15a4b83067d7bd7440204',
     asset: {
-      maxHeightPreviouslyForged: 1539,
-      maxHeightPrevoted: 1478,
-      seedReveal: '78bea5a107b317f6d3621b88a49ccc6f'
+      maxHeightPreviouslyForged: 3406,
+      maxHeightPrevoted: 3356,
+      seedReveal: '0445aab446d7bcfc533a40bad1056986'
     },
-    id: '52303f33684f5ffae4d307747db36d86bde6e14d76958e197cb82eeab5ca6f92'
+    id: '1dd06d95755984741260be1a7b07c512ddb8a1a1fb5c422d7f5b14995f8a85aa'
   },
   payload: [
     {
-      moduleID: 1000,
+      moduleID: 2,
       assetID: 0,
-      nonce: '7',
-      fee: '100000000',
-      senderPublicKey: 'bad983c72bed43fd274f852658c298b74c71ab6fc50508879fef309e3836384b',
+      nonce: '2',
+      fee: '141000',
+      senderPublicKey: '5133af7944acf5278b0310a11c06134f80ab4546d77d1b0e027c8430a7d2bb92',
       signatures: [Array],
-      id: '6a50f991566f8516084ce53c2f71feb8d4dc6b7724061b8e6292af730479b398',
+      id: '2dd42458cd3255bb2db9f19a32519e9dd7705d273683114822fbcfd85a1cea00',
       asset: [Object]
     }
   ]
 }
+{
+  amount: '100000000',
+  recipientAddress: 'ed86183c22f8399f7aa28f7d2c2f1680224f7281',
+  data: ''
+}
 ----
+====
 
-== Decoding a transaction
+== Decoding & encoding transactions
 
 The transaction ID is returned every time a transaction is sent to the node.
 
@@ -136,7 +151,7 @@ Write a simple script that decodes the transaction.
 Create a new file `getTxById.js`:
 
 .Example for decoding a transaction by a given ID
-[source,js]
+[source,js,linenums]
 ----
 const { apiClient } = require('@liskhq/lisk-client');
 let clientCache;
@@ -159,12 +174,18 @@ getClient().then((client) => {
 	client.invoke("app:getTransactionByID", {
 		id: txId
 	}).then(res => {
-        // Transaction as Buffer
-		console.log(res);
-		const txObject = client.transaction.decode(res);
-		const txJSON = client.transaction.toJSON(txObject);
-        // Transaction as JSON object
-		console.log(txJSON);
+		const decodedTx = client.transaction.decode(res);
+		const txJSON = client.transaction.toJSON(decodedTx);
+		const txObject = client.transaction.fromJSON(txJSON);
+		const encodedTxObject = client.transaction.encode(txBuffer)
+		const encodedTxAsHexString = encodedTxAsBuffer.toString('hex')
+		console.log("Encoded tx: ", res)
+		console.log("Decoded tx: ", decodedTx);
+		console.log("Tx as JSON: ", txJSON);
+		console.log("Tx from JSON to Object: ", txObject);
+		console.log("Encoded tx object: ", encodedTxObject);
+		console.log("Encoded tx as hex string: ", encodedTxAsHexString)
+		console.log("res = encodedTxAsHexString? - ", (res == encodedTxAsHexString));
 		process.exit(0);
 	});
 });
@@ -177,20 +198,28 @@ Assuming you wish to decode a transaction with the ID `130227fa63ac60edbbacb6dae
 node getTxById.js 130227fa63ac60edbbacb6dae709cf9304ab0181ef7ea28105764f6240d012f2
 ----
 
-The decoded transaction object is then returned to the terminal:
+The decoded transaction JSON will look similar to the following, as shown below:
 
-[source,js]
+.Transaction as JSON
+[%collapsible]
+====
+[source,json]
 ----
 {
-  moduleID: 1000,
+  moduleID: 2,
   assetID: 0,
-  nonce: '6',
-  fee: '100000000',
-  senderPublicKey: 'bad983c72bed43fd274f852658c298b74c71ab6fc50508879fef309e3836384b',
+  nonce: '1',
+  fee: '142000',
+  senderPublicKey: '5133af7944acf5278b0310a11c06134f80ab4546d77d1b0e027c8430a7d2bb92',
   signatures: [
-    '26c7248a01e1ff604d93280b520b13d7814dffb4ae3f28ca66d30f6dcad7de891c22e68ff2b53bc9186ce807d12e96f5319673a9866dd6f5828908fb33c86409'
+    'c6df8ccf2a50662cfea83660977b0093f7315b77a476f6e9b654d1c8296cd04afaa66f0225862a85fc50116b6ded743e245b5975df5b5ead2139382aa2c84002'
   ],
-  asset: { helloString: 'hurrsa' },
-  id: '130227fa63ac60edbbacb6dae709cf9304ab0181ef7ea28105764f6240d012f2'
+  asset: {
+    amount: '1000000000',
+    recipientAddress: 'ed86183c22f8399f7aa28f7d2c2f1680224f7281',
+    data: ''
+  },
+  id: 'a0217443d5b9c427fcc5e89b71c3dd0b87cb516976a7683f52b5cb04eb46eb9b'
 }
 ----
+====

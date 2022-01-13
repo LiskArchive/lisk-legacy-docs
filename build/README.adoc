@@ -1,0 +1,103 @@
+= Lisk Docs
+:imagesdir: assets
+:toc: preamble
+
+Lisk uses https://antora.org/[Antora] as documentation generator.
+
+Click here to see the live version of the https://lisk.io/documentation/lisk-sdk/index.html[Lisk Documentation].
+
+xref:CONTRIBUTING.adoc[How to contribute to the Lisk Documentation]
+
+== Overview
+
+Content::
+The Content of the whole Lisk documentation is stored in branches:
++
+----
+docs-core
+docs-sdk
+----
+Documentation for previous versions of the SDK and Core is stored in branches following the naming convention:
++
+----
+docs-core-VERSION
+docs-sdk-VERSION
+----
+where `VERSION` is always referring to the corresponding software version.
+
+UI::
+The presentation of the documentation is stored completely seperate form the actual content.
+It's stored on the `antora` branch.
+
+Building::
+The `build` branch stores the `site.yml` file, which is used to generate the Lisk Documentation using Antora.
+
+== Building the documentation
+
+General workflow to follow, to update the Lisk documentation.
+
+=== Prerequisites
+
+The following software packages are required:
+
+- make
+- node.js
+- antora (`npm install --global @antora/cli@2.1 @antora/site-generator-default@2.1`)
+- gulp (`npm install --global gulp-cli`)
+
+It's also required to have the `antora` and `master` directories setup as working trees to their respective branches.
+This can be done like so:
+
+```
+git worktree add master master
+git worktree add antora antora
+```
+
+Note: if you're making a pull request against either the master or antora branches, you might want to temporarily use different branches instead. Refer to `man git worktree` for further details
+
+You'll notice that if you do a `git branch` now that you have 3 branches checked out.
+
+=== Build Steps
+
+Building at this point should be as simple as running `make`
+
+Once this is complete, the changes will be in the `master` directory/branch and ready for committing and pushing.
+
+[source,bash]
+----
+make
+cd master
+git add .
+git commit -m "Docs update"
+git push origin master
+----
+
+==== Build Details
+
+It's a 2 step process where the UI bundle is built first followed by the static site which uses the UI bundle.
+
+This can be done manually by going into the antora directory and running:
+`git pull origin antora && npm ci && gulp bundle`
+
+More details on this can be found in antora/README.adoc
+
+And then, from the root directory, running `antora site.yml`.
+
+=== Generate API spec
+
+. Generate Asciidoc files from swagger spec
++
+[source,bash]
+----
+cd lisk-sdk/framework/src/modules/http_api/schema
+swagger2markup convert -i ./swagger.yml -d ~/swagger-spec
+----
+. Merge generated files and remove outdated links from description.
+
+=== Update Aloglia search index
+
+[source,bash]
+----
+cd docsearch-scraper
+pipenv run ./docsearch docker:run ./config.json
+----

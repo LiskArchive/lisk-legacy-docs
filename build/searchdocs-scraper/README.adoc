@@ -1,0 +1,168 @@
+= How to Update the Search Index
+// Settings:
+:hide-uri-scheme:
+:idprefix:
+:idseparator: -
+// Project URLs:
+:url-repo: https://gitlab.com/liskhq/lisk-docs
+// External URLs:
+:url-algolia: https://www.algolia.com/doc/guides/getting-started/what-is-algolia/
+:url-docsearch-scraper-repo: https://github.com/algolia/docsearch-scraper
+:url-docsearch-scraper-docs: https://community.algolia.com/docsearch/run-your-own.html
+:url-chromedriver: https://sites.google.com/a/chromium.org/chromedriver/
+:url-pipenv: https://pipenv.readthedocs.io/en/latest/
+:url-doc-susemanager: https://github.com/SUSE/doc-susemanager/wiki/Setup-Algolia-Search-with-Antora
+:url-antora-search: https://gitlab.com/antora/antora-ui-default/issues/44
+
+This guide contains information for how to manage the search index for the Antora documentation site.
+It documents where the search index is located and how to update it.
+
+The procedure described in this guide is used by the GitLab CI job named "index" defined in [.path]_.gitlab-ci.yml_.
+This document is helpful to understand how the CI job works, or, if necessary, how to perform the update manually.
+
+== Overview
+
+The search index for the documentation is hosted by {url-algolia}[Algolia] in the Antora application.
+The name of the index is *antora-docs*.
+The index is populated by the {url-docsearch-scraper-repo}[docsearch scraper] (aka crawler).
+
+The sections below document the prerequisites for running the docsearch scraper and how to run it to update the index.
+
+== Prerequisites
+
+* git (to clone the docsearch-scraper repository)
+* {url-pipenv}[pipenv] (to manage a local Python installation and packages)
+* Chrome/Chromium and {url-chromedriver}[chromedriver] (or Docker)
+
+== Setup
+
+To begin, clone the {url-repo} repository using git and switch to it:
+
+[subs=attributes+]
+ $ git clone {url-repo} &&
+   cd "`basename $_`" &&
+   cd docsearch-scraper
+
+Staying in the [.path]_docsearch_ folder, also clone the {url-docsearch-scraper-repo} repository using git:
+
+[subs=attributes+]
+ $ git clone {url-docsearch-scraper-repo} scraper &&
+   cd scraper
+
+Next, create an [.path]_.env_ file in the directory of the cloned scraper repository as shown below.
+This file is used to define the application ID (`APPLICATION_ID`) and write API key (`API_KEY`) for the scraper.
+_To protect the API key, only the final four characters of the API key are shown here._
+
+.{blank}.env
+[source,bash]
+----
+APPLICATION_ID=E80Q5UHPOS
+API_KEY=****************************7ac1
+----
+
+Then change the permissions of this file so it cannot be read by others.
+
+ $ chmod 600 .env
+
+NOTE: The API key used in this file is different than the one used for searching.
+In the Algolia dashboard, it's labeled as the Admin API Key.
+
+*To run the provided Docker container directly, skip to <<docker run>>.
+Otherwise, continue following the instructions.*
+
+The next step is to use {url-pipenv}[pipenv] to set up a Python environment and install the required packages.
+
+ $ pipenv install
+
+If you don't plan to use the Docker image, you'll need to install both Chrome (or Chromium) and {url-chromedriver}[chromedriver].
+Run the following command to make sure Chromedriver is installed successfully:
+
+ $ chromedriver --version
+
+Finally, you'll need the docsearch configuration file.
+This configuration file is located in the playbook repository for the Antora documentation.
+If you've followed the instructions thus far, this file will be located in the parent of the current directory (i.e., [.path]_../config.json_).
+
+You're now ready to run the scraper.
+
+== Usage
+
+There are three ways to run the scraper:
+
+* <<docsearch run>> (uses local packages and chromedriver)
+* <<docsearch docker:run>> (uses local packages and the provided Docker image)
+* <<docker run>> (uses the provided Docker image; used by the CI job)
+
+Keep in mind that building the index takes several minutes because the scraper has to visit every page in the site.
+
+=== docsearch run
+
+WARNING: The `docsearch run` command will not be available if the APPLICATION_ID and API_KEY are not defined in the [.path]_.env_ file.
+
+To update the index, pass the config file to the `docsearch run` command:
+
+ $ pipenv run ./docsearch run ../config.json
+
+If that command succeeds, it means the index is now updated.
+
+TIP: You can remove the Python environment and installed packages by typing `pipenv --rm`.
+
+If that command fails, you may need to run it in the provided Docker container.
+
+=== docsearch docker:run
+
+WARNING: The `docsearch docker:run` command will not be available if the APPLICATION_ID and API_KEY are not defined in the [.path]_.env_ file.
+
+First, make sure you have Docker running on your machine and that you can list images.
+
+ $ docker images
+
+Then, pass the config file to the `docsearch docker:run` command, which launches the provided Docker container (algolia/docsearch-scraper):
+
+ $ pipenv run ./docsearch docker:run ../config.json
+
+If that command succeeds, it means the index is now updated.
+
+TIP: You can remove the Python environment and installed packages by typing `pipenv --rm`.
+
+=== docker run
+
+Using Docker, it's possible to bypass the use of pipenv by invoking `docker run` directly.
+This is the strategy used by the CI job (with some modifications required to make it work in GitLab CI).
+
+First, make sure you have Docker running on your machine and that you can list images.
+
+ $ docker images
+
+Then, create a script named `scrape` with the following contents:
+
+.scrape
+[source,bash]
+----
+#!/bin/bash
+
+source .env
+
+docker run \
+  -e APPLICATION_ID=$APPLICATION_ID \
+  -e API_KEY=$API_KEY \
+  -e CONFIG="`cat ${1:-config.json}`" \
+  -t --rm algolia/docsearch-scraper
+----
+
+Now make the `scrape` script executable:
+
+ $ chmod 755 scrape
+
+Finally, run the `scrape` script, passing the configuration file as the first argument:
+
+ $ ./scrape ../config.json
+
+If that command succeeds, it means the index is now updated.
+
+== See Also
+
+* {url-docsearch-scraper-docs}[Official documentation for the docsearch scraper]
+* {url-doc-susemanager}[How to update the search index more info]
+* {url-antora-search}[Open issue about adding autocomplete search to Antora default UI]
+

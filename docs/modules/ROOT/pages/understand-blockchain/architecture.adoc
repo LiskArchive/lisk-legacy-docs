@@ -1,1 +1,127 @@
-= Framework architecture
+= SDK Architecture
+Mona Bärenfänger <mona@lightcurve.io>
+//Settings
+:page-aliases: lisk-framework/index.adoc
+:toc: preamble
+:idprefix:
+:idseparator: -
+:imagesdir: ../../assets/images
+:docs_sdk: 6.0.0@lisk-sdk::
+// URLs
+:nodejs: https://nodejs.org/en/
+// Project URLs
+:url_introduction_bapps: understand-blockchain/index.adoc
+:url_introduction_bapps_defaultmodules: understand-blockchain/index.adoc#default-modules
+:url_introduction_bapps_diagram: understand-blockchain/index.adoc#blockchain-application-architecture-diagram
+:url_guides_config: build-blockchain/configure-app.adoc
+:url_guides_genesis_block: build-blockchain/create-genesis-block.adoc
+:url_guides_setup: build-blockchain/get-started.adoc
+:url_references_config: {docs_sdk}config.adoc
+:url_references_commander: {docs_sdk}reference/lisk-commander/index.adoc
+:url_references_elements: {docs_sdk}reference/lisk-elements/index.adoc
+:url_references_framework: {docs_sdk}reference/lisk-framework/index.adoc
+:url_references_framework_basemodule: {docs_sdk}reference/lisk-framework/index.adoc#the-basemodule
+:url_protocol: understand-blockchain/lisk-protocol/index.adoc
+:url_protocol_genesis_block: understand-blockchain/lisk-protocol/blocks.adoc#genesis-block
+:url_lisk_sdk: glossary.adoc#lisk-sdk
+:url_lisk_framework: glossary.adoc#lisk-framework
+
+The xref:{url_lisk_sdk}[Lisk SDK] operates on the {nodejs}[Node.js^] runtime and consists primarily of an application framework (xref:{url_lisk_framework}[Lisk Framework]).
+It contains a collection of libraries providing blockchain application functionalities (xref:{url_references_elements}[Lisk Elements]), and a powerful Command Line Interface (xref:{url_references_commander}[Lisk Commander]), which allows developers to bootstrap and manage their xref:{url_introduction_bapps}[].
+
+image::diagram_sdk.png[Diagram]
+
+== SDK components
+
+[width="100%",cols="23%,77%",options="header",]
+|===
+| Component | Description
+| xref:{url_references_framework}[Lisk Framework] | Lisk Framework is an application framework responsible for establishing and maintaining the interactions between the different xref:{url_introduction_bapps_diagram}[components of a blockchain application].
+
+| xref:{url_references_elements}[Lisk Elements] | Lisk Elements is a collection of libraries, each of them implements a certain type of blockchain application functionality such as cryptography, transactions, p2p, etc.
+Each library is designed to be compatible with xref:{url_protocol}[].
+
+| xref:{url_references_commander}[Lisk Commander] | Lisk Commander is a command line tool which provides various commands to simplify the development and management of blockchain applications.
+For example, it allows to xref:{url_guides_setup}[bootstrap] a complete blockchain application with just 1 command.
+|===
+
+== Application
+
+The framework architecture is constructed of three different layers of abstractions: `Node`, `Modules` and `Plugins` (see the xref:{url_introduction_bapps_diagram}[architecture diagram] of a blockchain application).
+The `Application` object encapsulates all together to provide a user-facing interface.
+
+The `Application` class is the entry point to create a blockchain application.
+It can be instantiated in the following two ways:
+
+[source,js]
+----
+//Initiates the Application including all SDK default modules
+const app = Application.defaultApplication(genesisBlock, config);
+//Initiates the Application without the SDK default modules
+const app = new Application(genesisBlock, config);
+----
+
+`genesisBlock` represents the <<genesis-block>> and `config` represents the <<configuration>> for the application.
+
+.Recommended: Use the default application
+[TIP]
+The recommended method to create an `Application` instance is to use the *defaultApplication*, as it comes with the xref:{url_introduction_bapps_defaultmodules}[SDK default modules].
+If the class constructor is used, all modules need to be registered manually.
+
+== Configuration
+
+The application config object is passed to the `Application` and must follow the configuration schema.
+
+It is not necessary to include all options that are included in the schema.
+The application will use the default configuration options in case a config option is not specified.
+
+More information about how to configure a blockchain application can be found in the guide xref:{url_guides_config}[] and the xref:{url_references_config}[].
+
+
+== Genesis block
+
+The xref:{url_protocol_genesis_block}[genesis block] describes the very first block in the blockchain.
+It defines the initial state of the blockchain at the start of the network.
+
+The genesis block is not forged by a delegate, such as all of the other blocks which come after the genesis block.
+Instead it is defined by the developer, when creating the Application instance of the blockchain application.
+
+TIP: Check out the xref:{url_guides_genesis_block}[] guide to learn how to create a valid genesis block.
+
+.Genesis block schema
+[source,js]
+----
+const genesisBlock = {
+  header: {
+    generatorPublicKey: "",
+    // height can be either 0 or regenesis height
+    height: number,
+    // empty buffer or merkle root of the previous blocks from previous network
+    previousBlockID: Buffer,
+    reward: 0n,
+    signature: "",
+    // timestamp of the blockchain in unix timestamp in second
+    timestamp: number,
+    // transactionRoot is alway empty hash
+    transactionRoot: Buffer.from('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', 'hex'),
+    version: 0,
+    asset: {
+      // number of initial round to use the initDelegates
+      initRounds: number,
+      // address of initial delegates
+      initDelegates: Buffer[],
+      // encoded accounts for the initial state
+      accounts: Buffer[],
+    },
+  },
+  payload: [],
+}
+----
+
+== Life cycle of a block
+
+If a node receives a new block, it always performs the following actions:
+
+The colored steps are the steps exposed to the developer via the base module and base asset, see the xref:{url_references_framework_basemodule}[Lisk Framework reference].
+
+image::intro/block-lifecycle.png[]

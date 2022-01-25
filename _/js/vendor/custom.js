@@ -1,1 +1,1 @@
-!function(){"use strict";"lisk"===document.querySelector(".nav-container").getAttribute("data-component")&&document.querySelectorAll(".nav-item:not(.single-page)")[3].classList.add("is-active"),document.querySelectorAll(".nav-item:not(.single-page)")[1].classList.add("is-active");for(var e=document.querySelectorAll("img"),t=0;t<e.length;t++)e[t].setAttribute("data-zoomable","true");mediumZoom("[data-zoomable]")}();
+!function(){"use strict";for(var t=document.querySelectorAll("img"),e=0;e<t.length;e++)t[e].setAttribute("data-zoomable","true");mediumZoom("[data-zoomable]")}();

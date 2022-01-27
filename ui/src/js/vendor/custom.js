@@ -14,6 +14,10 @@
 
 let themetoggle = document.getElementById("theme-toggle");
 
+document
+  .querySelector(`link[title="Dark"]`)
+  .setAttribute("disabled", "disabled");
+
 themetoggle.onclick = function(){
   console.log("clicked!");
   themetoggle.classList.toggle("dark");

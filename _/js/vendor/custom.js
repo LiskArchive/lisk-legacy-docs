@@ -1,1 +1,1 @@
-!function(){"use strict";for(var t=document.querySelectorAll("img"),e=0;e<t.length;e++)t[e].setAttribute("data-zoomable","true");mediumZoom("[data-zoomable]")}();
+!function(){"use strict";for(var t=document.querySelectorAll("img"),o=0;o<t.length;o++)t[o].classList.contains("copy-icon")||t[o].setAttribute("data-zoomable","true");mediumZoom("[data-zoomable]")}();

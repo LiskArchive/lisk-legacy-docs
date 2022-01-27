@@ -12,7 +12,42 @@
   mediumZoom('[data-zoomable]')
 })()
 
+console.log(uiRootPath)
+
 let themetoggle = document.getElementById("theme-toggle");
+let themelink = document.getElementById('theme');
+let theme = window.localStorage.getItem('data-theme');
+if(theme && theme == 'dark') {
+  themelink.setAttribute('href', uiRootPath+'/css/dark-site.css');
+  themetoggle.classList.add("dark");
+} else if ( theme && theme == 'light') {
+  themelink.setAttribute('href', uiRootPath+'/css/site.css');
+  themetoggle.classList.remove("dark");
+} else {
+  themelink.setAttribute('href', uiRootPath+'/css/site.css');
+  themetoggle.classList.remove("dark");
+}
+checkBox.checked = theme == 'dark' ? true : false;
+
+function toggleTheme() {
+  // Obtains an array of all <link>
+  // elements.
+  // Select your element using indexing.
+  let theme = document.getElementById('theme');
+
+
+  // Change the value of href attribute
+  // to change the css sheet.
+  if (theme.getAttribute('href') == uiRootPath+'/css/site.css') {
+    theme.setAttribute('href', uiRootPath+'/css/dark-site.css');
+    window.localStorage.setItem('data-theme', 'dark');
+  } else {
+    theme.setAttribute('href', uiRootPath+'/css/site.css');
+    window.localStorage.setItem('data-theme', 'light');
+  }
+}
+
+/*let themetoggle = document.getElementById("theme-toggle");
 
 document
   .querySelector(`link[title="Dark"]`)
@@ -39,7 +74,7 @@ themetoggle.onclick = function(){
       .querySelector(`link[title="Dark"]`)
       .setAttribute("disabled", "disabled");
   }
-};
+};*/
 
 /*
 console.log(themetoggle);

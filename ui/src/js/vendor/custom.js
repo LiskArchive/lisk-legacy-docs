@@ -4,7 +4,7 @@
   var images = document.querySelectorAll('img')
 
   for (var i = 0; i < images.length; i++) {
-    if (!images[i].classList.contains('copy-icon')){
+    if (!(images[i].classList.contains('copy-icon') || images[i].classList.contains('pencil'))){
       images[i].setAttribute('data-zoomable', 'true')
     }
   }

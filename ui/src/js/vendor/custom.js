@@ -18,23 +18,6 @@
   } else {
     set_style_from_localstorage('Default');
   }
-
- /* let themetoggle = document.getElementById("theme-toggle");
-  let themelink = document.getElementById('theme');
-  let theme = window.localStorage.getItem('data-theme');
-
-  if(theme && theme == 'dark' && themelink.getAttribute('href') !== uiRootPath+'/css/dark-site.css') {
-    console.log('piep');
-    themelink.setAttribute('href', uiRootPath+'/css/dark-site.css');
-    themetoggle.classList.add("dark");
-  } else if ( theme && theme == 'light') {
-    themelink.setAttribute('href', uiRootPath+'/css/site.css');
-    themetoggle.classList.remove("dark");
-  } else {
-    themelink.setAttribute('href', uiRootPath+'/css/site.css');
-    themetoggle.classList.remove("dark");
-    window.localStorage.setItem('data-theme', 'light');
-  }*/
 })()
 
 console.log(uiRootPath);
@@ -80,19 +63,3 @@ function set_localstorage (title) {
     window.localStorage.setItem('data-theme', 'Default');
   }
 }
-
-
-/*function toggleTheme() {
-  let theme = window.localStorage.getItem('data-theme');
-  let themelink = document.getElementById('theme');
-
-  if (theme.getAttribute('href') == uiRootPath+'/css/site.css') {
-    themelink.setAttribute('href', uiRootPath+'/css/dark-site.css');
-    window.localStorage.setItem('data-theme', 'Dark');
-    themetoggle.classList.add("dark");
-  } else {
-    themelink.setAttribute('href', uiRootPath+'/css/site.css');
-    window.localStorage.setItem('data-theme', 'Default');
-    themetoggle.classList.remove("dark");
-  }
-};*/

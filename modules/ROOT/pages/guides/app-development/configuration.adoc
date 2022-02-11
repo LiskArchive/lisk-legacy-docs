@@ -5,9 +5,8 @@ Mona Bärenfänger <mona@lightcurve.io>
 :toc:
 :idprefix:
 :idseparator: -
-:v_sdk: v5.2.0
+:v_sdk: v5.2.1
 // URLs
-
 :url_github_config_devnet: https://github.com/LiskHQ/lisk-sdk/blob/{v_sdk}/sdk/src/samples/config_devnet.json
 :url_github_config_schema_genesiscfg: https://github.com/LiskHQ/lisk-sdk/blob/{v_sdk}/framework/src/schema/application_config_schema.ts#L61
 :url_github_config_schema_default: https://github.com/LiskHQ/lisk-sdk/blob/{v_sdk}/framework/src/schema/application_config_schema.ts#L362
@@ -22,6 +21,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_guides_module: guides/app-development/module.adoc
 :url_guides_plugin: guides/app-development/plugin.adoc
 :url_guides_setup: guides/app-development/setup.adoc
+:url_guides_non_forging_protection: guides/node-management/non-forging-node-protection.adoc
 :url_intro_modules_genesiscfg: introduction/modules.adoc#genesis-config
 :url_references_config: references/config.adoc
 :url_references_cli_start: references/application-cli.adoc#start
@@ -30,36 +30,53 @@ Mona Bärenfänger <mona@lightcurve.io>
 
 How to configure a blockchain application.
 
-.Prerequisites
-[NOTE]
-====
-To use this guide, it is assumed that the following criteria have been met:
+The `Application` instance expects two arguments:
 
-. Lisk Commander is installed, and a basic blockchain application is already initialized, as explained in the guide xref:{url_guides_setup}[].
-. A new module `HelloModule` is created, as explained in the guide xref:{url_guides_module}[].
-. A new asset `HelloAsset` is created, as explained in the guide xref:{url_guides_asset}[].
-. A new plugin `LatestHelloPlugin` is created, as explained in the previous guide xref:{url_guides_plugin}[].
-====
+. A configuration file
+. A genesis block
 
-== Config file location
+.src/app/index.js
+[source,js]
+----
+import { Application, PartialApplicationConfig } from 'lisk-sdk';
+import { registerModules } from './modules';
+import { registerPlugins } from './plugins';
 
-The configuration of a blockchain application is stored under the following path:
+export const getApplication = (
+	genesisBlock: Record<string, unknown>,
+	config: PartialApplicationConfig,
+): Application => {
+	const app = Application.defaultApplication(genesisBlock, config);
 
- ~/.lisk/APP_NAME/config/default/config.json <1>
+	registerModules(app);
+	registerPlugins(app);
 
-<1> Replace `APP_NAME` with the name of the blockchain application.
+	return app;
+};
+----
 
-After editing the config file, it is required to restart the blockchain application, so that the changes can take effect.
+== Setting a custom configuration
 
-[IMPORTANT]
-====
-The configuration file located in `APP_NAME/config/default/config.json` is only used during the initial bootstrapping of the blockchain application.
-Making updates in this config file will have no further effect on the blockchain application, so please ensure you are updating the correct `config.json` file.
+To start the application with a custom `config.json`, add the `--config` flag to the xref:{url_references_cli_start}[start command] with a custom path to the configuration file, e.g. `--config my_custom_config.json`.
 
-Alternatively, to start the application with a different `config.json` add the `--config` flag to the xref:{url_references_cli_start}[start command] with a custom path to the configuration file, e.g. `--config ~/my_custom_config.json`.
-====
+[source,bash]
+----
+bin/run start --config my_custom_config.json --override-config
+----
 
-== Example: Configuration of the Hello World application
+=== How to create a custom config
+
+The optimal method to create a custom configuration for your app is to copy an existing `config.json` and adjust it to suit your requirements.
+
+For example, copy the default `config.json` of the blockchain application:
+
+.In the root directory of the blockchain application
+[source,bash]
+----
+cp config/default/config.json my_custom_config.json
+----
+
+=== Example: Configuration of the Hello World application
 
 Until now, it was not necessary to use any custom configurations for the Hello World application.
 However, if we want to interact with the application as described in the next guide xref:{url_guides_dashboard}[], it is necessary to change the RPC (Remote-Procedure-Call), configuration of the application, so that the dashboard plugin can connect to it.
@@ -69,7 +86,7 @@ It is now necessary to enable the RPC API and change the communication protocol 
 
 Adjust the RPC configuration as follows:
 
-.~/.lisk/hello_app/config/default/config.json
+.my_custom_config.json
 [source,js]
 ----
 {
@@ -87,7 +104,15 @@ Adjust the RPC configuration as follows:
 }
 ----
 
-Now restart the app to apply the new configuration.
+Restart the app to apply the new configuration.
+
+== Config file location
+
+The current configuration of a blockchain application is stored under the following path after the application is started for the first time:
+
+ ~/.lisk/APP_NAME/config/default/config.json <1>
+
+<1> Replace `APP_NAME` with the name of the blockchain application.
 
 == List of all available config options
 
@@ -175,7 +200,7 @@ The `rpc` key holds all configuration options related to the API access of the b
 ====
 Allowing arbitrary machines to access the rpc port (ws) is dangerous and strongly discouraged -- access should be strictly limited to trusted machines.
 
-To achieve this, configure a firewall that only allows access from whitelisted IPs.
+For reference see the guide xref:{url_guides_non_forging_protection}[]
 ====
 
 Please see the xref:{url_rpc_endpoints}[] and xref:{url_architecture_communication}[] pages for more information about the API access options.
@@ -188,6 +213,9 @@ Please see the xref:{url_rpc_endpoints}[] and xref:{url_architecture_communicati
         "enable": true, //true or false
         "mode": "ws", //"ws" or "ipc"
         "port": 8080, //websocket port
+        "host": "127.0.0.1" //<1>
     },
 }
 ----
+
+<1> Change the host to 0.0.0.0 if you wish to connect to the node from a remote server.

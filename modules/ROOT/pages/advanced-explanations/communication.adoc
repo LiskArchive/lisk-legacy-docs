@@ -8,7 +8,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 :imagesdir: ../../assets/images
 //External URLs
 :url_npm_lisk_sdk: https://www.npmjs.com/package/lisk-sdk
-:url_ipc_socket: https://en.wikipedia.org/wiki/Unix_domain_socket
+:url_wiki_ipc: https://en.wikipedia.org/wiki/Inter-process_communication
 :url_websocket: https://en.wikipedia.org/wiki/WebSocket
 :url_eda: https://en.wikipedia.org/wiki/Event-driven_architecture
 // Project URLs
@@ -31,18 +31,15 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_guides_asset: guides/app-development/asset.adoc
 :url_lisk_sdk: glossary.adoc#lisk-sdk
 
-The open Lisk communication architecture is based on {url_ipc_socket}[IPC Unix Sockets^] and {url_websocket}[WebSocket (WS)^].
-The xref:{url_advanced_architecture}[Application] can be configured to either expose an IPC or a WS API that can be used by internal components such as modules and plugins, as well as by any external service like other scripts in JS, a tool in Rust, or a Python daemon.
-The xref:{url_lisk_sdk}[Lisk SDK] offers two different RPC (Remote-Procedure-Call), API modes: `ipc` (Inter-process communication) and `ws` (WebSocket).
-If the node and the frontend are running on the same machine, it is recommended to use the `ipc` mode.
-To enable the API to be reachable remotely, use the `ws` option.
+The open Lisk communication architecture is based on two different RPC (Remote-Procedure-Call), API modes: {url_wiki_ipc}[Inter-Process Communication (IPC)^] and {url_websocket}[WebSocket (WS)^].
+The xref:{url_advanced_architecture}[Application] can be configured to either expose an IPC or a WS API that can be used by internal components such as modules and plugins, as well as by any external service such as other scripts in JS, a tool in Rust, or a Python daemon.
 
 TIP: For more information about the configuration of the RPC endpoints, check out the xref:{url_guides_config_rpc}[configuration guide].
 
 image::intro/communication-architecture.png[]
 
 [[the-api-client]]
-== The API client (external communication)
+== The API client
 
 The xref:{url_references_elements_apiclient}[] simplifies sending API requests to a blockchain application via IPC or WS.
 
@@ -73,9 +70,6 @@ const getClient = async () => {
 const apiRequest = async () => {
   const client = await getClient();
   const blockAtHeight123 = await client.block.getByHeight(123);
-  client.subscribe('app:block:new', ( data ) => {
-    console.log('new block:',data);
-  });
   return blockAtHeight123;
 };
 
@@ -102,18 +96,30 @@ const getClient = async () => {
 const apiRequest = async () => {
   const client = await getClient();
   const blockAtHeight123 = await client.block.getByHeight(123);
-  client.subscribe('app:block:new', ( data ) => {
-    console.log("new block:",data);
-  });
   return blockAtHeight123;
 };
 
 apiRequest().then((val) => {
-  console.log("val:",val);
+  console.log("block 123: ",val);
 });
 ----
 --
 =====
+
+=== IPC vs WS
+
+There are two ways through which a node can communicate via the API:
+
+* IPC (Inter-Process-Communication)
+* WS (WebSocket)
+
+In general, IPC is preferred for local connections because it...
+
+* is slightly faster
+* supports synchronous data exchange
+* does not use the ports of the system, avoiding any risk of collision when the port is already used by another application
+
+WS, on the contrary, should be used if the node API communicates with services on remote servers.
 
 == Channels
 
@@ -286,5 +292,8 @@ Example for subscribing to an event by utilizing <<the-api-client>>:
 ----
 client.subscribe('pluginAlias:timestamp', ( data ) => {
   console.log(data);
+});
+client.subscribe('app:block:new', ( data ) => {
+  console.log('new block:',data);
 });
 ----

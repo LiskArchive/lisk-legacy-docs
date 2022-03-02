@@ -1,1 +1,272 @@
 = Plugins
+Mona Bärenfänger <mona@lightcurve.io>
+//Settings
+:toc: preamble
+:idprefix:
+:idseparator: -
+:imagesdir: ../../assets/images
+:docs_sdk: lisk-sdk::
+// URLs
+:url_github_hello_plugin: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/hello-world/blockchain_app/hello_plugin/index.js
+:url_github_nft_plugin: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/nft/blockchain_app/nft_api_plugin/index.js
+:url_github_srs_api_plugin: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/social-recovery/blockchain_app/plugins/srs_api_plugin/index.js
+:url_github_srs_data_plugin: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/social-recovery/blockchain_app/plugins/srs_data_plugin/index.js
+// Project URLs
+:url_advanced_architecture_config: understand-blockchain/architecture.adoc#configuration
+:url_advanced_communication: understand-blockchain/endpoints.adoc
+:url_advanced_communication_pluginschannel: {url_advanced_communication}#channel-for-plugins
+:url_advanced_communication_alias: {url_advanced_communication}#alias
+:url_advanced_communication_interfaces: {url_advanced_communication}#interfaces
+:url_advanced_communication_invoke_actions: {url_advanced_communication}#how-to-invoke-actions
+:url_advanced_schemas: understand-blockchain/codec-schema.adoc
+:url_guides_setup: build-blockchain/create-blockchain-app.adoc
+:url_guides_setup_helloapp: {url_guides_setup}#the-hello-world-application
+:url_guides_plugin: build-blockchain/create-plugin.adoc
+:url_introduction_modules: understand-blockchain/modules-commands.adoc
+:url_references_config: {docs_sdk}config.adoc
+:url_references_framework_baseplugin: {docs_sdk}references/framework-class-interfaces.adoc#the-baseplugin
+:url_rpc_endpoints: understand-blockchain/endpoints.adoc
+:url_tutorials_nft: tutorial/nft.adoc
+:url_tutorials_srs: tutorial/srs.adoc
+
+Plugins offer useful features to the application and external services, which are part of the off-chain logic of the blockchain application.
+In other words, a plugin will never change the state of the blockchain itself, contrary to the xref:{url_introduction_modules}[modules], which hold the on-chain logic of the blockchain application.
+
+.When to create a plugin
+****
+Plugins are able to perform the following:
+
+* Search the blockchain data.
+* Aggregate the blockchain data.
+* Provide a UI for the blockchain application.
+* Automate the blockchain logic, such as automatically sending transactions.
+* Add a proxy to the application interfaces.
+****
+
+[TIP]
+
+====
+For a more practical guide how to create a new plugin, check out the guide xref:{url_guides_plugin}[].
+
+If you wish to view an example of a fully implemented plugin, check out the following examples:
+
+* The {url_github_hello_plugin}[Hello plugin] from the xref:{url_guides_setup_helloapp}[Hello World] blockchain application.
+* The {url_github_nft_plugin}[NFT plugin] from the xref:{url_tutorials_nft}[].
+* The {url_github_srs_api_plugin}[SRS API plugin] and the {url_github_srs_data_plugin}[SRS data plugin] from the xref:{url_tutorials_srs}[].
+====
+
+== Adding a plugin to the application
+
+Plugins need to be registered to become available in the application.
+If the application was xref:{url_guides_setup}[bootstrapped] with Lisk Commander, they are registered in the file `src/app/plugins.ts`.
+
+.Example: How to register a plugin with the application in `plugins.ts`
+[source,typescript]
+----
+import { Application } from 'lisk-sdk';
+import { SomePlugin } from "some-plugin"; // <1>
+import { OtherPlugin } from "other-plugin";
+
+const customConfig = {
+    port: 5555,
+    host: "127.0.0.1"
+};
+
+export const registerPlugins = (app: Application): void => {
+    app.registerPlugin(SomePlugin); // <2>
+    app.registerPlugin(OtherPlugin, customConfig); // <3>
+};
+----
+
+<1> Import the plugin from an NPM package or from a local path.
+<2> Add this line to register the plugin to the application.
+<3> Optional: provide a custom configuration for the plugin.
+If no custom config option is provided, the plugin will use the default config options, defined in <<plugin-defaults>>.
+
+== Plugin anatomy
+
+image::intro/plugin-diagram.png[]
+
+== The plugin class
+
+All custom plugins must extend the `BasePlugin` exposed by the SDK.
+The interface for the `BasePlugin` is described in the xref:{url_references_framework_baseplugin}[Lisk Framework reference].
+
+[source,js]
+----
+const { BasePlugin } = require("lisk-sdk");
+
+class ForgerPlugin extends BasePlugin {
+
+}
+----
+
+== Plugin Alias
+
+The unique identifier of the plugin.
+
+It is used as prefix in the xref:{url_advanced_communication_alias}[alias] of events and actions, and as a key label to to add the properties of the <<plugin-defaults>> to the xref:{url_advanced_architecture_config}[application configuration].
+
+.Example: Alias of the forger plugin
+[source,typescript]
+----
+public static get alias(): string {
+    return 'forger';
+}
+----
+
+
+== Plugin info
+
+Plugin meta information.
+
+.Example: Info of the forger plugin
+[source,typescript]
+----
+public static get info(): PluginInfo {
+    return {
+        author: packageJSON.author,
+        version: packageJSON.version,
+        name: packageJSON.name,
+    };
+}
+----
+
+== Plugin defaults
+
+The configuration schema for this plugin.
+
+After registering the plugin with the application, it can be configured in the xref:{url_advanced_architecture_config}[application configuration], using the defined schema here.
+The configuration options can then be accessed in the plugin under the variable `this.options`.
+
+.Example: Config schema of the Dashboard plugin
+[source,js]
+----
+get defaults() {
+    return {
+        $id: '#/plugins/lisk-dashboard/config',
+        type: 'object',
+        properties: {
+            applicationName: {
+                type: 'string',
+                description: 'Application name to be shown near Logo',
+            },
+            applicationUrl: {
+                type: 'string',
+                format: 'uri',
+                description: 'URL to connect',
+            },
+            port: {
+                type: 'integer',
+                minimum: 1,
+                maximum: 65535,
+            },
+            host: {
+                type: 'string',
+                format: 'ip',
+            },
+        },
+        required: [],
+        default: {
+            applicationUrl: 'ws://localhost:8080/ws',
+            port: 4005,
+            host: '127.0.0.1',
+            applicationName: 'Lisk',
+        },
+    }
+};
+----
+
+== Interfaces
+
+Plugins can expose interfaces (<<actions>> and <<events>>), which allow other plugins and external tools to interact with the plugin.
+
+TIP: View the "Interfaces" section of the xref:{url_advanced_communication_interfaces}[Communication] page to see an overview of the different interfaces and their accessibility in modules, plugins, and external services.
+
+=== Actions
+
+Actions are functions which can be xref:{url_advanced_communication_invoke_actions}[invoked] via Remote-Procedure-Calls (RPC) by plugins and external services, to request data from the plugin.
+
+.Example: Actions of the forger plugin
+[source,typescript]
+----
+public get actions(): ActionsDefinition {
+    return {
+        getVoters: async () =>
+            controllers.voters.getVoters(this._channel, this.codec, this._forgerPluginDB),
+        getForgingInfo: async () =>
+            controllers.forgingInfo.getForgingInfo(this._channel, this.codec, this._forgerPluginDB),
+    };
+}
+----
+
+=== Events
+
+Events are <<channel,published>> by the plugin on relevant occasions.
+Other plugins and external services can subscribe to these events and as a result, they will be notified immediately every time a new event is published.
+
+.Example: Events of the forger plugin
+[source,typescript]
+----
+public get events(): EventsDefinition {
+    return ['block:created', 'block:missed'];
+}
+----
+
+== Execution logic
+
+=== load()
+
+The `load()` method will be invoked by the controller to load the plugin.
+It contains the plugin logic that is executed when the plugin is loaded in the application.
+
+It can be used to retrieve, mutate, store and/or publish data in a specific manner, depending on the purpose of the plugin.
+
+The `channel`, which is available inside of the `load()` function, allows access to the xref:{url_rpc_endpoints}[] in order to subscribe to events or to invoke certain actions within the application to retrieve the desired data.
+
+
+The following variables are accessible in the `load()` function:
+
+* `channel`: See xref:{url_advanced_communication_pluginschannel}[Channel for plugins].
+* `this.options`: The <<plugin-defaults>>, as defined in the xref:{url_advanced_architecture_config}[application configuration].
+
+.Example: load() function of the forger plugin
+[source,typescript]
+----
+public async load(channel: BaseChannel): Promise<void> {
+    // Merge custom plugin configuration with default options
+    const options = objects.mergeDeep({}, config.defaultConfig.default, this.options) as Options;
+    this._channel = channel;
+
+    this._forgerPluginDB = await getDBInstance(options.dataPath);
+
+    this._channel.once('app:ready', async () => {
+        // Fetch and set forger list from the app
+        await this._setForgersList();
+
+        // Fetch and set transactions fees
+        await this._setTransactionFees();
+
+        // Sync the information
+        this._syncingWithNode = true;
+        await this._syncForgerInfo();
+        this._syncingWithNode = false;
+
+        // Listen to new block and delete block events
+        this._subscribeToChannel();
+    });
+}
+----
+
+=== unload()
+
+The `unload()` method will be invoked by the controller to unload the plugin correctly.
+It is executed on application shutdown.
+
+.Example: unload() function of the forger plugin
+[source,typescript]
+----
+public async unload(): Promise<void> {
+    await this._forgerPluginDB.close();
+}
+----

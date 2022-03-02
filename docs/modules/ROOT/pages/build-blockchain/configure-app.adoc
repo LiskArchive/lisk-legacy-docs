@@ -1,10 +1,221 @@
-= How to configure a blockchain applicatoin
+= How to configure a blockchain application
 Mona Bärenfänger <mona@lightcurve.io>
 // Settings
+:page-aliases: configuration.adoc
 :toc:
 :idprefix:
 :idseparator: -
-:v_sdk: v5.2.0
+:v_sdk: v5.2.1
+:docs-sdk: lisk-sdk::
 // URLs
-
+:url_github_config_devnet: https://github.com/LiskHQ/lisk-sdk/blob/{v_sdk}/sdk/src/samples/config_devnet.json
+:url_github_config_schema_genesiscfg: https://github.com/LiskHQ/lisk-sdk/blob/{v_sdk}/framework/src/schema/application_config_schema.ts#L61
+:url_github_config_schema_default: https://github.com/LiskHQ/lisk-sdk/blob/{v_sdk}/framework/src/schema/application_config_schema.ts#L362
+:url_github_genesis_block: https://github.com/LiskHQ/lisk-sdk/blob/{v_sdk}/sdk/src/samples/genesis_block_devnet.json
+:url_github_sdk: https://github.com/LiskHQ/lisk-sdk/tree/{v_sdk}
 // Project URLs
+:url_architecture_config: understand-blockchain/architecture.adoc#configuration
+:url_architecture_communication: understand-blockchain/endpoints.adoc
+:url_architecture_genesis_block: understand-blockchain/architecture.adoc#genesis-block
+:url_guides_asset: build-blockchain/create-command.adoc
+:url_guides_dashboard: build-blockchain/using-dashboard.adoc
+:url_guides_module: build-blockchain/create-module.adoc
+:url_guides_plugin: build-blockchain/create-plugin.adoc
+:url_guides_setup: build-blockchain/create-blockchain-app.adoc
+:url_guides_non_forging_protection: run-blockchain/non-forging-node-protection.adoc
+:url_intro_modules_genesiscfg: understand-blockchain/modules.adoc#genesis-config
+:url_references_config: {docs-sdk}config.adoc
+:url_references_cli_start: {docs-sdk}application-cli.adoc#start
+:url_rpc_endpoints: understand-blockchain/endpoints.adoc
+
+How to configure a blockchain application.
+
+The `Application` instance expects two arguments:
+
+. A configuration file
+. A genesis block
+
+.src/app/index.js
+[source,js]
+----
+import { Application, PartialApplicationConfig } from 'lisk-sdk';
+import { registerModules } from './modules';
+import { registerPlugins } from './plugins';
+
+export const getApplication = (
+	genesisBlock: Record<string, unknown>,
+	config: PartialApplicationConfig,
+): Application => {
+	const app = Application.defaultApplication(genesisBlock, config);
+
+	registerModules(app);
+	registerPlugins(app);
+
+	return app;
+};
+----
+
+== Setting a custom configuration
+
+To start the application with a custom `config.json`, add the `--config` flag to the xref:{url_references_cli_start}[start command] with a custom path to the configuration file, e.g. `--config my_custom_config.json`.
+
+[source,bash]
+----
+bin/run start --config my_custom_config.json --override-config
+----
+
+=== How to create a custom config
+
+The optimal method to create a custom configuration for your app is to copy an existing `config.json` and adjust it to suit your requirements.
+
+For example, copy the default `config.json` of the blockchain application:
+
+.In the root directory of the blockchain application
+[source,bash]
+----
+cp config/default/config.json my_custom_config.json
+----
+
+=== Example: Configuration of the Hello World application
+
+Until now, it was not necessary to use any custom configurations for the Hello World application.
+However, if we want to interact with the application as described in the next guide xref:{url_guides_dashboard}[], it is necessary to change the RPC (Remote-Procedure-Call), configuration of the application, so that the dashboard plugin can connect to it.
+
+By default, the RPC API is disabled, and the communication protocol is set to `ipc`.
+It is now necessary to enable the RPC API and change the communication protocol to `ws`.
+
+Adjust the RPC configuration as follows:
+
+.my_custom_config.json
+[source,js]
+----
+{
+
+  // ...
+
+    "rpc": {
+        "enable": true,
+        "mode": "ws",
+        "port": 8080
+    },
+
+   // ...
+
+}
+----
+
+Restart the app to apply the new configuration.
+
+== Config file location
+
+The current configuration of a blockchain application is stored under the following path after the application is started for the first time:
+
+ ~/.lisk/APP_NAME/config/default/config.json <1>
+
+<1> Replace `APP_NAME` with the name of the blockchain application.
+
+== List of all available config options
+
+To get a complete overview of all configuration options for the Lisk SDK, please refer to the xref:{url_references_config}[].
+
+[TIP]
+
+It is not necessary to include all options that are included in the schema.
+The application will use {url_github_config_schema_default}[the default configuration options^] in the case whereby a config option is not specified.
+
+== Important configuration options
+
+=== `genesisConfig`
+
+Adjust basic properties for the blockchain application in `genesisConfig`.
+For example, the time that elapses until a new block is forged, the network epoch time, and the block rewards.
+
+TIP: To see a full list of all constants and their predefined values, please see the file {url_github_config_schema_genesiscfg}[application_config_schema.js^].
+
+.Example: Starting the app with a custom genesisConfig
+[source,js]
+----
+{
+    // ...
+
+    "genesisConfig": {
+        "bftThreshold": 78,
+        "communityIdentifier": "hello",
+        "blockTime": 5,
+        "maxPayloadLength": 19000,
+        "rewards":{
+            "milestones": [
+                "1000000000",
+                "700000000",
+                "500000000",
+                "200000000",
+                "100000000"
+            ],
+            "offset": 100,
+            "distance": 100000
+        },
+        "minFeePerByte": 500,
+        "baseFees": [
+            {
+                "moduleID": 2,
+                "assetID": 0,
+                "baseFee": 1000000
+            }
+        ],
+        "activeDelegates": 31,
+        "standbyDelegates": 5
+    }
+
+    // ...
+}
+----
+
+==== Custom properties in the genesisConfig
+
+Since all genesis config options will be passed to modules, it is possible to add custom config options to the `genesisConfig`.
+
+These options can then be used in a specific custom module, see the "Genesis config" section of the xref:{url_intro_modules_genesiscfg}[Modules introduction] for more information.
+
+.Adding a custom config option to the genesis config
+[source,js]
+----
+{
+    // ...
+
+    "genesisConfig": {
+        "myCustomOption": "Some data",
+        // ...
+    },
+
+    // ...
+
+};
+----
+
+=== `rpc`
+
+The `rpc` key holds all configuration options related to the API access of the blockchain application.
+
+[WARNING]
+====
+Allowing arbitrary machines to access the rpc port (ws) is dangerous and strongly discouraged -- access should be strictly limited to trusted machines.
+
+For reference see the guide xref:{url_guides_non_forging_protection}[]
+====
+
+Please see the xref:{url_rpc_endpoints}[] and xref:{url_architecture_communication}[] pages for more information about the API access options.
+
+.Configuring the API access to the node
+[source,js]
+----
+{
+    "rpc": {
+        "enable": true, //true or false
+        "mode": "ws", //"ws" or "ipc"
+        "port": 8080, //websocket port
+        "host": "127.0.0.1" //<1>
+    },
+}
+----
+
+<1> Change the host to 0.0.0.0 if you wish to connect to the node from a remote server.

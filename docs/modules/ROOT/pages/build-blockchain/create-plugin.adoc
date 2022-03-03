@@ -1,1 +1,254 @@
 = Creating a new plugin
+Mona Bärenfänger <mona@lightcurve.io>
+// Settings
+:toc: preamble
+:idprefix:
+:idseparator: -
+:sectnums:
+:docs_sdk: lisk-sdk::
+// URLs
+:url_github_guides_plugin: https://github.com/LiskHQ/lisk-sdk-examples/tree/development/guides/04-plugin/hello_app
+// Project URLS
+:url_architecture_config: advanced-explanations/architecture.adoc#configuration
+:url_guides_module: build-blockchain/create-module.adoc
+:url_guides_asset: build-blockchain/create-command.adoc
+:url_guides_setup: build-blockchain/create-blockchain-app.adoc
+:url_guides_setup_helloapp: {url_guides_setup}#the-hello-world-application
+:url_intro_plugins: understand-blockchain/plugins.adoc
+:url_references_commander_commands_plugin: {docs_sdk}references/lisk-commander/commands.adoc#generate-plugin
+
+How to create a new xref:{url_intro_plugins}[plugin] for a blockchain application.
+
+As defined in the xref:{url_guides_setup_helloapp}[Hello World application overview], the plugin shall provide the following functionality:
+
+* Anyone can retrieve the latest hello message and the address of the sender of the message.
+
+.Sample code
+[NOTE]
+====
+View the complete sample code of this guide on GitHub in the {url_github_guides_plugin}[Lisk SDK examples repository^].
+====
+
+.Prerequisites
+[NOTE]
+====
+To use this guide, it is assumed that the following criteria have been met:
+
+. Lisk Commander is installed, and a basic blockchain application is already initialized, as explained in the guide xref:{url_guides_setup}[].
+. A new module `HelloModule` is created, as explained in the guide xref:{url_guides_module}[].
+. A new asset `HelloAsset` is created, as explained in the previous guide xref:{url_guides_asset}[].
+====
+
+== Generating the plugin skeleton
+
+While in the root folder of your blockchain application, generate a skeleton for the new plugin with Lisk Commander.
+
+The command `generate:plugin` expects the following argument:
+
+* Plugin alias: The name of the plugin.
+Needs to be a string that only consists of both lower case and upper case letters [a-z, A-Z].
+No numbers, hyphens, etc., are allowed.
+
+For a complete overview of all available options of the `generate:plugin` command, visit the xref:{url_references_commander_commands_plugin}[Lisk Commander command reference].
+
+[[generate-plugin]]
+[source,bash]
+----
+lisk generate:plugin latestHello
+----
+
+This will generate the following files:
+
+----
+Using template "lisk-ts"
+Generating plugin skeleton
+Registering plugin...
+ conflict .liskrc.json
+? Overwrite .liskrc.json? overwrite
+    force .liskrc.json
+   create src/app/plugins/latest_hello/latest_hello_plugin.ts
+   create test/unit/plugins/latest_hello/latest_hello_plugin.spec.ts
+
+No change to package.json was detected. No package manager install will be executed.
+
+Finished creating plugin
+----
+
+It will also automatically register the plugin with the application by adding it to `src/app/plugins.ts`.
+
+.src/app/plugins.ts
+[source,typescript]
+----
+/* eslint-disable @typescript-eslint/no-empty-function */
+import { Application } from 'lisk-sdk';
+import { LatestHelloPlugin } from "./plugins/latest_hello/latest_hello_plugin";
+
+// @ts-expect-error Unused variable error happens here until at least one module is registered
+export const registerPlugins = (app: Application): void => {
+
+    app.registerPlugin(LatestHelloPlugin);
+};
+----
+
+The file `latest_hello_plugin.ts` contains the plugin skeleton and the file `latest_hello_plugin.spec.ts` contains the related unit tests for the new plugin.
+
+The plugin skeleton can be viewed in `latest_hello_plugin.ts`:
+
+[source,typescript]
+----
+import { BasePlugin, PluginInfo } from 'lisk-sdk';
+import type { BaseChannel, EventsDefinition, ActionsDefinition, SchemaWithDefault } from 'lisk-sdk';
+
+ /* eslint-disable class-methods-use-this */
+ /* eslint-disable  @typescript-eslint/no-empty-function */
+ export class LatestHelloPlugin extends BasePlugin {
+	// private _channel!: BaseChannel;
+
+	public static get alias(): string {
+		return 'latestHello';
+	}
+
+	// eslint-disable-next-line @typescript-eslint/class-literal-property-style
+	public static get info(): PluginInfo {
+		return {
+			author: 'mona',
+			version: '0.1.0',
+			name: 'latestHello',
+		};
+	}
+
+	// eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
+	public get defaults(): SchemaWithDefault {
+		return {
+			$id: '/plugins/plugin-latestHello/config',
+			type: 'object',
+			properties: {},
+			required: [],
+			default: {},
+		}
+	}
+
+	public get events(): EventsDefinition {
+		return [
+			// 'block:created',
+			// 'block:missed'
+		];
+	}
+
+	public get actions(): ActionsDefinition {
+		return {
+		// 	hello: async () => { hello: 'world' },
+		};
+	}
+
+		public async load(_: BaseChannel): Promise<void> {
+		// this._channel = channel;
+		// this._channel.once('app:ready', () => {});
+	}
+
+	public async unload(): Promise<void> {}
+}
+----
+
+The command `generate:plugin` already created the plugin `LatestHelloPlugin` which contains skeletons of all the important components of a plugin.
+The only properties currently set at this point are the auto-generated plugin info, and the plugin alias which was defined when generating the plugin.
+
+The plugin can already be used like this with the application, however, it is not performing any functions yet.
+To give the plugin a purpose, it is necessary to implement certain logic inside of the plugin.
+
+The following sections explain, how the different components of a plugin can be used to implement the desired logic.
+
+== The plugin class
+
+The plugin class always extends from the `BasePlugin`, which is imported from the `lisk-sdk` package.
+
+The properties `alias` and `info` are pre-filled when <<generate-plugin,generating the plugin skeleton>> in the previous step.
+
+[source,typescript]
+----
+import { BasePlugin, PluginInfo } from 'lisk-sdk';
+import type { BaseChannel, EventsDefinition, ActionsDefinition, SchemaWithDefault } from 'lisk-sdk';
+
+ export class LatestHelloPlugin extends BasePlugin {
+
+	public static get alias(): string {
+		return 'latestHello';
+	}
+
+	public static get info(): PluginInfo {
+		return {
+			author: 'mona',
+			version: '0.1.0',
+			name: 'latestHello',
+		};
+	}
+
+	// ...
+
+ }
+----
+
+== Defining the plugin configuration
+
+A plugin can be configured by setting the related properties in the application configuration.
+
+The `defaults()` getter defines which properties are available in the xref:{url_architecture_config}[application configuration] for the plugin.
+
+[source,js]
+----
+public get defaults(): SchemaWithDefault {
+    return {
+        $id: '/plugins/plugin-latestHello/config',
+        type: 'object',
+        properties: {
+            enable: {
+                type: 'boolean',
+            },
+        },
+        required: [ 'enable'],
+        default: {
+            enable: true,
+        },
+    }
+}
+----
+
+The plugin configuration is accessible in the plugin under the variable `this.options`.
+
+For example, see the following section.
+
+== Defining the plugin logic
+
+The plugin subscribes to the event `hello:newHello`.
+
+If a new event `hello:newHello` is published, it saves the latest hello message to `this._hello`.
+
+[source,typescript]
+----
+public async load(channel): Promise<void> {
+    if (this.options.enable) {
+        channel.subscribe('hello:newHello', (info) => {
+            this._hello = info;
+        });
+    }
+}
+
+public async unload(): Promise<void> {}
+----
+
+== Actions & events
+
+Similar to modules, plugins expose `actions` and `events`, which are interfaces that allow other plugins or external services to interact with the plugin.
+
+In this example, one actions is added:
+
+* If `latestHello:getLatestHello` is invoked, it returns the last hello message that was posted in the network.
+
+[source,typescript]
+----
+public get actions(): ActionsDefinition {
+    return {
+      getLatestHello: () => this._hello,
+    };
+}
+----

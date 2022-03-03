@@ -1,1 +1,392 @@
-= Launching a test network
+= Launching a public test network
+Mona Bärenfänger <mona@lightcurve.io>
+:description: How to launch a public testnet for a blockchain application.
+:toc:
+:imagesdir: ../../../assets/images
+:v_sdk: 5.2.1
+:v_protocol: master
+:sectnums:
+:experimental:
+:idseparator: -
+:idprefix:
+:docs_sdk: lisk-sdk::
+// URLs
+:url_github: https://github.com/
+:url_github_corbifex: https://github.com/corbifex/lisk-genesis
+:url_github_hello_index: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/hello_world/index.js
+:url_github_hello_client: https://github.com/LiskHQ/lisk-sdk-examples/tree/development/hello_world/react-client
+:url_github_hello_package: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/hello_world/package.json
+:url_github_hello_transaction: https://github.com/LiskHQ/lisk-sdk-examples/tree/development/hello_world/transactions
+:url_github_sdk_configDevnet: https://github.com/LiskHQ/lisk-sdk/blob/{v_sdk}/sdk/src/samples/config_devnet.json
+:url_gitlab: https://about.gitlab.com/
+:url_lisk_community: https://lisk.io/community
+// Project URLs
+:url_bapps_network: understand-blockchain/index.adoc#architecture-of-blockchain-applications
+:url_commander_commands_createaccount: {docs_sdk}references/lisk-commander/commands.adoc#create-account
+:url_references_cli_createaccount: {docs_sdk}application-cli.adoc#accountcreate
+:url_guides_forging: run-blockchain/forging.adoc
+:url_guides_securenonforging: run-blockchain/non-forging-node-protection.adoc
+:url_guides_setup: build-blockchain/create-blockchain-app.adoc
+:url_guides_dashboard: build-blockchain/using-dashboard.adoc
+:url_guides_forging_enable: run-blockchain/forging.adoc
+:url_guides_forging_register: {url_guides_forging_enable}#registering-a-delegate
+:url_guides_genesisblock: build-blockchain/create-genesis-block.adoc
+:url_guides_genesisblock_enableforging: build-blockchain/create-genesis-block.adoc#enabling-forging-for-the-new-genesis-delegates
+:url_reference_config: {docs_sdk}config.adoc
+:url_references_cli_genesis: {docs_sdk}application-cli.adoc#genesis-blockcreate
+:url_protocol_genesis_block: understand-blockchain/lisk-protocol/blocks.adoc#_genesis_block
+:url_lisk_sdk: glossary.adoc#lisk-sdk
+
+== Introduction
+
+How to turn your local 1-node Devnet into an actual blockchain network.
+
+This guide describes how to release a blockchain application to the public, and how to establish a network of nodes and validators that are maintaining and securing the blockchain application in a decentralized manner.
+
+== Initial state: Devnet
+
+The Devnet is used as the default network to connect to during the development of a blockchain application.
+Starting the node after xref:{url_guides_setup}[Bootstrapping the blockchain application] will always connect to a local Devnet.
+
+During development, it is both necessary and convenient to have a rather centralized network with only one node connected.
+
+Once the development has reached a certain maturity, it will be necessary to add more nodes to the network, and hence offer other potential users the opportunity to join the newly created blockchain network.
+
+This is how the setup looks during development:
+
+image:guides/launch/devnet-node.png[One node diagram]
+
+== Prepare the Testnet
+
+To turn the Devnet into a public Testnet, the following steps should be considered:
+
+* <<create-a-new-genesis-block,Create a new unique genesis block>> for the Testnet.
+** Create new genesis delegates & keep their credentials private and secure.
+* <<update-the-configuration-file>>
+** Update the community identifier here.
+* <<define-seed-nodes>>
+* <<releasing-the-testnet-to-the-public,Release the Testnet to the public>>
+
+.Example file structure
+----
+.
+├── bin/
+├── config/
+│   └── default/
+│       ├── config.json
+│       └── genesis_block.json
+├── package-lock.json
+├── package.json
+├── src/
+│   ├── app/
+│   │   ├── app.ts
+│   │   ├── index.ts
+│   │   ├── modules/
+│   │   ├── modules.ts
+│   │   ├── plugins/
+│   │   └── plugins.ts
+│   └── commands/
+└── test/
+----
+
+After completing the above steps, the very first version of the public testnet may appear as shown in the illustration below:
+
+image:guides/launch/testnet-node.png[Two nodes diagram]
+
+=== Create a new genesis block
+
+The genesis block for the Testnet is created by using the xref:{url_references_cli_genesis}[genesis-block:create] command of the application CLI.
+
+For example, the new genesis block may exhibit the following properties:
+
+* 23 genesis delegate accounts (default: 103).
+* 5 genesis accounts (default: 10).
+* 2000 tokens are distributed initially to each genesis account (default: 1000).
+
+NOTE: The above variables for the genesis block can be adjusted as desired.
+If no flags are set, the default values will be used.
+
+IMPORTANT: In case a custom value is used for the number of validators, don't forget to <<update-the-configuration-file, update the genesis configuration>> accordingly.
+
+To create the custom genesis block, set the following flags:
+
+[source,bash]
+----
+./bin/run genesis-block:create --validators 23 --accounts 5 --token-distribution 200000000000
+----
+
+For more information about generating a genesis block, check out the guide xref:{url_guides_genesisblock}[].
+
+Replace the old genesis block under `config/default` with the new one.
+
+[CAUTION]
+====
+The following files should be kept private and not shared with the public:
+
+* `forging_info.json`
+* `password.json`
+* `accounts.json`
+====
+
+=== Update the configuration file
+
+The most common config options to update are listed below:
+
+* `label`: Defines the process name and folder within the root path.
+* `version`: Version of the application.
+* `networkVersion`: Defines a P2P network version.
+* `genesisConfig.bftThreshold`: Defines a threshold for pre-vote and pre-commit of delegates.
+* `genesisConfig.communityIdentifier`: Defines a community identifier used to create the network identifier.
+* `genesisConfig.blockTime`: Defines the frequency of blocks to be created in seconds.
+* `genesisConfig.rewards`: Defines a block reward schedule.
+* `genesisConfig.baseFees`:	Defines an additional base fee to be included in the calculation of the minimum fee for a transaction.
+* `genesisConfig.activeDelegates`: Number of actively forging delegates.
+* `genesisConfig.standbyDelegates`:	Number of random standby delegates that are allowed to forge each round.
+* `forging.force`: Force enabling forging by using the default password.
+Should be always `false` in the default config.
+* `forging.defaultPassword`: Password to automatically decrypt the encrypted passphrase of one or multiple delegates specified in `forging.delegates`.
+This is only used for enabling forging for genesis delegates.
+Should be removed in the default config.
+* `forging.delegates`: Contains the delegate information for forging.
+Should be empty in the default config.
+* `network.seedPeers`: Defines one or multiple entry node(s) to the network.
+
+[TIP]
+
+====
+The sum of `genesisConfig.activeDelegates` and `genesisConfig.standbyDelegates` should be lower or equal to the amount of genesis delegates used to <<create-a-new-genesis-block>>.
+
+The `genesisConfig.bftThreshold` should be around 2/3 of the total forging delegates during each forging round.
+====
+
+.config.json
+[source,js]
+----
+{
+  "label": "my-app",
+  "version": "0.1.0",
+  "networkVersion": "1.0",
+  "genesisConfig": {
+    "bftThreshold": 16,
+    "communityIdentifier": "hello",
+    "blockTime": 6,
+    "maxPayloadLength": 19000,
+    "rewards":{
+        "milestones": [
+            "1000000000",
+            "700000000",
+            "500000000",
+            "200000000",
+            "100000000"
+        ],
+        "offset": 100,
+        "distance": 100000
+    },
+    "minFeePerByte": 500,
+    "baseFees": [
+        {
+            "moduleID": 2,
+            "assetID": 0,
+            "baseFee": 1000000
+        }
+    ],
+    "activeDelegates": 19,
+    "standbyDelegates": 4
+  },
+  "forging": {
+    "force": false,
+    "waitThreshold": 2,
+    "delegates": [],
+  },
+  "network": {
+    "seedPeers": [
+        {
+            "ip": "1.2.3.4",
+            "port": 5000
+        }
+    ],
+    "port": 5000
+  },
+  // ...
+}
+----
+
+=== Define seed nodes
+
+Each node that is connecting to the network for the first time, will initially connect to the seed nodes, which are defined in the configuration of the node.
+Starting from a seed node, the new node will discover the rest of the network by requesting their peer list.
+This is then followed by the peer lists of the newly discovered peers and so on.
+
+To define a node as a seed node, simply add the IP and port of the seed node to the config as described in the <<update-the-configuration-file>> section.
+
+==== Seed node config
+
+It is convenient to have the genesis delegates actively forging on the seed node, in case the network does not yet have enough real delegates who can take the forging spots.
+
+CAUTION: It is very important to not share the config of the seed nodes with the public, especially if it contains the `defaultPassword` to decrypt the passphrases of the genesis delegates.
+
+Include the data of the new genesis delegates in the config (see xref:{url_guides_genesisblock_enableforging}[Enabling forging for the new genesis delegates]).
+
+Besides this, seed nodes require no further special config options.
+It is highly recommended to leave the public API disabled on a seed node.
+
+=== Releasing the Testnet to the public
+
+Publish the code of the blockchain application to the public, so everyone is able to setup their own node.
+For example, on  {url_github}[Github^] or {url_gitlab}[Gitlab^].
+
+This provides all users with the opportunity to download the application, and deploy it on a server in order to connect with the network.
+
+The code of the blockchain application can be released as is to enable external users to spin up their own node.
+
+.Example file structure
+----
+.
+├── bin/
+├── config/
+│   └── default/
+│       ├── config.json
+│       └── genesis_block.json
+├── package-lock.json
+├── package.json
+├── src/
+│   ├── app/
+│   │   ├── app.ts
+│   │   ├── index.ts
+│   │   ├── modules/
+│   │   ├── modules.ts
+│   │   ├── plugins/
+│   │   └── plugins.ts
+│   └── commands/
+├── test/
+└── README.md
+----
+
+It is recommended to provide additional application specific documentation for users, for example by updating the README.md with all the important steps required to spin up a node.
+
+=== Add a node with enabled API
+
+As the seed node should have the RPC API disabled, add a new node to the network with the API enabled.
+The main function of this node is to provide blockchain data to external tools and services via the API.
+Forging should be disabled on this node.
+
+.Enabling the RPC API
+[source,js]
+----
+{
+  // ...
+  "rpc": {
+    "enable": true,
+    "mode": "ws",
+    "port": 8080
+  },
+  // ...
+}
+----
+
+To restrict the node API to specific IPs, see the guide xref:{url_guides_securenonforging}[]
+
+=== Enable the Faucet plugin
+
+Enable the Faucet plugin on one of the nodes.
+
+One account is always connected to the faucet, to provide the tokens to be distributed through the faucet.
+To prevent the faucet from running dry, the faucet account should always have a high enough balance to be able to provide the requested tokens to the users.
+
+Install the Faucet plugin:
+
+[source,bash]
+----
+npm i @liskhq/lisk-framework-faucet-plugin
+----
+
+Now open `plugins.ts`, import the Faucet plugin, and register it with the application as shown below:
+
+.src/app/plugins.ts
+[source,typescript]
+----
+/* eslint-disable @typescript-eslint/no-empty-function */
+import { Application } from 'lisk-sdk';
+import { FaucetPlugin } from "@liskhq/lisk-framework-faucet-plugin";
+
+// @ts-expect-error Unused variable error happens here until at least one module is registered
+export const registerPlugins = (app: Application): void => {
+
+    app.registerPlugin(FaucetPlugin);
+};
+----
+
+//TODO: Explainn steps in the Faucet guide and refeer to it here
+
+.Configuration options for the Faucet plugin
+[source,js]
+----
+{
+  // ...
+  "plugins": {
+    "faucet": {
+        "encryptedPassphrase": "iterations=1000000&cipherText=643bfbf1b6f1dc0ce740dd9fc9f27a682e476dc5de4e6c023deded4d3efe2822346226541106b42638db5ba46e0ae0a338cb78fb40bce67fdec7abbca68e20624fa6b0d7&iv=8a9c461744b9e70a8ba65edd&salt=3fe00b03d10b7002841857c1f028196e&tag=c57a798ef65f5a7be617d8737828fd58&version=1",
+        "captchaSecretkey": "6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe",
+        "captchaSitekey": "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"
+    }
+  }
+}
+----
+
+To register the Faucet plugin save and close `plugins.ts` and start the blockchain application again:
+
+[source,bash]
+----
+./bin/run start
+----
+
+Now, enable the faucet plugin by invoking the action `faucet:authorize`.
+
+Use the `apiClient` of the `lisk-client` package and write a small script to invoke the action:
+
+[source,js]
+----
+const { apiClient } = require('@liskhq/lisk-client');
+let clientCache;
+
+const getClient = async () => {
+  if (!clientCache) {
+    clientCache = await apiClient.createWSClient('ws://localhost:8080/ws');
+  }
+  return clientCache;
+};
+
+const enableFaucet = async () => {
+  const client = await getClient();
+  const result = client.invoke('faucet:authorize',{"enable":true,"password":"password"});
+  return result;
+};
+
+enableFaucet().then((val) => {
+  console.log('val:',val);
+});
+----
+
+TIP: To invoke actions conveniently through a UI in the browser, xref:{url_guides_dashboard}[register the Dashboard plugin] on the node as well.
+
+[[more_nodes]]
+== Become a validator for the Testnet
+
+After the public testnet-release of the blockchain application, it is beneficial that real independent delegate accounts take the forging slots of the genesis delegates.
+
+NOTE: The network will become decentralized for the first time when at least 51% of the delegates that are actively forging in the network are independent delegates.
+
+.Forging nodes join the network
+image:guides/launch/testnet-delegate-nodes.png[3 nodes diagram]
+
+To join the network as a new delegate, follow the steps listed below:
+
+. Create your own account on the network.
+.. xref:{url_references_cli_createaccount}[Generate the account credentials]
+.. Use the Testnet Faucet to receive some initial tokens.
+. xref:{url_guides_forging_register}[Register a delegate].
+. Set up a node: Follow the steps in the `README` file or the documentation of the blockchain application.
+Normally it involves downloading the application code from a public source, configuring it (via config or flags on startup), and starting the application.
+. xref:{url_guides_forging}[Enable forging] for the newly registered delegate.
+. Perform a self-vote.
+. Optional: Convince other accounts to vote for your delegate, in order to increase the delegate vote weight, if necessary.

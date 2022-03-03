@@ -1,7 +1,7 @@
 ;(function () {
   'use strict'
 
-  var hljs = require('highlight.js/lib/highlight')
+  var hljs = require('highlight.js/lib/core')
   hljs.registerLanguage('asciidoc', require('highlight.js/lib/languages/asciidoc'))
   hljs.registerLanguage('bash', require('highlight.js/lib/languages/bash'))
   hljs.registerLanguage('clojure', require('highlight.js/lib/languages/clojure'))
@@ -35,6 +35,6 @@
   hljs.registerLanguage('xml', require('highlight.js/lib/languages/xml'))
   hljs.registerLanguage('yaml', require('highlight.js/lib/languages/yaml'))
   ;[].slice.call(document.querySelectorAll('pre code.hljs')).forEach(function (node) {
-    hljs.highlightBlock(node)
+    hljs.highlightElement(node)
   })
 })()

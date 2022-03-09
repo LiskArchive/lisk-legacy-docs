@@ -100,7 +100,7 @@
     <div id="docsearch-toolbar" class="search-box hide-for-print toolbar-search">
       <!--<input id="search-input" type="text" placeholder="Search me ...">-->
     </div>
-  <div class="edit-this-page"><a href="https://github.com/LiskHQ/lisk-docs/edit/1405-sdk-restructure/docs/modules/ROOT/pages/build-blockchain/create-module.adoc"><img class="pencil">Edit this Page</a></div>
+  <div class="edit-this-page"><a href="https://github.com/LiskHQ/lisk-docs/edit/1409-docs-improvements/docs/modules/ROOT/pages/build-blockchain/create-module.adoc"><img class="pencil">Edit this Page</a></div>
   </div>
 <div class="body">
 <div class="nav-container" data-component="ROOT" data-version="">
@@ -797,7 +797,7 @@ All of this can be defined in the account schema.</p>
 <div class="title">src/app/modules/hello/hello_module.ts</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import { BaseModule } from 'lisk-sdk';
-const { CreateHelloAsset } = require('./assets/hello_asset');
+const { CreateHelloAsset } = require('./assets/create_hello_asset');
 
 export class HelloModule extends BaseModule {
 
@@ -896,25 +896,30 @@ See the "Lifecycle Hooks" section of the <a href="../understand-blockchain/modul
 
     // ...
 
-    public async afterTransactionApply({transaction, stateStore, reducerHandler}) {
+     // Lifecycle hooks
+    public async afterTransactionApply(_input: TransactionApplyContext) {
         // Publish a `newHello` event for every received hello transaction
-        if (_input.transaction.moduleID === this.id &amp;&amp; _input.transaction.assetID === HelloAssetID) {
+        // 1. Check for correct module and asset IDs
+        if (_input.transaction.moduleID === this.id &amp;&amp; _input.transaction.assetID === 0) {
 
-          const helloAsset = codec.decode(
-            helloAssetSchema,
-            _input.transaction.asset
-          );
+            // 2. Decode the transaction asset
+            const helloAsset = codec.decode(
+                helloAssetSchema,
+                _input.transaction.asset
+            );
 
-          this._channel.publish('hello:newHello', {
-            sender: _input.transaction._senderAddress.toString('hex'),
-            hello: helloAsset.helloString
-          });
+            // 3. Publish the event 'hello:newHello' and
+            // attach information about the sender address and the posted hello message.
+            this._channel.publish('hello:newHello', {
+                sender: _input.transaction._senderAddress.toString('hex'),
+                hello: helloAsset.helloString
+            });
         }
     }
 
-    public async afterGenesisBlockApply({genesisBlock, stateStore, reducerHandler}) {
+    public async afterGenesisBlockApply(_input: AfterGenesisBlockApplyContext) {
         // Set the hello counter to zero after the genesis block is applied
-        await stateStore.chain.set(
+        await _input.stateStore.chain.set(
             CHAIN_STATE_HELLO_COUNTER,
             codec.encode(helloCounterSchema, { helloCounter: 0 })
         );
@@ -950,15 +955,15 @@ const CHAIN_STATE_HELLO_COUNTER = "hello:helloCounter";
 
 // This schema is used to decode/encode the data of the hello counter from/for the database
 const helloCounterSchema = {
-    $id: "lisk/hello/counter",
-    type: "object",
-    required: ["helloCounter"],
-    properties: {
-        helloCounter: {
-            dataType: "uint32",
-            fieldNumber: 1,
-        },
+  $id: "lisk/hello/counter",
+  type: "object",
+  required: ["helloCounter"],
+  properties: {
+    helloCounter: {
+      dataType: "uint32",
+      fieldNumber: 1,
     },
+  },
 };
 
 // This schema is used to decode/encode the data of the asset of the hello transaction from/for the database
@@ -972,6 +977,12 @@ const helloAssetSchema = {
       fieldNumber: 1,
     },
   },
+};
+
+module.exports = {
+  CHAIN_STATE_HELLO_COUNTER,
+  helloCounterSchema,
+  helloAssetSchema
 };</code></pre>
 </div>
 </div>

@@ -1,7 +1,92 @@
 = Reducers
 
+:url_understand_modules_statestore: understand-blockchain/modules-assets.adoc#the-state-store
+:url_understand_modules_hooks: understand-blockchain/modules-assets.adoc#lifecycle-hooks
+:url_understand_modules_assets: understand-blockchain/modules-assets.adoc#assets
+
 Module-to-module interactions are done via reducers.
 
-== Reducerhandler
+Reducers are functions in modules which can be invoked via Remote-Procedure-Calls (RPC) by other modules.
+
+Reducers have access to the xref:{url_understand_modules_statestore}[state store].
+
+Modules and Assets can invoke reducers through the <<reducerHandler>>.
+
+.Example: Reducers of the Token module
+[source,js]
+----
+public reducers = {
+    // Credit tokens to an account
+    credit: async (params: Record<string, unknown>, stateStore: StateStore): Promise<void> => {
+        const { address, amount } = params;
+        if (!Buffer.isBuffer(address)) {
+            throw new Error('Address must be a buffer');
+        }
+        if (typeof amount !== 'bigint') {
+            throw new Error('Amount must be a bigint');
+        }
+        if (amount <= BigInt(0)) {
+            throw new Error('Amount must be a positive bigint.');
+        }
+        const account = await stateStore.account.getOrDefault<TokenAccount>(address);
+        account.token.balance += amount;
+        if (account.token.balance < this._minRemainingBalance) {
+            throw new Error(
+                `Remaining balance must be greater than ${this._minRemainingBalance.toString()}`,
+            );
+        }
+        await stateStore.account.set(address, account);
+    },
+    // Debit tokens from an account
+    debit: async (params: Record<string, unknown>, stateStore: StateStore): Promise<void> => {
+        const { address, amount } = params;
+        if (!Buffer.isBuffer(address)) {
+            throw new Error('Address must be a buffer');
+        }
+        if (typeof amount !== 'bigint') {
+            throw new Error('Amount must be a bigint');
+        }
+        if (amount <= BigInt(0)) {
+            throw new Error('Amount must be a positive bigint.');
+        }
+        const account = await stateStore.account.getOrDefault<TokenAccount>(address);
+        account.token.balance -= amount;
+        if (account.token.balance < this._minRemainingBalance) {
+            throw new Error(
+                `Remaining balance must be greater than ${this._minRemainingBalance.toString()}`,
+            );
+        }
+        await stateStore.account.set(address, account);
+    },
+    // Get the balance of an specific account
+    getBalance: async (
+        params: Record<string, unknown>,
+        stateStore: StateStore,
+    ): Promise<bigint> => {
+        const { address } = params;
+        if (!Buffer.isBuffer(address)) {
+            throw new Error('Address must be a buffer');
+        }
+        const account = await stateStore.account.getOrDefault<TokenAccount>(address);
+        return account.token.balance;
+    },
+    // Returns the minimum remaining balance for accounts
+    getMinRemainingBalance: async (): Promise<bigint> => this._minRemainingBalance,
+};
+----
+
+== reducerHandler
 
 Used to call reducers of other modules.
+
+Reducers of modules can be invoked inside of the xref:{url_understand_modules_hooks}[lifecycle-hooks] and xref:{url_understand_modules_assets}[assets] of other modules via the `reducerHandler`.
+
+.Example: Invoking the "debit" reducer of the Token module
+[source,js]
+----
+// debit tokens from sender account
+await reducerHandler.invoke("token:debit", {
+  address: senderAddress,
+  amount: asset.initValue,
+});
+----

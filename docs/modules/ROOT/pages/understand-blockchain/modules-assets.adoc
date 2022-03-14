@@ -21,7 +21,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_advanced_communication_invoke_actions: {url_advanced_communication}#how-to-invoke-actions
 :url_advanced_communication_publishsubscribe: {url_advanced_communication}#how-to-publish-and-subscribe-to-events
 :url_advanced_communication_moduleschannel: {url_advanced_communication}#channel-for-modules
-:url_reducerhandler: understand-blockchain/modules-assets.adoc#the-reducerhandler
+:url_reducerhandler: understand-blockchain/reducers.adoc#reducerhandler
 :url_advanced_schemas: understand-blockchain/codec-schema.adoc
 :url_guides_asset: build-blockchain/create-asset.adoc
 :url_guides_genesis: build-blockchain/create-genesis-block.adoc
@@ -46,6 +46,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_tutorials_nft: tutorial/nft.adoc
 :url_tutorials_srs: tutorial/srs.adoc
 :url_active_delegate: glossary.adoc#active-delegate
+:url_understand_reducers: understand-blockchain/reducers.adoc
 
 Modules hold all logic that can change the state of the blockchain, or in other words all logic that can make changes on the blockchain.
 
@@ -252,7 +253,7 @@ events = ['newHello'];
 
 The parts which contain the logic to perform state mutation on the blockchain are possibly the most important part of the module, as they define the underlying business logic and general behavior of a module.
 
-It is possible to change the state of the blockchain in the <<reducers>>, <<lifecycle-hooks>> or <<assets>> of a module.
+It is possible to change the state of the blockchain in the xref:{url_understand_reducers}[], <<lifecycle-hooks>> or <<assets>> of a module.
 
 IMPORTANT: All of the logic implemented in a module / asset must be “deterministic” and executable within the block time.
 
@@ -260,7 +261,7 @@ IMPORTANT: All of the logic implemented in a module / asset must be “determini
 
 The `stateStore` is used to mutate the state of the blockchain data, or to retrieve data from the blockchain.
 
-Inside of a module, the `stateStore` is available for <<reducers>>, <<assets>> and all <<lifecycle-hooks>>.
+Inside of a module, the `stateStore` is available for xref:{url_understand_reducers}[], <<assets>> and all <<lifecycle-hooks>>.
 
 .Interface of `stateStore`
 [source,typescript]
@@ -280,20 +281,6 @@ interface StateStore {
 		set(key: string, value: Buffer): Promise<void>;
 	};
 }
-----
-
-=== The reducerHandler
-
-<<reducers>> of modules can be invoked inside of the <<lifecycle-hooks>> and <<assets>> of other modules via the `reducerHandler`.
-
-.Example: Invoking the "debit" reducer of the Token module
-[source,js]
-----
-// debit tokens from sender account
-await reducerHandler.invoke("token:debit", {
-  address: senderAddress,
-  amount: asset.initValue,
-});
 ----
 
 === Assets
@@ -422,76 +409,6 @@ async apply({ asset, stateStore, reducerHandler, transaction }) {
         codec.encode(helloCounterSchema, counter)
     );
 }
-----
-
-=== Reducers
-Reducers are functions which can be invoked via Remote-Procedure-Calls (RPC) by other modules.
-
-Reducers have access to the <<the-state-store,state store>>.
-
-Modules and Assets can invoke reducers through <<the-reducerhandler>>.
-
-.Example: Reducers of the Token module
-[source,js]
-----
-public reducers = {
-    // Credit tokens to an account
-    credit: async (params: Record<string, unknown>, stateStore: StateStore): Promise<void> => {
-        const { address, amount } = params;
-        if (!Buffer.isBuffer(address)) {
-            throw new Error('Address must be a buffer');
-        }
-        if (typeof amount !== 'bigint') {
-            throw new Error('Amount must be a bigint');
-        }
-        if (amount <= BigInt(0)) {
-            throw new Error('Amount must be a positive bigint.');
-        }
-        const account = await stateStore.account.getOrDefault<TokenAccount>(address);
-        account.token.balance += amount;
-        if (account.token.balance < this._minRemainingBalance) {
-            throw new Error(
-                `Remaining balance must be greater than ${this._minRemainingBalance.toString()}`,
-            );
-        }
-        await stateStore.account.set(address, account);
-    },
-    // Debit tokens from an account
-    debit: async (params: Record<string, unknown>, stateStore: StateStore): Promise<void> => {
-        const { address, amount } = params;
-        if (!Buffer.isBuffer(address)) {
-            throw new Error('Address must be a buffer');
-        }
-        if (typeof amount !== 'bigint') {
-            throw new Error('Amount must be a bigint');
-        }
-        if (amount <= BigInt(0)) {
-            throw new Error('Amount must be a positive bigint.');
-        }
-        const account = await stateStore.account.getOrDefault<TokenAccount>(address);
-        account.token.balance -= amount;
-        if (account.token.balance < this._minRemainingBalance) {
-            throw new Error(
-                `Remaining balance must be greater than ${this._minRemainingBalance.toString()}`,
-            );
-        }
-        await stateStore.account.set(address, account);
-    },
-    // Get the balance of an specific account
-    getBalance: async (
-        params: Record<string, unknown>,
-        stateStore: StateStore,
-    ): Promise<bigint> => {
-        const { address } = params;
-        if (!Buffer.isBuffer(address)) {
-            throw new Error('Address must be a buffer');
-        }
-        const account = await stateStore.account.getOrDefault<TokenAccount>(address);
-        return account.token.balance;
-    },
-    // Returns the minimum remaining balance for accounts
-    getMinRemainingBalance: async (): Promise<bigint> => this._minRemainingBalance,
-};
 ----
 
 === Lifecycle Hooks

@@ -462,7 +462,6 @@
 <li><a href="#state-changes-execution-logic">State changes &amp; execution logic</a>
 <ul class="sectlevel2">
 <li><a href="#the-state-store">The state store</a></li>
-<li><a href="#the-reducerhandler">The reducerHandler</a></li>
 <li><a href="#assets">Assets</a>
 <ul class="sectlevel3">
 <li><a href="#asset-anatomy">Asset anatomy</a></li>
@@ -471,7 +470,6 @@
 <li><a href="#apply">Apply</a></li>
 </ul>
 </li>
-<li><a href="#reducers">Reducers</a></li>
 <li><a href="#lifecycle-hooks">Lifecycle Hooks</a>
 <ul class="sectlevel3">
 <li><a href="#beforetransactionapply">beforeTransactionApply()</a></li>
@@ -789,7 +787,7 @@ Plugins and external services can <a href="../api/lisk-node-rpc.html#how-to-publ
 <p>The parts which contain the logic to perform state mutation on the blockchain are possibly the most important part of the module, as they define the underlying business logic and general behavior of a module.</p>
 </div>
 <div class="paragraph">
-<p>It is possible to change the state of the blockchain in the <a href="#reducers">Reducers</a>, <a href="#lifecycle-hooks">Lifecycle Hooks</a> or <a href="#assets">Assets</a> of a module.</p>
+<p>It is possible to change the state of the blockchain in the <a href="reducers.html" class="xref page">Reducers</a>, <a href="#lifecycle-hooks">Lifecycle Hooks</a> or <a href="#assets">Assets</a> of a module.</p>
 </div>
 <div class="admonitionblock important">
 <table>
@@ -809,7 +807,7 @@ All of the logic implemented in a module / asset must be “deterministic” and
 <p>The <code>stateStore</code> is used to mutate the state of the blockchain data, or to retrieve data from the blockchain.</p>
 </div>
 <div class="paragraph">
-<p>Inside of a module, the <code>stateStore</code> is available for <a href="#reducers">Reducers</a>, <a href="#assets">Assets</a> and all <a href="#lifecycle-hooks">Lifecycle Hooks</a>.</p>
+<p>Inside of a module, the <code>stateStore</code> is available for <a href="reducers.html" class="xref page">Reducers</a>, <a href="#assets">Assets</a> and all <a href="#lifecycle-hooks">Lifecycle Hooks</a>.</p>
 </div>
 <div class="listingblock">
 <div class="title">Interface of <code>stateStore</code></div>
@@ -829,22 +827,6 @@ All of the logic implemented in a module / asset must be “deterministic” and
 		set(key: string, value: Buffer): Promise&lt;void&gt;;
 	};
 }</code></pre>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="the-reducerhandler"><a class="anchor" href="#the-reducerhandler"></a>The reducerHandler</h3>
-<div class="paragraph">
-<p><a href="#reducers">Reducers</a> of modules can be invoked inside of the <a href="#lifecycle-hooks">Lifecycle Hooks</a> and <a href="#assets">Assets</a> of other modules via the <code>reducerHandler</code>.</p>
-</div>
-<div class="listingblock">
-<div class="title">Example: Invoking the "debit" reducer of the Token module</div>
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">// debit tokens from sender account
-await reducerHandler.invoke("token:debit", {
-  address: senderAddress,
-  amount: asset.initValue,
-});</code></pre>
 </div>
 </div>
 </div>
@@ -1023,7 +1005,7 @@ Must be unique.</td>
 <p><code>stateStore</code>: See <a href="#the-state-store">The state store</a>.</p>
 </li>
 <li>
-<p><code>reducerHandler</code>: See <a href="#the-reducerhandler">reducerHandler</a>.</p>
+<p><code>reducerHandler</code>: See <a href="reducers.html#reducerhandler" class="xref page">reducerHandler</a>.</p>
 </li>
 <li>
 <p><code>transaction</code>: The complete transaction object which was posted to the node.</p>
@@ -1057,81 +1039,6 @@ Must be unique.</td>
     );
 }</code></pre>
 </div>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="reducers"><a class="anchor" href="#reducers"></a>Reducers</h3>
-<div class="paragraph">
-<p>Reducers are functions which can be invoked via Remote-Procedure-Calls (RPC) by other modules.</p>
-</div>
-<div class="paragraph">
-<p>Reducers have access to the <a href="#the-state-store">state store</a>.</p>
-</div>
-<div class="paragraph">
-<p>Modules and Assets can invoke reducers through <a href="#the-reducerhandler">The reducerHandler</a>.</p>
-</div>
-<div class="listingblock">
-<div class="title">Example: Reducers of the Token module</div>
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">public reducers = {
-    // Credit tokens to an account
-    credit: async (params: Record&lt;string, unknown&gt;, stateStore: StateStore): Promise&lt;void&gt; =&gt; {
-        const { address, amount } = params;
-        if (!Buffer.isBuffer(address)) {
-            throw new Error('Address must be a buffer');
-        }
-        if (typeof amount !== 'bigint') {
-            throw new Error('Amount must be a bigint');
-        }
-        if (amount &lt;= BigInt(0)) {
-            throw new Error('Amount must be a positive bigint.');
-        }
-        const account = await stateStore.account.getOrDefault&lt;TokenAccount&gt;(address);
-        account.token.balance += amount;
-        if (account.token.balance &lt; this._minRemainingBalance) {
-            throw new Error(
-                `Remaining balance must be greater than ${this._minRemainingBalance.toString()}`,
-            );
-        }
-        await stateStore.account.set(address, account);
-    },
-    // Debit tokens from an account
-    debit: async (params: Record&lt;string, unknown&gt;, stateStore: StateStore): Promise&lt;void&gt; =&gt; {
-        const { address, amount } = params;
-        if (!Buffer.isBuffer(address)) {
-            throw new Error('Address must be a buffer');
-        }
-        if (typeof amount !== 'bigint') {
-            throw new Error('Amount must be a bigint');
-        }
-        if (amount &lt;= BigInt(0)) {
-            throw new Error('Amount must be a positive bigint.');
-        }
-        const account = await stateStore.account.getOrDefault&lt;TokenAccount&gt;(address);
-        account.token.balance -= amount;
-        if (account.token.balance &lt; this._minRemainingBalance) {
-            throw new Error(
-                `Remaining balance must be greater than ${this._minRemainingBalance.toString()}`,
-            );
-        }
-        await stateStore.account.set(address, account);
-    },
-    // Get the balance of an specific account
-    getBalance: async (
-        params: Record&lt;string, unknown&gt;,
-        stateStore: StateStore,
-    ): Promise&lt;bigint&gt; =&gt; {
-        const { address } = params;
-        if (!Buffer.isBuffer(address)) {
-            throw new Error('Address must be a buffer');
-        }
-        const account = await stateStore.account.getOrDefault&lt;TokenAccount&gt;(address);
-        return account.token.balance;
-    },
-    // Returns the minimum remaining balance for accounts
-    getMinRemainingBalance: async (): Promise&lt;bigint&gt; =&gt; this._minRemainingBalance,
-};</code></pre>
 </div>
 </div>
 </div>
@@ -1184,7 +1091,7 @@ Must be unique.</td>
 <p><code>stateStore</code>: See <a href="#the-state-store">The state store</a>.</p>
 </li>
 <li>
-<p><code>reducerHandler</code>: See <a href="#the-reducerhandler">reducerHandler</a>.</p>
+<p><code>reducerHandler</code>: See <a href="reducers.html#reducerhandler" class="xref page">reducerHandler</a>.</p>
 </li>
 <li>
 <p><code>this._channel</code>: See <a href="../api/lisk-node-rpc.html#channel-for-modules" class="xref page">Channel for modules</a>.</p>
@@ -1209,7 +1116,7 @@ Must be unique.</td>
 <p><code>stateStore</code>: See <a href="#the-state-store">The state store</a>.</p>
 </li>
 <li>
-<p><code>reducerHandler</code>: See <a href="#the-reducerhandler">reducerHandler</a>.</p>
+<p><code>reducerHandler</code>: See <a href="reducers.html#reducerhandler" class="xref page">reducerHandler</a>.</p>
 </li>
 <li>
 <p><code>this._channel</code>: See <a href="../api/lisk-node-rpc.html#channel-for-modules" class="xref page">Channel for modules</a>.</p>
@@ -1234,7 +1141,7 @@ Must be unique.</td>
 <p><code>stateStore</code>: See <a href="#the-state-store">The state store</a>.</p>
 </li>
 <li>
-<p><code>reducerHandler</code>: See <a href="#the-reducerhandler">reducerHandler</a>.</p>
+<p><code>reducerHandler</code>: See <a href="reducers.html#reducerhandler" class="xref page">reducerHandler</a>.</p>
 </li>
 <li>
 <p><code>this._channel</code>: See <a href="../api/lisk-node-rpc.html#channel-for-modules" class="xref page">Channel for modules</a>.</p>
@@ -1259,7 +1166,7 @@ Must be unique.</td>
 <p><code>stateStore</code>: See <a href="#the-state-store">The state store</a>.</p>
 </li>
 <li>
-<p><code>reducerHandler</code>: See <a href="#the-reducerhandler">reducerHandler</a>.</p>
+<p><code>reducerHandler</code>: See <a href="reducers.html#reducerhandler" class="xref page">reducerHandler</a>.</p>
 </li>
 <li>
 <p><code>this._channel</code>: See <a href="../api/lisk-node-rpc.html#channel-for-modules" class="xref page">Channel for modules</a>.</p>
@@ -1284,7 +1191,7 @@ Must be unique.</td>
 <p><code>stateStore</code>: See <a href="#the-state-store">The state store</a>.</p>
 </li>
 <li>
-<p><code>reducerHandler</code>: See <a href="#the-reducerhandler">reducerHandler</a>.</p>
+<p><code>reducerHandler</code>: See <a href="reducers.html#reducerhandler" class="xref page">reducerHandler</a>.</p>
 </li>
 <li>
 <p><code>this._channel</code>: See <a href="../api/lisk-node-rpc.html#channel-for-modules" class="xref page">Channel for modules</a>.</p>

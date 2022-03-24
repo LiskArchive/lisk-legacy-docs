@@ -3,8 +3,18 @@
   'use strict'
   var images = document.querySelectorAll('img')
 
+  function hasParentClass(child, classname){
+    if(child.className.split(' ').indexOf(classname) >= 0) return true;
+    try{
+      //Throws TypeError if child doesn't have parent any more
+      return child.parentNode && hasParentClass(child.parentNode, classname);
+    }catch(TypeError){
+      return false;
+    }
+  }
+
   for (var i = 0; i < images.length; i++) {
-    if (!(images[i].classList.contains('copy-icon') || images[i].classList.contains('pencil'))){
+    if (!(images[i].classList.contains('copy-icon') || images[i].classList.contains('pencil') || hasParentClass(images[i],'overview-box'))){
       images[i].setAttribute('data-zoomable', 'true')
     }
   }
@@ -36,11 +46,8 @@ function switch_style ( css_title )
        i < link_tag.length ; i++ ) {
     if ((link_tag[i].rel.indexOf( "stylesheet" ) != -1) &&
       link_tag[i].title) {
-    console.log('i: ' + link_tag[i].title)
-    console.log('css_tyle : ' + css_title)
       link_tag[i].disabled = true ;
       if (link_tag[i].title == css_title) {
-        console.log('pieeps ' + css_title);
         link_tag[i].disabled = false ;
       }
     }

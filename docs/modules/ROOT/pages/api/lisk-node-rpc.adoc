@@ -1,305 +1,1742 @@
-= RPC endpoints (SDK & Core)
+= RPC API for Lisk nodes
 Mona Bärenfänger <mona@lightcurve.io>
-:description: Introduces the Lisk communication architecture, which is based on IPC Unix Sockets and WebSocket.
-//Settings
+// Settings
 :toc: preamble
 :idprefix:
 :idseparator: -
-:imagesdir: ../../assets/images
-:sdk_docs: lisk-sdk::
-//External URLs
-:url_npm_lisk_sdk: https://www.npmjs.com/package/lisk-sdk
-:url_wiki_ipc: https://en.wikipedia.org/wiki/Inter-process_communication
-:url_websocket: https://en.wikipedia.org/wiki/WebSocket
-:url_eda: https://en.wikipedia.org/wiki/Event-driven_architecture
+// URLs
+:docs_sdk: lisk-sdk::
 // Project URLs
-:url_advanced_architecture: understand-blockchain/architecture.adoc#application
-:url_advanced_rpc: {sdk_docs}actions.adoc
-:url_guides_config_rpc: build-blockchain/configure-app.adoc#rpc
-:url_intro_modules: understand-blockchain/modules-assets.adoc
-:url_intro_modules_assets: understand-blockchain/modules-assets.adoc#assets
-:url_intro_modules_lifecycle: understand-blockchain/modules-assets.adoc#lifecycle-hooks
-:url_intro_modules_statestore: understand-blockchain/modules-assets.adoc#the-state-store
-:url_intro_plugins: understand-blockchain/plugins.adoc
-:url_intro_plugins_load: understand-blockchain/plugins.adoc#defining-the-plugin-logic
-:url_references_elements_apiclient: {sdk_docs}references/lisk-elements/api-client.adoc
-:url_references_elements_client: {sdk_docs}references/lisk-elements/client.adoc
-:url_references_plugins_monitor: {sdk_docs}plugins/monitor-plugin.adoc
-:url_advanced_rpc_actions: {sdk_docs}actions.adoc
-:url_advanced_rpc_events: {sdk_docs}events.adoc
-:url_guides_asset: build-blockchain/create-asset.adoc
-:url_lisk_sdk: glossary.adoc#lisk-sdk
+:url_general_endpoints: understand-blockchain/endpoints.adoc
+:url_modules: {docs_sdk}modules/index.adoc
+:url_plugins: {docs_sdk}plugins/index.adoc
 
-The open Lisk communication architecture is based on two different RPC (Remote-Procedure-Call), API modes: {url_wiki_ipc}[Inter-Process Communication (IPC)^] and {url_websocket}[WebSocket (WS)^].
-The xref:{url_advanced_architecture}[Application] can be configured to either expose an IPC or a WS API that can be used by internal components such as modules and plugins, as well as by any external service such as other scripts in JS, a tool in Rust, or a Python daemon.
+A reference of all actions and events that are provided by the Lisk Framework for a blockchain application.
 
-TIP: For more information about the configuration of the RPC endpoints, check out the xref:{url_guides_config_rpc}[configuration guide].
+TIP: For mor information about the public application endpoints, check out the xref:{url_general_endpoints}[] page.
 
-image::intro/communication-architecture.png[]
+== Module- and plugin-specific actions and events
 
-[[the-api-client]]
-== The API client
+Modules and plugins often expose additional events and actions to the application.
+All actions and events registered with the application are available as RPC endpoints.
 
-The xref:{url_references_elements_apiclient}[] simplifies sending API requests to a blockchain application via IPC or WS.
+The actions and events of the official modules and plugins are described on their respective reference pages, see xref:{url_modules}[] and xref:{url_plugins}[].
 
-It can be imported in any JS client application.
-
-It  provides an interface to *subscribe* to all events and to *invoke* actions of the blockchain application and its' modules & plugins.
-
-TIP: To conveniently communicate with a blockchain application, use the `apiClient` which is included in the xref:{url_references_elements_client}[@liskhq/lisk-client] and the {url_npm_lisk_sdk}[lisk-sdk^] packages.
-
-[tabs]
-
-=====
-WS API client example::
-+
---
-[source,js]
-----
-const { apiClient } = require('@liskhq/lisk-client');
-let clientCache;
-const nodeAPIURL = 'ws://localhost:8080/ws';
-
-const getClient = async () => {
-	if (!clientCache) {
-		clientCache = await apiClient.createWSClient(nodeAPIURL);
-	}
-	return clientCache;
-};
-
-const blockId = 123;
-
-getClient().then((client) => {
-	client.invoke("app:getBlockByID", {
-		id: blockId
-	}).then(res => {
-		const decodedBlock = client.block.decode(res);
-		console.log("Decoded block: ", decodedBlock);
-		process.exit(0);
-	});
-});
-----
---
-IPC API client example::
-+
---
-[source,js]
-----
-const { apiClient } = require('@liskhq/lisk-client');
-let clientCache;
-const nodeAPIURL = 'ws://localhost:8080/ws';
-
-const getClient = async () => {
-    if (!clientCache) {
-        clientCache = await apiClient.createIPCClient('~/.lisk/my-app');
-    }
-    return clientCache;
-};
-
-const blockId = 123;
-
-getClient().then((client) => {
-	client.invoke("app:getBlockByID", {
-		id: blockId
-	}).then(res => {
-		const decodedBlock = client.block.decode(res);
-		console.log("Decoded block: ", decodedBlock);
-		process.exit(0);
-	});
-});
-----
---
-=====
-
-=== IPC vs WS
-
-There are two ways through which a node can communicate via the API:
-
-* IPC (Inter-Process-Communication)
-* WS (WebSocket)
-
-In general, IPC is preferred for local connections because it...
-
-* is slightly faster
-* supports synchronous data exchange
-* does not use the ports of the system, avoiding any risk of collision when the port is already used by another application
-
-WS, on the contrary, should be used if the node API communicates with services on remote servers.
-
-== Channels
-
-All modules and plugins have access to a `channel` to communicate with the application via actions and events.
-
-=== Channel for modules
-
-The channel in modules has only one purpose: it allows a module to publish events to the application which were defined in the <<events>> property of the module.
-
-The channel is accessible inside of a module under `this._channel`.
-It is used especially in the xref:{url_intro_modules_lifecycle}[lifecycle-hooks], to publish the events of the module.
-
-The following function is available for a `channel` inside a module:
-
-* `publish(eventName: string, data?: object)`: Publishes an event.
-
-An example how to use the channel to publish an event is shown below:
-
-[source,js]
-----
-this._channel.publish('hello:newHello', {
-  sender: transaction._senderAddress.toString('hex'),
-  hello: helloAsset.helloString
-});
-----
-
-The above code example will publish the event `hello:newHello` to the application, and attach an object which is containing the sender address and the hello message of the last sent xref:{url_guides_asset}[hello transaction].
-
-=== Channel for plugins
-
-The channel is used inside of the xref:{url_intro_plugins_load}[load()] function of a plugin.
-
-The following functions are available for a `channel` inside a plugin:
-
-* `publish(eventName: string, data?: object)`: Publishes an event.
-* `subscribe(eventName: string, cb: EventCallback)`: Subscribes to an event.
-* `once(actionName: string, cb: EventCallback)`: Executes the callback only once, when receiving the event for the first time.
-* `invoke(actionName: string, params?: object)`: Invokes an action.
-
-[source,js]
-----
-channel.subscribe('app:block:new', ({ data }) => {
-    const decodedBlock = this.codec.decodeBlock(data.block);
-    this._knownTimestamps.push(decodedBlock.header.timestamp);
-    channel.publish('myPlugin:timestamp', { timestamp: decodedBlock.header.timestamp });
-});
-----
-
-== Aliases
-
-<<events>> and <<actions>> are identified by their alias.
-
-Example alias:
-
- "monitor:getTransactionStats"
-
-The alias always consists of the following parts:
-
-. *Prefix:* Consists of the module or plugin name that provides the respective action or event.
-Equals `app` if it's an xref:{url_advanced_rpc}[application event or action].
-The prefix `monitor` in this example is referring the the xref:{url_references_plugins_monitor}[].
-. *Separator:*
-Prefix and suffix are always separated by a colon `:`.
-. *Suffix:* The respective name of the event or action.
-
-== Interfaces
-
-A blockchain application communicates via <<actions>> and <<events>> which can be invoked (actions), or subscribed to (events), via WebSocket.
-
-The different components of the application each have access to different parts of these interfaces.
-This is summarized in the following table.
-
-For each action and event displayed below, the following statements apply:
-
-* ... `reply` means, the component can reply to this kind of RPC request.
-* ... `invoke` means, the component can invoke this kind of RPC request.
-* ... `publish` means, the component can publish events.
-* ... `subscribe` means, the component can subscribe to events.
-
-
-image::intro/sdk-interfaces.png[]
+[TIP]
+To see a full list of all available actions and events of your blockchain application, invoke the actions <<appgetregisteredactions>> and <<appgetregisteredmodules>>.
 
 == Actions
 
 Actions are invoked to receive specific data from the blockchain application.
-Actions are part of the request / response API, and are invoked via RPCs.
+Actions are part of the public request / response API, and are invoked via RPCs.
 
-The following components can *expose* actions:
+=== `app:getRegisteredActions`
 
-* xref:{url_intro_modules}[]
-* xref:{url_intro_plugins}[]
-* and also the application itself, see xref:{url_advanced_rpc_actions}[application actions]
+Returns a list of all actions known to the application.
 
-The following components can *invoke* actions:
+Includes actions from registered modules and plugins.
 
-* Plugins
-* External services/applications
+==== Input
+none
 
-=== How to invoke actions
-
-The first argument is always the <<aliases,alias>>.
-If input data is required, it is provided as a second argument.
-
-[tabs]
-
-=====
-API client::
-+
---
-Actions can be invoked by <<the-api-client>>.
-
-.How to invoke different kind of actions with the API client
+.Returns
+[%collapsible]
+====
+.Example output
 [source,js]
 ----
-const data = await client.invoke('app:getSchema'); // <1>
-const data = await client.invoke('app:actionName', input); // <2>
-client.invoke('monitor:getTransactionStats').then((val) => { // <3>
-    console.log(val);
+[
+    'app:getConnectedPeers',
+    'app:getDisconnectedPeers',
+    'app:getNetworkStats',
+    'app:getForgers',
+    'app:updateForgingStatus',
+    'app:getForgingStatus',
+    'app:getTransactionsFromPool',
+    'app:postTransaction',
+    'app:getLastBlock',
+    'app:getAccount',
+    'app:getAccounts',
+    'app:getBlockByID',
+    'app:getBlocksByIDs',
+    'app:getBlockByHeight',
+    'app:getBlocksByHeightBetween',
+    'app:getTransactionByID',
+    'app:getTransactionsByIDs',
+    'app:getSchema',
+    'app:getRegisteredModules',
+    'app:getNodeInfo',
+    'app:getRegisteredActions',
+    'app:getRegisteredEvents',
+    'dpos:getAllDelegates',
+    'dpos:getUnlockings'
+  ]
+----
+====
+
+=== `app:getRegisteredEvents`
+
+Returns a list of all events known to the application.
+
+Includes events from registered modules and plugins.
+
+==== Input
+none
+
+.Returns
+[%collapsible]
+====
+.Example output
+[source,js]
+----
+[
+    'app:ready',
+    'app:shutdown',
+    'app:network:event',
+    'app:network:ready',
+    'app:transaction:new',
+    'app:chain:fork',
+    'app:chain:validators:change',
+    'app:block:new',
+    'app:block:delete',
+    'token:registeredToBus',
+    'token:loading:started',
+    'token:loading:finished',
+    'token:unloading:started',
+    'token:unloading:finished',
+    'token:unloading:error',
+    'sequence:registeredToBus',
+    'sequence:loading:started',
+    'sequence:loading:finished',
+    'sequence:unloading:started',
+    'sequence:unloading:finished',
+    'sequence:unloading:error',
+    'keys:registeredToBus',
+    'keys:loading:started',
+    'keys:loading:finished',
+    'keys:unloading:started',
+    'keys:unloading:finished',
+    'keys:unloading:error',
+    'dpos:registeredToBus',
+    'dpos:loading:started',
+    'dpos:loading:finished',
+    'dpos:unloading:started',
+    'dpos:unloading:finished',
+    'dpos:unloading:error'
+  ]
+----
+====
+
+=== `app:getRegisteredModules`
+Gets a list of all modules that are registered in the application.
+
+==== Input
+none
+
+.Returns
+[%collapsible]
+====
+.Example output
+[source,json]
+----
+[
+  {
+     "id":2,
+     "name":"token",
+     "actions":[],
+     "events":[],
+     "reducers":[
+        "token:credit",
+        "token:debit",
+        "token:getBalance",
+        "token:getMinRemainingBalance"
+     ],
+     "transactionAssets":[
+        {
+           "id":0,
+           "name":"transfer"
+        }
+     ]
+  },
+  {
+     "id":3,
+     "name":"sequence",
+     "actions":[],
+     "events":[],
+     "reducers":[],
+     "transactionAssets":[]
+  },
+  {
+     "id":4,
+     "name":"keys",
+     "actions":[],
+     "events":[],
+     "reducers":[],
+     "transactionAssets":[
+        {
+           "id":0,
+           "name":"registerMultisignatureGroup"
+        }
+     ]
+  },
+  {
+     "id":5,
+     "name":"dpos",
+     "actions":[
+        "dpos:getAllDelegates"
+     ],
+     "events":[],
+     "reducers":[],
+     "transactionAssets":[
+        {
+           "id":0,
+           "name":"registerDelegate"
+        },
+        {
+           "id":1,
+           "name":"voteDelegate"
+        },
+        {
+           "id":2,
+           "name":"unlockToken"
+        },
+        {
+           "id":3,
+           "name":"reportDelegateMisbehavior"
+        }
+     ]
+  },
+  {
+     "id":1000,
+     "name":"hello",
+     "actions":["hello:amountOfHellos"],
+     "events":["hello:newHello"],
+     "reducers":[],
+     "transactionAssets":[
+        {
+           "id":0,
+           "name":"helloAsset"
+        }
+     ]
+  }
+]
+----
+====
+
+=== `app:getNodeInfo`
+Gets information about the node.
+
+==== Input
+none
+
+.Returns
+[%collapsible]
+====
+.Example output
+[source,json]
+----
+{
+  "version":"2.1.0",
+  "networkVersion":"1.1",
+  "networkIdentifier":"f9aa0b17154aa27aa17f585b96b19a6559ed6ef3805352188312912c7b9192e5",
+  "lastBlockID":"3516635832d937949409474d3e53bdb7db5f1fa32cf68ebe8fdc915573ef0f2f",
+  "height":119,
+  "finalizedHeight":0,
+  "syncing":false,
+  "unconfirmedTransactions":0,
+  "genesisConfig":{
+     "blockTime":10,
+     "maxPayloadLength":15360,
+     "bftThreshold":68,
+     "minFeePerByte":1000,
+     "baseFees":[
+        {
+           "moduleID":5,
+           "assetID":0,
+           "baseFee":"1000000000"
+        }
+     ],
+     "rewards":{
+        "milestones":[
+           "500000000",
+           "400000000",
+           "300000000",
+           "200000000",
+           "100000000"
+        ],
+        "offset":2160,
+        "distance":3000000
+     },
+     "communityIdentifier":"hello",
+     "minRemainingBalance":"5000000",
+     "activeDelegates":101,
+     "standbyDelegates":2,
+     "delegateListRoundOffset":2
+  },
+  "registeredModules":[ /*registered modules*/ ]
+}
+----
+====
+
+=== `app:getConnectedPeers`
+Returns all connected peers.
+
+==== Input
+none
+
+.Returns
+[%collapsible]
+====
+.Example output
+[source,json]
+----
+[
+  {
+    "networkIdentifier": "97fe70c3289c3c4cd310891952ab457dd86e345d37a5144aa96d2ed8892d7c82",
+    "nonce": "09e2fc804dc18386",
+    "networkVersion": "1.0",
+    "options": {
+      "height": 3240,
+      "maxHeightPrevoted": 3143,
+      "blockVersion": 2,
+      "lastBlockID": "fc108ac8e2a39eb00ba0dc9bb2158f3e1b77b0c2dfd6f014ebcf4a5d6092f6de"
+    },
+    "ipAddress": "127.0.0.1",
+    "port": 5005,
+    "peerId": "127.0.0.1:5005"
+  }
+]
+----
+
+=== `app:getDisconnectedPeers`
+Returns all disconnected peers
+
+==== Input
+none
+
+==== Returns
+.Example output
+[source,json]
+----
+[
+  {
+    "networkIdentifier": "97fe70c3289c3c4cd310891952ab457dd86e345d37a5144aa96d2ed8892d7c82",
+    "nonce": "09e2fc804dc18386",
+    "networkVersion": "1.0",
+    "options": {},
+    "ipAddress": "127.0.0.1",
+    "port": 5005,
+    "peerId": "127.0.0.1:5005"
+  }
+]
+
+
+----
+====
+
+=== `app:getForgingStatus`
+Gets information about the forging status of the node.
+
+==== Input
+none
+
+.Returns
+[%collapsible]
+====
+.Example output
+[source,json]
+----
+[
+  {
+     "address":"9cabee3d27426676b852ce6b804cb2fdff7cd0b5",
+     "forging":true
+  }
+]
+----
+====
+
+=== `app:updateForgingStatus`
+Enable or disable forging for a registered forger in the config.
+
+==== Input
+
+[source,typescript]
+----
+{
+  address: string; <1>
+  password: string; <2>
+  forging: boolean; <3>
+  height?: number; <4>
+  maxHeightPrevoted?: number; <5>
+  maxHeightPreviouslyForged?: number; <6>
+  override?: boolean; <7>
+}
+----
+<1> Address as hex string.
+<2> Password to decrypt the passphrase.
+<3> When enabling forging, the value should be `true`.
+<4> Height of the last forged block by the delegate.
+<5> Only required when enabling forging.
+Height of the previously prevoted block by any delegate.
+Must match the value in the `forger_info` data.
+<6> Only required when enabling forging.
+Height of the previously last forged block.
+Must match the value in the `forger_info` data.
+<7> Optional: If true, overrides `maxHeightPreviouslyForged` and `maxHeightPrevoted` values in the forger_info data.
+
+
+.Returns
+[%collapsible]
+====
+.Example output after disabling forging
+[source,json]
+----
+{
+  "address": "d6a79b4f59f7da027405277b55783ba7dd255aa9"
+}
+----
+====
+
+=== `app:getAccount`
+Gets information about an account based on its address.
+
+==== Example
+
+[source,js]
+----
+client.invoke("app:getAccount", {
+    address: "d6a79b4f59f7da027405277b55783ba7dd255aa9"
+}).then(res => {
+    console.log(res);
+    const accObject = client.account.decode(res);
+    const accJSON = client.account.toJSON(accObject);
+    console.log(accJSON);
 });
 ----
 
-<1> How to invoke an action.
-<2> How to invoke an action that needs some input data.
-<3> Example of how to invoke an action of the monitor plugin.
---
-Channel::
-+
---
-Actions can be invoked by plugins with the <<channel-for-plugins>>.
+==== Input
+[source,typescript]
+----
+{
+  address: string; <1>
+}
+----
+<1> Address as hex string.
 
-.How to invoke an action inside a plugin
+.Returns
+[%collapsible]
+====
+.Account binary example output
 [source,js]
 ----
-this._nodeInfo = await this.channel.invoke("app:getNodeInfo");
+0a14d6a79b4f59f7da027405277b55783ba7dd255aa912070880d6d2c881031a020800220208002a190a170a0c64656c65676174655f313031180120ac1628003000c23e0e0a0c48656c6c6f20576f726c6421
 ----
---
-=====
+.Account JSON example output
+[source,js]
+----
+{
+  address: 'd6a79b4f59f7da027405277b55783ba7dd255aa9',
+  token: { balance: '103500000000' },
+  sequence: { nonce: '0' },
+  keys: { numberOfSignatures: 0, mandatoryKeys: [], optionalKeys: [] },
+  dpos: {
+    delegate: {
+      username: 'delegate_101',
+      pomHeights: [],
+      consecutiveMissedBlocks: 1,
+      lastForgedHeight: 2860,
+      isBanned: false,
+      totalVotesReceived: '0'
+    },
+    sentVotes: [],
+    unlocking: []
+  },
+  hello: { helloMessage: 'Hello World!' }
+}
+----
+====
+
+=== `app:getAccounts`
+Gets information about multiple accounts based on their address.
+
+==== Input
+[source,typescript]
+----
+{
+  address: string[]; <1>
+}
+----
+<1> List of addresses in hexadecimal representation.
+
+.Returns
+[%collapsible]
+====
+.Example output
+[source,json]
+----
+[
+  "0a14d6a79b4f59f7da027405277b55783ba7dd255aa912070880d6d2c881031a020800220208002a190a170a0c64656c65676174655f313031180120ac1628003000c23e0e0a0c48656c6c6f20576f726c6421",
+  "0a147c1facd5a55044f4b2ec3329b8ae8382959d4d7e1206088099e6e1301a020801220208002a0c0a0a0a001800200028003000c23e0c0a0a48656c6c6f204c69736b"
+]
+----
+====
+
+=== `app:getLastBlock`
+Gets the last forged block of the blockchain.
+
+==== Input
+none
+
+.Returns
+[%collapsible]
+====
+.Example output
+[source,js]
+----
+"0ace01080210e7c9c8fe0518b5012220a6d70932fa088a10e34f89c49235851674efa478bef485b3501ace2ce3553b202a20e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b8553220378459e753aad9b1cc86d4d91c53045c01728529668105535064ecf66f5e612638004217089a0110001a10537de22286d9a750b40546f0541b67b34a403af7b23fde6585e18def6580bc5ab7de042e136b996e7c650d806d179e0bac74b72f0ec543013c8b3f4a4ce789b1c2e13f09a9869e5e854c9369f234c8db0502"
+----
+====
+
+=== `app:getBlockByID`
+Gets information about a block based on its ID.
+
+==== Input
+[source,typescript]
+----
+{
+  id: string; <1>
+}
+----
+<1> block ID in hex string
+
+.Returns
+[%collapsible]
+====
+.Example output
+[source,js]
+----
+"0acf01080210c9f1c8fe0518f7042220a1f1d770d6b357aa380a03bac50d5326d71e1852f034832be4a8f7d51dc297422a20d98e6b8e5f2d0c07a7223ed8aef260ebdc16cb9109454fb800e26dd5133cd3943220b3ea2960041507cb3deb7172f68836048c1d980e06ba4bc0b9a75262d66b37ec3800421808b00410ad041a10eea29fbfbdf4c83c26ee8d8805e555304a407c641f52de39d7790ffe0568f89eae06b2f8a71c2af08dac7b96b92b486668376bfbbcb63ef1334284731847219e5726157c789823b128a2d85f8552038e0d0a128f010802100018072080ade2042a200fe9a3f1a21b5530f27f87a414b549e79a940bf24fdf2b2f05e7f22aeeecc86a321e088088debe0112147c1facd5a55044f4b2ec3329b8ae8382959d4d7e1a003a4012287dca67b83563c345be901d74b54dae1e9c78dae33e67feed5fa8047e1869ed5aaddf1de2337a26a774161bf9364e1d2c31b52a1eb24c61bbeb0ab514050d"
+----
+====
+
+=== `app:getBlocksByIDs`
+Gets information about multiple blocks based on their IDs.
+
+==== Input
+[source,typescript]
+----
+{
+  ids: string[]; <1>
+}
+----
+<1> block ID in hex string
+
+.Returns
+[%collapsible]
+====
+.Example output
+[source,json]
+----
+["0acf01080210c9f1c8fe0518f7042220a1f1d770d6b357aa380a03bac50d5326d71e1852f034832be4a8f7d51dc297422a20d98e6b8e5f2d0c07a7223ed8aef260ebdc16cb9109454fb800e26dd5133cd3943220b3ea2960041507cb3deb7172f68836048c1d980e06ba4bc0b9a75262d66b37ec3800421808b00410ad041a10eea29fbfbdf4c83c26ee8d8805e555304a407c641f52de39d7790ffe0568f89eae06b2f8a71c2af08dac7b96b92b486668376bfbbcb63ef1334284731847219e5726157c789823b128a2d85f8552038e0d0a128f010802100018072080ade2042a200fe9a3f1a21b5530f27f87a414b549e79a940bf24fdf2b2f05e7f22aeeecc86a321e088088debe0112147c1facd5a55044f4b2ec3329b8ae8382959d4d7e1a003a4012287dca67b83563c345be901d74b54dae1e9c78dae33e67feed5fa8047e1869ed5aaddf1de2337a26a774161bf9364e1d2c31b52a1eb24c61bbeb0ab514050d"]
+----
+====
+
+=== `app:getBlockByHeight`
+Gets information about a block based on its height.
+
+==== Input
+[source,typescript]
+----
+{
+  height: number; <1>
+}
+----
+<1> block height
+
+.Returns
+[%collapsible]
+====
+.Example output
+[source,json]
+----
+"0acc01080210abbfc8fe05187b2220908e5c18cedd5fc0f1720663b34bccfdc6ee7d8386774635efb5eaf109b1898a2a20e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b8553220b3ea2960041507cb3deb7172f68836048c1d980e06ba4bc0b9a75262d66b37ec38004216085710001a101e072d7ec38f6956537a1ad008df53f74a40fc1927266c040b61707cfd686d47896890ee5a934547abcd2f4d697fffd86c91f23cc1a27df8b1e13a914b4478fded0de4ed6d4fecca161a76f92e8038a6e90f"
+----
+====
+
+=== `app:getBlocksByHeightBetween`
+Gets all blocks starting from height `from`, until height `to`.
+
+==== Input
+[source,typescript]
+----
+{
+  from: number; <1>
+  to: number; <2>
+}
+----
+<1> block height to fetch from
+<2> block height to fetch to
+
+.Returns
+[%collapsible]
+====
+.Example output
+[source,js]
+----
+[
+   "0ace01080210a5d5c8fe0518ae022220c1dd20a1d19a2e90c140d76a2a15214fb7e4a805cb0a8bcd2115fd354b82285b2a20e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855322071d21f1b2ebd2968157e013fe6c4eac5eb0f1b2449e87735bf5bcb950439fce83800421708e00110001a10bb060bd8ec0ca23573cda88093e637424a40786b15a51d50bd575a8972b582b5a4557e9ec0f4f0bec75d6d76871179b9a06de41443eb560a03e1bcd43273eaa209fe4e23cbf715d41261e521212536d7fc0e",
+   "0ace010802109bd5c8fe0518ad02222065dc50826f48e3943eab6111fd40c80a935885feb6eca55da99a2c0d8051a7d82a20e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b8553220a4873bb8edab1822bb38c65c6948e1cbee83e62ad00fb9b6c6c3893767354b443800421708df0110001a106dbd6013796ed3a52c5052f3d94c8a9a4a40a7653b4d52ca3a81f83b0d6f16892ec9b2fb09a999e716215aaef35a117634fd18e38cfb219ced077f716643f21852e5b60806b209224b3c2f81174c5c57e00a",
+   "0ace0108021091d5c8fe0518ac0222207551ae69b656142bce7ec5af177522f9806ef8cfab3741ef7e3266f489e9e48a2a20e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b85532201c0960d064e45e0a603a26d0892e998a39bec8cd2c8c25f8c75d2bef419af9d23800421708de0110001a10f4dc8b2667a090a3f8a6e4587ce815b24a40d8801f4435b7d805a4569608d80b66f235b8ef1cba6a7d4b0c374692eb7233fb2db347abf8ceef01b57b49758ebdade8197858b85921c765c7675da7c4f79a06",
+   "0ace0108021087d5c8fe0518ab022220ef89d40f02678e8fe89d388f7339e991dcf30b18eacf4791720c3d65f042e6aa2a20e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b85532204c4b4357efed0a0d395ccd7108ddd7ca43652860e2aae9e52738212e2d8952a73800421708dd0110001a106e9bb3eeeb9ac7e48aa71e850f86ae124a40be3c885d4291b20300db6ddd18bf5068a3182db58864532f8e4a380f12a577ee87869c0e3706c2aa2aac3db59baf8a27112cd49ff482201ae856f79b7c04370e"
+]
+----
+====
+
+=== `app:getTransactionByID`
+Gets information about a single transaction based on its ID.
+
+==== Input
+[source,typescript]
+----
+{
+  id: string; <1>
+}
+----
+<1> transaction ID in hex string
+
+.Returns
+[%collapsible]
+====
+.Example output
+[source,json]
+----
+"0802100018062080ade2042a200fe9a3f1a21b5530f27f87a414b549e79a940bf24fdf2b2f05e7f22aeeecc86a321e088088debe0112147c1facd5a55044f4b2ec3329b8ae8382959d4d7e1a003a401adac14de6bfab8ec103cfb7486449180ee0c9f3e60de9e555940c4b73856d21acb366eaa89693b087a5858cf6713c0eae911c5869ad23dbc1f386de177d8205"
+----
+====
+
+=== `app:getTransactionsByIDs`
+Gets information about multiple transactions based on their IDs.
+
+==== Input
+[source,typescript]
+----
+{
+  ids: string[]; <1>
+}
+----
+<1> transaction ID in hex string
+
+.Returns
+[%collapsible]
+====
+.Example output
+[source,json]
+----
+[
+  "0802100018062080ade2042a200fe9a3f1a21b5530f27f87a414b549e79a940bf24fdf2b2f05e7f22aeeecc86a321e088088debe0112147c1facd5a55044f4b2ec3329b8ae8382959d4d7e1a003a401adac14de6bfab8ec103cfb7486449180ee0c9f3e60de9e555940c4b73856d21acb366eaa89693b087a5858cf6713c0eae911c5869ad23dbc1f386de177d8205"
+]
+----
+====
+
+=== `app:getTransactionsFromPool`
+Gets information about all transactions that are currently in the transaction pool of the application.
+
+==== Input
+none
+
+.Returns
+[%collapsible]
+====
+.Example output
+[source,json]
+----
+[
+  "0802100018012080ade2042a200fe9a3f1a21b5530f27f87a414b549e79a940bf24fdf2b2f05e7f22aeeecc86a321e088094ebdc0312147c1facd5a55044f4b2ec3329b8ae8382959d4d7e1a003a409a4128fc04d167d44490e24e7f29be2465044762b8469a96a5ab33889e2411004b3f8fab002a1f5563a0edd16324bc387c13fb2d7108e1592e86c8ed855d5006"
+]
+----
+====
+
+=== `app:postTransaction`
+Posts a transaction to the node.
+
+==== Input
+[source,typescript]
+----
+{
+  transaction: string; <1>
+}
+----
+<1> encoded transaction in hex string
+
+=== `app:getForgers`
+Returns the status of all registered forgers information for the current round.
+
+==== Input
+none
+
+.Returns
+[%collapsible]
+====
+.Example output
+[source,js]
+----
+[
+  {
+     "address":"d8e611bafd70a549f035cf61ab0d6ed9e7f25c4e",
+     "nextForgingTime":1607606327
+  },
+  {
+     "address":"dcb5bf35b6d521195e613c42483f520139e2331d",
+     "nextForgingTime":1607606337
+  },
+  // ...
+  {
+     "address":"d5e1f52cbe4a11a3730b98f52109b57602a9c4a1",
+     "nextForgingTime":1607607347
+  }
+]
+----
+====
+
+=== `app:getSchema`
+Gets the app schema.
+
+==== Input
+none
+
+.Returns
+[%collapsible]
+====
+.Example output
+[source,json]
+----
+{
+  "account":{
+     "$id":"/account/base",
+     "type":"object",
+     "properties":{
+        "address":{
+           "dataType":"bytes",
+           "fieldNumber":1
+        },
+        "token":{
+           "type":"object",
+           "properties":{
+              "balance":{
+                 "fieldNumber":1,
+                 "dataType":"uint64"
+              }
+           },
+           "fieldNumber":2
+        },
+        "sequence":{
+           "type":"object",
+           "properties":{
+              "nonce":{
+                 "fieldNumber":1,
+                 "dataType":"uint64"
+              }
+           },
+           "fieldNumber":3
+        },
+        "keys":{
+           "type":"object",
+           "properties":{
+              "numberOfSignatures":{
+                 "dataType":"uint32",
+                 "fieldNumber":1
+              },
+              "mandatoryKeys":{
+                 "type":"array",
+                 "items":{
+                    "dataType":"bytes"
+                 },
+                 "fieldNumber":2
+              },
+              "optionalKeys":{
+                 "type":"array",
+                 "items":{
+                    "dataType":"bytes"
+                 },
+                 "fieldNumber":3
+              }
+           },
+           "fieldNumber":4
+        },
+        "dpos":{
+           "type":"object",
+           "properties":{
+              "delegate":{
+                 "type":"object",
+                 "fieldNumber":1,
+                 "properties":{
+                    "username":{
+                       "dataType":"string",
+                       "fieldNumber":1
+                    },
+                    "pomHeights":{
+                       "type":"array",
+                       "items":{
+                          "dataType":"uint32"
+                       },
+                       "fieldNumber":2
+                    },
+                    "consecutiveMissedBlocks":{
+                       "dataType":"uint32",
+                       "fieldNumber":3
+                    },
+                    "lastForgedHeight":{
+                       "dataType":"uint32",
+                       "fieldNumber":4
+                    },
+                    "isBanned":{
+                       "dataType":"boolean",
+                       "fieldNumber":5
+                    },
+                    "totalVotesReceived":{
+                       "dataType":"uint64",
+                       "fieldNumber":6
+                    }
+                 },
+                 "required":[
+                    "username",
+                    "pomHeights",
+                    "consecutiveMissedBlocks",
+                    "lastForgedHeight",
+                    "isBanned",
+                    "totalVotesReceived"
+                 ]
+              },
+              "sentVotes":{
+                 "type":"array",
+                 "fieldNumber":2,
+                 "items":{
+                    "type":"object",
+                    "properties":{
+                       "delegateAddress":{
+                          "dataType":"bytes",
+                          "fieldNumber":1
+                       },
+                       "amount":{
+                          "dataType":"uint64",
+                          "fieldNumber":2
+                       }
+                    },
+                    "required":[
+                       "delegateAddress",
+                       "amount"
+                    ]
+                 }
+              },
+              "unlocking":{
+                 "type":"array",
+                 "fieldNumber":3,
+                 "items":{
+                    "type":"object",
+                    "properties":{
+                       "delegateAddress":{
+                          "dataType":"bytes",
+                          "fieldNumber":1
+                       },
+                       "amount":{
+                          "dataType":"uint64",
+                          "fieldNumber":2
+                       },
+                       "unvoteHeight":{
+                          "dataType":"uint32",
+                          "fieldNumber":3
+                       }
+                    },
+                    "required":[
+                       "delegateAddress",
+                       "amount",
+                       "unvoteHeight"
+                    ]
+                 }
+              }
+           },
+           "fieldNumber":5
+        },
+        "hello":{
+           "type":"object",
+           "properties":{
+              "helloMessage":{
+                 "fieldNumber":1,
+                 "dataType":"string"
+              }
+           },
+           "fieldNumber":1000
+        }
+     },
+     "required":[
+        "address",
+        "token",
+        "sequence",
+        "keys",
+        "dpos",
+        "hello"
+     ]
+  },
+  "block":{
+     "$id":"/block",
+     "type":"object",
+     "properties":{
+        "header":{
+           "dataType":"bytes",
+           "fieldNumber":1
+        },
+        "payload":{
+           "type":"array",
+           "items":{
+              "dataType":"bytes"
+           },
+           "fieldNumber":2
+        }
+     },
+     "required":[
+        "header",
+        "payload"
+     ]
+  },
+  "blockHeader":{
+     "$id":"/block/header",
+     "type":"object",
+     "properties":{
+        "version":{
+           "dataType":"uint32",
+           "fieldNumber":1
+        },
+        "timestamp":{
+           "dataType":"uint32",
+           "fieldNumber":2
+        },
+        "height":{
+           "dataType":"uint32",
+           "fieldNumber":3
+        },
+        "previousBlockID":{
+           "dataType":"bytes",
+           "fieldNumber":4
+        },
+        "transactionRoot":{
+           "dataType":"bytes",
+           "fieldNumber":5
+        },
+        "generatorPublicKey":{
+           "dataType":"bytes",
+           "fieldNumber":6
+        },
+        "reward":{
+           "dataType":"uint64",
+           "fieldNumber":7
+        },
+        "asset":{
+           "dataType":"bytes",
+           "fieldNumber":8
+        },
+        "signature":{
+           "dataType":"bytes",
+           "fieldNumber":9
+        }
+     },
+     "required":[
+        "version",
+        "timestamp",
+        "height",
+        "previousBlockID",
+        "transactionRoot",
+        "generatorPublicKey",
+        "reward",
+        "asset"
+     ]
+  },
+  "blockHeadersAssets":{
+     "0":{
+        "$id":"/genesisBlock/header/asset",
+        "type":"object",
+        "required":[
+           "accounts",
+           "initDelegates",
+           "initRounds"
+        ],
+        "properties":{
+           "accounts":{
+              "type":"array",
+              "fieldNumber":1,
+              "items":{
+                 "$id":"/account/base",
+                 "type":"object",
+                 "properties":{
+                    "address":{
+                       "dataType":"bytes",
+                       "fieldNumber":1
+                    },
+                    "token":{
+                       "type":"object",
+                       "properties":{
+                          "balance":{
+                             "fieldNumber":1,
+                             "dataType":"uint64"
+                          }
+                       },
+                       "fieldNumber":2
+                    },
+                    "sequence":{
+                       "type":"object",
+                       "properties":{
+                          "nonce":{
+                             "fieldNumber":1,
+                             "dataType":"uint64"
+                          }
+                       },
+                       "fieldNumber":3
+                    },
+                    "keys":{
+                       "type":"object",
+                       "properties":{
+                          "numberOfSignatures":{
+                             "dataType":"uint32",
+                             "fieldNumber":1
+                          },
+                          "mandatoryKeys":{
+                             "type":"array",
+                             "items":{
+                                "dataType":"bytes"
+                             },
+                             "fieldNumber":2
+                          },
+                          "optionalKeys":{
+                             "type":"array",
+                             "items":{
+                                "dataType":"bytes"
+                             },
+                             "fieldNumber":3
+                          }
+                       },
+                       "fieldNumber":4
+                    },
+                    "dpos":{
+                       "type":"object",
+                       "properties":{
+                          "delegate":{
+                             "type":"object",
+                             "fieldNumber":1,
+                             "properties":{
+                                "username":{
+                                   "dataType":"string",
+                                   "fieldNumber":1
+                                },
+                                "pomHeights":{
+                                   "type":"array",
+                                   "items":{
+                                      "dataType":"uint32"
+                                   },
+                                   "fieldNumber":2
+                                },
+                                "consecutiveMissedBlocks":{
+                                   "dataType":"uint32",
+                                   "fieldNumber":3
+                                },
+                                "lastForgedHeight":{
+                                   "dataType":"uint32",
+                                   "fieldNumber":4
+                                },
+                                "isBanned":{
+                                   "dataType":"boolean",
+                                   "fieldNumber":5
+                                },
+                                "totalVotesReceived":{
+                                   "dataType":"uint64",
+                                   "fieldNumber":6
+                                }
+                             },
+                             "required":[
+                                "username",
+                                "pomHeights",
+                                "consecutiveMissedBlocks",
+                                "lastForgedHeight",
+                                "isBanned",
+                                "totalVotesReceived"
+                             ]
+                          },
+                          "sentVotes":{
+                             "type":"array",
+                             "fieldNumber":2,
+                             "items":{
+                                "type":"object",
+                                "properties":{
+                                   "delegateAddress":{
+                                      "dataType":"bytes",
+                                      "fieldNumber":1
+                                   },
+                                   "amount":{
+                                      "dataType":"uint64",
+                                      "fieldNumber":2
+                                   }
+                                },
+                                "required":[
+                                   "delegateAddress",
+                                   "amount"
+                                ]
+                             }
+                          },
+                          "unlocking":{
+                             "type":"array",
+                             "fieldNumber":3,
+                             "items":{
+                                "type":"object",
+                                "properties":{
+                                   "delegateAddress":{
+                                      "dataType":"bytes",
+                                      "fieldNumber":1
+                                   },
+                                   "amount":{
+                                      "dataType":"uint64",
+                                      "fieldNumber":2
+                                   },
+                                   "unvoteHeight":{
+                                      "dataType":"uint32",
+                                      "fieldNumber":3
+                                   }
+                                },
+                                "required":[
+                                   "delegateAddress",
+                                   "amount",
+                                   "unvoteHeight"
+                                ]
+                             }
+                          }
+                       },
+                       "fieldNumber":5
+                    },
+                    "hello":{
+                       "type":"object",
+                       "properties":{
+                          "helloMessage":{
+                             "fieldNumber":1,
+                             "dataType":"string"
+                          }
+                       },
+                       "fieldNumber":1000
+                    }
+                 },
+                 "required":[
+                    "address",
+                    "token",
+                    "sequence",
+                    "keys",
+                    "dpos",
+                    "hello"
+                 ]
+              }
+           },
+           "initDelegates":{
+              "type":"array",
+              "items":{
+                 "dataType":"bytes"
+              },
+              "fieldNumber":2,
+              "minItems":1
+           },
+           "initRounds":{
+              "dataType":"uint32",
+              "fieldNumber":3,
+              "minimum":3
+           }
+        }
+     },
+     "2":{
+        "$id":"/blockHeader/asset/v2",
+        "type":"object",
+        "properties":{
+           "maxHeightPreviouslyForged":{
+              "dataType":"uint32",
+              "fieldNumber":1
+           },
+           "maxHeightPrevoted":{
+              "dataType":"uint32",
+              "fieldNumber":2
+           },
+           "seedReveal":{
+              "dataType":"bytes",
+              "minLength":16,
+              "maxLength":16,
+              "fieldNumber":3
+           }
+        },
+        "required":[
+           "maxHeightPreviouslyForged",
+           "maxHeightPrevoted",
+           "seedReveal"
+        ]
+     }
+  },
+  "transaction":{
+     "$id":"lisk/transaction",
+     "type":"object",
+     "required":[
+        "moduleID",
+        "assetID",
+        "nonce",
+        "fee",
+        "senderPublicKey",
+        "asset"
+     ],
+     "properties":{
+        "moduleID":{
+           "dataType":"uint32",
+           "fieldNumber":1,
+           "minimum":2
+        },
+        "assetID":{
+           "dataType":"uint32",
+           "fieldNumber":2
+        },
+        "nonce":{
+           "dataType":"uint64",
+           "fieldNumber":3
+        },
+        "fee":{
+           "dataType":"uint64",
+           "fieldNumber":4
+        },
+        "senderPublicKey":{
+           "dataType":"bytes",
+           "fieldNumber":5,
+           "minLength":32,
+           "maxLength":32
+        },
+        "asset":{
+           "dataType":"bytes",
+           "fieldNumber":6
+        },
+        "signatures":{
+           "type":"array",
+           "items":{
+              "dataType":"bytes"
+           },
+           "fieldNumber":7
+        }
+     }
+  },
+  "transactionsAssets":[
+     {
+        "moduleID":2,
+        "moduleName":"token",
+        "assetID":0,
+        "assetName":"transfer",
+        "schema":{
+           "$id":"lisk/transfer-asset",
+           "title":"Transfer transaction asset",
+           "type":"object",
+           "required":[
+              "amount",
+              "recipientAddress",
+              "data"
+           ],
+           "properties":{
+              "amount":{
+                 "dataType":"uint64",
+                 "fieldNumber":1
+              },
+              "recipientAddress":{
+                 "dataType":"bytes",
+                 "fieldNumber":2,
+                 "minLength":20,
+                 "maxLength":20
+              },
+              "data":{
+                 "dataType":"string",
+                 "fieldNumber":3,
+                 "minLength":0,
+                 "maxLength":64
+              }
+           }
+        }
+     },
+     {
+        "moduleID":4,
+        "moduleName":"keys",
+        "assetID":0,
+        "assetName":"registerMultisignatureGroup",
+        "schema":{
+           "$id":"lisk/keys/register",
+           "type":"object",
+           "required":[
+              "numberOfSignatures",
+              "optionalKeys",
+              "mandatoryKeys"
+           ],
+           "properties":{
+              "numberOfSignatures":{
+                 "dataType":"uint32",
+                 "fieldNumber":1,
+                 "minimum":1,
+                 "maximum":64
+              },
+              "mandatoryKeys":{
+                 "type":"array",
+                 "items":{
+                    "dataType":"bytes",
+                    "minLength":32,
+                    "maxLength":32
+                 },
+                 "fieldNumber":2,
+                 "minItems":0,
+                 "maxItems":64
+              },
+              "optionalKeys":{
+                 "type":"array",
+                 "items":{
+                    "dataType":"bytes",
+                    "minLength":32,
+                    "maxLength":32
+                 },
+                 "fieldNumber":3,
+                 "minItems":0,
+                 "maxItems":64
+              }
+           }
+        }
+     },
+     {
+        "moduleID":5,
+        "moduleName":"dpos",
+        "assetID":0,
+        "assetName":"registerDelegate",
+        "schema":{
+           "$id":"lisk/dpos/register",
+           "type":"object",
+           "required":[
+              "username"
+           ],
+           "properties":{
+              "username":{
+                 "dataType":"string",
+                 "fieldNumber":1,
+                 "minLength":1,
+                 "maxLength":20
+              }
+           }
+        }
+     },
+     {
+        "moduleID":5,
+        "moduleName":"dpos",
+        "assetID":1,
+        "assetName":"voteDelegate",
+        "schema":{
+           "$id":"lisk/dpos/vote",
+           "type":"object",
+           "required":[
+              "votes"
+           ],
+           "properties":{
+              "votes":{
+                 "type":"array",
+                 "minItems":1,
+                 "maxItems":20,
+                 "items":{
+                    "type":"object",
+                    "required":[
+                       "delegateAddress",
+                       "amount"
+                    ],
+                    "properties":{
+                       "delegateAddress":{
+                          "dataType":"bytes",
+                          "fieldNumber":1,
+                          "minLength":20,
+                          "maxLength":20
+                       },
+                       "amount":{
+                          "dataType":"sint64",
+                          "fieldNumber":2
+                       }
+                    }
+                 },
+                 "fieldNumber":1
+              }
+           }
+        }
+     },
+     {
+        "moduleID":5,
+        "moduleName":"dpos",
+        "assetID":2,
+        "assetName":"unlockToken",
+        "schema":{
+           "$id":"lisk/dpos/unlock",
+           "type":"object",
+           "required":[
+              "unlockObjects"
+           ],
+           "properties":{
+              "unlockObjects":{
+                 "type":"array",
+                 "minItems":1,
+                 "maxItems":20,
+                 "items":{
+                    "type":"object",
+                    "required":[
+                       "delegateAddress",
+                       "amount",
+                       "unvoteHeight"
+                    ],
+                    "properties":{
+                       "delegateAddress":{
+                          "dataType":"bytes",
+                          "fieldNumber":1,
+                          "minLength":20,
+                          "maxLength":20
+                       },
+                       "amount":{
+                          "dataType":"uint64",
+                          "fieldNumber":2
+                       },
+                       "unvoteHeight":{
+                          "dataType":"uint32",
+                          "fieldNumber":3
+                       }
+                    }
+                 },
+                 "fieldNumber":1
+              }
+           }
+        }
+     },
+     {
+        "moduleID":5,
+        "moduleName":"dpos",
+        "assetID":3,
+        "assetName":"reportDelegateMisbehavior",
+        "schema":{
+           "$id":"lisk/dpos/pom",
+           "type":"object",
+           "required":[
+              "header1",
+              "header2"
+           ],
+           "properties":{
+              "header1":{
+                 "$id":"lisk/block-header",
+                 "type":"object",
+                 "properties":{
+                    "version":{
+                       "dataType":"uint32",
+                       "fieldNumber":1
+                    },
+                    "timestamp":{
+                       "dataType":"uint32",
+                       "fieldNumber":2
+                    },
+                    "height":{
+                       "dataType":"uint32",
+                       "fieldNumber":3
+                    },
+                    "previousBlockID":{
+                       "dataType":"bytes",
+                       "fieldNumber":4
+                    },
+                    "transactionRoot":{
+                       "dataType":"bytes",
+                       "fieldNumber":5
+                    },
+                    "generatorPublicKey":{
+                       "dataType":"bytes",
+                       "fieldNumber":6
+                    },
+                    "reward":{
+                       "dataType":"uint64",
+                       "fieldNumber":7
+                    },
+                    "asset":{
+                       "type":"object",
+                       "fieldNumber":8,
+                       "properties":{
+                          "maxHeightPreviouslyForged":{
+                             "dataType":"uint32",
+                             "fieldNumber":1
+                          },
+                          "maxHeightPrevoted":{
+                             "dataType":"uint32",
+                             "fieldNumber":2
+                          },
+                          "seedReveal":{
+                             "dataType":"bytes",
+                             "fieldNumber":3
+                          }
+                       },
+                       "required":[
+                          "maxHeightPreviouslyForged",
+                          "maxHeightPrevoted",
+                          "seedReveal"
+                       ]
+                    },
+                    "signature":{
+                       "dataType":"bytes",
+                       "fieldNumber":9
+                    }
+                 },
+                 "required":[
+                    "version",
+                    "timestamp",
+                    "height",
+                    "previousBlockID",
+                    "transactionRoot",
+                    "generatorPublicKey",
+                    "reward",
+                    "asset"
+                 ],
+                 "fieldNumber":1
+              },
+              "header2":{
+                 "$id":"lisk/block-header",
+                 "type":"object",
+                 "properties":{
+                    "version":{
+                       "dataType":"uint32",
+                       "fieldNumber":1
+                    },
+                    "timestamp":{
+                       "dataType":"uint32",
+                       "fieldNumber":2
+                    },
+                    "height":{
+                       "dataType":"uint32",
+                       "fieldNumber":3
+                    },
+                    "previousBlockID":{
+                       "dataType":"bytes",
+                       "fieldNumber":4
+                    },
+                    "transactionRoot":{
+                       "dataType":"bytes",
+                       "fieldNumber":5
+                    },
+                    "generatorPublicKey":{
+                       "dataType":"bytes",
+                       "fieldNumber":6
+                    },
+                    "reward":{
+                       "dataType":"uint64",
+                       "fieldNumber":7
+                    },
+                    "asset":{
+                       "type":"object",
+                       "fieldNumber":8,
+                       "properties":{
+                          "maxHeightPreviouslyForged":{
+                             "dataType":"uint32",
+                             "fieldNumber":1
+                          },
+                          "maxHeightPrevoted":{
+                             "dataType":"uint32",
+                             "fieldNumber":2
+                          },
+                          "seedReveal":{
+                             "dataType":"bytes",
+                             "fieldNumber":3
+                          }
+                       },
+                       "required":[
+                          "maxHeightPreviouslyForged",
+                          "maxHeightPrevoted",
+                          "seedReveal"
+                       ]
+                    },
+                    "signature":{
+                       "dataType":"bytes",
+                       "fieldNumber":9
+                    }
+                 },
+                 "required":[
+                    "version",
+                    "timestamp",
+                    "height",
+                    "previousBlockID",
+                    "transactionRoot",
+                    "generatorPublicKey",
+                    "reward",
+                    "asset"
+                 ],
+                 "fieldNumber":2
+              }
+           }
+        }
+     },
+     {
+        "moduleID":1000,
+        "moduleName":"hello",
+        "assetID":0,
+        "assetName":"helloAsset",
+        "schema":{
+           "$id":"lisk/hello/asset",
+           "type":"object",
+           "required":[
+              "helloString"
+           ],
+           "properties":{
+              "helloString":{
+                 "dataType":"string",
+                 "fieldNumber":1
+              }
+           }
+        }
+     }
+  ]
+}
+----
+====
 
 == Events
 
 Events are part of the public publish / subscribe API of a blockchain application.
-If an event is published it is immediately received by all of the subscribers of the event.
 
-The following components can *publish* events:
+=== `app:ready`
+Fired when the application starts.
 
-* xref:{url_intro_modules}[]
-* xref:{url_intro_plugins}[]
-* and also the application itself, see xref:{url_advanced_rpc_events}[application events]
-
-The following components can *subscribe* to events:
-
-* Plugins
-* External services / applications
-
-=== How to publish and subscribe to events
-
-Events are published inside lifecycle hooks of the module.
-The `channel` is available inside the lifecycle hooks, which offers the possibility to subscribe and publish to events, as well as invoking actions in the network.
-
-.Publishing an event
-[source,typescript]
+.Returns
+[%collapsible]
+====
+.Example output
+[source,json]
 ----
-channel.publish('pluginAlias:timestamp', { info: 'sample' });
+{}
 ----
+====
 
-Example for subscribing to an event by utilizing <<the-api-client>>:
+=== `app:shutdown`
+Fired when the application stops.
 
-.Subscribing to an event
-[source,typescript]
+.Returns
+[%collapsible]
+====
+.Example output
+[source,json]
 ----
-client.subscribe('pluginAlias:timestamp', ( data ) => {
-  console.log(data);
-});
-client.subscribe('app:block:new', ( data ) => {
-  console.log('new block:',data);
-});
+{}
+----
+====
+
+=== `app:network:ready`
+Fired when the network has at least one outbound connection.
+////
+==== Returns
+.Example output
+[source,json]
 ----
 
+----
+////
+
+=== `app:network:event`
+Fired when the application receives a P2P event from the network.
+
+.Returns
+[%collapsible]
+====
+.Example output
+[source,json]
+----
+{
+  "event":"postBlock",
+  "data":
+    {
+      "block":"0ad301080210fc88ad8e06189e192220454717ffe85ae4877656962acb065eb316dcd9118a024f9f70a5c335368f03f52a20e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b8553220fd0ec19ef02054efd85dd2693ced1e28654f6e29638d5bb5de75f1dd75ab179a3880cab5ee01421808a51810bf181a10c43fe38f9ecdcf87a52615111054a1ff4a408e1897e9535be3be53f68ed7604af51852530eee6acdb7ac0ab647a2f14a23ad326253a2f7b44041efee7dbf776c1687c945115aaf83ee1a03167707c9a9840f"
+    }
+}
+----
+====
+
+=== `app:transaction:new`
+Fired when the node receives a new transaction.
+
+.Returns
+[%collapsible]
+====
+.Example output
+[source,json]
+----
+{
+ "transaction":"0802100018022080ade2042a200fe9a3f1a21b5530f27f87a414b549e79a940bf24fdf2b2f05e7f22aeeecc86a321e088094ebdc0312147c1facd5a55044f4b2ec3329b8ae8382959d4d7e1a003a4068baa1de9f102a3aad4ef7df411280f9aed93c4236922734515bb1984dffed1139ed8c9db073e79c5c535f376a63657d589f330b2480260617873740b0941d09"
+}
+----
+====
+
+=== `app:chain:fork`
+Fired when the node received a block from the forked chain.
+
+.Returns
+[%collapsible]
+====
+.Example output
+[source,json]
+----
+{
+  "block":"0acc01080210f3ebccfe051802222088b1bad7200b0d813d5bef7982b6f8e2cb407b39731c949c7e27bf70ff0083e32a20e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b8553220c395ed88399c1a8d48a0134a9e42fa7d769faaf3ba8ed332b9f0923eb22197b538004216080010001a1037b33154dad7b5f5ac28078fa09c41fd4a406aa158238ce2ee516182ca4613a87b1078b580c9f97e18a5652277107e8a777b185dd5c4b7529fa99d20c6a539543dd2894bb82f04c0e3a8141e364a782fbd07",
+  "accounts":
+    [ "0a14e2950a9f07b44e724df2129360cc140293c08308120208001a020800220208002a3a0a190a0a67656e657369735f35371800200228003080a094a58d1d121d0a14e2950a9f07b44e724df2129360cc140293c083081080a094a58d1dc23e020a00" ]
+}
+----
+====
+
+=== `app:chain:validators:change`
+Fired when the node updates the validator set.
+
+.Returns
+[%collapsible]
+====
+.Example output
+[source,js]
+----
+{ validators: [
+    {
+      address: 'b42580bf7501c6c69a37603b0d010077abb20ab6',
+      isConsensusParticipant: true,
+      minActiveHeight: 1
+    },
+    // ...
+    {
+      address: '8d146ccb9835beccd3b5646ba04c3942ec11636b',
+      isConsensusParticipant: true,
+      minActiveHeight: 1
+    }
+  ]
+}
+----
+====
+
+=== `app:block:new`
+Fired when a new block is added to the blockchain.
+
+.Returns
+[%collapsible]
+====
+.Example output
+[source,json]
+----
+{
+  "block":"0acc01080210f3ebccfe051802222088b1bad7200b0d813d5bef7982b6f8e2cb407b39731c949c7e27bf70ff0083e32a20e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b8553220c395ed88399c1a8d48a0134a9e42fa7d769faaf3ba8ed332b9f0923eb22197b538004216080010001a1037b33154dad7b5f5ac28078fa09c41fd4a406aa158238ce2ee516182ca4613a87b1078b580c9f97e18a5652277107e8a777b185dd5c4b7529fa99d20c6a539543dd2894bb82f04c0e3a8141e364a782fbd07",
+  "accounts":
+    [ "0a14e2950a9f07b44e724df2129360cc140293c08308120208001a020800220208002a3a0a190a0a67656e657369735f35371800200228003080a094a58d1d121d0a14e2950a9f07b44e724df2129360cc140293c083081080a094a58d1dc23e020a00" ]
+}
+----
+====
+
+=== `app:block:delete`
+Emitted when a block is deleted from the blockchain.
+
+.Returns
+[%collapsible]
+====
+.Example output
+[source,json]
+----
+{
+  "block":"0acc01080210f3ebccfe051802222088b1bad7200b0d813d5bef7982b6f8e2cb407b39731c949c7e27bf70ff0083e32a20e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b8553220c395ed88399c1a8d48a0134a9e42fa7d769faaf3ba8ed332b9f0923eb22197b538004216080010001a1037b33154dad7b5f5ac28078fa09c41fd4a406aa158238ce2ee516182ca4613a87b1078b580c9f97e18a5652277107e8a777b185dd5c4b7529fa99d20c6a539543dd2894bb82f04c0e3a8141e364a782fbd07",
+  "accounts":
+    [ "0a14e2950a9f07b44e724df2129360cc140293c08308120208001a020800220208002a3a0a190a0a67656e657369735f35371800200228003080a094a58d1d121d0a14e2950a9f07b44e724df2129360cc140293c083081080a094a58d1dc23e020a00" ]
+}
+----
+====

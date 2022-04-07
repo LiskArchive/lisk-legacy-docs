@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Creating transactions and signing them offline :: Lisk documentation</title>
-    <link rel="canonical" href="https://lisk.com/documentation/integrate-blockchain/create-tx-offline.html">
-    <link rel="prev" href="create-send-transactions.html">
-    <link rel="next" href="decoding-transactions-blocks.html">
+    <title>How to send a transaction to the network :: Lisk documentation</title>
+    <link rel="canonical" href="https://lisk.com/documentation/integrate-blockchain/create-send-transactions.html">
+    <link rel="prev" href="calculating-min-fee.html">
+    <link rel="next" href="create-tx-offline.html">
     <meta name="generator" content="Antora 3.0.0">
 
   <link id="theme" rel="stylesheet" title="Default" href="../_/css/site.css">
@@ -93,10 +93,10 @@
   <ul>
     <li><a href="../index.html">Lisk Documentation</a></li>
     <li><a href="index.html">Integrate Blockchain</a></li>
-    <li><a href="create-tx-offline.html">Creating transactions and signing them offline</a></li>
+    <li><a href="create-send-transactions.html">How to send a transaction to the network</a></li>
   </ul>
 </nav>
-  <div class="edit-this-page"><a href="https://github.com/LiskHQ/lisk-docs/edit/1258-send-tx-guide/docs/modules/ROOT/pages/integrate-blockchain/create-tx-offline.adoc"><img class="pencil">Edit this Page</a></div>
+  <div class="edit-this-page"><a href="https://github.com/LiskHQ/lisk-docs/edit/1258-send-tx-guide/docs/modules/ROOT/pages/integrate-blockchain/create-send-transactions.adoc"><img class="pencil">Edit this Page</a></div>
   </div>
 <div class="body">
 <div class="nav-container" data-component="ROOT" data-version="">
@@ -233,10 +233,10 @@
   <li class="nav-item" data-depth="2">
     <a class="nav-link" href="calculating-min-fee.html">Calculating the minimum fee for a transaction</a>
   </li>
-  <li class="nav-item" data-depth="2">
+  <li class="nav-item is-current-page" data-depth="2">
     <a class="nav-link" href="create-send-transactions.html">How to send a transaction to the network</a>
   </li>
-  <li class="nav-item is-current-page" data-depth="2">
+  <li class="nav-item" data-depth="2">
     <a class="nav-link" href="create-tx-offline.html">Creating transactions and signing them offline</a>
   </li>
   <li class="nav-item" data-depth="2">
@@ -391,261 +391,168 @@
   <div class="toc-menu"></div>
 </aside>
 <article class="doc">
-<h1 class="page">Creating transactions and signing them offline</h1>
+<h1 class="page">How to send a transaction to the network</h1>
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>How to create and sign a transaction in an entirely offline environment.</p>
+<p>This guide describes different methods of creating and sending transactions to Lisk nodes.</p>
 </div>
 </div>
 <div id="toc" class="toc">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#creating-transactions">Creating transactions</a>
+<li><a href="#transaction-formats">Transaction formats</a>
 <ul class="sectlevel2">
-<li><a href="#creating-transactions-with-lisk-client">Creating transactions with lisk-client</a></li>
-<li><a href="#using-the-cli-to-create-a-transaction">Using the CLI to create a transaction</a></li>
+<li><a href="#buffer">Buffer</a></li>
+<li><a href="#hex-string">Hex string</a></li>
+<li><a href="#decoded-object">Decoded object</a></li>
+<li><a href="#json-compatible-object">JSON compatible object</a></li>
 </ul>
 </li>
-<li><a href="#broadcastingsending-a-signed-transaction">Broadcasting/sending a signed transaction</a>
+<li><a href="#how-to-create-a-transaction">How to create a transaction</a>
 <ul class="sectlevel2">
-<li><a href="#via-api-client">Via API client</a></li>
-<li><a href="#via-rpc-api">Via RPC API</a></li>
-<li><a href="#via-cli">Via CLI</a></li>
+<li><a href="#via-api-client">via API client</a></li>
+<li><a href="#via-cli">via CLI</a></li>
+</ul>
+</li>
+<li><a href="#how-to-send-the-transaction">How to send the transaction</a>
+<ul class="sectlevel2">
+<li><a href="#with-lisk-service">With Lisk Service</a>
+<ul class="sectlevel3">
 <li><a href="#via-lisk-service-http-api">Via Lisk Service HTTP API</a></li>
-<li><a href="#via-lisk-core-http-api">Via Lisk Core HTTP API</a></li>
+<li><a href="#via-lisk-service-websocket-api">Via Lisk Service WebSocket API</a></li>
+</ul>
+</li>
+<li><a href="#with-the-application-node">With the application / node</a>
+<ul class="sectlevel3">
+<li><a href="#via-the-application-cli">Via the application CLI</a></li>
+<li><a href="#via-the-http-api-for-lisk-nodes">Via the HTTP API for Lisk nodes</a></li>
+<li><a href="#via-lisk-api-client">Via Lisk API client</a></li>
+<li><a href="#by-invoking-the-action-appposttransaction">By invoking the action <code>app:postTransaction</code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
 </div>
 </div>
 <div class="sect1">
-<h2 id="creating-transactions"><a class="anchor" href="#creating-transactions"></a>Creating transactions</h2>
+<h2 id="transaction-formats"><a class="anchor" href="#transaction-formats"></a>Transaction formats</h2>
 <div class="sectionbody">
+<div class="paragraph">
+<p>A transaction can be represented in different formats.</p>
+</div>
+<div class="paragraph">
+<p>Below is an overview of all existing transaction formats and their use cases.</p>
+</div>
 <div class="sect2">
-<h3 id="creating-transactions-with-lisk-client"><a class="anchor" href="#creating-transactions-with-lisk-client"></a>Creating transactions with lisk-client</h3>
-<div class="sect3">
-<h4 id="require-the-transaction-and-asset-schema"><a class="anchor" href="#require-the-transaction-and-asset-schema"></a>Require the transaction and asset schema</h4>
+<h3 id="buffer"><a class="anchor" href="#buffer"></a>Buffer</h3>
 <div class="paragraph">
-<p>To create, validate, and sign transactions offline with the lisk-client, it is necessary to access their schemas.
-Create a new file <code>schemas.js</code> and add all required schemas in this file, as shown in the snippet below.</p>
+<p>The representation of the transaction binary data as a Buffer.</p>
 </div>
 <div class="paragraph">
-<p>In this example, we will send a Token Transfer transaction, therefore two different schemas are required:</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>The transaction schema (always required).</p>
-</li>
-<li>
-<p>The Token Transfer asset schema.</p>
-</li>
-</ol>
-</div>
-<div class="paragraph">
-<p>The corresponding schemas can be found in the module reference pages listed below:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><a href="../lisk-sdk/modules/token-module.html#transferasset" class="xref page">Token Transfer schema</a></p>
-</li>
-<li>
-<p><a href="../lisk-sdk/modules/keys-module.html#registerasset" class="xref page">Register Multisignature Account schema</a></p>
-</li>
-<li>
-<p><a href="../lisk-sdk/modules/dpos-module.html#registertransactionasset" class="xref page">Register Delegate schema</a></p>
-</li>
-<li>
-<p><a href="../lisk-sdk/modules/dpos-module.html#votetransactionasset" class="xref page">Cast Votes schema</a></p>
-</li>
-<li>
-<p><a href="../lisk-sdk/modules/dpos-module.html#unlocktransactionasset" class="xref page">Unlock Tokens schema</a></p>
-</li>
-<li>
-<p><a href="../lisk-sdk/modules/dpos-module.html#pomtransactionasset" class="xref page">Report Delegate Misbehavior schema</a></p>
-</li>
-</ul>
+<p>This format is used for applications-internal processes.</p>
 </div>
 <div class="listingblock">
-<div class="title">schemas.js</div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export const transactionSchema = {
-     "$id":"lisk/transaction",
-     "type":"object",
-     "required":[
-        "moduleID",
-        "assetID",
-        "nonce",
-        "fee",
-        "senderPublicKey",
-        "asset"
-     ],
-     "properties":{
-        "moduleID":{
-           "dataType":"uint32",
-           "fieldNumber":1,
-           "minimum":2
-        },
-        "assetID":{
-           "dataType":"uint32",
-           "fieldNumber":2
-        },
-        "nonce":{
-           "dataType":"uint64",
-           "fieldNumber":3
-        },
-        "fee":{
-           "dataType":"uint64",
-           "fieldNumber":4
-        },
-        "senderPublicKey":{
-           "dataType":"bytes",
-           "fieldNumber":5,
-           "minLength":32,
-           "maxLength":32
-        },
-        "asset":{
-           "dataType":"bytes",
-           "fieldNumber":6
-        },
-        "signatures":{
-           "type":"array",
-           "items":{
-              "dataType":"bytes"
-           },
-           "fieldNumber":7
-        }
-     }
-};
-
-export const transferAssetSchema = {
-    $id: 'lisk/transfer-asset',
-    title: 'Transfer transaction asset',
-    type: 'object',
-    required: ['amount', 'recipientAddress', 'data'],
-    properties: {
-        amount: {
-            dataType: 'uint64',
-            fieldNumber: 1,
-        },
-        recipientAddress: {
-            dataType: 'bytes',
-            fieldNumber: 2,
-            minLength: 20,
-            maxLength: 20,
-        },
-        data: {
-            dataType: 'string',
-            fieldNumber: 3,
-            minLength: 0,
-            maxLength: 64,
-        },
-    },
-};</code></pre>
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">&lt;Buffer 08 02 10 00 18 04 20 c0 84 3d 2a 20 51 33 af 79 44 ac f5 27 8b 03 10 a1 1c 06 13 4f 80 ab 45 46 d7 7d 1b 0e 02 7c 84 30 a7 d2 bb 92 32 2d 08 80 90 bc ... 107 more bytes&gt;</code></pre>
 </div>
 </div>
 </div>
-<div class="sect3">
-<h4 id="creating-and-signing-the-transaction"><a class="anchor" href="#creating-and-signing-the-transaction"></a>Creating and signing the transaction</h4>
+<div class="sect2">
+<h3 id="hex-string"><a class="anchor" href="#hex-string"></a>Hex string</h3>
+<div class="paragraph">
+<p>This is the hex string representation of the Buffer data.</p>
+</div>
+<div class="paragraph">
+<p>It is sometimes used as an input or output format in the CLI when sending or creating transactions via the CLI (see <a href="../lisk-sdk/application-cli.html" class="xref page">Application CLI</a> and <a href="../lisk-core/reference/cli.html" class="xref page">Command line interface</a>).</p>
+</div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">const { validator, transactions } = require('@liskhq/lisk-client');
-const { transactionSchema, transferAssetSchema } = require('./schemas');
-
-// Example account credentials
-const account = {
-  "passphrase": "chalk story jungle ability catch erupt bridge nurse inmate noodle direct alley",
-  "privateKey": "713406a2cf2bdf6b951c1bcba85d44eddbc06d003e8d3faf433b22be28333d97840c66741a76f936bed0a4c308e4f670156e1e1f6b91640bb8d3dd0ae2b3581e",
-  "publicKey": "840c66741a76f936bed0a4c308e4f670156e1e1f6b91640bb8d3dd0ae2b3581e",
-  "binaryAddress": "85c12d39041bc09e1f89dfeffe4b87cfcfe79fb2",
-  "address": "lskuwzrd73pc8z4jnj4sgwgjrjnagnf8nhrovbwdn"
-};
-
-// Create the unsigned transaction object manually
-const unsignedTransaction = {
-  moduleID: Number(2),
-  assetID: Number(0), // aka Token Transfer transaction
-  fee: BigInt(10000000),
-  nonce: BigInt(23),
-  senderPublicKey: Buffer.from(account.publicKey,'hex'),
-  asset: Buffer.alloc(0),
-  signatures: [],
-};
-
-// Validate the transaction oject
-const transactionErrors = validator.validator.validate(transactionSchema, unsignedTransaction);
-
-if (transactionErrors.length) {
-  throw new validator.LiskValidationError([...transactionErrors]);
-}
-
-// Create the asset for the Token Transfer transaction
-const transferAsset = {
-  amount: BigInt(2000000000),
-  recipientAddress: Buffer.from(account.binaryAddress,'hex'),
-  data: 'Happy birthday!'
-};
-
-// Add the transaction asset to the transaction object
-unsignedTransaction.asset = transferAsset;
-
-console.log(unsignedTransaction);
-/*
-{
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">'08021000180420c0843d2a205133af7944acf5278b0310a11c06134f80ab4546d77d1b0e027c8430a7d2bb92322d088090bcfd0212149bd82e637d306533b1e1ad66e19ca0047faa1a6a1a0f4861707079206269727468646179213a4098a9ee2cde8354d014cfe6367d430be2713e102f37d92ab91f03db780407e5bf6d818a45c21c9f5518638dfc3c5365fc2d497b928e0b9d6337988df46a663a02'</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="decoded-object"><a class="anchor" href="#decoded-object"></a>Decoded object</h3>
+<div class="paragraph">
+<p>The decoded transaction object.</p>
+</div>
+<div class="paragraph">
+<p>Used as an input / output format for functions in <a href="../lisk-sdk/references/lisk-elements/index.html" class="xref page">What is Lisk Elements?</a>, for example the <a href="../lisk-sdk/references/lisk-elements/api-client.html" class="xref page">API client</a>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">{
   moduleID: 2,
   assetID: 0,
-  nonce: 1n,
-  fee: 10000000n,
-  senderPublicKey: &lt;Buffer 84 0c 66 74 1a 76 f9 36 be d0 a4 c3 08 e4 f6 70 15 6e 1e 1f 6b 91 64 0b b8 d3 dd 0a e2 b3 58 1e&gt;,
+  nonce: 4n,
+  fee: 1000000n,
+  senderPublicKey: &lt;Buffer 51 33 af 79 44 ac f5 27 8b 03 10 a1 1c 06 13 4f 80 ab 45 46 d7 7d 1b 0e 02 7c 84 30 a7 d2 bb 92&gt;,
   asset: {
-    amount: 20n,
-    recipientAddress: &lt;Buffer 85 c1 2d 39 04 1b c0 9e 1f 89 df ef fe 4b 87 cf cf e7 9f b2&gt;,
-    data: 'Happy birthday!'
-  },
-  signatures: []
-}
-*/
-
-// Sign the transaction
-const networkIdTestnet = '15f0dacc1060e91818224a94286b13aa04279c640bd5d6f193182031d133df7c';
-
-const signedTransaction = transactions.signTransaction(
-  transferAssetSchema,
-  unsignedTransaction,
-  Buffer.from(networkIdTestnet, 'hex'),
-  account.passphrase,
-);
-
-console.log(signedTransaction);
-
-/*
-{
-  moduleID: 2,
-  assetID: 0,
-  fee: 10000000n,
-  nonce: 23n,
-  senderPublicKey: &lt;Buffer 84 0c 66 74 1a 76 f9 36 be d0 a4 c3 08 e4 f6 70 15 6e 1e 1f 6b 91 64 0b b8 d3 dd 0a e2 b3 58 1e&gt;,
-  asset: {
-    amount: 2000000000n,
-    recipientAddress: &lt;Buffer 3e 56 5c 6f 2d 22 e0 a3 c1 e4 71 76 72 ec 8a c6 1c 26 60 f2&gt;,
+    amount: 800000000n,
+    recipientAddress: &lt;Buffer 9b d8 2e 63 7d 30 65 33 b1 e1 ad 66 e1 9c a0 04 7f aa 1a 6a&gt;,
     data: 'Happy birthday!'
   },
   signatures: [
-    &lt;Buffer 3c 77 8c e7 b9 8e 72 e6 6b e1 83 86 b4 c1 97 b0 79 3d dc 33 ac ad 8d df 38 d3 52 9f 6a 76 ba 5e 5a ed 54 22 3f b8 36 81 61 b0 2c 71 68 88 3b 09 df b3 ... 14 more bytes&gt;
+    &lt;Buffer 98 a9 ee 2c de 83 54 d0 14 cf e6 36 7d 43 0b e2 71 3e 10 2f 37 d9 2a b9 1f 03 db 78 04 07 e5 bf 6d 81 8a 45 c2 1c 9f 55 18 63 8d fc 3c 53 65 fc 2d 49 ... 14 more bytes&gt;
   ],
-  id: &lt;Buffer 95 d2 d3 29 90 cd c7 f3 ae e5 54 b3 f5 23 7b fb f3 4c 33 48 e5 83 72 7a ce dd e5 b3 b6 e3 e7 25&gt;
-}
-*/</code></pre>
-</div>
+  id: &lt;Buffer 17 a0 90 44 15 f7 ad 9a 0e 30 5a e8 a4 34 53 24 3a 84 e2 af e1 76 08 3a 0a b3 3f b1 2e 3b bc 25&gt;
+}</code></pre>
 </div>
 </div>
 </div>
 <div class="sect2">
-<h3 id="using-the-cli-to-create-a-transaction"><a class="anchor" href="#using-the-cli-to-create-a-transaction"></a>Using the CLI to create a transaction</h3>
+<h3 id="json-compatible-object"><a class="anchor" href="#json-compatible-object"></a>JSON compatible object</h3>
 <div class="paragraph">
-<p>The CLI  of a node can be used to create a sendable transaction object.</p>
+<p>A representation of the decoded transaction in a JSON compatible format.</p>
+</div>
+<div class="paragraph">
+<p>For example, used for displaying the details of a transaction in the UI to the user.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">{
+  moduleID: 2,
+  assetID: 0,
+  nonce: '4',
+  fee: '1000000',
+  senderPublicKey: '5133af7944acf5278b0310a11c06134f80ab4546d77d1b0e027c8430a7d2bb92',
+  signatures: [
+    '98a9ee2cde8354d014cfe6367d430be2713e102f37d92ab91f03db780407e5bf6d818a45c21c9f5518638dfc3c5365fc2d497b928e0b9d6337988df46a663a02'
+  ],
+  asset: {
+    amount: '800000000',
+    recipientAddress: '9bd82e637d306533b1e1ad66e19ca0047faa1a6a',
+    data: 'Happy birthday!'
+  },
+  id: '17a0904415f7ad9a0e305ae8a43453243a84e2afe176083a0ab33fb12e3bbc25'
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="how-to-create-a-transaction"><a class="anchor" href="#how-to-create-a-transaction"></a>How to create a transaction</h2>
+<div class="sectionbody">
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>For convenience, it is recommended to use the API client or the CLI to communicate to a node for creating and signing transactions.</p>
+</div>
+<div class="paragraph">
+<p>In the case whereby a higher level of security is desired, it is possible to create the transaction in a completely stand-alone offline environment.
+Please check out the guide <a href="create-tx-offline.html" class="xref page">Creating transactions and signing them offline</a> for more information.</p>
+</div>
+</td>
+</tr>
+</table>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -654,21 +561,98 @@ console.log(signedTransaction);
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
+<div class="title">Transaction properties</div>
 <div class="paragraph">
-<p>The flag <code>--offline</code> is used here, so that the transaction can be signed, even if the node is not connected to any network at the moment.</p>
-</div>
-<div class="paragraph">
-<p>The <code>--offline</code> flag also requires the flags <code>--network-identifier</code> and <code>--nonce</code> to be specified.</p>
+<p>The properties of a transaction are described in detail in the Lisk Protocol on the <a href="../understand-blockchain/lisk-protocol/transactions.html#transaction-properties" class="xref page">Transactions</a> page.</p>
 </div>
 </td>
 </tr>
 </table>
 </div>
+<div class="sect2">
+<h3 id="via-api-client"><a class="anchor" href="#via-api-client"></a>via API client</h3>
+<div class="paragraph">
+<p>The API client allows connecting to a particular node API, and enables to get and post data to the node.
+It is part of the <code>lisk-api-client</code> package and is also included in the <code>lisk-client</code> and <code>lisk-sdk</code> packages.</p>
+</div>
+<div class="paragraph">
+<p>An example script how to create a transaction object via the API client is described in the code snippet below:</p>
+</div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">$ ./bin/run transaction:create 2 0 100000000 \
---network-identifier=15f0dacc1060e91818224a94286b13aa04279c640bd5d6f193182031d133df7c \
---nonce=2 --offline
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { apiClient, cryptography, transactions } = require('@liskhq/lisk-client');
+const RPC_ENDPOINT = 'ws://localhost:8080/ws';
+
+let clientCache;
+
+// Replace with the sender address
+const senderAddress = "lskt8ovj2shbxrtno8xqqt7cnmzzygdkbt6brnvmj";
+// Replace with the sender passphrase
+const passphrase = "2 word mnemonic passphrase of an account with sufficient balance"
+
+const getClient = async () =&gt; {
+    if (!clientCache) {
+        clientCache = await apiClient.createWSClient(RPC_ENDPOINT);
+    }
+    return clientCache;
+};
+
+getClient().then(async (client) =&gt; {
+  const address = cryptography.getAddressFromBase32Address(senderAddress);
+  const tx = await client.transaction.create({
+    moduleID: 2,
+    assetID: 0,
+    fee: BigInt(transactions.convertLSKToBeddows('0.01')),
+    asset: {
+        amount: BigInt(transactions.convertLSKToBeddows('8')),
+        recipientAddress: address,
+        data: 'Happy birthday!'
+    }
+  }, passphrase);
+
+
+  console.log("Transaction object: ", tx);
+});</code></pre>
+</div>
+</div>
+<details>
+<summary class="title">Example output</summary>
+<div class="content">
+<div class="listingblock">
+<div class="title">Transaction object</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">{
+  moduleID: 2,
+  assetID: 0,
+  fee: 1000000n,
+  asset: {
+    amount: 800000000n,
+    recipientAddress: &lt;Buffer 9b d8 2e 63 7d 30 65 33 b1 e1 ad 66 e1 9c a0 04 7f aa 1a 6a&gt;,
+    data: 'Happy birthday!'
+  },
+  nonce: 4n,
+  senderPublicKey: &lt;Buffer 51 33 af 79 44 ac f5 27 8b 03 10 a1 1c 06 13 4f 80 ab 45 46 d7 7d 1b 0e 02 7c 84 30 a7 d2 bb 92&gt;,
+  signatures: [
+    &lt;Buffer 98 a9 ee 2c de 83 54 d0 14 cf e6 36 7d 43 0b e2 71 3e 10 2f 37 d9 2a b9 1f 03 db 78 04 07 e5 bf 6d 81 8a 45 c2 1c 9f 55 18 63 8d fc 3c 53 65 fc 2d 49 ... 14 more bytes&gt;
+  ],
+  id: &lt;Buffer 17 a0 90 44 15 f7 ad 9a 0e 30 5a e8 a4 34 53 24 3a 84 e2 af e1 76 08 3a 0a b3 3f b1 2e 3b bc 25&gt;
+}</code></pre>
+</div>
+</div>
+</div>
+</details>
+</div>
+<div class="sect2">
+<h3 id="via-cli"><a class="anchor" href="#via-cli"></a>via CLI</h3>
+<div class="paragraph">
+<p>Any running node can be used to create a sendable transaction object, see <a href="../lisk-sdk/application-cli.html" class="xref page">Application CLI</a> and <a href="../lisk-core/reference/cli.html" class="xref page">Command line interface</a>.</p>
+</div>
+<div class="paragraph">
+<p>An example for creating a transfer transaction with the Lisk Core CLI is displayed below:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">$ lisk-core transaction:create 2 0 100000000
 ? Please enter: amount:  1000000000
 ? Please enter: recipientAddress:  ab0041a7d3f7b2c290b5b834d46bdc7b7eb85815
 ? Please enter: data:  send tokens
@@ -679,22 +663,32 @@ console.log(signedTransaction);
 <div class="paragraph">
 <p>After all relevant information about the transaction is given, the already encoded transaction object is returned:</p>
 </div>
+<details>
+<summary class="title">Example output</summary>
+<div class="content">
 <div class="listingblock">
 <div class="content">
 <pre>{"transaction":"0802100018022080c2d72f2a20e03c09bdc8c023d94cf66a5d352e6258380210d97d545abbf75668ea3736e3123229088094ebdc031214ab0041a7d3f7b2c290b5b834d46bdc7b7eb858151a0b73656e6420746f6b656e733a40faa2626d7306506b1999f48aa2f4b1ffdee01e641fa76d37a9d1d6fd8c225a81065c856ea625c52d138a7e3ba86b62913dc8e5aef8b5e307641ab66e0277a60b"}</pre>
 </div>
 </div>
-<details>
-<summary class="title">How to additionally return the transaction in JSON format</summary>
-<div class="content">
+</div>
+</details>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
 <div class="paragraph">
 <p>To also see the decoded transaction object on creation, add the <code>--json</code> parameter:</p>
 </div>
+<details>
+<summary class="title">Example</summary>
+<div class="content">
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">$ ./bin/run transaction:create 2 0 100000000 \
---network-identifier=15f0dacc1060e91818224a94286b13aa04279c640bd5d6f193182031d133df7c \
---nonce=2 --offline --json --pretty
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">$ lisk-core transaction:create 2 0 100000000 --json --pretty
 ? Please enter: amount:  1000000000
 ? Please enter: recipientAddress:  ab0041a7d3f7b2c290b5b834d46bdc7b7eb85815
 ? Please enter: data:  send tokens
@@ -724,97 +718,78 @@ console.log(signedTransaction);
 </div>
 </div>
 </details>
+</td>
+</tr>
+</table>
+</div>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="broadcastingsending-a-signed-transaction"><a class="anchor" href="#broadcastingsending-a-signed-transaction"></a>Broadcasting/sending a signed transaction</h2>
+<h2 id="how-to-send-the-transaction"><a class="anchor" href="#how-to-send-the-transaction"></a>How to send the transaction</h2>
 <div class="sectionbody">
-<div class="paragraph">
-<p>A transaction can be posted to a node in the following ways:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><a href="#via-api-client">Via API client</a></p>
-</li>
-<li>
-<p><a href="#via-rpc-api">Via RPC API</a></p>
-</li>
-<li>
-<p><a href="#via-cli">Via CLI</a></p>
-</li>
-<li>
-<p><a href="#via-lisk-service-http-api">Via Lisk Service HTTP API</a></p>
-</li>
-<li>
-<p><a href="#via-lisk-core-http-api">Via Lisk Core HTTP API</a></p>
-</li>
-</ul>
-</div>
-<div class="admonitionblock note">
+<div class="admonitionblock tip">
 <table>
 <tr>
 <td class="icon">
-<i class="fa icon-note" title="Note"></i>
+<i class="fa icon-tip" title="Tip"></i>
 </td>
 <td class="content">
 <div class="paragraph">
-<p>If the existing data needs to be encoded/decoded before posting, check the guide <a href="decoding-transactions-blocks.html" class="xref page">Decoding &amp; encoding transactions and blocks</a></p>
+<p>In case it is desired to have the transaction in a different format before sending, there are functions available to conveniently convert the transaction between the different formats, see <a href="decoding-transactions-blocks.html" class="xref page">Decoding &amp; encoding transactions and blocks</a> for more information.</p>
 </div>
 </td>
 </tr>
 </table>
 </div>
 <div class="sect2">
-<h3 id="via-api-client"><a class="anchor" href="#via-api-client"></a>Via API client</h3>
+<h3 id="with-lisk-service"><a class="anchor" href="#with-lisk-service"></a>With Lisk Service</h3>
 <div class="paragraph">
-<p>Create a file <code>api-client.js</code> which will export the function <code>getClient()</code>.</p>
-</div>
-<div class="paragraph">
-<p>Adjust the RPC (Remote-Procedure-Call), endpoint to point to the node you want to broadcast the transaction to.</p>
-</div>
-<div class="listingblock">
-<div class="title">api-client.js</div>
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js"> const { apiClient } = require('@liskhq/lisk-client');
-
-const RPC_ENDPOINT = 'ws://localhost:8080/ws';
-let clientCache;
-
-const getClient = async () =&gt; {
-  if (!clientCache) {
-    clientCache = await apiClient.createWSClient(RPC_ENDPOINT);
-  }
-  return clientCache;
-};
-
-module.exports = { getClient };</code></pre>
-</div>
+<p>How to send transactions to a Lisk node via Lisk Service.</p>
 </div>
 <div class="paragraph">
-<p>Import the <code>getClient()</code> function and execute it to use the API client to broadcast the transaction, as shown in below snippet.</p>
+<p>An existing transaction as hex string can be posted to a Lisk node via the Lisk Service either by using its HTTP or WebSocket APIs.</p>
+</div>
+<div class="sect3">
+<h4 id="via-lisk-service-http-api"><a class="anchor" href="#via-lisk-service-http-api"></a>Via Lisk Service HTTP API</h4>
+<div class="paragraph">
+<p>cURL is one of the tools that can be used to send HTTP API requests to Lisk Service:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { getClient } = require('./api-client');
-
-// ...
-
-// Use the API client to send the transaction to a node
-getClient().then(async client =&gt; {
-  try {
-    res = await client.transaction.send(signedTransaction);
-    console.log(res);
-  } catch (error) {
-    console.log(error);
-  }
-});</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -X POST -H "Content-Type: application/json" \
+-d '{"transaction": "0802100018022080c2d72f2a20e03c09bdc8c023d94cf66a5d352e6258380210d97d545abbf75668ea3736e3123229088094ebdc031214ab0041a7d3f7b2c290b5b834d46bdc7b7eb858151a0b73656e6420746f6b656e733a40faa2626d7306506b1999f48aa2f4b1ffdee01e641fa76d37a9d1d6fd8c225a81065c856ea625c52d138a7e3ba86b62913dc8e5aef8b5e307641ab66e0277a60b"}' \
+"http://localhost:9901/api/v2/transactions"</code></pre>
+</div>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>For more information, check out the <a href="../api/lisk-service-http.html" class="xref page">Mainnet HTTP API (Lisk Service)</a> reference.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The following response will be displayed, if the transaction was posted successfully.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "message":"Transaction payload was successfully passed to the network node",
+  "transactionId":"8a503843942e7d47ba0bef83fe735d26381f32a6ca6c96fb1cde902315f6220c"
+}</code></pre>
 </div>
 </div>
 </div>
-<div class="sect2">
-<h3 id="via-rpc-api"><a class="anchor" href="#via-rpc-api"></a>Via RPC API</h3>
+<div class="sect3">
+<h4 id="via-lisk-service-websocket-api"><a class="anchor" href="#via-lisk-service-websocket-api"></a>Via Lisk Service WebSocket API</h4>
 <div class="paragraph">
 <p>If you prefer to use the RPC WebSocket API of Lisk Service to post transactions, this can be achieved for example by writing a small JS script, and using the API client of the <code>socket.io-client</code> package:</p>
 </div>
@@ -850,86 +825,203 @@ socket.emit('request', {
 });</code></pre>
 </div>
 </div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>For more information, check out the <a href="../api/lisk-service-rpc.html" class="xref page">RPC endpoints (Lisk Service)</a> reference.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
 </div>
 <div class="sect2">
-<h3 id="via-cli"><a class="anchor" href="#via-cli"></a>Via CLI</h3>
+<h3 id="with-the-application-node"><a class="anchor" href="#with-the-application-node"></a>With the application / node</h3>
+<div class="sect3">
+<h4 id="via-the-application-cli"><a class="anchor" href="#via-the-application-cli"></a>Via the application CLI</h4>
+<div class="paragraph">
+<p>Any running node with an enabled API can be used to send a transaction object, see <a href="../lisk-sdk/application-cli.html" class="xref page">Application CLI</a> and <a href="../lisk-core/reference/cli.html" class="xref page">Command line interface</a>.</p>
+</div>
+<div class="paragraph">
+<p>An example for sending a transfer transaction with the Lisk Core CLI is displayed below:</p>
+</div>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">$ lisk-core transaction:send 0802100018022080c2d72f2a20e03c09bdc8c023d94cf66a5d352e6258380210d97d545abbf75668ea3736e3123229088094ebdc031214ab0041a7d3f7b2c290b5b834d46bdc7b7eb858151a0b73656e6420746f6b656e733a40faa2626d7306506b1999f48aa2f4b1ffdee01e641fa76d37a9d1d6fd8c225a81065c856ea625c52d138a7e3ba86b62913dc8e5aef8b5e307641ab66e0277a60b</code></pre>
 </div>
 </div>
 </div>
-<div class="sect2">
-<h3 id="via-lisk-service-http-api"><a class="anchor" href="#via-lisk-service-http-api"></a>Via Lisk Service HTTP API</h3>
-<div class="admonitionblock important">
+<div class="sect3">
+<h4 id="via-the-http-api-for-lisk-nodes"><a class="anchor" href="#via-the-http-api-for-lisk-nodes"></a>Via the HTTP API for Lisk nodes</h4>
+<div class="paragraph">
+<p>If the <a href="../lisk-sdk/plugins/http-api-plugin.html" class="xref page">HTTP API plugin</a> is enabled on a node, it is possible to send the transaction to the node via an HTTP request:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -X 'POST' \
+  'http://raw.githubusercontent.com/api/transactions' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "moduleID": 2,
+  "assetID": 0,
+  "fee": "1000000",
+  "nonce": "1",
+  "senderPublicKey": "5133af7944acf5278b0310a11c06134f80ab4546d77d1b0e027c8430a7d2bb92",
+  "asset": {
+      "amount": "1000000000",
+      "recipientAddress": "ab0041a7d3f7b2c290b5b834d46bdc7b7eb85815",
+      "data": "send tokens"
+    },
+  "signatures": [
+    "faa2626d7306506b1999f48aa2f4b1ffdee01e641fa76d37a9d1d6fd8c225a81065c856ea625c52d138a7e3ba86b62913dc8e5aef8b5e307641ab66e0277a60b"
+  ]
+}'</code></pre>
+</div>
+</div>
+<div class="admonitionblock tip">
 <table>
 <tr>
 <td class="icon">
-<i class="fa icon-important" title="Important"></i>
+<i class="fa icon-tip" title="Tip"></i>
 </td>
 <td class="content">
-<a href="../lisk-service/index.html" class="xref page">Lisk Service</a> needs to be installed in order to post a transaction via the Lisk Service HTTP API.
+<div class="paragraph">
+<p>For more information, check out the <a href="../api/lisk-node-http.html" class="xref page">HTTP API (SDK &amp; Core)</a> reference.</p>
+</div>
 </td>
 </tr>
 </table>
 </div>
+</div>
+<div class="sect3">
+<h4 id="via-lisk-api-client"><a class="anchor" href="#via-lisk-api-client"></a>Via Lisk API client</h4>
 <div class="paragraph">
-<p>cURL is one of the tools that can be used to send HTTP API requests to Lisk Service as shown below:</p>
+<p>A full example how to create and send a transaction via the API client is described in the code snippet below:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -X POST -H "Content-Type: application/json" \
--d '{ "transaction": "0802100018022080c2d72f2a20e03c09bdc8c023d94cf66a5d352e6258380210d97d545abbf75668ea3736e3123229088094ebdc031214ab0041a7d3f7b2c290b5b834d46bdc7b7eb858151a0b73656e6420746f6b656e733a40faa2626d7306506b1999f48aa2f4b1ffdee01e641fa76d37a9d1d6fd8c225a81065c856ea625c52d138a7e3ba86b62913dc8e5aef8b5e307641ab66e0277a60b"}' \
-"http://localhost:9901/api/v2/transactions"</code></pre>
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { apiClient, cryptography, transactions } = require('@liskhq/lisk-client');
+const RPC_ENDPOINT = 'ws://localhost:8080/ws';
+
+let clientCache;
+
+// Replace with the sender address
+const senderAddress = "lskt8ovj2shbxrtno8xqqt7cnmzzygdkbt6brnvmj";
+// Replace with the sender passphrase
+const passphrase = "2 word mnemonic passphrase of an account with sufficient balance"
+
+const getClient = async () =&gt; {
+    if (!clientCache) {
+        clientCache = await apiClient.createWSClient(RPC_ENDPOINT);
+    }
+    return clientCache;
+};
+
+getClient().then(async (client) =&gt; {
+  const address = cryptography.getAddressFromBase32Address(senderAddress);
+  const tx = await client.transaction.create({
+    moduleID: 2,
+    assetID: 0,
+    fee: BigInt(transactions.convertLSKToBeddows('0.01')),
+    asset: {
+        amount: BigInt(transactions.convertLSKToBeddows('8')),
+        recipientAddress: address,
+        data: 'Happy birthday!'
+    }
+  }, passphrase);
+
+  console.log("Transaction object: ", tx);
+  console.log("Transaction as JSON compatible object: ", client.transaction.toJSON(tx));
+  console.log("Transaction binary: ", client.transaction.encode(tx).toString('hex'));
+  const res = await client.transaction.send(tx);
+  console.log(res);
+  process.exit(0);
+});</code></pre>
 </div>
 </div>
+<details>
+<summary class="title">Example Response</summary>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">{
+  transactionId: '80f93e2540ceb9112ea900ee6c966c6de372c83a935bddb7c396e823ac4bc4eb'
+}</code></pre>
+</div>
+</div>
+</div>
+</details>
+</div>
+<div class="sect3">
+<h4 id="by-invoking-the-action-appposttransaction"><a class="anchor" href="#by-invoking-the-action-appposttransaction"></a>By invoking the action <code>app:postTransaction</code></h4>
 <div class="paragraph">
-<p>The following response will be displayed if the transaction was posted successfully:</p>
+<p>If the <a href="../api/lisk-node-rpc.html" class="xref page">RPC endpoints (SDK &amp; Core)</a> is enabled on a node, it is possible to send a transaction via WebSockets or IPC, depending on which protocol is enabled in the config.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre>{"message":"Transaction payload was successfully passed to the network node","transactionId":"8a503843942e7d47ba0bef83fe735d26381f32a6ca6c96fb1cde902315f6220c"}</pre>
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { apiClient, cryptography, transactions } = require('@liskhq/lisk-client');
+let clientCache;
+const nodeAPIURL = 'ws://localhost:8080/ws';
+// Replace with the sender address
+const senderAddress = "lskt8ovj2shbxrtno8xqqt7cnmzzygdkbt6brnvmj";
+// Replace with the sender passphrase
+const passphrase = "2 word mnemonic passphrase of an account with sufficient balance"
+
+const getClient = async () =&gt; {
+	if (!clientCache) {
+		clientCache = await apiClient.createWSClient(nodeAPIURL);
+	}
+	return clientCache;
+};
+
+getClient().then(async (client) =&gt; {
+    const address = cryptography.getAddressFromBase32Address(senderAddress);
+    const tx = await client.transaction.create({
+        moduleID: 2,
+        assetID: 0,
+        fee: BigInt(transactions.convertLSKToBeddows('0.01')),
+        asset: {
+            amount: BigInt(transactions.convertLSKToBeddows('8')),
+            recipientAddress: address,
+            data: 'Happy birthday!'
+        }
+    }, passphrase);
+
+	client.invoke("app:postTransaction", {
+		transaction: client.transaction.encode(tx).toString('hex')
+	}).then(res =&gt; {
+		console.log("Response: ", res);
+		process.exit(0);
+	});
+});</code></pre>
 </div>
 </div>
-</div>
-<div class="sect2">
-<h3 id="via-lisk-core-http-api"><a class="anchor" href="#via-lisk-core-http-api"></a>Via Lisk Core HTTP API</h3>
-<div class="admonitionblock important">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-important" title="Important"></i>
-</td>
-<td class="content">
-The <a href="../lisk-sdk/plugins/http-api-plugin.html" class="xref page">HTTP API plugin</a> needs to be enabled on the node in order to post a transaction via the node HTTP API.
-</td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-<p>cURL is one of the tools that can be used to send HTTP API requests to Lisk Core as shown below:</p>
-</div>
+<details>
+<summary class="title">Example output</summary>
+<div class="content">
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl -X POST -H "Content-Type: application/json" \
--d '{ "transaction": "0802100018022080c2d72f2a20e03c09bdc8c023d94cf66a5d352e6258380210d97d545abbf75668ea3736e3123229088094ebdc031214ab0041a7d3f7b2c290b5b834d46bdc7b7eb858151a0b73656e6420746f6b656e733a40faa2626d7306506b1999f48aa2f4b1ffdee01e641fa76d37a9d1d6fd8c225a81065c856ea625c52d138a7e3ba86b62913dc8e5aef8b5e307641ab66e0277a60b"}' \
-"http://localhost:4000/api/transactions"</code></pre>
+<pre>Response:  {
+  transactionId: 'dc041582c69b788d68f6b904bddadda5a52eb5e3b054087c74a80940f7f80210'
+}</pre>
 </div>
 </div>
-<div class="paragraph">
-<p>The following response will be displayed if the transaction was posted successfully:</p>
 </div>
-<div class="listingblock">
-<div class="content">
-<pre>{"message":"Transaction payload was successfully passed to the network node","transactionId":"8a503843942e7d47ba0bef83fe735d26381f32a6ca6c96fb1cde902315f6220c"}</pre>
-</div>
+</details>
 </div>
 </div>
 </div>
 </div>
 <nav class="pagination">
-  <span class="prev"><a href="create-send-transactions.html">How to send a transaction to the network</a></span>
-  <span class="next"><a href="decoding-transactions-blocks.html">Decoding &amp; encoding transactions and blocks</a></span>
+  <span class="prev"><a href="calculating-min-fee.html">Calculating the minimum fee for a transaction</a></span>
+  <span class="next"><a href="create-tx-offline.html">Creating transactions and signing them offline</a></span>
 </nav>
 </article>
   </div>

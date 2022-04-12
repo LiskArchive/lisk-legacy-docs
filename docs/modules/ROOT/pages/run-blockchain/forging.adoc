@@ -185,14 +185,39 @@ To enable your node to forge for a particular delegate, firstly it is required t
 * `encryptedPassphrase`: The symmetrically encrypted 12 word mnemonic passphrase of the delegate account.
 * `hashOnion`: The hash onion stores the random seeds of the delegate for each forging round.
 
-To create the forging configuration data, it is recommended to use one of the following alternatives listed below:
+To create the forging configuration data,
 
-[IMPORTANT]
+. first create a custom config file
+. then use one of the following alternatives to generate the delegate config data: <<via-application-cli>> or <<with-lisk-commander>>
+. lastly, add the delegate config data to the custom config file.
+
+=== Creating a custom config file
+
+First copy the existing config file for the respective network.
+
+[tabs]
 ====
-Restart the node to apply the changes in the config.
+Lisk Core::
++
+--
+[source,bash]
+----
+cp ~/lisk-core/config/mainnet/config.json ~/lisk-core/config/mainnet/custom-config.json
+----
+--
+Lisk app::
++
+--
+Navigate to the app root folder, then
+
+[source,bash]
+----
+cp config/default/config.json config/default/custom-config.json
+----
+--
 ====
 
-=== via application CLI
+=== Option 1: via application CLI
 
 If the blockchain application was xref:{url_guides_setup_bootstrap}[bootstrapped with Lisk Commander], it is possible to generate the relevant forging data conveniently with the command xref:{url_references_cli_forgingconfig}[forging:config].
 
@@ -232,29 +257,20 @@ The command will ask for the delegate passphrase, and in order to symmetrically 
 IMPORTANT: Store the password you used for the encryption somewhere safe.
 It will be required everytime you wish to enable forging, in order to decrypt the delegates' passphrase in the config.
 
-Add the JSON object to the config under `forging.delegates`.
+After providing the required inputs, the delegate configuration data will be saved in the file `forging_config.json`.
 
-`forging.delegates` stores the list of delegates who are allowed to forge on this node:
-
-.custom-config.json
-[source,json]
+.Example of forging_config.json
+[%collapsible]
+====
+[source,js]
 ----
 {
-  //...
-  "logger": {
-    "fileLogLevel": "error",
-    "consoleLogLevel": "info" //<1>
-  },
-  "rpc": {
-    "enable": true, //<2>
-    "mode": "ipc"
-  },
-  "forging": {
-    "delegates": [ //<3>
+  forging: {
+    delegates: [ //<1>
         {
-            "address": "86555265f0110b4ed5a8cb95dbc732e77732c474",
-            "encryptedPassphrase": "iterations=1&salt=476d4299531718af8c88156aab0bb7d6&cipherText=663dde611776d87029ec188dc616d96d813ecabcef62ed0ad05ffe30528f5462c8d499db943ba2ded55c3b7c506815d8db1c2d4c35121e1d27e740dc41f6c405ce8ab8e3120b23f546d8b35823a30639&iv=1a83940b72adc57ec060a648&tag=b5b1e6c6e225c428a4473735bc8f1fc9&version=1",
-            "hashOnion": {
+            address: "86555265f0110b4ed5a8cb95dbc732e77732c474",
+            encryptedPassphrase: "iterations=1&salt=476d4299531718af8c88156aab0bb7d6&cipherText=663dde611776d87029ec188dc616d96d813ecabcef62ed0ad05ffe30528f5462c8d499db943ba2ded55c3b7c506815d8db1c2d4c35121e1d27e740dc41f6c405ce8ab8e3120b23f546d8b35823a30639&iv=1a83940b72adc57ec060a648&tag=b5b1e6c6e225c428a4473735bc8f1fc9&version=1",
+            hashOnion: {
                 "count": 1000000,
                 "distance": 1000,
                 "hashes": [
@@ -269,17 +285,15 @@ Add the JSON object to the config under `forging.delegates`.
                 ]
             }
         }
-    ],
-  },
-  //...
+    ]
+  }
 }
 ----
 
-<1> Set the console log level to `info` to view all relevant logs on the console.
-<2> Enable IPC to be able to use all commands of the Lisk Core CLI (see xref:{url_ref_cli}[])
-<3> Add the delegate config info here, under `forging.delegates` of the node configuration.
+<1>  The list of delegates who are allowed to forge on this node.
+====
 
-=== with Lisk Commander
+=== Option 2: with Lisk Commander
 
 Please ensure the xref:{url_commander_commands}[Lisk Commander] is installed in a secure environment.
 Upon completion, please follow these commands to generate the encrypted passphrase:
@@ -345,9 +359,79 @@ lisk hash-onion --json
 
 <1>  The list of delegates who are allowed to forge on this node.
 
-Now restart the node to apply the changes in the config.
+[IMPORTANT]
+====
+Restart the node to apply the changes in the config.
+====
 
 For more information about the configuration of the Lisk SDK check out the xref:{url_guides_config}[configuration guide].
+
+=== Updating the custom configuration
+
+Add the JSON object to the config file of the application.
+
+`forging.delegates` stores the list of delegates who are allowed to forge on this node:
+
+Merge the forging config with the custom config which was created in <<creating-a-custom-config-file,step 2.1>> above, to add the delegate information to the application configuration:
+
+[source,bash]
+----
+TEMP_FILE=$( mktemp )
+jq --slurp '.[0] * .[1]' custom-config.json custom-forging.json >$TEMP_FILE
+mv $TEMP_FILE custom-config.json
+----
+
+Open `custom-config.json` to verify it was updated correctly.
+
+Beside adding the delegate config data, the other options in the config can be adjusted as desired.
+Find examples of config options that might be interesting to update right below.
+
+.Example: `custom-config.json` file
+[%collapsible]
+====
+.custom-config.json
+[source,json]
+----
+{
+  //...
+  "logger": {
+    "fileLogLevel": "error",
+    "consoleLogLevel": "info" //<1>
+  },
+  "rpc": {
+    "enable": true, //<2>
+    "mode": "ipc"
+  },
+  "forging": {
+    "delegates": [ //<3>
+        {
+            "address": "86555265f0110b4ed5a8cb95dbc732e77732c474",
+            "encryptedPassphrase": "iterations=1&salt=476d4299531718af8c88156aab0bb7d6&cipherText=663dde611776d87029ec188dc616d96d813ecabcef62ed0ad05ffe30528f5462c8d499db943ba2ded55c3b7c506815d8db1c2d4c35121e1d27e740dc41f6c405ce8ab8e3120b23f546d8b35823a30639&iv=1a83940b72adc57ec060a648&tag=b5b1e6c6e225c428a4473735bc8f1fc9&version=1",
+            "hashOnion": {
+                "count": 1000000,
+                "distance": 1000,
+                "hashes": [
+                    "ff2156e33c4aefa4a5a790edbe329f4a",
+                    "5f86db180d4e63be6412d42d444dfb49",
+                    "10fc37bb42d7f77030138e45795fef65",
+                    "f04a306a73c5d7d94cc4f262b4d5ebb4",
+                    //[...]
+                    "ca41d52225f4b76140fc7f277731d326",
+                    "fde61109609b74ba16d5ebd72a8b446f",
+                    "9752dc2228492466d7c2046354d5fdfd"
+                ]
+            }
+        }
+    ],
+  },
+  //...
+}
+----
+
+<1> Set the console log level to `info` to view all relevant logs on the console.
+<2> Enable IPC to be able to use all commands of the Lisk Core CLI (see xref:{url_ref_cli}[])
+<3> Add the delegate config info here, under `forging.delegates` of the node configuration.
+====
 
 == Enable forging
 

@@ -175,7 +175,7 @@ The new delegate name should be under `dpos.delegate.username`:
 }
 ----
 
-== Add forging data to config
+== Add delegate data to config
 
 IMPORTANT: This step only needs to be performed when a delegate is enabling forging on a node for the first time.
 
@@ -185,7 +185,7 @@ To enable your node to forge for a particular delegate, firstly it is required t
 * `encryptedPassphrase`: The symmetrically encrypted 12 word mnemonic passphrase of the delegate account.
 * `hashOnion`: The hash onion stores the random seeds of the delegate for each forging round.
 
-To create the forging configuration data,
+To create the delegate configuration data,
 
 . first create a custom config file
 . then use one of the following alternatives to generate the delegate config data: <<via-application-cli>> or <<with-lisk-commander>>
@@ -228,7 +228,7 @@ Lisk Core::
 --
 [source,bash]
 ----
-$ lisk-core forging:config --output ./forging_config.json
+$ lisk-core forging:config --output ./delegate_config.json
 ? Please enter passphrase:  [hidden] # <1>
 ? Please re-enter passphrase:  [hidden]
 ? Please enter password:  [hidden] # <2>
@@ -240,7 +240,7 @@ Lisk app::
 --
 [source,bash]
 ----
-$ ./bin/run forging:config --output ./forging_config.json
+$ ./bin/run forging:config --output ./delegate_config.json
 ? Please enter passphrase:  [hidden] # <1>
 ? Please re-enter passphrase:  [hidden]
 ? Please enter password:  [hidden] # <2>
@@ -259,7 +259,7 @@ It will be required everytime you wish to enable forging, in order to decrypt th
 
 After providing the required inputs, the delegate configuration data will be saved in the file `forging_config.json`.
 
-.Example of forging_config.json
+.Example of delegate_config.json
 [%collapsible]
 ====
 [source,js]
@@ -372,12 +372,12 @@ Add the JSON object to the config file of the application.
 
 `forging.delegates` stores the list of delegates who are allowed to forge on this node:
 
-Merge the forging config with the custom config which was created in <<creating-a-custom-config-file,step 2.1>> above, to add the delegate information to the application configuration:
+Merge the delegate config with the custom config which was created in <<creating-a-custom-config-file,step 2.1>> above, to add the delegate information to the application configuration:
 
 [source,bash]
 ----
 TEMP_FILE=$( mktemp )
-jq --slurp '.[0] * .[1]' custom-config.json custom-forging.json >$TEMP_FILE
+jq --slurp '.[0] * .[1]' custom-config.json delegate_config.json >$TEMP_FILE
 mv $TEMP_FILE custom-config.json
 ----
 
@@ -444,6 +444,40 @@ Afterwards, it is always required to use the latest values of the `forger_info` 
 .. Never use outdated <<forger_info-data>>.
 .. Never activate forging for the same delegate on two or more nodes at the same time, (a.k.a double-forging).
 ====
+
+=== Forger_info data
+
+The `forger_info` data contains the following three properties:
+
+* `height`: Last forged block height.
+* `maxHeightPreviouslyForged`: Delegates largest previously forged height.
+* `maxHeightPrevoted`: Delegates largest prevoted height for a block.
+
+For each of these properties, the forger config contains the value used in the last block forged by the node.
+
+These  three variables are required for enabling forging for the corresponding delegate.
+
+== Checking the forging status
+
+To check the forging status of a Lisk Core node, execute the following command:
+
+[source,bash]
+----
+lisk-core forging:status
+----
+
+.Example output
+----
+[{"address":"89aa5fc8861d392f60662f76a379cc348fe97d28","forging":true,"height":670237,"maxHeightPrevoted":670159,"maxHeightPreviouslyForged":670187}]
+----
+
+The command returns a list of delegates, based on the list under `forging.delegates` in the Lisk Core config, (based on the details added to the config in the previous step, <<add-delegate-data-to-config>>).
+The following information is displayed for each delegate:
+
+* The hexadecimal representation of the delegate address.
+* If the delegate has forging enabled or not.
+* The <<forger_info-data>>.
+
 
 === via application CLI
 
@@ -677,7 +711,7 @@ To safely enable forging on another node, please ensure to follow the steps belo
 . Start the node and let it synchronize with the network.
 If available, it is recommended to synchronize from snapshots to speed up the synchronization process.
 . Login to the server with the old node.
-. <<forgingdisable,Disable forging>> on the old node.
+. <<disable-forging>> on the old node.
 . Stop the old node.
 . Dump the data in the `forger_info` table of the db of your node.
 +
@@ -692,7 +726,7 @@ lisk-core forger-info:export
 ----
 lisk-core forger-info:import ./forger.db.tar.gz
 ----
-. <<adding-the-delegate-info-to-the-config>>.
+. <<add-delegate-data-to-config>>.
 . Ensure the node is fully synchronized with the network.
 The height of your node should be equal to the current network height.
 +

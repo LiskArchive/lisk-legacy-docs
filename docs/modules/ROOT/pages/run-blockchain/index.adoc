@@ -1,20 +1,162 @@
 = Running a blockchain node
+:toc: preamble
+:docs_core: lisk-core::
+:url_faucet: https://testnet-faucet.lisk.com/
+:url_observer: https://lisk.observer/delegates
+:url_liskscan: https://liskscan.com/delegates
 :url_run_reset: run-blockchain/blockchain-reset.adoc
 :url_run_forging: run-blockchain/forging.adoc
 :url_run_logging: run-blockchain/logging.adoc
+:url_run_accounts: run-blockchain/account-management.adoc
 :url_run_protection: run-blockchain/non-forging-node-protection.adoc
 :url_run_protection_forge: run-blockchain/forging-node-protection.adoc
+:url_core: {docs_core}index.adoc
+:url_core_setup_npm: {docs_core}setup/npm.adoc
+:url_core_setup_binary: {docs_core}setup/binary.adoc
+:url_core_setup_snap: {docs_core}setup/snap.adoc
+:url_core_setup_docker: {docs_core}setup/docker.adoc
+:url_core_setup_source: {docs_core}setup/source.adoc
+:url_glossary_selfvote: glossary.adoc#self-vote
+:url_glossary_delegateweight: glossary.adoc#delegate-weight
+:url_protocol_voting: understand-blockchain/lisk-protocol/consensus-algorithm.adoc#voting_and_weight
+:url_protocol_selection: understand-blockchain/lisk-protocol/consensus-algorithm.adoc#delegate_selection
+:url_understand_endpoints: understand-blockchain/endpoints.adoc
+:url_sdk_plugin_http: lisk-sdk::plugins/http-api-plugin.adoc
+:url_api_service_http: api/lisk-service-http.adoc
+:url_api_service_rpc: api/lisk-service-rpc.adoc
+:url_api_service_pubsub: api/lisk-service-pubsub.adoc
+:url_service_setup_docker_coreconfig: lisk-service::setup/docker.adoc#configuring-lisk-core
+:url_service_setup_docker: lisk-service::setup/docker.adoc
+:url_service_setup_source: lisk-service::setup/source.adoc
 
 The "Run Blockchain" category contains all the guides concerning the management of a Lisk node and is therefore especially interesting for delegates and other operators of a Lisk node.
 
+== What is a blockchain node?
 
-== Guides for node operators
+A blockchain node is a server with a running blockchain application, like xref:{url_core}[].
+Nodes are usually connected to other nodes running the same blockchain application via P2P.
+Together, they form the network that is maintaining the blockchain.
+
+.Node types of a blockchain network
+image::run-blockchain/node-service-network.png[Node network, 600]
+
+In DPoS, only a certain set of nodes is delegated by the network to add new blocks to the blockchain.
+These nodes fulfill a very important role in the network and therefore require certain <<how-to-enable-forging-on-a-node,additional configurations>> and <<protecting-forging-nodes,security measures>>, compared to regular nodes.
+Furthermore, they are equal to any non-forging node in the network and follow the same installation process.
+
+== How to set up a Lisk Core node
+
+Lisk Core is the blockchain application that maintains the Lisk Mainnet.
+
+To set up Lisk Core, choose a distribution and follow the respective setup guide:
+
+* *NPM:* xref:{url_core_setup_npm}[]
+* *Binary:* xref:{url_core_setup_binary}[]
+* *Snap:* xref:{url_core_setup_snap}[]
+* *Docker:* xref:{url_core_setup_docker}[]
+* *Source code:* xref:{url_core_setup_source}[]
+
+== Forging nodes
+
+A forging node is simply a node that has forging enabled for a particular delegate, who is in an active forging position.
+In the Lisk Mainnet, this means exactly 103 forging delegates exist in the network for each forging round.
+
+Forging nodes are the only nodes that can propose new blocks to the blockchain.
+During a forging round, every forging node has the opportunity to forge at least one block.
+
+NOTE: Follow the guide xref:{url_run_forging}[] to learn how to enable forging on a node for a particular delegate.
+
+=== Forging in the Testnet
+
+Anyone can start forging in the Lisk Testnet, thanks to the the {url_faucet}[Lisk Testnet faucet^], where users can request free Testnet LSK tokens.
+
+The Lisk Testnet is the perfect network for users who want to test out how the forging process works, or delegates who want to test certain forging setups before implementing them for their Mainnet delegate.
+
+IMPORTANT: The Testnet LSK do not hold any intrinsic value, as the Lisk Testnet is a network purely for testing purposes.
+They can *never* be exchanged to real LSK tokens from the Lisk Mainnet.
+
+=== Forging in the Mainnet
+
+If you consider gaining an active forging position on the Lisk Mainnet, please be aware that the Lisk DPoS requires to xref:{url_glossary_selfvote}[self vote] with a certain amount of your own tokens.
+Therefore, a certain self-investment is required for every delegate who wishes to participate in the forging process.
+
+==== Gaining an active forging spot
+
+To gain a secure forging spot for a forging round, a delegate needs to be one of the top 101 delegates with the most xref:{url_glossary_delegateweight}[delegate weight] in the network, see xref:{url_protocol_voting}[Delegates, voting and delegate weight] for more information about the voting process in the Lisk Protocol.
+
+To see the currently required thresholds for entering the top 101, check the delegate weights of the currently actively 101 forging delegates, for example in one of the public Lisk network explorers:
+
+* *Lisk Observer:* {url_observer}[^]
+* *Lisk Scan:* {url_liskscan}[^]
+
+==== Earning rewards as standby delegate
+
+Each forging round, two additional delegates outside the top 101 are chosen randomly to gain an active forging spot for this particular round.
+This gives delegates who don't have enough vote weights the chance to profit from forging awards as well.
+
+The random selection of the two standby delegates is proportional to their individual vote weight, meaning delegates with higher vote weight have a higher chance of getting selected.
+See xref:{url_protocol_selection}[Forging delegate selection] for more information.
+
+=== Protecting forging nodes
+To keep the network healthy, and to not miss any block rewards, it is recommended to implement certain security measures to protect the forging node against attacks and/or failures.
+
+For more information, see the guide xref:{url_run_protection_forge}[].
+
+== Non-forging nodes
+
+Non-forging nodes are, as the name suggests, blockchain nodes with forging disabled.
+This means, non-forging nodes cannot add new blocks to the blockchain themselves, but they are able to receive and relay new blocks and transactions from and to other nodes in the network.
+
+If not configured otherwise, every installed node is a non-forging node by default.
+
+Generally, non-forging nodes are used to get data from, or send data to the blockchain via one of the available APIs of the node.
+
+Additionally, non-forging nodes can be used to create snapshots/backups of the blockchain, if desired.
+
+=== Protecting non-forging nodes
+
+Opening a node's API to the public exposes the node to certain attacks, and it is recommended to protect the node accordingly, in order to ensure the node keeps running stable.
+
+For more information, see the guide xref:{url_run_protection}[].
+
+=== APIs
+
+The following APIs can be enabled in a blockchain node:
+
+* *RPC endpoints*: xref:{url_understand_endpoints}[]
+* *HTTP API*: xref:{url_sdk_plugin_http}[]
+
+== Lisk Service nodes
+
+Lisk Service is a data aggregation service which connects to a particular blockchain node and aggregates the blockchain data, in order to provide enriched API endpoints for other applications and services that rely on data from the blockchain.
+
+=== How to configure a blockchain node for Lisk Service
+
+To connect successfully to a blockchain node with Lisk Service, it is necessary to configure the node accordingly, by enabling the RPC API.
+
+See the section xref:{url_service_setup_docker_coreconfig}[Configuring Lisk Core] of the Lisk Service setup guide for a concrete example how to configure Lisk Core so that Lisk Service can connect to it.
+
+=== How to set up a Lisk Service node
+
+To set up Lisk Core, choose a distribution and follow the respective setup guide:
+
+* *Docker:* xref:{url_service_setup_docker}[]
+* *Source code:* xref:{url_service_setup_source}[]
+
+=== APIs
+
+The following APIs can be enabled in a Lisk Service node:
+
+* *HTTP API*: xref:{url_api_service_http}[]
+* *RPC WS API*: xref:{url_api_service_rpc}[]
+* *Public/Subscribe API*: xref:{url_api_service_pubsub}[]
+
+== Further guides for node operators
 
 * xref:{url_run_logging}[]
 * xref:{url_run_reset}[]
-* xref:{url_run_protection}[]
 
-== Guides for delegates
+== Further guides for delegates
 
+* xref:{url_run_accounts}[]
 * xref:{url_run_forging}[]
-* xref:{url_run_protection_forge}[]

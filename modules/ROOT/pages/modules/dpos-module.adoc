@@ -40,7 +40,7 @@ Specifically the following:
 |ID
 |`13`
 
-|Assets
+|Commands
 a|
 [cols=",",options="header",stripes="hover"]
 !===
@@ -48,24 +48,21 @@ a|
 !Name
 
 !0
-!<<registertransactionasset>>
+!<<delegate-registration>>
 !1
-!<<votetransactionasset>>
+!<<vote>>
 !2
-!<<unlocktransactionasset>>
+!<<unlock>>
 !3
-!<<pomtransactionasset>>
+!<<report-delegate-misbehavior>>
 !===
-|Reducers
+|API
 a| none
 
-|Actions
+|Endpoints
 a|
 * <<dposgetalldelegates>>
 * <<dposgetunlockings>>
-
-|Events
-| none
 
 |Custom config options
 a|
@@ -224,9 +221,9 @@ export const delegateRegistrationCommandParamsSchema = {
 };
 ----
 
-=== VoteTransactionAsset
+=== Vote
 
-Allows sending a vote transaction, which casts votes and unvotes for delegates.
+Casts votes and unvotes for delegates.
 
 Each token can only be used once for voting, therefore the sender locks a certain amount of tokens for each vote.
 After unvoting a delegate, the user is able to unlock the token again with the <<unlocktransactionasset, unlock transaction>>.
@@ -270,56 +267,20 @@ export const voteCommandParamsSchema = {
 };
 ----
 
-=== UnlockTransactionAsset
+=== Unlock
 
-Allows sending an unlock transaction, which unlocks tokens that have been locked after voting for a delegate, after unvoting this delegate.
+Unlocks tokens that have been locked after voting for a delegate, after unvoting this delegate.
 
 Name::
 `unlockToken`
 ID::
 `2`
 
-.Schema
-[source,typescript]
-----
-{
-    $id: 'lisk/dpos/unlock',
-    type: 'object',
-    required: ['unlockObjects'],
-    properties: {
-        unlockObjects: {
-            type: 'array',
-            minItems: 1,
-            maxItems: 20,
-            items: {
-                type: 'object',
-                required: ['delegateAddress', 'amount', 'unvoteHeight'],
-                properties: {
-                    delegateAddress: {
-                        dataType: 'bytes',
-                        fieldNumber: 1,
-                        minLength: 20,
-                        maxLength: 20,
-                    },
-                    amount: {
-                        dataType: 'uint64',
-                        fieldNumber: 2,
-                    },
-                    unvoteHeight: {
-                        dataType: 'uint32',
-                        fieldNumber: 3,
-                    },
-                },
-            },
-            fieldNumber: 1,
-        },
-    },
-}
-----
+No schema.
 
-=== PomTransactionAsset
+=== Report Delegate Misbehavior
 
-Allows sending a proof-of-misbehavior transaction, and reports violations of the BFT protocol by a particular delegate.
+Reports violations of the BFT protocol by a particular delegate.
 
 Name::
 `reportDelegateMisbehavior`
@@ -329,36 +290,154 @@ ID::
 .Schema
 [source,typescript]
 ----
-{
-    $id: 'lisk/dpos/pom',
-    type: 'object',
-    required: ['header1', 'header2'],
-    properties: {
-        header1: {
-            ...blockHeaderSchema,
-            fieldNumber: 1,
-        },
-        header2: {
-            ...blockHeaderSchema,
-            fieldNumber: 2,
-        },
-    },
-}
+export const pomCommandParamsSchema = {
+	$id: '/dpos/command/reportDelegateMisbehaviorParams',
+	type: 'object',
+	required: ['header1', 'header2'],
+	properties: {
+		header1: {
+			dataType: 'bytes',
+			fieldNumber: 1,
+		},
+		header2: {
+			dataType: 'bytes',
+			fieldNumber: 2,
+		},
+	},
+};
 ----
 
+=== Update Generator Key
 
-== Actions
+Updates the generator key of a delegate.
 
-=== dpos:getAllDelegates
+Name::
+`updateGeneratorKey`
+ID::
+`4`
+
+.Schema
+[source,typescript]
+----
+export const updateGeneratorKeyCommandParamsSchema = {
+	$id: '/dpos/command/updateGeneratorKeyParams',
+	type: 'object',
+	required: ['generatorKey'],
+	properties: {
+		generatorKey: {
+			dataType: 'bytes',
+			fieldNumber: 1,
+			minLength: 32,
+			maxLength: 32,
+		},
+	},
+};
+----
+
+== Module API
+
+=== isNameAvailable
+
+Checks, if a given delegate name is still available in the network.
+
+Parameters::
+* `apiContext` (ImmutableAPIContext)
+* `name` (String)
+
+Returns::
+A Boolean, signaling if the name is still available.
+* `true`, if a given delegate name is still available.
+* `false`, if another delegate is already registered under this name in on the blockchain.
+
+=== getVoter
+
+Returns the recent voting history for a given account address.
+
+Parameters::
+* `apiContext` (ImmutableAPIContext)
+* `address` (Buffer)
+
+Returns::
+An Object with an array of the current votes/unvotes as well as an array of objects representing the tokens waiting to be unlocked.
+* `sentVotes`: An array of the 10 most recent votes of a user.
+Each vote is represented by the address of the voted delegate and the amount of tokens that have been used to vote for the delegate.
+The `sentVotes` array is always kept ordered in lexicographical order of delegateAddress.
+* `pendingUnlocks`: An array representing the tokens that have been unvoted, but not yet unlocked.
+Each unvote generates an object in this array containing the address of the unvoted delegate, the amount of the unvote and the height at which the unvote was included in the chain.
+Objects in this array get removed when the corresponding unlock command is executed.
+The pendingUnlocks array is always kept ordered by lexicographical order of delegateAddress, ties broken by increasing amount, ties broken by increasing unvoteHeight.
+The size of the pendingUnlocks array is at most MAX_NUMBER_PENDING_UNLOCKS, any state transition that would increase it to above MAX_NUMBER_PENDING_UNLOCKS is invalid.
+
+
+=== getDelegate
+
+Returns information about a particular delegate.
+
+Parameters::
+* `apiContext` (ImmutableAPIContext)
+* `address` (Hex-String)
+
+Returns::
+An object with the following properties:
+* `name`: a string representing the delegate name, with a minimum length of 1 character and a maximum length of MAX_LENGTH_NAME
+* `totalVotesReceived`: the sum of all votes received by a delegate.
+* `selfVotes` : the sum of all votes the delegate cast for its own account.
+* `lastGeneratedHeight`: the height at which the delegate last generated a block.
+* `isBanned`: a boolean value indicating if the delegate is banned or not.
+Banned delegates are never chosen to generate new blocks.
+* `pomHeights`: the heights at which a proof of misbehavior command was successfully executed with blocks generated by the delegate.
+* `consecutiveMissedBlocks`: the number of consecutive missed blocks by the delegate.
+This value resets to 0 whenever a block generated by the delegate is included in the blockchain.
+
+== Endpoints
+
+=== getDelegate
+
+Returns information about a particular delegate.
+
+Parameters::
+* `ctx` (ModuleEndpointContext)
+* `address` (Buffer)
+
+Returns::
+An object with the following properties:
+* `name`: a string representing the delegate name, with a minimum length of 1 character and a maximum length of MAX_LENGTH_NAME
+* `totalVotesReceived`: the sum of all votes received by a delegate.
+* `selfVotes` : the sum of all votes the delegate cast for its own account.
+* `lastGeneratedHeight`: the height at which the delegate last generated a block.
+* `isBanned`: a boolean value indicating if the delegate is banned or not.
+Banned delegates are never chosen to generate new blocks.
+* `pomHeights`: the heights at which a proof of misbehavior command was successfully executed with blocks generated by the delegate.
+* `consecutiveMissedBlocks`: the number of consecutive missed blocks by the delegate.
+This value resets to 0 whenever a block generated by the delegate is included in the blockchain.
+
+=== getVoter
 
 Returns a list of all registered delegates, including their username and address.
 The address is returned as a hex string.
 
-==== Input
+Input::
+none
+
+Returns::
+[source,json]
+----
+{
+    username: string, <1>
+    address: string, <2>
+}[]
+----
+
+=== getAllDelegates
+
+Returns a list of all registered delegates, including their username and address.
+The address is returned as a hex string.
+
+Input::
 none
 
 
-==== Returns
+Returns::
 [source,json]
 ----
 {
@@ -370,32 +449,8 @@ none
 <1> Username of the delegate.
 <2> Address of the delegate as hex string.
 
-=== dpos:getUnlockings
-Returns a list of delegate unvotes of a certain account, the height of the unvote, and the minimum height for unlocking the tokens again.
 
-==== Input
-
-[source,json]
-----
-{
-  address: string; <1>
-}
-----
-
-<1> Address of the account as hex string.
-
-
-==== Returns
-[source,js]
-----
-{
-    delegateAddress: string, <1>
-    amount: string, <2>
-    unvoteHeight: number, <3>
-    minUnlockHeight: number, <4>
-}[]
-----
-
+////
 [[dpos]]
 == Delegated Proof of Stake (DPoS)
 

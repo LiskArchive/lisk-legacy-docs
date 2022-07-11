@@ -15,6 +15,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_dashboard: http://localhost:4005
 :url_oclif: https://oclif.io/
 :url_sdkexamples_lns_secret: https://github.com/LiskHQ/lisk-sdk-examples/tree/development/tutorials/lisk-name-service/lns/.secret
+:url_gh_sdk_examples_lns: https://github.com/LiskHQ/lisk-sdk-examples/tree/development/tutorials/lisk-name-service
 // Project URLs
 :url_guide_dashboard: build-blockchain/using-dashboard.adoc
 :url_guide_setup_dependencies: build-blockchain/create-blockchain-app.adoc#dependencies
@@ -25,9 +26,15 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_transaction_asset: glossary.adoc#transaction-asset
 :sectnums:
 
-== Dependencies
+[TIP]
+====
+Find the complete code for the LNS example application in the {url_gh_sdk_examples_lns}[Lisk SDK examples^] repository:
 
-Please refer to the section xref:{url_guide_setup_dependencies}[Lisk SDK Dependencies] of the setup guide to set up all the required dependencies to follow this tutorial, if you have not done so already.
+[source,bash]
+----
+git clone https://github.com/LiskHQ/lisk-sdk-examples.git
+----
+====
 
 == Bootstrapping the default application
 
@@ -112,9 +119,9 @@ lisk generate:asset lns register 1
 
 <1> The newly created skeleton for the `register` asset.
 
-When you open `register.ts` at this point, it will appear as shown below:
+When you open `register-asset.ts` at this point, it will appear as shown below:
 
-.src/app/modules/lns/assets/register.ts
+.src/app/modules/lns/assets/register-asset.ts
 [source,typescript]
 ----
 import { BaseAsset, ApplyAssetContext, ValidateAssetContext } from 'lisk-sdk';
@@ -412,13 +419,19 @@ Next, open the file `lns/constants.ts`, which was created in the <<validation>> 
 [source,typescript]
 ----
 export const EMPTY_BUFFER = Buffer.alloc(0);
+export const LNS_PREFIX = 'LNS';
 ----
 
 ==== Utility functions
 
 Create a new file `storage.ts` in the LNS module folder.
 
-Import the `eth-ens-namehash` package.
+Install and import the following dependencies:
+
+[source,bash]
+----
+npm i eth-ens-namehash date-fns axios
+----
 
 Implement the following functions:
 
@@ -432,11 +445,12 @@ Implement the following functions:
 .src/app/modules/lns/storage.ts
 [source,typescript]
 ----
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference
+/// <reference path="../../../@types/eth-ens-namehash/index.d.ts" />
 import * as namehash from 'eth-ens-namehash';
-
-// constants
-export const LNS_PREFIX = 'LNS';
-export const VALID_TLDS = ['lsk'];
+import { codec, StateStore } from 'lisk-sdk';
+import { LNS_PREFIX } from './constants';
+import { LNSNode, lnsNodeSchema } from './data/lns_node';
 
 // Get a unique key for each LNS object
 export const getKeyForNode = (node: Buffer): string => `${LNS_PREFIX}:${node.toString('hex')}`;
@@ -447,14 +461,6 @@ export const getKeyForNode = (node: Buffer): string => `${LNS_PREFIX}:${node.toS
 .src/app/modules/lns/storage.ts
 [source,typescript]
 ----
-import * as namehash from 'eth-ens-namehash';
-
-// constants
-export const LNS_PREFIX = 'LNS';
-export const VALID_TLDS = ['lsk'];
-
-// Get a unique key for each LNS object
-export const getKeyForNode = (node: Buffer): string => `${LNS_PREFIX}:${node.toString('hex')}`;
 // Create a hash from the domain name and return it as Buffer
 export const getNodeForName = (name: string): Buffer =>
 	Buffer.from(namehash.hash(name).slice(2), 'hex');
@@ -481,8 +487,6 @@ The stateStore allows performing state changes on the blockchain.
 [source,typescript]
 ----
 import { chain, codec, StateStore } from 'lisk-sdk';
-import * as namehash from 'eth-ens-namehash';
-
 // ...
 
 export const createLNSObject = async (
@@ -518,11 +522,6 @@ The stateStore allows performing state changes on the blockchain.
 .src/app/modules/lns/storage.ts
 [source,typescript]
 ----
-import { chain, codec, StateStore } from 'lisk-sdk';
-import * as namehash from 'eth-ens-namehash';
-
-// ...
-
 export const getLNSObject = async (
 	stateStore: StateStore,
 	node: Buffer,
@@ -683,7 +682,7 @@ Use `reverse_lookup` as the asset name and `2` as the asset ID.
 .lisk-name-service/lns/
 [source,bash]
 ----
-lisk generate:asset lns reverse_lookup 2
+lisk generate:asset lns reverseLookup 2
 ----
 
 ==== Schema
@@ -715,7 +714,7 @@ Add the interface and asset schema to the file and save it.
 
 Now include the schema in the asset file:
 
-.src/app/modules/lns/assets/reverse_lookup.ts
+.src/app/modules/lns/assets/reverse_lookup_asset.ts
 [source,typescript]
 ----
 import { ApplyAssetContext, BaseAsset } from 'lisk-sdk';
@@ -777,7 +776,7 @@ For example if you build any DNS provider service on top of the LNS app, then yo
 
 [source,bash]
 ----
-lisk generate:asset lns update_records 3
+lisk generate:asset lns updateRecords 3
 ----
 
 ==== Schema
@@ -795,7 +794,7 @@ export interface UpdateRecordsAssetProps {
 }
 
 export const updateRecordsAssetPropsSchema = {
-  $id: 'lns/assets/update-records',
+  $id: 'lns/updateRecords-asset',
   title: 'Update Records transaction asset for lns module',
   type: 'object',
   required: ['records'],
@@ -817,7 +816,7 @@ export const updateRecordsAssetPropsSchema = {
 
 Now include the schema in the asset file.
 
-.src/app/modules/lns/assets/reverse_lookup.ts
+.src/app/modules/lns/assets/reverse_lookup_asset.ts
 [source,typescript]
 ----
 import { ApplyAssetContext, BaseAsset, ValidateAssetContext } from 'lisk-sdk';
@@ -851,7 +850,7 @@ export const MAX_RECORD_VALUE_LENGTH = 255;
 
 Now import the constants inside of `update_records.ts` and implement the `validate` function as follows:
 
-.src/app/modules/lns/assets/update_records.ts
+.src/app/modules/lns/assets/update_records_asset.ts
 [source,typescript]
 ----
 import { ApplyAssetContext, BaseAsset, ValidateAssetContext } from 'lisk-sdk';
@@ -985,12 +984,12 @@ The function `updateLNSObject()` is a new function which is added to the utility
 
 ==== Utility functions
 
-Open the file `storage.ts` which was previously created in the <<utility-functions>> step, and define a new function `updateLSNObject()` which updates a certain LNS object in the database, based on the provided parameters.
+Open the file `storage.ts` which was previously created in the <<utility-functions>> step, and define a new function `updateLNSObject()` which updates a certain LNS object in the database, based on the provided parameters.
 
 .src/app/modules/lns/storage.ts
 [source,typescript]
 ----
-export const updateLSNObject = async (
+export const updateLNSObject = async (
 	stateStore: StateStore,
 	params: Partial<Omit<LNSNode, 'createdAt' | 'updatedAt'>> & { node: Buffer },
 ): Promise<void> => {
@@ -1008,6 +1007,27 @@ export const updateLSNObject = async (
 	lnsObject.updatedAt = Math.ceil(Date.now() / 1000);
 
 	await stateStore.chain.set(getKeyForNode(params.node), codec.encode(lnsNodeSchema, lnsObject));
+};
+----
+
+Create a new file `utils.ts` inside of the lns module folder, with the following two utility functions:
+
+.src/app/modules/lns/utils.ts
+[source,typescript]
+----
+import { LNSNode } from './data';
+
+export const isExpired = (node: LNSNode): boolean => {
+	const currentTime = Math.ceil(new Date().getTime() / 1000);
+
+	return currentTime > node.expiry;
+};
+
+export const isTTLPassed = (node: LNSNode): boolean => {
+	const currentTime = Math.ceil(new Date().getTime() / 1000);
+	const validUpdateTime = node.updatedAt + node.ttl;
+
+	return currentTime > validUpdateTime;
 };
 ----
 
@@ -1150,13 +1170,9 @@ export const lnsAccountPropsSchema = {
 };
 ----
 
-
 === Assets
 
-Now add the assets that were created previously in the <<creating-the-lns-module-assets>> step.
-Import the different assets to the LNS module as shown in the snippet below.
-
-Now create a new instance of each asset and add them as an array to the `transactionAssets` property of the LNS module.
+The assets created previousely in step <<creating-the-lns-module-assets>> are already added to the module.
 
 .lns/lns_module.ts
 [source,typescript]
@@ -1424,26 +1440,32 @@ NOTE: In case the LNS tutorial was cloned from the `lisk-sdk-examples` repositor
 If the blockchain application was newly bootstrapped with `lisk init`, it still contains a default genesis block, which does not include the account schema of the new LNS module.
 Therefore it is necessary to create a new genesis block with genesis accounts that include the new account properties of the LNS module.
 
-//TODO: Add more information about how to update the genesis block
-TIP: Detailed information about this process can be found in the guide xref:{url_guide_genesisblock}[].
-
-./lisk-name-service/lns/
 [source,bash]
 ----
-./bin/run genesis-block:create --output  /home/USERNAME/.lisk/lns/config/default
+./bin/run genesis-block:create --output config/default
 ----
 
-Copy the following content to `~/.lisk/lns/config/default/config.json`:
+Update the config with the info for the newly generated genesis delegates.
 
-* copy the content of `forging_info.json` to under forging.delegates
-* copy the content of `password.json` to under forging.defaultPassword
+[source,bash]
+----
+tmp=$(mktemp)
+jq '.forging.delegates = input' config/default/config.json config/default/forging_info.json > "$tmp" && mv "$tmp" config/default/config.json
+jq '.forging += input' config/default/config.json config/default/password.json > "$tmp" && mv "$tmp" config/default/config.json
+----
 
-Save the file `accounts.json` somewhere secure as it contains the credentials for all genesis accounts.
-In the LNS example application, the file is stored in the {url_sdkexamples_lns_secret}[lisk-name-service/lns/.secret/^] folder.
+Finally, remove the existing application data, and start the node again, to verify it is starting successfully.
 
-After the genesis block and config are updated, the application should start again successfully. To start, run the following command:
+[source,bash]
+----
+rm -r ~/.lisk
+----
 
-.lisk-name-service/lns/
+TIP: Detailed information about this process can be found in the guide xref:{url_guide_genesisblock}[].
+
+After the genesis block and config are updated, the application should start again successfully.
+To start, run the following command:
+
 [source,bash]
 ----
 ./bin/run start
@@ -1595,11 +1617,11 @@ The {url_recaptcha_keys}[free site key and secret key for reCAPTCHA^] are used b
 The last step to use the Faucet plugin is to enable it via the action `faucet:authorize`.
 This can be achieved with the Dashboard plugin.
 
-Start the blockchain application again:
+Start the blockchain application again, with WebSocket API enabled:
 
 [source,bash]
 ----
-./bin/run start
+./bin/run start --api-ws
 ----
 
 Wait until the application start is completed.

@@ -10,6 +10,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_github_nft: https://github.com/LiskHQ/lisk-sdk-examples/tree/development/tutorials/nft
 :url_react_docs: https://reactjs.org/docs/getting-started.html
 // Project URLs
+:url_build_bapp: build-blockchain/create-blockchain-app.adoc#bootstrapping-a-new-blockchain-application-with-lisk-commander
 :url_references_schemas: understand-blockchain/codec-schema.adoc
 :url_statestore: lisk-sdk::references/lisk-elements/chain.adoc#state-store
 :url_references_token_module: lisk-sdk::modules/token-module.adoc
@@ -17,6 +18,9 @@ Mona Bärenfänger <mona@lightcurve.io>
 
 How to create a blockchain application that supports NFTs.
 You will learn how to create a custom module that adds the feature to create and purchase NFTs in a blockchain application, and a custom plugin that provides additional NFT-related features.
+
+IMPORTANT: The example app for this tutorial was build without bootstrapping via Lisk Commander, therefore the project setup and file structure are different in this tutorial.
+If you wish to see an example how to easily bootstrap a blockchain application with the Lisk Commander, check out xref:{url_build_bapp}[how to bootstrap the Hello World application].
 
 TIP: For the *full code example* please see the {url_github_nft}[NFT app on Github^].
 
@@ -78,7 +82,7 @@ Create a new folder, which will contain all the files for the NFT app:
 mkdir nft
 mkdir nft/blockchain_app
 cd nft/blockchain_app
-npm init --yes
+npm init
 npm i lisk-sdk
 ----
 
@@ -121,13 +125,13 @@ The following functions are implemtented:
 
 * `registeredNFTTokensSchema`: The schema, how the NFTs are saved in the database.
 Each NFT has the following properties:
-** id
-** value
-** ownerAddress
-** minPurchaseMargin
-** name
+** id: The unique ID of the NFT.
+** value: The value of the NFT.
+** ownerAddress: The address of the owner of the NFT.
+** minPurchaseMargin: The minimum price increase, that should happen with every purchase of the NFT in percentage.
+** name: The NFT name.
 * `CHAIN_STATE_NFT_TOKENS`: The key under which the NFTs are saved in the database.
-* `createNFTToken()`: Creates a new NFT based on the provided `name`, `ownerAddress`, `nonce`, `value` and  `minPurchaseMargin`.
+* `createNFTToken()`: Creates a new NFT based on the provided `name`, `ownerAddress`, `nonce`, `value`, and  `minPurchaseMargin`.
 The ID for the NFT is created by combining and hashing the owner address and its' current nonce, which in combination always creates a unique value.
 This way it is ensured that each newly created NFT has a unique ID in the database.
 * `setAllNFTTokens()`: Saves provided NFTs to the database.
@@ -520,6 +524,8 @@ Create a new file `purchase_nft_asset.js` inside the `transactions/` folder.
 
 Analog to the implementation of the `createNFT` asset, create the `purchaseNFT` asset by pasting the snippet below.
 
+NOTE: The validation of the asset inputs is done in the `apply()` function, as it is necessary to access the database in order to validate the transaction inputs.
+
 .nft/blockchain_app/nft_module/transactions/purchase_nft_asset.js
 [source,js]
 ----
@@ -668,7 +674,7 @@ class TransferNFTAsset extends BaseAsset {
     },
   };
 
-  async apply({ asset, stateStore, reducerHandler, transaction }) {
+  async apply({ asset, stateStore, transaction }) {
     const nftTokens = await getAllNFTTokens(stateStore);
     const nftTokenIndex = nftTokens.findIndex((t) => t.id.equals(asset.nftId));
 
@@ -749,8 +755,8 @@ It is recommended to start with the easiest ones: defining the module name and I
 const { BaseModule } = require("lisk-sdk");
 
 class NFTModule extends BaseModule {
-  name = "nft"; <1>
-  id = 1024; <2>
+  public name = "nft"; //<1>
+  public id = 1024; //<2>
 }
 
 module.exports = { NFTModule };
@@ -780,9 +786,9 @@ const { BaseModule } = require("lisk-sdk");
 
 // Extend base module to implement your custom module
 class NFTModule extends BaseModule {
-  name = "nft";
-  id = 1024;
-  accountSchema = {
+  public name = "nft";
+  public id = 1024;
+  public accountSchema = {
     type: "object",
     required: ["ownNFTs"],
     properties: {
@@ -830,9 +836,9 @@ const TransferNFTAsset = require("./transactions/transfer_nft_asset");
 
 // Extend base module to implement your custom module
 class NFTModule extends BaseModule {
-  name = "nft";
-  id = 1024;
-  accountSchema = {
+  public name = "nft";
+  public id = 1024;
+  public accountSchema = {
     type: "object",
     required: ["ownNFTs"],
     properties: {
@@ -849,7 +855,7 @@ class NFTModule extends BaseModule {
     },
   };
   // Add the transaction assets to the module
-  transactionAssets = [new CreateNFTAsset(), new PurchaseNFTAsset(), new TransferNFTAsset()];
+  public transactionAssets = [new CreateNFTAsset(), new PurchaseNFTAsset(), new TransferNFTAsset()];
 }
 
 module.exports = { NFTModule };
@@ -877,9 +883,9 @@ const TransferNFTAsset = require("./transactions/transfer_nft_asset");
 
 // Extend from the base module to implement the NFT module
 class NFTModule extends BaseModule {
-  name = "nft";
-  id = 1024;
-  accountSchema = {
+  public name = "nft";
+  public id = 1024;
+  public accountSchema = {
     type: "object",
     required: ["ownNFTs"],
     properties: {
@@ -895,8 +901,8 @@ class NFTModule extends BaseModule {
       ownNFTs: [],
     },
   };
-  transactionAssets = [new CreateNFTAsset(), new PurchaseNFTAsset(), new TransferNFTAsset()];
-  actions = {
+  public transactionAssets = [new CreateNFTAsset(), new PurchaseNFTAsset(), new TransferNFTAsset()];
+  public actions = {
     // get all the registered NFT tokens from blockchain
     getAllNFTTokens: async () => getAllNFTTokensAsJSON(this._dataAccess),
   };

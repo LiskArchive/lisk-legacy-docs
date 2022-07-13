@@ -421,13 +421,13 @@
 <li><a href="#the-three-domains-of-a-blockchain">The three domains of a blockchain</a></li>
 <li><a href="#blocks">Blocks</a>
 <ul class="sectlevel2">
+<li><a href="#block-header">Block header</a></li>
+<li><a href="#block-assets">Block assets</a></li>
+<li><a href="#block-transactions">Block transactions</a></li>
 <li><a href="#block-generation">Block generation</a></li>
 <li><a href="#block-processing">Block processing</a></li>
 <li><a href="#block-schema">Block schema</a></li>
 <li><a href="#block-validation">Block validation</a></li>
-<li><a href="#block-header">Block header</a></li>
-<li><a href="#block-transactions">Block transactions</a></li>
-<li><a href="#block-assets">Block assets</a></li>
 <li><a href="#block-signature-calculation">Block Signature Calculation</a></li>
 </ul>
 </li>
@@ -446,30 +446,233 @@
 <div class="paragraph">
 <p>At a very high level, there are three domains of a blockchain:</p>
 </div>
-<div class="imageblock">
+<div class="imageblock text-center">
 <div class="content">
-<img src="../_images/understand-blockchain/3-domains.png" alt="3 domains">
+<img src="../_images/understand-blockchain/3-domains.png" alt="3 domains of blockchain" width="300">
 </div>
 <div class="title">Figure 1. The three domains of a blockchain application</div>
 </div>
-<div class="paragraph">
-<p><a href="state-machine.html" class="xref page">State machine domain</a>: Responsible for transitioning the blockchain state with deterministic logic.
-<a href="state-machine.html" class="xref page">Consensus domain</a>: Responsible for the replication of the same sequence of states among all nodes in the network.
-This is achieved by nodes in the network following a <a href="../intro/how-blockchain-works.html#consensus-mechanisms" class="xref page">consensus protocol</a> and utilizing the state machine and network domains.
-<a href="state-machine.html" class="xref page">Network domain</a>:: Responsible for the communication of the peer-to-peer network.</p>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><a href="state-machine.html" class="xref page">State machine domain</a>: Responsible for transitioning the blockchain state with deterministic logic.</p>
+</li>
+<li>
+<p><a href="state-machine.html" class="xref page">Consensus domain</a>: Responsible for the replication of the same sequence of states among all nodes in the network.
+This is achieved by nodes in the network following a <a href="../intro/how-blockchain-works.html#consensus-mechanisms" class="xref page">consensus protocol</a> and utilizing the state machine and network domains.</p>
+</li>
+<li>
+<p><a href="state-machine.html" class="xref page">Network domain</a>:: Responsible for the communication of the peer-to-peer network.</p>
+</li>
+</ol>
 </div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="blocks"><a class="anchor" href="#blocks"></a>Blocks</h2>
 <div class="sectionbody">
+<div class="imageblock text-center">
+<div class="content">
+<img src="../_images/understand-blockchain/block.png" alt="Anatomy of a Lisk block" width="300">
+</div>
+<div class="title">Figure 2. Anatomy of a block</div>
+</div>
 <div class="sect2">
-<h3 id="block-generation"><a class="anchor" href="#block-generation"></a>Block generation</h3>
+<h3 id="block-header"><a class="anchor" href="#block-header"></a>Block header</h3>
+<div class="paragraph">
+<p>Properties handled by the <a href="state-machine.html" class="xref page">consensus</a> domain are added to the block header.</p>
+</div>
+<div class="paragraph">
+<p>The block header consists of the following properties:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>generatorAddress</code>: The address of the block generator.
+It replaces the <code>generatorPublicKey</code> property.
+See below for more details.</p>
+</li>
+<li>
+<p><code>assetRoot</code>: The root of the Merkle tree computed from the block assets array.
+See below for more details.</p>
+</li>
+<li>
+<p><code>eventRoot</code>: The root of the sparse Merkle tree that is computed from the events emitted during the block processing.
+See LIP "Introduce events and event root" LIP for the reason why it needs to be included in a block header.</p>
+</li>
+<li>
+<p><code>stateRoot</code>: The root of the sparse Merkle tree that is computed from the state of the blockchain.
+See LIP 0040 for the reason why it needs to be included in a block header.</p>
+</li>
+<li>
+<p><code>maxHeightPrevoted</code>: This property is related to the Lisk-BFT protocol and is used for the fork choice rule.</p>
+</li>
+<li>
+<p><code>maxHeightGenerated</code>: This property is related to the Lisk-BFT protocol and is used to check for contradicting block headers.</p>
+</li>
+<li>
+<p><code>validatorsHash</code>: This property authenticates the set of validators active from the next block onward.
+It is important for cross-chain certification and included in certificates.</p>
+</li>
+<li>
+<p><code>aggregateCommit</code>: This property contains the aggregate signature for a certificate and the height of the certified block.
+Based on this, any node can create a certificate for the given height.
+See LIP 0061 for more details.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="block-assets"><a class="anchor" href="#block-assets"></a>Block assets</h3>
+<div class="paragraph">
+<p>Properties created by individual modules are added to the block assets.</p>
+</div>
+<div class="paragraph">
+<p>As an example, blockchains created with the Lisk SDK that implement the Random module, will insert the seed reveal property in the block assets, not in the block header.</p>
+</div>
+<div class="paragraph">
+<p>The schema for the block assets allows each module to include its serialized data individually, which makes the inclusion of module data very flexible.
+Each module can insert a single entry in the assets.
+This entry is an object containing a <code>moduleID</code> property, indicating the ID of the module handling it, and a generic data property that can contain arbitrary serialized data.</p>
+</div>
+<div class="paragraph">
+<p>Each entry of the block assets is then inserted in a Merkle tree <sup class="footnote" id="_footnote_tree">[<a id="_footnoteref_1" class="footnote" href="#_footnotedef_1" title="View footnote.">1</a>]</sup>, whose root is included in the block header as the <code>assetRoot</code> property.
+Inserting the assets root rather than the full assets allows to bound the size of the block header while still authenticating the content of the block assets.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="block-transactions"><a class="anchor" href="#block-transactions"></a>Block transactions</h3>
 
 </div>
 <div class="sect2">
+<h3 id="block-generation"><a class="anchor" href="#block-generation"></a>Block generation</h3>
+<div class="imageblock text-center">
+<div class="content">
+<img src="../_images/understand-blockchain/block-generation.png" alt="Block generation steps" width="300">
+</div>
+</div>
+<div class="paragraph">
+<p>The full generation of a block is organized as follows.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Header initialization</strong>: Block header properties that require access to the state store before any state transitions implied by the block are executed are inserted in this stage.</p>
+</li>
+<li>
+<p><strong>Assets insertion</strong>: Each module can insert information in the block assets.</p>
+</li>
+<li>
+<p><strong>Before transactions execution</strong>: Each module can define protocol logic that is executed before the transactions contained in the block are processed.
+After this stage has been completed, transactions are selected one-by-one from a transaction pool.
+The transaction processing stages (stages 4 to 8) are repeated for each transaction selected.
+If stages 4, 5, 6, and 8 are executed successfully, the transaction is valid and it is included in the block, otherwise it is invalid and therefore discarded.</p>
+</li>
+<li>
+<p><strong>Transaction verification</strong>: Each module can define protocol logic that verifies a transaction, possibly by accessing the state store.
+If an error occurs, the transaction is invalid and it is not included in the block.</p>
+</li>
+<li>
+<p><strong>Command verification</strong>: The command corresponding to the <code>moduleID</code>-<code>commandID</code> combination is verified.
+If an error occurs, the transaction is invalid and it is not included in the block.</p>
+</li>
+<li>
+<p><strong>Before command execution</strong>: Each module can define protocol logic that is processed before the command has been executed.
+If an error occurs, the transaction is invalid, it is not included in the block, all state transitions induced by the transaction are reverted.
+In that case, the block generation continues with stage 4 for another transaction from the transaction pool or stage 9.</p>
+</li>
+<li>
+<p><strong>Command execution</strong>: The command corresponding to the <code>moduleID</code>-<code>commandID</code> combination is executed.
+If an error occurs, the transaction is failed and all state transitions performed in this stage are reverted.
+In any case, afterwards the processing continues with the next stage.</p>
+</li>
+<li>
+<p><strong>After command execution</strong>: Each module can define protocol logic that is processed after the command has been executed.
+If an error occurs, the transaction is invalid, it is not included in the block and all state transitions induced by the transaction performed up to this stage are reverted.
+In that case, the block generation continues with stage 4 for another transaction from the transaction pool or stage 9.</p>
+</li>
+<li>
+<p><strong>After transactions execution</strong>: Each module can define protocol logic that is executed after all the transactions contained in the block have been processed.</p>
+</li>
+<li>
+<p><strong>Header finalization</strong>: Block header properties, which require accessing the state store after all state transitions implied by the block have been executed, are inserted.</p>
+</li>
+<li>
+<p><strong>Block processing</strong>: The block goes through the <a href="#block-processing">Block processing</a> stages.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
 <h3 id="block-processing"><a class="anchor" href="#block-processing"></a>Block processing</h3>
-
+<div class="imageblock text-center">
+<div class="content">
+<img src="../_images/understand-blockchain/block-processing.png" alt="Block prosessing steps" width="300">
+</div>
+</div>
+<div class="paragraph">
+<p>The full processing of a block is organized as follows.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Block reception</strong>: A new block is received from the P2P network.</p>
+</li>
+<li>
+<p><strong>Fork choice</strong>: Upon receiving a new block, the fork choice rule determines whether the block will be discarded or if the processing continues.</p>
+</li>
+<li>
+<p><strong>Static validation</strong>: Some initial static checks are done to ensure that the serialized object follows the general structure of a block.
+These checks are performed immediately because they do not require access to the state store and can therefore be done very quickly.</p>
+</li>
+<li>
+<p><strong>Header verification</strong>: Block header properties that require access to the state store before any state transitions implied by the block are executed are verified in this stage.</p>
+</li>
+<li>
+<p><strong>Assets verification</strong>: Each module verifies the respective entry in the block assets.
+If any check fails, the block is discarded and has no further effect.</p>
+</li>
+<li>
+<p><strong>Block forwarding</strong>: After the initial checks, the full block is forwarded to a subset of peers.</p>
+</li>
+<li>
+<p><strong>Before transactions execution</strong>: Each module can define protocol logic that is executed before the transactions contained in the block are processed.</p>
+</li>
+<li>
+<p><strong>Transaction verification</strong>: Each module can define protocol logic that verifies a transaction, possibly by accessing the state store.
+If an error occurs, the transaction is invalid and the whole block is discarded.</p>
+</li>
+<li>
+<p><strong>Command verification</strong>: The command corresponding to the moduleID-commandID combination is verified.
+If an error occurs, the transaction is invalid and the whole block is discarded.</p>
+</li>
+<li>
+<p><strong>Before command execution</strong>: Each module can define protocol logic that is processed before the command has been executed.
+If an error occurs, the transaction is invalid and the whole block is discarded.</p>
+</li>
+<li>
+<p><strong>Command execution</strong>: The command corresponding to the moduleID-commandID combination is executed.
+If an error occurs, the transaction is failed and all state transitions performed in this stage are reverted.
+In any case, afterwards the processing continues with the next stage.</p>
+</li>
+<li>
+<p><strong>After command execution</strong>: Each module can define protocol logic that is processed after the command has been executed.
+If an error occurs, the transaction is invalid and the whole block is discarded.</p>
+</li>
+<li>
+<p><strong>After transactions execution</strong>: Each module can define protocol logic that is executed after all the transactions contained in the block have been processed.</p>
+</li>
+<li>
+<p><strong>Result verification</strong>: Block header properties, which require accessing the state store after all state transitions implied by the block have been executed, are verified.</p>
+</li>
+<li>
+<p><strong>Block storage</strong>: The block is persisted into the database.</p>
+</li>
+<li>
+<p><strong>Peers notification</strong>: Other peers in the P2P network are notified of the new block.</p>
+</li>
+</ol>
+</div>
 </div>
 <div class="sect2">
 <h3 id="block-schema"><a class="anchor" href="#block-schema"></a>Block schema</h3>
@@ -477,18 +680,6 @@ This is achieved by nodes in the network following a <a href="../intro/how-block
 </div>
 <div class="sect2">
 <h3 id="block-validation"><a class="anchor" href="#block-validation"></a>Block validation</h3>
-
-</div>
-<div class="sect2">
-<h3 id="block-header"><a class="anchor" href="#block-header"></a>Block header</h3>
-
-</div>
-<div class="sect2">
-<h3 id="block-transactions"><a class="anchor" href="#block-transactions"></a>Block transactions</h3>
-
-</div>
-<div class="sect2">
-<h3 id="block-assets"><a class="anchor" href="#block-assets"></a>Block assets</h3>
 
 </div>
 <div class="sect2">
@@ -500,6 +691,18 @@ This is achieved by nodes in the network following a <a href="../intro/how-block
 <div class="sect1">
 <h2 id="transactions"><a class="anchor" href="#transactions"></a>Transactions</h2>
 <div class="sectionbody">
+<div class="paragraph">
+<p>A transaction is valid, if the "transaction verification", "command verification", "before command execution", and "after command execution" stages associated to the transaction are executed successfully without errors (see the "Block processing stages" section below).
+Otherwise, a transaction is invalid.
+Only valid transactions should be added to a block during the block generation, as an invalid transaction makes the whole block invalid meaning that it would be discarded by any node in the network.</p>
+</div>
+<div class="paragraph">
+<p>A valid transaction is executed successfully if additionally the "command execution" stage is executed successfully without errors.
+A valid transaction fails if on the other hand an error occurs during the command execution.
+In this case, all state transitions of the "command execution" stage are reverted.
+This means that the transaction has no effect except for those defined in "before command execution" and "after command execution".
+The result of the transaction execution is logged using an event emitted at the end of the "after transaction execution" stage, indicating whether the transaction was processed successfully or an error occurred.</p>
+</div>
 <div class="sect2">
 <h3 id="transaction-schema"><a class="anchor" href="#transaction-schema"></a>Transaction schema</h3>
 
@@ -508,6 +711,12 @@ This is achieved by nodes in the network following a <a href="../intro/how-block
 <h3 id="transaction-header"><a class="anchor" href="#transaction-header"></a>Transaction header</h3>
 
 </div>
+</div>
+</div>
+<div id="footnotes">
+<hr>
+<div class="footnote" id="_footnotedef_1">
+<a href="#_footnoteref_1">1</a>. See <a href="#{url_protocol_blocks}">[{url_protocol_blocks}]</a> page of the Lisk protocol.
 </div>
 </div>
 <nav class="pagination">

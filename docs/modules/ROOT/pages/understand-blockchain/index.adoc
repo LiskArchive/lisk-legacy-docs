@@ -35,15 +35,16 @@ Blocks following the Lisk protocol have three main properties:
 
 . The <<block-header>>
 . The <<block-assets>>
-. The <<block-transactions>>
+. The <<transactions>> included in a block
 
 .Anatomy of a block
 image::understand-blockchain/block.png["Anatomy of a Lisk block",300,align="center"]
 
-The definitions of the main properties of a block are provided in the following sections.
+Detailed descriptions of the main properties of a block are provided in the following sections.
 
-=== Block JSON schema
-
+.Block JSON schema
+[%collapsible]
+====
 Blocks are serialized and deserialized accordingly to the following JSON schema.
 
 [source,js]
@@ -73,10 +74,14 @@ blockSchema = {
   }
 }
 ----
+====
 
 === Block header
 
 Properties handled by the xref:{url_understand_state_machine}[consensus] domain are added to the block header.
+
+.Block ID
+NOTE: The block ID is calculated by hashing the complete block header of a signed block.
 
 The block header consists of the following properties:
 
@@ -212,19 +217,23 @@ blockHeaderSchema = {
 
 Properties created by individual modules are added to the block assets.
 
-As an example, blockchains created with the Lisk SDK that implement the Random module, will insert the seed reveal property in the block assets, not in the block header.
-
 //TODO: Add link to state-machine page, merkle trees
-Each entry of the block assets is then inserted in a Merkle tree, whose root is included in the block header as the `assetRoot` property.
-Inserting the assets root rather than the full assets allows to bound the size of the block header while still authenticating the content of the block assets.
+Each entry of the block assets is then inserted in a Merkle tree, whose root is included in the <<block-header>> as the `assetRoot` property.
+
+NOTE: Inserting the assets root rather than the full assets allows to bound the size of the block header while still authenticating the content of the block assets.
+
+As an example, blockchains created with the Lisk SDK that implement the Random module, will insert the seed reveal property in the block assets, not in the block header.
 
 ==== JSON schema
 
 The schema for the block assets allows each module to include its serialized data individually, which makes the inclusion of module data very flexible.
+
 Each module can insert a single entry in the assets.
 This entry is an object containing a `moduleID` property, indicating the ID of the module handling it, and a generic data property that can contain arbitrary serialized data.
 
 .Block asset schema
+[%collapsible]
+====
 [source,js]
 ----
 assetSchema = {
@@ -242,6 +251,7 @@ assetSchema = {
   }
 }
 ----
+====
 
 === Block generation
 
@@ -329,11 +339,20 @@ Verifies the `stateRoot`, `eventRoot`, and `validatorsHash` properties of the <<
 
 //TODO: Include image of the anatomy of a transaction
 
-A transaction is valid, if the "transaction verification", "command verification", "before command execution", and "after command execution" stages associated to the transaction are executed successfully without errors (see the "Block processing stages" section below).
+=== Valid vs invalid transactions
+A transaction is valid, if the following stages associated to the transaction of <<block-processing>> are executed successfully without errors:
+
+* "transaction verification"
+* "command verification"
+* "before command execution" and
+* "after command execution"
+
 Otherwise, a transaction is invalid.
 Only valid transactions should be added to a block during the block generation, as an invalid transaction makes the whole block invalid meaning that it would be discarded by any node in the network.
 
+=== Successful vs failed transactions
 A valid transaction is executed successfully if additionally the "command execution" stage is executed successfully without errors.
+
 A valid transaction fails if on the other hand an error occurs during the command execution.
 In this case, all state transitions of the "command execution" stage are reverted.
 This means that the transaction has no effect except for those defined in "before command execution" and "after command execution".

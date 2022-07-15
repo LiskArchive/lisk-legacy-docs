@@ -421,7 +421,6 @@
 <li><a href="#the-three-domains-of-a-blockchain">The three domains of a blockchain</a></li>
 <li><a href="#blocks">Blocks</a>
 <ul class="sectlevel2">
-<li><a href="#block-json-schema">Block JSON schema</a></li>
 <li><a href="#block-header">Block header</a></li>
 <li><a href="#block-assets">Block assets</a></li>
 <li><a href="#block-generation">Block generation</a></li>
@@ -430,6 +429,8 @@
 </li>
 <li><a href="#transactions">Transactions</a>
 <ul class="sectlevel2">
+<li><a href="#valid-vs-invalid-transactions">Valid vs invalid transactions</a></li>
+<li><a href="#successful-vs-failed-transactions">Successful vs failed transactions</a></li>
 <li><a href="#transaction-schema">Transaction schema</a></li>
 <li><a href="#transaction-header">Transaction header</a></li>
 </ul>
@@ -480,7 +481,7 @@ This is achieved by nodes in the network following a <a href="../intro/how-block
 <p>The <a href="#block-assets">Block assets</a></p>
 </li>
 <li>
-<p>The <a href="#block-transactions">[block-transactions]</a></p>
+<p>The <a href="#transactions">Transactions</a> included in a block</p>
 </li>
 </ol>
 </div>
@@ -491,10 +492,11 @@ This is achieved by nodes in the network following a <a href="../intro/how-block
 <div class="title">Figure 2. Anatomy of a block</div>
 </div>
 <div class="paragraph">
-<p>The definitions of the main properties of a block are provided in the following sections.</p>
+<p>Detailed descriptions of the main properties of a block are provided in the following sections.</p>
 </div>
-<div class="sect2">
-<h3 id="block-json-schema"><a class="anchor" href="#block-json-schema"></a>Block JSON schema</h3>
+<details>
+<summary class="title">Block JSON schema</summary>
+<div class="content">
 <div class="paragraph">
 <p>Blocks are serialized and deserialized accordingly to the following JSON schema.</p>
 </div>
@@ -527,10 +529,24 @@ This is achieved by nodes in the network following a <a href="../intro/how-block
 </div>
 </div>
 </div>
+</details>
 <div class="sect2">
 <h3 id="block-header"><a class="anchor" href="#block-header"></a>Block header</h3>
 <div class="paragraph">
 <p>Properties handled by the <a href="state-machine.html" class="xref page">consensus</a> domain are added to the block header.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="title">Block ID</div>
+The block ID is calculated by hashing the complete block header of a signed block.
+</td>
+</tr>
+</table>
 </div>
 <div class="paragraph">
 <p>The block header consists of the following properties:</p>
@@ -700,21 +716,36 @@ Based on this, any node can create a certificate for the given height<sup class=
 <p>Properties created by individual modules are added to the block assets.</p>
 </div>
 <div class="paragraph">
-<p>As an example, blockchains created with the Lisk SDK that implement the Random module, will insert the seed reveal property in the block assets, not in the block header.</p>
+<p>Each entry of the block assets is then inserted in a Merkle tree, whose root is included in the <a href="#block-header">Block header</a> as the <code>assetRoot</code> property.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Inserting the assets root rather than the full assets allows to bound the size of the block header while still authenticating the content of the block assets.
+</td>
+</tr>
+</table>
 </div>
 <div class="paragraph">
-<p>Each entry of the block assets is then inserted in a Merkle tree, whose root is included in the block header as the <code>assetRoot</code> property.
-Inserting the assets root rather than the full assets allows to bound the size of the block header while still authenticating the content of the block assets.</p>
+<p>As an example, blockchains created with the Lisk SDK that implement the Random module, will insert the seed reveal property in the block assets, not in the block header.</p>
 </div>
 <div class="sect3">
 <h4 id="json-schema"><a class="anchor" href="#json-schema"></a>JSON schema</h4>
 <div class="paragraph">
-<p>The schema for the block assets allows each module to include its serialized data individually, which makes the inclusion of module data very flexible.
-Each module can insert a single entry in the assets.
+<p>The schema for the block assets allows each module to include its serialized data individually, which makes the inclusion of module data very flexible.</p>
+</div>
+<div class="paragraph">
+<p>Each module can insert a single entry in the assets.
 This entry is an object containing a <code>moduleID</code> property, indicating the ID of the module handling it, and a generic data property that can contain arbitrary serialized data.</p>
 </div>
+<details>
+<summary class="title">Block asset schema</summary>
+<div class="content">
 <div class="listingblock">
-<div class="title">Block asset schema</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">assetSchema = {
   "type": "object",
@@ -732,6 +763,8 @@ This entry is an object containing a <code>moduleID</code> property, indicating 
 }</code></pre>
 </div>
 </div>
+</div>
+</details>
 </div>
 </div>
 <div class="sect2">
@@ -926,17 +959,43 @@ If an error occurs, the transaction is invalid and the whole block is discarded.
 <div class="sect1">
 <h2 id="transactions"><a class="anchor" href="#transactions"></a>Transactions</h2>
 <div class="sectionbody">
+<div class="sect2">
+<h3 id="valid-vs-invalid-transactions"><a class="anchor" href="#valid-vs-invalid-transactions"></a>Valid vs invalid transactions</h3>
 <div class="paragraph">
-<p>A transaction is valid, if the "transaction verification", "command verification", "before command execution", and "after command execution" stages associated to the transaction are executed successfully without errors (see the "Block processing stages" section below).
-Otherwise, a transaction is invalid.
-Only valid transactions should be added to a block during the block generation, as an invalid transaction makes the whole block invalid meaning that it would be discarded by any node in the network.</p>
+<p>A transaction is valid, if the following stages associated to the transaction of <a href="#block-processing">Block processing</a> are executed successfully without errors:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>"transaction verification"</p>
+</li>
+<li>
+<p>"command verification"</p>
+</li>
+<li>
+<p>"before command execution" and</p>
+</li>
+<li>
+<p>"after command execution"</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
-<p>A valid transaction is executed successfully if additionally the "command execution" stage is executed successfully without errors.
-A valid transaction fails if on the other hand an error occurs during the command execution.
+<p>Otherwise, a transaction is invalid.
+Only valid transactions should be added to a block during the block generation, as an invalid transaction makes the whole block invalid meaning that it would be discarded by any node in the network.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="successful-vs-failed-transactions"><a class="anchor" href="#successful-vs-failed-transactions"></a>Successful vs failed transactions</h3>
+<div class="paragraph">
+<p>A valid transaction is executed successfully if additionally the "command execution" stage is executed successfully without errors.</p>
+</div>
+<div class="paragraph">
+<p>A valid transaction fails if on the other hand an error occurs during the command execution.
 In this case, all state transitions of the "command execution" stage are reverted.
 This means that the transaction has no effect except for those defined in "before command execution" and "after command execution".
 The result of the transaction execution is logged using an event emitted at the end of the "after transaction execution" stage, indicating whether the transaction was processed successfully or an error occurred.</p>
+</div>
 </div>
 <div class="sect2">
 <h3 id="transaction-schema"><a class="anchor" href="#transaction-schema"></a>Transaction schema</h3>

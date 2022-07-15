@@ -1,7 +1,12 @@
 = Key concepts of the Lisk blockchain
 //Settings
 :toc: preamble
-:fn_tree: footnote:tree[See xref:{url_protocol_blocks}[] page of the Lisk protocol.]
+:idprefix:
+:idseparator: -
+:fn_gpk: footnote:generatorPublicKey[Previously the `generatorPublicKey` property (see https://github.com/LiskHQ/lips/blob/main/proposals/lip-0055.md#change-generator-public-key-to-generator-address[LIP 0055^] for more information).]
+:fn_eventroot: footnote:eventroot[See https://github.com/LiskHQ/lips/blob/main/proposals/lip-0065.md[LIP 0065^] for the reason why it needs to be included in a block header.]
+:fn_stateroot: footnote:stateroot[See https://github.com/LiskHQ/lips/blob/main/proposals/lip-0040.md[LIP 0040^] for the reason why it needs to be included in a block header.]
+:fn_aggregate: footnote:aggregate[See https://github.com/LiskHQ/lips/blob/main/proposals/lip-0061.md[LIP 0061^] for more details.]
 // Project URLs
 :url_intro_how_blockchain_works: intro/how-blockchain-works.adoc#state-machine
 :url_intro_consensus: intro/how-blockchain-works.adoc#consensus-mechanisms
@@ -14,7 +19,7 @@ This section introduces the main concepts of the Lisk protocol.
 
 == The three domains of a blockchain
 
-At a very high level, there are three domains of a blockchain:
+At a high level, there are three domains of a blockchain:
 
 .The three domains of a blockchain application
 image::understand-blockchain/3-domains.png["3 domains of blockchain", 300, align="center"]
@@ -22,12 +27,52 @@ image::understand-blockchain/3-domains.png["3 domains of blockchain", 300, align
 . xref:{url_understand_state_machine}[State machine domain]: Responsible for transitioning the blockchain state with deterministic logic.
 . xref:{url_understand_state_machine}[Consensus domain]: Responsible for the replication of the same sequence of states among all nodes in the network.
 This is achieved by nodes in the network following a xref:{url_intro_consensus}[consensus protocol] and utilizing the state machine and network domains.
-. xref:{url_understand_state_machine}[Network domain]:: Responsible for the communication of the peer-to-peer network.
+. xref:{url_understand_state_machine}[Network domain]: Responsible for the communication of the peer-to-peer network.
 
 == Blocks
 
+Blocks following the Lisk protocol have three main properties:
+
+. The <<block-header>>
+. The <<block-assets>>
+. The <<block-transactions>>
+
 .Anatomy of a block
 image::understand-blockchain/block.png["Anatomy of a Lisk block",300,align="center"]
+
+The definitions of the main properties of a block are provided in the following sections.
+
+=== Block JSON schema
+
+Blocks are serialized and deserialized accordingly to the following JSON schema.
+
+[source,js]
+----
+blockSchema = {
+  "type": "object",
+  "required": ["header", "transactions", "assets"],
+  "properties": {
+    "header": {
+      "dataType": "bytes",
+      "fieldNumber": 1
+    },
+    "transactions": {
+      "type": "array",
+      "fieldNumber": 2,
+      "items": {
+        "dataType": "bytes"
+      }
+    },
+    "assets": {
+      "type": "array",
+      "fieldNumber": 3,
+      "items": {
+        "dataType": "bytes"
+      }
+    }
+  }
+}
+----
 
 === Block header
 
@@ -35,23 +80,133 @@ Properties handled by the xref:{url_understand_state_machine}[consensus] domain 
 
 The block header consists of the following properties:
 
-* `generatorAddress`: The address of the block generator.
-It replaces the `generatorPublicKey` property.
-See below for more details.
-* `assetRoot`: The root of the Merkle tree computed from the block assets array.
-See below for more details.
-* `eventRoot`: The root of the sparse Merkle tree that is computed from the events emitted during the block processing.
-See LIP "Introduce events and event root" LIP for the reason why it needs to be included in a block header.
+* `version`: The block header version must be equal the value of a block of the previous protocol plus one.
+* `timestamp`: Time the block was created as Unix timestamp.
+* `height`: The height of a block is always `= height of the previous block + 1`.
+* `previousBlockID`: The ID of the previous block.
+* `generatorAddress`: The address of the block generator{fn_gpk}.
+* `transactionRoot`: The transaction root is the root of the Merkle tree built from the ID of the <<block-transactions,transactions contained in the block>>.
+* `assetRoot`: The root of the Merkle tree computed from the <<block-assets>> array.
+* `eventRoot`: The root of the sparse Merkle tree that is computed from the events emitted during the block processing{fn_eventroot}.
 * `stateRoot`: The root of the sparse Merkle tree that is computed from the state of the blockchain.
-See LIP 0040 for the reason why it needs to be included in a block header.
+The state root is the root of the sparse Merkle tree built from the state of the chain after the block has been processed{fn_stateroot}.
+//TODO: Add link to Lisk BFT explanation
 * `maxHeightPrevoted`: This property is related to the Lisk-BFT protocol and is used for the fork choice rule.
+//TODO: Add link to Lisk BFT explanation
 * `maxHeightGenerated`: This property is related to the Lisk-BFT protocol and is used to check for contradicting block headers.
+//TODO: Add link to Lisk interoperability explanation about certificates
 * `validatorsHash`: This property authenticates the set of validators active from the next block onward.
 It is important for cross-chain certification and included in certificates.
-* `aggregateCommit`: This property contains the aggregate signature for a certificate and the height of the certified block.
-Based on this, any node can create a certificate for the given height.
-See LIP 0061 for more details.
+* `aggregateCommit`: This property contains the aggregate BLS signature for a certificate and the height of the certified block.
+It attests that all signing validators consider the corresponding block final.
+Based on this, any node can create a certificate for the given height{fn_aggregate}.
+* `signature`: Signature of the validator who created the block.
 
+.Block header JSON schema
+[%collapsible]
+====
+Block headers are serialized and deserialized accordingly to the following JSON schema.
+
+[source,js]
+----
+blockHeaderSchema = {
+  "type": "object",
+  "required": [
+    "version",
+    "timestamp",
+    "height",
+    "previousBlockID",
+    "generatorAddress",
+    "transactionRoot",
+    "assetRoot",
+    "eventRoot",
+    "stateRoot",
+    "maxHeightPrevoted",
+    "maxHeightGenerated",
+    "validatorsHash",
+    "aggregateCommit",
+    "signature"
+  ],
+  "properties": {
+    "version": {
+      "dataType": "uint32",
+      "fieldNumber": 1
+    },
+    "timestamp": {
+      "dataType": "uint32",
+      "fieldNumber": 2
+    },
+    "height": {
+      "dataType": "uint32",
+      "fieldNumber": 3
+    },
+    "previousBlockID": {
+      "dataType": "bytes",
+      "fieldNumber": 4
+    },
+    "generatorAddress": {
+      "dataType": "bytes",
+      "fieldNumber": 5
+    },
+    "transactionRoot": {
+      "dataType": "bytes",
+      "fieldNumber": 6
+    },
+    "assetRoot": {
+      "dataType": "bytes",
+      "fieldNumber": 7
+    },
+    "eventRoot": {
+      "dataType": "bytes",
+      "fieldNumber": 8
+    },
+    "stateRoot": {
+      "dataType": "bytes",
+      "fieldNumber": 9
+    },
+    "maxHeightPrevoted": {
+      "dataType": "uint32",
+      "fieldNumber": 10
+    },
+    "maxHeightGenerated": {
+      "dataType": "uint32",
+      "fieldNumber": 11
+    },
+    "validatorsHash": {
+      "dataType": "bytes",
+      "fieldNumber": 12
+    },
+    "aggregateCommit": {
+      "type": "object",
+      "fieldNumber": 13,
+      "required": [
+        "height",
+        "aggregationBits",
+        "certificateSignature"
+      ],
+      "properties": {
+        "height": {
+          "dataType": "uint32",
+          "fieldNumber": 1
+        },
+        "aggregationBits": {
+          "dataType": "bytes",
+          "fieldNumber": 2
+        },
+        "certificateSignature": {
+          "dataType": "bytes",
+          "fieldNumber": 3
+        }
+      }
+    },
+    "signature": {
+      "dataType": "bytes",
+      "fieldNumber": 14
+    }
+  }
+}
+----
+====
 
 === Block assets
 
@@ -59,12 +214,34 @@ Properties created by individual modules are added to the block assets.
 
 As an example, blockchains created with the Lisk SDK that implement the Random module, will insert the seed reveal property in the block assets, not in the block header.
 
+//TODO: Add link to state-machine page, merkle trees
+Each entry of the block assets is then inserted in a Merkle tree, whose root is included in the block header as the `assetRoot` property.
+Inserting the assets root rather than the full assets allows to bound the size of the block header while still authenticating the content of the block assets.
+
+==== JSON schema
+
 The schema for the block assets allows each module to include its serialized data individually, which makes the inclusion of module data very flexible.
 Each module can insert a single entry in the assets.
 This entry is an object containing a `moduleID` property, indicating the ID of the module handling it, and a generic data property that can contain arbitrary serialized data.
 
-Each entry of the block assets is then inserted in a Merkle tree {fn_tree}, whose root is included in the block header as the `assetRoot` property.
-Inserting the assets root rather than the full assets allows to bound the size of the block header while still authenticating the content of the block assets.
+.Block asset schema
+[source,js]
+----
+assetSchema = {
+  "type": "object",
+  "required": ["moduleID", "data"],
+  "properties": {
+    "moduleID": {
+      "dataType": "bytes",
+      "fieldNumber": 1
+    },
+    "data": {
+      "dataType": "bytes",
+      "fieldNumber": 2
+    }
+  }
+}
+----
 
 === Block transactions
 
@@ -75,6 +252,8 @@ image::understand-blockchain/block-generation.png["Block generation steps",300, 
 The full generation of a block is organized as follows.
 
 . **Header initialization**: Block header properties that require access to the state store before any state transitions implied by the block are executed are inserted in this stage.
++
+Sets the `version`, `timestamp`, `height`, `previousBlockID`, `generatorAddress`, `maxHeightPrevoted`, `maxHeightGenerated`, and `aggregateCommit` properties of the <<block-header>>.
 . **Assets insertion**: Each module can insert information in the block assets.
 . **Before transactions execution**: Each module can define protocol logic that is executed before the transactions contained in the block are processed.
 After this stage has been completed, transactions are selected one-by-one from a transaction pool.
@@ -95,6 +274,8 @@ If an error occurs, the transaction is invalid, it is not included in the block 
 In that case, the block generation continues with stage 4 for another transaction from the transaction pool or stage 9.
 . **After transactions execution**: Each module can define protocol logic that is executed after all the transactions contained in the block have been processed.
 . **Header finalization**: Block header properties, which require accessing the state store after all state transitions implied by the block have been executed, are inserted.
++
+Sets the `transactionRoot`, `assetRoot`, `eventRoot`, `stateRoot`, `validatorsHash`, and `signature` properties of the <<block-header>>.
 . **Block processing**: The block goes through the <<block-processing>> stages.
 
 === Block processing
@@ -104,10 +285,28 @@ image::understand-blockchain/block-processing.png["Block prosessing steps",500, 
 The full processing of a block is organized as follows.
 
 . **Block reception**: A new block is received from the P2P network.
+//TODO: Add link to definition of the fork choice rule
 . **Fork choice**: Upon receiving a new block, the fork choice rule determines whether the block will be discarded or if the processing continues.
 . **Static validation**: Some initial static checks are done to ensure that the serialized object follows the general structure of a block.
 These checks are performed immediately because they do not require access to the state store and can therefore be done very quickly.
++
+Checks, if:
+
+* the block follows the block schema.
+* the total size of the serialized transactions contained in the block is at most the maximum allowed size for transactions per block.
+* the block header is valid:
+** Check that the block header follows the block header schema.
+** Validate the `version`, `transactionRoot`, and `assetRoot` properties.
+* the block assets are valid:
+** each entry in the assets array has `moduleID` with length equal to `MODULE_ID_LENGTH_BYTES` and set to the ID of a module registered in the chain, while the data property has size at most equal to `MAX_ASSET_DATA_SIZE_BYTES`.
+** each module can insert at most one entry in the block assets.
+Hence, check that each entry has a distinct `moduleID` property.
+** the entries are sorted by increasing values of `moduleID`.
+These validations are performed before the block is processed and without accessing the state.
+The individual entries are then checked in the *assets verification* stage.
 . **Header verification**: Block header properties that require access to the state store before any state transitions implied by the block are executed are verified in this stage.
++
+Verifies `timestamp`, `height`, `previousBlockID`, `generatorAddress`, `maxHeightPrevoted`, `maxHeightGenerated`, `aggregateCommit`, and `signature` properties of the <<block-header>>.
 . **Assets verification**: Each module verifies the respective entry in the block assets.
 If any check fails, the block is discarded and has no further effect.
 . **Block forwarding**: After the initial checks, the full block is forwarded to a subset of peers.
@@ -125,12 +324,16 @@ In any case, afterwards the processing continues with the next stage.
 If an error occurs, the transaction is invalid and the whole block is discarded.
 . **After transactions execution**: Each module can define protocol logic that is executed after all the transactions contained in the block have been processed.
 . **Result verification**: Block header properties, which require accessing the state store after all state transitions implied by the block have been executed, are verified.
++
+Verifies the `stateRoot`, `eventRoot`, and `validatorsHash` properties of the <<block-header>>.
 . **Block storage**: The block is persisted into the database.
 . **Peers notification**: Other peers in the P2P network are notified of the new block.
 
-=== Block schema
-
 === Block validation
+
+The block is validated in the <<block-processing,static validation stage>>.
+
+
 
 === Block Signature Calculation
 

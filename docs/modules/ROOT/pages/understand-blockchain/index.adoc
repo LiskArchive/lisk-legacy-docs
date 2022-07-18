@@ -298,7 +298,7 @@ The full processing of a block is organized as follows.
 . **Static validation**: Some initial static checks are done to ensure that the serialized object follows the general structure of a block.
 These checks are performed immediately because they do not require access to the state store and can therefore be done very quickly.
 +
-Checks, if:
+Validates, if:
 
 * the block follows the block schema.
 * the total size of the serialized transactions contained in the block is at most the maximum allowed size for transactions per block.
@@ -307,7 +307,7 @@ Checks, if:
 ** validates the `version`, `transactionRoot`, and `assetRoot` properties.
 * the block assets are valid:
 ** each entry in the assets array has `moduleID` set to the ID of a module registered in the chain
-** the data property has size at most equal to The max size of an assets entry in bytes.
+** the data property has size at most equal to the max size of an assets entry in bytes.
 ** each module can insert at most one entry in the block assets.
 ** the entries are sorted by increasing values of `moduleID`.
 . **Header verification**: Block header properties that require access to the state store before any state transitions implied by the block are executed are verified in this stage.
@@ -319,11 +319,11 @@ If any check fails, the block is discarded and has no further effect.
 . **Before transactions execution**: Each module can define protocol logic that is executed before the transactions contained in the block are processed.
 . **Transaction verification**: Each module can define protocol logic that verifies a transaction, possibly by accessing the state store.
 If an error occurs, the transaction is invalid and the whole block is discarded.
-. **Command verification**: The command corresponding to the moduleID-commandID combination is verified.
+. **Command verification**: The command corresponding to the `moduleID`-`commandID` combination is verified.
 If an error occurs, the transaction is invalid and the whole block is discarded.
 . **Before command execution**: Each module can define protocol logic that is processed before the command has been executed.
 If an error occurs, the transaction is invalid and the whole block is discarded.
-. **Command execution**: The command corresponding to the moduleID-commandID combination is executed.
+. **Command execution**: The command corresponding to the `moduleID`-`commandID` combination is executed.
 If an error occurs, the transaction is failed and all state transitions performed in this stage are reverted.
 In any case, afterwards the processing continues with the next stage.
 . **After command execution**: Each module can define protocol logic that is processed after the command has been executed.
@@ -337,27 +337,99 @@ Verifies the `stateRoot`, `eventRoot`, and `validatorsHash` properties of the <<
 
 == Transactions
 
+//TODO: Intro to transactions, explain connection to modules & commands
+
 //TODO: Include image of the anatomy of a transaction
 
+* `moduleID`: An integer identifying the module the transaction is addressing.
+* `commandID`: An integer identifying the specific command in the module.
+* `nonce`: An integer which is *unique for each transaction* from the account corresponding to the `senderPublicKey`.
+* `fee`: An integer that specifies the *fee in Beddows* to be spent by the transaction.
+* `senderPublicKey`: The public key of the account issuing the transaction.
+A valid public key is 32 bytes long.
+* `params`: The *serialized parameters* of the module command.
+* `signatures`: An array with the signatures of the transaction.
+A transaction is signed by the sender account to verify its correctness.
+In case of a multisignature trasnaction, several accounts need to sign a transaction, before it is accepted by a node.
+
+=== Transaction JSON schema
+
+.Transaction schema
+[%collapsible]
+====
+[source,js]
+----
+transactionSchema = {
+    "type": "object",
+    "required": [
+        "moduleID",
+        "commandID",
+        "nonce",
+        "fee",
+        "senderPublicKey",
+        "params",
+        "signatures"
+    ],
+    "properties": {
+        "moduleID": {
+            "dataType": "bytes",
+            "length": 4,
+            "fieldNumber": 1
+        },
+        "commandID": {
+            "dataType": "bytes",
+            "length": 2,
+            "fieldNumber": 2
+        },
+        "nonce": {
+            "dataType": "uint64",
+            "fieldNumber": 3
+        },
+        "fee": {
+            "dataType": "uint64",
+            "fieldNumber": 4
+        },
+        "senderPublicKey": {
+            "dataType": "bytes",
+            "length": 32,
+            "fieldNumber": 5
+        },
+        "params": {
+            "dataType": "bytes",
+            "fieldNumber": 6
+        },
+        "signatures": {
+            "dataType": "array",
+            "items": {
+                "dataType": "bytes",
+                "length": 64
+            },
+            "fieldNumber": 7
+        }
+    }
+}
+----
+====
+
 === Valid vs invalid transactions
-A transaction is valid, if the following stages associated to the transaction of <<block-processing>> are executed successfully without errors:
+
+Only valid transactions should be added to a block during the block generation, as an invalid transaction makes the whole block invalid, meaning that it would be discarded by any node in the network.
+
+A transaction is *valid*, if the following stages associated to the transaction of <<block-processing>> are executed successfully without errors:
 
 * "transaction verification"
 * "command verification"
 * "before command execution" and
 * "after command execution"
 
-Otherwise, a transaction is invalid.
-Only valid transactions should be added to a block during the block generation, as an invalid transaction makes the whole block invalid meaning that it would be discarded by any node in the network.
+Otherwise, a transaction is *invalid*.
 
 === Successful vs failed transactions
-A valid transaction is executed successfully if additionally the "command execution" stage is executed successfully without errors.
+A valid transaction is executed *successfully* if additionally the "command execution" stage of <<block-processing>> is executed successfully without errors.
 
-A valid transaction fails if on the other hand an error occurs during the command execution.
+A valid transaction *fails* if on the other hand an error occurs during the command execution.
 In this case, all state transitions of the "command execution" stage are reverted.
 This means that the transaction has no effect except for those defined in "before command execution" and "after command execution".
 The result of the transaction execution is logged using an event emitted at the end of the "after transaction execution" stage, indicating whether the transaction was processed successfully or an error occurred.
 
-=== Transaction schema
 
-=== Transaction header

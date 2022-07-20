@@ -297,19 +297,17 @@ The full processing of a block is organized as follows.
 . **Fork choice**: Upon receiving a new block, the fork choice rule determines whether the block will be discarded or if the processing continues.
 . **Static validation**: Some initial static checks are done to ensure that the serialized object follows the general structure of a block.
 These checks are performed immediately because they do not require access to the state store and can therefore be done very quickly.
-+
-Validates, if:
-
-* the block follows the block schema.
-* the total size of the serialized transactions contained in the block is at most the maximum allowed size for transactions per block.
-* the block header is valid:
-** checks that the block header follows the block header schema.
-** validates the `version`, `transactionRoot`, and `assetRoot` properties.
-* the block assets are valid:
-** each entry in the assets array has `moduleID` set to the ID of a module registered in the chain
-** the data property has size at most equal to the max size of an assets entry in bytes.
-** each module can insert at most one entry in the block assets.
-** the entries are sorted by increasing values of `moduleID`.
+* Validates, if:
+** the block follows the block schema.
+** the total size of the serialized transactions contained in the block is at most the maximum allowed size for transactions per block.
+** the block header is valid:
+*** checks that the block header follows the block header schema.
+*** validates the `version`, `transactionRoot`, and `assetRoot` properties.
+** the block assets are valid:
+*** each entry in the assets array has `moduleID` set to the ID of a module registered in the chain
+*** the data property has size at most equal to the max size of an assets entry in bytes.
+*** each module can insert at most one entry in the block assets.
+*** the entries are sorted by increasing values of `moduleID`.
 . **Header verification**: Block header properties that require access to the state store before any state transitions implied by the block are executed are verified in this stage.
 +
 Verifies `timestamp`, `height`, `previousBlockID`, `generatorAddress`, `maxHeightPrevoted`, `maxHeightGenerated`, `aggregateCommit`, and `signature` properties of the <<block-header>>.
@@ -318,16 +316,16 @@ If any check fails, the block is discarded and has no further effect.
 . **Block forwarding**: After the initial checks, the full block is forwarded to a subset of peers.
 . **Before transactions execution**: Each module can define protocol logic that is executed before the transactions contained in the block are processed.
 . **Transaction verification**: Each module can define protocol logic that verifies a transaction, possibly by accessing the state store.
-If an error occurs, the transaction is invalid and the whole block is discarded.
+If an error occurs, the transaction is *invalid* and the whole block is discarded.
 . **Command verification**: The command corresponding to the `moduleID`-`commandID` combination is verified.
-If an error occurs, the transaction is invalid and the whole block is discarded.
+If an error occurs, the transaction is *invalid* and the whole block is discarded.
 . **Before command execution**: Each module can define protocol logic that is processed before the command has been executed.
-If an error occurs, the transaction is invalid and the whole block is discarded.
+If an error occurs, the transaction is *invalid* and the whole block is discarded.
 . **Command execution**: The command corresponding to the `moduleID`-`commandID` combination is executed.
-If an error occurs, the transaction is failed and all state transitions performed in this stage are reverted.
+If an error occurs, the transaction is *failed* and all state transitions performed in this stage are reverted.
 In any case, afterwards the processing continues with the next stage.
 . **After command execution**: Each module can define protocol logic that is processed after the command has been executed.
-If an error occurs, the transaction is invalid and the whole block is discarded.
+If an error occurs, the transaction is *invalid* and the whole block is discarded.
 . **After transactions execution**: Each module can define protocol logic that is executed after all the transactions contained in the block have been processed.
 . **Result verification**: Block header properties, which require accessing the state store after all state transitions implied by the block have been executed, are verified.
 +
@@ -337,13 +335,22 @@ Verifies the `stateRoot`, `eventRoot`, and `validatorsHash` properties of the <<
 
 == Transactions
 
-//TODO: Intro to transactions, explain connection to modules & commands
+Transactions are sent to the blockchain application by its users to trigger state mutations on the blockchain.
 
-//TODO: Include image of the anatomy of a transaction
+Valid transactions trigger the corresponding command of a particular module which accepts this transaction type.
+Therefore, each transaction always needs to include the IDs of the module and command that the transaction wants to trigger.
+If any specific data input from the user is needed to complete the command, they are included under the `params` property of a transaction.
+Beside this, there are a few additional properties which every transaction should contain, which are described in image _Figure 3_ and below.
+
+To be accepted by the blockchain application, the transactions must be transmitted in the expected format, including all the required properties of a transaction.
+
+.Properties of a transaction object
+image::understand-blockchain/transaction.png["Transaction properties",300, align="center]
 
 * `moduleID`: An integer identifying the module the transaction is addressing.
 * `commandID`: An integer identifying the specific command in the module.
 * `nonce`: An integer which is *unique for each transaction* from the account corresponding to the `senderPublicKey`.
+Increments by `+1` for each transaction.
 * `fee`: An integer that specifies the *fee in Beddows* to be spent by the transaction.
 * `senderPublicKey`: The public key of the account issuing the transaction.
 A valid public key is 32 bytes long.
@@ -410,6 +417,39 @@ transactionSchema = {
 }
 ----
 ====
+
+=== Default transaction types
+
+The following transaction types are included in every blockchain application by default.
+
+[cols="1,2,1,1,6a"]
+|===
+|Module Name|Command Name|Module ID|Command ID|Description
+
+|*Token*|*token transfer transaction*|2|0|Transmit funds to another Lisk account.
+|*Token*|*cross-chain token transfer transaction*|2|1|Transfers fungible tokens from one chain to another (e.g., mainchain to sidechain).
+
+|*Auth*|*multisignature registration transaction*|12|0|Registers a multi-signature account.
+
+|*DPoS*|*delegate registration transaction*|13|0|Registers a delegate for the sending account.
+|*DPoS*|*delegate vote transaction*|13|1|Submits or removes vote(s) for delegates.
+|*DPoS*|*token unlock transaction*|13|2|Unlocks locked tokens.
+|*DPoS*|*delegate misbehavior report transaction*|13|3|Report a misbehavior of a delegate
+|*DPoS*|*update generator key transaction*|13|4|Report a misbehavior of a delegate
+
+|*Interoperability*|*sidechain registration transaction*|64|0|Registers a sidechain/blockchain application.
+|*Interoperability*|*mainchain registration transaction*|64|1|Registers the mainchain on a sidechain.
+|*Interoperability*|*sidechain cross-chain update transaction*|64|2|Submits updates about the state of the sidechain and new cross-chain messages.
+|*Interoperability*|*mainchain cross-chain update transaction*|64|3|Submits updates about the state of the mainchain and new cross-chain messages.
+|*Interoperability*|*state recovery transaction*|64|4|description
+|*Interoperability*|*message recovery transaction*|64|5|description
+|*Interoperability*|*state recovery initialization transaction*|64|6|description
+|===
+////
+TODO: Document txs of the nft module
+|*NFT*|*NFT transfer transaction*|||Transfers non-fungible tokens within one chain.
+|*NFT*|*cross-chain NFT transfer transaction*|||Transfers non-fungible tokens from one chain to another (sidechain to sidechain).
+////
 
 === Valid vs invalid transactions
 

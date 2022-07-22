@@ -7,6 +7,8 @@
 :fn_eventroot: footnote:eventroot[See https://github.com/LiskHQ/lips/blob/main/proposals/lip-0065.md[LIP 0065^] for the reason why it needs to be included in a block header.]
 :fn_stateroot: footnote:stateroot[See https://github.com/LiskHQ/lips/blob/main/proposals/lip-0040.md[LIP 0040^] for the reason why it needs to be included in a block header.]
 :fn_aggregate: footnote:aggregate[See https://github.com/LiskHQ/lips/blob/main/proposals/lip-0061.md[LIP 0061^] for more details.]
+// URLs
+:url_lip55: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0055.md
 // Project URLs
 :url_intro_how_blockchain_works: intro/how-blockchain-works.adoc#state-machine
 :url_intro_consensus: intro/how-blockchain-works.adoc#consensus-mechanisms
@@ -15,10 +17,11 @@
 :url_understand_network: understand-blockchain/network.adoc
 :url_understand_state_machine_tree: understand-blockchain/state-machine.adoc#the-blockchain-state-as-sparse-merkle-tree
 :url_understand_sdk_commands: understand-blockchain/sdk/modules-assets.adoc#assets
+:url_understand_sdk_modules: understand-blockchain/sdk/modules-assets.adoc
 
 In the "Understand blockchain" category you learn the basic concepts of blockchain applications, including how they are structured and which topics and terms are important to know when developing within the Lisk ecosystem.
 
-This page explains the three domains of a blockchain, and introduces to blocks and transactions.
+This page explains the three domains of a blockchain, and gives introduction to blocks and transactions.
 
 == The three domains of a blockchain
 
@@ -36,8 +39,8 @@ This is achieved by nodes in the network following a xref:{url_intro_consensus}[
 
 Blocks following the Lisk protocol have three main properties:
 
-. The <<block-header,block header>> includes properties relevant to the xref:{url_understand_consensus}[consensus] domain
-. The <<block-assets,block assets>> allow modules to include specific data into a block.
+. The <<block-header,block header>> includes properties relevant to the xref:{url_understand_consensus}[consensus] domain.
+. The <<block-assets,block assets>> are an array of objects containing data injected by the blockchain application during the block creation.
 . The <<transactions,transactions>> included in a block.
 Each block can include a maximum of 15 kB of transactions.
 
@@ -87,18 +90,26 @@ Properties handled by the xref:{url_understand_consensus}[consensus] domain are 
 .Block ID
 NOTE: The block ID is calculated by hashing the complete block header of a signed block.
 
-The block header consists of the following properties:
+The most important properties of the block header are:
 
-* `version`: The block header version must be equal the value of a block of the previous protocol plus one.
 * `timestamp`: Time the block was created as Unix timestamp.
 * `height`: The height of a block is always `= height of the previous block + 1`.
 * `previousBlockID`: The ID of the previous block.
 * `generatorAddress`: The address of the block generator{fn_gpk}.
 * `transactionRoot`: The transaction root is the root of the Merkle tree built from the ID of the <<transactions,transactions contained in the block>>.
-* `assetRoot`: The root of the Merkle tree computed from the <<block-assets>> array.
-* `eventRoot`: The root of the sparse Merkle tree that is computed from the events emitted during the block processing{fn_eventroot}.
 * `stateRoot`: The root of the sparse Merkle tree that is computed from the state of the blockchain.
 The state root is the root of the sparse Merkle tree built from the state of the chain after the block has been processed{fn_stateroot}.
+
+Beside the above properties, each block header contains various additional properties, required for deeper technical aspects of the blockchain application.
+Expand below boxes for a description of the additional properties, and see the JSON schema for an overview of all properties included in the header.
+Check {url_lip55}[LIP 0055^] for additional information about the block header.
+
+.Remaining properties of the block header
+[%collapsible]
+====
+* `version`: The block header version must be equal the value of a block of the previous protocol plus one.
+* `assetRoot`: The root of the Merkle tree computed from the <<block-assets>> array.
+* `eventRoot`: The root of the sparse Merkle tree that is computed from the events emitted during the block processing{fn_eventroot}.
 //TODO: Add link to Lisk BFT explanation
 * `maxHeightPrevoted`: This property is related to the Lisk-BFT protocol and is used for the fork choice rule.
 //TODO: Add link to Lisk BFT explanation
@@ -110,6 +121,7 @@ It is important for cross-chain certification and included in certificates.
 It attests that all signing validators consider the corresponding block final.
 Based on this, any node can create a certificate for the given height{fn_aggregate}.
 * `signature`: Signature of the validator who created the block.
+====
 
 .Block header JSON schema
 [%collapsible]
@@ -219,18 +231,18 @@ blockHeaderSchema = {
 
 === Block assets
 
-Properties created by individual modules are added to the block assets.
+Block assets allow the blockchain application to store specific data inside of each block.
 
 //TODO: Add link to state-machine page, merkle trees
 Each entry of the block assets is then inserted in a Merkle tree, whose root is included in the <<block-header>> as the `assetRoot` property.
 
-NOTE: Inserting the assets root rather than the full assets allows to bound the size of the block header while still authenticating the content of the block assets.
+NOTE: Inserting the assets root rather than the full assets allows to bound the size of the block header to a fixed size, while still authenticating the content of the block assets.
 
-As an example, blockchains created with the Lisk SDK that implement the Random module, will insert the seed reveal property in the block assets, not in the block header.
+As an example, blockchains created with the Lisk SDK that implement the Random module, will insert the seed reveal property in the block assets.
 
 ==== JSON schema
 
-The schema for the block assets allows each module to include its serialized data individually, which makes the inclusion of module data very flexible.
+The schema for the block assets allows each xref:{url_understand_sdk_modules}[module] to include its serialized data individually, which makes the inclusion of module data very flexible.
 
 Each module can insert a single entry in the assets.
 This entry is an object containing a `moduleID` property, indicating the ID of the module handling it, and a generic data property that can contain arbitrary serialized data.
@@ -258,6 +270,9 @@ assetSchema = {
 ====
 
 === Block generation
+
+The block generation flow offers a lot of flexibility for custom business logic of the blockchain application by providing hooks for executing additional custom logic before and after each execution of a transaction and/or command.
+The gradual steps make all important verification steps explicit and obvious.
 
 image::understand-blockchain/block-generation.png["Block generation steps",500, align="center"]
 
@@ -291,6 +306,9 @@ Sets the `transactionRoot`, `assetRoot`, `eventRoot`, `stateRoot`, `validatorsHa
 . **Block processing**: The block goes through the <<block-processing>> stages.
 
 === Block processing
+
+The block processing flow offers a lot of flexibility for custom business logic of the blockchain application by providing hooks for executing additional custom logic before and after each execution of a transaction and/or command.
+The gradual steps make all important verification steps explicit and obvious.
 
 image::understand-blockchain/block-processing.png["Block prosessing steps",500, align="center"]
 
@@ -353,7 +371,7 @@ After a transaction is sent to a node, it is first added to the transaction pool
 The transactions to be included in the block are then always picked from there.
 
 .Properties of a transaction object
-image::understand-blockchain/transaction.png["Transaction properties",300, align="center]
+image::understand-blockchain/transaction.png["Transaction properties",300, align="center"]
 
 * `moduleID`: An integer identifying the module the transaction is addressing.
 * `commandID`: An integer identifying the specific command in the module.

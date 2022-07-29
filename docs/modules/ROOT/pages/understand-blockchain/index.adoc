@@ -10,10 +10,12 @@
 // URLs
 :url_lip55: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0055.md
 // Project URLs
+:url_sdk_modules_dpos: lisk-sdk::modules/dpos-module.adoc#dpos-module-overview
 :url_intro_how_blockchain_works: intro/how-blockchain-works.adoc#state-machine
 :url_intro_consensus: intro/how-blockchain-works.adoc#consensus-mechanisms
 :url_understand_state_machine: understand-blockchain/state-machine.adoc
 :url_understand_consensus: understand-blockchain/consensus/index.adoc
+:url_understand_consensus_dpos_poa: understand-blockchain/consensus/dpos-poa.adoc
 :url_understand_network: understand-blockchain/network.adoc
 :url_understand_state_machine_tree: understand-blockchain/state-machine.adoc#the-blockchain-state-as-sparse-merkle-tree
 :url_understand_sdk_commands: understand-blockchain/sdk/modules-assets.adoc#assets
@@ -269,6 +271,33 @@ assetSchema = {
 ----
 ====
 
+=== Forging Rewards
+
+Delegates receive a reward for generating a block.
+The amount of reward depends on the block height according to the table shown below:
+
+|===
+| Heights | Reward
+| From 1,451,520 to 4,451,519   | 5 × 10^8^
+| From 4,451,520 to 7,451,519   | 4 × 10^8^
+| From 7,451,520 to 10,451,519  | 3 × 10^8^
+| From 10,451,520 to 13,451,519 | 2 × 10^8^
+| From 13,451,520 onwards       | 1 × 10^8^
+|===
+
+In Lisk Mainnet this corresponds to rewards of 5 LSK, 4 LSK, 3 LSK, 2 LSK and 1 LSK.
+
+==== Reduced block reward
+The table above shows the default block reward values.
+However, the Lisk protocol defines specific situations related to the {url_github_lip_14}[Lisk-BFT protocol] or the {url_github_lip_22_validating_block_header}[commit-reveal scheme] in which the block reward is lower.
+
+
+==== Projected token supply
+
+Blockchains following the Lisk protocol do not have a bounded token supply.
+For every block forged, the amount of available tokens increases.
+This increase is obtained by subtracting the burned fees from the block reward.
+
 === Block generation
 
 The block generation flow offers a lot of flexibility for custom business logic of the blockchain application by providing hooks for executing additional custom logic before and after each execution of a transaction and/or command.
@@ -354,6 +383,23 @@ If an error occurs, the transaction is *invalid* and the whole block is discarde
 Verifies the `stateRoot`, `eventRoot`, and `validatorsHash` properties of the <<block-header>>.
 . **Block storage**: The block is persisted into the database.
 . **Peers notification**: Other peers in the P2P network are notified of the new block.
+
+=== Genesis block
+The first block of the blockchain, the genesis block, has version `0` and a different `asset` property than the block described above.
+More specifically, the block asset of the genesis block contains the following three properties:
+
+* `accounts`: The value for this property is an array of accounts following the schema defined in {url_github_lip_30_account_serialization}[LIP 0030].
+It can be used to define the desired initial distribution of tokens when starting a new blockchain.
+
+* `initDelegates`: The value for this property is an array of delegate addresses.
+This array must contain at least one value and not more values than the length of a round.
+It defines the forging delegates for a bootstrap period during which users can register delegates and start voting.
+
+* `initRounds`: The value of this property is an integer that is at least 3. It defines the number of rounds that the delegates given in `initDelegates` are the forging delegates.
+Afterwards, the forging delegates are selected as defined in the section xref:{url_consensus_delegate_selection}[Consensus Algorithm].
+
+Additionally, the `timestamp` value should be the Unix time in seconds that is supposed to be the starting time of the blockchain, `previousBlockID` should be the the SHA-256 (Secure Hash Algorithm 256), hash of the empty string and the value of `height` is supposed to be `0`.
+All other properties have certain default values that are defined in {url_github_lip_34_genesis_block}[LIP 0034].
 
 == Transactions
 
@@ -462,6 +508,34 @@ transactionSchema = {
 }
 ----
 ====
+
+=== Fees
+Transactions also include fees.
+This fee has to be *equal or greater than the minimum fee* for the transaction to be valid.
+
+The *minimum fee* is calculated as the size of the transaction object multiplied by a constant, `minFeePerByte`, given by the protocol.
+
+ transactionSize x  minFeePerByte + extraCommandFee = minFee
+
+The value of `minFeePerByte` is `1000` Beddows (10^-5^ LSK/byte in Lisk Mainnet).
+The `extraCommandFee` is an optional fee required for specific transaction types.
+For Delegate Registration transactions there is an extra summand of 10^9^ (10 LSK in Lisk Mainnet) added to the minimum fee to account for the name space used by this transaction.
+
+For example, in Lisk Mainnet, for a *Token Transfer transaction* with a size of 153 bytes, the minimum fee is:
+
+ 153 bytes × 10^-5^ LSK/byte = 0.00153 LSK
+
+In the case of *Delegate Registration transaction* with a size of 308 bytes, the minimum fee of the transaction is:
+
+ 308 bytes × 10^-5^ LSK/byte + 10 LSK= 10.00308 LSK
+
+NOTE: This required minimum fee paid by every transaction is *burned*, in other words, it is not assigned to any account balance.
+
+Together with the block reward, the unburned parts of the transaction fees are added to the balance of the delegate forging the block, see xref:{url_understand_consensus_dpos_poa}[consensus > DPoS & PoA].
+This is done after all transactions in the block payload have been applied.
+Note, that a delegate cannot receive and spend the reward in the same block.
+
+TIP: This implies that under normal circumstances delegates give *priority* to transactions with higher remaining fees.
 
 === Valid vs invalid transactions
 

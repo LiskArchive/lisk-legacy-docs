@@ -1,29 +1,67 @@
 = DPoS & PoA
+:toc:
 :url_github_lip_22: https://github.com/LiskHQ/lips/blob/master/proposals/lip-0022.md
 :url_arxiv: https://arxiv.org/abs/1903.11434
-
+//Project URLs
+:url_sdk_modules_dpos: lisk-sdk::modules/dpos-module.adoc#dpos-module-overview
 :url_protocol: understand-blockchain/lisk-protocol/
 :url_transactions_delegate: {url_protocol}transactions.adoc#delegate
 :url_transactions_pom: {url_protocol}transactions.adoc#pom
 :url_transactions_vote: {url_protocol}transactions.adoc#vote
-:url_blocks_genesis: {url_protocol}blocks.adoc#genesis-block
+:url_blocks_genesis: understand-blockchain/index.adoc#genesis-block
 :url_active_delegate: glossary.adoc#active-delegate
+
+The process of adding a new block to the blockchain is called *forging* in DPoS & PoA.
 
 == Lisk DPoS
 
-=== Delegates, voting and delegate weight
-A *delegate* is any account that performed a Delegate Registration transaction.
+=== Forging delegate selection
 
+Blocks in the Lisk protocol are grouped together into batches of 103 consecutive blocks, which are referred to as a *forging round*.
 
-==== Voting
+Every forging round has a *forger list*, which is an ordered list of 103 delegates that are allowed to forge a block in that round.
+
+A *delegate* is any account that performed a xref:{url_sdk_modules_dpos}[Delegate Registration transaction].
+
+In Lisk DPoS, the forger list is computed taking into account the <<voting-and-delegate-weight,delegate weights>> and some random values submitted by delegates as part of their block.
+
+Starting with the first delegate on the forger list, every delegate has a *10 second block slot window* in which they can forge a block and broadcast it to the network.
+
+[NOTE]
+====
+If every delegate on the list manages to forge a block in their block slot building on the block by the previous delegate, a round lasts 1030 seconds (around 17 minutes).
+
+It can happen that a delegate *misses the block slot*, meaning that there is no block added to the chain by the delegate in their designated block slot.
+Consequently, the end of the forger list is reached before 103 blocks are added to the chain.
+In this case, block slots are assigned again from the beginning of the forger list until 103 blocks are forged.
+====
+
+image::protocol/forgerList.svg[forgerList]
+
+The top 101 delegates by delegate weight are called *active delegates*, whereas all other delegates with a delegate weight of at least 10^11^ (1000 LSK in Lisk Mainnet) are referred to as *standby delegates*.
+Specifically, the forger list for a round is generated as follows:
+
+. Compute two values `randomSeed1` and `randomSeed2` from the values provided by the delegates in the `seedReveal` property of the block headers of the previous 3 rounds.
+. Add the 101 active delegates to the list.
+Moreover, add 2 standby delegates to the list using a random selection proportional to delegate weight.
+The random selection utilizes `randomSeed1` and `randomSeed2`, respectively.
+The computation of 101 active delegates as well as the standby delegate selection is based on the delegate weights from two rounds before.
+. Shuffle the list using `randomSeed1`.
+
+The random selection of two standby delegates and the commit-reveal scheme that the `seedReveal` values provided by the delegates in the block header must follow are described in detail in {url_github_lip_22}[LIP 0022^].
+
+During the bootstrap period defined in the xref:{url_blocks_genesis}[genesis block] the number of blocks per round and length of the forger list is still 103.
+However, the Lisk DPoS delegate selection is not used.
+Instead, the forger list is directly computed from the initial delegates specified in the genesis block, repeating delegates if needed to obtain a list of length 103.
+
+=== Voting and delegate weight
+
 By registering as delegate, it is possible to *receive votes* for this delegate.
 Any account can vote for any delegate using a Delegate Vote transaction.
 
+NOTE: A vote that a delegate account casts for themselves is called a *self-vote*.
 
-
-A vote that a delegate account casts for themselves is further called a *self-vote*.
-
-Depending on the votes cast, every delegate has an associated #*delegate weight*#, which is an indicator for the support for this delegate in the network.
+Depending on the votes cast, every delegate has an associated *delegate weight*, which is an indicator for the support for this delegate in the network.
 Formally, the delegate weight is defined as the following:
 
 ----
@@ -33,39 +71,8 @@ minimum { 10 * selfVotes , totalVotes },
 where `selfVotes` is the amount the delegate voted for themselves, and `totalVotes` is the sum of all vote amounts (including self-votes) for that specific delegate.
 This definition implies that the self-votes are always at least 10 % of the delegate weight and thus delegates always have substantial skin in the game.
 
-=== Forging rounds
-
 === Active vs stand-by vs inactive delegates
 
-
-
-
-[[delegate_selection]]
-=== Forging delegate selection
-
-Blocks in the Lisk protocol are grouped together into batches of 103 consecutive blocks, which are referred to as a [#index-round-1]#*round*#.
-Every round has a [#index-forger_list-1]#*forger list*#, which is an ordered list of 103 delegates that are allowed to forge a block in that round.
-Starting with the first delegate on the forger list, every delegate has a 10 second block slot window in which they can forge a block and broadcast it to the network.
-If every delegate on the list manages to forge a block in their block slot building on the block by the previous delegate, a round lasts 1030 seconds (around 17 minutes).
-It can happen that a delegate [#index-misses_the_block_slot-1]#*misses the block slot*#, meaning that there is no block added to the chain by the delegate in their designated block slot.
-Consequently, the end of the forger list is reached before 103 blocks are added to the chain.
-In this case, block slots are assigned again from the beginning of the forger list until 103 blocks are forged.
-
-image::protocol/forgerList.svg[forgerList]
-
-In Lisk DPoS, the forger list is computed taking into account the delegate weights and some random values submitted by delegates as part of their block.
-The top 101 delegates by delegate weight are called [#index-active_delegate-1]#*active delegates*#, whereas all other delegates with a delegate weight of at least 10^11^ (1000 LSK in Lisk Mainnet) are referred to as [#index-standby_delegate-1]#*standby delegates*#.
-Specifically, the forger list for a round is generated as follows:
-
-. Compute two values `randomSeed1` and `randomSeed2` from the values provided by the delegates in the `seedReveal` property of the block headers of the previous 3 rounds.
-. Add the 101 xref:{url_active_delegate}[active delegates] to the list. Moreover, add 2 standby delegates to the list using a random selection proportional to delegate weight.
-The random selection utilizes `randomSeed1` and `randomSeed2`, respectively.
-The computation of 101 active delegates as well as the standby delegate selection is based on the delegate weights from two rounds before.
-. Shuffle the list using `randomSeed1`.
-
-The random selection of two standby delegates and the commit-reveal scheme that the `seedReveal` values provided by the delegates in the block header must follow are described in detail in {url_github_lip_22}[LIP 0022].
-
-During the bootstrap period defined in the xref:{url_blocks_genesis}[genesis block] the number of blocks per round and length of the forger list is still 103. However, the Lisk DPoS delegate selection is not used. Instead, the forger list is directly computed from the initial delegates specified in the genesis block, repeating delegates if needed to obtain a list of length 103.
 
 === Banning of unproductive delegates
 

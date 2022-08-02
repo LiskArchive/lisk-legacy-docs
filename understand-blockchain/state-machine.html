@@ -419,7 +419,7 @@
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
 <li><a href="#the-blockchain-state-as-sparse-merkle-tree">The blockchain state as Sparse Merkle Tree</a></li>
-<li><a href="#use-cases-of-smts">Use cases of SMTs</a></li>
+<li><a href="#use-cases-of-merkle-trees-in-lisk">Use cases of Merkle trees in Lisk</a></li>
 </ul>
 </div>
 <div id="preamble">
@@ -434,7 +434,7 @@
 <div class="ulist">
 <ul>
 <li>
-<p><strong>states:</strong> A state machine typically has a set of different states, that it can enter.
+<p><strong>states:</strong> A state machine typically has a set of different states that it can enter.
 For example, a padlock represented as state machine would have the two states "Open" and "Locked".</p>
 </li>
 <li>
@@ -445,10 +445,12 @@ For example, to change from state "Open" to "Locked", a transition would be "Clo
 </div>
 </li>
 <li>
-<p><strong>Replicated</strong> describes the characteristic of blockchains to consist of a network of nodes all storing an individual copy of the blockchain, which replicates the state machine on each connected node.</p>
+<p>The state machine is <strong>replicated</strong> across many nodes.
+Each node maintains independently the current state of the state machine.
+This only works for <em>deterministic</em> state machines.</p>
 </li>
 <li>
-<p><strong>Finite</strong> means, the number of states, that the machine can reach is always finite.</p>
+<p><strong>Finite</strong> means that the number of states that the machine can reach is finite (not infinite).</p>
 </li>
 <li>
 <p>And <strong>deterministic</strong> means that if the state machine is replicated and all state transitions are replayed, it will end up always in the exact same state.</p>
@@ -514,8 +516,19 @@ Here we consider only <strong>binary trees</strong>, where each parent has two c
 <div class="paragraph">
 <p>A <strong>sparse Merkle tree (SMT)</strong> is very similar to a regular Merkle Tree, with the following difference:
 The order of insertion of data blocks does not matter, and the root of the tree only depends on the final state of the map.
-That means, in an SMT, the input of the hash function is the underlying <a href="#kv-maps">key-value map</a> and the output is the Merkle root.
-Due to the history independence, SMTs are the suitable choice to authenticate key-value maps.</p>
+That means, in an SMT, the input of the hash function is the underlying key-value map and the output is the Merkle root.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Due to the history independence, SMTs are the suitable choice to authenticate <a href="#kv-maps">key-value maps</a>.
+</td>
+</tr>
+</table>
 </div>
 <div class="imageblock">
 <div class="content">
@@ -534,27 +547,27 @@ Then the Merkle root of this tree, the state root, is inserted into each block h
 <div class="ulist">
 <ul>
 <li>
-<p><strong>key</strong> = Module ID | Store prefix | Store key</p>
+<p><strong>key</strong>: Module ID | Store prefix | Store key</p>
 <div class="ulist">
 <ul>
 <li>
-<p><strong>Module ID</strong> = The ID of the module, identifying the key-value map. We will reserve all module IDs starting with a 0 in their binary representation to modules that are shipped with the SDK by default. The IDs of modules developed as part of each blockchain application will start with a 1. The module ID has a fixed length of 4 bytes.</p>
+<p><strong>Module ID</strong>: The ID of the module, identifying the key-value map. We will reserve all module IDs starting with a 0 in their binary representation to modules that are shipped with the SDK by default. The IDs of modules developed as part of each blockchain application will start with a 1. The module ID has a fixed length of 4 bytes.</p>
 </li>
 <li>
-<p><strong>Store prefix</strong> = Each module can define several buckets, to separate different data structures within the store. Each bucket is identified by the store prefix. The store prefix has a fixed length of 2 bytes.</p>
+<p><strong>Store prefix</strong>: Each module can define several buckets, to separate different data structures within the store. Each bucket is identified by the store prefix. The store prefix has a fixed length of 2 bytes.</p>
 </li>
 <li>
-<p><strong>Store key</strong> = The store key identifies a certain element within a store bucket.</p>
+<p><strong>Store key</strong>: The store key identifies a certain element within a store bucket.</p>
 </li>
 </ul>
 </div>
 </li>
 <li>
-<p><strong>value</strong> = serialized object (with JSON schema)</p>
+<p><strong>value</strong>: serialized object (with JSON schema)</p>
 <div class="ulist">
 <ul>
 <li>
-<p><strong>JSON schema</strong> = The schema used in <code>lisk-codec</code> to serialize the value</p>
+<p><strong>JSON schema</strong>: The schema used in <code>lisk-codec</code> to serialize the value</p>
 </li>
 </ul>
 </div>
@@ -569,8 +582,22 @@ Then the Merkle root of this tree, the state root, is inserted into each block h
 </div>
 </div>
 <div class="sect1">
-<h2 id="use-cases-of-smts"><a class="anchor" href="#use-cases-of-smts"></a>Use cases of SMTs</h2>
+<h2 id="use-cases-of-merkle-trees-in-lisk"><a class="anchor" href="#use-cases-of-merkle-trees-in-lisk"></a>Use cases of Merkle trees in Lisk</h2>
 <div class="sectionbody">
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="title">SMTs allow efficient (non-)inclusion proofs</div>
+A Prover is able to convince a Verifier that a certain element is present in the underlying data structure <strong>without revealing any other element</strong>, and the <strong>proof size scales logarithmically</strong> with the number of data blocks.
+A Prover can convince a Verifier that a certain entry is not present in the map, and the proof size scales logarithmically with the number of data blocks.
+</td>
+</tr>
+</table>
+</div>
 <div class="paragraph">
 <p>A list of all use cases for SMTs in the Lisk Protocol, and their corresponding SMT.</p>
 </div>
@@ -628,6 +655,37 @@ Reference to the last blockchain state will be stored as the Merkle root of the 
 </div></div></td>
 </tr>
 <tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Proofs-of-Inclusion for Events in a Block</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><code>eventRoot</code></p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>The root of the event sparse Merkle tree is added to the block header to allow checking inclusion and non-inclusion of events.</p>
+</div></div></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>A list of all use cases for RMTs in the Lisk Protocol, and their corresponding RMT.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 2. Use cases for RMTs in the Lisk protocol</caption>
+<colgroup>
+<col style="width: 22.2222%;">
+<col style="width: 22.2222%;">
+<col style="width: 55.5556%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Use Case</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>RMT</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Description</p>
+</div></div></td>
+</tr>
+<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Proofs-of-Inclusion for Transactions in a Block</p></td>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
 <p><code>transactionRoot</code></p>
@@ -650,34 +708,11 @@ Using the <code>transactionRoot</code> and a proof-of-inclusion, it is be possib
 <p><code>assetRoot</code></p>
 </div></div></td>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p>The root of the event sparse Merkle tree is added to the block header to allow checking inclusion and non-inclusion of block assets.</p>
-</div></div></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Proofs-of-Inclusion for Events in a Block</p></td>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p><code>eventRoot</code></p>
-</div></div></td>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p>The root of the event sparse Merkle tree is added to the block header to allow checking inclusion and non-inclusion of events.</p>
+<p>The root of the asset Merkle tree is added to the block header to allow checking inclusion and non-inclusion of block assets.</p>
 </div></div></td>
 </tr>
 </tbody>
 </table>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-<div class="title">SMTs allow efficient (non-)inclusion proofs</div>
-A Prover is able to convince a Verifier that a certain element is present in the underlying data structure <strong>without revealing any other element</strong>, and the <strong>proof size scales logarithmically</strong> with the number of data blocks.
-A Prover can convince a Verifier that a certain entry is not present in the map, and the proof size scales logarithmically with the number of data blocks.
-</td>
-</tr>
-</table>
-</div>
 <div id="kv-maps" class="sidebarblock">
 <div class="content">
 <div class="paragraph">

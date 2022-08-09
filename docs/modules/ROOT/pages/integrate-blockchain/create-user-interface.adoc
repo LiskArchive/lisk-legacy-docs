@@ -44,10 +44,27 @@ To use this guide, it is assumed that the following criteria have been met:
 . A new plugin `LatestHelloPlugin` is created, as explained in the guide xref:{url_guides_plugin}[].
 . The Hello World blockchain application has been configured to successfully connect with the dashboard plugin, as explained in the previous guide xref:{url_guides_config}[].
 ====
+== Update Directory Structure
+Create a parent directory `HelloApplication`.
+[source,bash]
+----
+mkdir HelloApplication
+cd HelloApplication
+----
+Move your `hello_app` folder to the `HelloApplication`.
+[source,bash]
+----
+mv ~/<YOUR_DIRECTORY>/hello_app ~/<YOUR_DIRECTORY>/HelloApplication
+----
+
+----
+├── HelloApplication/
+│   └── hello_app/
+----
 
 == Create a new React app
 
-Bootstrap the React app with the following command:
+While being in the `HelloApplication` folder, bootstrap the React app with the following command:
 
 [source,bash]
 ----
@@ -64,11 +81,13 @@ npx create-react-app hello_frontend
 This will automatically set up a React project for you with default configurations in a newly created `frontend-app` folder.
 
 ----
-├── hello_frontend
-│   ├── public/
-│   ├── src/
-│   ├── README.md
-│   └── package.json
+├── HelloApplication
+│   ├── hello_app/
+│   ├── hello_frontend/
+│   │   ├── public/
+│   │   ├── src/
+│   │   ├── README.md
+│   │   └── package.json
 ----
 
 It is already possible to start the frontend at this point.
@@ -186,12 +205,12 @@ export default NewAccount;
 
 The faucet is a component that allows accounts to receive tokens from the genesis account, which holds the majority of initial tokens at the start of the Devnet.
 
-In a new file `api.js`, the `apiClient` from package `lisk-client` provides an interface for the faucet and other React components to connect to the blockchain application via a websocket on port 8888.
+In a new file `api.js`, the `apiClient` from package `lisk-client` provides an interface for the faucet and other React components to connect to the blockchain application via a WebSocket on port 8080.
 
 .src/api.js
 [source,js]
 ----
-const { apiClient } = require('@liskhq/lisk-client');
+const { apiClient, cryptography } = require('@liskhq/lisk-client');
 const RPC_ENDPOINT = 'ws://localhost:8080/ws';
 
 let clientCache;
@@ -203,6 +222,11 @@ export const getClient = async () => {
     return clientCache;
 };
 
+export const fetchAccountInfo = async (address) => {
+    const client = await getClient();
+    return client.account.get(cryptography.getAddressFromBase32Address(address));
+};
+
 export const fetchHelloCounter = async () => {
     const client = await getClient();
     return client.invoke('hello:amountOfHellos');
@@ -212,6 +236,7 @@ export const fetchLatestHello = async () => {
     const client = await getClient();
     return client.invoke('latestHello:getLatestHello');
 };
+
 ----
 
 Next, create a new file `Faucet.js`, which will store the React component of the faucet.
@@ -224,13 +249,8 @@ import React, { useState } from 'react';
 import { cryptography, transactions } from '@liskhq/lisk-client';
 // Inside `Faucet.js`, import the previously defined API client from `api.js`.
 import * as api from '../api.js';
-
-// The passphrase for a genesis account of the local Devnet.
-const accounts = {
-  "genesis": {
-    "passphrase": "peanut hundred pen hawk invite exclude brain chunk gadget wait wrong ready"
-  }
-};
+//List of accounts, the list should be same as the hello_app
+import accounts from '../accounts.json';
 
 const Faucet = () => {
     const [state, updateState] = useState({
@@ -263,7 +283,7 @@ const Faucet = () => {
                 recipientAddress: address,
                 data: '',
             },
-        }, accounts.genesis.passphrase);
+        }, JSON.parse(JSON.stringify(accounts[10]["passphrase"]))); // Address of a delegate account
         // After creation, the transaction is submitted to the blockchain application.
         const response = await client.transaction.send(tx);
         // After submitting the transaction and receiving the response, the state of the Faucet component is updated with the transaction object and the API response.
@@ -271,7 +291,7 @@ const Faucet = () => {
             transaction: client.transaction.toJSON(tx),
             address: '',
             amount: '',
-            response:response
+            response: response
         });
     }
 
@@ -282,15 +302,15 @@ const Faucet = () => {
             <form onSubmit={handleSubmit}>
                 <label>
                     Address:
-                        <input type="text" id="address" name="address" onChange={handleChange} value={state.address} />
+                    <input type="text" id="address" name="address" onChange={handleChange} value={state.address} />
                 </label>
                 <label>
                     Amount (1 = 10^8 tokens):
-                        <input type="text" id="amount" name="amount" onChange={handleChange} value={state.amount} />
+                    <input type="text" id="amount" name="amount" onChange={handleChange} value={state.amount} />
                 </label>
                 <input type="submit" value="Submit" />
             </form>
-            {state.transaction && <7>
+            {state.transaction &&
                 <div>
                     <pre>Transaction: {JSON.stringify(state.transaction, null, 2)}</pre>
                     <pre>Response: {JSON.stringify(state.response, null, 2)}</pre>
@@ -302,6 +322,13 @@ const Faucet = () => {
 
 export default Faucet;
 ----
+Both frontend and blockchain applications should have the same `accounts.json`. So, copy `accounts.json` from `hello_app` and paste it into `hello_frontend`. 
+
+[source,bash]
+----
+cp hello_app/config/default/accounts.json hello_frontend/src/
+----
+
 
 === Send Transfer transaction
 
@@ -694,7 +721,30 @@ ReactDOM.render(
   document.getElementById('root')
 );
 ----
+== Update Configuration
 
+A WebSocket connection defined in the `api.js` must also be configured in the `hello_app`. So, add the following configuration to the `config.json` file.
+
+.hello_app/config/default/config.json
+[source,js]
+----
+{
+  // [...]
+  "rpc": {
+    "enable": true,
+    "mode": "ws",
+    "port": 8080,
+    "host": "127.0.0.1"
+  },
+  // [...]
+}
+----
+For the new configurations to take effect, the existing data of `hello_app` must be removed:
+
+[source,bash]
+----
+rm -rf ~/.lisk 
+----
 == View in browser
 
 After completing all the steps above, start the app again:

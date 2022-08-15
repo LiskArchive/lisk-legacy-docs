@@ -63,25 +63,37 @@ export const registerModules = (app: Application): void => {
 <2> Add this line to register the module to the application.
 ////
 
-== Module anatomy
+== Module anatomy & the BaseModule
 
-All important parts of a module are explained in more detail and are shown in the diagram below.
+All important parts of a module are shown in the diagram below.
 
 .Anatomy of a module
-image::understand-blockchain/sdk/module.png[,600, align="center"]
+image::understand-blockchain/sdk/module.png["Module Anatomy",600, align="center"]
 
-== The module class
+Each module is constructed as a class which extends from the **BaseModule** interface.
 
-Each module is constructed as a class which extends from the **BaseModule**.
+The `BaseModule` interface defines all optional and required properties and hooks of a module that must be implemented for the blockchain application to recognize it as a valid module.
 
-The `BaseModule` provides an interface which needs to be completed by implementing the described components of a module as listed below.
-
-[source,js]
+[source,typescript]
 ----
-const { BaseModule } = require('lisk-sdk');
+export abstract class BaseModule {
+	public abstract id: Buffer;
+	public abstract name: string;
+	public abstract metadata(): ModuleMetadata;
+	public abstract endpoint: BaseEndpoint;
+	public abstract methods: BaseMethod;
+	public commands: BaseCommand[] = [];
 
-class HelloModule extends BaseModule {
-
+	public async init?(args: ModuleInitArgs): Promise<void>;
+	public async insertAssets?(context: InsertAssetContext): Promise<void>;
+	public async verifyAssets?(context: BlockVerifyContext): Promise<void>;
+	public async verifyTransaction?(context: TransactionVerifyContext): Promise<VerificationResult>;
+	public async beforeCommandExecute?(context: TransactionExecuteContext): Promise<void>;
+	public async afterCommandExecute?(context: TransactionExecuteContext): Promise<void>;
+	public async initGenesisState?(context: GenesisBlockExecuteContext): Promise<void>;
+	public async finalizeGenesisState?(context: GenesisBlockExecuteContext): Promise<void>;
+	public async beforeTransactionsExecute?(context: BlockExecuteContext): Promise<void>;
+	public async afterTransactionsExecute?(context: BlockAfterExecuteContext): Promise<void>;
 }
 ----
 
@@ -99,7 +111,13 @@ So as an example, it is valid to register multiple modules to the application wh
 .Example: ID of the Hello module from the Hello World app
 [source,js]
 ----
-id = 1000;
+const { BaseModule } = require('lisk-sdk');
+
+class HelloModule extends BaseModule {
+    // ...
+    public id = 1000;
+    // ...
+}
 ----
 
 == Module name
@@ -111,9 +129,154 @@ It is used as a prefix in the xref:{url_advanced_communication_alias}[alias] of 
 .Example: Name of the Hello module from the Hello World app
 [source,js]
 ----
-name = 'hello';
+const { BaseModule } = require('lisk-sdk');
+
+class HelloModule extends BaseModule {
+    // ...
+    public name = 'hello';
+    // ...
+}
 ----
 
+== Module metadata
+
+The metadata of a module provides information about the module to external services like UIs.
+
+It provides information about the following module properties:
+
+* *endpoints*: A list of endpoints of the respective module.
+Each item has the following properties:
+** `name`: The name of the endpoint.
+** `request`: Required parameters for the endpoint (optional).
+** `response`: A schema of the expected response to a request to the endpoint.
+* *commands*: The list of commands belonging to the module.
+Each item has the following properties:
+** `id`: The command ID.
+** `name`: The command name.
+** `params`: The required and optional parameters to execute the command (optional).
+* *events*: A list of events that are emitted by the module.
+Each item has the following properties:
+** `typeId`: The event type ID.
+//TODO: describe event metadata
+** `data`:
+* *assets*: The schemas to decode module assets in blocks.
+Each item has the following properties:
+** `version`: The block version.
+** `data`: The asset schema.
+
+//TODO: Replace the snippet below with a code example from Hello app
+[source,typescript]
+----
+const { BaseModule } = require('lisk-sdk');
+
+class HelloModule extends BaseModule {
+    // ...
+
+    public metadata(): ModuleMetadata {
+        return {
+            endpoints: [
+                {
+                    name: this.endpoint.getAllDelegates.name,
+                    response: getAllDelegatesResponseSchema,
+                },
+                {
+                    name: this.endpoint.getDelegate.name,
+                    request: getDelegateRequestSchema,
+                    response: getDelegateResponseSchema,
+                },
+                {
+                    name: this.endpoint.getVoter.name,
+                    request: getVoterRequestSchema,
+                    response: getVoterResponseSchema,
+                },
+                {
+                    name: this.endpoint.getConstants.name,
+                    response: configSchema,
+                },
+            ],
+            commands: this.commands.map(command => ({
+                id: command.id,
+                name: command.name,
+                params: command.schema,
+            })),
+            events: [],
+            assets: [
+                {
+                    version: 0,
+                    data: genesisStoreSchema,
+                },
+            ],
+        };
+    }
+
+    // ...
+}
+----
+
+//TODO: Replace the snippet below with a code example from Hello app
+.Example: Schema of the `getAllDelegatesResponse` endpoint of the DPoS module
+[source,typescript]
+----
+export const getDelegateRequestSchema = {
+	$id: 'modules/dpos/endpoint/getDelegateRequest',
+	type: 'object',
+	required: ['address'],
+	properties: {
+		address: {
+			type: 'string',
+			format: 'hex',
+		},
+	},
+};
+----
+////
+.Schema interface
+[%collapsible]
+====
+[source,typescript]
+----
+export interface Schema {
+	readonly $id: string;
+	readonly type: string;
+	readonly properties: Record<string, unknown>;
+	readonly required?: string[];
+}
+----
+====
+////
+.Interface for the Module metadata
+[%collapsible]
+====
+[source,typescript]
+----
+import { Schema } from '@liskhq/lisk-codec';
+
+export interface ModuleMetadata {
+	endpoints: {
+		name: string;
+		request?: Schema;
+		response: Schema;
+	}[];
+	events: {
+		typeID: string;
+		data: Schema;
+	}[];
+	commands: {
+		id: Buffer;
+		name: string;
+		params?: Schema;
+	}[];
+	assets: {
+		version: number;
+		data: Schema;
+	}[];
+}
+----
+====
+
+== Endpoints
+
+////
 == Logger
 
 The logger is accessible inside of a module under `this._logger`.
@@ -136,6 +299,7 @@ The logger expects 2 arguments:
 . Data of the log message (object).
 . Message of the log message (string).
 
+
 == Genesis config
 
 The genesis configuration is accessible in a module under the variable `this.config`.
@@ -145,7 +309,7 @@ The genesis configuration is accessible in a module under the variable `this.con
 console.log(this.config.blockTime);
 // 10
 ----
-
+////
 == Interfaces
 Modules can expose interfaces (<<actions>>, and <<events>>), which allow other components of the application to interact with the module.
 

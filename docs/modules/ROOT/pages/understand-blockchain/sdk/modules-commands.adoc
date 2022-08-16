@@ -22,47 +22,6 @@ All modules of a blockchain application combined define the complete *on-chain l
 * Defining logic that is executed per transaction.
 ****
 
-////
-[TIP]
-
-====
-For a more practical guide how to create a new module, check out the guide xref:{url_guides_module}[].
-
-If you wish to view an example of a fully implemented module, check out the following examples:
-
-* The {url_github_hello_module}[Hello module] from the xref:{url_guides_setup_helloapp}[Hello World] blockchain application.
-* The {url_github_nft_module}[NFT module] from the xref:{url_tutorials_nft}[] tutorial.
-* The {url_github_srs_module}[SRS module] from the xref:{url_tutorials_srs}[] tutorial.
-====
-
-== Adding a module to the application
-
-Modules need to be registered to become available in the application.
-If the application was xref:{url_guides_setup}[bootstrapped] with Lisk Commander, they are registered in the file `src/app/modules.ts`.
-
-[IMPORTANT]
-====
-Registering a new module requires the generation of a new genesis block if the module defines an <<account-schema>>.
-This always results in a hardfork of the blockchain of the application.
-
-Check out the xref:{url_guides_genesis}[Generating a genesis block] guide for more information on how to generate a new genesis block for your application.
-====
-
-.Example: How to register a module with the application in `modules.ts`
-[source,typescript]
-----
-import { Application } from 'lisk-sdk';
-import { SomeModule } from "some-module"; // <1>
-
-export const registerModules = (app: Application): void => {
-    app.registerModule(SomeModule); // <2>
-};
-----
-
-<1> Import the module from an NPM (Node Package Manager), package or from a local path.
-<2> Add this line to register the module to the application.
-////
-
 == Module anatomy & the BaseModule
 
 All important parts of a module are shown in the diagram below.
@@ -165,6 +124,9 @@ Each item has the following properties:
 ** `version`: The block version.
 ** `data`: The asset schema.
 
+.Example: Module metadata
+[%collapsible]
+====
 //TODO: Replace the snippet below with a code example from Hello app
 [source,typescript]
 ----
@@ -230,28 +192,13 @@ export const getDelegateRequestSchema = {
 	},
 };
 ----
-////
-.Schema interface
-[%collapsible]
 ====
-[source,typescript]
-----
-export interface Schema {
-	readonly $id: string;
-	readonly type: string;
-	readonly properties: Record<string, unknown>;
-	readonly required?: string[];
-}
-----
-====
-////
+
 .Interface for the Module metadata
 [%collapsible]
 ====
 [source,typescript]
 ----
-import { Schema } from '@liskhq/lisk-codec';
-
 export interface ModuleMetadata {
 	endpoints: {
 		name: string;
@@ -273,9 +220,165 @@ export interface ModuleMetadata {
 	}[];
 }
 ----
+[source,typescript]
+----
+export interface Schema {
+	readonly $id: string;
+	readonly type: string;
+	readonly properties: Record<string, unknown>;
+	readonly required?: string[];
+}
+----
 ====
 
 == Endpoints
+
+An endpoint is the interface for a module to an external system through an RPC endpoint.
+The module RPC endpoints of a blockchain application can be requested by external services, like a UIs, to get relevant data from the application.
+
+The endpoints are defined individually for each module, depending on the module purpose.
+
+IMPORTANT: Endpoints allow to conveniently *get data from the blockchain application*.
+It is never possible to set data / mutate the state via module endpoints.
+
+Every module endpoint always extends from the `BaseEndpoint` class.
+
+.The `BaseEndpoint` class
+[source,typescript]
+----
+export abstract class BaseEndpoint {
+	[key: string]: unknown;
+	protected moduleID: Buffer;
+	public constructor(moduleID: Buffer) {
+		this.moduleID = moduleID;
+	}
+}
+----
+
+The module endpoints are usually defined in a file called `endpoints.ts` inside of the folder of the respective module.
+
+//TODO: Update code snippet to use Hello app example
+.Example: Module endpoint
+[%collapsible]
+====
+[source,typescript]
+----
+export class DPoSEndpoint extends BaseEndpoint {
+
+	public async getVoter(ctx: ModuleEndpointContext): Promise<VoterDataJSON> {
+		const voterSubStore = ctx.getStore(this.moduleID, STORE_PREFIX_VOTER);
+		const { address } = ctx.params;
+		if (typeof address !== 'string') {
+			throw new Error('Parameter address must be a string.');
+		}
+		const voterData = await voterSubStore.getWithSchema<VoterData>(
+			Buffer.from(address, 'hex'),
+			voterStoreSchema,
+		);
+
+		return codec.toJSON(voterStoreSchema, voterData);
+	}
+}
+----
+====
+
+== Methods
+
+A method is the interface for the module-to-module communication, and can perform state mutations on the blockchain.
+
+Methods are called from other modules or by the module itself, if certain module-specific data is desired to get or set in the blockchain.
+
+.The `BaseMethod` class
+[source,typescipt]
+----
+export abstract class BaseMethod {
+	protected moduleID: Buffer;
+	public constructor(moduleID: Buffer) {
+		this.moduleID = moduleID;
+	}
+}
+----
+
+//TODO: Update code snippet to use Hello app example
+.Example: Module methods
+[%collapsible]
+====
+[source,typescript]
+----
+export class DPoSAPI extends BaseAPI {
+
+    // ...
+
+	public async getVoter(apiContext: ImmutableAPIContext, address: Buffer): Promise<VoterData> {
+		const voterSubStore = apiContext.getStore(this.moduleID, STORE_PREFIX_VOTER);
+		const voterData = await voterSubStore.getWithSchema<VoterData>(address, voterStoreSchema);
+
+		return voterData;
+	}
+
+    // ...
+}
+----
+====
+
+=== Calling a module method
+
+[spurce,typescript]
+----
+const { EventQueue } = require('lisk-sdk');
+
+const apiContext = createAPIContext({ stateStore, eventQueue: new EventQueue() });
+const voterDataReturned = await dposAPI.getVoter(apiContext, address);
+----
+
+.From a command
+[source,js]
+----
+public async execute(context: CommandExecuteContext<Params>): Promise<void> {
+    const { params } = context;
+    await this._api.transfer(
+        context.getAPIContext(),
+        context.transaction.senderAddress,
+        params.recipientAddress,
+        params.tokenID,
+        params.amount,
+    );
+}
+----
+
+.From a module hook
+[source,js]
+----
+public async beforeCommandExecute(context: TransactionExecuteContext): Promise<void> {
+    const minFee =
+        BigInt(this._minFeePerByte * context.transaction.getBytes().length) +
+        this._extraFee(context.transaction.moduleID, context.transaction.commandID);
+    const senderAddress = address.getAddressFromPublicKey(context.transaction.senderPublicKey);
+    const apiContext = context.getAPIContext();
+
+    const isNative = await this._tokenAPI.isNative(apiContext, this._tokenID);
+    if (isNative) {
+        await this._tokenAPI.burn(apiContext, senderAddress, this._tokenID, minFee);
+        await this._tokenAPI.transfer(
+            apiContext,
+            senderAddress,
+            context.header.generatorAddress,
+            this._tokenID,
+            context.transaction.fee - minFee,
+        );
+
+        return;
+    }
+
+    await this._tokenAPI.transfer(
+        apiContext,
+        senderAddress,
+        context.header.generatorAddress,
+        this._tokenID,
+        context.transaction.fee,
+    );
+}
+----
 
 ////
 == Logger
@@ -310,7 +413,7 @@ The genesis configuration is accessible in a module under the variable `this.con
 console.log(this.config.blockTime);
 // 10
 ----
-////
+
 == Interfaces
 Modules can expose interfaces (<<actions>>, and <<events>>), which allow other components of the application to interact with the module.
 
@@ -703,3 +806,4 @@ NOTE: The properties `token`, `sequence`, `keys`, and `dpos` exist in the user a
 }
 ----
 
+////

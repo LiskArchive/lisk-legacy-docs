@@ -313,7 +313,7 @@
     <span class="nav-text">APIs</span>
 <ul class="nav-list">
   <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../../api/lisk-node-http.html">HTTP API for Lisk nodes</a>
+    <a class="nav-link" href="#api/lisk-node-http.adoc">api/lisk-node-http.adoc</a>
   </li>
   <li class="nav-item" data-depth="2">
     <a class="nav-link" href="../../api/lisk-node-rpc.html">RPC API for Lisk nodes</a>
@@ -456,11 +456,21 @@ For a successful registration, each module needs to follow the expected module s
 <li><a href="#module-anatomy-the-basemodule">Module anatomy &amp; the BaseModule</a></li>
 <li><a href="#module-id">Module ID</a></li>
 <li><a href="#module-name">Module name</a></li>
-<li><a href="#module-metadata">Module metadata</a></li>
-<li><a href="#endpoints">Endpoints</a></li>
+<li><a href="#module-metadata">Module metadata</a>
+<ul class="sectlevel2">
+<li><a href="#defining-the-module-metadata">Defining the module metadata</a></li>
+<li><a href="#obtaining-and-using-metadata-about-a-module">Obtaining and using metadata about a module</a></li>
+</ul>
+</li>
+<li><a href="#endpoints">Endpoints</a>
+<ul class="sectlevel2">
+<li><a href="#exposing-endpoints-to-plugins-and-external-services">Exposing endpoints to plugins and external services</a></li>
+</ul>
+</li>
 <li><a href="#methods">Methods</a>
 <ul class="sectlevel2">
-<li><a href="#calling-a-module-method">Calling a module method</a></li>
+<li><a href="#exposing-methods-to-other-modules">Exposing methods to other modules</a></li>
+<li><a href="#calling-a-module-method-from-another-module">Calling a module method from another module</a></li>
 </ul>
 </li>
 </ul>
@@ -519,7 +529,7 @@ For a successful registration, each module needs to follow the expected module s
 <div class="paragraph">
 <p>The module IDs <code>0</code>-<code>999</code> are reserved for official modules for the Lisk SDK.
 This means that the minimum ID for a new module is <code>1000</code>.
-The maximum value for a module ID is <code>2^32 - 1</code> (this equals 4,294,967,295), because it is stored as a <code>uint32</code> value.</p>
+The module ID is stored in binary format.</p>
 </div>
 <div class="paragraph">
 <p>It is also important to note, that module IDs do not need to be in succession, the only requirement is that they are unique within the blockchain application.
@@ -528,11 +538,11 @@ So as an example, it is valid to register multiple modules to the application wh
 <div class="listingblock">
 <div class="title">Example: ID of the Hello module from the Hello World app</div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { BaseModule } = require('lisk-sdk');
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">import { cryptography, BaseModule } from 'lisk-sdk';
 
-class HelloModule extends BaseModule {
-    // ...
-    public id = 1000;
+export class HelloModule extends BaseModule {
+	public id = cryptography.utils.intToBuffer(1000, 4);
+
     // ...
 }</code></pre>
 </div>
@@ -545,13 +555,10 @@ class HelloModule extends BaseModule {
 <div class="paragraph">
 <p>The module name is the human readable unique identifier for the module.</p>
 </div>
-<div class="paragraph">
-<p>It is used as a prefix in the <a href="#{url_advanced_communication_alias}">alias</a> of events and actions, and as a key label to add the properties of the <a href="#account-schema">[account-schema]</a> to the user accounts <sup class="footnote" id="_footnote_account_footnote">[<a id="_footnoteref_1" class="footnote" href="#_footnotedef_1" title="View footnote.">1</a>]</sup>.</p>
-</div>
 <div class="listingblock">
 <div class="title">Example: Name of the Hello module from the Hello World app</div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const { BaseModule } = require('lisk-sdk');
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">import { BaseModule } from 'lisk-sdk';
 
 class HelloModule extends BaseModule {
     // ...
@@ -637,6 +644,47 @@ Each item has the following properties:</p>
 </li>
 </ul>
 </div>
+<details id="interface-metadata">
+<summary class="title">Interface for the Module metadata</summary>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export interface ModuleMetadata {
+	endpoints: {
+		name: string;
+		request?: Schema;
+		response: Schema;
+	}[];
+	events: {
+		typeID: string;
+		data: Schema;
+	}[];
+	commands: {
+		id: Buffer;
+		name: string;
+		params?: Schema;
+	}[];
+	assets: {
+		version: number;
+		data: Schema;
+	}[];
+}
+
+export interface Schema {
+	readonly $id: string;
+	readonly type: string;
+	readonly properties: Record&lt;string, unknown&gt;;
+	readonly required?: string[];
+}</code></pre>
+</div>
+</div>
+</div>
+</details>
+<div class="sect2">
+<h3 id="defining-the-module-metadata"><a class="anchor" href="#defining-the-module-metadata"></a>Defining the module metadata</h3>
+<div class="paragraph">
+<p>The module metadata follows the format of the <a href="#interface-metadata">module metadata interface</a> and is returned in the <code>metadata()</code> function of a module.</p>
+</div>
 <details>
 <summary class="title">Example: Module metadata</summary>
 <div class="content">
@@ -706,45 +754,16 @@ class HelloModule extends BaseModule {
 </div>
 </div>
 </details>
-<details>
-<summary class="title">Interface for the Module metadata</summary>
-<div class="content">
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export interface ModuleMetadata {
-	endpoints: {
-		name: string;
-		request?: Schema;
-		response: Schema;
-	}[];
-	events: {
-		typeID: string;
-		data: Schema;
-	}[];
-	commands: {
-		id: Buffer;
-		name: string;
-		params?: Schema;
-	}[];
-	assets: {
-		version: number;
-		data: Schema;
-	}[];
-}</code></pre>
+</div>
+<div class="sect2">
+<h3 id="obtaining-and-using-metadata-about-a-module"><a class="anchor" href="#obtaining-and-using-metadata-about-a-module"></a>Obtaining and using metadata about a module</h3>
+<div class="paragraph">
+<p>Metadata can be obtained</p>
+</div>
+<div class="paragraph">
+<p>and used is</p>
 </div>
 </div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export interface Schema {
-	readonly $id: string;
-	readonly type: string;
-	readonly properties: Record&lt;string, unknown&gt;;
-	readonly required?: string[];
-}</code></pre>
-</div>
-</div>
-</div>
-</details>
 </div>
 </div>
 <div class="sect1">
@@ -785,11 +804,26 @@ It is never possible to set data / mutate the state via module endpoints.
 }</code></pre>
 </div>
 </div>
+<div class="sect2">
+<h3 id="exposing-endpoints-to-plugins-and-external-services"><a class="anchor" href="#exposing-endpoints-to-plugins-and-external-services"></a>Exposing endpoints to plugins and external services</h3>
 <div class="paragraph">
-<p>The module endpoints are usually defined in a file called <code>endpoints.ts</code> inside of the folder of the respective module.</p>
+<p>The module endpoints are usually defined in a file called <code>endpoint.ts</code> inside of the folder of the respective module.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example: Module endpoint</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import { HelloEndpoint } from './endpoint';
+import { cryptography } from 'lisk-sdk';
+
+export class HelloModule extends BaseModule {
+	public id = cryptography.utils.intToBuffer(1000, 4);
+	public name = 'hello';
+	public endpoint = new HelloEndpoint(this.id);
+}</code></pre>
+</div>
 </div>
 <details>
-<summary class="title">Example: Module endpoint</summary>
+<summary class="title">Example: <code>HelloEndpoint</code> in <code>endpoint.ts</code></summary>
 <div class="content">
 <div class="listingblock">
 <div class="content">
@@ -815,14 +849,16 @@ It is never possible to set data / mutate the state via module endpoints.
 </details>
 </div>
 </div>
+</div>
 <div class="sect1">
 <h2 id="methods"><a class="anchor" href="#methods"></a>Methods</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>A method is the interface for the module-to-module communication, and can perform state mutations on the blockchain.</p>
+<p>A method is the interface for the module-to-module communication, and <strong>can perform state mutations</strong> on the blockchain.</p>
 </div>
 <div class="paragraph">
-<p>Methods are called from other modules or by the module itself, if certain module-specific data is desired to get or set in the blockchain.</p>
+<p>Methods are called from other modules or by the module itself, if certain module-specific data is desired to get or set data in the blockchain.
+For example, the <code>transfer</code> method from the <code>Token</code> module is called by a module, if it needs to transfer tokens from one account to the other.</p>
 </div>
 <div class="listingblock">
 <div class="title">The <code>BaseMethod</code> class</div>
@@ -835,12 +871,30 @@ It is never possible to set data / mutate the state via module endpoints.
 }</code></pre>
 </div>
 </div>
+<div class="sect2">
+<h3 id="exposing-methods-to-other-modules"><a class="anchor" href="#exposing-methods-to-other-modules"></a>Exposing methods to other modules</h3>
+<div class="paragraph">
+<p>Modules</p>
+</div>
+<div class="listingblock">
+<div class="title">Example: Module methods</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import { HelloMethod } from './api';
+import { cryptography } from 'lisk-sdk';
+
+export class HelloModule extends BaseModule {
+	public id = cryptography.utils.intToBuffer(1000, 4);
+	public name = 'hello';
+	public api = new HelloMethod(this.id);
+}</code></pre>
+</div>
+</div>
 <details>
-<summary class="title">Example: Module methods</summary>
+<summary class="title">Example: <code>HelloMethod</code> in <code>methods.ts</code></summary>
 <div class="content">
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export class DPoSAPI extends BaseAPI {
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export class HelloMethod extends BaseMethod {
 
     // ...
 
@@ -857,72 +911,13 @@ It is never possible to set data / mutate the state via module endpoints.
 </div>
 </div>
 </details>
+</div>
 <div class="sect2">
-<h3 id="calling-a-module-method"><a class="anchor" href="#calling-a-module-method"></a>Calling a module method</h3>
-<div class="listingblock">
-<div class="content">
-<pre>const { EventQueue } = require('lisk-sdk');
-
-const apiContext = createAPIContext({ stateStore, eventQueue: new EventQueue() });
-const voterDataReturned = await dposAPI.getVoter(apiContext, address);</pre>
+<h3 id="calling-a-module-method-from-another-module"><a class="anchor" href="#calling-a-module-method-from-another-module"></a>Calling a module method from another module</h3>
+<div class="paragraph">
+<p>To see an example how to call a module method from another module, look at the following example in the module hooks.</p>
 </div>
 </div>
-<div class="listingblock">
-<div class="title">From a command</div>
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">public async execute(context: CommandExecuteContext&lt;Params&gt;): Promise&lt;void&gt; {
-    const { params } = context;
-    await this._api.transfer(
-        context.getAPIContext(),
-        context.transaction.senderAddress,
-        params.recipientAddress,
-        params.tokenID,
-        params.amount,
-    );
-}</code></pre>
-</div>
-</div>
-<div class="listingblock">
-<div class="title">From a module hook</div>
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">public async beforeCommandExecute(context: TransactionExecuteContext): Promise&lt;void&gt; {
-    const minFee =
-        BigInt(this._minFeePerByte * context.transaction.getBytes().length) +
-        this._extraFee(context.transaction.moduleID, context.transaction.commandID);
-    const senderAddress = address.getAddressFromPublicKey(context.transaction.senderPublicKey);
-    const apiContext = context.getAPIContext();
-
-    const isNative = await this._tokenAPI.isNative(apiContext, this._tokenID);
-    if (isNative) {
-        await this._tokenAPI.burn(apiContext, senderAddress, this._tokenID, minFee);
-        await this._tokenAPI.transfer(
-            apiContext,
-            senderAddress,
-            context.header.generatorAddress,
-            this._tokenID,
-            context.transaction.fee - minFee,
-        );
-
-        return;
-    }
-
-    await this._tokenAPI.transfer(
-        apiContext,
-        senderAddress,
-        context.header.generatorAddress,
-        this._tokenID,
-        context.transaction.fee,
-    );
-}</code></pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div id="footnotes">
-<hr>
-<div class="footnote" id="_footnotedef_1">
-<a href="#_footnoteref_1">1</a>. For more information about accounts, check the <a href="#{url_protocol_accounts}">[{url_protocol_accounts}]</a> page of the Lisk protocol.
 </div>
 </div>
 <nav class="pagination">

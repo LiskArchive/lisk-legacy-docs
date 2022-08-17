@@ -856,10 +856,13 @@ export class HelloModule extends BaseModule {
 <p>Methods are called from other modules or by the module itself, if certain module-specific data is desired to get or set data in the blockchain.
 For example, the <code>transfer</code> method from the <code>Token</code> module is called by a module, if it needs to transfer tokens from one account to the other.</p>
 </div>
+<div class="paragraph">
+<p>Every module method always extends from the <code>BaseMethod</code> class.</p>
+</div>
 <div class="listingblock">
-<div class="title">The <code>BaseMethod</code> class</div>
+<div class="title">The BaseMethod class</div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-typescipt hljs" data-lang="typescipt">export abstract class BaseMethod {
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export abstract class BaseMethod {
 	protected moduleID: Buffer;
 	public constructor(moduleID: Buffer) {
 		this.moduleID = moduleID;
@@ -870,7 +873,7 @@ For example, the <code>transfer</code> method from the <code>Token</code> module
 <div class="sect2">
 <h3 id="exposing-methods-to-other-modules"><a class="anchor" href="#exposing-methods-to-other-modules"></a>Exposing methods to other modules</h3>
 <div class="paragraph">
-<p>Modules</p>
+<p>The module methods are usually defined in a file called <code>methods.ts</code> inside of the folder of the respective module.</p>
 </div>
 <div class="listingblock">
 <div class="title">Example: Module methods</div>
@@ -919,7 +922,35 @@ export class HelloModule extends BaseModule {
 <div class="sect1">
 <h2 id="module-configuration"><a class="anchor" href="#module-configuration"></a>Module configuration</h2>
 <div class="sectionbody">
+<div class="paragraph">
+<p>A module can access specific configuration options of the blockchain application:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Module-specific configuration options</p>
+</li>
+<li>
+<p>Genesis config options</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>If a module needs to access certain configuration options, it is required to obtain the respctive configurations in the <code>init()</code> method of a module, like described in the code snippet below.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async init(args: ModuleInitArgs): Promise&lt;void&gt; {
+    const { genesisConfig, moduleConfig } = args;
+    const config = objects.mergeDeep({}, defaultConfig, moduleConfig);
+    validator.validate&lt;ModuleConfig&gt;(configSchema, config);
 
+    this._tokenID = Buffer.from(config.feeTokenID, 'hex');
+    this._minFeePerByte = genesisConfig.minFeePerByte;
+    this._baseFees = genesisConfig.baseFees.map(fee =&gt; ({ ...fee, baseFee: BigInt(fee.baseFee) }));
+}</code></pre>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">

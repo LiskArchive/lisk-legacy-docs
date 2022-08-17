@@ -373,7 +373,7 @@ A module can access specific configuration options of the blockchain application
 
 //TODO: include example snippets of module and genesis configurations
 
-If a module needs to access certain configuration options, it is required to obtain the respctive configurations in the `init()` method of a module, like described in the code snippet below.
+If a module needs to access certain configuration options, it is required to obtain the respective configurations in the `init()` method of a module, like described in the code snippet below.
 
 [source,typescript]
 ----
@@ -417,12 +417,144 @@ export abstract class BaseCommand<T = unknown> {
 ----
 
 === Command ID
+[source,typescript]
+----
+const CREATE_HELLO_ID = 0;
+export class TransferCommand extends BaseCommand {
+	public id = cryptography.utils.intToBuffer(CREATE_HELLO_ID, 4);
+	// ...
+}
+----
+[source,typescript]
+----
+export class TransferCommand extends BaseCommand {
+	public name = 'transfer';
+	public id = getIDAsKeyForStore(COMMAND_ID_TRANSFER);
+	public schema = transferParamsSchema;
+	private _api!: TokenAPI;
+
+	public init(args: { api: TokenAPI }) {
+		this._api = args.api;
+	}
+
+	// eslint-disable-next-line @typescript-eslint/require-await
+	public async verify(context: CommandVerifyContext<Params>): Promise<VerificationResult> {
+		const { params } = context;
+
+		try {
+			validator.validate(transferParamsSchema, params);
+		} catch (err) {
+			return {
+				status: VerifyStatus.FAIL,
+				error: err as Error,
+			};
+		}
+		return {
+			status: VerifyStatus.OK,
+		};
+	}
+
+	public async execute(context: CommandExecuteContext<Params>): Promise<void> {
+		const { params } = context;
+		await this._api.transfer(
+			context.getAPIContext(),
+			context.transaction.senderAddress,
+			params.recipientAddress,
+			params.tokenID,
+			params.amount,
+		);
+	}
+}
+----
 === Command name
+
+[source,typescript]
+----
+export class TransferCommand extends BaseCommand {
+    // ...
+	public name = 'transfer';
+    // ...
+}
+----
+
 === Command schema
+
+[source,typescript]
+----
+export class TransferCommand extends BaseCommand {
+	// ...
+	public schema = transferParamsSchema;
+    // ...
+}
+----
+
+=== Command initialization
+[source,typescript]
+----
+export class TransferCommand extends BaseCommand {
+    // ...
+	private _api!: TokenMethods;
+	public init(args: { api: TokenMethods }) {
+		this._api = args.api;
+	}
+    // ...
+}
+----
 === Command verification
+
+[source,typescript]
+----
+export class TransferCommand extends BaseCommand {
+	// ...
+	public async verify(context: CommandVerifyContext<Params>): Promise<VerificationResult> {
+		const { params } = context;
+
+		try {
+			validator.validate(transferParamsSchema, params);
+		} catch (err) {
+			return {
+				status: VerifyStatus.FAIL,
+				error: err as Error,
+			};
+		}
+		return {
+			status: VerifyStatus.OK,
+		};
+	}
+    // ...
+}
+----
 === Command execution
 
+[source,typescript]
+----
+export class TransferCommand extends BaseCommand {
+	// ...
+	public async execute(context: CommandExecuteContext<Params>): Promise<void> {
+		const { params } = context;
+		await this._api.transfer(
+			context.getAPIContext(),
+			context.transaction.senderAddress,
+			params.recipientAddress,
+			params.tokenID,
+			params.amount,
+		);
+	}
+}
+----
+
 == Lifecycle Hooks
+
+=== insertAssets
+=== verifyAssets
+=== verifyTransaction
+=== beforeCommandExecute
+=== afterCommandExecute
+=== initGenesisState
+=== finalizeGenesisState
+=== beforeTransactionsExecute
+=== afterTransactionsExecute
+
 ////
 [source,typescript]
 ----

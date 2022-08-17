@@ -307,8 +307,10 @@ A method is the interface for the module-to-module communication, and *can perfo
 Methods are called from other modules or by the module itself, if certain module-specific data is desired to get or set data in the blockchain.
 For example, the `transfer` method from the `Token` module is called by a module, if it needs to transfer tokens from one account to the other.
 
-.The `BaseMethod` class
-[source,typescipt]
+Every module method always extends from the `BaseMethod` class.
+
+.The BaseMethod class
+[source,typescript]
 ----
 export abstract class BaseMethod {
 	protected moduleID: Buffer;
@@ -320,7 +322,7 @@ export abstract class BaseMethod {
 
 === Exposing methods to other modules
 
-Modules
+The module methods are usually defined in a file called `methods.ts` inside of the folder of the respective module.
 
 .Example: Module methods
 [source,typescript]
@@ -359,10 +361,32 @@ export class HelloMethod extends BaseMethod {
 
 === Calling a module method from another module
 
-//TODO: Link to example of calling a mmodule in a command/hook
+//TODO: Link to example of calling a module in a command/hook
 To see an example how to call a module method from another module, look at the following example in the module hooks.
 
 == Module configuration
+
+A module can access specific configuration options of the blockchain application:
+
+. Module-specific configuration options
+. Genesis config options
+
+//TODO: include example snippets of module and genesis configurations
+
+If a module needs to access certain configuration options, it is required to obtain the respctive configurations in the `init()` method of a module, like described in the code snippet below.
+
+[source,typescript]
+----
+public async init(args: ModuleInitArgs): Promise<void> {
+    const { genesisConfig, moduleConfig } = args;
+    const config = objects.mergeDeep({}, defaultConfig, moduleConfig);
+    validator.validate<ModuleConfig>(configSchema, config);
+
+    this._tokenID = Buffer.from(config.feeTokenID, 'hex');
+    this._minFeePerByte = genesisConfig.minFeePerByte;
+    this._baseFees = genesisConfig.baseFees.map(fee => ({ ...fee, baseFee: BigInt(fee.baseFee) }));
+}
+----
 
 == Commands
 

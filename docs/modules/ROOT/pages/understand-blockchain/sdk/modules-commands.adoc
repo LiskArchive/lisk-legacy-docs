@@ -63,7 +63,7 @@ The module ID is the unique identifier for a module in the application.
 
 The module IDs `0`-`999` are reserved for official modules for the Lisk SDK.
 This means that the minimum ID for a new module is `1000`.
-The maximum value for a module ID is `2^32 - 1` (this equals 4,294,967,295), because it is stored as a `uint32` value.
+The module ID is stored in binary format.
 
 It is also important to note, that module IDs do not need to be in succession, the only requirement is that they are unique within the blockchain application.
 So as an example, it is valid to register multiple modules to the application which have the following module IDs: `1003`, `1000`, and `2500001` as they are in the allowed number range, and each ID is different.
@@ -71,11 +71,11 @@ So as an example, it is valid to register multiple modules to the application wh
 .Example: ID of the Hello module from the Hello World app
 [source,js]
 ----
-const { BaseModule } = require('lisk-sdk');
+import { cryptography, BaseModule } from 'lisk-sdk';
 
-class HelloModule extends BaseModule {
-    // ...
-    public id = 1000;
+export class HelloModule extends BaseModule {
+	public id = cryptography.utils.intToBuffer(1000, 4);
+
     // ...
 }
 ----
@@ -84,12 +84,10 @@ class HelloModule extends BaseModule {
 
 The module name is the human readable unique identifier for the module.
 
-It is used as a prefix in the xref:{url_advanced_communication_alias}[alias] of events and actions, and as a key label to add the properties of the <<account-schema>> to the user accounts footnote:account_footnote[For more information about accounts, check the xref:{url_protocol_accounts}[] page of the Lisk protocol.].
-
 .Example: Name of the Hello module from the Hello World app
 [source,js]
 ----
-const { BaseModule } = require('lisk-sdk');
+import { BaseModule } from 'lisk-sdk';
 
 class HelloModule extends BaseModule {
     // ...
@@ -123,6 +121,46 @@ Each item has the following properties:
 Each item has the following properties:
 ** `version`: The block version.
 ** `data`: The asset schema.
+
+[[interface-metadata]]
+.Interface for the Module metadata
+[%collapsible]
+====
+[source,typescript]
+----
+export interface ModuleMetadata {
+	endpoints: {
+		name: string;
+		request?: Schema;
+		response: Schema;
+	}[];
+	events: {
+		typeID: string;
+		data: Schema;
+	}[];
+	commands: {
+		id: Buffer;
+		name: string;
+		params?: Schema;
+	}[];
+	assets: {
+		version: number;
+		data: Schema;
+	}[];
+}
+
+export interface Schema {
+	readonly $id: string;
+	readonly type: string;
+	readonly properties: Record<string, unknown>;
+	readonly required?: string[];
+}
+----
+====
+
+=== Defining the module metadata
+
+The module metadata follows the format of the <<interface-metadata,module metadata interface>> and is returned in the `metadata()` function of a module.
 
 .Example: Module metadata
 [%collapsible]
@@ -194,42 +232,13 @@ export const getDelegateRequestSchema = {
 ----
 ====
 
-.Interface for the Module metadata
-[%collapsible]
-====
-[source,typescript]
-----
-export interface ModuleMetadata {
-	endpoints: {
-		name: string;
-		request?: Schema;
-		response: Schema;
-	}[];
-	events: {
-		typeID: string;
-		data: Schema;
-	}[];
-	commands: {
-		id: Buffer;
-		name: string;
-		params?: Schema;
-	}[];
-	assets: {
-		version: number;
-		data: Schema;
-	}[];
-}
-----
-[source,typescript]
-----
-export interface Schema {
-	readonly $id: string;
-	readonly type: string;
-	readonly properties: Record<string, unknown>;
-	readonly required?: string[];
-}
-----
-====
+=== Obtaining and using metadata about a module
+
+Metadata can be obtained
+
+
+and used is
+
 
 == Endpoints
 
@@ -255,10 +264,24 @@ export abstract class BaseEndpoint {
 }
 ----
 
-The module endpoints are usually defined in a file called `endpoints.ts` inside of the folder of the respective module.
+=== Exposing endpoints to plugins and external services
+The module endpoints are usually defined in a file called `endpoint.ts` inside of the folder of the respective module.
+
+.Example: Module endpoint
+[source,typescript]
+----
+import { HelloEndpoint } from './endpoint';
+import { cryptography } from 'lisk-sdk';
+
+export class HelloModule extends BaseModule {
+	public id = cryptography.utils.intToBuffer(1000, 4);
+	public name = 'hello';
+	public endpoint = new HelloEndpoint(this.id);
+}
+----
 
 //TODO: Update code snippet to use Hello app example
-.Example: Module endpoint
+.Example: `HelloEndpoint` in `endpoint.ts`
 [%collapsible]
 ====
 [source,typescript]
@@ -284,9 +307,10 @@ export class DPoSEndpoint extends BaseEndpoint {
 
 == Methods
 
-A method is the interface for the module-to-module communication, and can perform state mutations on the blockchain.
+A method is the interface for the module-to-module communication, and *can perform state mutations* on the blockchain.
 
-Methods are called from other modules or by the module itself, if certain module-specific data is desired to get or set in the blockchain.
+Methods are called from other modules or by the module itself, if certain module-specific data is desired to get or set data in the blockchain.
+For example, the `transfer` method from the `Token` module is called by a module, if it needs to transfer tokens from one account to the other.
 
 .The `BaseMethod` class
 [source,typescipt]
@@ -299,13 +323,30 @@ export abstract class BaseMethod {
 }
 ----
 
-//TODO: Update code snippet to use Hello app example
+=== Exposing methods to other modules
+
+Modules
+
 .Example: Module methods
+[source,typescript]
+----
+import { HelloMethod } from './api';
+import { cryptography } from 'lisk-sdk';
+
+export class HelloModule extends BaseModule {
+	public id = cryptography.utils.intToBuffer(1000, 4);
+	public name = 'hello';
+	public api = new HelloMethod(this.id);
+}
+----
+
+//TODO: Update code snippet to use Hello app example
+.Example: `HelloMethod` in `methods.ts`
 [%collapsible]
 ====
 [source,typescript]
 ----
-export class DPoSAPI extends BaseAPI {
+export class HelloMethod extends BaseMethod {
 
     // ...
 
@@ -321,9 +362,13 @@ export class DPoSAPI extends BaseAPI {
 ----
 ====
 
-=== Calling a module method
+=== Calling a module method from another module
 
-[spurce,typescript]
+//TODO: Link to example of calling a mmodule in a command/hook
+To see an example how to call a module method from another module, look at the following example in the module hooks.
+
+////
+[source,typescript]
 ----
 const { EventQueue } = require('lisk-sdk');
 
@@ -332,7 +377,7 @@ const voterDataReturned = await dposAPI.getVoter(apiContext, address);
 ----
 
 .From a command
-[source,js]
+[source,typescript]
 ----
 public async execute(context: CommandExecuteContext<Params>): Promise<void> {
     const { params } = context;
@@ -347,7 +392,7 @@ public async execute(context: CommandExecuteContext<Params>): Promise<void> {
 ----
 
 .From a module hook
-[source,js]
+[source,typescript]
 ----
 public async beforeCommandExecute(context: TransactionExecuteContext): Promise<void> {
     const minFee =
@@ -380,7 +425,6 @@ public async beforeCommandExecute(context: TransactionExecuteContext): Promise<v
 }
 ----
 
-////
 == Logger
 
 The logger is accessible inside of a module under `this._logger`.

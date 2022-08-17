@@ -480,7 +480,11 @@ For a successful registration, each module needs to follow the expected module s
 <li><a href="#command-schema">Command schema</a></li>
 <li><a href="#command-initialization">Command initialization</a></li>
 <li><a href="#command-verification">Command verification</a></li>
-<li><a href="#command-execution">Command execution</a></li>
+<li><a href="#command-execution">Command execution</a>
+<ul class="sectlevel3">
+<li><a href="#command-execution-context">Command execution context</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li><a href="#lifecycle-hooks">Lifecycle Hooks</a>
@@ -1061,6 +1065,22 @@ export class TransferCommand extends BaseCommand {
 </div>
 <div class="sect2">
 <h3 id="command-verification"><a class="anchor" href="#command-verification"></a>Command verification</h3>
+<div class="paragraph">
+<p>The hook <code>Command.verify</code> is called only for the command that is referenced by the module name and the command name in the transaction.
+Similar to the <code>verifyTransaction</code> hook, <code>Command.verify</code> will be called also in the transaction pool, and it is to ensure the verification defined in this hook is respected when the transactions are included in a block.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+In this hook, the <strong>state cannot be mutated</strong> and events cannot be emitted.
+</td>
+</tr>
+</table>
+</div>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export class TransferCommand extends BaseCommand {
@@ -1087,6 +1107,26 @@ export class TransferCommand extends BaseCommand {
 </div>
 <div class="sect2">
 <h3 id="command-execution"><a class="anchor" href="#command-execution"></a>Command execution</h3>
+<div class="paragraph">
+<p>Applies the state changes through the state machine.
+The hook <code>Command.execute</code> is triggered by a transaction identified by the module name and the command name.</p>
+</div>
+<div class="paragraph">
+<p>If the hook execution fails, the transaction that triggered this command is still valid, but the state changes applied during this hook are reverted.
+Additionally, an event will be emitted that provides the information whether a command is executed successfully or failed.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+In this hook, the <strong>state can be mutated</strong> and events can be emitted.
+</td>
+</tr>
+</table>
+</div>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export class TransferCommand extends BaseCommand {
@@ -1103,6 +1143,10 @@ export class TransferCommand extends BaseCommand {
 	}
 }</code></pre>
 </div>
+</div>
+<div class="sect3">
+<h4 id="command-execution-context"><a class="anchor" href="#command-execution-context"></a>Command execution context</h4>
+
 </div>
 </div>
 </div>
@@ -1125,39 +1169,161 @@ export class TransferCommand extends BaseCommand {
 </div>
 <div class="sect2">
 <h3 id="insertassets"><a class="anchor" href="#insertassets"></a>insertAssets</h3>
-
+<div class="paragraph">
+<p>The hook <code>insertAssets</code> is called at the very beginning of the block generation.
+The assets added during the execution of this hook can be used in all the execution hooks afterwards.</p>
+</div>
+<div class="paragraph">
+<p>For example, the <code>seedReveal</code> property is added to the block asset in this hook by the Random module.</p>
+</div>
 </div>
 <div class="sect2">
 <h3 id="verifyassets"><a class="anchor" href="#verifyassets"></a>verifyAssets</h3>
-
+<div class="paragraph">
+<p>The hook <code>verifyAssets</code> is only called before executing a block.</p>
+</div>
+<div class="paragraph">
+<p>If this stage fails, the block is considered invalid and will be rejected.
+In particular, the following hooks will not get executed.
+This hook is used for verification before any state changes.
+For example, at this stage, each module checks if the expected assets exist in the block.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+In this hook, the <strong>state cannot be mutated</strong> and events cannot be emitted.
+</td>
+</tr>
+</table>
+</div>
 </div>
 <div class="sect2">
 <h3 id="beforetransactionsexecute"><a class="anchor" href="#beforetransactionsexecute"></a>beforeTransactionsExecute</h3>
-
+<div class="paragraph">
+<p>The hook <code>beforeTransactionsExecute</code> is the first hook that is triggered by the block.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+In this hook, the <strong>state can be mutated</strong> and events can be emitted.
+</td>
+</tr>
+</table>
+</div>
 </div>
 <div class="sect2">
 <h3 id="verifytransaction"><a class="anchor" href="#verifytransaction"></a>verifyTransaction</h3>
-
+<div class="paragraph">
+<p>The hook <code>verifyTransaction</code> is called for all the transactions within a block regardless of the command they trigger.
+This ensures that all transactions included in a block satisfy the verifications defined in this hook.</p>
+</div>
+<div class="paragraph">
+<p>This hook is used also for transaction verification in the transaction pool to reject invalid transactions early before transmitting them to the network.
+For example, signature verification is done in this hook.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+In this hook, the <strong>state cannot be mutated</strong> and events cannot be emitted.
+</td>
+</tr>
+</table>
+</div>
 </div>
 <div class="sect2">
 <h3 id="beforecommandexecute"><a class="anchor" href="#beforecommandexecute"></a>beforeCommandExecute</h3>
-
+<div class="paragraph">
+<p>The hook <code>beforeCommandExecute</code> is called for all the transactions within a block regardless of the command they trigger, similar to <code>verifyTransaction</code>.</p>
+</div>
+<div class="paragraph">
+<p>If the hook fails during the execution, the transaction becomes invalid and the block containing this transaction will be invalid.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+In this hook, the <strong>state can be mutated</strong> and events can be emitted.
+</td>
+</tr>
+</table>
+</div>
 </div>
 <div class="sect2">
 <h3 id="aftercommandexecute"><a class="anchor" href="#aftercommandexecute"></a>afterCommandExecute</h3>
-
+<div class="paragraph">
+<p>The hook <code>afterCommandExecute</code> is called for all the transactions within a block regardless of the command they trigger.</p>
+</div>
+<div class="paragraph">
+<p>If the hook fails during the execution, the transaction becomes invalid and the block containing this transaction will be invalid.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+In this hook, the <strong>state can be mutated</strong> and events can be emitted.
+</td>
+</tr>
+</table>
+</div>
 </div>
 <div class="sect2">
 <h3 id="aftertransactionsexecute"><a class="anchor" href="#aftertransactionsexecute"></a>afterTransactionsExecute</h3>
-
+<div class="paragraph">
+<p>The hook <code>afterTransactionsExecute</code> is the last hook allowed to define state changes that are triggered by the block.</p>
+</div>
+<div class="paragraph">
+<p>Additionally, when defining the <code>afterTransactionsExecute</code> logic for a module, the transactions included in the block are available in that context and can be used in this logic.
+For example, this hook can be used to sum the fees of the transactions included in a block and transfer them to the block generator.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+In this hook, the <strong>state can be mutated</strong> and events can be emitted.
+</td>
+</tr>
+</table>
+</div>
 </div>
 <div class="sect2">
 <h3 id="initgenesisstate"><a class="anchor" href="#initgenesisstate"></a>initGenesisState</h3>
-
+<div class="paragraph">
+<p>The hook <code>initGenesisState</code> is called at the beginning of the genesis block execution.
+Each module must initialize their state using an associated block asset.</p>
+</div>
+<div class="paragraph">
+<p>It is recommended not to use methods from other modules because their state might not be initialized yet depending on the order of the hook execution.</p>
+</div>
 </div>
 <div class="sect2">
 <h3 id="finalizegenesisstate"><a class="anchor" href="#finalizegenesisstate"></a>finalizeGenesisState</h3>
-
+<div class="paragraph">
+<p>The hook <code>finalizeGenesisState</code> is called at the end of genesis block execution.</p>
+</div>
+<div class="paragraph">
+<p>In this hook, it can be assumed that the state initialization via <code>initGenesisState</code> of every module is completed and therefore methods from other modules can be used.</p>
+</div>
 </div>
 </div>
 </div>

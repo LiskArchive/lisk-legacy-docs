@@ -478,11 +478,24 @@ For a successful registration, each module needs to follow the expected module s
 <li><a href="#command-id">Command ID</a></li>
 <li><a href="#command-name">Command name</a></li>
 <li><a href="#command-schema">Command schema</a></li>
+<li><a href="#command-initialization">Command initialization</a></li>
 <li><a href="#command-verification">Command verification</a></li>
 <li><a href="#command-execution">Command execution</a></li>
 </ul>
 </li>
-<li><a href="#lifecycle-hooks">Lifecycle Hooks</a></li>
+<li><a href="#lifecycle-hooks">Lifecycle Hooks</a>
+<ul class="sectlevel2">
+<li><a href="#insertassets">insertAssets</a></li>
+<li><a href="#verifyassets">verifyAssets</a></li>
+<li><a href="#beforetransactionsexecute">beforeTransactionsExecute</a></li>
+<li><a href="#verifytransaction">verifyTransaction</a></li>
+<li><a href="#beforecommandexecute">beforeCommandExecute</a></li>
+<li><a href="#aftercommandexecute">afterCommandExecute</a></li>
+<li><a href="#aftertransactionsexecute">afterTransactionsExecute</a></li>
+<li><a href="#initgenesisstate">initGenesisState</a></li>
+<li><a href="#finalizegenesisstate">finalizeGenesisState</a></li>
+</ul>
+</li>
 </ul>
 </div>
 </div>
@@ -944,7 +957,7 @@ export class HelloModule extends BaseModule {
 </ol>
 </div>
 <div class="paragraph">
-<p>If a module needs to access certain configuration options, it is required to obtain the respctive configurations in the <code>init()</code> method of a module, like described in the code snippet below.</p>
+<p>If a module needs to access certain configuration options, it is required to obtain the respective configurations in the <code>init()</code> method of a module, like described in the code snippet below.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -997,30 +1010,155 @@ export class HelloModule extends BaseModule {
 </div>
 <div class="sect2">
 <h3 id="command-id"><a class="anchor" href="#command-id"></a>Command ID</h3>
-
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">const CREATE_HELLO_ID = 0;
+export class TransferCommand extends BaseCommand {
+	public id = cryptography.utils.intToBuffer(CREATE_HELLO_ID, 4);
+	// ...
+}</code></pre>
+</div>
+</div>
 </div>
 <div class="sect2">
 <h3 id="command-name"><a class="anchor" href="#command-name"></a>Command name</h3>
-
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export class TransferCommand extends BaseCommand {
+    // ...
+	public name = 'transfer';
+    // ...
+}</code></pre>
+</div>
+</div>
 </div>
 <div class="sect2">
 <h3 id="command-schema"><a class="anchor" href="#command-schema"></a>Command schema</h3>
-
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export class TransferCommand extends BaseCommand {
+	// ...
+	public schema = transferParamsSchema;
+    // ...
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="command-initialization"><a class="anchor" href="#command-initialization"></a>Command initialization</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export class TransferCommand extends BaseCommand {
+    // ...
+	private _api!: TokenMethods;
+	public init(args: { api: TokenMethods }) {
+		this._api = args.api;
+	}
+    // ...
+}</code></pre>
+</div>
+</div>
 </div>
 <div class="sect2">
 <h3 id="command-verification"><a class="anchor" href="#command-verification"></a>Command verification</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export class TransferCommand extends BaseCommand {
+	// ...
+	public async verify(context: CommandVerifyContext&lt;Params&gt;): Promise&lt;VerificationResult&gt; {
+		const { params } = context;
 
+		try {
+			validator.validate(transferParamsSchema, params);
+		} catch (err) {
+			return {
+				status: VerifyStatus.FAIL,
+				error: err as Error,
+			};
+		}
+		return {
+			status: VerifyStatus.OK,
+		};
+	}
+    // ...
+}</code></pre>
+</div>
+</div>
 </div>
 <div class="sect2">
 <h3 id="command-execution"><a class="anchor" href="#command-execution"></a>Command execution</h3>
-
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export class TransferCommand extends BaseCommand {
+	// ...
+	public async execute(context: CommandExecuteContext&lt;Params&gt;): Promise&lt;void&gt; {
+		const { params } = context;
+		await this._api.transfer(
+			context.getAPIContext(),
+			context.transaction.senderAddress,
+			params.recipientAddress,
+			params.tokenID,
+			params.amount,
+		);
+	}
+}</code></pre>
+</div>
+</div>
 </div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="lifecycle-hooks"><a class="anchor" href="#lifecycle-hooks"></a>Lifecycle Hooks</h2>
 <div class="sectionbody">
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><a href="../index.html#genesis-block-execution" class="xref page">Lisk key concepts &gt; Genesis block execution</a></p>
+</li>
+<li>
+<p><a href="../index.html#block-generation" class="xref page">Lisk key concepts &gt; Block generation</a></p>
+</li>
+<li>
+<p><a href="../index.html#block-processing" class="xref page">Lisk key concepts &gt; Block processing</a></p>
+</li>
+</ol>
+</div>
+<div class="sect2">
+<h3 id="insertassets"><a class="anchor" href="#insertassets"></a>insertAssets</h3>
 
+</div>
+<div class="sect2">
+<h3 id="verifyassets"><a class="anchor" href="#verifyassets"></a>verifyAssets</h3>
+
+</div>
+<div class="sect2">
+<h3 id="beforetransactionsexecute"><a class="anchor" href="#beforetransactionsexecute"></a>beforeTransactionsExecute</h3>
+
+</div>
+<div class="sect2">
+<h3 id="verifytransaction"><a class="anchor" href="#verifytransaction"></a>verifyTransaction</h3>
+
+</div>
+<div class="sect2">
+<h3 id="beforecommandexecute"><a class="anchor" href="#beforecommandexecute"></a>beforeCommandExecute</h3>
+
+</div>
+<div class="sect2">
+<h3 id="aftercommandexecute"><a class="anchor" href="#aftercommandexecute"></a>afterCommandExecute</h3>
+
+</div>
+<div class="sect2">
+<h3 id="aftertransactionsexecute"><a class="anchor" href="#aftertransactionsexecute"></a>afterTransactionsExecute</h3>
+
+</div>
+<div class="sect2">
+<h3 id="initgenesisstate"><a class="anchor" href="#initgenesisstate"></a>initGenesisState</h3>
+
+</div>
+<div class="sect2">
+<h3 id="finalizegenesisstate"><a class="anchor" href="#finalizegenesisstate"></a>finalizeGenesisState</h3>
+
+</div>
 </div>
 </div>
 <nav class="pagination">

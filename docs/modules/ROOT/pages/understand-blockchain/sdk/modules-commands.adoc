@@ -7,9 +7,14 @@ Mona Bärenfänger <mona@lightcurve.io>
 :idseparator: -
 :docs_sdk: lisk-sdk::
 // URLs
+:url_json_schema: https://json-schema.org/specification.html
+:url_json_schema_id: https://json-schema.org/understanding-json-schema/structuring.html#id
+// Project URLs
 :url_understand_block_generation: understand-blockchain/index.adoc#block-generation
-:url_understand_block_processing: understand-blockchain/index.adoc#block-processing
+:url_understand_block_execution: understand-blockchain/index.adoc#block-execution
 :url_understand_genesis_block_execution: understand-blockchain/index.adoc#genesis-block-execution
+// Footnotes
+:fn_jsonschema: footnote:jsonSchema[See the {url_json_schema} for more information about the JSON schema.]
 
 A module is a separate component that contains blockchain-related business logic related to one specific domain or topic of a blockchain application.
 
@@ -420,6 +425,8 @@ export abstract class BaseCommand<T = unknown> {
 ----
 
 === Command ID
+
+
 [source,typescript]
 ----
 const CREATE_HELLO_ID = 0;
@@ -431,6 +438,9 @@ export class TransferCommand extends BaseCommand {
 
 === Command name
 
+The command identifier.
+Needs to be unique within the module the command belongs to.
+
 [source,typescript]
 ----
 export class TransferCommand extends BaseCommand {
@@ -440,18 +450,90 @@ export class TransferCommand extends BaseCommand {
 }
 ----
 
-=== Command schema
+=== Command parameters schema
 
+If the command has parameters, the parameters schema is defined in the `schema` property of a command.
+It defines which parameters are optional and/or required in the transaction, and also which data types are to be expected.
+
+If a transaction object does not match the corresponding schema, the transaction will not be accepted by the node.
+The schema follows the format of a modified JSON schema{fn_jsonschema}, and should contain the following properties:
+
+$id::
+Unique identifier of the schema throughout the system.
+
+The `$id` property is directly inherited from the JSON-schema.
+You can read more about the id property on {url_json_schema_id}[^].
+
+In general, adhere to the following criteria:
+
+* Use unique IDs across the system.
+* Use path like format for easy readability, (it is not an actual requirement).
+
+In order to ensure no mixing of any schema with other registered schemas occurs, use one fixed identifier for your app in each ID.
+
+title:: A short description of the schema.
+type or dataType::
+If the data type of a property is either an `object` or an `array`, the `type` property must be used instead of `dataType`.
+Root type of the schema must be type object.
+required::
+A list of all required parameters.
+
+TIP: If the schema is used for serialization, it is recommended to put all properties as required to guarantee the uniqueness of encoding.
+
+properties::
+A list of the command parameters.
+It also defines their data type, order, and additional properties like min and max length.
+
+.Example: Command parameters schema
+[%collapsible]
+====
 [source,typescript]
 ----
 export class TransferCommand extends BaseCommand {
 	// ...
-	public schema = transferParamsSchema;
+	public schema = {
+        $id: '/lisk/transferParams',
+        title: 'Transfer transaction params',
+        type: 'object',
+        required: ['tokenID', 'amount', 'recipientAddress', 'data'],
+        properties: {
+            tokenID: {
+                dataType: 'bytes',
+                fieldNumber: 1,
+                minLength: TOKEN_ID_LENGTH,
+                maxLength: TOKEN_ID_LENGTH,
+            },
+            amount: {
+                dataType: 'uint64',
+                fieldNumber: 2,
+            },
+            recipientAddress: {
+                dataType: 'bytes',
+                fieldNumber: 3,
+                minLength: ADDRESS_LENGTH,
+                maxLength: ADDRESS_LENGTH,
+            },
+            data: {
+                dataType: 'string',
+                fieldNumber: 4,
+                minLength: 0,
+                maxLength: MAX_DATA_LENGTH,
+            },
+        },
+    };
     // ...
 }
 ----
+====
+
 === Command Lifecycle Hooks
+
+Each command has the following lifecycle hooks, which are executed separately for each command in a block.
+
 ==== Command initialization
+
+If a command needs to access module methods, it is required to obtain the respective methods in the `init()` method of a command, like described in the code snippet below.
+
 [source,typescript]
 ----
 export class TransferCommand extends BaseCommand {
@@ -522,21 +604,29 @@ export class TransferCommand extends BaseCommand {
 
 == Lifecycle Hooks
 
+The module hooks are called in a specific order during block creation and execution.
+
+Read more about the block lifecycles in the following sections:
 . xref:{url_understand_genesis_block_execution}[Lisk key concepts > Genesis block execution]
 . xref:{url_understand_block_generation}[Lisk key concepts > Block generation]
-. xref:{url_understand_block_processing}[Lisk key concepts > Block processing]
+. xref:{url_understand_block_execution}[Lisk key concepts > Block processing]
+
+IMPORTANT: Never include external dynamic data to state changes in the lifecycle hooks.
+It will create inconsistencies/forks for nodes when syncing to the current height.
 
 === insertAssets
-The hook `insertAssets` is called at the very beginning of the block generation.
+The hook `insertAssets` is called at the very beginning of the xref:{url_understand_block_generation}[block generation].
 The assets added during the execution of this hook can be used in all the execution hooks afterwards.
 
+//TODO: Add link to random module
 For example, the `seedReveal` property is added to the block asset in this hook by the Random module.
 
 === verifyAssets
-The hook `verifyAssets` is only called before executing a block.
+The hook `verifyAssets` is only called before xref:{url_understand_block_execution}[executing a block].
 
 If this stage fails, the block is considered invalid and will be rejected.
 In particular, the following hooks will not get executed.
+
 This hook is used for verification before any state changes.
 For example, at this stage, each module checks if the expected assets exist in the block.
 
@@ -544,7 +634,7 @@ NOTE: In this hook, the *state cannot be mutated* and events cannot be emitted.
 
 === beforeTransactionsExecute
 
-The hook `beforeTransactionsExecute` is the first hook that is triggered by the block.
+The hook `beforeTransactionsExecute` is triggered before any of the transactions of the block are processed.
 
 NOTE: In this hook, the *state can be mutated* and events can be emitted.
 
@@ -559,14 +649,16 @@ For example, signature verification is done in this hook.
 NOTE: In this hook, the *state cannot be mutated* and events cannot be emitted.
 
 === beforeCommandExecute
-The hook `beforeCommandExecute` is called for all the transactions within a block regardless of the command they trigger, similar to `verifyTransaction`.
+The hook `beforeCommandExecute` allows adding business logic before the execution of a command.
+It is called for all the transactions within a block regardless of the command they trigger.
 
 If the hook fails during the execution, the transaction becomes invalid and the block containing this transaction will be invalid.
 
 NOTE: In this hook, the *state can be mutated* and events can be emitted.
 
 === afterCommandExecute
-The hook `afterCommandExecute` is called for all the transactions within a block regardless of the command they trigger.
+The hook `afterCommandExecute` allows adding business logic after the execution of a command.
+It is called for all the transactions within a block regardless of the command they trigger.
 
 If the hook fails during the execution, the transaction becomes invalid and the block containing this transaction will be invalid.
 
@@ -581,12 +673,12 @@ For example, this hook can be used to sum the fees of the transactions included 
 NOTE: In this hook, the *state can be mutated* and events can be emitted.
 
 === initGenesisState
-The hook `initGenesisState` is called at the beginning of the genesis block execution.
+The hook `initGenesisState` is called at the beginning of the xref:{url_understand_genesis_block_execution}[genesis block execution].
 Each module must initialize their state using an associated block asset.
 
 It is recommended not to use methods from other modules because their state might not be initialized yet depending on the order of the hook execution.
 
 === finalizeGenesisState
-The hook `finalizeGenesisState` is called at the end of genesis block execution.
+The hook `finalizeGenesisState` is called at the end of xref:{url_understand_genesis_block_execution}[genesis block execution].
 
 In this hook, it can be assumed that the state initialization via `initGenesisState` of every module is completed and therefore methods from other modules can be used.

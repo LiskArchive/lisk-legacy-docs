@@ -381,7 +381,7 @@ A module can access specific configuration options of the blockchain application
 
 //TODO: include example snippets of module and genesis configurations
 
-If a module needs to access certain configuration options, it is required to obtain the respective configurations in the `init()` method of a module, like described in the code snippet below.
+If a module needs to access certain configuration options, it is required to validate and cache the respective configurations in the `init()` method of a module, like described in the code snippet below.
 
 [source,typescript]
 ----
@@ -395,6 +395,8 @@ public async init(args: ModuleInitArgs): Promise<void> {
     this._baseFees = genesisConfig.baseFees.map(fee => ({ ...fee, baseFee: BigInt(fee.baseFee) }));
 }
 ----
+
+== Events
 
 == Commands
 
@@ -426,6 +428,10 @@ export abstract class BaseCommand<T = unknown> {
 
 === Command ID
 
+The command ID is a unique identifier for the command within the module.
+
+The minimum value is 0.
+The ID is stored in binary format.
 
 [source,typescript]
 ----
@@ -438,7 +444,10 @@ export class TransferCommand extends BaseCommand {
 
 === Command name
 
-The command identifier.
+The command identifier in string format.
+The string must only consist of lower case and upper case letters [a-z, A-Z].
+No numbers, hyphens, etc., are allowed.
+
 Needs to be unique within the module the command belongs to.
 
 [source,typescript]
@@ -532,19 +541,22 @@ Each command has the following lifecycle hooks, which are executed separately fo
 
 ==== Command initialization
 
-If a command needs to access module methods, it is required to obtain the respective methods in the `init()` method of a command, like described in the code snippet below.
+The `init()` hook of a command is called by the Lisk Framework when the node starts.
+
+Here, you can validate and cache the module config or do initializations which should only happen once per node starts.
 
 [source,typescript]
 ----
 export class TransferCommand extends BaseCommand {
     // ...
-	private _api!: TokenMethods;
-	public init(args: { api: TokenMethods }) {
-		this._api = args.api;
+	private _methods!: TokenMethods;
+	public init(args: { methods: TokenMethods }) {
+		this._methods = args.methods;
 	}
     // ...
 }
 ----
+
 ==== Command verification
 The hook `Command.verify` is called only for the command that is referenced by the module name and the command name in the transaction.
 Similar to the `verifyTransaction` hook, `Command.verify` will be called also in the transaction pool, and it is to ensure the verification defined in this hook is respected when the transactions are included in a block.
@@ -571,6 +583,32 @@ export class TransferCommand extends BaseCommand {
 		};
 	}
     // ...
+}
+----
+
+===== Command verification context
+
+The `context` is available in every `Command.execute()` hook.
+
+It allows convenient access to:
+
+* `logger`: Logger interface, to create log messages.
+* `networkIdentifier`: The identifier of the blockchain network, in which this command is executed.
+* `transaction`: The transaction triggering the command.
+* `params`: The command params, which were attached to the transaction.
+* `getMethodContext`: Module method interface, to invoke modules methods.
+* `getStore`: State store interface, to get and set data from/to the module stores.
+
+.CommandVerifyContext interface
+[source,typescript]
+----
+export interface CommandVerifyContext<T = undefined> {
+	logger: Logger;
+	networkIdentifier: Buffer;
+	transaction: Transaction; // without decoding params
+	params: T;
+	getMethodContext: () => ImmutableMethodContext;
+	getStore: (moduleID: Buffer, storePrefix: number) => ImmutableSubStore;
 }
 ----
 ==== Command execution
@@ -602,11 +640,125 @@ export class TransferCommand extends BaseCommand {
 
 ===== Command execution context
 
+The `context` is available in every `Command.execute()` hook.
+
+It allows convenient access to:
+
+* `logger`: Logger interface, to create log messages.
+* `networkIdentifier`: The identifier of the blockchain network, in which this command is executed.
+* `eventQueue`: The event queue.
+See <<events>> for more information.
+* `header`: Block header.
+* `assets`: Block assets.
+//TODO: Update/review term `block generation round` (former forging-round)
+* `currentValidators`: Validators of the current block generation round.
+//TODO: add description
+* `impliesMaxPrevote`:
+//TODO: add description
+* `maxHeightCertified`:
+//TODO: add description
+* `certificateThreshold`:
+* `transaction`: The transaction triggering the command.
+* `params`: The command params, which were attached to the transaction.
+* `getMethodContext`: Module method interface, to invoke modules methods.
+* `getStore`: State store interface, to get and set data from/to the module stores.
+
+.Interface: CommandExecuteContext
+[%collapsible]
+====
+[source,typescript]
+----
+export interface CommandExecuteContext<T = undefined> {
+	logger: Logger;
+	networkIdentifier: Buffer;
+	eventQueue: EventQueue; // see "Events" section for more info
+	header: BlockHeader;
+	assets: BlockAssets;
+	currentValidators: Validator[];
+	impliesMaxPrevote: boolean;
+	maxHeightCertified: number;
+	certificateThreshold: bigint;
+	transaction: Transaction; // See the "Lisk key concepts" page for more information about transactions
+	params: T;
+	getMethodContext: () => MethodContext;
+	getStore: (moduleID: Buffer, storePrefix: number) => SubStore;
+}
+----
+====
+
+////
+.References
+[%collapsible]
+====
+.Logger
+[source,typescript]
+----
+export interface Logger {
+	readonly trace: (data?: object | unknown, message?: string) => void;
+	readonly debug: (data?: object | unknown, message?: string) => void;
+	readonly info: (data?: object | unknown, message?: string) => void;
+	readonly warn: (data?: object | unknown, message?: string) => void;
+	readonly error: (data?: object | unknown, message?: string) => void;
+	readonly fatal: (data?: object | unknown, message?: string) => void;
+	readonly level: () => number;
+}
+----
+
+.BlockHeader
+[source,typescript]
+----
+export interface BlockHeader {
+	version: number;
+	height: number;
+	timestamp: number;
+	previousBlockID: Buffer;
+	generatorAddress: Buffer;
+	maxHeightPrevoted: number;
+	maxHeightGenerated: number;
+	aggregateCommit: {
+		height: number;
+		aggregationBits: Buffer;
+		certificateSignature: Buffer;
+	};
+}
+----
+
+.BlockAssets
+[source,typescript]
+----
+export interface BlockAssets {
+	getAsset: (moduleID: Buffer) => Buffer | undefined;
+}
+----
+
+.Validator
+[source,typescript]
+----
+export interface Validator {
+	address: Buffer;
+	bftWeight: bigint;
+	generatorKey: Buffer;
+	blsKey: Buffer;
+}
+----
+
+.APIContext
+[source,typescript]
+----
+export interface APIContext {
+	getStore: (moduleID: Buffer, storePrefix: number) => SubStore;
+	eventQueue: EventQueueAdder;
+}
+----
+====
+////
+
 == Lifecycle Hooks
 
 The module hooks are called in a specific order during block creation and execution.
 
 Read more about the block lifecycles in the following sections:
+
 . xref:{url_understand_genesis_block_execution}[Lisk key concepts > Genesis block execution]
 . xref:{url_understand_block_generation}[Lisk key concepts > Block generation]
 . xref:{url_understand_block_execution}[Lisk key concepts > Block processing]
@@ -621,6 +773,11 @@ The assets added during the execution of this hook can be used in all the execut
 //TODO: Add link to random module
 For example, the `seedReveal` property is added to the block asset in this hook by the Random module.
 
+[source,typescript]
+----
+public async insertAssets(context: InsertAssetContext): Promise<void> {}
+----
+
 === verifyAssets
 The hook `verifyAssets` is only called before xref:{url_understand_block_execution}[executing a block].
 
@@ -632,11 +789,21 @@ For example, at this stage, each module checks if the expected assets exist in t
 
 NOTE: In this hook, the *state cannot be mutated* and events cannot be emitted.
 
+[source,typescript]
+----
+public async verifyAssets(context: BlockVerifyContext): Promise<void> {}
+----
+
 === beforeTransactionsExecute
 
 The hook `beforeTransactionsExecute` is triggered before any of the transactions of the block are processed.
 
 NOTE: In this hook, the *state can be mutated* and events can be emitted.
+
+[source,typescript]
+----
+public async beforeTransactionsExecute(context: BlockExecuteContext): Promise<void> {}
+----
 
 === verifyTransaction
 
@@ -648,6 +815,11 @@ For example, signature verification is done in this hook.
 
 NOTE: In this hook, the *state cannot be mutated* and events cannot be emitted.
 
+[source,typescript]
+----
+public async verifyTransaction(context: TransactionVerifyContext): Promise<void> {}
+----
+
 === beforeCommandExecute
 The hook `beforeCommandExecute` allows adding business logic before the execution of a command.
 It is called for all the transactions within a block regardless of the command they trigger.
@@ -655,6 +827,11 @@ It is called for all the transactions within a block regardless of the command t
 If the hook fails during the execution, the transaction becomes invalid and the block containing this transaction will be invalid.
 
 NOTE: In this hook, the *state can be mutated* and events can be emitted.
+
+[source,typescript]
+----
+public async beforeCommandExecute(context: TransactionExecuteContext): Promise<void> {}
+----
 
 === afterCommandExecute
 The hook `afterCommandExecute` allows adding business logic after the execution of a command.
@@ -664,6 +841,11 @@ If the hook fails during the execution, the transaction becomes invalid and the 
 
 NOTE: In this hook, the *state can be mutated* and events can be emitted.
 
+[source,typescript]
+----
+public async afterCommandExecute(context: TransactionExecuteContext): Promise<void> {}
+----
+
 === afterTransactionsExecute
 The hook `afterTransactionsExecute` is the last hook allowed to define state changes that are triggered by the block.
 
@@ -672,13 +854,28 @@ For example, this hook can be used to sum the fees of the transactions included 
 
 NOTE: In this hook, the *state can be mutated* and events can be emitted.
 
+[source,typescript]
+----
+public async afterTransactionsExecute(context: BlockAfterExecuteContext): Promise<void> {}
+----
+
 === initGenesisState
 The hook `initGenesisState` is called at the beginning of the xref:{url_understand_genesis_block_execution}[genesis block execution].
 Each module must initialize their state using an associated block asset.
 
 It is recommended not to use methods from other modules because their state might not be initialized yet depending on the order of the hook execution.
 
+[source,typescript]
+----
+public async initGenesisState(context: GenesisBlockExecuteContext): Promise<void> {}
+----
+
 === finalizeGenesisState
 The hook `finalizeGenesisState` is called at the end of xref:{url_understand_genesis_block_execution}[genesis block execution].
 
 In this hook, it can be assumed that the state initialization via `initGenesisState` of every module is completed and therefore methods from other modules can be used.
+
+[source,typescript]
+----
+public async finalizeGenesisState(context: GenesisBlockExecuteContext): Promise<void> {}
+----

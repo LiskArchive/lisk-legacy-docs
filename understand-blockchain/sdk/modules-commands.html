@@ -313,9 +313,6 @@
     <span class="nav-text">APIs</span>
 <ul class="nav-list">
   <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="#api/lisk-node-http.adoc">api/lisk-node-http.adoc</a>
-  </li>
-  <li class="nav-item" data-depth="2">
     <a class="nav-link" href="../../api/lisk-node-rpc.html">RPC API for Lisk nodes</a>
   </li>
   <li class="nav-item" data-depth="2">
@@ -473,6 +470,7 @@ For a successful registration, each module needs to follow the expected module s
 </ul>
 </li>
 <li><a href="#module-configuration">Module configuration</a></li>
+<li><a href="#events">Events</a></li>
 <li><a href="#commands">Commands</a>
 <ul class="sectlevel2">
 <li><a href="#command-id">Command ID</a></li>
@@ -481,7 +479,11 @@ For a successful registration, each module needs to follow the expected module s
 <li><a href="#command-lifecycle-hooks">Command Lifecycle Hooks</a>
 <ul class="sectlevel3">
 <li><a href="#command-initialization">Command initialization</a></li>
-<li><a href="#command-verification">Command verification</a></li>
+<li><a href="#command-verification">Command verification</a>
+<ul class="sectlevel4">
+<li><a href="#command-verification-context">Command verification context</a></li>
+</ul>
+</li>
 <li><a href="#command-execution">Command execution</a>
 <ul class="sectlevel4">
 <li><a href="#command-execution-context">Command execution context</a></li>
@@ -965,7 +967,7 @@ export class HelloModule extends BaseModule {
 </ol>
 </div>
 <div class="paragraph">
-<p>If a module needs to access certain configuration options, it is required to obtain the respective configurations in the <code>init()</code> method of a module, like described in the code snippet below.</p>
+<p>If a module needs to access certain configuration options, it is required to validate and cache the respective configurations in the <code>init()</code> method of a module, like described in the code snippet below.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -980,6 +982,12 @@ export class HelloModule extends BaseModule {
 }</code></pre>
 </div>
 </div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="events"><a class="anchor" href="#events"></a>Events</h2>
+<div class="sectionbody">
+
 </div>
 </div>
 <div class="sect1">
@@ -1018,6 +1026,13 @@ export class HelloModule extends BaseModule {
 </div>
 <div class="sect2">
 <h3 id="command-id"><a class="anchor" href="#command-id"></a>Command ID</h3>
+<div class="paragraph">
+<p>The command ID is a unique identifier for the command within the module.</p>
+</div>
+<div class="paragraph">
+<p>The minimum value is 0.
+The ID is stored in binary format.</p>
+</div>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">const CREATE_HELLO_ID = 0;
@@ -1031,8 +1046,12 @@ export class TransferCommand extends BaseCommand {
 <div class="sect2">
 <h3 id="command-name"><a class="anchor" href="#command-name"></a>Command name</h3>
 <div class="paragraph">
-<p>The command identifier.
-Needs to be unique within the module the command belongs to.</p>
+<p>The command identifier in string format.
+The string must only consist of lower case and upper case letters [a-z, A-Z].
+No numbers, hyphens, etc., are allowed.</p>
+</div>
+<div class="paragraph">
+<p>Needs to be unique within the module the command belongs to.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -1172,15 +1191,18 @@ It also defines their data type, order, and additional properties like min and m
 <div class="sect3">
 <h4 id="command-initialization"><a class="anchor" href="#command-initialization"></a>Command initialization</h4>
 <div class="paragraph">
-<p>If a command needs to access module methods, it is required to obtain the respective methods in the <code>init()</code> method of a command, like described in the code snippet below.</p>
+<p>The <code>init()</code> hook of a command is called by the Lisk Framework when the node starts.</p>
+</div>
+<div class="paragraph">
+<p>Here, you can validate and cache the module config or do initializations which should only happen once per node starts.</p>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export class TransferCommand extends BaseCommand {
     // ...
-	private _api!: TokenMethods;
-	public init(args: { api: TokenMethods }) {
-		this._api = args.api;
+	private _methods!: TokenMethods;
+	public init(args: { methods: TokenMethods }) {
+		this._methods = args.methods;
 	}
     // ...
 }</code></pre>
@@ -1228,6 +1250,50 @@ In this hook, the <strong>state cannot be mutated</strong> and events cannot be 
 }</code></pre>
 </div>
 </div>
+<div class="sect4">
+<h5 id="command-verification-context"><a class="anchor" href="#command-verification-context"></a>Command verification context</h5>
+<div class="paragraph">
+<p>The <code>context</code> is available in every <code>Command.execute()</code> hook.</p>
+</div>
+<div class="paragraph">
+<p>It allows convenient access to:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>logger</code>: Logger interface, to create log messages.</p>
+</li>
+<li>
+<p><code>networkIdentifier</code>: The identifier of the blockchain network, in which this command is executed.</p>
+</li>
+<li>
+<p><code>transaction</code>: The transaction triggering the command.</p>
+</li>
+<li>
+<p><code>params</code>: The command params, which were attached to the transaction.</p>
+</li>
+<li>
+<p><code>getMethodContext</code>: Module method interface, to invoke modules methods.</p>
+</li>
+<li>
+<p><code>getStore</code>: State store interface, to get and set data from/to the module stores.</p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="title">CommandVerifyContext interface</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export interface CommandVerifyContext&lt;T = undefined&gt; {
+	logger: Logger;
+	networkIdentifier: Buffer;
+	transaction: Transaction; // without decoding params
+	params: T;
+	getMethodContext: () =&gt; ImmutableMethodContext;
+	getStore: (moduleID: Buffer, storePrefix: number) =&gt; ImmutableSubStore;
+}</code></pre>
+</div>
+</div>
+</div>
 </div>
 <div class="sect3">
 <h4 id="command-execution"><a class="anchor" href="#command-execution"></a>Command execution</h4>
@@ -1270,7 +1336,80 @@ In this hook, the <strong>state can be mutated</strong> and events can be emitte
 </div>
 <div class="sect4">
 <h5 id="command-execution-context"><a class="anchor" href="#command-execution-context"></a>Command execution context</h5>
-
+<div class="paragraph">
+<p>The <code>context</code> is available in every <code>Command.execute()</code> hook.</p>
+</div>
+<div class="paragraph">
+<p>It allows convenient access to:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>logger</code>: Logger interface, to create log messages.</p>
+</li>
+<li>
+<p><code>networkIdentifier</code>: The identifier of the blockchain network, in which this command is executed.</p>
+</li>
+<li>
+<p><code>eventQueue</code>: The event queue.
+See <a href="#events">Events</a> for more information.</p>
+</li>
+<li>
+<p><code>header</code>: Block header.</p>
+</li>
+<li>
+<p><code>assets</code>: Block assets.</p>
+</li>
+<li>
+<p><code>currentValidators</code>: Validators of the current block generation round.</p>
+</li>
+<li>
+<p><code>impliesMaxPrevote</code>:</p>
+</li>
+<li>
+<p><code>maxHeightCertified</code>:</p>
+</li>
+<li>
+<p><code>certificateThreshold</code>:</p>
+</li>
+<li>
+<p><code>transaction</code>: The transaction triggering the command.</p>
+</li>
+<li>
+<p><code>params</code>: The command params, which were attached to the transaction.</p>
+</li>
+<li>
+<p><code>getMethodContext</code>: Module method interface, to invoke modules methods.</p>
+</li>
+<li>
+<p><code>getStore</code>: State store interface, to get and set data from/to the module stores.</p>
+</li>
+</ul>
+</div>
+<details>
+<summary class="title">Interface: CommandExecuteContext</summary>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export interface CommandExecuteContext&lt;T = undefined&gt; {
+	logger: Logger;
+	networkIdentifier: Buffer;
+	eventQueue: EventQueue; // see "Events" section for more info
+	header: BlockHeader;
+	assets: BlockAssets;
+	currentValidators: Validator[];
+	impliesMaxPrevote: boolean;
+	maxHeightCertified: number;
+	certificateThreshold: bigint;
+	transaction: Transaction; // See the "Lisk key concepts" page for more information about transactions
+	params: T;
+	getMethodContext: () =&gt; MethodContext;
+	getStore: (moduleID: Buffer, storePrefix: number) =&gt; SubStore;
+}</code></pre>
+</div>
+</div>
+</div>
+</details>
 </div>
 </div>
 </div>
@@ -1283,10 +1422,20 @@ In this hook, the <strong>state can be mutated</strong> and events can be emitte
 <p>The module hooks are called in a specific order during block creation and execution.</p>
 </div>
 <div class="paragraph">
-<p>Read more about the block lifecycles in the following sections:
-. <a href="../index.html#genesis-block-execution" class="xref page">Lisk key concepts &gt; Genesis block execution</a>
-. <a href="../index.html#block-generation" class="xref page">Lisk key concepts &gt; Block generation</a>
-. <a href="../index.html#block-execution" class="xref page">Lisk key concepts &gt; Block processing</a></p>
+<p>Read more about the block lifecycles in the following sections:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><a href="../index.html#genesis-block-execution" class="xref page">Lisk key concepts &gt; Genesis block execution</a></p>
+</li>
+<li>
+<p><a href="../index.html#block-generation" class="xref page">Lisk key concepts &gt; Block generation</a></p>
+</li>
+<li>
+<p><a href="../index.html#block-execution" class="xref page">Lisk key concepts &gt; Block processing</a></p>
+</li>
+</ol>
 </div>
 <div class="admonitionblock important">
 <table>
@@ -1309,6 +1458,11 @@ The assets added during the execution of this hook can be used in all the execut
 </div>
 <div class="paragraph">
 <p>For example, the <code>seedReveal</code> property is added to the block asset in this hook by the Random module.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async insertAssets(context: InsertAssetContext): Promise&lt;void&gt; {}</code></pre>
+</div>
 </div>
 </div>
 <div class="sect2">
@@ -1336,6 +1490,11 @@ In this hook, the <strong>state cannot be mutated</strong> and events cannot be 
 </tr>
 </table>
 </div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async verifyAssets(context: BlockVerifyContext): Promise&lt;void&gt; {}</code></pre>
+</div>
+</div>
 </div>
 <div class="sect2">
 <h3 id="beforetransactionsexecute"><a class="anchor" href="#beforetransactionsexecute"></a>beforeTransactionsExecute</h3>
@@ -1353,6 +1512,11 @@ In this hook, the <strong>state can be mutated</strong> and events can be emitte
 </td>
 </tr>
 </table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async beforeTransactionsExecute(context: BlockExecuteContext): Promise&lt;void&gt; {}</code></pre>
+</div>
 </div>
 </div>
 <div class="sect2">
@@ -1377,6 +1541,11 @@ In this hook, the <strong>state cannot be mutated</strong> and events cannot be 
 </tr>
 </table>
 </div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async verifyTransaction(context: TransactionVerifyContext): Promise&lt;void&gt; {}</code></pre>
+</div>
+</div>
 </div>
 <div class="sect2">
 <h3 id="beforecommandexecute"><a class="anchor" href="#beforecommandexecute"></a>beforeCommandExecute</h3>
@@ -1398,6 +1567,11 @@ In this hook, the <strong>state can be mutated</strong> and events can be emitte
 </td>
 </tr>
 </table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async beforeCommandExecute(context: TransactionExecuteContext): Promise&lt;void&gt; {}</code></pre>
+</div>
 </div>
 </div>
 <div class="sect2">
@@ -1421,6 +1595,11 @@ In this hook, the <strong>state can be mutated</strong> and events can be emitte
 </tr>
 </table>
 </div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async afterCommandExecute(context: TransactionExecuteContext): Promise&lt;void&gt; {}</code></pre>
+</div>
+</div>
 </div>
 <div class="sect2">
 <h3 id="aftertransactionsexecute"><a class="anchor" href="#aftertransactionsexecute"></a>afterTransactionsExecute</h3>
@@ -1443,6 +1622,11 @@ In this hook, the <strong>state can be mutated</strong> and events can be emitte
 </tr>
 </table>
 </div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async afterTransactionsExecute(context: BlockAfterExecuteContext): Promise&lt;void&gt; {}</code></pre>
+</div>
+</div>
 </div>
 <div class="sect2">
 <h3 id="initgenesisstate"><a class="anchor" href="#initgenesisstate"></a>initGenesisState</h3>
@@ -1453,6 +1637,11 @@ Each module must initialize their state using an associated block asset.</p>
 <div class="paragraph">
 <p>It is recommended not to use methods from other modules because their state might not be initialized yet depending on the order of the hook execution.</p>
 </div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async initGenesisState(context: GenesisBlockExecuteContext): Promise&lt;void&gt; {}</code></pre>
+</div>
+</div>
 </div>
 <div class="sect2">
 <h3 id="finalizegenesisstate"><a class="anchor" href="#finalizegenesisstate"></a>finalizeGenesisState</h3>
@@ -1461,6 +1650,11 @@ Each module must initialize their state using an associated block asset.</p>
 </div>
 <div class="paragraph">
 <p>In this hook, it can be assumed that the state initialization via <code>initGenesisState</code> of every module is completed and therefore methods from other modules can be used.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async finalizeGenesisState(context: GenesisBlockExecuteContext): Promise&lt;void&gt; {}</code></pre>
+</div>
 </div>
 </div>
 </div>

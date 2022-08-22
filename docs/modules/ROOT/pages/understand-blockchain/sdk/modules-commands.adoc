@@ -379,7 +379,48 @@ A module can access specific configuration options of the blockchain application
 . Module-specific configuration options
 . Genesis config options
 
+Both configuration options are defined by the node operator in the `config.json` file, generally located in the `config/default/` directory.
 //TODO: include example snippets of module and genesis configurations
+
+.config.json structure
+[source,js]
+----
+{
+    // ...
+    plugins: {},
+    genesis: {
+        blockTime: 10,
+        bftBatchSize: 103,
+        communityIdentifier: 'sdk',
+        maxTransactionsSize: 15 * 1024, // Kilo Bytes
+        minFeePerByte: 1000,
+        baseFees: [],
+        modules: {},
+    },
+    generation: {
+        force: false,
+        waitThreshold: 2,
+        generators: [],
+        modules: {},
+    },
+}
+----
+
+All needed configuration options are identified by the module name, followed by a list of properties.
+
+The module config properties must follow the naming pattern defined in the `moduleConfigSchema`, otherwise, there are no restrictions.
+
+.moduleConfigSchema
+[source,js]
+----
+const moduleConfigSchema = {
+	type: 'object',
+	propertyNames: {
+		pattern: '^[a-zA-Z][a-zA-Z0-9_]*$',
+	},
+	additionalProperties: { type: 'object' },
+};
+----
 
 If a module needs to access certain configuration options, it is required to validate and cache the respective configurations in the `init()` method of a module, like described in the code snippet below.
 
@@ -392,11 +433,10 @@ public async init(args: ModuleInitArgs): Promise<void> {
 
     this._tokenID = Buffer.from(config.feeTokenID, 'hex');
     this._minFeePerByte = genesisConfig.minFeePerByte;
-    this._baseFees = genesisConfig.baseFees.map(fee => ({ ...fee, baseFee: BigInt(fee.baseFee) }));
 }
 ----
 
-== Events
+== Blockchain Events
 
 == Commands
 
@@ -461,10 +501,10 @@ export class TransferCommand extends BaseCommand {
 
 === Command parameters schema
 
-If the command has parameters, the parameters schema is defined in the `schema` property of a command.
-It defines which parameters are optional and/or required in the transaction, and also which data types are to be expected.
+If a command expects parameters, the parameters schema is defined in the `schema` property of the command.
+It defines which parameters are required in the transaction, and also which data types are to be expected.
 
-If a transaction object does not match the corresponding schema, the transaction will not be accepted by the node.
+If the parameters of a transaction object do not match the corresponding schema, the transaction will not be accepted by the node.
 The schema follows the format of a modified JSON schema{fn_jsonschema}, and should contain the following properties:
 
 $id::
@@ -651,7 +691,7 @@ It allows convenient access to:
 * `logger`: Logger interface, to create log messages.
 * `networkIdentifier`: The identifier of the blockchain network, in which this command is executed.
 * `eventQueue`: The event queue.
-See <<events>> for more information.
+See <<blockchain-events>> for more information.
 * `header`: Block header.
 * `assets`: Block assets.
 //TODO: Update/review term `block generation round` (former forging-round)

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Modules and commands :: Lisk documentation</title>
     <link rel="canonical" href="https://lisk.com/documentation/understand-blockchain/sdk/modules-commands.html">
-    <link rel="prev" href="block-life-cycle.html">
+    <link rel="prev" href="architecture.html">
     <link rel="next" href="../lisk-protocol/index.html">
     <meta name="generator" content="Antora 3.0.0">
 
@@ -150,9 +150,6 @@
 <ul class="nav-list">
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="architecture.html">SDK Architecture</a>
-  </li>
-  <li class="nav-item" data-depth="3">
-    <a class="nav-link" href="block-life-cycle.html">Block life cycle</a>
   </li>
   <li class="nav-item is-current-page" data-depth="3">
     <a class="nav-link" href="modules-commands.html">Modules and commands</a>
@@ -470,7 +467,7 @@ For a successful registration, each module needs to follow the expected module s
 </ul>
 </li>
 <li><a href="#module-configuration">Module configuration</a></li>
-<li><a href="#events">Events</a></li>
+<li><a href="#blockchain-events">Blockchain Events</a></li>
 <li><a href="#commands">Commands</a>
 <ul class="sectlevel2">
 <li><a href="#command-id">Command ID</a></li>
@@ -967,6 +964,51 @@ export class HelloModule extends BaseModule {
 </ol>
 </div>
 <div class="paragraph">
+<p>Both configuration options are defined by the node operator in the <code>config.json</code> file, generally located in the <code>config/default/</code> directory.</p>
+</div>
+<div class="listingblock">
+<div class="title">config.json structure</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">{
+    // ...
+    plugins: {},
+    genesis: {
+        blockTime: 10,
+        bftBatchSize: 103,
+        communityIdentifier: 'sdk',
+        maxTransactionsSize: 15 * 1024, // Kilo Bytes
+        minFeePerByte: 1000,
+        baseFees: [],
+        modules: {},
+    },
+    generation: {
+        force: false,
+        waitThreshold: 2,
+        generators: [],
+        modules: {},
+    },
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>All needed configuration options are identified by the module name, followed by a list of properties.</p>
+</div>
+<div class="paragraph">
+<p>The module config properties must follow the naming pattern defined in the <code>moduleConfigSchema</code>, otherwise, there are no restrictions.</p>
+</div>
+<div class="listingblock">
+<div class="title">moduleConfigSchema</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const moduleConfigSchema = {
+	type: 'object',
+	propertyNames: {
+		pattern: '^[a-zA-Z][a-zA-Z0-9_]*$',
+	},
+	additionalProperties: { type: 'object' },
+};</code></pre>
+</div>
+</div>
+<div class="paragraph">
 <p>If a module needs to access certain configuration options, it is required to validate and cache the respective configurations in the <code>init()</code> method of a module, like described in the code snippet below.</p>
 </div>
 <div class="listingblock">
@@ -978,14 +1020,13 @@ export class HelloModule extends BaseModule {
 
     this._tokenID = Buffer.from(config.feeTokenID, 'hex');
     this._minFeePerByte = genesisConfig.minFeePerByte;
-    this._baseFees = genesisConfig.baseFees.map(fee =&gt; ({ ...fee, baseFee: BigInt(fee.baseFee) }));
 }</code></pre>
 </div>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="events"><a class="anchor" href="#events"></a>Events</h2>
+<h2 id="blockchain-events"><a class="anchor" href="#blockchain-events"></a>Blockchain Events</h2>
 <div class="sectionbody">
 
 </div>
@@ -1066,11 +1107,11 @@ No numbers, hyphens, etc., are allowed.</p>
 <div class="sect2">
 <h3 id="command-parameters-schema"><a class="anchor" href="#command-parameters-schema"></a>Command parameters schema</h3>
 <div class="paragraph">
-<p>If the command has parameters, the parameters schema is defined in the <code>schema</code> property of a command.
-It defines which parameters are optional and/or required in the transaction, and also which data types are to be expected.</p>
+<p>If a command expects parameters, the parameters schema is defined in the <code>schema</code> property of the command.
+It defines which parameters are required in the transaction, and also which data types are to be expected.</p>
 </div>
 <div class="paragraph">
-<p>If a transaction object does not match the corresponding schema, the transaction will not be accepted by the node.
+<p>If the parameters of a transaction object do not match the corresponding schema, the transaction will not be accepted by the node.
 The schema follows the format of a modified JSON schema<sup class="footnote" id="_footnote_jsonSchema">[<a id="_footnoteref_1" class="footnote" href="#_footnotedef_1" title="View footnote.">1</a>]</sup>, and should contain the following properties:</p>
 </div>
 <div class="dlist">
@@ -1280,8 +1321,10 @@ In this hook, the <strong>state cannot be mutated</strong> and events cannot be 
 </li>
 </ul>
 </div>
+<details>
+<summary class="title">CommandVerifyContext interface</summary>
+<div class="content">
 <div class="listingblock">
-<div class="title">CommandVerifyContext interface</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export interface CommandVerifyContext&lt;T = undefined&gt; {
 	logger: Logger;
@@ -1293,6 +1336,8 @@ In this hook, the <strong>state cannot be mutated</strong> and events cannot be 
 }</code></pre>
 </div>
 </div>
+</div>
+</details>
 </div>
 </div>
 <div class="sect3">
@@ -1352,7 +1397,7 @@ In this hook, the <strong>state can be mutated</strong> and events can be emitte
 </li>
 <li>
 <p><code>eventQueue</code>: The event queue.
-See <a href="#events">Events</a> for more information.</p>
+See <a href="#blockchain-events">Blockchain Events</a> for more information.</p>
 </li>
 <li>
 <p><code>header</code>: Block header.</p>
@@ -1666,7 +1711,7 @@ Each module must initialize their state using an associated block asset.</p>
 </div>
 </div>
 <nav class="pagination">
-  <span class="prev"><a href="block-life-cycle.html">Block life cycle</a></span>
+  <span class="prev"><a href="architecture.html">SDK Architecture</a></span>
   <span class="next"><a href="../lisk-protocol/index.html">Lisk Protocol</a></span>
 </nav>
 </article>

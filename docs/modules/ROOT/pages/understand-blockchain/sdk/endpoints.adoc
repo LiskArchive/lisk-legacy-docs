@@ -1,5 +1,5 @@
 = RPC endpoints of a Lisk node
-Mona Bärenfänger <mona@lightcurve.io>
+Mona Bärenfänger <mona@lightcurve.io> Muhammad Talha <muhammad.talha@lightcurve.io>
 :description: Introduces the Lisk communication architecture, which is based on IPC Unix Sockets and WebSocket.
 //Settings
 :toc: preamble
@@ -11,6 +11,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_npm_lisk_sdk: https://www.npmjs.com/package/lisk-sdk
 :url_wiki_ipc: https://en.wikipedia.org/wiki/Inter-process_communication
 :url_websocket: https://en.wikipedia.org/wiki/WebSocket
+:url_wiki_http_protocol: https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol
 :url_eda: https://en.wikipedia.org/wiki/Event-driven_architecture
 // Project URLs
 :url_advanced_architecture: understand-blockchain/sdk/architecture.adoc#application
@@ -30,8 +31,8 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_guides_asset: build-blockchain/create-asset.adoc
 :url_lisk_sdk: glossary.adoc#lisk-sdk
 
-The open Lisk communication architecture is based on two different RPC (Remote-Procedure-Call), API modes: {url_wiki_ipc}[Inter-Process Communication (IPC)^] and {url_websocket}[WebSocket (WS)^].
-The xref:{url_advanced_architecture}[Application] can be configured to either expose an IPC or a WS API that can be used by internal components such as modules and plugins, as well as by any external service such as other scripts in JS, a tool in Rust, or a Python daemon.
+The open Lisk communication architecture is based on three different RPC (Remote-Procedure-Call) API modes: {url_wiki_ipc}[Inter-Process Communication (IPC)^], {url_websocket}[WebSocket (WS)^], and {url_wiki_http_protocol}[Hypertext Transfer Protocol (HTTP)^].
+The xref:{url_advanced_architecture}[Application] can be configured to expose either an IPC, WS or an HTTP API. These APIs can be used by internal components such as modules and plugins. External services such as other scripts in JS, a tool in Rust, or a Python daemon can also use these APIs.
 
 TIP: For more information about the configuration of the RPC endpoints, check out the xref:{url_guides_config_rpc}[configuration guide].
 
@@ -111,12 +112,13 @@ getClient().then((client) => {
 --
 =====
 
-=== IPC vs WS
+=== IPC vs WS vs HTTP
 
-There are two methods available whereby a node can communicate via the API:
+As mentioned earlier, there are three methods available whereby a node can communicate via the API:
 
 * IPC (Inter-Process-Communication)
 * WS (WebSocket)
+* HTTP (Hypertext Transfer Protocol)
 
 In general, IPC is the preferred method for local connections for the following reasons:
 
@@ -126,56 +128,56 @@ In general, IPC is the preferred method for local connections for the following 
 
 WS, on the contrary, should be used if the node API communicates with services on remote servers.
 
-== Channels
+// == Channels
 
-All modules and plugins have access to a `channel` to communicate with the application via actions and events.
+// All modules and plugins have access to a `channel` to communicate with the application via actions and events.
 
-=== Channel for modules
+// === Channel for modules
 
-The channel in modules has only one purpose: it allows a module to publish events to the application which were defined in the <<events>> property of the module.
+// The channel in modules has only one purpose: it allows a module to publish events to the application which were defined in the <<events>> property of the module.
 
-The channel is accessible inside of a module under `this._channel`.
-It is used especially in the xref:{url_intro_modules_lifecycle}[lifecycle-hooks], to publish the events of the module.
+// The channel is accessible inside of a module under `this._channel`.
+// It is used especially in the xref:{url_intro_modules_lifecycle}[lifecycle-hooks], to publish the events of the module.
 
-The following function is available for a `channel` inside a module:
+// The following function is available for a `channel` inside a module:
 
-* `publish(eventName: string, data?: object)`: Publishes an event.
+// * `publish(eventName: string, data?: object)`: Publishes an event.
 
-An example how to use the channel to publish an event is shown below:
+// An example how to use the channel to publish an event is shown below:
 
-[source,js]
-----
-this._channel.publish('hello:newHello', {
-  sender: transaction._senderAddress.toString('hex'),
-  hello: helloAsset.helloString
-});
-----
+// [source,js]
+// ----
+// this._channel.publish('hello:newHello', {
+//   sender: transaction._senderAddress.toString('hex'),
+//   hello: helloAsset.helloString
+// });
+// ----
 
-The above code example will publish the event `hello:newHello` to the application, and attach an object which is containing the sender address and the hello message of the last sent xref:{url_guides_asset}[hello transaction].
+// The above code example will publish the event `hello:newHello` to the application, and attach an object which is containing the sender address and the hello message of the last sent xref:{url_guides_asset}[hello transaction].
 
-=== Channel for plugins
+// === Channel for plugins
 
-The channel is used inside of the xref:{url_intro_plugins_load}[load()] function of a plugin.
+// The channel is used inside of the xref:{url_intro_plugins_load}[load()] function of a plugin.
 
-The following functions are available for a `channel` inside a plugin:
+// The following functions are available for a `channel` inside a plugin:
 
-* `publish(eventName: string, data?: object)`: Publishes an event.
-* `subscribe(eventName: string, cb: EventCallback)`: Subscribes to an event.
-* `once(actionName: string, cb: EventCallback)`: Executes the callback only once, when receiving the event for the first time.
-* `invoke(actionName: string, params?: object)`: Invokes an action.
+// * `publish(eventName: string, data?: object)`: Publishes an event.
+// * `subscribe(eventName: string, cb: EventCallback)`: Subscribes to an event.
+// * `once(actionName: string, cb: EventCallback)`: Executes the callback only once, when receiving the event for the first time.
+// * `invoke(actionName: string, params?: object)`: Invokes an action.
 
-[source,js]
-----
-channel.subscribe('app:block:new', ({ data }) => {
-    const decodedBlock = this.codec.decodeBlock(data.block);
-    this._knownTimestamps.push(decodedBlock.header.timestamp);
-    channel.publish('myPlugin:timestamp', { timestamp: decodedBlock.header.timestamp });
-});
-----
+// [source,js]
+// ----
+// channel.subscribe('app:block:new', ({ data }) => {
+//     const decodedBlock = this.codec.decodeBlock(data.block);
+//     this._knownTimestamps.push(decodedBlock.header.timestamp);
+//     channel.publish('myPlugin:timestamp', { timestamp: decodedBlock.header.timestamp });
+// });
+// ----
 
 == Aliases
 
-<<events>> and <<actions>> are identified by their alias.
+<<events>> and <<endpoints>> are identified by their alias.
 
 Example alias:
 
@@ -192,7 +194,7 @@ Prefix and suffix are always separated by a colon `:`.
 
 == Interfaces
 
-A blockchain application communicates via <<actions>> and <<events>> which can be invoked (actions), or subscribed to (events), via WebSocket.
+A blockchain application communicates via <<endpoints>> and <<events>> which can be invoked (actions), or subscribed to (events), via WebSocket.
 
 The different components of the application each have access to different parts of these interfaces.
 This is summarized in the following table.
@@ -207,7 +209,7 @@ For each action and event displayed below, the following statements apply:
 
 image::intro/sdk-interfaces.png[,600 ,align="center"]
 
-== Actions
+== Endpoints
 
 Actions are invoked to receive specific data from the blockchain application.
 Actions are part of the request / response API, and are invoked via RPCs.

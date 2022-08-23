@@ -26,17 +26,19 @@ Mona Bärenfänger <mona@lightcurve.io> Muhammad Talha <muhammad.talha@lightcurv
 :url_references_elements_apiclient: {sdk_docs}references/lisk-elements/api-client.adoc
 :url_references_elements_client: {sdk_docs}references/lisk-elements/client.adoc
 :url_references_plugins_monitor: {sdk_docs}plugins/monitor-plugin.adoc
-:url_advanced_rpc_actions: {url_advanced_rpc}#actions
+:url_advanced_rpc_endpoints: {url_advanced_rpc}#endpoints
 :url_advanced_rpc_events: {url_advanced_rpc}#events
 :url_guides_asset: build-blockchain/create-asset.adoc
 :url_lisk_sdk: glossary.adoc#lisk-sdk
+:url_RPC_System_API: {url_advanced_rpc}#system
+:url_RPC_Events: {url_advanced_rpc}#events
 
 The open Lisk communication architecture is based on three different RPC (Remote-Procedure-Call) API modes: {url_wiki_ipc}[Inter-Process Communication (IPC)^], {url_websocket}[WebSocket (WS)^], and {url_wiki_http_protocol}[Hypertext Transfer Protocol (HTTP)^].
 The xref:{url_advanced_architecture}[Application] can be configured to expose either an IPC, WS or an HTTP API. These APIs can be used by internal components such as modules and plugins. External services such as other scripts in JS, a tool in Rust, or a Python daemon can also use these APIs.
 
 TIP: For more information about the configuration of the RPC endpoints, check out the xref:{url_guides_config_rpc}[configuration guide].
 
-image::intro/communication-architecture.png[,600 ,align="center"]
+image::intro/Communication-architecture-transparent - v1.png[,600 ,align="center"]
 
 [[the-api-client]]
 == The API client
@@ -62,22 +64,22 @@ let clientCache;
 const nodeAPIURL = 'ws://localhost:8080/ws';
 
 const getClient = async () => {
-	if (!clientCache) {
-		clientCache = await apiClient.createWSClient(nodeAPIURL);
-	}
-	return clientCache;
+    if (!clientCache) {
+        clientCache = await apiClient.createWSClient(nodeAPIURL);
+    }
+    return clientCache;
 };
 
 const blockId = 123;
 
 getClient().then((client) => {
-	client.invoke("app:getBlockByID", {
-		id: blockId
-	}).then(res => {
-		const decodedBlock = client.block.decode(res);
-		console.log("Decoded block: ", decodedBlock);
-		process.exit(0);
-	});
+    client.invoke("chain_getBlockByID", {
+        id: blockId
+    }).then(res => {
+        const decodedBlock = client.block.decode(res);
+        console.log("Decoded block: ", decodedBlock);
+        process.exit(0);
+    });
 });
 ----
 --
@@ -100,7 +102,7 @@ const getClient = async () => {
 const blockId = 123;
 
 getClient().then((client) => {
-	client.invoke("app:getBlockByID", {
+	client.invoke("chain_getBlockByID", {
 		id: blockId
 	}).then(res => {
 		const decodedBlock = client.block.decode(res);
@@ -116,9 +118,9 @@ getClient().then((client) => {
 
 As mentioned earlier, there are three methods available whereby a node can communicate via the API:
 
-* IPC (Inter-Process-Communication)
-* WS (WebSocket)
-* HTTP (Hypertext Transfer Protocol)
+* IPC
+* WS
+* HTTP
 
 In general, IPC is the preferred method for local connections for the following reasons:
 
@@ -177,24 +179,22 @@ WS, on the contrary, should be used if the node API communicates with services o
 
 == Aliases
 
-<<events>> and <<endpoints>> are identified by their alias.
+<<events>> and <<endpoints>> are identified by their aliases.
 
 Example alias:
 
- "monitor:getTransactionStats"
+ "system_getNodeInfo"
 
-The alias always consists of the following parts:
+An alias always consists of the following parts:
 
-. *Prefix:* Consists of the module or plugin name that provides the respective action or event.
-Equals `app` if it's an xref:{url_advanced_rpc}[application event or action].
-The prefix `monitor` in this example is referring the the xref:{url_references_plugins_monitor}[].
+. *Prefix:* A *namespace* from which an event or an endpoint belongs to. The prefix `system` in this example is referring to the xref:{url_RPC_System_API}[System namespace].
 . *Separator:*
-Prefix and suffix are always separated by a colon `:`.
-. *Suffix:* The respective name of the event or action.
+The prefix and suffix are always separated by an underscore `_`.
+. *Suffix:* A suffix is a name of the event or an endpoint e.g. `getNodeInfo` is the name of an endpoint which exists inside the `system` namespace.
 
 == Interfaces
 
-A blockchain application communicates via <<endpoints>> and <<events>> which can be invoked (actions), or subscribed to (events), via WebSocket.
+A blockchain application communicates via <<endpoints>> and <<events>> which can be invoked (endpoints), or subscribed to (events), via WS or HTTP.
 
 The different components of the application each have access to different parts of these interfaces.
 This is summarized in the following table.
@@ -203,105 +203,92 @@ For each action and event displayed below, the following statements apply:
 
 * ... `reply` means, the component can reply to this kind of RPC request.
 * ... `invoke` means, the component can invoke this kind of RPC request.
-* ... `publish` means, the component can publish events.
+// * ... `publish` means, the component can publish events.
 * ... `subscribe` means, the component can subscribe to events.
 
 
-image::intro/sdk-interfaces.png[,600 ,align="center"]
+image::intro/Sdk-interfaces.png[,600 ,align="center"]
 
 == Endpoints
 
-Actions are invoked to receive specific data from the blockchain application.
-Actions are part of the request / response API, and are invoked via RPCs.
+Endpoints are invoked to receive specific data from the blockchain application.
+Endpoints are part of the request / response API, and are invoked via RPCs.
 
-The following components can *expose* actions:
-
-* xref:{url_intro_modules}[]
-* xref:{url_intro_plugins}[]
-* and also the application itself, see xref:{url_advanced_rpc_actions}[application actions]
-
-The following components can *invoke* actions:
-
-* Plugins
-* External services/applications
-
-=== How to invoke actions
-
-The first argument is always the <<aliases,alias>>.
-If input data is required, it is provided as a second argument.
-
-[tabs]
-
-=====
-API client::
-+
---
-Actions can be invoked by <<the-api-client>>.
-
-.How to invoke different kind of actions with the API client
-[source,js]
-----
-const data = await client.invoke('app:getSchema'); // <1>
-const data = await client.invoke('app:actionName', input); // <2>
-client.invoke('monitor:getTransactionStats').then((val) => { // <3>
-    console.log(val);
-});
-----
-
-<1> How to invoke an action.
-<2> How to invoke an action that needs some data input.
-<3> Example of how to invoke an action of the monitor plugin.
---
-Channel::
-+
---
-Actions can be invoked by plugins with the <<channel-for-plugins>>.
-
-.How to invoke an action inside a plugin
-[source,js]
-----
-this._nodeInfo = await this.channel.invoke("app:getNodeInfo");
-----
---
-=====
-
-== Events
-
-Events are part of the public publish / subscribe API of a blockchain application.
-If an event is published it is immediately received by all of the subscribers of the event.
-
-The following components can *publish* events:
+The following components can *expose* endpoints:
 
 * xref:{url_intro_modules}[]
 * xref:{url_intro_plugins}[]
-* and also the application itself, see xref:{url_advanced_rpc_events}[application events]
+* and also the application itself, see xref:{url_advanced_rpc_endpoints}[application endpoints]
 
-The following components can *subscribe* to events:
+The following components can *invoke* endpoints:
 
 * Plugins
 * External services / applications
 
-=== How to publish and subscribe to events
+=== How to invoke endpoints
 
-Events are published inside lifecycle hooks of the module.
-The `channel` is available inside the lifecycle hooks, which offers the possibility to subscribe and publish to events, as well as invoking actions in the network.
+Whilst invoking an endpoint, the first argument is always the <<aliases,alias>>.
+If input data is required, it is provided as a second argument. All endpoints can be invoked via <<the-api-client>>. The following example shows invocation of an endpoint with and without additional arguments.
 
-.Publishing an event
-[source,typescript]
+.How to invoke different kind of actions with the API client
+[source,js]
 ----
-channel.publish('pluginAlias:timestamp', { info: 'sample' });
-----
+// How to invoke an action.
+const data = await client.invoke('system_getSchema');
+console.log(data);
 
-Example for subscribing to an event by utilizing <<the-api-client>>:
+// How to invoke an action that needs some data input.
+const data = await client.invoke('app:actionName', input); 
+console.log(data);
+----
+// Example of how to invoke an action of the monitor plugin.
+// client.invoke('network_getStats').then((val) => {
+//     console.log(val);
+// });
+// <1> How to invoke an action.
+// <2> How to invoke an action that needs some data input.
+// <3> Example of how to invoke an action of the monitor plugin.
+//--
+// Channel::
+// +
+// --
+// Actions can be invoked by plugins with the <<channel-for-plugins>>.
+
+// .How to invoke an action inside a plugin
+// [source,js]
+// ----
+// this._nodeInfo = await this.channel.invoke("app:getNodeInfo");
+// ----
+// --
+//=====
+
+== Events
+By default, Lisk exposes various events that can be subscribed to get latest information regarding network, chain and transactions. These events can be subscribed by the following:
+
+* xref:{url_intro_plugins}[]
+* External services / applications
+
+TIP: For more information about the default events exposed by the Lisk Framework, check out the xref:{url_RPC_Events}[Events reference] page.
+// Events are part of the public publish / subscribe API of a blockchain application.
+// If an event is published it is immediately received by all of the subscribers of the event.
+
+// The following components can *publish* events:
+
+// // * xref:{url_intro_modules}[]
+// // * xref:{url_intro_plugins}[]
+// * and also the application itself, see xref:{url_advanced_rpc_events}[application events]
+
+// The following components can *subscribe* to events:
+
+
+=== How to subscribe to events
+Each event as described in the  xref:{url_RPC_Events}[Events reference] page can be subscribed by using the convention mentioned in the <<aliases>> section. The following snippet describes how an event can be subscribed by using the <<the-api-client>>:
 
 .Subscribing to an event
 [source,typescript]
 ----
-client.subscribe('pluginAlias:timestamp', ( data ) => {
-  console.log(data);
-});
-client.subscribe('app:block:new', ( data ) => {
-  console.log('new block:',data);
+client.subscribe('network_newBlock', ( data ) => {
+  console.log('new block: ',data);
 });
 ----
 

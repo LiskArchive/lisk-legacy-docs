@@ -45,12 +45,18 @@ The `BaseModule` interface defines all optional and required properties and hook
 [source,typescript]
 ----
 export abstract class BaseModule {
-	public abstract id: Buffer;
-	public abstract name: string;
-	public abstract metadata(): ModuleMetadata;
-	public abstract endpoint: BaseEndpoint;
-	public abstract methods: BaseMethod;
 	public commands: BaseCommand[] = [];
+	public events: NamedRegistry = new NamedRegistry();
+	public stores: NamedRegistry = new NamedRegistry();
+	public offchainStores: NamedRegistry = new NamedRegistry();
+
+	public get name(): string {
+		const name = this.constructor.name.replace('Module', '');
+		return name.charAt(0).toLowerCase() + name.substr(1);
+	}
+
+	public abstract endpoint: BaseEndpoint;
+	public abstract api: BaseAPI;
 
 	public async init?(args: ModuleInitArgs): Promise<void>;
 	public async insertAssets?(context: InsertAssetContext): Promise<void>;
@@ -62,9 +68,12 @@ export abstract class BaseModule {
 	public async finalizeGenesisState?(context: GenesisBlockExecuteContext): Promise<void>;
 	public async beforeTransactionsExecute?(context: BlockExecuteContext): Promise<void>;
 	public async afterTransactionsExecute?(context: BlockAfterExecuteContext): Promise<void>;
+
+	public abstract metadata(): ModuleMetadata;
 }
 ----
 
+////
 == Module ID
 
 The module ID is the unique identifier for a module in the application.
@@ -87,19 +96,56 @@ export class HelloModule extends BaseModule {
     // ...
 }
 ----
+////
 
 == Module name
 
 The module name is the human-readable unique identifier for the module.
 
-.Example: Name of the Hello module
+The module name is automatically calculated from the class name of the module, if it extends from the <<module-anatomy-the-basemodule,BaseModule>>:
+The `Module` suffix of the class name is removed, and all uppercase characters are converted to lowercase.
+
+TIP: For example, the module class `HelloModule` will have the module name `hello`.
+
+The module name can be accessed inside the module via `this.name`.
+
+In case it is desired to choose a different name for the module, a custom module name can be defined by implementing a getter `name` which returns the custom module name.
+
+.Example: Choosing a custom module name
 [source,js]
 ----
 import { BaseModule } from 'lisk-sdk';
 
 class HelloModule extends BaseModule {
     // ...
-    public name = 'hello';
+    public get name() {
+      return 'newName';
+    }
+    // ...
+}
+----
+
+== Module constructor
+
+<<blockchain-events>> and <<stores>> of the module are registered in the constructor of a module, for later use in the module.
+
+//TODO: Update snippet with Hello Module implementation
+.Example: Module constructor, registering stores and events to the module
+[source,typescript]
+----
+import { cryptography, BaseModule } from 'lisk-sdk';
+
+export class HelloModule extends BaseModule {
+    // ...
+    public constructor() {
+		super();
+		this.stores.register(UserStore, new UserStore(this.name));
+		this.stores.register(EscrowStore, new EscrowStore(this.name));
+		this.stores.register(SupplyStore, new SupplyStore(this.name));
+		this.stores.register(TerminatedEscrowStore, new TerminatedEscrowStore(this.name));
+		this.stores.register(AvailableLocalIDStore, new AvailableLocalIDStore(this.name));
+		this.events.register(TransferEvent, new TransferEvent(this.name));
+	}
     // ...
 }
 ----
@@ -123,8 +169,7 @@ Each item has the following properties:
 * *events*: A list of events that are emitted by the module.
 Each item has the following properties:
 ** `typeId`: The event type ID.
-//TODO: describe event metadata
-** `data`:
+** `data`: The event data.
 * *assets*: The schemas to decode module assets in blocks.
 Each item has the following properties:
 ** `version`: The block version.
@@ -308,6 +353,169 @@ export class DPoSEndpoint extends BaseEndpoint {
 ----
 ====
 
+== Stores
+
+=== The BaseStore
+
+.The BaseStore class
+[source,typescript]
+----
+export abstract class BaseStore<T> {
+	private readonly _version: number;
+	private readonly _storePrefix: Buffer;
+	private readonly _subStorePrefix: Buffer;
+
+	public abstract schema: Schema;
+
+	public get storePrefix(): Buffer {
+		return this._storePrefix;
+	}
+
+	public get subStorePrefix(): Buffer {
+		return this._subStorePrefix;
+	}
+
+	public get key(): Buffer {
+		return Buffer.concat([this._storePrefix, this._subStorePrefix]);
+	}
+
+	public get name(): string {
+		const name = this.constructor.name.replace('Store', '');
+		return name.charAt(0).toLowerCase() + name.substr(1);
+	}
+
+	public constructor(moduleName: string, version = 0) {
+		this._version = version;
+		this._storePrefix = utils.hash(Buffer.from(moduleName, 'utf-8')).slice(0, 4);
+		// eslint-disable-next-line no-bitwise
+		this._storePrefix[0] &= 0x7f;
+		const versionBuffer = Buffer.alloc(2);
+		versionBuffer.writeUInt16BE(this._version, 0);
+		this._subStorePrefix = utils
+			.hash(Buffer.concat([Buffer.from(this.name, 'utf-8'), versionBuffer]))
+			.slice(0, 2);
+	}
+
+	public async get(ctx: ImmutableStoreGetter, key: Buffer): Promise<T> {
+		if (!this.schema) {
+			throw new Error('Schema is not set');
+		}
+		const subStore = ctx.getStore(this._storePrefix, this._subStorePrefix);
+		return subStore.getWithSchema<T>(key, this.schema);
+	}
+
+	public async has(ctx: ImmutableStoreGetter, key: Buffer): Promise<boolean> {
+		if (!this.schema) {
+			throw new Error('Schema is not set');
+		}
+		const subStore = ctx.getStore(this._storePrefix, this._subStorePrefix);
+		return subStore.has(key);
+	}
+
+	public async iterate(
+		ctx: ImmutableStoreGetter,
+		options: IterateOptions,
+	): Promise<{ key: Buffer; value: T }[]> {
+		if (!this.schema) {
+			throw new Error('Schema is not set');
+		}
+		const subStore = ctx.getStore(this._storePrefix, this._subStorePrefix);
+		return subStore.iterateWithSchema<T>(options, this.schema);
+	}
+
+	public async set(ctx: StoreGetter, key: Buffer, value: T): Promise<void> {
+		if (!this.schema) {
+			throw new Error('Schema is not set');
+		}
+		const subStore = ctx.getStore(this._storePrefix, this._subStorePrefix);
+		return subStore.setWithSchema(key, value as Record<string, unknown>, this.schema);
+	}
+
+	public async del(ctx: StoreGetter, key: Buffer): Promise<void> {
+		if (!this.schema) {
+			throw new Error('Schema is not set');
+		}
+		const subStore = ctx.getStore(this._storePrefix, this._subStorePrefix);
+		return subStore.del(key);
+	}
+}
+----
+
+
+
+=== Off-chain Stores
+
+== Module configuration
+
+A module can access specific configuration options of the blockchain application:
+
+. Module-specific configuration options
+. Genesis config options
+
+Both configuration options are defined by the node operator in the `config.json` file, generally located in the `config/default/` directory.
+//TODO: include example snippets of module and genesis configurations
+
+.config.json structure
+[source,js]
+----
+{
+    // ...
+    plugins: {},
+    genesis: {
+        blockTime: 10,
+        bftBatchSize: 103,
+        communityIdentifier: 'sdk',
+        maxTransactionsSize: 15 * 1024, // Kilo Bytes
+        minFeePerByte: 1000,
+        baseFees: [],
+        modules: {},
+    },
+    generation: {
+        force: false,
+        waitThreshold: 2,
+        generators: [],
+        modules: {},
+    },
+}
+----
+
+All needed configuration options are identified by the module name, followed by a list of properties.
+
+The module config properties must follow the naming pattern defined in the `moduleConfigSchema`, otherwise, there are no restrictions.
+
+.moduleConfigSchema
+[source,js]
+----
+const moduleConfigSchema = {
+	type: 'object',
+	propertyNames: {
+		pattern: '^[a-zA-Z][a-zA-Z0-9_]*$',
+	},
+	additionalProperties: { type: 'object' },
+};
+----
+
+=== Config initialization
+
+If a module needs to access certain configuration options, it is required to validate and cache the respective configurations in the `init()` method of a module, like described in the code snippet below.
+
+.Example: Module init() hook
+[source,typescript]
+----
+export class HelloModule extends BaseModule {
+    // ...
+	public async init(args: ModuleInitArgs): Promise<void> {
+        const { genesisConfig, moduleConfig } = args;
+        const config = objects.mergeDeep({}, defaultConfig, moduleConfig);
+        validator.validate<ModuleConfig>(configSchema, config);
+
+        this._tokenID = Buffer.from(config.feeTokenID, 'hex');
+        this._minFeePerByte = genesisConfig.minFeePerByte;
+    }
+    // ...
+}
+----
+
 == Methods
 
 A method is the interface for the module-to-module communication, and *can perform state mutations* on the blockchain.
@@ -372,78 +580,22 @@ export class HelloMethod extends BaseMethod {
 //TODO: Link to example of calling a module in a command/hook
 To see an example how to call a module method from another module, look at the following example in the module hooks.
 
-== Module configuration
-
-A module can access specific configuration options of the blockchain application:
-
-. Module-specific configuration options
-. Genesis config options
-
-Both configuration options are defined by the node operator in the `config.json` file, generally located in the `config/default/` directory.
-//TODO: include example snippets of module and genesis configurations
-
-.config.json structure
-[source,js]
-----
-{
-    // ...
-    plugins: {},
-    genesis: {
-        blockTime: 10,
-        bftBatchSize: 103,
-        communityIdentifier: 'sdk',
-        maxTransactionsSize: 15 * 1024, // Kilo Bytes
-        minFeePerByte: 1000,
-        baseFees: [],
-        modules: {},
-    },
-    generation: {
-        force: false,
-        waitThreshold: 2,
-        generators: [],
-        modules: {},
-    },
-}
-----
-
-All needed configuration options are identified by the module name, followed by a list of properties.
-
-The module config properties must follow the naming pattern defined in the `moduleConfigSchema`, otherwise, there are no restrictions.
-
-.moduleConfigSchema
-[source,js]
-----
-const moduleConfigSchema = {
-	type: 'object',
-	propertyNames: {
-		pattern: '^[a-zA-Z][a-zA-Z0-9_]*$',
-	},
-	additionalProperties: { type: 'object' },
-};
-----
-
-If a module needs to access certain configuration options, it is required to validate and cache the respective configurations in the `init()` method of a module, like described in the code snippet below.
-
-.Example: Module init() hook
-[source,typescript]
-----
-export class HelloModule extends BaseModule {
-    // ...
-	public async init(args: ModuleInitArgs): Promise<void> {
-        const { genesisConfig, moduleConfig } = args;
-        const config = objects.mergeDeep({}, defaultConfig, moduleConfig);
-        validator.validate<ModuleConfig>(configSchema, config);
-
-        this._tokenID = Buffer.from(config.feeTokenID, 'hex');
-        this._minFeePerByte = genesisConfig.minFeePerByte;
-    }
-    // ...
-}
-----
-
 == Blockchain Events
 
-// TODO: write content here once https://github.com/LiskHQ/lisk-sdk/pull/7415 is merged
+// TODO: update content here, once https://github.com/LiskHQ/lisk-sdk/pull/7415 is merged
+Blockchain events are logs of events that occurred in the blockchain network.
+
+NOTE: Blockchain events are part of the on-chain logic: Each block includes the **event root in the block header**, which is the root of a Sparse-Merkle-Tree of all events, that are included in that particular block.
+
+Certain blockchain events are published by default, for example
+
+=== The BaseEvent
+
+=== Creating events
+
+=== Registering events
+
+=== Publishing events
 
 == Commands
 

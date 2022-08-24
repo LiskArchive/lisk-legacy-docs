@@ -100,10 +100,10 @@ export class HelloModule extends BaseModule {
 
 == Module name
 
-The module name is the human-readable unique identifier for the module.
+The module name is the unique identifier for the module.
 
 The module name is automatically calculated from the class name of the module, if it extends from the <<module-anatomy-the-basemodule,BaseModule>>:
-The `Module` suffix of the class name is removed, and all uppercase characters are converted to lowercase.
+The `Module` suffix of the class name is removed, and the first character is converted to lowercase.
 
 TIP: For example, the module class `HelloModule` will have the module name `hello`.
 
@@ -648,13 +648,13 @@ Every module method always extends from the `BaseCommand` class.
 export abstract class BaseCommand<T = unknown> {
 	public schema?: Schema;
 
-	protected moduleID: Buffer;
-	public abstract name: string;
-	public abstract id: Buffer;
-
-	public constructor(moduleID: Buffer) {
-		this.moduleID = moduleID;
+	public get name(): string {
+		const name = this.constructor.name.replace('Command', '');
+		return name.charAt(0).toLowerCase() + name.substr(1);
 	}
+
+	// eslint-disable-next-line no-useless-constructor
+	public constructor(protected stores: NamedRegistry, protected events: NamedRegistry) {}
 
 	public verify?(context: CommandVerifyContext<T>): Promise<VerificationResult>;
 
@@ -662,35 +662,30 @@ export abstract class BaseCommand<T = unknown> {
 }
 ----
 
-=== Command ID
-
-The command ID is a unique identifier for the command within the module.
-
-The minimum value is 0.
-The ID is stored in binary format.
-
-[source,typescript]
-----
-const CREATE_HELLO_ID = 0;
-export class TransferCommand extends BaseCommand {
-	public id = cryptography.utils.intToBuffer(CREATE_HELLO_ID, 4);
-	// ...
-}
-----
-
 === Command name
 
-The command identifier in string format.
-The string must only consist of lower case and upper case letters [a-z, A-Z].
-No numbers, hyphens, etc., are allowed.
-
+The command name is the unique identifier for the command.
 Needs to be unique within the module the command belongs to.
 
+The command name is automatically calculated from the class name of the command, if it extends from the <<commands,BaseCommand>>:
+The `Command` suffix of the class name is removed, and the first character is converted to lowercase.
+
+TIP: For example, the module class `CreateHelloCommand` will have the command name `createHello`.
+
+The command name can be accessed inside the command via `this.name`.
+
+In case it is desired to choose a different name for the command, a custom command name can be defined by implementing a getter `name` which returns the custom command name.
+
+.Example: Choosing a custom command name
 [source,typescript]
 ----
+import { BaseCommand } from 'lisk-sdk';
+
 export class TransferCommand extends BaseCommand {
     // ...
-	public name = 'transfer';
+    public get name() {
+      return 'newName';
+    }
     // ...
 }
 ----

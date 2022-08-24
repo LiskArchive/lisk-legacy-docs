@@ -32,9 +32,11 @@ Mona Bärenfänger <mona@lightcurve.io> Muhammad Talha <muhammad.talha@lightcurv
 :url_lisk_sdk: glossary.adoc#lisk-sdk
 :url_RPC_System_API: {url_advanced_rpc}#system
 :url_RPC_Events: {url_advanced_rpc}#events
+:JSON_RPC_Specs: https://www.jsonrpc.org/specification
+:url_module_endpoints: {sdk_docs}/modules/index.adoc
 
 The open Lisk communication architecture is based on three different RPC (Remote-Procedure-Call) API modes: {url_wiki_ipc}[Inter-Process Communication (IPC)^], {url_websocket}[WebSocket (WS)^], and {url_wiki_http_protocol}[Hypertext Transfer Protocol (HTTP)^].
-The xref:{url_advanced_architecture}[Application] can be configured to expose either an IPC, WS or an HTTP API. These APIs can be used by internal components such as modules and plugins. External services such as other scripts in JS, a tool in Rust, or a Python daemon can also use these APIs.
+The xref:{url_advanced_architecture}[Application] can be configured to expose either an IPC, WS, or an HTTP API. These APIs can be used by internal components such as modules and plugins. External services such as other scripts in JS, a tool in Rust, or a Python daemon can also use these APIs.
 
 TIP: For more information about the configuration of the RPC endpoints, check out the xref:{url_guides_config_rpc}[configuration guide].
 
@@ -45,11 +47,11 @@ image::intro/Communication-architecture-transparent - v1.png[,600 ,align="center
 
 The xref:{url_references_elements_apiclient}[] simplifies sending API requests to a blockchain application via IPC or WS.
 
-It can be imported in any JS client application.
+It can be imported into any JS client application.
 
-It  provides an interface to *subscribe* to all events and to *invoke* actions of the blockchain application and its' modules & plugins.
+It  provides an interface to *subscribe* to all events and to *invoke* endpoints of the blockchain application and its' modules & plugins.
 
-TIP: To conveniently communicate with a blockchain application, use the `apiClient` which is included in the xref:{url_references_elements_client}[@liskhq/lisk-client] and the {url_npm_lisk_sdk}[lisk-sdk^] packages.
+TIP: To conveniently communicate with a blockchain application, use the `apiClient` included in the xref:{url_references_elements_client}[@liskhq/lisk-client] and the {url_npm_lisk_sdk}[lisk-sdk^] packages.
 
 [tabs]
 
@@ -102,33 +104,67 @@ const getClient = async () => {
 const blockId = 123;
 
 getClient().then((client) => {
-	client.invoke("chain_getBlockByID", {
-		id: blockId
-	}).then(res => {
-		const decodedBlock = client.block.decode(res);
-		console.log("Decoded block: ", decodedBlock);
-		process.exit(0);
-	});
+    client.invoke("chain_getBlockByID", {
+        id: blockId
+    }).then(res => {
+        const decodedBlock = client.block.decode(res);
+        console.log("Decoded block: ", decodedBlock);
+        process.exit(0);
+    });
 });
 ----
 --
 =====
 
+=== HTTP
+Apart from the WS and IPC method, Lisk endpoints also support HTTP requests and response mechanisms. With a {JSON_RPC_Specs}[JSON RPC 2.0] based format, any endpoint can be invoked using a cURL request. For example:
+
+[source,json]
+----
+curl --location --request POST 'http://localhost:7887/rpc' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "jsonrpc": "2.0",
+    "id": "1",
+    "method": "chain_getBlockByHeight",
+    "params": {
+        "height": 2291
+    }
+}'
+----
+
+
 === IPC vs WS vs HTTP
 
-As mentioned earlier, there are three methods available whereby a node can communicate via the API:
+The three modes of communication i.e. IPC, WS, and HTTP allow 
+blockchain applications to communicate with Lisk nodes.
 
-* IPC
-* WS
-* HTTP
+// As mentioned earlier, there are three methods available whereby a node can communicate via the API:
 
-In general, IPC is the preferred method for local connections for the following reasons:
+// * IPC
+// * WS
+// * HTTP
 
-* It is slightly faster
-* It supports synchronous data exchange
-* It does not use the system ports, therefore avoiding any risk of collision when the ports are already in use by another application
+*IPC* in general is the preferred method for local connections:
 
-WS, on the contrary, should be used if the node API communicates with services on remote servers.
+    * It is slightly faster.
+    * It supports synchronous data exchange.
+    * It does not use the system ports, so it mitigates any risk of collision when the ports are already in use by another application.
+    * It can invoke and subscribe to endpoints and events, respectively.
+
+*WS* on the contrary should be used if the node API has to communicate with services on remote servers.
+
+    * It is a bidirectional communication protocol that allows sending and receiving of data between a client and a server.
+    * A WS connection is kept alive until terminated by either the client or the server.
+    * A WS connection is usually necessary if real-time data acquisition is required.
+    * A WS connection can also invoke and subscribe to endpoints and events, respectively.
+
+*HTTP* is stateless so, it can only be used for fetching data from an endpoint.
+
+    * HTTP requests establish a uni-directional connection to the server and close it once a response is received.
+    * Since an event emits data in real time, a subscription can only work if the receiver's connection is persistent. This is not possible with an HTTP connection, hence it cannot be used to subscribe to events.
+
+
 
 // == Channels
 
@@ -190,55 +226,57 @@ An alias always consists of the following parts:
 . *Prefix:* A *namespace* from which an event or an endpoint belongs to. The prefix `system` in this example is referring to the xref:{url_RPC_System_API}[System namespace].
 . *Separator:*
 The prefix and suffix are always separated by an underscore `_`.
-. *Suffix:* A suffix is a name of the event or an endpoint e.g. `getNodeInfo` is the name of an endpoint which exists inside the `system` namespace.
+. *Suffix:* A suffix is a name of the event or an endpoint e.g. `getNodeInfo` is the name of an endpoint that exists inside the `system` namespace.
 
 == Interfaces
 
-A blockchain application communicates via <<endpoints>> and <<events>> which can be invoked (endpoints), or subscribed to (events), via WS or HTTP.
+A blockchain application communicates via interfaces i.e. <<endpoints>> and <<events>>. Endpoints are invoked and events are subscribed to. Within an application, different interfaces are exposed to different components. This is summarized in the following diagram.
 
-The different components of the application each have access to different parts of these interfaces.
-This is summarized in the following table.
+// A blockchain application communicates via <<endpoints>> and <<events>>, where endpoints are invoked and events are subscribed to via the available modes of communications.
 
-For each action and event displayed below, the following statements apply:
+// The different components of the application each have access to different parts of these interfaces.
+
+
+
+image::intro/Sdk-interfaces.png[,600 ,align="center"]
+
+For each endpoint and event displayed above, the following statements apply:
 
 * ... `reply` means, the component can reply to this kind of RPC request.
 * ... `invoke` means, the component can invoke this kind of RPC request.
 // * ... `publish` means, the component can publish events.
 * ... `subscribe` means, the component can subscribe to events.
 
-
-image::intro/Sdk-interfaces.png[,600 ,align="center"]
-
 == Endpoints
 
 Endpoints are invoked to receive specific data from the blockchain application.
-Endpoints are part of the request / response API, and are invoked via RPCs.
+Endpoints are part of the request/response mechanism and are invoked via RPCs.
 
 The following components can *expose* endpoints:
 
-* xref:{url_intro_modules}[]
+* xref:{url_intro_modules}[], for details about module specific endpoints, see xref:{url_module_endpoints}[Modules Overview].
 * xref:{url_intro_plugins}[]
 * and also the application itself, see xref:{url_advanced_rpc_endpoints}[application endpoints]
 
 The following components can *invoke* endpoints:
 
 * Plugins
-* External services / applications
+* External services/applications
 
 === How to invoke endpoints
 
 Whilst invoking an endpoint, the first argument is always the <<aliases,alias>>.
-If input data is required, it is provided as a second argument. All endpoints can be invoked via <<the-api-client>>. The following example shows invocation of an endpoint with and without additional arguments.
+If input data is required, it is provided as a second argument. All endpoints can be invoked via <<the-api-client>>. The following example shows the invocation of an endpoint with and without additional arguments.
 
-.How to invoke different kind of actions with the API client
+.How to invoke different kinds of endpoints with the API client
 [source,js]
 ----
-// How to invoke an action.
+// How to invoke an endpoint.
 const data = await client.invoke('system_getSchema');
 console.log(data);
 
-// How to invoke an action that needs some data input.
-const data = await client.invoke('app:actionName', input); 
+// How to invoke an endpoint that needs some data input.
+const data = await client.invoke('namespace_endpointName', input); 
 console.log(data);
 ----
 // Example of how to invoke an action of the monitor plugin.
@@ -263,7 +301,7 @@ console.log(data);
 //=====
 
 == Events
-By default, Lisk exposes various events that can be subscribed to get latest information regarding network, chain and transactions. These events can be subscribed by the following:
+By default, Lisk exposes various events that can be subscribed to get the latest information regarding network, chain, and transactions. These events can be subscribed to, by the following:
 
 * xref:{url_intro_plugins}[]
 * External services / applications
@@ -282,7 +320,7 @@ TIP: For more information about the default events exposed by the Lisk Framework
 
 
 === How to subscribe to events
-Each event as described in the  xref:{url_RPC_Events}[Events reference] page can be subscribed by using the convention mentioned in the <<aliases>> section. The following snippet describes how an event can be subscribed by using the <<the-api-client>>:
+Each event as described in the  xref:{url_RPC_Events}[Events reference] page can be subscribed to, by using the convention mentioned in the <<aliases>> section. The following snippet describes how an event can be subscribed by using <<the-api-client>>:
 
 .Subscribing to an event
 [source,typescript]

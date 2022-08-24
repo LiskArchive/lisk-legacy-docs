@@ -448,8 +448,8 @@ For a successful registration, each module needs to follow the expected module s
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
 <li><a href="#module-anatomy-the-basemodule">Module anatomy &amp; the BaseModule</a></li>
-<li><a href="#module-id">Module ID</a></li>
 <li><a href="#module-name">Module name</a></li>
+<li><a href="#module-constructor">Module constructor</a></li>
 <li><a href="#module-metadata">Module metadata</a>
 <ul class="sectlevel2">
 <li><a href="#defining-the-module-metadata">Defining the module metadata</a></li>
@@ -460,14 +460,31 @@ For a successful registration, each module needs to follow the expected module s
 <li><a href="#exposing-endpoints-to-plugins-and-external-services">Exposing endpoints to plugins and external services</a></li>
 </ul>
 </li>
+<li><a href="#stores">Stores</a>
+<ul class="sectlevel2">
+<li><a href="#the-basestore">The BaseStore</a></li>
+<li><a href="#off-chain-stores">Off-chain Stores</a></li>
+</ul>
+</li>
+<li><a href="#module-configuration">Module configuration</a>
+<ul class="sectlevel2">
+<li><a href="#config-initialization">Config initialization</a></li>
+</ul>
+</li>
 <li><a href="#methods">Methods</a>
 <ul class="sectlevel2">
 <li><a href="#exposing-methods-to-other-modules">Exposing methods to other modules</a></li>
 <li><a href="#calling-a-module-method-from-another-module">Calling a module method from another module</a></li>
 </ul>
 </li>
-<li><a href="#module-configuration">Module configuration</a></li>
-<li><a href="#blockchain-events">Blockchain Events</a></li>
+<li><a href="#blockchain-events">Blockchain Events</a>
+<ul class="sectlevel2">
+<li><a href="#the-baseevent">The BaseEvent</a></li>
+<li><a href="#creating-events">Creating events</a></li>
+<li><a href="#registering-events">Registering events</a></li>
+<li><a href="#publishing-events">Publishing events</a></li>
+</ul>
+</li>
 <li><a href="#commands">Commands</a>
 <ul class="sectlevel2">
 <li><a href="#command-id">Command ID</a></li>
@@ -528,12 +545,18 @@ For a successful registration, each module needs to follow the expected module s
 <div class="title">The <code>BaseModule</code></div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export abstract class BaseModule {
-	public abstract id: Buffer;
-	public abstract name: string;
-	public abstract metadata(): ModuleMetadata;
-	public abstract endpoint: BaseEndpoint;
-	public abstract methods: BaseMethod;
 	public commands: BaseCommand[] = [];
+	public events: NamedRegistry = new NamedRegistry();
+	public stores: NamedRegistry = new NamedRegistry();
+	public offchainStores: NamedRegistry = new NamedRegistry();
+
+	public get name(): string {
+		const name = this.constructor.name.replace('Module', '');
+		return name.charAt(0).toLowerCase() + name.substr(1);
+	}
+
+	public abstract endpoint: BaseEndpoint;
+	public abstract api: BaseAPI;
 
 	public async init?(args: ModuleInitArgs): Promise&lt;void&gt;;
 	public async insertAssets?(context: InsertAssetContext): Promise&lt;void&gt;;
@@ -545,35 +568,8 @@ For a successful registration, each module needs to follow the expected module s
 	public async finalizeGenesisState?(context: GenesisBlockExecuteContext): Promise&lt;void&gt;;
 	public async beforeTransactionsExecute?(context: BlockExecuteContext): Promise&lt;void&gt;;
 	public async afterTransactionsExecute?(context: BlockAfterExecuteContext): Promise&lt;void&gt;;
-}</code></pre>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="module-id"><a class="anchor" href="#module-id"></a>Module ID</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>The module ID is the unique identifier for a module in the application.</p>
-</div>
-<div class="paragraph">
-<p>The module IDs <code>0</code>-<code>999</code> are reserved for official modules for the Lisk SDK.
-This means that the minimum ID for a new module is <code>1000</code>.
-The module ID is stored in binary format.</p>
-</div>
-<div class="paragraph">
-<p>It is also important to note, that module IDs do not need to be in succession, the only requirement is that they are unique within the blockchain application.
-So as an example, it is valid to register multiple modules to the application which have the following module IDs: <code>1003</code>, <code>1000</code>, and <code>2500001</code> as they are in the allowed number range, and each ID is different.</p>
-</div>
-<div class="listingblock">
-<div class="title">Example: ID of the Hello module</div>
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">import { cryptography, BaseModule } from 'lisk-sdk';
 
-export class HelloModule extends BaseModule {
-	public id = cryptography.utils.intToBuffer(1000, 4);
-
-    // ...
+	public abstract metadata(): ModuleMetadata;
 }</code></pre>
 </div>
 </div>
@@ -585,14 +581,66 @@ export class HelloModule extends BaseModule {
 <div class="paragraph">
 <p>The module name is the human-readable unique identifier for the module.</p>
 </div>
+<div class="paragraph">
+<p>The module name is automatically calculated from the class name of the module, if it extends from the <a href="#module-anatomy-the-basemodule">BaseModule</a>:
+The <code>Module</code> suffix of the class name is removed, and all uppercase characters are converted to lowercase.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+For example, the module class <code>HelloModule</code> will have the module name <code>hello</code>.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The module name can be accessed inside the module via <code>this.name</code>.</p>
+</div>
+<div class="paragraph">
+<p>In case it is desired to choose a different name for the module, a custom module name can be defined by implementing a getter <code>name</code> which returns the custom module name.</p>
+</div>
 <div class="listingblock">
-<div class="title">Example: Name of the Hello module</div>
+<div class="title">Example: Choosing a custom module name</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">import { BaseModule } from 'lisk-sdk';
 
 class HelloModule extends BaseModule {
     // ...
-    public name = 'hello';
+    public get name() {
+      return 'newName';
+    }
+    // ...
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="module-constructor"><a class="anchor" href="#module-constructor"></a>Module constructor</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><a href="#blockchain-events">Blockchain Events</a> and <a href="#stores">Stores</a> of the module are registered in the constructor of a module, for later use in the module.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example: Module constructor, registering stores and events to the module</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import { cryptography, BaseModule } from 'lisk-sdk';
+
+export class HelloModule extends BaseModule {
+    // ...
+    public constructor() {
+		super();
+		this.stores.register(UserStore, new UserStore(this.name));
+		this.stores.register(EscrowStore, new EscrowStore(this.name));
+		this.stores.register(SupplyStore, new SupplyStore(this.name));
+		this.stores.register(TerminatedEscrowStore, new TerminatedEscrowStore(this.name));
+		this.stores.register(AvailableLocalIDStore, new AvailableLocalIDStore(this.name));
+		this.events.register(TransferEvent, new TransferEvent(this.name));
+	}
     // ...
 }</code></pre>
 </div>
@@ -653,7 +701,7 @@ Each item has the following properties:</p>
 <p><code>typeId</code>: The event type ID.</p>
 </li>
 <li>
-<p><code>data</code>:</p>
+<p><code>data</code>: The event data.</p>
 </li>
 </ul>
 </div>
@@ -875,6 +923,188 @@ export class HelloModule extends BaseModule {
 </div>
 </div>
 <div class="sect1">
+<h2 id="stores"><a class="anchor" href="#stores"></a>Stores</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="the-basestore"><a class="anchor" href="#the-basestore"></a>The BaseStore</h3>
+<div class="listingblock">
+<div class="title">The BaseStore class</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export abstract class BaseStore&lt;T&gt; {
+	private readonly _version: number;
+	private readonly _storePrefix: Buffer;
+	private readonly _subStorePrefix: Buffer;
+
+	public abstract schema: Schema;
+
+	public get storePrefix(): Buffer {
+		return this._storePrefix;
+	}
+
+	public get subStorePrefix(): Buffer {
+		return this._subStorePrefix;
+	}
+
+	public get key(): Buffer {
+		return Buffer.concat([this._storePrefix, this._subStorePrefix]);
+	}
+
+	public get name(): string {
+		const name = this.constructor.name.replace('Store', '');
+		return name.charAt(0).toLowerCase() + name.substr(1);
+	}
+
+	public constructor(moduleName: string, version = 0) {
+		this._version = version;
+		this._storePrefix = utils.hash(Buffer.from(moduleName, 'utf-8')).slice(0, 4);
+		// eslint-disable-next-line no-bitwise
+		this._storePrefix[0] &amp;= 0x7f;
+		const versionBuffer = Buffer.alloc(2);
+		versionBuffer.writeUInt16BE(this._version, 0);
+		this._subStorePrefix = utils
+			.hash(Buffer.concat([Buffer.from(this.name, 'utf-8'), versionBuffer]))
+			.slice(0, 2);
+	}
+
+	public async get(ctx: ImmutableStoreGetter, key: Buffer): Promise&lt;T&gt; {
+		if (!this.schema) {
+			throw new Error('Schema is not set');
+		}
+		const subStore = ctx.getStore(this._storePrefix, this._subStorePrefix);
+		return subStore.getWithSchema&lt;T&gt;(key, this.schema);
+	}
+
+	public async has(ctx: ImmutableStoreGetter, key: Buffer): Promise&lt;boolean&gt; {
+		if (!this.schema) {
+			throw new Error('Schema is not set');
+		}
+		const subStore = ctx.getStore(this._storePrefix, this._subStorePrefix);
+		return subStore.has(key);
+	}
+
+	public async iterate(
+		ctx: ImmutableStoreGetter,
+		options: IterateOptions,
+	): Promise&lt;{ key: Buffer; value: T }[]&gt; {
+		if (!this.schema) {
+			throw new Error('Schema is not set');
+		}
+		const subStore = ctx.getStore(this._storePrefix, this._subStorePrefix);
+		return subStore.iterateWithSchema&lt;T&gt;(options, this.schema);
+	}
+
+	public async set(ctx: StoreGetter, key: Buffer, value: T): Promise&lt;void&gt; {
+		if (!this.schema) {
+			throw new Error('Schema is not set');
+		}
+		const subStore = ctx.getStore(this._storePrefix, this._subStorePrefix);
+		return subStore.setWithSchema(key, value as Record&lt;string, unknown&gt;, this.schema);
+	}
+
+	public async del(ctx: StoreGetter, key: Buffer): Promise&lt;void&gt; {
+		if (!this.schema) {
+			throw new Error('Schema is not set');
+		}
+		const subStore = ctx.getStore(this._storePrefix, this._subStorePrefix);
+		return subStore.del(key);
+	}
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="off-chain-stores"><a class="anchor" href="#off-chain-stores"></a>Off-chain Stores</h3>
+
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="module-configuration"><a class="anchor" href="#module-configuration"></a>Module configuration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A module can access specific configuration options of the blockchain application:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Module-specific configuration options</p>
+</li>
+<li>
+<p>Genesis config options</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Both configuration options are defined by the node operator in the <code>config.json</code> file, generally located in the <code>config/default/</code> directory.</p>
+</div>
+<div class="listingblock">
+<div class="title">config.json structure</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">{
+    // ...
+    plugins: {},
+    genesis: {
+        blockTime: 10,
+        bftBatchSize: 103,
+        communityIdentifier: 'sdk',
+        maxTransactionsSize: 15 * 1024, // Kilo Bytes
+        minFeePerByte: 1000,
+        baseFees: [],
+        modules: {},
+    },
+    generation: {
+        force: false,
+        waitThreshold: 2,
+        generators: [],
+        modules: {},
+    },
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>All needed configuration options are identified by the module name, followed by a list of properties.</p>
+</div>
+<div class="paragraph">
+<p>The module config properties must follow the naming pattern defined in the <code>moduleConfigSchema</code>, otherwise, there are no restrictions.</p>
+</div>
+<div class="listingblock">
+<div class="title">moduleConfigSchema</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const moduleConfigSchema = {
+	type: 'object',
+	propertyNames: {
+		pattern: '^[a-zA-Z][a-zA-Z0-9_]*$',
+	},
+	additionalProperties: { type: 'object' },
+};</code></pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="config-initialization"><a class="anchor" href="#config-initialization"></a>Config initialization</h3>
+<div class="paragraph">
+<p>If a module needs to access certain configuration options, it is required to validate and cache the respective configurations in the <code>init()</code> method of a module, like described in the code snippet below.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example: Module init() hook</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export class HelloModule extends BaseModule {
+    // ...
+	public async init(args: ModuleInitArgs): Promise&lt;void&gt; {
+        const { genesisConfig, moduleConfig } = args;
+        const config = objects.mergeDeep({}, defaultConfig, moduleConfig);
+        validator.validate&lt;ModuleConfig&gt;(configSchema, config);
+
+        this._tokenID = Buffer.from(config.feeTokenID, 'hex');
+        this._minFeePerByte = genesisConfig.minFeePerByte;
+    }
+    // ...
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="methods"><a class="anchor" href="#methods"></a>Methods</h2>
 <div class="sectionbody">
 <div class="paragraph">
@@ -948,92 +1178,42 @@ export class HelloModule extends BaseModule {
 </div>
 </div>
 <div class="sect1">
-<h2 id="module-configuration"><a class="anchor" href="#module-configuration"></a>Module configuration</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>A module can access specific configuration options of the blockchain application:</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Module-specific configuration options</p>
-</li>
-<li>
-<p>Genesis config options</p>
-</li>
-</ol>
-</div>
-<div class="paragraph">
-<p>Both configuration options are defined by the node operator in the <code>config.json</code> file, generally located in the <code>config/default/</code> directory.</p>
-</div>
-<div class="listingblock">
-<div class="title">config.json structure</div>
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">{
-    // ...
-    plugins: {},
-    genesis: {
-        blockTime: 10,
-        bftBatchSize: 103,
-        communityIdentifier: 'sdk',
-        maxTransactionsSize: 15 * 1024, // Kilo Bytes
-        minFeePerByte: 1000,
-        baseFees: [],
-        modules: {},
-    },
-    generation: {
-        force: false,
-        waitThreshold: 2,
-        generators: [],
-        modules: {},
-    },
-}</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>All needed configuration options are identified by the module name, followed by a list of properties.</p>
-</div>
-<div class="paragraph">
-<p>The module config properties must follow the naming pattern defined in the <code>moduleConfigSchema</code>, otherwise, there are no restrictions.</p>
-</div>
-<div class="listingblock">
-<div class="title">moduleConfigSchema</div>
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const moduleConfigSchema = {
-	type: 'object',
-	propertyNames: {
-		pattern: '^[a-zA-Z][a-zA-Z0-9_]*$',
-	},
-	additionalProperties: { type: 'object' },
-};</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>If a module needs to access certain configuration options, it is required to validate and cache the respective configurations in the <code>init()</code> method of a module, like described in the code snippet below.</p>
-</div>
-<div class="listingblock">
-<div class="title">Example: Module init() hook</div>
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export class HelloModule extends BaseModule {
-    // ...
-	public async init(args: ModuleInitArgs): Promise&lt;void&gt; {
-        const { genesisConfig, moduleConfig } = args;
-        const config = objects.mergeDeep({}, defaultConfig, moduleConfig);
-        validator.validate&lt;ModuleConfig&gt;(configSchema, config);
-
-        this._tokenID = Buffer.from(config.feeTokenID, 'hex');
-        this._minFeePerByte = genesisConfig.minFeePerByte;
-    }
-    // ...
-}</code></pre>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
 <h2 id="blockchain-events"><a class="anchor" href="#blockchain-events"></a>Blockchain Events</h2>
 <div class="sectionbody">
+<div class="paragraph">
+<p>Blockchain events are logs of events that occurred in the blockchain network.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Blockchain events are part of the on-chain logic: Each block includes the <strong>event root in the block header</strong>, which is the root of a Sparse-Merkle-Tree of all events, that are included in that particular block.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Certain blockchain events are published by default, for example</p>
+</div>
+<div class="sect2">
+<h3 id="the-baseevent"><a class="anchor" href="#the-baseevent"></a>The BaseEvent</h3>
 
+</div>
+<div class="sect2">
+<h3 id="creating-events"><a class="anchor" href="#creating-events"></a>Creating events</h3>
+
+</div>
+<div class="sect2">
+<h3 id="registering-events"><a class="anchor" href="#registering-events"></a>Registering events</h3>
+
+</div>
+<div class="sect2">
+<h3 id="publishing-events"><a class="anchor" href="#publishing-events"></a>Publishing events</h3>
+
+</div>
 </div>
 </div>
 <div class="sect1">

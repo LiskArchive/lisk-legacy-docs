@@ -517,11 +517,11 @@ For a successful registration, each module needs to follow the expected module s
 <h2 id="module-name"><a class="anchor" href="#module-name"></a>Module name</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The module name is the human-readable unique identifier for the module.</p>
+<p>The module name is the unique identifier for the module.</p>
 </div>
 <div class="paragraph">
 <p>The module name is automatically calculated from the class name of the module, if it extends from the <a href="#module-anatomy-the-basemodule">BaseModule</a>:
-The <code>Module</code> suffix of the class name is removed, and all uppercase characters are converted to lowercase.</p>
+The <code>Module</code> suffix of the class name is removed, and the first character is converted to lowercase.</p>
 </div>
 <div class="admonitionblock tip">
 <table>
@@ -1212,13 +1212,13 @@ Blockchain events are part of the on-chain logic: Each block includes the <stron
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export abstract class BaseCommand&lt;T = unknown&gt; {
 	public schema?: Schema;
 
-	protected moduleID: Buffer;
-	public abstract name: string;
-	public abstract id: Buffer;
-
-	public constructor(moduleID: Buffer) {
-		this.moduleID = moduleID;
+	public get name(): string {
+		const name = this.constructor.name.replace('Command', '');
+		return name.charAt(0).toLowerCase() + name.substr(1);
 	}
+
+	// eslint-disable-next-line no-useless-constructor
+	public constructor(protected stores: NamedRegistry, protected events: NamedRegistry) {}
 
 	public verify?(context: CommandVerifyContext&lt;T&gt;): Promise&lt;VerificationResult&gt;;
 
@@ -1227,39 +1227,43 @@ Blockchain events are part of the on-chain logic: Each block includes the <stron
 </div>
 </div>
 <div class="sect2">
-<h3 id="command-id"><a class="anchor" href="#command-id"></a>Command ID</h3>
-<div class="paragraph">
-<p>The command ID is a unique identifier for the command within the module.</p>
-</div>
-<div class="paragraph">
-<p>The minimum value is 0.
-The ID is stored in binary format.</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">const CREATE_HELLO_ID = 0;
-export class TransferCommand extends BaseCommand {
-	public id = cryptography.utils.intToBuffer(CREATE_HELLO_ID, 4);
-	// ...
-}</code></pre>
-</div>
-</div>
-</div>
-<div class="sect2">
 <h3 id="command-name"><a class="anchor" href="#command-name"></a>Command name</h3>
 <div class="paragraph">
-<p>The command identifier in string format.
-The string must only consist of lower case and upper case letters [a-z, A-Z].
-No numbers, hyphens, etc., are allowed.</p>
+<p>The command name is the unique identifier for the command.
+Needs to be unique within the module the command belongs to.</p>
 </div>
 <div class="paragraph">
-<p>Needs to be unique within the module the command belongs to.</p>
+<p>The command name is automatically calculated from the class name of the command, if it extends from the <a href="#commands">BaseCommand</a>:
+The <code>Command</code> suffix of the class name is removed, and the first character is converted to lowercase.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+For example, the module class <code>CreateHelloCommand</code> will have the command name <code>createHello</code>.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The command name can be accessed inside the command via <code>this.name</code>.</p>
+</div>
+<div class="paragraph">
+<p>In case it is desired to choose a different name for the command, a custom command name can be defined by implementing a getter <code>name</code> which returns the custom command name.</p>
 </div>
 <div class="listingblock">
+<div class="title">Example: Choosing a custom command name</div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export class TransferCommand extends BaseCommand {
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import { BaseCommand } from 'lisk-sdk';
+
+export class TransferCommand extends BaseCommand {
     // ...
-	public name = 'transfer';
+    public get name() {
+      return 'newName';
+    }
     // ...
 }</code></pre>
 </div>

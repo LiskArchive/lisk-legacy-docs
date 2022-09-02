@@ -8,15 +8,15 @@ assignees: ''
 ---
 
 ### Motivation
-Why  does this content need improvement?
+Why does this content need improvement?
 
 ### Description
-Explain, how the content should be improved.
+Explain how the content should be improved.
 
 ### Location
 
 #### Affected branch / URL
-Choose the branch that should be used as base branch for this issue.
+Choose the applicable branch that should be used as the base branch for this issue.
 
 #### Page location
 Define the path and name for the new page in the documentation.

@@ -9,18 +9,18 @@ assignees: ''
 
 ### Motivation
 Why is this new content needed?
-What is the intention/ motivation of creating it?
+What is the intention/motivation for creating it?
 
 ### Content structure
 Describe the desired structure of the new content.
-Create a TOC as bullet list, and add more information about the desired content as possible:
+Create a TOC in the form of a bullet-point list, and add as much information as possible regarding the desired content:
 - mention important information to include or emphasize on
 - leave additional comments or suggestions, e.g. for creating diagrams
 
 ### Location
 
 #### Affected branch / URL
-Choose the branch that should be used as base branch for this issue.
+Choose the applicable branch that should be used as the base branch for this issue.
 
 #### Page location
 Define the path and name for the new page in the documentation.

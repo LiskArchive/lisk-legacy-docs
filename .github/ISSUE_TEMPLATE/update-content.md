@@ -10,7 +10,7 @@ assignees: ''
 ### Location
 
 ### Description
-Describe which content is outdated, and how it should be updated
+Describe which content is outdated, and how it should be updated.
 
 #### Affected branch / URL
 List the branch name which includes the outdated content.

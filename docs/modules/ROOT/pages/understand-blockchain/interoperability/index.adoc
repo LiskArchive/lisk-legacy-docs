@@ -1,13 +1,20 @@
 = Lisk Interoperability
 :toc: preamble
 :url_blog_interop_intro: https://lisk.io/blog/research/introduction-blockchain-interoperability
+:url_wiki_topologies_star: https://en.wikipedia.org/wiki/Network_topology#Star
 :url_understand_tx: understand-blockchain/index.adoc#transactions
 :url_understand_command: understand-blockchain/sdk/modules-commands.adoc#commands
+// footnotes
+:fn_wiki_topology: footnote:topology[See {url_wiki_topologies_star}[^] for more information about network topologies.]
 
-The Lisk interoperability solution allows blockchain to blockchain communication by using the paradigm of *cross-chain certification*, which was introduced in detail in the research blog post {url_blog_interop_intro}["Introduction to Blockchain Interoperability"].
+//TODO: Add link to certificate explanations
+The Lisk interoperability solution allows blockchain to blockchain communication by using the paradigm of *cross-chain certification*.
 
-Basically, cross-chain certification means that information from one chain is submitted to another chain utilizing a signed object called a certificate.
-Let us see more specifically how this will work in the Lisk ecosystem.
+Basically, cross-chain certification means that information from one chain is submitted to another chain utilizing a signed object called a *certificate*.
+The information is transmitted across chains by issuing a Cross-Chain Update transaction, aka CCU, including a certificate, that verifies the correctness of the data in the CCU.
+
+A CCU can contain multiple cross-chain messages.
+Cross-chain messages contain commands which can be executed on the opposite chain, what can mutate the state of this chain in response to state changes that happened on the sending chain.
 
 .Example: Transferring tokens across different blockchains
 image::understand-blockchain/interop/cc-transfer-example.png[]
@@ -23,29 +30,70 @@ When the transaction is included, Bob’s account is credited.
 
 [TIP]
 Cross-chain messages are, however, not limited to token transfers.
-Similar to transactions, cross-chain messages have an asset property.
+Similar to transactions, cross-chain messages have an `asset` property.
 Therefore, when building a blockchain application with the Lisk SDK, you can create custom cross-chain messages by defining the content of the asset property as needed.
 For example, you could create a custom cross-chain message that contains some authenticated information from an oracle chain in its asset property.
 
 == Terminology summary
 
-Transaction:: An envelope object for a command, see xref:{url_understand_tx}[Understand blockchain, Transactions].
-Cross-chain transaction (CCT):: Transaction generating one or more cross-chain messages.
-Command:: Trigger of a state transition in the same chain, see xref:{url_understand_command}[Modules and commands].
-Cross-chain command (CCC):: Trigger of a state transition coming from another chain.
-Cross-chain message (CCM):: An envelope object for a cross-chain command.
-Cross-chain update (CCU):: A CCU, aka "Cross-chain update transaction` is a special transaction containing cross-chain messages, certified by validators.
-image:understand-blockchain/ccu.png[]
+Transaction::
+An envelope object for a command, see xref:{url_understand_tx}[Understand blockchain, Transactions].
+Cross-chain transaction (CCT)::
+Transaction generating one or more cross-chain messages.
+Cross-chain update (CCU)::
+A CCU, aka "Cross-chain update transaction" is a special transaction containing cross-chain messages, certified by validators.
+Command::
+Trigger of a state transition in the same chain, see xref:{url_understand_command}[Modules and commands].
+Cross-chain command (CCC)::
+Trigger of a state transition coming from another chain.
+Cross-chain message (CCM)::
+An envelope object for a cross-chain command.
+Certificates::
+Certificates contain information from finalized block headers that are signed by a large portion of validators from a certain chain, and thus authenticate a finalized state of that chain.
+They are the fundamental components of the cross-chain certification paradigm for the Lisk ecosystem.
 
-== Mainchain & Sidechains
+== Cross-chain network topology
+
+The cross-chain network topology describes arrangements of blockchains in the Lisk ecosystem.
+
+The network topology between blockchains in the Lisk ecosystem is a **structured star topology**:
+
+* *structured* means, that the network is self-organizing in a predefined structure.
+* *star* describes the predefined structure of the Lisk blockchain ecosystem.{fn_wiki_topology}
+
+//TODO: Add link to network page, explaining network topology for Lisk blockchains
+
+image::understand-blockchain/interop/cross-chain topology.png[]
+
+As shown by the image above, a Lisk blockchain can become interoperable to any other blockchain in the Lisk ecosystem, including the Lisk Mainchain, simply by registering itself to the Lisk Mainchain.
+
+All communication to other sidechains is routed through the Lisk Mainchain.
+
+.What is the maximum of connected sidechains to the Lisk Mainchain?
+[TIP]
+====
+**The maximum of sidechains being simultaneously connected to the Lisk mainchain is currently around 3,5 million.**
+
+The number is only capped by the maximum number of CCU transactions, that the Lisk Mainchain can integrate per day.
+====
+
+== Mainchain & sidechains
+
+image:understand-blockchain/interop/s2s.png[]
+
+On sidechain 1, three transactions are included, where each one emits one cross-chain message, denoted by `m1`, `m2`, and `m3`.
+The color of a transaction or cross-chain message is always the one of the receiving chain, except for a cross-chain update transaction whose color is the one of the sending chain.
+All three cross-chain messages are delivered in one cross-chain update transaction, `CCU1`, to the mainchain, where `m1` and m3 are processed, but not `m2`.
+Later on, `m2` is delivered to sidechain 2 by a cross-chain update transaction, `CCU2`, from the mainchain to sidechain 2.
+This cross-chain update transaction contains an additional cross-chain message, `m4`, emitted by the transaction `t4` included in the mainchain.
 
 .The Role of the LSK Token
 [NOTE]
 ====
 The LSK token is the only token that can be transferred to every chain within the Lisk ecosystem.
-It will be the default token for transaction fees on sidechains, but it will be possible to configure a sidechain token for the transaction fees.
+It is the default token for transaction fees on sidechains, but it is possible to configure a sidechain token for the transaction fees.
 As the LSK token is listed on several exchanges, it will in most cases be the initial token that a user acquires within the Lisk ecosystem.
-Once a user possesses some LSK tokens, they can exchange them for other sidechain tokens, e.g., on a decentralized exchange sidechain.
+Once a user possesses some LSK tokens, they can exchange them for other sidechain tokens, e.g., on a decentralized exchange (DEX) sidechain.
 
 ====
 

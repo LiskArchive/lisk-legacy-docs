@@ -19,7 +19,7 @@ Explain how the content should be improved.
 Choose the applicable branch that should be used as the base branch for this issue.
 
 #### Page location
-Define the path and name for the new page in the documentation.
+Insert the path of the affected page(s) in the documentation.
 
 ### Additional resources
 Relevant resources to solve the issue, i.e. lips, code examples, blogs, videos, documents, etc.

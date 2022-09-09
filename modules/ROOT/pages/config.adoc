@@ -26,7 +26,6 @@ An `Application` instance can have various configuration schemas within a config
 * <<system>>
 * <<rpc>>
 * <<generator>>
-* <<delegate>>
 
 By default a configuration looks like this:
 
@@ -71,7 +70,6 @@ export const defaultConfig = {
 		},
 		"blockTime": 10,
 		"bftBatchSize": 103,
-
 		"maxTransactionsSize": 15 * 1024, // Kilo Bytes
 		"minFeePerByte": 1000,
 		"chainID": "yaE12vt6",
@@ -529,7 +527,7 @@ const customConfig =
 
 
 === generator
-The `generator` configuration is used to read keys from a file, which are then stored in the database.
+The `generator` configuration is used to read keys from a file, which are then stored in the database. The schema acceptable to lisk for the "Keys" file is available in the "Keys Schema" tab.
 
 [tabs]
 =====
@@ -547,7 +545,7 @@ Properties::
 | keys
 | object
 | optional
-| Contains keys for the generator.
+| Contains path to the "keys" file for the generator.
 a| 
 [source,js]
 ----
@@ -570,99 +568,111 @@ const customConfig =
 	"generator": {
 		"keys": {
 			"fromFile": "<<path/filename>>",
+			"plain": "<<plainKeysObjectSchema>>",
+			"encrypted": {
+				...encryptedObjectSchema,
+				// encrypted property can be empty object
+				"required": [],
+			},
 		},
 	},
 	// Other types of configurations.
 }
 ----
 --
-=====
-
-
-=== delegate 
-This configuration holds the `delegate` information about block generation.
-
-[tabs]
-=====
-Properties::
-+
 --
-[cols="2,1,1,2,4",options="header",stripes="hover"]
-|===
-|Property's Name
-|Datatype
-|Optionality
-|Description
-|Sample
-
-| address
-| string
-| mandatory
-| Defines the address of the delegate.
-| 68d6b039567ebbfc714176d87cdd6906cf526cc7
-
-| encryptedPassphrase
-| string
-| mandatory
-| Defines the encrypted passphrase.
-| iterations=1000000&cipherText=5c53db41ec94b46049- 
-ca5a5b8312e6b38c7bbad775153a8091baf-ade3f78ac855b55d- 5d33318e13f22ec961510061c8a07726aeb4d2d2b30fbcc6ddfa- bc82dd6f233891a06ae54b2&iv=8c0419422b6e81c32c10ac6a&-
-salt=1f2308d0d12480d0c788a4c60a8f272dtag=23cf9840cb9-
-85550a96b463f878de99d&version=1
- 
-| hashOnion
-| object
-| mandatory
-| Holds the seed reveal to put in the block header. A hashOnion object contains count, distance and a hashes[string].
-a| 
-[source,js]
-----
-"hashOnion": {
-	"count": 100000,
-	"distance": 1000,
-	"hashes": ["34ecc432170c0812e7ca69d73485ca57"]
-},
-----
-|===
-
---
-Sample::
+Keys::
 +
 --
 [source,js]
 ----
-const customConfig = 
 {
-	// Other types of configurations.
-	"delegate": [
-		{		
-			// Defines the address of the delegate.
-			"address": "68d6b039567ebbfc714176d87cdd6906cf526cc7",
-
-			// Defines the encrypted passphrase.
-			"encryptedPassphrase": "iterations=1000000&cipherText=5c53db41ec94b46049ca5a5b8312e6b38c7bbad775153a8091bafade3f78ac855b55d5d33318e13f22ec961510061c8a07726aeb4d2d2b30fbcc6ddfabc82dd6f233891a06ae54b2&iv=8c0419422b6e81c32c10ac6a&salt=1f2308d0d12480d0c788a4c60a8f272d&tag=23cf9840cb985550a96b463f878de99d&version=1",
-			
-			// The hashOnion holds the seed reveal to put in the block header.
-			"hashOnion": {
-				//The count property holds the total number of hash onions.
-				"count": 100000,
-				// Defines distance between each hash onion.
-				"distance": 1000,
-				// The hashes holds the seed reveal for every distance.
-				"hashes": [
-					"34ecc432170c0812e7ca69d73485ca57",
-					"1bf9423f594619f7d14e6f742c0631a1",
-					// ...
-					"fa51b75c7920894019b43378af621e2d",
-					"bd4ea06be86fb6d850023be7ad1d9558",
-					"da23c5a34d19bbd57ebb159da170dfb5"
-				]
+	"plainKeysObjectSchema": {
+		"generatorKey": {
+					"type": 'string',
+					"format": 'hex',
+					"minLength": 64,
+					"maxLength": 64,
+				},
+		"generatorPrivateKey": {
+					"type": 'string',
+					"format": 'hex',
+					"minLength": 128,
+					"maxLength": 128,
+				},
+		"blsKey": {
+					"type": 'string',
+					"format": 'hex',
+					"minLength": 96,
+					"maxLength": 96,
+				},
+		"blsPrivateKey": {
+					"type": 'string',
+					"format": 'hex',
+					"minLength": 64,
+					"maxLength": 64,
+				},
+	},
+	"encryptedObjectSchema" : {
+		"version": {
+			"type": 'string',
+		},
+		"ciphertext": {
+			"type": 'string',
+			"format": 'hex',
+		},
+		"kdf": {
+			"type": 'string',
+			"enum": ['argon2id', 'PBKDF2'],
+		},
+		"kdfparams": {
+			"type": 'object',
+			"properties": {
+				"parallelism": {
+					"type": 'integer',
+				},
+				"iterations": {
+					type: 'integer',
+				},
+				"memoriSize": {
+					type: 'integer',
+				},
+				"salt": {
+					"type": 'string',
+					"format": 'hex',
+				},
 			},
-		}
-	],
-		// Other types of configurations.
+		},
+		"cipher": {
+			"type": 'string',
+			"enum": ['aes-256-gcm'],
+		},
+		"cipherparams": {
+			"type": 'object',
+			"properties": {
+				"iv": {
+					"type": 'string',
+					"format": 'hex',
+				},
+				"tag": {
+					"type": 'string',
+					"format": 'hex',
+				},
+			},
+		},
+
+	}
 }
+
+
+
+
 ----
 --
-=====
+--
 
+
+
+
+
+=====

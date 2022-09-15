@@ -493,38 +493,94 @@ But in case of a CCM, the command always refers to a cross-chain command, and th
 <dl>
 <dt class="hdlist1">sending-chain ID</dt>
 <dd>
-<p>description</p>
+<p>Used to identify the chain sending the cross-chain message.
+The sending chain ID is used, for example, if the message triggers an error and has to be sent back.</p>
 </dd>
 <dt class="hdlist1">receiving-chain ID</dt>
 <dd>
-<p>description</p>
+<p>Used to identify the chain receiving the cross-chain message.
+On the mainchain, the receiving chain ID is read to route the message to the corresponding chain outbox.</p>
 </dd>
-<dt class="hdlist1">module name</dt>
+<dt class="hdlist1">module &amp; cross-chain command name</dt>
 <dd>
-<p>description</p>
-</dd>
-<dt class="hdlist1">CCC name</dt>
-<dd>
-<p>description</p>
+<p>Once the message has reached the receiving chain, the two properties <code>module</code> and <code>crossChainCommand</code> specify which logic should be used to validate and execute the message on the receiving chain.
+The module always corresponds to the module which includes the specified cross-chain command.</p>
 </dd>
 <dt class="hdlist1">nonce</dt>
 <dd>
-<p>description</p>
+<p>When a cross-chain message is created and added to the partner chain outbox, the nonce of the sending chain (total number of messages that were added to outboxes so far) is added to the message in the nonce property.
+This allows all messages to be uniquely identified by the (sendingChainID, receivingChainID, nonce, status) tuple, which implies that the message ID defined below will be unique for all messages in the ecosystem.
+The uniqueness of messages in the Lisk ecosystem is important for identifying messages with message IDs and tracking them throughout the ecosystem.</p>
 </dd>
 <dt class="hdlist1">fee</dt>
 <dd>
-<p>description</p>
+<p>For all cross-chain messages, the message fee is used to account for the transaction processing in the receiving chain.
+This fee must be transferred from the sending chain account to the receiving chain account in order to maintain the correct balances on all chains in the ecosystem.
+The token ID for this fee is stored in the channel account and is by default the token ID of the LSK token.
+As it is stored in the channel account, it does not need to be repeated in the message.
+Being the main utility token of the Lisk ecosystem, the LSK token is always the token ID for this fee for channels between the Lisk mainchain and registered sidechains.</p>
 </dd>
 <dt class="hdlist1">parameters</dt>
 <dd>
-<p>description</p>
+<p>The params property of the messages is defined by each module and can follow any schema, similar to the <code>params</code> property of a transaction.
+The <code>params</code> property is not deserialized or validated by the Interoperability module.
+In the Lisk ecosystem, all cross-chain messages are routed through the mainchain.
+This means that messages should always have a sufficiently small size in order to be easily included in mainchain blocks.
+As the mainchain payload size limit is 15 KiB, and other properties in the cross-chain updates will not be larger than 4 KiB, we limit the message size to 10 KiB.
+To guarantee that all messages can be included and handled, sidechains in the Lisk ecosystem should have a payload size limit equal to or greater than 15 KiB (15 x 1024 bytes).</p>
 </dd>
 <dt class="hdlist1">status</dt>
 <dd>
-<p>description</p>
+<p>The basic error handling for routing messages to other chains is done by the mainchain.
+Information about the reason why the message failed is stored in the status property.
+For example, in the case the receiving chain does not exist, is not active or has been terminated, the mainchain will return the message to the sending chain.
+The sending chain can then revert the message and potentially refund users.
+This design choice allows sidechains to send messages to other chains without needing to monitor the status (or even existence) of every other chain.
+The constant table lists the different status codes defined by the Interoperability module.
+To allow for future updates or improvements of the Interoperability module, other modules are restricted from using status codes up to 63 (included).
+Other modules may use other status codes larger or equal to 64.</p>
 </dd>
 </dl>
 </div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Name</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Type</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Value</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CCM_STATUS_OK</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">uint32</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CCM_STATUS_MODULE_NOT_SUPPORTED</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">uint32</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CCM_STATUS_CROSS_CHAIN_COMMAND_NOT_SUPPORTED</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">uint32</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CCM_STATUS_CHANNEL_UNAVAILABLE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">uint32</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">3</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CCM_STATUS_RECOVERED</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">uint32</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4</p></td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>
 <div class="sect1">
@@ -582,26 +638,65 @@ The only difference is, that a CCT refers to a <strong>cross-chain command</stro
 </div>
 <div class="imageblock right">
 <div class="content">
-<img src="../../_images/understand-blockchain/ccu.png" alt="ccu" width="300">
+<img src="../../_images/understand-blockchain/interop/ccu.png" alt="ccu" width="300">
 </div>
 </div>
 <div class="dlist">
 <dl>
 <dt class="hdlist1">sending-chain ID</dt>
 <dd>
-<p>description</p>
+<p>Identifies the chain sending the cross-chain update.
+Only cross-chain update transactions coming from registered chains are valid, registered chains are the ones with an entry in the interoperability store corresponding to their <code>chainID</code>.</p>
 </dd>
 <dt class="hdlist1">validators update</dt>
 <dd>
-<p>description</p>
+<p>The chain account stores an array containing the BLS keys and BFT weights required to validate the certificate signature.
+This array has to be updated if the validator set changes in the chain sending the certificate.
+The difference between the stored array and the new one is included in this property.</p>
 </dd>
 <dt class="hdlist1">certificate</dt>
 <dd>
-<p>description</p>
+<p>Aggregates certificate of a set of the current validators of the sending chain, verifying the correctness of the data sent in the CCU.
+It must be a certificate with an adequate BLS signature.
+The signature is always validated against the public key set stored in the sending chain account.</p>
+</dd>
+<dt class="hdlist1">certificate threshold</dt>
+<dd>
+<p>The threshold of block generators required to validate the certificate signature.
+This certificate threshold has to be updated if its value changes in the chain sending the certificate.
+In that case, the updated value is set in the <code>newCertificateThreshold</code> property of the CCU.
+If <code>newCertificateThreshold</code> is set to <code>0</code>, it implies that the certificate threshold has not been changed in the sending chain.</p>
 </dd>
 <dt class="hdlist1">inbox</dt>
 <dd>
-<p>description</p>
+<p>The <code>inboxUpdate</code> contains the information relative to the messages to be included in the sending chain inbox.
+Cross-chain messages are stored in the chain outbox on the sending chain and in the corresponding inbox on the receiving chain.
+This property contains three elements:</p>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>the <code>crossChainMessages</code>:
+An array of cross-chain messages.
+The <code>crossChainMessages</code> property must contain consecutive messages from the outbox.</p>
+</li>
+<li>
+<p><code>messageWitness</code>:
+an inclusion witness into the outbox root:
+In the sending chain, all cross-chain messages are added to a regular Merkle tree attested by the outbox root.
+The messageWitness contains two values relative to that Merkle tree:
+the partnerChainOutboxSize, giving the total messages sent by the partner chain, and the siblingHashes, which is part of a regular Merkle proof.
+This Merkle proof is required if not all messages necessary to recompute the outbox root were given in crossChainMessages.
+If all messages required to compute the outbox root are included in crossChainMessages then siblingHashes can be left empty.</p>
+</li>
+<li>
+<p><code>outboxRootWitness</code>:
+An inclusion witness of this outbox root into the state root.
+The outbox root of the sending chain is part of a sparse Merkle tree attested by the state root (provided in the certificate).
+The outboxRootWitness property is an inclusion proof into the state root of the outbox root computed from the receiving chain inbox, crossChainMessages and messageWitness.
+If the cross-chain update transaction contains an empty certificate, this property can also be left empty, as the required root was already attested in a previous cross-chain update.</p>
+</li>
+</ol>
+</div>
 </dd>
 </dl>
 </div>

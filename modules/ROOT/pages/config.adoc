@@ -1,204 +1,694 @@
-= Application Configuration
-Mona Bärenfänger <mona@lightcurve.io>
+= Application configuration
+Mona Bärenfänger <mona@lightcurve.io> Muhammad Talha <muhammad.talha@lightcurve.io>
 :description: The configuration reference covers the config object, the default values, and also a description of each value.
 // Settings
-:toc:
-:v_sdk: v5.2.1
+:toc: preamble
+:toclevels: 5
+:page-toclevels: 4
+:v_sdk: development
 // URLs
 :url_github_sdk_configschema: https://github.com/LiskHQ/lisk-sdk/blob/{v_sdk}/framework/src/schema/application_config_schema.ts
+
+:url_plain_object_schema: https://github.com/LiskHQ/lisk-sdk/blob/238ed3166fe04856e855ff8d2dd328ae414666f7/framework/src/engine/generator/schemas.ts#L429
+:url_encrypted_object_schema: https://github.com/LiskHQ/lisk-sdk/blob/238ed3166fe04856e855ff8d2dd328ae414666f7/framework/src/engine/generator/schemas.ts#L376
+:url_key_derivation_lip66: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0066.md
+:url_configure_app_guide: https://lisk.com/documentation/build-blockchain/configure-app.html
+:keys_fixture: https://github.com/LiskHQ/lisk-sdk/blob/development/framework/src/testing/fixtures/keys_fixture.json
+:lisk_ID_system: https://lisk.com/blog/research/new-lisk-id-system
 // Project URLs
 
-The application config object is passed to the `Application` instance and must follow the configuration schema.
+A complete reference of the *default* and *custom* application configurations is described on this page.
 
-It is not necessary to include all options that are included in the schema.
-The application will use the default configuration options in case a config option is not specified.
+TIP: For more information about the *configuration schema* and *configuring an application*, see the {url_github_sdk_configschema}[Application config schema^] and {url_configure_app_guide}[How to configure a blockchain application]. 
 
-TIP: For more information about the config schema, see the {url_github_sdk_configschema}[application config schema file] at GitHub.
+== Configuration 
+
+The application `config` object is passed to the `Application` instance and must follow the configuration schema.
+By default, each blockchain application has a set of configurations that enable it to run properly.
+The application uses the default configuration options in case a custom config is not specified.
+
+An `Application` instance can have various configuration schemas within a configuration object, as listed below:
+
+* <<network>>
+* <<genesis>>
+* <<transactionPool>>
+* <<system>>
+* <<rpc>>
+* <<generator>>
+
+By default a configuration looks like this:
 
 .Default config options
 [source,js]
 ----
-const config = {
-    // label defines the process name and folder within the root path
-	"label": "beta-sdk-app",
-	// version must follow semver format
-	"version": "0.0.0",
-	// network version defines a P2P network version
-	"networkVersion": "1.0",
-    // rootPath defines the root path for all data to be stored
-	"rootPath": "~/.lisk",
-	// logger holds information for the logging
-	"logger": {
-	    // fileLogLevel defines the log level output for the file logging
-		"fileLogLevel": "info",
-		// consoleLogLevel defines the log level output for the console logging
-		"consoleLogLevel": "info",
-		// logFileName defines a name for the log file
-		"logFileName": "lisk.log"
+export const defaultConfig = {
+	// Contains configuration for the blockchain application.
+	"system": {
+		"dataPath": "~/.lisk/beta-sdk-app",
+		"keepEventsForHeights": 300,
+		"logLevel": "info",
 	},
-	// rpc defines communication behavior
+
+	// The rpc protocol defines communication behavior.
 	"rpc": {
-	    // enabled creates IPC or WS socket if true
-		"enable": false,
-		// enabled communication through 'ipc' or 'ws'
-		"mode": "ipc",
-		// In case of `mode` is set to `ws`, this port used
-		"port": 8080,
-        // Change to 0.0.0.0 to connect from a remote server
-        "host": "127.0.0.1"
+		"modes": ["ipc"],
+		"port": 7887,
+		"host": "127.0.0.1",
 	},
-	// genesisConfig holds the blockchain protocol configuration
-    // it is also passed to the module constructor
-	"genesisConfig": {
-	    // blockTime defines the frequency of blocks to be created
-		"blockTime": 10,
-		// communityIdentifier defines a community identifier used to create the network identifier
-		"communityIdentifier": "sdk",
-		// maxPayloadLength defines a maximum payload size allowed in a block in bytes
-		"maxPayloadLength": 15360,
-		// bftThreshold defines a threshold for pre-vote and pre-commit
-		"bftThreshold": 68,
-		// minFeePerByte defines a minimum fee per byte for a transaction
-		"minFeePerByte": 1000,
-		// baseFees defines an additional base fee to be included in the calculation of the minimum fee for a transaction
-		"baseFees": [
-			{
-				"moduleID": 5,
-				"assetID": 0,
-				"baseFee": "1000000000"
-			}
-		],
-		// rewards defines a block reward schedule
-		"rewards": {
-		    // milestones defines the block reward for every distance
-			"milestones": ["500000000", "400000000", "300000000", "200000000", "100000000"],
-			// offset defines at which height the block reward is given
-			"offset": 2160,
-			// distance defines the duration of the each milestone
-			"distance": 3000000
-		},
-		// The minimum balance of accounts
-		"minRemainingBalance": "5000000",
-		// Number of actively forging delegates.
-		"activeDelegates": 101,
-		// Number of random standy delegates that are allowed to forge each round.
-		"standbyDelegates": 2,
-		 // The offset of rounds from the current round, which will be used to calculate the vote weights for the next forging round.
-		"delegateListRoundOffset": 2
-	},
-	// forging holds delegate information for forging
-	"forging": {
-		"force": true,
-		// waitThreshold defines the Number of seconds to wait for previous block before forging
-		"waitThreshold": 2,
-		// delegates holds the delegate information for forging
-		"delegates": [
-			{
-			    // encryptedPassphrase defines the encrypted passphrase
-				"encryptedPassphrase": "iterations=1000000&cipherText=5c53db41ec94b46049ca5a5b8312e6b38c7bbad775153a8091bafade3f78ac855b55d5d33318e13f22ec961510061c8a07726aeb4d2d2b30fbcc6ddfabc82dd6f233891a06ae54b2&iv=8c0419422b6e81c32c10ac6a&salt=1f2308d0d12480d0c788a4c60a8f272d&tag=23cf9840cb985550a96b463f878de99d&version=1",
-				// hashOnion holds the seed reveal to put in block header
-				"hashOnion": {
-				    // count holds the total number of hash onions
-					"count": 100000,
-					// distance holds a distance between each hash onion
-					"distance": 1000,
-					// hashes holds the seed reveal for every distance
-					"hashes": [
-						"34ecc432170c0812e7ca69d73485ca57",
-						"1bf9423f594619f7d14e6f742c0631a1",
-                        // ...
-						"fa51b75c7920894019b43378af621e2d",
-						"bd4ea06be86fb6d850023be7ad1d9558",
-						"da23c5a34d19bbd57ebb159da170dfb5"
-					]
-				},
-				// address defines the address of the delegate
-				"address": "68d6b039567ebbfc714176d87cdd6906cf526cc7"
-			}
-		],
-		// defaultPassword defines a password to use to decrypt the encrypted Passphrase
-		"defaultPassword": "state dawn marriage honey cinnamon sadness crumble someone file caution sell oxygen"
-	},
-	// network holds the network information of the node
+
+	//The network configuration holds the network information of the node.
 	"network": {
-	    // seedPeers defines an entry point of the network
+		"version": "1.0",
+		"seedPeers": [],
+		"port": 7667,
+	},
+
+	// Contains configuration about a transaction pool.
+	"transactionPool": {
+		"maxTransactions": 4096,
+		"maxTransactionsPerAccount": 64,
+		"transactionExpiryTime": 3 * 60 * 60 * 1000,
+		"minEntranceFeePriority": "0",
+		"minReplacementFeeDifference": "10",
+	},
+
+	// The genesis configuration holds the blockchain protocol configurations.
+	"genesis": {
+		"block": {
+			"fromFile": "./config/genesis_block.blob",
+		},
+		"blockTime": 10,
+		"bftBatchSize": 103,
+		"maxTransactionsSize": 15 * 1024, // Kilo Bytes
+		"minFeePerByte": 1000,
+		"chainID": "0x00000000",
+	},
+	
+	// Contains the directory path to the "keys" file required by the generator.
+	"generator": {
+		"keys": {},
+	},
+
+	// (Optional) modules hold a group of module-specific configs which is passed to a particular module.
+	"modules": {},
+
+	// (Optional) plugins hold a group of plugin-specific configs which is passed to a particular plugin.
+	"plugins": {},
+};
+
+export const DEFAULT_KEY_DERIVATION_PATH = "m/25519'/134'/0'/0'";
+----
+NOTE: The `*DEFAULT_KEY_DERIVATION_PATH*` points to the path for deriving the private key of the n-th generator key pair. 
+For more information, see {url_key_derivation_lip66}[Introduce tree based key derivation and account recovery^].
+
+All the aforementioned configurations can be tweaked as per the necessity and then can be passed as a `customConfig` to the `Application` instance. 
+The following sections describe various configuration schemas and their available properties.
+
+=== network 
+An application's `network` can be configured by passing a specific network configuration object to the Application config.
+
+WARNING: The connectivity of the node might be negatively impacted if the `*fixedPeers*` configuration is used.
+ Beware of declaring only trustworthy peers in `*whitelistedPeers*` as these could attack a node with a denial-of-service attack because the banning mechanism is deactivated.
+
+[tabs]
+=====
+Properties::
++
+--
+[cols="2,1,1,2,4",options="header",stripes="hover"]
+|===
+|Property's Name
+|Datatype
+|Optionality
+|Description
+|Sample
+
+| version
+| string
+| mandatory
+| The version of network protocol.
+| 1.0
+ 
+| port
+| number
+| mandatory
+| The port defines an open port for P2P incoming connections.
+| 7667
+ 
+| seedPeers
+| object[]
+| mandatory
+| SeedPeers defines an entry point of the network.
+a|[source,js]
+----
+"seedPeers": [{
+	"ip": "127.0.0.1",
+	"port": 5000
+}]
+----
+ 
+| host
+| string
+| optional
+| Address of the server to connect to.
+| 127.0.0.1
+ 
+| blacklistedIPs
+| string[]
+| optional
+| A list of IP addresses for which the node will reject the connection for both outbound and inbound connections.
+| 192.168.178.23
+ 
+| fixedPeers
+| object[]
+| optional
+| A set of peers to which a node will always try to connect, for outbound connections.
+a|[source,js]
+----
+"fixedPeers": [{
+	"ip": "192.110.01.12",
+	"port": 5000
+}]
+----
+ 
+| whitelistedPeers
+| object[]
+| optional
+| Set of peers that are always allowed to connect to the node through inbound connections.
+a|[source,js]
+----
+"whitelistedPeers": [{
+	"ip": "192.110.01.12",
+	"port": 5000
+}]
+----
+ 
+| maxOutboundConnections
+| number
+| optional
+| The maximum number of outbound connections allowed.
+| 20footnote:disclaimer[This is the default value.]
+ 
+| maxInboundConnections
+| number
+| optional
+| The maximum number of inbound connections allowed.
+| 100footnote:disclaimer[This is the default value.]
+ 
+| wsMaxPayload
+| number
+| optional
+| The maximum size of the payload allowed per communication.
+| 3048576footnote:disclaimer[This is the default value.]
+ 
+| advertiseAddress
+| boolean
+| optional
+| Defines whether to announce the IP/Port to other peers.
+| truefootnote:disclaimer[This is the default value.]
+
+|===
+
+--
+Sample::
++
+--
+[source,js]
+----
+const customConfig = 
+{
+	// Other types of configurations.
+	"network": {
+		"version": "1.0",  
 		"seedPeers": [
 			{
 				"ip": "127.0.0.1",
 				"port": 5000
 			}
 		],
-		// port defines an open port for P2P incoming connections
-		"port": 5000,
-		// (Optional) blacklistedIPs defines IP address which the node will reject the connection for both outbound and inbound connections
-        //"blacklistedIPs": string[],
-        // (Optional) fixedPeers defines peers which will always try to connect for outbound connections
-        // Warning! The connectivity of the node might be negatively impacted if using this option.
-        // "fixedPeers": { ip: string, port: number }[],
-        // (Optional) whitelistedPeers defines peers that are always allowed to connect to the node on inbound connections
-        // Warning! Beware of declaring only trustworthy peers in this array as these could attack a
-		// node with a denial-of-service attack because the banning mechanism is deactivated.
-        // whitelistedPeers?: { ip: string, port: number }[],
-        // (Optional) peerBanTime defines the length of banning in milliseconds
-        // Default: 86400000 (24h)
-        //"peerBanTime": number,
-        // (Optional) connectTimeout defines a timeout for a connection
-        // "connectTimeout": number,
-        // Optional.
-        // (Optional) actTimeout defines a timeout for response from a peer
-        //"ackTimeout": number,
-        // (Optional) maxOutboundConnections defines a maximum number of outbound connection allowed
-        // Default: 20
-        //"maxOutboundConnections": number,
-        // (Optional) maxInboundConnections defines a maximum number of inbound connection allowed
-        // Default: 100
-        //"maxInboundConnections": number,
-        // (Optional) sendPeerLimit defines a maximum peer to send information when “send” is called
-        // Default: 16
-        //"sendPeerLimit": number,
-        // (Optional) maxPeerDiscoveryResponseLength defines a maximum length for the peer information response of peer discovery
-        // Default: 200
-        //"maxPeerDiscoveryResponseLength": number,
-        // (Optional) wsMaxPayload defines maximum size of the payload allowed per communication
-        // Default: 3048576
-        //"wsMaxPayload": number,
-        // (Optional) advertiseAddress defines whether to announce the IP/Port other peers
-        // Default: true
-        //"advertiseAddress": boolean
-	},
-	// (Optional) transactionPool defines custom properties of the transaction pool
-	"transactionPool": {
-	    // maxTransactions defines a maximum number of transactions in the pool
-		"maxTransactions": 4096,
-		// maxTransactionsPerAccount defines a maximum number of transactions in the pool per sender account
-		"maxTransactionsPerAccount": 64,
-		// transactionExpiryTime defines timeout of the transaction in the pool in milliseconds
-		"transactionExpiryTime": 10800000,
-		// minEntranceFeePriority defines a minimum fee priority required to be added to the transaction pool
-		"minEntranceFeePriority": "0",
-		// minReplacementFeeDifference defines a minimum fee difference to replace a transaction with the same nonce
-		"minReplacementFeeDifference": "10"
-	},
-	// (Optional) plugins holds a group of plugin-specific configs which is passed to a particular plugin.
-	"plugins": {
-	    // Example config for the HTTP API plugin
-        /*"httpApi": {
-            "port": 4000,
-            "host": "127.0.0.1",
-            "whiteList": ["127.0.0.1"],
-            "cors": {
-                "origin": "*",
-                "methods": ["GET", "POST", "PUT"],
-            },
-            "limits": {
-                "max": 0,
-                "delayMs": 0,
-                "delayAfter": 0,
-                "windowMs": 60000,
-                "headersTimeout": 5000,
-                "serverSetTimeout": 20000,
-            },
-        }*/
-	}
+		"port": 7667,
+		"host": "127.0.0.1",  
+		"blacklistedIPs": [
+			"172.112,31.0",
+			"172.112,31.2"
+		],                                    
+		"fixedPeers": [
+			{
+				"ip": "192.110.01.12",
+				"port": 5000
+			},
+		]            
+		"whitelistedPeers": [
+			{
+				"ip": "192.110.01.12",
+				"port": 5000
+			},
+		],                  
+		"maxOutboundConnections": 20,                                   
+		"maxInboundConnections": 100,                             
+		"wsMaxPayload": 3048576,             
+		"advertiseAddress": true,                           
+		},
+	// Other types of configurations.
 }
 ----
+--
+=====
+
+=== genesis
+The `genesis` configuration holds the settings for the blockchain protocol.
+
+[tabs]
+=====
+Properties::
++
+--
+[cols="2,1,1,2,4",options="header",stripes="hover"]
+|===
+|Property's Name
+|Datatype
+|Optionality
+|Description
+|Sample
+
+| block
+| object
+| optional
+| This is the first block of a chain.
+a|[source,js]
+----
+"block": {
+	"fromFile": "./config/genesis_block.blob'",
+	"blob": "<<Hex of encoded genesis block>>",
+},
+----
+ 
+| chainID
+| string
+| mandatory
+| Represents a 4-byte hex string that identifies each chain in the Lisk ecosystem. The length of the hex string should be 8 characters.
+| 0x00000000
+ 
+| maxTransactionsSize
+| number
+| mandatory
+| The maximum transaction size (kilobytes) allowed in a block.
+| 15 * 1024
+
+| minFeePerByte
+| number
+| mandatory
+| The minimum fee per byte for a transaction.
+| 1000
+ 
+| blockTime
+| number
+| mandatory
+| The frequency of blocks to be created.
+| 10
+ 
+| bftBatchSize
+| number
+| mandatory
+| The length of a round for block generation.
+| 103
+
+|===
+
+--
+Sample::
++
+--
+[source,js]
+----
+const customConfig = 
+{
+	// Other types of configurations.
+	"genesis": {
+		"block": {
+			"fromFile": "./config/genesis_block.blob",
+			"blob": "<<Hex of encoded genesis block>>",
+		},
+		"chainID": "0x00000000",
+		"maxTransactionsSize": 15 * 1024, // Kilo Bytes
+		"minFeePerByte": 1000,
+		"blockTime": 10,
+		"bftBatchSize": 103,
+	},
+	// Other types of configurations.
+}
+----
+--
+=====
+
+
+
+
+
+=== transactionPool
+This type of configuration holds the settings for the `transactionPool`.
+
+[tabs]
+=====
+Properties::
++
+--
+[cols="2,1,1,2,4",options="header",stripes="hover"]
+|===
+|Property's Name
+|Datatype
+|Optionality
+|Description
+|Sample
+
+| maxTransactions
+| number
+| optional
+| The maximum number of transactions in the pool.
+| 4096
+ 
+| maxTransactionsPerAccount
+| number
+| optional
+| The maximum number of transactions in the pool per sender account.
+| 64
+ 
+| transactionExpiryTime
+| number
+| optional
+| Defines the timeout (milliseconds) of the transaction in the pool.
+| 3 * 60 * 60 * 1000
+ 
+| minEntranceFeePriority
+| string
+| optional
+| The minimum fee required for a transaction to be added to the transaction pool.
+| 0
+ 
+| minReplacementFeeDifference
+| string
+| optional
+| The difference of minimum fee required to replace a transaction with the same nonce
+| 10
+
+|===
+
+--
+Sample::
++
+--
+[source,js]
+----
+const customConfig = 
+{
+	// Other types of configurations.
+	"transactionPool": {
+		"maxTransactions": 4096,
+		"maxTransactionsPerAccount": 64,
+		"transactionExpiryTime": 3 * 60 * 60 * 1000,
+		"minEntranceFeePriority": "0",
+		"minReplacementFeeDifference": "10",
+	},
+	// Other types of configurations.
+}
+----
+--
+=====
+
+
+
+=== system
+The `system` configuration holds settings for the lisk application.
+
+[tabs]
+=====
+Properties::
++
+--
+[cols="2,1,1,2,4",options="header",stripes="hover"]
+|===
+|Property's Name
+|Datatype
+|Optionality
+|Description
+|Sample
+
+| version
+| string
+| mandatory
+| The version of the system.
+| 1.0
+ 
+| dataPath
+| string
+| mandatory
+| DataPath defines the blockchain application's name and folder within the root path.
+| ~/.lisk/beta-sdk-app
+
+| keepEventsForHeights
+| number
+| mandatory
+| Defines the number of blocks for which the events should be maintained by the system. Usually, the events are based on the latest, given number of blocks.
+| 300footnote:disclaimer[This is the default value.]
+
+| logLevel
+| string
+| mandatory
+| Level of the log to be maintained.
+| info
+
+|===
+--
+Sample::
++
+--
+[source,js]
+----
+const customConfig = 
+{
+	// Other types of configurations.
+	"system": {
+		"version": "1.0"
+		"dataPath": "~/.lisk/beta-sdk-app",
+		"keepEventsForHeights": 300,
+		"logLevel": "info",
+	},
+	// Other types of configurations.
+}
+----
+--
+=====
+
+
+=== rpc
+Lisk based blockchain applications can communicate with a node via the `rpc` communication protocol. 
+
+[tabs]
+=====
+Properties::
++
+--
+[cols="2,1,1,2,4",options="header",stripes="hover"]
+|===
+|Property's Name
+|Datatype
+|Optionality
+|Description
+|Sample
+
+| modes
+| enum
+| mandatory
+| Modes of communication between lisk node and the blockchain application.
+| IPC, WS, HTTP
+ 
+| port
+| number
+| mandatory
+| Port to be used for a 'WS' connection.
+| 7887
+
+| host
+| string
+| mandatory
+| Address of the server to connect.
+| 127.0.0.1
+
+|===
+--
+Sample::
++
+--
+[source,js]
+----
+const customConfig = 
+{
+	// Other types of configurations.
+	"rpc": {
+		"modes": ["IPC"],
+		"port": 7887,
+		"host": "127.0.0.1",
+	},
+	// Other types of configurations.
+}
+----
+--
+=====
+
+
+
+=== generator
+The `generator` configuration is used to read keys from a file, which are then stored in the database.
+
+[tabs]
+=====
+Properties::
++
+--
+[cols="2,1,1,2,4",options="header",stripes="hover"]
+|===
+|Property's Name
+|Datatype
+|Optionality
+|Description
+|Sample
+
+| keys
+| object
+| optional
+| Contains a path to the "keys" file for the generator.
+a| 
+[source,js]
+----
+"generator": {
+	"keys": {},
+},
+----
+
+|===
+--
+
+
+Sample::
++
+--
+[source,js]
+----
+const customConfig = 
+{
+	// Other types of configurations.
+	"generator": {
+		"keys": {
+			"fromFile": "<<path/filename>>",
+		},
+	},
+	// Other types of configurations.
+}
+----
+--
+=====
+
+==== keys schema
+The file passed to the `generator` configuration contains the schema for the keys to be used by the generator.
+
+TIP: For more information, see {url_plain_object_schema}[plainKeysObjectSchema^], {url_encrypted_object_schema}[encryptedObjectSchema^] and a sample {keys_fixture}[ keys_fixture.json^]. 
+
+[tabs]
+=====
+Properties::
++
+--
+[cols="2,1,1,2,4",options="header",stripes="hover"]
+|===
+|Property's Name
+|Datatype
+|Optionality
+|Description
+|Sample
+
+| address
+| string
+| mandatory
+| Lisk 32 addressfootnote:liskIDSystem[For more information, see the {lisk_ID_system}[New LISK ID System^].] for the generator.
+| lsk24cd35u4jdq8szo3pnsqe5dsxwrnazyqqqg5eu
+
+| plain
+| object
+| mandatory
+| Contains the object for plain keys.
+a| 
+[source,js]
+----
+"plain": {
+	"generatorKey": "",
+	"generatorPrivateKey" : "",
+	"blsKey": "",
+	"blsPrivateKey": ""
+},
+----
+
+| encrypted
+| object
+| mandatory
+| Contains the object for encrypted keys.
+a| 
+[source,js]
+----
+"encrypted": {
+	"version": ,
+	"ciphertext": ,
+	"kdf": ,
+	"kdfparams" : {},
+	"cipher": '',
+	"cipherparams": {}
+},
+----
+
+
+|===
+--
+
+Sample keys file::
++
+--
+[source,js]
+----
+{
+	"keys": [
+		{
+		"address": "lske5sqed53fdcs4m9et28f2k7u9fk6hno9bauday",
+		"keyPath": "m/44'/134'/0'",
+		"publicKey": "a3f96c50d0446220ef2f98240898515cbba8155730679ca35326d98dcfb680f0",
+		"privateKey": "d0b159fe5a7cc3d5f4b39a97621b514bc55b0a0f1aca8adeed2dd1899d93f103a3f96c50d0446220ef2f98240898515cbba8155730679ca35326d98dcfb680f0",
+		"plain": {
+			"generatorKeyPath": "m/25519'/134'/0'/0'",
+			"generatorKey": "b9e54121e5346cc04cc84bcf286d5e40d586ba5d39571daf57bd31bac3861a4a",
+			"generatorPrivateKey": "b3c4de7f7932275b7a465045e918337ffd7b7b229cef8eba28f706de8759da95b9e54121e5346cc04cc84bcf286d5e40d586ba5d39571daf57bd31bac3861a4a",
+			"blsKeyPath": "m/12381/134/0/0",
+			"blsKey": "92f020ce5e37befb86493a82686b0eedddb264350b0873cf1eeaa1fefe39d938f05f272452c1ef5e6ceb4d9b23687e31",
+			"blsProofOfPosession": "b92b11d66348e197c62d14af1453620d550c21d59ce572d95a03f0eaa0d0d195efbb2f2fd1577dc1a04ecdb453065d9d168ce7648bc5328e5ea47bb07d3ce6fd75f35ee51064a9903da8b90f7dc8ab4f2549b834cb5911b883097133f66b9ab9",
+			"blsPrivateKey": "463dd3413051366ee658c2524dd0bec85f8459bf6d70439685746406604f950d"
+		},
+		"encrypted": {
+			"ciphertext": "d340438fde7b744d7482f01531415ffc0bda70dac36257571bb0dab703771e83152428b4a4dddc77dff1a983f07b0f3cba688fab2e46abe970ae4131c616e6cbf613952786f5749e94531641f07fcdef38a001a44f56f5de69e0976964ea13cbaff0682b5e0eaf9ff01a00f5b2215a3a1d9e3f0d5b78c876b157213367f7f90a468937c0baf9904189c21870c396b43b53422422bd61a3e1c8cb3126e1a5d60545aa06ee789c89dfb9155b560c327a88af5f9b04b4c6d4e9",
+			"mac": "d476a90c1fb057a1e4ece0d725f40f67ae36efcc166aede5380115d2a7532833",
+			"kdf": "argon2id",
+			"kdfparams": {
+			"parallelism": 4,
+			"iterations": 1,
+			"memorySize": 2024,
+			"salt": "ecc014a7619b7f179b3fa32d2fed5d6c"
+			},
+			"cipher": "aes-256-gcm",
+			"cipherparams": {
+			"iv": "328cf25fdda6988ed9f1101e",
+			"tag": "1862fde73a2a7b71979773bf620872ef"
+			},
+			"version": "1"
+		}
+		}
+	]
+}
+----
+--
+=====

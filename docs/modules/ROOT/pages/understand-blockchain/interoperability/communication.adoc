@@ -22,14 +22,44 @@ A CCM includes the following properties:
 .Structure of a CCM
 image:understand-blockchain/interop/ccm.png[,300,role="right"]
 
-sending-chain ID:: description
-receiving-chain ID:: description
-module name:: description
-CCC name:: description
-nonce:: description
-fee:: description
-parameters:: description
-status:: description
+sending-chain ID:: Used to identify the chain sending the cross-chain message.
+The sending chain ID is used, for example, if the message triggers an error and has to be sent back.
+receiving-chain ID:: Used to identify the chain receiving the cross-chain message.
+On the mainchain, the receiving chain ID is read to route the message to the corresponding chain outbox.
+module & cross-chain command name:: Once the message has reached the receiving chain, the two properties `module` and `crossChainCommand` specify which logic should be used to validate and execute the message on the receiving chain.
+The module always corresponds to the module which includes the specified cross-chain command.
+nonce:: When a cross-chain message is created and added to the partner chain outbox, the nonce of the sending chain (total number of messages that were added to outboxes so far) is added to the message in the nonce property.
+This allows all messages to be uniquely identified by the (sendingChainID, receivingChainID, nonce, status) tuple, which implies that the message ID defined below will be unique for all messages in the ecosystem.
+The uniqueness of messages in the Lisk ecosystem is important for identifying messages with message IDs and tracking them throughout the ecosystem.
+fee:: For all cross-chain messages, the message fee is used to account for the transaction processing in the receiving chain.
+This fee must be transferred from the sending chain account to the receiving chain account in order to maintain the correct balances on all chains in the ecosystem.
+The token ID for this fee is stored in the channel account and is by default the token ID of the LSK token.
+As it is stored in the channel account, it does not need to be repeated in the message.
+Being the main utility token of the Lisk ecosystem, the LSK token is always the token ID for this fee for channels between the Lisk mainchain and registered sidechains.
+parameters:: The params property of the messages is defined by each module and can follow any schema, similar to the `params` property of a transaction.
+The `params` property is not deserialized or validated by the Interoperability module.
+In the Lisk ecosystem, all cross-chain messages are routed through the mainchain.
+This means that messages should always have a sufficiently small size in order to be easily included in mainchain blocks.
+As the mainchain payload size limit is 15 KiB, and other properties in the cross-chain updates will not be larger than 4 KiB, we limit the message size to 10 KiB.
+To guarantee that all messages can be included and handled, sidechains in the Lisk ecosystem should have a payload size limit equal to or greater than 15 KiB (15 x 1024 bytes).
+status:: The basic error handling for routing messages to other chains is done by the mainchain.
+Information about the reason why the message failed is stored in the status property.
+For example, in the case the receiving chain does not exist, is not active or has been terminated, the mainchain will return the message to the sending chain.
+The sending chain can then revert the message and potentially refund users.
+This design choice allows sidechains to send messages to other chains without needing to monitor the status (or even existence) of every other chain.
+The constant table lists the different status codes defined by the Interoperability module.
+To allow for future updates or improvements of the Interoperability module, other modules are restricted from using status codes up to 63 (included).
+Other modules may use other status codes larger or equal to 64.
+
+[cols=",,"]
+|===
+|Name|Type|Value
+|CCM_STATUS_OK|uint32|0
+|CCM_STATUS_MODULE_NOT_SUPPORTED|uint32|1
+|CCM_STATUS_CROSS_CHAIN_COMMAND_NOT_SUPPORTED|uint32|2
+|CCM_STATUS_CHANNEL_UNAVAILABLE|uint32|3
+|CCM_STATUS_RECOVERED|uint32|4
+|===
 
 :sectnums:
 == Using CCTs to generate CCMs
@@ -53,18 +83,43 @@ This cross-chain command will
 * execute the necessary changes on the sending chain (i.e. removing 5 LSK from Alices balance), and
 * also create CCMs to trigger the corresponding state changes in the receiving chain (i.e. add 5 LSK to Bobs balance).
 
-
 == Transferring CCMs in a CCU
 
 Several cross-chain messages are collected together and posted to another chain as part of a cross-chain update
 
+image::understand-blockchain/interop/ccu.png[,300,role=right]
 
-image::understand-blockchain/ccu.png[,300,role=right]
+sending-chain ID:: Identifies the chain sending the cross-chain update.
+Only cross-chain update transactions coming from registered chains are valid, registered chains are the ones with an entry in the interoperability store corresponding to their `chainID`.
+validators update:: The chain account stores an array containing the BLS keys and BFT weights required to validate the certificate signature.
+This array has to be updated if the validator set changes in the chain sending the certificate.
+The difference between the stored array and the new one is included in this property.
+certificate:: Aggregates certificate of a set of the current validators of the sending chain, verifying the correctness of the data sent in the CCU.
+It must be a certificate with an adequate BLS signature.
+The signature is always validated against the public key set stored in the sending chain account.
+certificate threshold:: The threshold of block generators required to validate the certificate signature.
+This certificate threshold has to be updated if its value changes in the chain sending the certificate.
+In that case, the updated value is set in the `newCertificateThreshold` property of the CCU.
+If `newCertificateThreshold` is set to `0`, it implies that the certificate threshold has not been changed in the sending chain.
+inbox:: The `inboxUpdate` contains the information relative to the messages to be included in the sending chain inbox.
+Cross-chain messages are stored in the chain outbox on the sending chain and in the corresponding inbox on the receiving chain.
+This property contains three elements:
 
-sending-chain ID:: description
-validators update:: description
-certificate:: description
-inbox:: description
+. the `crossChainMessages`:
+An array of cross-chain messages.
+The `crossChainMessages` property must contain consecutive messages from the outbox.
+. `messageWitness`:
+an inclusion witness into the outbox root:
+In the sending chain, all cross-chain messages are added to a regular Merkle tree attested by the outbox root.
+The messageWitness contains two values relative to that Merkle tree:
+the partnerChainOutboxSize, giving the total messages sent by the partner chain, and the siblingHashes, which is part of a regular Merkle proof.
+This Merkle proof is required if not all messages necessary to recompute the outbox root were given in crossChainMessages.
+If all messages required to compute the outbox root are included in crossChainMessages then siblingHashes can be left empty.
+. `outboxRootWitness`:
+An inclusion witness of this outbox root into the state root.
+The outbox root of the sending chain is part of a sparse Merkle tree attested by the state root (provided in the certificate).
+The outboxRootWitness property is an inclusion proof into the state root of the outbox root computed from the receiving chain inbox, crossChainMessages and messageWitness.
+If the cross-chain update transaction contains an empty certificate, this property can also be left empty, as the required root was already attested in a previous cross-chain update.
 
 === Sidechain to mainchain
 image:understand-blockchain/interop/ccc-2.png[,300,role=""]

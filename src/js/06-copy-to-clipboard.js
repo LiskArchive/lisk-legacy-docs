@@ -50,7 +50,7 @@
       copy.appendChild(toast)
       toolbox.appendChild(copy)
     }
-    pre.appendChild(toolbox)
+    pre.parentNode.appendChild(toolbox)
     if (copy) copy.addEventListener('click', writeToClipboard.bind(copy, code))
   })
 

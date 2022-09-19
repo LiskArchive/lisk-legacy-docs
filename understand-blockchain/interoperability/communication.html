@@ -437,7 +437,7 @@
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
 <li><a href="#inducing-state-changes-across-chains-with-ccms">Inducing state changes across chains with CCMs</a></li>
-<li><a href="#using-ccts-to-generate-ccms">1. Using CCTs to generate CCMs</a></li>
+<li><a href="#using-cross-chain-transactions-to-generate-ccms">1. Using cross-chain transactions to generate CCMs</a></li>
 <li><a href="#transferring-ccms-in-a-ccu">2. Transferring CCMs in a CCU</a>
 <ul class="sectlevel2">
 <li><a href="#sidechain-to-mainchain">2.1. Sidechain to mainchain</a></li>
@@ -445,7 +445,7 @@
 </ul>
 </li>
 <li><a href="#executing-the-ccc-on-the-receiving-chain">3. Executing the CCC on the receiving chain</a></li>
-<li><a href="#complete-cross-chain-communicatin-flow">Complete cross-chain-communicatin flow</a></li>
+<li><a href="#complete-cross-chain-communication-flow">Complete cross-chain-communication flow</a></li>
 <li><a href="#error-handling">Error handling</a>
 <ul class="sectlevel2">
 <li><a href="#ccm-validation-in-the-mainchain">CCM validation in the Mainchain</a></li>
@@ -584,14 +584,19 @@ Other modules may use other status codes larger or equal to 64.</p>
 </div>
 </div>
 <div class="sect1">
-<h2 id="using-ccts-to-generate-ccms"><a class="anchor" href="#using-ccts-to-generate-ccms"></a>1. Using CCTs to generate CCMs</h2>
+<h2 id="using-cross-chain-transactions-to-generate-ccms"><a class="anchor" href="#using-cross-chain-transactions-to-generate-ccms"></a>1. Using cross-chain transactions to generate CCMs</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Let&#8217;s look at a example of a simple cross-chain transfer between Alice and Bob.</p>
 </div>
 <div class="paragraph">
-<p>Alice has 10 LSK in her account on a chain, in this context, we call it the sending chain.
-She wants to transfer 5 LSK to Bob, who has an account on another chain, in this context the receiving chain.</p>
+<p><span class="image right"><img src="../../_images/understand-blockchain/interop/ccc-1.png" alt="ccc 1" width="300"></span></p>
+</div>
+<div class="paragraph">
+<p>Alice has 10 LSK in her account on a chain called "Sidechain X", in this context, we refer to it as the sending chain.</p>
+</div>
+<div class="paragraph">
+<p>She wants to transfer 5 LSK to Bob, who has an account on another chain, "Sidechain Y", in this context the receiving chain.</p>
 </div>
 <div class="paragraph">
 <p>Here is where <strong>cross-chain transactions (CCTs)</strong> come into play.</p>
@@ -609,14 +614,11 @@ A cross-chain transaction (CCT) is a transaction that, upon its execution, creat
 </table>
 </div>
 <div class="paragraph">
-<p><span class="image right"><img src="../../_images/understand-blockchain/interop/ccc-1.png" alt="ccc 1" width="300"></span></p>
-</div>
-<div class="paragraph">
 <p>In fact, a cross-chain transaction uses the identical schema as normal transactions.
 The only difference is, that a CCT refers to a <strong>cross-chain command</strong>, instead of a normal command.</p>
 </div>
 <div class="paragraph">
-<p>This cross-chain command will</p>
+<p>This cross-chain command will:</p>
 </div>
 <div class="ulist">
 <ul>
@@ -634,7 +636,10 @@ The only difference is, that a CCT refers to a <strong>cross-chain command</stro
 <h2 id="transferring-ccms-in-a-ccu"><a class="anchor" href="#transferring-ccms-in-a-ccu"></a>2. Transferring CCMs in a CCU</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Several cross-chain messages are collected together and posted to another chain as part of a cross-chain update</p>
+<p>Several cross-chain messages are collected together and posted to another chain as part of a cross-chain update transactions, aka CCU.</p>
+</div>
+<div class="paragraph">
+<p>A CCU contains the following properties:</p>
 </div>
 <div class="imageblock right">
 <div class="content">
@@ -656,18 +661,18 @@ The difference between the stored array and the new one is included in this prop
 </dd>
 <dt class="hdlist1">certificate</dt>
 <dd>
-<p>Aggregates certificate of a set of the current validators of the sending chain, verifying the correctness of the data sent in the CCU.
-It must be a certificate with an adequate BLS signature.
-The signature is always validated against the public key set stored in the sending chain account.</p>
+<p>Verifies the correctness of the data sent in the CCU.
+Consists of aggregated signatures of a set of the current validators of the sending chain.
+Anyone can obtain the full certificate from the blockchain by obtaining the corresponding block header, computing the unsigned certificate, and then obtaining the <code>aggregateCommit</code> once the block is finalized.</p>
 </dd>
-<dt class="hdlist1">certificate threshold</dt>
+<dt class="hdlist1">new certificate threshold</dt>
 <dd>
 <p>The threshold of block generators required to validate the certificate signature.
 This certificate threshold has to be updated if its value changes in the chain sending the certificate.
 In that case, the updated value is set in the <code>newCertificateThreshold</code> property of the CCU.
 If <code>newCertificateThreshold</code> is set to <code>0</code>, it implies that the certificate threshold has not been changed in the sending chain.</p>
 </dd>
-<dt class="hdlist1">inbox</dt>
+<dt class="hdlist1">inboxUpdate</dt>
 <dd>
 <p>The <code>inboxUpdate</code> contains the information relative to the messages to be included in the sending chain inbox.
 Cross-chain messages are stored in the chain outbox on the sending chain and in the corresponding inbox on the receiving chain.
@@ -683,16 +688,25 @@ The <code>crossChainMessages</code> property must contain consecutive messages f
 <p><code>messageWitness</code>:
 an inclusion witness into the outbox root:
 In the sending chain, all cross-chain messages are added to a regular Merkle tree attested by the outbox root.
-The messageWitness contains two values relative to that Merkle tree:
-the partnerChainOutboxSize, giving the total messages sent by the partner chain, and the siblingHashes, which is part of a regular Merkle proof.
-This Merkle proof is required if not all messages necessary to recompute the outbox root were given in crossChainMessages.
-If all messages required to compute the outbox root are included in crossChainMessages then siblingHashes can be left empty.</p>
+The <code>messageWitness</code> contains two values relative to that Merkle tree:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>the <code>partnerChainOutboxSize</code>, giving the total messages sent by the partner chain, and</p>
+</li>
+<li>
+<p>the <code>siblingHashes</code>, which is part of a regular Merkle proof.
+This Merkle proof is required if not all messages necessary to recompute the outbox root were given in <code>crossChainMessages</code>.
+If all messages required to compute the outbox root are included in <code>crossChainMessages</code> then <code>siblingHashes</code> can be left empty.</p>
+</li>
+</ol>
+</div>
 </li>
 <li>
 <p><code>outboxRootWitness</code>:
 An inclusion witness of this outbox root into the state root.
 The outbox root of the sending chain is part of a sparse Merkle tree attested by the state root (provided in the certificate).
-The outboxRootWitness property is an inclusion proof into the state root of the outbox root computed from the receiving chain inbox, crossChainMessages and messageWitness.
+The <code>outboxRootWitness</code> property is an inclusion proof into the state root of the outbox root computed from the receiving chain inbox, <code>crossChainMessages</code> and <code>messageWitness</code>.
 If the cross-chain update transaction contains an empty certificate, this property can also be left empty, as the required root was already attested in a previous cross-chain update.</p>
 </li>
 </ol>
@@ -702,14 +716,55 @@ If the cross-chain update transaction contains an empty certificate, this proper
 </div>
 <div class="sect2">
 <h3 id="sidechain-to-mainchain"><a class="anchor" href="#sidechain-to-mainchain"></a>2.1. Sidechain to mainchain</h3>
+<div class="openblock float-group">
+<div class="content">
 <div class="paragraph">
-<p><span class="image "><img src="../../_images/understand-blockchain/interop/ccc-2.png" alt="ccc 2" width="300"></span></p>
+<p><span class="image right"><img src="../../_images/understand-blockchain/interop/ccc-2.png" alt="ccc 2" width="300"></span></p>
+</div>
+<div class="paragraph">
+<p>After the CCM has been created in step <a href="#using-cross-chain-transactions-to-generate-ccms">Using cross-chain transactions to generate CCMs</a>, it is added to the outbox of the sending chain X.</p>
+</div>
+<div class="paragraph">
+<p>From the outbox, a <strong>relayer</strong> collects the CCMs and create a CCU with the properties described in step <a href="#transferring-ccms-in-a-ccu">Transferring CCMs in a CCU</a>.</p>
+</div>
+<div class="paragraph">
+<p>A relayer is a network participant who collects CCMs in a CCU and, as the name suggests, relays them to the mainchain.</p>
+</div>
+<div class="paragraph">
+<p>When the relayer posts a CCU, the included CCMs will be added to the inbox of the mainchain, and processed further from there.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Because all information to create CCUs is public, anyone can assume the role of a relayer in the network.
+</td>
+</tr>
+</table>
+</div>
+</div>
 </div>
 </div>
 <div class="sect2">
 <h3 id="mainchain-to-sidechain"><a class="anchor" href="#mainchain-to-sidechain"></a>2.2. Mainchain to sidechain</h3>
+<div class="openblock float-group">
+<div class="content">
 <div class="paragraph">
-<p><span class="image "><img src="../../_images/understand-blockchain/interop/ccc-3.png" alt="ccc 3" width="300"></span></p>
+<p><span class="image left"><img src="../../_images/understand-blockchain/interop/ccc-3.png" alt="ccc 3" width="300"></span></p>
+</div>
+<div class="paragraph">
+<p>After the CCM is included in the inbox of the mainchain, the mainchain performs the most important verifications on the CCM, e.g. it checks if the receiving chain exists, and has the status <code>active</code>.</p>
+</div>
+<div class="paragraph">
+<p>If the verification on the mainchain is passed successfully, the CCM is added to the outbox of the mainchain, ready to be picked up by a relayer.</p>
+</div>
+<div class="paragraph">
+<p>A relayer on the mainchain will include the CCM in a CCU and post it to the sending chain.</p>
+</div>
+</div>
 </div>
 </div>
 </div>
@@ -717,14 +772,19 @@ If the cross-chain update transaction contains an empty certificate, this proper
 <div class="sect1">
 <h2 id="executing-the-ccc-on-the-receiving-chain"><a class="anchor" href="#executing-the-ccc-on-the-receiving-chain"></a>3. Executing the CCC on the receiving chain</h2>
 <div class="sectionbody">
+<div class="openblock float-group">
+<div class="content">
 <div class="paragraph">
-<p><strong>Cross-chain commands</strong>, or <strong>CC-commands</strong>, induce a state transition in the receiving chain, if:</p>
+<p><span class="image left"><img src="../../_images/understand-blockchain/interop/ccc-4.png" alt="ccc 4" width="300"></span></p>
+</div>
+<div class="paragraph">
+<p>Once the CCM is included in the inbox on the receiving chain Y, the remaining validations of the CCM are performed.</p>
+</div>
+<div class="paragraph">
+<p>The <strong>Cross-chain commands</strong>, or <strong>CC-commands</strong>, induce a state transition in the receiving chain, if:</p>
 </div>
 <div class="ulist">
 <ul>
-<li>
-<p>the receiving chain exists, and has the status <code>active</code>.</p>
-</li>
 <li>
 <p>the receiving application understands the particular command, i.e. if it includes the required module to interpret the command name</p>
 </li>
@@ -733,15 +793,24 @@ If the cross-chain update transaction contains an empty certificate, this proper
 </li>
 </ul>
 </div>
+<div class="paragraph">
+<p>If the validation is completed successfully, the CC-Transfer command is performing the intended state changes on the receiving chain, i.e. adding 5 LSK to Bobs account.</p>
+</div>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="complete-cross-chain-communicatin-flow"><a class="anchor" href="#complete-cross-chain-communicatin-flow"></a>Complete cross-chain-communicatin flow</h2>
+<h2 id="complete-cross-chain-communication-flow"><a class="anchor" href="#complete-cross-chain-communication-flow"></a>Complete cross-chain-communication flow</h2>
 <div class="sectionbody">
+<div class="paragraph">
+<p>To summarize, the complete flow of cross-chain communciation is described in the diagram below:</p>
+</div>
 <div class="imageblock">
 <div class="content">
 <img src="../../_images/understand-blockchain/interop/cc-cmmunication-flow.png" alt="cc cmmunication flow" width="300">
 </div>
+<div class="title">Figure 1. Overview: Cross-chain communication flow</div>
 </div>
 </div>
 </div>

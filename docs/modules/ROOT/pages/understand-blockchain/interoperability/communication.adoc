@@ -135,12 +135,38 @@ After the CCM has been created in step <<using-cross-chain-transactions-to-gener
 
 From the outbox, a *relayer* collects the CCMs and creates a CCU with the properties described in step <<transferring-ccms-in-a-ccu>>.
 
-A relayer is a network participant who collects CCMs in a CCU and, as the name suggests, relays them to the mainchain.
+A *relayer* is a blockchain node that collects CCMs in a CCU and, as the name suggests, relays them cross-chain.
+
+The role of relayer is totally symmetric for relaying information from a sidechain to the mainchain.
 
 When the relayer posts a CCU, the included CCMs will be added to the inbox of the mainchain, and processed further from there.
 
-NOTE: Because all information to create CCUs is public, anyone can assume the role of a relayer in the network.
+NOTE: Because all information to create CCUs is publicly available, anyone can assume the role of a relayer in the network, and create and post CCUs to other chains.
 --
+
+=== Creating and Posting CCUs
+
+The Lisk consensus mechanism is designed to create and publish certificates regularly.
+In that regard, obtaining the information required to post a cross-chain update transaction is easy and straightforward.
+The following is an example workflow that a relayer for a given sidechain could follow.
+
+. Setup to gather the required mainchain information:
+.. Run a mainchain node.
+.. Maintain a list of all CCMs included in the sidechain outbox.
+For each height where a CCM was included in the outbox, also save the inclusion witness of the outbox into the state root.
+All CCMs and witnesses for heights that have been certified on the sidechain can be discarded.
+.. Maintain a history of all validator changes on the mainchain for rounds that have not yet been certified on the sidechain.
+. Create a cross-chain update transaction for a given height `h1`:
+.. Find a signed certificate in the mainchain block headers for a height (say `h2`) higher or equal to `h1`.
+This will be used as the `certificate` property of the transaction.
+.. The property `inboxUpdate.crossChainMessages` lists all CCMs that have been included in the sidechain outbox up to `h2` (and which have not been included on the sidechain yet).
+In this case, the `messageWitness` will be empty.
+.. Compute the inclusion proof for the outbox root of the sidechain account into the mainchain state root.
+This proof is then used to compute `inboxUpdate.outboxRootWitness`.
+.. Compute the required update to the active validators stored in the chain account and the validators that were used to create `certificate.validatorsHash`.
+//This update can be obtained by following the logic of `getActiveValidatorsDiff` as detailed in the Appendix.
+.. If the certificateThreshold used to create `certificate.validatorsHash` is different from the one stored in the chain account, include the new value in the `newCertificateThreshold` property.
+.. Post the cross-chain update transaction on the sidechain.
 
 === Mainchain to sidechain
 
@@ -148,11 +174,15 @@ NOTE: Because all information to create CCUs is public, anyone can assume the ro
 --
 image:understand-blockchain/interop/ccc-3.png[,300,role="right"]
 
-After the CCM is included in the inbox of the mainchain, the mainchain performs the most important verifications on the CCM, e.g. it checks if the receiving chain exists, and has the status `active`.
+After the CCM is included in the inbox of the mainchain, the mainchain performs the most important verifications on the CCM.
 
 If the verification on the mainchain is passed successfully, the CCM is added to the outbox of the mainchain, ready to be picked up by a relayer.
 
 A relayer on the mainchain will include the CCM in a CCU and post it to the sending chain.
+
+Relayers should post cross-chain update transactions on the sidechain when the need for it arises.
+This can be either because some CCMs have been included in the outbox and need to be relayed, or when the mainchain validators changes require the channel to be updated on the sidechain.
+
 --
 
 == Executing the CCC on the receiving chain
@@ -163,27 +193,38 @@ image:understand-blockchain/interop/ccc-4.png[,300,role="right"]
 
 Once the CCM is included in the inbox on the receiving chain Y, the remaining validations of the CCM are performed.
 
+If the validation is completed successfully, the CC-Transfer command is performing the intended state changes on the receiving chain, i.e. adding 5 LSK to Bobs account.
+--
+:!sectnums:
+
+== Error handling
+
+
+=== CCM validation in the Mainchain
+
+Checks for all CCMs in the inbox update, if ...
+
+* the receiving chain exists
+* the receiving chain has the status `active`.
+* `sendingchain-ID` of the CCM equals the chain ID of the sending chain.
+
+image:understand-blockchain/interop/ccc-2b.png[,300,role="right"]
+
+=== CCM validation in the receiving chain
+
+[.float-group]
+--
 The *Cross-chain commands*, or *CC-commands*, induce a state transition in the receiving chain, if:
 
 * the receiving application understands the particular command, i.e. if it includes the required module to interpret the command name
 * the CCM includes all parameters required for the CC-command
 
-If the validation is completed successfully, the CC-Transfer command is performing the intended state changes on the receiving chain, i.e. adding 5 LSK to Bobs account.
+image:understand-blockchain/interop/ccc-3b.png[,300,role="right"]
 --
-:!sectnums:
 
 == Complete cross-chain-communication flow
 
-To summarize, the complete flow of cross-chain communciation is described in the diagram below:
+To summarize, the complete flow of cross-chain communciation is described in the diagram:
 
 .Overview: Cross-chain communication flow
-image::understand-blockchain/interop/cc-cmmunication-flow.png[,300]
-
-== Error handling
-
-=== CCM validation in the Mainchain
-image:understand-blockchain/interop/ccc-2b.png[,300,role=""]
-
-=== CCM validation in the receiving chain
-image:understand-blockchain/interop/ccc-3b.png[,300,role=""]
-
+image::understand-blockchain/interop/cc-cmmunication-flow.png[]

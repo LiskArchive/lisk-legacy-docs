@@ -7,6 +7,8 @@ Chris Braithwaite <christopher.braithwaite@lightcurve.io> Mona Bärenfänger <mo
 :imagesdir: ../../assets/images
 
 :url_ccm: understand-blockchain/interoperability/communication.adoc
+:url_ccm1: understand-blockchain/interoperability/communication.adoc#inducing_state_changes_across_chains_with_ccms
+
 
 //:url_how_blockchain_works: intro/how-blockchain-works.adoc
 //:url_transactions: understand-blockchain/lisk-protocol/transactions.adoc
@@ -20,7 +22,29 @@ Furthermore, it is possible to move these assets back to the original blockchain
 Simply put, a sidechain will allow nodes containing assets or data from the parent blockchain to be securely used in a separate blockchain (the sidechain), and hence, these assets and data can then be transferred back to the original blockchain.
 In turn, the advent of sidechains will further increase the performance of the parent blockchain by taking some of the workload, and furthermore this increases the level of security as all transactions that are executed, are secured by the participants (generators/forgers), of the mainchain.
 
-=== Sidechains in Lisk
+== Life Cycle of a Sidechain
+
+The life cycle of a sidechain can be broken down into 3 parts, corresponding to the following 3 values of the account status property: ''registered'', ''active'', and ''terminated''.
+
+Firstly, a sidechain registers on the mainchain with a *sidechain registration command*.
+This command creates the sidechain account on the mainchain. In particular, it creates an entry in the chain data substore, with initial status set to 'registered'; an entry in the channel data substore, with empty inbox and outbox; and an entry in the validators data substore, holding the initial sidechain validators set.
+Thereafter, the mainchain account is similarly created on a sidechain with a *mainchain registration command*.
+
+After a sidechain has been registered on the mainchain, it cannot receive any cross-chain message and does not need to follow the liveness rule, until the first sidechain CCU has been included in the mainchain.
+At this point, the status of the sidechain account on the mainchain is updated to ''active'' and the liveness requirement is enforced.
+
+If no CCU is received within 30 days, the *chain account is terminated* and no more CCMs can be sent to or received from the sidechain.
+A sidechain account can also be terminated if the sidechain posts a CCU containing a CCM with an invalid schema or with an invalid sending chain ID.
+A message targeting a terminated chain is bounced on the mainchain instead of being forwarded.
+When this happens, a ''terminated sidechain'' message is emitted by the mainchain, targeting the original sending chain.
+When this message is processed, the chain is also terminated in the sending chain, blocking future messages.
+
+When a chain is terminated, a 'terminated state' account is created, storing the last certified state root of the terminated chain.
+Then, users can recover tokens from the terminated sidechain with a state recovery command or proceed with the message recovery initialization command to kick-off the recovery of pending cross-chain messages.
+
+
+
+== Sidechains in Lisk
 Within the Lisk network, the sidechain technique deployed collects a series of cross-chain messages before to executing a transaction.
 After these messages reach the receiving platform, they can then be verified and added to the block.
 
@@ -68,13 +92,16 @@ It guarantees that when the CCU activating the channel is executed, a registrati
 
 ==== Sidechain Registration Process
 
-A transaction with this command can be sent by any user account in the Lisk Mainchain with enough funds to pay the required fee.
-The processing of this command implies the creation of a sidechain account in the mainchain state associated with a unique network identifier and a name.
-Therefore that every new sidechain occupies a certain namespace in the ecosystem.
+A transaction with this command can be sent by any user account in the Lisk Mainchain that possesses adequate funds to pay the required fee.
+The processing of this command signifies the creation of a sidechain account in the mainchain state that is associated with a unique network identifier and a name.
+Therefore each new sidechain occupies a certain namespace in the ecosystem.
 Additionally, every newly registered sidechain can increase the size of every cross-chain update command posted on the mainchain (due to the increasing size of the  `outboxRootWitness` property of the command).
 For these two reasons, the minimum fee for this command has an added constant similar to the extra fee in a *delegate registration command*.
 The value of this extra registration fee is 10 LSK.
 
+Once the sidechain registration command is processed, the sidechain account status is set to registered.
+In this state, the cross-chain channel is still not active, so the users on the mainchain or other chains cannot send xref:{url_ccm1}[cross-chain messages (CCMs)] to this sidechain yet. Moreover, the *liveness requirement* to maintain the channel is not enforced, this means that there is no specific time requirement for a sidechain to be activated on the mainchain, it can stay in the registered status for any period of time.
+When a first valid cross-chain update command from this sidechain is processed, the sidechain status is changed to active, making it active in the ecosystem. Now it is possible to send CCMs to the sidechain and the liveness condition is enforced.
 
 
 

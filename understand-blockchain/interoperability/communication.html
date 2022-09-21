@@ -542,45 +542,6 @@ Other modules may use other status codes larger or equal to 64.</p>
 </dd>
 </dl>
 </div>
-<table class="tableblock frame-all grid-all stretch">
-<colgroup>
-<col style="width: 33.3333%;">
-<col style="width: 33.3333%;">
-<col style="width: 33.3334%;">
-</colgroup>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Name</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Type</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Value</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">CCM_STATUS_OK</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">uint32</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">CCM_STATUS_MODULE_NOT_SUPPORTED</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">uint32</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">CCM_STATUS_CROSS_CHAIN_COMMAND_NOT_SUPPORTED</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">uint32</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">2</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">CCM_STATUS_CHANNEL_UNAVAILABLE</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">uint32</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">3</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">CCM_STATUS_RECOVERED</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">uint32</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">4</p></td>
-</tr>
-</tbody>
-</table>
 </div>
 </div>
 <div class="sect1">
@@ -856,6 +817,68 @@ This can be either because some CCMs have been included in the outbox and need t
 <div class="sect1">
 <h2 id="error-handling"><a class="anchor" href="#error-handling"></a>Error handling</h2>
 <div class="sectionbody">
+<div class="paragraph">
+<p>There are multiple possible errors which can happen during cross-chain communication.</p>
+</div>
+<div class="paragraph">
+<p>To ensure, that only intended state changes are performed on the receiving chain, the CCM is validated at several stages of the cross-chain communication.</p>
+</div>
+<div class="paragraph">
+<p>If a validation of the CCM fails, the <code>status</code> property of the CCM is updated with the corresponding error code, and the error handling takes care that the CCM is not executed, and all unintended state changes are reverted.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 1. CCM status codes</caption>
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 12.5%;">
+<col style="width: 12.5%;">
+<col style="width: 50%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Status</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Type</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Value</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Description</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">OK</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">uint32</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The default status of a cross-chain message.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MODULE NOT SUPPORTED</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">uint32</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Status assigned on the receiving chain if it does not implement any module with ID equal to the message module ID.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CROSS CHAIN COMMAND NOT SUPPORTED</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">uint32</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Status assigned on the receiving chain if it does not implement any command with ID equal to the message command ID.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CHANNEL UNAVAILABLE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">uint32</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">status assigned on the mainchain if the receiving chain is not available (it does not exist, it is not active, or it has been terminated).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">RECOVERED</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">uint32</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Status assigned on the mainchain to a cross-chain message after it has been recovered from the outbox of a terminated sidechain.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>The status code provides crucial information to the blockchain application how to process / forward a CCM.</p>
+</div>
+<div class="paragraph">
+<p>Mainchain and receiving chain each perform different validity checks on the CCM, and in turn each add their specific status codes to a CCM, if the validation failed.</p>
+</div>
 <div class="sect2">
 <h3 id="ccm-validation-in-the-mainchain"><a class="anchor" href="#ccm-validation-in-the-mainchain"></a>CCM validation in the Mainchain</h3>
 <div class="openblock float-group">
@@ -864,7 +887,7 @@ This can be either because some CCMs have been included in the outbox and need t
 <p><span class="image right"><img src="../../_images/understand-blockchain/interop/ccc-2b.png" alt="ccc 2b" width="300"></span></p>
 </div>
 <div class="paragraph">
-<p>Checks for all CCMs in the inbox update, if &#8230;&#8203;</p>
+<p>When a CCU is relayed from a sending chain to the mainchain, the mainchain checks for all CCMs in the inbox update, if:</p>
 </div>
 <div class="ulist">
 <ul>
@@ -886,8 +909,11 @@ This can be either because some CCMs have been included in the outbox and need t
 <h3 id="ccm-validation-in-the-receiving-chain"><a class="anchor" href="#ccm-validation-in-the-receiving-chain"></a>CCM validation in the receiving chain</h3>
 <div class="openblock float-group">
 <div class="content">
+<div class="paragraph right">
+<p><span class="image"><img src="../../_images/understand-blockchain/interop/ccc-3b.png" alt="ccc 3b" width="300"></span></p>
+</div>
 <div class="paragraph">
-<p><span class="image left"><img src="../../_images/understand-blockchain/interop/ccc-3b.png" alt="ccc 3b" width="300"></span></p>
+<p>When a CCU is relayed from the mainchain to the receiving chain, the receiving chain checks for all CCMs in the inbox update, if &#8230;&#8203;</p>
 </div>
 <div class="paragraph">
 <p>The <strong>Cross-chain commands</strong>, or <strong>CC-commands</strong>, induce a state transition in the receiving chain, if:</p>

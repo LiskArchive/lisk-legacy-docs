@@ -50,16 +50,6 @@ The constant table lists the different status codes defined by the Interoperabil
 To allow for future updates or improvements of the Interoperability module, other modules are restricted from using status codes up to 63 (included).
 Other modules may use other status codes larger or equal to 64.
 
-[cols=",,"]
-|===
-|Name|Type|Value
-|CCM_STATUS_OK|uint32|0
-|CCM_STATUS_MODULE_NOT_SUPPORTED|uint32|1
-|CCM_STATUS_CROSS_CHAIN_COMMAND_NOT_SUPPORTED|uint32|2
-|CCM_STATUS_CHANNEL_UNAVAILABLE|uint32|3
-|CCM_STATUS_RECOVERED|uint32|4
-|===
-
 :sectnums:
 == Using cross-chain transactions to generate CCMs
 
@@ -199,6 +189,26 @@ If the validation is completed successfully, the CC-Transfer command is performi
 
 == Error handling
 
+There are multiple possible errors which can happen during cross-chain communication.
+
+To ensure, that only intended state changes are performed on the receiving chain, the CCM is validated at several stages of the cross-chain communication.
+
+If a validation of the CCM fails, the `status` property of the CCM is updated with the corresponding error code, and the error handling takes care that the CCM is not executed, and all unintended state changes are reverted.
+
+.CCM status codes
+[cols="2,1,1,4"]
+|===
+|Status|Type|Value|Description
+|OK|uint32|0|The default status of a cross-chain message.
+|MODULE NOT SUPPORTED|uint32|1|Status assigned on the receiving chain if it does not implement any module with ID equal to the message module ID.
+|CROSS CHAIN COMMAND NOT SUPPORTED|uint32|2|Status assigned on the receiving chain if it does not implement any command with ID equal to the message command ID.
+|CHANNEL UNAVAILABLE|uint32|3|status assigned on the mainchain if the receiving chain is not available (it does not exist, it is not active, or it has been terminated).
+|RECOVERED|uint32|4|Status assigned on the mainchain to a cross-chain message after it has been recovered from the outbox of a terminated sidechain.
+|===
+
+The status code provides crucial information to the blockchain application how to process / forward a CCM.
+
+Mainchain and receiving chain each perform different validity checks on the CCM, and in turn each add their specific status codes to a CCM, if the validation failed.
 
 === CCM validation in the Mainchain
 
@@ -206,7 +216,7 @@ If the validation is completed successfully, the CC-Transfer command is performi
 --
 image:understand-blockchain/interop/ccc-2b.png[,300,role="right"]
 
-Checks for all CCMs in the inbox update, if ...
+When a CCU is relayed from a sending chain to the mainchain, the mainchain checks for all CCMs in the inbox update, if:
 
 * the receiving chain exists
 * the receiving chain has the status `active`.
@@ -218,7 +228,11 @@ Checks for all CCMs in the inbox update, if ...
 
 [.float-group]
 --
-image:understand-blockchain/interop/ccc-3b.png[,300,role="left"]
+
+[.right]
+image:understand-blockchain/interop/ccc-3b.png[,300]
+
+When a CCU is relayed from the mainchain to the receiving chain, the receiving chain checks for all CCMs in the inbox update, if ...
 
 The *Cross-chain commands*, or *CC-commands*, induce a state transition in the receiving chain, if:
 

@@ -873,10 +873,37 @@ export class HelloModule extends BaseModule {
 <div class="sect1">
 <h2 id="stores"><a class="anchor" href="#stores"></a>Stores</h2>
 <div class="sectionbody">
+<div class="paragraph">
+<p>Modules have access to two kind of stores:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>an <a href="#on-chain&.adoc#8212;&#8203;module-stores" class="xref unresolved">on-chain store, a.k.a module store</a></p>
+</li>
+<li>
+<p>an <a href="#off-chain-store">Off-chain Store</a></p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Both stores are included in the state machine of the blockchain application, though only the data on the on-chain stores is shared and synchronized with other nodes in the network.</p>
+</div>
 <div class="sect2">
-<h3 id="the-basestore"><a class="anchor" href="#the-basestore"></a>The BaseStore</h3>
+<h3 id="on-chain-module-stores"><a class="anchor" href="#on-chain-module-stores"></a>On-chain- / Module Stores</h3>
+<div class="paragraph">
+<p>A module can define one or multiple on-chain stores, to store data in the blockchain that is part of the blockchain state.</p>
+</div>
+<div class="paragraph">
+<p>For example, data like account balances, delegate names and multisignature keys are values that are stored in the on-chain module store.</p>
+</div>
+<div class="paragraph">
+<p>Every module store is extended from the <code>BaseStore</code>:</p>
+</div>
+<details>
+<summary class="title">The BaseStore class</summary>
+<div class="content">
 <div class="listingblock">
-<div class="title">The BaseStore class</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export abstract class BaseStore&lt;T&gt; {
 	private readonly _version: number;
@@ -960,9 +987,111 @@ export class HelloModule extends BaseModule {
 </div>
 </div>
 </div>
+</details>
+</div>
 <div class="sect2">
-<h3 id="off-chain-stores"><a class="anchor" href="#off-chain-stores"></a>Off-chain Stores</h3>
+<h3 id="off-chain-store"><a class="anchor" href="#off-chain-store"></a>Off-chain Store</h3>
+<div class="paragraph">
+<p>In a module, the off-chain store is available in: <a href="#insertassets">insertAssets</a> &amp; <a href="#endpoints">Endpoints</a>.</p>
+</div>
+<div class="paragraph">
+<p>It complements the on-chain module store, by allowing to store various additional data in the blockchain application, that does not need to be included in the on-chain store.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+The data stored in the off-chain store is not part of the blockchain protocol, and it may be different from machine to machine.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Every off-chain store is extended from the <code>BaseOffchainStore</code>:</p>
+</div>
+<details>
+<summary class="title">The BaseOffchainStore class</summary>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">export abstract class BaseOffchainStore&lt;T&gt; {
+	private readonly _version: number;
+	private readonly _storePrefix: Buffer;
+	private readonly _subStorePrefix: Buffer;
 
+	public abstract schema: Schema;
+
+	public get key(): Buffer {
+		return Buffer.concat([this._storePrefix, this._subStorePrefix]);
+	}
+
+	public get name(): string {
+		const name = this.constructor.name.replace('Store', '');
+		return name.charAt(0).toLowerCase() + name.substr(1);
+	}
+
+	public constructor(moduleName: string, version = 0) {
+		this._version = version;
+		this._storePrefix = utils.hash(Buffer.from(moduleName, 'utf-8')).slice(0, 4);
+		// eslint-disable-next-line no-bitwise
+		this._storePrefix[0] &amp;= 0x7f;
+		const versionBuffer = Buffer.alloc(2);
+		versionBuffer.writeUInt16BE(this._version, 0);
+		this._subStorePrefix = utils
+			.hash(Buffer.concat([Buffer.from(this.name, 'utf-8'), versionBuffer]))
+			.slice(0, 2);
+	}
+
+	public async get(ctx: ImmutableStoreGetter, key: Buffer): Promise&lt;T&gt; {
+		if (!this.schema) {
+			throw new Error('Schema is not set');
+		}
+		const subStore = ctx.getOffchainStore(this._storePrefix, this._subStorePrefix);
+		return subStore.getWithSchema&lt;T&gt;(key, this.schema);
+	}
+
+	public async has(ctx: ImmutableStoreGetter, key: Buffer): Promise&lt;boolean&gt; {
+		if (!this.schema) {
+			throw new Error('Schema is not set');
+		}
+		const subStore = ctx.getOffchainStore(this._storePrefix, this._subStorePrefix);
+		return subStore.has(key);
+	}
+
+	public async iterate(
+		ctx: ImmutableStoreGetter,
+		options: IterateOptions,
+	): Promise&lt;{ key: Buffer; value: T }[]&gt; {
+		if (!this.schema) {
+			throw new Error('Schema is not set');
+		}
+		const subStore = ctx.getOffchainStore(this._storePrefix, this._subStorePrefix);
+		return subStore.iterateWithSchema&lt;T&gt;(options, this.schema);
+	}
+
+	public async set(ctx: StoreGetter, key: Buffer, value: T): Promise&lt;void&gt; {
+		if (!this.schema) {
+			throw new Error('Schema is not set');
+		}
+		const subStore = ctx.getOffchainStore(this._storePrefix, this._subStorePrefix);
+		return subStore.setWithSchema(key, value as Record&lt;string, unknown&gt;, this.schema);
+	}
+
+	public async del(ctx: StoreGetter, key: Buffer): Promise&lt;void&gt; {
+		if (!this.schema) {
+			throw new Error('Schema is not set');
+		}
+		const subStore = ctx.getOffchainStore(this._storePrefix, this._subStorePrefix);
+		return subStore.del(key);
+	}
+}</code></pre>
+</div>
+</div>
+</div>
+</details>
 </div>
 </div>
 </div>
@@ -1685,6 +1814,26 @@ The assets added during the execution of this hook can be used in all the execut
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async insertAssets(context: InsertAssetContext): Promise&lt;void&gt; {}</code></pre>
 </div>
 </div>
+<details>
+<summary class="title">Interface for <code>InsertAssets</code> context</summary>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">{
+	logger: Logger;
+	networkIdentifier: Buffer;
+	getAPIContext: () =&gt; APIContext;
+	getStore: (moduleID: Buffer, storePrefix: Buffer) =&gt; ImmutableSubStore;
+	header: BlockHeader;
+	assets: WritableBlockAssets;
+	getGeneratorStore: (moduleID: Buffer) =&gt; SubStore;
+	getOffchainStore: (moduleID: Buffer, storePrefix: Buffer) =&gt; SubStore;
+	getFinalizedHeight(): number;
+}</code></pre>
+</div>
+</div>
+</div>
+</details>
 </div>
 <div class="sect2">
 <h3 id="verifyassets"><a class="anchor" href="#verifyassets"></a>verifyAssets</h3>
@@ -1716,6 +1865,23 @@ In this hook, the <strong>state cannot be mutated</strong> and events cannot be 
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async verifyAssets(context: BlockVerifyContext): Promise&lt;void&gt; {}</code></pre>
 </div>
 </div>
+<details>
+<summary class="title">Interface for <code>verifyAssets</code> context</summary>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">{
+	logger: Logger;
+	networkIdentifier: Buffer;
+	getAPIContext: () =&gt; ImmutableAPIContext;
+	getStore: (moduleID: Buffer, storePrefix: Buffer) =&gt; ImmutableSubStore;
+	header: BlockHeader;
+	assets: BlockAssets;
+}</code></pre>
+</div>
+</div>
+</div>
+</details>
 </div>
 <div class="sect2">
 <h3 id="beforetransactionsexecute"><a class="anchor" href="#beforetransactionsexecute"></a>beforeTransactionsExecute</h3>
@@ -1739,6 +1905,28 @@ In this hook, the <strong>state can be mutated</strong> and events can be emitte
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async beforeTransactionsExecute(context: BlockExecuteContext): Promise&lt;void&gt; {}</code></pre>
 </div>
 </div>
+<details>
+<summary class="title">Interface for <code>beforeTransactionsExecute</code> context</summary>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">{
+	logger: Logger;
+	networkIdentifier: Buffer;
+	eventQueue: EventQueue;
+	getAPIContext: () =&gt; APIContext;
+	getStore: (moduleID: Buffer, storePrefix: Buffer) =&gt; SubStore;
+	header: BlockHeader;
+	assets: BlockAssets;
+	currentValidators: Validator[];
+	impliesMaxPrevote: boolean;
+	maxHeightCertified: number;
+	certificateThreshold: bigint;
+}</code></pre>
+</div>
+</div>
+</div>
+</details>
 </div>
 <div class="sect2">
 <h3 id="verifytransaction"><a class="anchor" href="#verifytransaction"></a>verifyTransaction</h3>
@@ -1767,6 +1955,22 @@ In this hook, the <strong>state cannot be mutated</strong> and events cannot be 
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async verifyTransaction(context: TransactionVerifyContext): Promise&lt;void&gt; {}</code></pre>
 </div>
 </div>
+<details>
+<summary class="title">Interface for <code>TransactionVerifyContext</code> context</summary>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">{
+	networkIdentifier: Buffer;
+	logger: Logger;
+	transaction: Transaction;
+	getAPIContext: () =&gt; ImmutableAPIContext;
+	getStore: (moduleID: Buffer, storePrefix: Buffer) =&gt; ImmutableSubStore;
+}</code></pre>
+</div>
+</div>
+</div>
+</details>
 </div>
 <div class="sect2">
 <h3 id="beforecommandexecute"><a class="anchor" href="#beforecommandexecute"></a>beforeCommandExecute</h3>
@@ -1794,6 +1998,29 @@ In this hook, the <strong>state can be mutated</strong> and events can be emitte
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async beforeCommandExecute(context: TransactionExecuteContext): Promise&lt;void&gt; {}</code></pre>
 </div>
 </div>
+<details>
+<summary class="title">Interface for <code>beforeCommandExecute</code> context</summary>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">{
+	logger: Logger;
+	networkIdentifier: Buffer;
+	eventQueue: EventQueueAdder;
+	getAPIContext: () =&gt; APIContext;
+	getStore: (moduleID: Buffer, storePrefix: Buffer) =&gt; SubStore;
+	header: BlockHeader;
+	assets: BlockAssets;
+	transaction: Transaction;
+	currentValidators: Validator[];
+	impliesMaxPrevote: boolean;
+	maxHeightCertified: number;
+	certificateThreshold: bigint;
+}</code></pre>
+</div>
+</div>
+</div>
+</details>
 </div>
 <div class="sect2">
 <h3 id="aftercommandexecute"><a class="anchor" href="#aftercommandexecute"></a>afterCommandExecute</h3>
@@ -1821,6 +2048,29 @@ In this hook, the <strong>state can be mutated</strong> and events can be emitte
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async afterCommandExecute(context: TransactionExecuteContext): Promise&lt;void&gt; {}</code></pre>
 </div>
 </div>
+<details>
+<summary class="title">Interface for <code>afterCommandExecute</code> context</summary>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">{
+	logger: Logger;
+	networkIdentifier: Buffer;
+	eventQueue: EventQueueAdder;
+	getAPIContext: () =&gt; APIContext;
+	getStore: (moduleID: Buffer, storePrefix: Buffer) =&gt; SubStore;
+	header: BlockHeader;
+	assets: BlockAssets;
+	transaction: Transaction;
+	currentValidators: Validator[];
+	impliesMaxPrevote: boolean;
+	maxHeightCertified: number;
+	certificateThreshold: bigint;
+}</code></pre>
+</div>
+</div>
+</div>
+</details>
 </div>
 <div class="sect2">
 <h3 id="aftertransactionsexecute"><a class="anchor" href="#aftertransactionsexecute"></a>afterTransactionsExecute</h3>
@@ -1848,6 +2098,34 @@ In this hook, the <strong>state can be mutated</strong> and events can be emitte
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async afterTransactionsExecute(context: BlockAfterExecuteContext): Promise&lt;void&gt; {}</code></pre>
 </div>
 </div>
+<details>
+<summary class="title">Interface for <code>afterTransactionsExecute</code> context</summary>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">{
+	logger: Logger;
+	networkIdentifier: Buffer;
+	eventQueue: EventQueue;
+	getAPIContext: () =&gt; APIContext;
+	getStore: (moduleID: Buffer, storePrefix: Buffer) =&gt; SubStore;
+	header: BlockHeader;
+	assets: BlockAssets;
+	currentValidators: Validator[];
+	impliesMaxPrevote: boolean;
+	maxHeightCertified: number;
+	certificateThreshold: bigint;
+	transactions: ReadonlyArray&lt;Transaction&gt;;
+	setNextValidators: (
+		preCommitThreshold: bigint,
+		certificateThreshold: bigint,
+		validators: Validator[],
+	) =&gt; void;
+}</code></pre>
+</div>
+</div>
+</div>
+</details>
 </div>
 <div class="sect2">
 <h3 id="initgenesisstate"><a class="anchor" href="#initgenesisstate"></a>initGenesisState</h3>
@@ -1863,6 +2141,28 @@ Each module must initialize their state using an associated block asset.</p>
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async initGenesisState(context: GenesisBlockExecuteContext): Promise&lt;void&gt; {}</code></pre>
 </div>
 </div>
+<details>
+<summary class="title">Interface for <code>initGenesisState</code> context</summary>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">{
+	logger: Logger;
+	eventQueue: EventQueueAdder;
+	getAPIContext: () =&gt; APIContext;
+	getStore: (moduleID: Buffer, storePrefix: Buffer) =&gt; SubStore;
+	header: BlockHeader;
+	assets: BlockAssets;
+	setNextValidators: (
+		preCommitThreshold: bigint,
+		certificateThreshold: bigint,
+		validators: Validator[],
+	) =&gt; void;
+}</code></pre>
+</div>
+</div>
+</div>
+</details>
 </div>
 <div class="sect2">
 <h3 id="finalizegenesisstate"><a class="anchor" href="#finalizegenesisstate"></a>finalizeGenesisState</h3>
@@ -1877,6 +2177,28 @@ Each module must initialize their state using an associated block asset.</p>
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async finalizeGenesisState(context: GenesisBlockExecuteContext): Promise&lt;void&gt; {}</code></pre>
 </div>
 </div>
+<details>
+<summary class="title">Interface for <code>finalizeGenesisState</code> context</summary>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">{
+	logger: Logger;
+	eventQueue: EventQueueAdder;
+	getAPIContext: () =&gt; APIContext;
+	getStore: (moduleID: Buffer, storePrefix: Buffer) =&gt; SubStore;
+	header: BlockHeader;
+	assets: BlockAssets;
+	setNextValidators: (
+		preCommitThreshold: bigint,
+		certificateThreshold: bigint,
+		validators: Validator[],
+	) =&gt; void;
+}</code></pre>
+</div>
+</div>
+</div>
+</details>
 </div>
 </div>
 </div>

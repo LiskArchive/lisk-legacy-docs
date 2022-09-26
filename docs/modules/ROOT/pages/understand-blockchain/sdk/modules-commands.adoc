@@ -771,7 +771,7 @@ It is automatically emitted everytime a transaction is processed by a module.
 The default event is therefore the only blockchain event, that is not defined manually by the developer of a module.
 
 .state_machine.ts
-[source,js]
+[source,typescript]
 ----
 public async executeTransaction(ctx: TransactionContext): Promise<TransactionExecutionResult> {
     // ...
@@ -784,7 +784,19 @@ public async executeTransaction(ctx: TransactionContext): Promise<TransactionExe
 				[ctx.transaction.id],
 			);
 		} catch (error) {
-        // ...
+            ctx.eventQueue.restoreSnapshot(commandEventQueueSnapshotID);
+			ctx.stateStore.restoreSnapshot(commandStateStoreSnapshotID);
+			ctx.eventQueue.unsafeAdd(
+				ctx.transaction.module,
+				EVENT_TRANSACTION_NAME,
+				codec.encode(standardEventDataSchema, { success: false }),
+				[ctx.transaction.id],
+			);
+			status = TransactionExecutionResult.FAIL;
+			this._logger.debug(
+				{ err: error as Error, module: ctx.transaction.module, command: ctx.transaction.command },
+				'Transaction execution failed',
+			);
 		}
         // ...
 }

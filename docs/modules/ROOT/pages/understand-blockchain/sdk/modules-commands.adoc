@@ -351,9 +351,24 @@ export class DPoSEndpoint extends BaseEndpoint {
 
 == Stores
 
-=== The BaseStore
+Modules have access to two kind of stores:
+
+. an <<on-chain--module-stores,on-chain store, a.k.a module store>>
+. an <<off-chain-store>>
+
+Both stores are included in the state machine of the blockchain application, though only the data on the on-chain stores is shared and synchronized with other nodes in the network.
+
+=== On-chain- / Module Stores
+
+A module can define one or multiple on-chain stores, to store data in the blockchain that is part of the blockchain state.
+
+For example, data like account balances, delegate names and multisignature keys are values that are stored in the on-chain module store.
+
+Every module store is extended from the `BaseStore`:
 
 .The BaseStore class
+[%collapsible]
+====
 [source,typescript]
 ----
 export abstract class BaseStore<T> {
@@ -436,10 +451,96 @@ export abstract class BaseStore<T> {
 	}
 }
 ----
+====
 
+=== Off-chain Store
 
+In a module, the off-chain store is available in: <<insertAssets>> & <<endpoints>>.
 
-=== Off-chain Stores
+It complements the on-chain module store, by allowing to store various additional data in the blockchain application, that does not need to be included in the on-chain store.
+
+IMPORTANT: The data stored in the off-chain store is not part of the blockchain protocol, and it may be different from machine to machine.
+
+Every off-chain store is extended from the `BaseOffchainStore`:
+
+.The BaseOffchainStore class
+[%collapsible]
+====
+[source,js]
+----
+export abstract class BaseOffchainStore<T> {
+	private readonly _version: number;
+	private readonly _storePrefix: Buffer;
+	private readonly _subStorePrefix: Buffer;
+
+	public abstract schema: Schema;
+
+	public get key(): Buffer {
+		return Buffer.concat([this._storePrefix, this._subStorePrefix]);
+	}
+
+	public get name(): string {
+		const name = this.constructor.name.replace('Store', '');
+		return name.charAt(0).toLowerCase() + name.substr(1);
+	}
+
+	public constructor(moduleName: string, version = 0) {
+		this._version = version;
+		this._storePrefix = utils.hash(Buffer.from(moduleName, 'utf-8')).slice(0, 4);
+		// eslint-disable-next-line no-bitwise
+		this._storePrefix[0] &= 0x7f;
+		const versionBuffer = Buffer.alloc(2);
+		versionBuffer.writeUInt16BE(this._version, 0);
+		this._subStorePrefix = utils
+			.hash(Buffer.concat([Buffer.from(this.name, 'utf-8'), versionBuffer]))
+			.slice(0, 2);
+	}
+
+	public async get(ctx: ImmutableStoreGetter, key: Buffer): Promise<T> {
+		if (!this.schema) {
+			throw new Error('Schema is not set');
+		}
+		const subStore = ctx.getOffchainStore(this._storePrefix, this._subStorePrefix);
+		return subStore.getWithSchema<T>(key, this.schema);
+	}
+
+	public async has(ctx: ImmutableStoreGetter, key: Buffer): Promise<boolean> {
+		if (!this.schema) {
+			throw new Error('Schema is not set');
+		}
+		const subStore = ctx.getOffchainStore(this._storePrefix, this._subStorePrefix);
+		return subStore.has(key);
+	}
+
+	public async iterate(
+		ctx: ImmutableStoreGetter,
+		options: IterateOptions,
+	): Promise<{ key: Buffer; value: T }[]> {
+		if (!this.schema) {
+			throw new Error('Schema is not set');
+		}
+		const subStore = ctx.getOffchainStore(this._storePrefix, this._subStorePrefix);
+		return subStore.iterateWithSchema<T>(options, this.schema);
+	}
+
+	public async set(ctx: StoreGetter, key: Buffer, value: T): Promise<void> {
+		if (!this.schema) {
+			throw new Error('Schema is not set');
+		}
+		const subStore = ctx.getOffchainStore(this._storePrefix, this._subStorePrefix);
+		return subStore.setWithSchema(key, value as Record<string, unknown>, this.schema);
+	}
+
+	public async del(ctx: StoreGetter, key: Buffer): Promise<void> {
+		if (!this.schema) {
+			throw new Error('Schema is not set');
+		}
+		const subStore = ctx.getOffchainStore(this._storePrefix, this._subStorePrefix);
+		return subStore.del(key);
+	}
+}
+----
+====
 
 == Module configuration
 
@@ -940,6 +1041,25 @@ For example, the `seedReveal` property is added to the block asset in this hook 
 public async insertAssets(context: InsertAssetContext): Promise<void> {}
 ----
 
+.Interface for `InsertAssets` context
+[%collapsible]
+====
+[source,js]
+----
+{
+	logger: Logger;
+	networkIdentifier: Buffer;
+	getAPIContext: () => APIContext;
+	getStore: (moduleID: Buffer, storePrefix: Buffer) => ImmutableSubStore;
+	header: BlockHeader;
+	assets: WritableBlockAssets;
+	getGeneratorStore: (moduleID: Buffer) => SubStore;
+	getOffchainStore: (moduleID: Buffer, storePrefix: Buffer) => SubStore;
+	getFinalizedHeight(): number;
+}
+----
+====
+
 === verifyAssets
 The hook `verifyAssets` is only called before xref:{url_understand_block_execution}[executing a block].
 
@@ -956,6 +1076,22 @@ NOTE: In this hook, the *state cannot be mutated* and events cannot be emitted.
 public async verifyAssets(context: BlockVerifyContext): Promise<void> {}
 ----
 
+.Interface for `verifyAssets` context
+[%collapsible]
+====
+[source,js]
+----
+{
+	logger: Logger;
+	networkIdentifier: Buffer;
+	getAPIContext: () => ImmutableAPIContext;
+	getStore: (moduleID: Buffer, storePrefix: Buffer) => ImmutableSubStore;
+	header: BlockHeader;
+	assets: BlockAssets;
+}
+----
+====
+
 === beforeTransactionsExecute
 
 The hook `beforeTransactionsExecute` is triggered before any of the transactions of the block are processed.
@@ -966,6 +1102,27 @@ NOTE: In this hook, the *state can be mutated* and events can be emitted.
 ----
 public async beforeTransactionsExecute(context: BlockExecuteContext): Promise<void> {}
 ----
+
+.Interface for `beforeTransactionsExecute` context
+[%collapsible]
+====
+[source,js]
+----
+{
+	logger: Logger;
+	networkIdentifier: Buffer;
+	eventQueue: EventQueue;
+	getAPIContext: () => APIContext;
+	getStore: (moduleID: Buffer, storePrefix: Buffer) => SubStore;
+	header: BlockHeader;
+	assets: BlockAssets;
+	currentValidators: Validator[];
+	impliesMaxPrevote: boolean;
+	maxHeightCertified: number;
+	certificateThreshold: bigint;
+}
+----
+====
 
 === verifyTransaction
 
@@ -982,6 +1139,21 @@ NOTE: In this hook, the *state cannot be mutated* and events cannot be emitted.
 public async verifyTransaction(context: TransactionVerifyContext): Promise<void> {}
 ----
 
+.Interface for `TransactionVerifyContext` context
+[%collapsible]
+====
+[source,js]
+----
+{
+	networkIdentifier: Buffer;
+	logger: Logger;
+	transaction: Transaction;
+	getAPIContext: () => ImmutableAPIContext;
+	getStore: (moduleID: Buffer, storePrefix: Buffer) => ImmutableSubStore;
+}
+----
+====
+
 === beforeCommandExecute
 The hook `beforeCommandExecute` allows adding business logic before the execution of a command.
 It is called for all the transactions within a block regardless of the command they trigger.
@@ -994,6 +1166,28 @@ NOTE: In this hook, the *state can be mutated* and events can be emitted.
 ----
 public async beforeCommandExecute(context: TransactionExecuteContext): Promise<void> {}
 ----
+
+.Interface for `beforeCommandExecute` context
+[%collapsible]
+====
+[source,js]
+----
+{
+	logger: Logger;
+	networkIdentifier: Buffer;
+	eventQueue: EventQueueAdder;
+	getAPIContext: () => APIContext;
+	getStore: (moduleID: Buffer, storePrefix: Buffer) => SubStore;
+	header: BlockHeader;
+	assets: BlockAssets;
+	transaction: Transaction;
+	currentValidators: Validator[];
+	impliesMaxPrevote: boolean;
+	maxHeightCertified: number;
+	certificateThreshold: bigint;
+}
+----
+====
 
 === afterCommandExecute
 The hook `afterCommandExecute` allows adding business logic after the execution of a command.
@@ -1008,6 +1202,28 @@ NOTE: In this hook, the *state can be mutated* and events can be emitted.
 public async afterCommandExecute(context: TransactionExecuteContext): Promise<void> {}
 ----
 
+.Interface for `afterCommandExecute` context
+[%collapsible]
+====
+[source,js]
+----
+{
+	logger: Logger;
+	networkIdentifier: Buffer;
+	eventQueue: EventQueueAdder;
+	getAPIContext: () => APIContext;
+	getStore: (moduleID: Buffer, storePrefix: Buffer) => SubStore;
+	header: BlockHeader;
+	assets: BlockAssets;
+	transaction: Transaction;
+	currentValidators: Validator[];
+	impliesMaxPrevote: boolean;
+	maxHeightCertified: number;
+	certificateThreshold: bigint;
+}
+----
+====
+
 === afterTransactionsExecute
 The hook `afterTransactionsExecute` is the last hook allowed to define state changes that are triggered by the block.
 
@@ -1021,6 +1237,33 @@ NOTE: In this hook, the *state can be mutated* and events can be emitted.
 public async afterTransactionsExecute(context: BlockAfterExecuteContext): Promise<void> {}
 ----
 
+.Interface for `afterTransactionsExecute` context
+[%collapsible]
+====
+[source,js]
+----
+{
+	logger: Logger;
+	networkIdentifier: Buffer;
+	eventQueue: EventQueue;
+	getAPIContext: () => APIContext;
+	getStore: (moduleID: Buffer, storePrefix: Buffer) => SubStore;
+	header: BlockHeader;
+	assets: BlockAssets;
+	currentValidators: Validator[];
+	impliesMaxPrevote: boolean;
+	maxHeightCertified: number;
+	certificateThreshold: bigint;
+	transactions: ReadonlyArray<Transaction>;
+	setNextValidators: (
+		preCommitThreshold: bigint,
+		certificateThreshold: bigint,
+		validators: Validator[],
+	) => void;
+}
+----
+====
+
 === initGenesisState
 The hook `initGenesisState` is called at the beginning of the xref:{url_understand_genesis_block_execution}[genesis block execution].
 Each module must initialize their state using an associated block asset.
@@ -1032,6 +1275,27 @@ It is recommended not to use methods from other modules because their state migh
 public async initGenesisState(context: GenesisBlockExecuteContext): Promise<void> {}
 ----
 
+.Interface for `initGenesisState` context
+[%collapsible]
+====
+[source,js]
+----
+{
+	logger: Logger;
+	eventQueue: EventQueueAdder;
+	getAPIContext: () => APIContext;
+	getStore: (moduleID: Buffer, storePrefix: Buffer) => SubStore;
+	header: BlockHeader;
+	assets: BlockAssets;
+	setNextValidators: (
+		preCommitThreshold: bigint,
+		certificateThreshold: bigint,
+		validators: Validator[],
+	) => void;
+}
+----
+====
+
 === finalizeGenesisState
 The hook `finalizeGenesisState` is called at the end of xref:{url_understand_genesis_block_execution}[genesis block execution].
 
@@ -1041,3 +1305,24 @@ In this hook, it can be assumed that the state initialization via `initGenesisSt
 ----
 public async finalizeGenesisState(context: GenesisBlockExecuteContext): Promise<void> {}
 ----
+
+.Interface for `finalizeGenesisState` context
+[%collapsible]
+====
+[source,js]
+----
+{
+	logger: Logger;
+	eventQueue: EventQueueAdder;
+	getAPIContext: () => APIContext;
+	getStore: (moduleID: Buffer, storePrefix: Buffer) => SubStore;
+	header: BlockHeader;
+	assets: BlockAssets;
+	setNextValidators: (
+		preCommitThreshold: bigint,
+		certificateThreshold: bigint,
+		validators: Validator[],
+	) => void;
+}
+----
+====

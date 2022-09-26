@@ -1,14 +1,14 @@
 = Cross-chain communication
 :toc: preamble
 
-On this page, we dive deeper into the details how cross-chain communication works in the Lisk ecosystem, by describing the different components and the general processes, how state changes are executed across chains in the Lisk ecosystem.
+On this page, we dive deeper into the details of how cross-chain communication works in the Lisk ecosystem, by describing the different components and the general processes, and how state changes are executed across chains in the Lisk ecosystem.
 
 == Inducing state changes across chains with CCMs
 
 Cross-chain messages, or CCMs, are the central component of the cross-chain communication between different sidechains.
 
 Similar to a normal transaction, a CCM includes a reference to a command that triggers state mutations.
-But in case of a CCM, the command always refers to a cross-chain command, and the state changes are not only executed in the sending chain, but also in the receiving chain.
+However in the case of a CCM, the command always refers to a cross-chain command, and the state changes are not only executed in the sending chain, but also in the receiving chain.
 
 [NOTE]
 ====
@@ -27,41 +27,29 @@ receiving-chain ID:: Used to identify the chain receiving the cross-chain messag
 On the mainchain, the receiving chain ID is read to route the message to the corresponding chain outbox.
 module & cross-chain command name:: Once the message has reached the receiving chain, the two properties `module` and `crossChainCommand` specify which logic should be used to validate and execute the message on the receiving chain.
 The module always corresponds to the module which includes the specified cross-chain command.
-nonce:: When a cross-chain message is created and added to the partner chain outbox, the nonce of the sending chain (total number of messages that were added to outboxes so far) is added to the message in the nonce property.
+nonce:: When a cross-chain message is created and added to the partner chain outbox, the nonce of the sending chain (total number of messages that were added to outboxes so far), is added to the message in the nonce property.
 This allows all messages to be uniquely identified by the (sendingChainID, receivingChainID, nonce, status) tuple, which implies that the message ID defined below will be unique for all messages in the ecosystem.
 The uniqueness of messages in the Lisk ecosystem is important for identifying messages with message IDs and tracking them throughout the ecosystem.
 fee:: For all cross-chain messages, the message fee is used to account for the transaction processing in the receiving chain.
 This fee must be transferred from the sending chain account to the receiving chain account in order to maintain the correct balances on all chains in the ecosystem.
 The token ID for this fee is stored in the channel account and is by default the token ID of the LSK token.
 As it is stored in the channel account, it does not need to be repeated in the message.
-Being the main utility token of the Lisk ecosystem, the LSK token is always the token ID for this fee for channels between the Lisk mainchain and registered sidechains.
+Being the main utility token of the Lisk ecosystem, the LSK token is always the token ID for this fee for the channels between the Lisk mainchain and registered sidechains.
 parameters:: The params property of the messages is defined by each module and can follow any schema, similar to the `params` property of a transaction.
 The `params` property is not deserialized or validated by the Interoperability module.
 In the Lisk ecosystem, all cross-chain messages are routed through the mainchain.
 This means that messages should always have a sufficiently small size in order to be easily included in mainchain blocks.
-As the mainchain payload size limit is 15 KiB, and other properties in the cross-chain updates will not be larger than 4 KiB, we limit the message size to 10 KiB.
+As the mainchain payload size limit is 15 KiB, and other properties in the cross-chain updates will not be larger than 4 KiB, the message size is limited to 10 KiB.
 To guarantee that all messages can be included and handled, sidechains in the Lisk ecosystem should have a payload size limit equal to or greater than 15 KiB (15 x 1024 bytes).
 status:: The basic error handling for routing messages to other chains is done by the mainchain.
 Information about the reason why the message failed is stored in the status property.
 For example, in the case the receiving chain does not exist, is not active or has been terminated, the mainchain will return the message to the sending chain.
 The sending chain can then revert the message and potentially refund users.
-This design choice allows sidechains to send messages to other chains without needing to monitor the status (or even existence) of every other chain.
-The constant table lists the different status codes defined by the Interoperability module.
 To allow for future updates or improvements of the Interoperability module, other modules are restricted from using status codes up to 63 (included).
 Other modules may use other status codes larger or equal to 64.
 
-[cols=",,"]
-|===
-|Name|Type|Value
-|CCM_STATUS_OK|uint32|0
-|CCM_STATUS_MODULE_NOT_SUPPORTED|uint32|1
-|CCM_STATUS_CROSS_CHAIN_COMMAND_NOT_SUPPORTED|uint32|2
-|CCM_STATUS_CHANNEL_UNAVAILABLE|uint32|3
-|CCM_STATUS_RECOVERED|uint32|4
-|===
-
 :sectnums:
-== Using cross-chain transactions to generate CCMs
+== Sending cross-chain transactions to generate CCMs
 
 Let's look at a example of a simple cross-chain transfer between Alice and Bob.
 
@@ -77,16 +65,21 @@ Here is where *cross-chain transactions (CCTs)* come into play.
 NOTE: A cross-chain transaction (CCT) is a transaction that, upon its execution, creates one or more cross-chain messages.
 
 In fact, a cross-chain transaction uses the identical schema as normal transactions.
-The only difference is, that a CCT refers to a **cross-chain command**, instead of a normal command.
+The only difference is that a CCT refers to a **cross-chain command**, instead of a normal command.
 
-This cross-chain command will:
+A cross-chain command will perform the following:
 
 * execute the necessary changes on the sending chain (i.e. removing 5 LSK from Alices balance), and
 * also create CCMs to trigger the corresponding state changes in the receiving chain (i.e. add 5 LSK to Bobs balance).
 
-== Transferring CCMs in a CCU
+Therefore, to initiate the cross-chain token transfer, Alice sends a corresponding cross-chain transfer transaction on the sending chain X.
 
-Several cross-chain messages are collected together and posted to another chain as part of a cross-chain update transactions, aka CCU.
+In the example, the CC-transfer will deduct 5 LSK from Alices balance once the transaction is included in a block.
+At the same time, it will create the corresponding cross-chain message, and add it to the outbox of the sending chain.
+
+== Relaying CCMs in a CCU
+
+Several cross-chain messages are collected together and posted to another chain as part of the cross-chain update transaction, aka CCU.
 
 A CCU contains the following properties:
 
@@ -127,9 +120,13 @@ If the cross-chain update transaction contains an empty certificate, this proper
 
 === Creating and Posting CCUs
 
+To create a valid CCU, it is necessary to collect existing CCMs in the outbox, and certify their validity with a corresponding certificate.
+
 The Lisk consensus mechanism is designed to create and publish certificates regularly.
-In that regard, obtaining the information required to post a cross-chain update transaction is easy and straightforward.
-The following is an example workflow that a relayer for a given sidechain could follow.
+//TODO: Add link to relayer node guide
+Therefore, obtaining the information required to post a cross-chain update transaction is straightforward, and can be performed by anyone, simply by setting up a relayer node.
+
+The following is an example workflow that a relayer for a given sidechain could follow, to create a valid CCU:
 
 . Setup to gather the required mainchain information:
 .. Run a mainchain node.
@@ -174,9 +171,9 @@ NOTE: Because all information to create CCUs is publicly available, anyone can a
 --
 image:understand-blockchain/interop/ccc-3.png[,300,role="right"]
 
-After the CCM is included in the inbox of the mainchain, the mainchain performs the most important verifications on the CCM.
+After the CCM is included in the inbox of the mainchain, the mainchain performs the most important validations on the CCM.
 
-If the verification on the mainchain is passed successfully, the CCM is added to the outbox of the mainchain, ready to be picked up by a relayer.
+If the validation on the mainchain is passed successfully, the CCM is added to the outbox of the mainchain, ready to be picked up by a relayer.
 
 A relayer on the mainchain will include the CCM in a CCU and post it to the sending chain.
 
@@ -199,6 +196,28 @@ If the validation is completed successfully, the CC-Transfer command is performi
 
 == Error handling
 
+There are multiple possible errors which can happen during cross-chain communication.
+
+To ensure that only intended state changes are performed on the receiving chain, the CCM is validated at several stages of the cross-chain communication.
+
+If a validation of the CCM fails, the `status` property of the CCM is updated with the corresponding error code, and the error handling takes care that the CCM is not executed, and all unintended state changes are reverted.
+
+This design choice allows sidechains to send messages to other chains without the need to monitor the status (or even existence), of every other chain.
+
+.CCM status codes
+[cols="2,1,1,4"]
+|===
+|Status|Type|Value|Description
+|OK|uint32|0|The default status of a cross-chain message.
+|MODULE NOT SUPPORTED|uint32|1|Status assigned on the receiving chain if it does not implement any module with ID equal to the message module ID.
+|CROSS CHAIN COMMAND NOT SUPPORTED|uint32|2|Status assigned on the receiving chain if it does not implement any command with ID equal to the message command ID.
+|CHANNEL UNAVAILABLE|uint32|3|Status assigned on the mainchain if the receiving chain is not available (it does not exist, it is not active, or it has been terminated).
+|RECOVERED|uint32|4|Status assigned on the mainchain to a cross-chain message after it has been recovered from the outbox of a terminated sidechain.
+|===
+
+The status code provides crucial information to the blockchain application on how to process/forward a CCM.
+
+Mainchain and receiving chain each perform different validity checks on the CCM, and in turn each add their specific status codes to a CCM, if the validation failed.
 
 === CCM validation in the Mainchain
 
@@ -206,30 +225,65 @@ If the validation is completed successfully, the CC-Transfer command is performi
 --
 image:understand-blockchain/interop/ccc-2b.png[,300,role="right"]
 
-Checks for all CCMs in the inbox update, if ...
+When a CCU is relayed from a sending chain to the mainchain, the mainchain checks for all CCMs in the inbox update, if the following criteria are met:
 
-* the receiving chain exists
+* the receiving chain exists.
 * the receiving chain has the status `active`.
 * `sendingchain-ID` of the CCM equals the chain ID of the sending chain.
 
+If the validation fails, the `status` of the CCM is updated by the mainchain with the corresponding error code.
+
+If the status is NOT OK, the CCM will NOT be forwarded to the receiving chain.
+Instead, a relayer on the mainchain will include the CCM in a new CCU and post it *back to the sending chain.*
+
+The sending chain may then revert the state changes related to the CCM that happened on the sending chain.
+
+For example, if Alice on Sidechain X sends 5 LSK to Bob on Sidechain Y, but Sidechain Y is not registered on the mainchain, the error handling process would function as follows:
+
+. Alice sends CC-Transfer: 5 LSK + Fee is deducted from Alices balance on Sidechain X.
+. Mainchain receives corresponding CCM & performs validations.
+. Mainchain cannot find the receiving chain: CCM status is updated to 3 (`CHANNEL_UNAVAILABLE`) on the mainchain.
+. Errored CCM is relayed back to the sending chain.
+. Sending chain undoes related state changes: 5 LSK are added back to Alice's account, because the cross-chain transfer was not successfull.
+
+NOTE: Alice always needs to pay the fee for the cross-chain transfer, even if it fails.
 --
 
 === CCM validation in the receiving chain
 
 [.float-group]
 --
-image:understand-blockchain/interop/ccc-3b.png[,300,role="left"]
 
-The *Cross-chain commands*, or *CC-commands*, induce a state transition in the receiving chain, if:
+[.right]
+image:understand-blockchain/interop/ccc-3b.png[,300]
 
-* the receiving application understands the particular command, i.e. if it includes the required module to interpret the command name
-* the CCM includes all parameters required for the CC-command
+When a CCU is relayed from the mainchain to the receiving chain, the receiving chain checks for all CCMs in the inbox update, if the following criteria are met:
+
+* the receiving application understands the particular command, i.e. if it includes the required module to interpret the command name.
+* the CCM includes all parameters required for the CC-command.
+
+If the validation fails the `status` of the CCM is updated by the receiving chain with the corresponding error code.
+
+If the status is NOT OK, the CCM will NOT be processed to the receiving chain.
+Instead, a relayer on the receiving chain will include the CCM in a new CCU and post it *back to the mainchain*, and from there to the sending chain.
+
+Once the CCM is added to the inbox of the sending chain, it may then revert the invalid state changes.
+
+For example, if Alice on Sidechain X sends 5 LSK to Bob on Sidechain Y, but Sidechain Y does not support the token module, the error handling process would function as follows:
+
+. Alice sends CC-Transfer: 5 LSK + Fee is deducted from Alices balance on Sidechain X.
+. Mainchain receives corresponding CCM & performs validations.
+. Mainchain relays CCM to the receiving chain via a CCU.
+. Sidechain does not support module: CCM status is updated to 1 (`MODULE_NOT_SUPPORTED`) on the mainchain.
+. Errored CCM is relayed back to the mainchain.
+. Errored CCM is relayed back to the sending chain.
+. Sending chain undoes related state changes: 5 LSK are added back to Alices account, because the cross-chain transfer was unsuccessful.
 
 --
 
 == Complete cross-chain-communication flow
 
-To summarize, the complete flow of cross-chain communciation is described in the diagram:
+To summarize, the complete flow of cross-chain communication is described in the diagram below:
 
 .Overview: Cross-chain communication flow
 image::understand-blockchain/interop/cc-cmmunication-flow.png[]

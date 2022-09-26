@@ -721,8 +721,6 @@ Blockchain events are logs of events that occurred in the blockchain network.
 
 NOTE: Blockchain events are part of the on-chain logic: Each block includes the **event root in the block header**, which is the root of a Sparse-Merkle-Tree of all events, that are included in that particular block.
 
-Certain blockchain events are published by default, for example
-
 Every module event always extends from the `BaseEvent` class.
 
 .The BaseEvent class
@@ -765,7 +763,36 @@ export abstract class BaseEvent<T> {
 ----
 ====
 
+=== Default module event
+
+The default event is indicating the result of a transaction processing (success/fail).
+It is automatically emitted everytime a transaction is processed by a module.
+
+The default event is therefore the only blockchain event, that is not defined manually by the developer of a module.
+
+.state_machine.ts
+[source,js]
+----
+public async executeTransaction(ctx: TransactionContext): Promise<TransactionExecutionResult> {
+    // ...
+    try {
+			await command.execute(commandContext);
+			ctx.eventQueue.unsafeAdd(
+				ctx.transaction.module,
+				EVENT_TRANSACTION_NAME,
+				codec.encode(standardEventDataSchema, { success: true }),
+				[ctx.transaction.id],
+			);
+		} catch (error) {
+        // ...
+		}
+        // ...
+}
+----
+
 === Creating events
+
+To create events, that complement the on-chain business logic of the module, extend from the `BaseEvent` class.
 
 .events/transfer.ts
 [source,typescript]
@@ -783,6 +810,8 @@ export class TransferEvent extends BaseEvent<TransferEventData> {
 
 === Registering events
 
+To make an event available in the module, register it to `this.events` in the <<module-constructor>>.
+
 .module.ts
 [source,typescript]
 ----
@@ -793,6 +822,8 @@ public constructor() {
 ----
 
 === Publishing events
+
+To emit or publish the event, add the following code snippet to the intended place, e.g. inside a module method:
 
 .method.ts
 [source,typescript]

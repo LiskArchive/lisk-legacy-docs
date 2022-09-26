@@ -723,13 +723,89 @@ NOTE: Blockchain events are part of the on-chain logic: Each block includes the 
 
 Certain blockchain events are published by default, for example
 
-=== The BaseEvent
+Every module event always extends from the `BaseEvent` class.
+
+.The BaseEvent class
+[%collapsible]
+====
+[source,typescript]
+----
+export abstract class BaseEvent<T> {
+	private readonly _moduleName: string;
+
+	public abstract schema: Schema;
+
+	public get key(): Buffer {
+		return Buffer.from(this._moduleName + this.name, 'utf-8');
+	}
+
+	public get name(): string {
+		const name = this.constructor.name.replace('Store', '');
+		return name.charAt(0).toLowerCase() + name.substr(1);
+	}
+
+	public constructor(moduleName: string) {
+		this._moduleName = moduleName;
+	}
+
+	public add(ctx: EventQueuer, data: T, topics?: Buffer[], noRevert?: boolean): void {
+		if (!this.schema) {
+			throw new Error('Schema is not set');
+		}
+
+		ctx.eventQueue.add(
+			this._moduleName,
+			this.name,
+			codec.encode(this.schema, data as Record<string, unknown>),
+			topics,
+			noRevert,
+		);
+	}
+}
+----
+====
 
 === Creating events
 
+.events/transfer.ts
+[source,typescript]
+----
+export class TransferEvent extends BaseEvent<TransferEventData> {
+	public schema = transferEventSchema;
+
+	public log(ctx: EventQueuer, data: TransferEventData): void {
+		const amountBuffer = Buffer.alloc(8);
+		amountBuffer.writeBigUInt64BE(data.amount);
+		this.add(ctx, data, [data.senderAddress, data.tokenID, data.recipientAddress]);
+	}
+}
+----
+
 === Registering events
 
+.module.ts
+[source,typescript]
+----
+public constructor() {
+		super();
+		this.events.register(TransferEvent, new TransferEvent(this.name));
+	}
+----
+
 === Publishing events
+
+.method.ts
+[source,typescript]
+----
+const transferEvent = this.events.get(TransferEvent);
+transferEvent.log(methodContext, {
+    amount,
+    recipientAddress,
+    result: TransferEventResult.SUCCESSFUL,
+    senderAddress,
+    tokenID,
+});
+----
 
 == Commands
 

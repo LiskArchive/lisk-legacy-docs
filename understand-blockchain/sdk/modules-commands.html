@@ -6,7 +6,7 @@
     <title>Modules and commands :: Lisk documentation</title>
     <link rel="canonical" href="https://lisk.com/documentation/understand-blockchain/sdk/modules-commands.html">
     <link rel="prev" href="architecture.html">
-    <link rel="next" href="../lisk-protocol/index.html">
+    <link rel="next" href="rpc.html">
     <meta name="generator" content="Antora 3.0.0">
 
   <link id="theme" rel="stylesheet" title="Default" href="../../_/css/site.css">
@@ -164,6 +164,9 @@
   </li>
   <li class="nav-item is-current-page" data-depth="3">
     <a class="nav-link" href="modules-commands.html">Modules and commands</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="rpc.html">Communicating to a Lisk node via RPC</a>
   </li>
 </ul>
   </li>
@@ -1313,21 +1316,94 @@ Blockchain events are part of the on-chain logic: Each block includes the <stron
 <div class="paragraph">
 <p>Certain blockchain events are published by default, for example</p>
 </div>
-<div class="sect2">
-<h3 id="the-baseevent"><a class="anchor" href="#the-baseevent"></a>The BaseEvent</h3>
-
+<div class="paragraph">
+<p>Every module event always extends from the <code>BaseEvent</code> class.</p>
 </div>
+<details>
+<summary class="title">The BaseEvent class</summary>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export abstract class BaseEvent&lt;T&gt; {
+	private readonly _moduleName: string;
+
+	public abstract schema: Schema;
+
+	public get key(): Buffer {
+		return Buffer.from(this._moduleName + this.name, 'utf-8');
+	}
+
+	public get name(): string {
+		const name = this.constructor.name.replace('Store', '');
+		return name.charAt(0).toLowerCase() + name.substr(1);
+	}
+
+	public constructor(moduleName: string) {
+		this._moduleName = moduleName;
+	}
+
+	public add(ctx: EventQueuer, data: T, topics?: Buffer[], noRevert?: boolean): void {
+		if (!this.schema) {
+			throw new Error('Schema is not set');
+		}
+
+		ctx.eventQueue.add(
+			this._moduleName,
+			this.name,
+			codec.encode(this.schema, data as Record&lt;string, unknown&gt;),
+			topics,
+			noRevert,
+		);
+	}
+}</code></pre>
+</div>
+</div>
+</div>
+</details>
 <div class="sect2">
 <h3 id="creating-events"><a class="anchor" href="#creating-events"></a>Creating events</h3>
+<div class="listingblock">
+<div class="title">events/transfer.ts</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export class TransferEvent extends BaseEvent&lt;TransferEventData&gt; {
+	public schema = transferEventSchema;
 
+	public log(ctx: EventQueuer, data: TransferEventData): void {
+		const amountBuffer = Buffer.alloc(8);
+		amountBuffer.writeBigUInt64BE(data.amount);
+		this.add(ctx, data, [data.senderAddress, data.tokenID, data.recipientAddress]);
+	}
+}</code></pre>
+</div>
+</div>
 </div>
 <div class="sect2">
 <h3 id="registering-events"><a class="anchor" href="#registering-events"></a>Registering events</h3>
-
+<div class="listingblock">
+<div class="title">module.ts</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public constructor() {
+		super();
+		this.events.register(TransferEvent, new TransferEvent(this.name));
+	}</code></pre>
+</div>
+</div>
 </div>
 <div class="sect2">
 <h3 id="publishing-events"><a class="anchor" href="#publishing-events"></a>Publishing events</h3>
-
+<div class="listingblock">
+<div class="title">method.ts</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">const transferEvent = this.events.get(TransferEvent);
+transferEvent.log(methodContext, {
+    amount,
+    recipientAddress,
+    result: TransferEventResult.SUCCESSFUL,
+    senderAddress,
+    tokenID,
+});</code></pre>
+</div>
+</div>
 </div>
 </div>
 </div>
@@ -2210,7 +2286,7 @@ Each module must initialize their state using an associated block asset.</p>
 </div>
 <nav class="pagination">
   <span class="prev"><a href="architecture.html">SDK Architecture</a></span>
-  <span class="next"><a href="../lisk-protocol/index.html">Lisk Protocol</a></span>
+  <span class="next"><a href="rpc.html">Communicating to a Lisk node via RPC</a></span>
 </nav>
 </article>
   </div>

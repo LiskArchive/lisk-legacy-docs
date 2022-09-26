@@ -1369,7 +1369,7 @@ It is automatically emitted everytime a transaction is processed by a module.</p
 <div class="listingblock">
 <div class="title">state_machine.ts</div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">public async executeTransaction(ctx: TransactionContext): Promise&lt;TransactionExecutionResult&gt; {
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async executeTransaction(ctx: TransactionContext): Promise&lt;TransactionExecutionResult&gt; {
     // ...
     try {
 			await command.execute(commandContext);
@@ -1380,7 +1380,19 @@ It is automatically emitted everytime a transaction is processed by a module.</p
 				[ctx.transaction.id],
 			);
 		} catch (error) {
-        // ...
+            ctx.eventQueue.restoreSnapshot(commandEventQueueSnapshotID);
+			ctx.stateStore.restoreSnapshot(commandStateStoreSnapshotID);
+			ctx.eventQueue.unsafeAdd(
+				ctx.transaction.module,
+				EVENT_TRANSACTION_NAME,
+				codec.encode(standardEventDataSchema, { success: false }),
+				[ctx.transaction.id],
+			);
+			status = TransactionExecutionResult.FAIL;
+			this._logger.debug(
+				{ err: error as Error, module: ctx.transaction.module, command: ctx.transaction.command },
+				'Transaction execution failed',
+			);
 		}
         // ...
 }</code></pre>

@@ -177,7 +177,7 @@ Each item has the following properties:
 The metadata can be obtained by requesting the metadata from the blockchain application via RPC request to the `system_getMetadata` endpoint.
 
 [[interface-metadata]]
-.Interface for the Module metadata
+.Module metadata interface
 [%collapsible]
 ====
 [source,typescript]
@@ -313,6 +313,7 @@ export abstract class BaseEndpoint {
 === Exposing endpoints to plugins and external services
 The module endpoints are usually defined in a file called `endpoint.ts` inside of the folder of the respective module.
 
+////
 .Example: Module endpoint
 [source,typescript]
 ----
@@ -325,7 +326,7 @@ export class HelloModule extends BaseModule {
 	public endpoint = new HelloEndpoint(this.id);
 }
 ----
-
+////
 //TODO: Update code snippet to use Hello app example
 .Example: `HelloEndpoint` in `endpoint.ts`
 [%collapsible]
@@ -347,6 +348,20 @@ export class DPoSEndpoint extends BaseEndpoint {
 
 		return codec.toJSON(voterStoreSchema, voterData);
 	}
+}
+----
+====
+
+.`ModuleEndpointContext` interface
+[%collapsible]
+====
+[source,typescript]
+----
+export interface ModuleEndpointContext extends PluginEndpointContext {
+	getStore: (moduleID: Buffer, storePrefix: Buffer) => ImmutableSubStore;
+	getOffchainStore: (moduleID: Buffer, storePrefix: Buffer) => SubStore;
+	getImmutableMethodContext: () => ImmutableMethodContext;
+	chainID: Buffer;
 }
 ----
 ====
@@ -695,15 +710,26 @@ export class HelloModule extends BaseModule {
 ====
 [source,typescript]
 ----
-export class HelloMethod extends BaseMethod {
+export class TokenMethod extends BaseMethod {
 
     // ...
 
-	public async getVoter(apiContext: ImmutableAPIContext, address: Buffer): Promise<VoterData> {
-		const voterSubStore = apiContext.getStore(this.moduleID, STORE_PREFIX_VOTER);
-		const voterData = await voterSubStore.getWithSchema<VoterData>(address, voterStoreSchema);
-
-		return voterData;
+	public async getAvailableBalance(
+		methodContext: ImmutableMethodContext,
+		address: Buffer,
+		tokenID: TokenID,
+	): Promise<bigint> {
+		const canonicalTokenID = await this.getCanonicalTokenID(methodContext, tokenID);
+		const userStore = this.stores.get(UserStore);
+		try {
+			const user = await userStore.get(methodContext, userStore.getKey(address, canonicalTokenID));
+			return user.availableBalance;
+		} catch (error) {
+			if (!(error instanceof NotFoundError)) {
+				throw error;
+			}
+			return BigInt(0);
+		}
 	}
 
     // ...
@@ -713,8 +739,41 @@ export class HelloMethod extends BaseMethod {
 
 === Calling a module method from another module
 
-//TODO: Link to example of calling a module in a command/hook
-To see an example of how to call a module method from another module, look at the following example in the module hooks.
+An example of how to call a module method from another module:
+
+The method `getAvailableBalance` from the Token module is called inside the sidechain registration command verification of the Interoperability module to verify, if the sender of a transaction has enough balance to pay the transaction fee.
+
+Methods from other modules are made available to the module by importing them, and adding them as private properties in the `addDependencies()` method, like shown in the code snippet below.
+.`interoperability/mainchain/commands/sidechain_registration.ts
+[source,typescript]
+----
+import { TokenMethod } from '../../../token';
+// ...
+
+export class SidechainRegistrationCommand extends BaseInteroperabilityCommand {
+	public schema = sidechainRegParams;
+	private _tokenMethod!: TokenMethod;
+
+	public addDependencies(tokenMethod: TokenMethod) {
+		this._tokenMethod = tokenMethod;
+	}
+    public async verify(
+		context: CommandVerifyContext<SidechainRegistrationParams>,
+	): Promise<VerificationResult> {
+        // ...
+        // Sender must have enough balance to pay for extra command fee.
+		const availableBalance = await this._tokenMethod.getAvailableBalance(
+			context.getMethodContext(),
+			senderAddress,
+			TOKEN_ID_LSK,
+		);
+		if (availableBalance < REGISTRATION_FEE) {
+            // ...
+		}
+        // ...
+	}
+}
+----
 
 == Blockchain Events
 
@@ -1233,7 +1292,7 @@ For example, the `seedReveal` property is added to the block asset in this hook 
 public async insertAssets(context: InsertAssetContext): Promise<void> {}
 ----
 
-.Interface for `InsertAssets` context
+.`InsertAssetContext` interface
 [%collapsible]
 ====
 [source,js]

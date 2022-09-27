@@ -677,7 +677,7 @@ Each item has the following properties:</p>
 <p>The metadata can be obtained by requesting the metadata from the blockchain application via RPC request to the <code>system_getMetadata</code> endpoint.</p>
 </div>
 <details id="interface-metadata">
-<summary class="title">Interface for the Module metadata</summary>
+<summary class="title">Module metadata interface</summary>
 <div class="content">
 <div class="listingblock">
 <div class="content">
@@ -832,19 +832,6 @@ It is never possible to set data / mutate the state via module endpoints.
 <div class="paragraph">
 <p>The module endpoints are usually defined in a file called <code>endpoint.ts</code> inside of the folder of the respective module.</p>
 </div>
-<div class="listingblock">
-<div class="title">Example: Module endpoint</div>
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import { HelloEndpoint } from './endpoint';
-import { cryptography } from 'lisk-sdk';
-
-export class HelloModule extends BaseModule {
-	public id = cryptography.utils.intToBuffer(1000, 4);
-	public name = 'hello';
-	public endpoint = new HelloEndpoint(this.id);
-}</code></pre>
-</div>
-</div>
 <details>
 <summary class="title">Example: <code>HelloEndpoint</code> in <code>endpoint.ts</code></summary>
 <div class="content">
@@ -865,6 +852,21 @@ export class HelloModule extends BaseModule {
 
 		return codec.toJSON(voterStoreSchema, voterData);
 	}
+}</code></pre>
+</div>
+</div>
+</div>
+</details>
+<details>
+<summary class="title"><code>ModuleEndpointContext</code> interface</summary>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export interface ModuleEndpointContext extends PluginEndpointContext {
+	getStore: (moduleID: Buffer, storePrefix: Buffer) =&gt; ImmutableSubStore;
+	getOffchainStore: (moduleID: Buffer, storePrefix: Buffer) =&gt; SubStore;
+	getImmutableMethodContext: () =&gt; ImmutableMethodContext;
+	chainID: Buffer;
 }</code></pre>
 </div>
 </div>
@@ -1269,15 +1271,26 @@ export class HelloModule extends BaseModule {
 <div class="content">
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export class HelloMethod extends BaseMethod {
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export class TokenMethod extends BaseMethod {
 
     // ...
 
-	public async getVoter(apiContext: ImmutableAPIContext, address: Buffer): Promise&lt;VoterData&gt; {
-		const voterSubStore = apiContext.getStore(this.moduleID, STORE_PREFIX_VOTER);
-		const voterData = await voterSubStore.getWithSchema&lt;VoterData&gt;(address, voterStoreSchema);
-
-		return voterData;
+	public async getAvailableBalance(
+		methodContext: ImmutableMethodContext,
+		address: Buffer,
+		tokenID: TokenID,
+	): Promise&lt;bigint&gt; {
+		const canonicalTokenID = await this.getCanonicalTokenID(methodContext, tokenID);
+		const userStore = this.stores.get(UserStore);
+		try {
+			const user = await userStore.get(methodContext, userStore.getKey(address, canonicalTokenID));
+			return user.availableBalance;
+		} catch (error) {
+			if (!(error instanceof NotFoundError)) {
+				throw error;
+			}
+			return BigInt(0);
+		}
 	}
 
     // ...
@@ -1290,7 +1303,44 @@ export class HelloModule extends BaseModule {
 <div class="sect2">
 <h3 id="calling-a-module-method-from-another-module"><a class="anchor" href="#calling-a-module-method-from-another-module"></a>Calling a module method from another module</h3>
 <div class="paragraph">
-<p>To see an example of how to call a module method from another module, look at the following example in the module hooks.</p>
+<p>An example of how to call a module method from another module:</p>
+</div>
+<div class="paragraph">
+<p>The method <code>getAvailableBalance</code> from the Token module is called inside the sidechain registration command verification of the Interoperability module to verify, if the sender of a transaction has enough balance to pay the transaction fee.</p>
+</div>
+<div class="paragraph">
+<p>Methods from other modules are made available to the module by importing them, and adding them as private properties in the <code>addDependencies()</code> method, like shown in the code snippet below.
+.`interoperability/mainchain/commands/sidechain_registration.ts</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import { TokenMethod } from '../../../token';
+// ...
+
+export class SidechainRegistrationCommand extends BaseInteroperabilityCommand {
+	public schema = sidechainRegParams;
+	private _tokenMethod!: TokenMethod;
+
+	public addDependencies(tokenMethod: TokenMethod) {
+		this._tokenMethod = tokenMethod;
+	}
+    public async verify(
+		context: CommandVerifyContext&lt;SidechainRegistrationParams&gt;,
+	): Promise&lt;VerificationResult&gt; {
+        // ...
+        // Sender must have enough balance to pay for extra command fee.
+		const availableBalance = await this._tokenMethod.getAvailableBalance(
+			context.getMethodContext(),
+			senderAddress,
+			TOKEN_ID_LSK,
+		);
+		if (availableBalance &lt; REGISTRATION_FEE) {
+            // ...
+		}
+        // ...
+	}
+}</code></pre>
+</div>
 </div>
 </div>
 </div>
@@ -2035,7 +2085,7 @@ The assets added during the execution of this hook can be used in all the execut
 </div>
 </div>
 <details>
-<summary class="title">Interface for <code>InsertAssets</code> context</summary>
+<summary class="title"><code>InsertAssetContext</code> interface</summary>
 <div class="content">
 <div class="listingblock">
 <div class="content">

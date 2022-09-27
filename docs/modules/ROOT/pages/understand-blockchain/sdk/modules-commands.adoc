@@ -15,6 +15,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_understand_genesis_block_execution: understand-blockchain/index.adoc#genesis-block-execution
 :url_understand_valid_invalid_txs: understand-blockchain/index.adoc##valid-vs-invalid-transactions
 :url_understand_rpc_events: understand-blockchain/sdk/rpc.adoc#events
+:url_understand_rpc_request: understand-blockchain/sdk/rpc.adoc#how-to-invoke-endpoints
 // Footnotes
 :fn_jsonschema: footnote:jsonSchema[See the {url_json_schema} for more information about the JSON schema.]
 
@@ -611,30 +612,18 @@ export abstract class BaseEndpoint {
 }
 ----
 
-=== Exposing endpoints to plugins and external services
+=== How to define module endpoints
+
 The module endpoints are usually defined in a file called `endpoint.ts` inside of the folder of the respective module.
 
-////
-.Example: Module endpoint
-[source,typescript]
-----
-import { HelloEndpoint } from './endpoint';
-import { cryptography } from 'lisk-sdk';
-
-export class HelloModule extends BaseModule {
-	public id = cryptography.utils.intToBuffer(1000, 4);
-	public name = 'hello';
-	public endpoint = new HelloEndpoint(this.id);
-}
-----
-////
 //TODO: Update code snippet to use Hello app example
-.Example: `HelloEndpoint` in `endpoint.ts`
+.Example: `endpoint.ts` of the DPoS module
 [%collapsible]
 ====
 [source,typescript]
 ----
 export class DPoSEndpoint extends BaseEndpoint {
+    // ...
 
 	public async getVoter(ctx: ModuleEndpointContext): Promise<VoterDataJSON> {
 		const voterSubStore = ctx.getStore(this.moduleID, STORE_PREFIX_VOTER);
@@ -649,9 +638,13 @@ export class DPoSEndpoint extends BaseEndpoint {
 
 		return codec.toJSON(voterStoreSchema, voterData);
 	}
+
+    // ...
 }
 ----
 ====
+
+All module endpoints have access to the on-chain and off-chain <<stores>> of a module and can receive data from there, to answer RPC requests with the expected data.
 
 .`ModuleEndpointContext` interface
 [%collapsible]
@@ -666,6 +659,26 @@ export interface ModuleEndpointContext extends PluginEndpointContext {
 }
 ----
 ====
+
+Once the module endpoints are defined in `endpoints.ts`, they can be added to the module under the `endpoint` attribute:
+
+.How to add endpoints to a module
+[source,typescript]
+----
+import { DPoSEndpoint } from './endpoint';
+
+export class DPoSModule extends BaseModule {
+	public endpoint = new DPoSEndpoint(this.stores, this.offchainStores);
+    // ...
+}
+----
+
+=== Calling a module endpoint
+
+To call a method of a module, simply send the respective RPC request.
+
+A convenient way to send RPC requests to the node is the *API client*.
+See section xref:{url_understand_rpc_request}[How to invoke endpoints] of the page "Communicating to a Lisk node via RPC".
 
 == Methods
 
@@ -687,7 +700,7 @@ export abstract class BaseMethod {
 }
 ----
 
-=== How to add module methods
+=== How to define module methods
 
 The module methods are usually defined in a file called `methods.ts` inside of the folder of the respective module.
 
@@ -726,7 +739,7 @@ export class TokenMethod extends BaseMethod {
 
 Once the module methods are defined in `methods.ts`, they can be added to the module under the `method` attribute:
 
-.How to add methods to the module
+.How to add methods to a module
 [source,typescript]
 ----
 import { TokenMethod } from './method';
@@ -972,14 +985,30 @@ To emit or publish the event, add the following code snippet to the intended pla
 .method.ts
 [source,typescript]
 ----
-const transferEvent = this.events.get(TransferEvent);
-transferEvent.log(methodContext, {
-    amount,
-    recipientAddress,
-    result: TransferEventResult.SUCCESSFUL,
-    senderAddress,
-    tokenID,
-});
+import { TransferEvent, TransferEventResult } from './events/transfer';
+// ...
+export class TokenMethod extends BaseMethod {
+    // ...
+    public async transfer(
+		methodContext: MethodContext,
+		senderAddress: Buffer,
+		recipientAddress: Buffer,
+		tokenID: TokenID,
+		amount: bigint,
+	): Promise<void> {
+        // ...
+        const transferEvent = this.events.get(TransferEvent);
+        transferEvent.log(methodContext, {
+            amount,
+            recipientAddress,
+            result: TransferEventResult.SUCCESSFUL,
+            senderAddress,
+            tokenID,
+        });
+	}
+    // ...
+}
+
 ----
 
 == Commands

@@ -155,16 +155,16 @@ The metadata of a module provides information about the module to external servi
 
 It provides information about the following module properties:
 
-* *endpoints*: A list of endpoints of the respective module.
+* *endpoints*: A list of <<endpoints>> of the respective module.
 Each item has the following properties:
 ** `name`: The name of the endpoint.
 ** `request`: Required parameters for the endpoint (optional).
 ** `response`: A schema of the expected response to a request to the endpoint.
-* *commands*: The list of commands belonging to the module.
+* *commands*: The list of <<commands>> belonging to the module.
 Each item has the following properties:
 ** `name`: The command name.
 ** `params`: The required and optional parameters to execute the command (optional).
-* *events*: A list of events that are emitted by the module.
+* *events*: A list of <<blockchain-events>> that are emitted by the module.
 Each item has the following properties:
 ** `typeId`: The event type ID.
 ** `data`: The event data.
@@ -282,87 +282,6 @@ export const getDelegateRequestSchema = {
 		},
 	},
 };
-----
-====
-
-== Endpoints
-
-An endpoint is an *interface between a module and an external system.*
-Lisk endpoints support RPC communication.
-The module-specific RPC endpoints can be invoked by external services, like UIs, to get relevant data from the application.
-
-The endpoints are defined individually for each module, depending on the module's purpose.
-
-IMPORTANT: Endpoints allow to conveniently *get data from the blockchain application*.
-It is never possible to set data / mutate the state via module endpoints.
-
-Every module endpoint always extends from the `BaseEndpoint` class.
-
-.The BaseEndpoint class
-[source,typescript]
-----
-export abstract class BaseEndpoint {
-	[key: string]: unknown;
-	protected moduleID: Buffer;
-	public constructor(moduleID: Buffer) {
-		this.moduleID = moduleID;
-	}
-}
-----
-
-=== Exposing endpoints to plugins and external services
-The module endpoints are usually defined in a file called `endpoint.ts` inside of the folder of the respective module.
-
-////
-.Example: Module endpoint
-[source,typescript]
-----
-import { HelloEndpoint } from './endpoint';
-import { cryptography } from 'lisk-sdk';
-
-export class HelloModule extends BaseModule {
-	public id = cryptography.utils.intToBuffer(1000, 4);
-	public name = 'hello';
-	public endpoint = new HelloEndpoint(this.id);
-}
-----
-////
-//TODO: Update code snippet to use Hello app example
-.Example: `HelloEndpoint` in `endpoint.ts`
-[%collapsible]
-====
-[source,typescript]
-----
-export class DPoSEndpoint extends BaseEndpoint {
-
-	public async getVoter(ctx: ModuleEndpointContext): Promise<VoterDataJSON> {
-		const voterSubStore = ctx.getStore(this.moduleID, STORE_PREFIX_VOTER);
-		const { address } = ctx.params;
-		if (typeof address !== 'string') {
-			throw new Error('Parameter address must be a string.');
-		}
-		const voterData = await voterSubStore.getWithSchema<VoterData>(
-			Buffer.from(address, 'hex'),
-			voterStoreSchema,
-		);
-
-		return codec.toJSON(voterStoreSchema, voterData);
-	}
-}
-----
-====
-
-.`ModuleEndpointContext` interface
-[%collapsible]
-====
-[source,typescript]
-----
-export interface ModuleEndpointContext extends PluginEndpointContext {
-	getStore: (moduleID: Buffer, storePrefix: Buffer) => ImmutableSubStore;
-	getOffchainStore: (moduleID: Buffer, storePrefix: Buffer) => SubStore;
-	getImmutableMethodContext: () => ImmutableMethodContext;
-	chainID: Buffer;
-}
 ----
 ====
 
@@ -667,6 +586,87 @@ export class HelloModule extends BaseModule {
 }
 ----
 
+== Endpoints
+
+An endpoint is an *interface between a module and an external system.*
+Lisk endpoints support RPC communication.
+The module-specific RPC endpoints can be invoked by external services, like UIs, to get relevant data from the application.
+
+The endpoints are defined individually for each module, depending on the module's purpose.
+
+IMPORTANT: Endpoints allow to conveniently *get data from the blockchain application*.
+It is never possible to set data / mutate the state via module endpoints.
+
+Every module endpoint always extends from the `BaseEndpoint` class.
+
+.The BaseEndpoint class
+[source,typescript]
+----
+export abstract class BaseEndpoint {
+	[key: string]: unknown;
+	protected moduleID: Buffer;
+	public constructor(moduleID: Buffer) {
+		this.moduleID = moduleID;
+	}
+}
+----
+
+=== Exposing endpoints to plugins and external services
+The module endpoints are usually defined in a file called `endpoint.ts` inside of the folder of the respective module.
+
+////
+.Example: Module endpoint
+[source,typescript]
+----
+import { HelloEndpoint } from './endpoint';
+import { cryptography } from 'lisk-sdk';
+
+export class HelloModule extends BaseModule {
+	public id = cryptography.utils.intToBuffer(1000, 4);
+	public name = 'hello';
+	public endpoint = new HelloEndpoint(this.id);
+}
+----
+////
+//TODO: Update code snippet to use Hello app example
+.Example: `HelloEndpoint` in `endpoint.ts`
+[%collapsible]
+====
+[source,typescript]
+----
+export class DPoSEndpoint extends BaseEndpoint {
+
+	public async getVoter(ctx: ModuleEndpointContext): Promise<VoterDataJSON> {
+		const voterSubStore = ctx.getStore(this.moduleID, STORE_PREFIX_VOTER);
+		const { address } = ctx.params;
+		if (typeof address !== 'string') {
+			throw new Error('Parameter address must be a string.');
+		}
+		const voterData = await voterSubStore.getWithSchema<VoterData>(
+			Buffer.from(address, 'hex'),
+			voterStoreSchema,
+		);
+
+		return codec.toJSON(voterStoreSchema, voterData);
+	}
+}
+----
+====
+
+.`ModuleEndpointContext` interface
+[%collapsible]
+====
+[source,typescript]
+----
+export interface ModuleEndpointContext extends PluginEndpointContext {
+	getStore: (moduleID: Buffer, storePrefix: Buffer) => ImmutableSubStore;
+	getOffchainStore: (moduleID: Buffer, storePrefix: Buffer) => SubStore;
+	getImmutableMethodContext: () => ImmutableMethodContext;
+	chainID: Buffer;
+}
+----
+====
+
 == Methods
 
 A method is an interface for module-to-module communication, and *can perform state mutations* on the blockchain.
@@ -782,7 +782,7 @@ Blockchain events, or module events, are logs of events that occurred in the blo
 Events occur per block, and are stored in the respective block header, from where they can be queried.
 
 .Do not confuse blockchain events with RPC events.
-IMPORTANT: Different to xref:{url_understand_rpc_events}[RPC events], Blockchain events are part of the on-chain logic: Each block includes the **event root in the block header**, which is the root of a Sparse-Merkle-Tree of all blockchain events, that are occured in that particular block.
+IMPORTANT: In contrast to xref:{url_understand_rpc_events}[RPC events], Blockchain events are part of the on-chain logic: Each block includes the **event root in the block header**, which is the root of a Sparse-Merkle-Tree of all blockchain events, that are occured in that particular block.
 
 Every module event always extends from the `BaseEvent` class.
 

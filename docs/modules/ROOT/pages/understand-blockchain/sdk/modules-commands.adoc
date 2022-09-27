@@ -13,6 +13,8 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_understand_block_generation: understand-blockchain/index.adoc#block-generation
 :url_understand_block_execution: understand-blockchain/index.adoc#block-execution
 :url_understand_genesis_block_execution: understand-blockchain/index.adoc#genesis-block-execution
+:url_understand_valid_invalid_txs: understand-blockchain/index.adoc##valid-vs-invalid-transactions
+:url_understand_rpc_events: understand-blockchain/sdk/rpc.adoc#events
 // Footnotes
 :fn_jsonschema: footnote:jsonSchema[See the {url_json_schema} for more information about the JSON schema.]
 
@@ -32,7 +34,7 @@ Modules perform state changes on Blockchain by::
 All important parts of a module are shown in the diagram below.
 
 .Anatomy of a module
-image::understand-blockchain/sdk/module.png[right thumb,"Module Anatomy",600, align="center"]
+image::understand-blockchain/sdk/module.png[600,"Module Anatomy", align="center"]
 
 Each module is constructed as a class which extends from the **BaseModule** interface.
 
@@ -285,7 +287,7 @@ export const getDelegateRequestSchema = {
 
 == Endpoints
 
-An endpoint is an interface between a module and an external system.
+An endpoint is an *interface between a module and an external system.*
 Lisk endpoints support RPC communication.
 The module-specific RPC endpoints can be invoked by external services, like UIs, to get relevant data from the application.
 
@@ -353,14 +355,14 @@ export class DPoSEndpoint extends BaseEndpoint {
 
 Modules have access to two kind of stores:
 
-. an <<on-chain--module-stores,on-chain store, a.k.a module store>>
+. an <<on-chain-stores,on-chain store, a.k.a module store>>
 . an <<off-chain-store>>
 
 Both stores are included in the state machine of the blockchain application, though only the data on the on-chain stores is shared and synchronized with other nodes in the network.
 
-=== On-chain- / Module Stores
+=== On-chain Stores
 
-A module can define one or multiple on-chain stores, to store data in the blockchain that is part of the blockchain state.
+A module can define one or multiple on-chain- or module stores, to store data in the blockchain that is part of the blockchain state.
 
 For example, data like account balances, delegate names and multisignature keys are values that are stored in the on-chain module store.
 
@@ -717,9 +719,13 @@ To see an example of how to call a module method from another module, look at th
 == Blockchain Events
 
 // TODO: update content here, once https://github.com/LiskHQ/lisk-sdk/pull/7415 is merged
-Blockchain events are logs of events that occurred in the blockchain network.
+Blockchain events, or module events, are logs of events that occurred in the blockchain network during block execution.
+Events occur per block, and are stored in the respective block header, from where they can be queried.
 
-NOTE: Blockchain events are part of the on-chain logic: Each block includes the **event root in the block header**, which is the root of a Sparse-Merkle-Tree of all events, that are included in that particular block.
+
+.Do not confuse blockchain events with RPC events.
+IMPORTANT: Different to xref:{url_understand_rpc_events}[RPC events], Blockchain events are part of the on-chain logic: Each block includes the **event root in the block header**, which is the root of a Sparse-Merkle-Tree of all blockchain events, that are occured in that particular block.
+
 
 Every module event always extends from the `BaseEvent` class.
 
@@ -768,6 +774,9 @@ export abstract class BaseEvent<T> {
 The default event is indicating the result of a transaction processing (success/fail).
 It is automatically emitted everytime a transaction is processed by a module.
 
+NOTE: Only valid transactions are processed, and therefore *only valid transaction emit the default module event.*
+See section xref:{url_understand_valid_invalid_txs}[Valid vs invalid transactions] for more ifnormation.
+
 The default event is therefore the only blockchain event, that is not defined manually by the developer of a module.
 
 .state_machine.ts
@@ -802,20 +811,86 @@ public async executeTransaction(ctx: TransactionContext): Promise<TransactionExe
 }
 ----
 
-=== Creating events
+=== Creating new blockchain event types
 
-To create events, that complement the on-chain business logic of the module, extend from the `BaseEvent` class.
+To create new event types that complement the on-chain business logic of the module, extend from the `BaseEvent` class.
+
+The only mandatory property to define in the event is the `schema`, which defines what custom data will be emitted by the event.
+
+TIP:  The only limitation to what `data` can be included in the event is the data size:
+*The maximum size of the event data is 1 kB.*
+
+.transferEventSchema
+[%collapsible]
+====
+[source,typescript]
+----
+export const transferEventSchema = {
+	$id: '/token/events/transfer',
+	type: 'object',
+	required: ['senderAddress', 'recipientAddress', 'tokenID', 'amount', 'result'],
+	properties: {
+		senderAddress: {
+			dataType: 'bytes',
+			format: 'lisk32',
+			fieldNumber: 1,
+		},
+		tokenID: {
+		recipientAddress: {
+			dataType: 'bytes',
+			format: 'lisk32',
+			fieldNumber: 2,
+		},
+		amount: {
+			dataType: 'uint64',
+		tokenID: {
+			dataType: 'bytes',
+			minLength: TOKEN_ID_LENGTH,
+			maxLength: TOKEN_ID_LENGTH,
+			fieldNumber: 3,
+		},
+		recipientAddress: {
+			dataType: 'bytes',
+		amount: {
+			dataType: 'uint64',
+			fieldNumber: 4,
+		},
+		result: {
+			dataType: 'uint32',
+			fieldNumber: 5,
+		},
+	},
+};
+----
+====
+
+`topics` are the second property, that can be defined by the developer, when adding/ publishing a blocckhain event.
+Topics are similar to tags and labels, categorizing the event after various relevant keywords.
+
+Both `data` and `topics` are passed as parameters to the `add()` method of a blockchain event:
+
+[source,js]
+----
+this.add(context, data, topics);
+----
+
+You can add utility functions like `log()` and `error()` to omit duplicate code and/or to simplify the publishing of the event later.
 
 .events/transfer.ts
 [source,typescript]
 ----
-export class TransferEvent extends BaseEvent<TransferEventData> {
+export class TransferEvent extends BaseEvent<TransferEventData & { result: TokenEventResult }> {
 	public schema = transferEventSchema;
 
 	public log(ctx: EventQueuer, data: TransferEventData): void {
-		const amountBuffer = Buffer.alloc(8);
-		amountBuffer.writeBigUInt64BE(data.amount);
-		this.add(ctx, data, [data.senderAddress, data.tokenID, data.recipientAddress]);
+		this.add(ctx, { ...data, result: TokenEventResult.SUCCESSFUL }, [
+			data.senderAddress,
+			data.recipientAddress,
+		]);
+	}
+
+	public error(ctx: EventQueuer, data: TransferEventData, result: TokenErrorEventResult): void {
+		this.add(ctx, { ...data, result }, [data.senderAddress, data.recipientAddress], true);
 	}
 }
 ----

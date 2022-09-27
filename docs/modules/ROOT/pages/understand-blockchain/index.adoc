@@ -53,6 +53,7 @@ Muhammad Talha <muhammad.talha@lightcurve.io>
 :url_integrate_ui: integrate-blockchain/create-user-interface.adoc
 :url_lisk_service: {lisk_service}index.adoc
 :url_sdk_plugins: {docs_sdk}plugins/index.adoc
+:url_fork_choice_rule: understand-blockchain/lisk-protocol/consensus-algorithm.adoc#fork_choice_rules
 
 
 In the "Understand Lisk blockchain" category you learn the basic concepts of Lisk blockchain, Network and Protocol. The page discusses the topics and terms that are important to know when developing within the Lisk ecosystem.
@@ -164,15 +165,15 @@ xref:{url_introduction_modules}[Modules] are able to perform the following funct
 ===== Plugins
 
 Plugins represent the off-chain logic.
-Plugins are not part of the Lisk protocol so, different plugins can be part of different nodes as shown in the network diagram.
-Plugins are not directly part of the Lisk protocol and they can be added to the application layer as per necessity.
+A plugin is not part of the Lisk protocol and must be registered with the application layer before its use.
+Each node inside the network can deploy various kinds of plugins to support their off-chain logic.
 
+For example, consider a case where a node wants to investigate possible misbehaviors in the Lisk network. For that, the node operator must gather all the blocks' data from the network, store it somewhere and analyze it to catch misbehavior.
 
-For example, consider a case where a node wants to investigate possible misbehaviours in the Lisk network. For that, node operator must gather all the blocks' data from the network, store it somewhere and analyse it to catch a misbehviour.
-
-While this can be done from scratch, Lisk provides the xref:{url_references_report_misbbehavior_plugin}[Report Misbehavior Plugin] that listens to blocks data and automatically reports a node about a delegate's misbehaviour.
+A node manager can write a script to perform the aforementioned task. However,  Lisk provides the xref:{url_references_report_misbbehavior_plugin}[Report Misbehavior Plugin] which listens to blocks' data and reports a node about a generator's misbehavior.
 
 TIP: Lisk provides a set of plugins that can be injected into the Application layer when needed, see xref:{url_sdk_plugins}[Plugins].
+
 
 
 ===== When to create a plugin
@@ -185,67 +186,81 @@ xref:{url_introduction_plugins}[] are able to perform the following:
 * Automate the blockchain logic, such as automatically sending transactions.
 * Add a proxy to the application interfaces.
 
-
 A blockchain application does not include any plugins by default, however, to extend and customize the application, register the desired plugins to the application.
 
-To add a new plugin to your application, either reuse an already existing plugin from another blockchain application, or create a new plugin based on the specific requirements of your application.
+To add a new plugin to your application, either reuse an existing plugin from another blockchain application or create a new plugin based on the specific requirements of your application.
 
 
 ===== Configuration
+Lisk understands the need for flexibility in terms of how a node should be run or how specific on-chain and off-chain logic should execute. 
+To serve this purpose, Lisk protocol accepts a configuration that is part of the state machine.
+
+A set of default configurations are passed to a blockchain application.
+These configurations can be tweaked as per necessity.
+For off-chain domains and logic, the configurations can differ for each node.
+However, the configurations for on-chain logic must be the same across the network of a blockchain application.
+
+TIP: For more information about the available configurations, see xref:{url_advanced_architecture_config}[].
 
 ==== Engine layer
-The Engine layer acts as a bridge between the *Chain* and the *Application layer*. Engine is responsible for managing upcomming transactions, generating blocks, reaching consensus, storing chain\'s data to data stores and dipersing the new blocks to other nodes on the chain. An engine layer consists of the following domains:
+The Engine layer acts as a bridge between the *Chain* and the *Application layer*. The engine is responsible for managing upcoming transactions, generating blocks, reaching consensus, storing the chain\'s data in data stores, and dispersing the new blocks to other nodes on the chain.
+An engine layer consists of the following domains:
 
 * Transaction Pool
 * Generator
 * Consensus
 * Chain
-* RPC
 * P2P
 
 ===== Transaction Pool
-A transaction pool is where new transactions exist, before they become part of the blockchain.
+A transaction pool is where new transactions exist before they become part of the blockchain.
 It is similar to mempool in Ethereum.
 Whenever a new transaction is created, it has to be sent to a transaction pool.
-The transaction pool recieves the new transaction, verifies it with the help of the Application layer and then stores it in the transaction pool.
+The transaction pool receives the new transaction, verifies it with the help of the Application layer, and then stores it in the transaction pool.
 
 A node operator can configure the Transaction pool via the *Configurations* passed to the Application layer.
-Node operator can change transaction properties like maximumTransactionsLimit, transactionPerAccount, minimumRequirementFee and minimumReplacementFee, etc.
+Node operator can change transaction properties like _maximumTransactionsLimit_, _transactionPerAccount_, _minimumRequirementFee_, and _minimumReplacementFee_, etc.
 
-Once a set of verified transactions are available in the pool, the are sent to the generator.
+Once a set of verified transactions are available in the pool, they are sent to the generator for further processing.
 
 ===== Generator
-A generator is responsible for generating new blocks.
-The generator picks up the transaction from transaction pool and orders it in terms of higher fees.
-The generator then executes each transaction with the help of state machine to check their validity.
+A generator handles the generation of new blocks.
+The generator picks up the transactions from the transaction pool and orders them in terms of higher fees.
+The generator then executes each transaction with the help of a state machine to check its validity.
 Once verified, the transactions are added to the block header.
-A generator uses the last generated block and generator keys to generate a block.
+A generator uses the _last generated block_ and _generator keys_ to generate a block.
 For more information about Generator and Block Generation, see << URL>>
 
 ===== Consensus
-The consensus domain applies the <<fork choice rule>> and checks the properties contained in the block header. It is also responsible for the replication of the same sequence of states among all nodes in the network.
+The consensus domain applies the xref:{url_fork_choice_rule}[fork choice rule] and checks the properties contained in the block header.
+It is also responsible for the replication of the same sequence of states among all nodes in the network.
 
 
 ===== Chain
-After a consensus is reached about a block, and the state has been changed, the new blocks' information is passed to the Chain, which stores data of the new block into a data store. 
+After a consensus for a block is reached and the state has been changed, the new block's information is passed to the Chain.
+The chain stores the transaction data into a data store.
+
 A chain is also responsible for fetching blockchain's data from the data stores.
 
 
 ===== P2P
-The P2P domian is responsible for the network, sending and receiving data from nodes and maintaining an active connection with the Lisk Network. 
-P2P network is responsible for the delivering the new blocks to all the peers in the network.
-Once new information is recieved on a different node, all the steps mentioned earlier are executed at the node and after passing all checks, the reciever node adds the new block at their end as well.
+The P2P domian handles sending and receiving data from nodes. 
+It also maintains an active connection with the Lisk Network. 
+Every node receives new blocks generated by other nodes via the P2P network.
+The receiver node in that case repeats all the steps mentioned in the Engine layer. 
+If the received block is verified, the receiving node adds it to their instance of blockchain.
 
 
 ===== Data Stores
-Each node of a chain has various data stores that store both off-chain and on-chain data pertaining to that node. 
+Each blockchain node keeps data on various data stores inside their Lisk protocol instance. This data is of two types: on-chain and off-chain.
 
-On Chain data includes but not limited to data regarding state of the chain, account balance, nonce, multi-signature keys, generators' information,and the Sparse Merkel tree, etc.
+* *On-chain* data includes but not limited to state data of the chain, account balance, nonce, multi-signature keys, generators' information, and the sparse merkel tree, etc.
 The blocks, transactions, events and assets are also part of the on-chain data among various other properties.
 
-Off-chain data includes, node information, peer list, random hash, etc. 
+* *Off-chain* data includes but not limited to node information, peer list, random hash, etc. 
 It also contains information for generators i.e. last generated block, encrypted keys, etc.
-Lisk also maintains information about legacy chains. Legacy informaction is off-chain and contains blocks from depriciated versions of the protocol.
+Lisk also maintain off-chain data about the legacy chains.
+legacy data consists of blocks from depriciated versions of the protocol.
 
 
 
@@ -277,6 +292,45 @@ Examples of blockchain applications can be found in the tutorials, such as the x
 Additionally, check out the apps list at {url_lisk_apps}[^]
 ****
 
+==== Structure of blockchain applications
+
+image::intro/ui-diagrams.png[,700 ,align="center"]
+
+Blockchain applications usually consist of a frontend and a backend part, just as normal web applications.
+
+In contrast to normal server-client applications, there is not one central backend, but rather a whole network of nodes which together secure and maintain the status of the blockchain.
+Each node can handle complex business logic and provides a flexible and customizable API.
+The blockchain itself is used as a database layer for the application.
+
+The frontend allows users to interact conveniently with the blockchain application.
+The implementation of a frontend is totally flexible.
+For example, this can be achieved in the following ways:
+
+[loweralpha]
+. Create a new xref:{url_introduction_plugins}[plugin] for the blockchain application.
+An example implementation of a frontend as a plugin is the {url_github_lns_dashboard}[LNS UI plugin] for the example application *Lisk Name Service*.
+. Use your favorite framework/ programming language to develop a user interface, and communicate to the node via the <<communication-interfaces-apis>>.
+One example is the frontend of the {url_github_srs}[SRS example application^] , which has been developed with React.js.
+Another example is the UI for the Hello World application, detailed in the guide xref:{url_integrate_ui}[].
+. For later requirements in a production environment, a middleware similar to Lisk Service should be used, which will aggregate the data from the blockchain network and possibly other 3rd party sources as well.
+The frontend can then request this data via API requests from the middleware.
+
+
+
+==== Communication interfaces / APIs
+
+image::intro/communication-architecture.png[,1000 ,align="center"]
+
+The communication architecture of the Lisk SDK allows internal application components and external services to communicate to the blockchain application via various channels.
+
+The Lisk SDK provides two industry standard communication protocols: Inter Process Communication (IPC) and Web Sockets (WS).
+The communication protocol of the blockchain application is changed in the xref:{url_advanced_architecture_config}[configuration].
+
+It is possible to communicate to modules and plugins directly by invoking xref:{url_advanced_communication_actions}[actions] via a RPC request, or by subscribing to xref:{url_advanced_communication_events}[events].
+
+It is recommended to use the IPC/WebSocket protocols where possible, as they provide a more enhanced performance in regard to the response times, (see the blog post: {url_blog_benchmark}[Benchmarking Lisk Core v3.0.0 against Lisk Core v2.1.6]).
+
+For more information about the communication architecture, check out the xref:{url_advanced_communication}[endpoints explanation].
 
 ==== Blockchain applications vs. dApps
 As blockchain applications are also in a sense decentralized applications, you may wonder what is the difference between blockchain applications and dApps, or if there is any difference at all.
@@ -314,45 +368,9 @@ This will provide seamless interoperability to the Lisk Mainchain and all of its
 
 
 
-==== Communication interfaces / APIs
 
-image::intro/communication-architecture.png[,1000 ,align="center"]
 
-The communication architecture of the Lisk SDK allows internal application components and external services to communicate to the blockchain application via various channels.
 
-The Lisk SDK provides two industry standard communication protocols: Inter Process Communication (IPC) and Web Sockets (WS).
-The communication protocol of the blockchain application is changed in the xref:{url_advanced_architecture_config}[configuration].
-
-It is possible to communicate to modules and plugins directly by invoking xref:{url_advanced_communication_actions}[actions] via a RPC request, or by subscribing to xref:{url_advanced_communication_events}[events].
-
-It is recommended to use the IPC/WebSocket protocols where possible, as they provide a more enhanced performance in regard to the response times, (see the blog post: {url_blog_benchmark}[Benchmarking Lisk Core v3.0.0 against Lisk Core v2.1.6]).
-// However, if you prefer an HTTP API, it is possible to add support for custom APIs by registering additional plugins, such as the xref:{url_references_http_plugin}[].
-//We also recommend to try out xref:{url_service}[Lisk Service], which provides a much more comprehensive API compared to the HTTP API plugin.
-
-For more information about the communication architecture, check out the xref:{url_advanced_communication}[endpoints explanation].
-
-==== Frontend & backend
-
-Blockchain applications usually consist of a frontend and a backend part, just as normal web applications.
-
-In contrast to normal server-client applications, there is not one central backend, but rather a whole network of nodes which together secure and maintain the status of the blockchain.
-Each node can handle complex business logic and provides a flexible and customizable API.
-The blockchain itself is used as a database layer for the application.
-
-The frontend allows users to interact conveniently with the blockchain application.
-The implementation of a frontend is totally flexible.
-For example, this can be achieved in the following ways:
-
-[loweralpha]
-. Create a new xref:{url_introduction_plugins}[plugin] for the blockchain application.
-An example implementation of a frontend as a plugin is the {url_github_lns_dashboard}[LNS UI plugin] for the example application *Lisk Name Service*.
-. Use your favorite framework/ programming language to develop a user interface, and communicate to the node via the <<communication-interfaces-apis>>.
-One example is the frontend of the {url_github_srs}[SRS example application^] , which has been developed with React.js.
-Another example is the UI for the Hello World application, detailed in the guide xref:{url_integrate_ui}[].
-. For later requirements in a production environment, a middleware similar to Lisk Service should be used, which will aggregate the data from the blockchain network and possibly other 3rd party sources as well.
-The frontend can then request this data via API requests from the middleware.
-
-image::intro/ui-diagrams.png[]
 
 
 

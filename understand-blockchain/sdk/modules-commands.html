@@ -485,7 +485,7 @@ For a successful registration, each module needs to follow the expected module s
 </div>
 <div class="imageblock text-center">
 <div class="content">
-<img src="../../_images/understand-blockchain/sdk/module.png" alt="right thumb" width="Module Anatomy" height="600">
+<img src="../../_images/understand-blockchain/sdk/module.png" alt="600" width="Module Anatomy">
 </div>
 <div class="title">Figure 1. Anatomy of a module</div>
 </div>
@@ -792,7 +792,7 @@ class HelloModule extends BaseModule {
 <h2 id="endpoints"><a class="anchor" href="#endpoints"></a>Endpoints</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>An endpoint is an interface between a module and an external system.
+<p>An endpoint is an <strong>interface between a module and an external system.</strong>
 Lisk endpoints support RPC communication.
 The module-specific RPC endpoints can be invoked by external services, like UIs, to get relevant data from the application.</p>
 </div>
@@ -882,7 +882,7 @@ export class HelloModule extends BaseModule {
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>an <a href="#on-chain&.adoc#8212;&#8203;module-stores" class="xref unresolved">on-chain store, a.k.a module store</a></p>
+<p>an <a href="#on-chain-stores">on-chain store, a.k.a module store</a></p>
 </li>
 <li>
 <p>an <a href="#off-chain-store">Off-chain Store</a></p>
@@ -893,9 +893,9 @@ export class HelloModule extends BaseModule {
 <p>Both stores are included in the state machine of the blockchain application, though only the data on the on-chain stores is shared and synchronized with other nodes in the network.</p>
 </div>
 <div class="sect2">
-<h3 id="on-chain-module-stores"><a class="anchor" href="#on-chain-module-stores"></a>On-chain- / Module Stores</h3>
+<h3 id="on-chain-stores"><a class="anchor" href="#on-chain-stores"></a>On-chain Stores</h3>
 <div class="paragraph">
-<p>A module can define one or multiple on-chain stores, to store data in the blockchain that is part of the blockchain state.</p>
+<p>A module can define one or multiple on-chain- or module stores, to store data in the blockchain that is part of the blockchain state.</p>
 </div>
 <div class="paragraph">
 <p>For example, data like account balances, delegate names and multisignature keys are values that are stored in the on-chain module store.</p>
@@ -1299,16 +1299,18 @@ export class HelloModule extends BaseModule {
 <h2 id="blockchain-events"><a class="anchor" href="#blockchain-events"></a>Blockchain Events</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Blockchain events are logs of events that occurred in the blockchain network.</p>
+<p>Blockchain events, or module events, are logs of events that occurred in the blockchain network during block execution.
+Events occur per block, and are stored in the respective block header, from where they can be queried.</p>
 </div>
-<div class="admonitionblock note">
+<div class="admonitionblock important">
 <table>
 <tr>
 <td class="icon">
-<i class="fa icon-note" title="Note"></i>
+<i class="fa icon-important" title="Important"></i>
 </td>
 <td class="content">
-Blockchain events are part of the on-chain logic: Each block includes the <strong>event root in the block header</strong>, which is the root of a Sparse-Merkle-Tree of all events, that are included in that particular block.
+<div class="title">Do not confuse blockchain events with RPC events.</div>
+Different to <a href="rpc.html#events" class="xref page">RPC events</a>, Blockchain events are part of the on-chain logic: Each block includes the <strong>event root in the block header</strong>, which is the root of a Sparse-Merkle-Tree of all blockchain events, that are occured in that particular block.
 </td>
 </tr>
 </table>
@@ -1363,6 +1365,19 @@ Blockchain events are part of the on-chain logic: Each block includes the <stron
 <p>The default event is indicating the result of a transaction processing (success/fail).
 It is automatically emitted everytime a transaction is processed by a module.</p>
 </div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Only valid transactions are processed, and therefore <strong>only valid transaction emit the default module event.</strong>
+See section <a href="../index.html##valid-vs-invalid-transactions" class="xref page">Valid vs invalid transactions</a> for more ifnormation.
+</td>
+</tr>
+</table>
+</div>
 <div class="paragraph">
 <p>The default event is therefore the only blockchain event, that is not defined manually by the developer of a module.</p>
 </div>
@@ -1400,20 +1415,101 @@ It is automatically emitted everytime a transaction is processed by a module.</p
 </div>
 </div>
 <div class="sect2">
-<h3 id="creating-events"><a class="anchor" href="#creating-events"></a>Creating events</h3>
+<h3 id="creating-new-blockchain-event-types"><a class="anchor" href="#creating-new-blockchain-event-types"></a>Creating new blockchain event types</h3>
 <div class="paragraph">
-<p>To create events, that complement the on-chain business logic of the module, extend from the <code>BaseEvent</code> class.</p>
+<p>To create new event types that complement the on-chain business logic of the module, extend from the <code>BaseEvent</code> class.</p>
+</div>
+<div class="paragraph">
+<p>The only mandatory property to define in the event is the <code>schema</code>, which defines what custom data will be emitted by the event.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+The only limitation to what <code>data</code> can be included in the event is the data size:
+<strong>The maximum size of the event data is 1 kB.</strong>
+</td>
+</tr>
+</table>
+</div>
+<details>
+<summary class="title">transferEventSchema</summary>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export const transferEventSchema = {
+	$id: '/token/events/transfer',
+	type: 'object',
+	required: ['senderAddress', 'recipientAddress', 'tokenID', 'amount', 'result'],
+	properties: {
+		senderAddress: {
+			dataType: 'bytes',
+			format: 'lisk32',
+			fieldNumber: 1,
+		},
+		tokenID: {
+		recipientAddress: {
+			dataType: 'bytes',
+			format: 'lisk32',
+			fieldNumber: 2,
+		},
+		amount: {
+			dataType: 'uint64',
+		tokenID: {
+			dataType: 'bytes',
+			minLength: TOKEN_ID_LENGTH,
+			maxLength: TOKEN_ID_LENGTH,
+			fieldNumber: 3,
+		},
+		recipientAddress: {
+			dataType: 'bytes',
+		amount: {
+			dataType: 'uint64',
+			fieldNumber: 4,
+		},
+		result: {
+			dataType: 'uint32',
+			fieldNumber: 5,
+		},
+	},
+};</code></pre>
+</div>
+</div>
+</div>
+</details>
+<div class="paragraph">
+<p><code>topics</code> are the second property, that can be defined by the developer, when adding/ publishing a blockhain event.
+Topics are similar to tags and labels, categorizing the event with a list of the relevant keywords.</p>
+</div>
+<div class="paragraph">
+<p>Both <code>data</code> and <code>topics</code> are passed as parameters to the <code>add()</code> method of a blockchain event:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">this.add(context, data, topics[]);</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can add utility functions like <code>log()</code> and <code>error()</code> to omit duplicate code and/or to simplify the publishing of the event later.</p>
 </div>
 <div class="listingblock">
 <div class="title">events/transfer.ts</div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export class TransferEvent extends BaseEvent&lt;TransferEventData&gt; {
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export class TransferEvent extends BaseEvent&lt;TransferEventData &amp; { result: TokenEventResult }&gt; {
 	public schema = transferEventSchema;
 
 	public log(ctx: EventQueuer, data: TransferEventData): void {
-		const amountBuffer = Buffer.alloc(8);
-		amountBuffer.writeBigUInt64BE(data.amount);
-		this.add(ctx, data, [data.senderAddress, data.tokenID, data.recipientAddress]);
+		this.add(ctx, { ...data, result: TokenEventResult.SUCCESSFUL }, [
+			data.senderAddress,
+			data.recipientAddress,
+		]);
+	}
+
+	public error(ctx: EventQueuer, data: TransferEventData, result: TokenErrorEventResult): void {
+		this.add(ctx, { ...data, result }, [data.senderAddress, data.recipientAddress], true);
 	}
 }</code></pre>
 </div>

@@ -69,10 +69,6 @@ When this message is processed, the chain is also terminated in the sending chai
 When a chain is terminated, a "terminated state" account is created, storing the last certified state root of the terminated chain.
 Then, users can recover tokens from the terminated sidechain with a state recovery command or proceed with the message recovery initialization command to kick-off the recovery of pending cross-chain messages.
 
-
-
-
-
 == Sidechain Registration
 
 // Explain why sidechain registration is needed referencing the introduction
@@ -85,9 +81,6 @@ To bring this to fruition a cross channel chain protocol needs to be established
 At this point it should be noted that there are two registration commands which are utilized dependent on whether it is the Lisk mainchain or the sidechain we are dealing with.
 To explain this briefly, for the Lisk mainchain the sidechain registration command is used.
 From the sidechain perspective, this is performed by the mainchain registration command, both of these are covered further in this section.
-
-
-
 
 == How to register a sidechain
 
@@ -105,7 +98,6 @@ It guarantees that when the CCU activating the channel is executed, a registrati
 When a sidechain is registered on the mainchain, as previously mentioned, an ecosystem wide chain ID and name are assigned to this chain.
 The chain name, network ID, and the token used for the message fees are included in a registration message that is appended to the sidechain outbox.
 When the first cross-chain update containing messages is sent to the sidechain, the equality between the properties in the registration message and the ones in the interoperability store is verified.
-
 
 ==== Sidechain Registration Process
 
@@ -131,14 +123,14 @@ The values of these entries are initialized, and the `name`, `networkID`, and `i
 
 This sidechain registration command assigns a unique integer as the chain ID that identifies the sidechain in the ecosystem.
 Furthermore, new data structures are inserted for the sidechain in the Lisk mainchain state.
-This results in a new entry being created in the five different substores of the interoperability module store listed below, and can also be seen in the diagram in figure 1.
+This results in a new entry being created in the five different substores of the interoperability module store listed below, and can also be seen in the diagram below in figure 1.
 
 The following substores are used:
 *outbox root substore*, *chain data substore*, *channel data substore*, *chain validators substore*, and *registered names*.
 //This chain ID integer is also part of the key of the interoperability store entries for the registered sidechain as shown below in Figure 1.
 image:understand-blockchain/interop/interoperability-module-store.png[ align="center" ,800]
 
-Figure 1: A summary of the Interoperability module store:
+*Figure 1:* A summary of the Interoperability module store:
 Each box represents a substore, where we indicate the `storeKey --> storeValue relation`.
 For the Lisk mainchain, the 'own chain' substore exists by default in the state whereas there is one entry per registered sidechain for five other substores (outbox root, chain data, channel data, chain validators, registered names), created by a sidechain registration command.
 For sidechains, the 'own chain' and one entry for the mainchain account for four other substores (outbox root, chain data, channel data, and chain validators) are created by the mainchain registration command.
@@ -187,8 +179,130 @@ Specifically in the Interoperability module, it serves a similar purpose for cha
 Furthermore, the chain ID has to be stated in every cross-chain interaction.
 For example, it has to be specified in the `receivingChainID` property of a CCM to this sidechain and in the `sendingChainId property` of a cross-chain update command from this sidechain.
 
+In the sidechain registration command the sidechain ID is given as a parameter.
+In the case whereby the given value is already taken by another sidechain, the sidechain registration fails.
+Therefore, the sidechain has to change the chain ID with a hardfork, and resubmit the sidechain registration command with a new value.
+The chain identifiers are of a value of 4-bytes, and dependent on the network on which the chain is running, the first byte must always be set to the correct value.
+
+An example can be seen below in the following table depicting the chain-identifiers prefixes currently specified.
+The first byte is set to  `CHAIN_ID_PREFIX_MAINNET` for chains running in the mainnet network and to `CHAIN_ID_PREFIX_TESTNET` for chains running in the testnet network.
+The other 3 bytes must be uniquely chosen for the respective blockchain, hence, no other blockchain created with the Lisk SDK should use the same 3 bytes.
+
+[cols="2,1,2,4"]
+|===
+|Name|Type|Value|Description
+|`CHAIN_ID_PREFIX_MAINNET`|bytes|0x00|Chain-identifier prefix for mainnet blockchains.
+|`CHAIN_ID_PREFIX_TESTNET`|bytes|0x01|Chain-identifier prefix for testnet blockchains.
+|===
+
+The chain ID is known to the mainchain as soon as the sidechain is registered, therefore it can validate cross-chain update commands coming from the sidechain without any further context.
 
 
+
+=== Mainchain registration on a sidechain
+
+ddd (use section fom lip 043)
+
+Once the sidechain has been registered on the mainchain, a similar registration process should happen in the sidechain before the interoperable channel is opened between the two chains.
+This is performed by submitting a transaction with the mainchain registration command in the sidechain, which implies the creation of a mainchain account in the sidechain state associated with the Lisk mainchain, and other structures needed for interoperability.
+This mainchain account has a similar structure as the one depicted in Figure 1 above.
+By protocol, the chain ID of the mainchain is a constant equal to `CHAIN_ID_MAINCHAIN` in the ecosystem.
+
+This registration process always has to occur after the sidechain registration on the mainchain, since the sidechain has no prior knowledge of the current mainchain validators or its name.
+Similar to the sidechain registration case, the mainchain account status will not change to active until a valid cross-chain update command from the mainchain containing a valid registration xref:{url_ccm}[CCM] is processed.
+
+=== Mainchain Registration Command
+The mainchain registration command is used to register the Lisk mainchain on a sidechain.
+When this command is processed, a new account for the mainchain is created in the sidechain state under the <<interoperability store>>.
+The account is initialized with an empty inbox and outbox, while the initial validators set is given in the command parameters.
+The name and network ID of the mainchain are global protocol constants in the whole ecosystem.
+
+This command also initializes another data structure in the interoperability store, containing certain information about the sidechain.
+In particular, it sets the sidechain name and chain ID to the ones that have been previously registered on the mainchain via the <<Sidechain Registration Command>>.
+//To do create entry in glossary for nteroperability store and add in link
+
+Once the sidechain has been registered on the mainchain, a similar registration process should happen in the sidechain before the interoperable channel is opened between the two chains.
+This is done by submitting a transaction with the mainchain registration command in the sidechain, which implies the creation of a mainchain account in the sidechain state associated with the Lisk mainchain.
+The mainchain account possesses a similar structure as depicted in the chain interoperability store diagram above in figure 1.
+
+* `mainchainValidators`
+
+xxxx
+
+* `name`
+
+xxx
+
+* `ownChainID`
+
+xx
+
+* `ownName`
+
+xxx
+
+// etc from lip 43
+* Interoperability Constants
+
+[cols="2,1,2,4"]
+|===
+|Name|Type|Value|Description
+|MODULE_ID_INTEROPERABILITY|uint32|64|ID of the interoperability module.
+|MAINCHAIN_ID|bytes|1|Chain ID of the Lisk mainchain.
+|MAINCHAIN_NAME|string|"lisk-mainchain"|Name of the Lisk mainchain.
+//|MAINCHAIN_NETWORK_ID|bytes|TBD|Network identifier of the Lisk mainchain.
+|===
+
+* Interoperability Store
+
+[cols="2,1,2,4"]
+|===
+|Name|Type|Value|Description
+|STORE_PREFIX_OUTBOX_ROOT|bytes|0x0000|Store prefix of the outbox root substore.
+|STORE_PREFIX_CHAIN_DATA|bytes|0x8000|Store prefix of the chain data substore.
+|STORE_PREFIX_REGISTERED_NAMES|bytes|0xe000|Store prefix of the chain names substore.
+|STORE_PREFIX_REGISTERED_NETWORK_IDS|bytes|0xf000|Store prefix of the chain network IDs substore.
+|===
+
+* Interoperability Command IDs
+
+[cols="2,1,2,4"]
+|===
+|Name|Type|Value|Description
+|COMMAND_ID_SIDECHAIN_REG|uint32|0|Command ID of sidechain registration command.
+|COMMAND_ID_MAINCHAIN_REG|uint32|1|Command ID of mainchain registration command.
+|CROSS_CHAIN_COMMAND_ID_REGISTRATION|uint32|0|Cross-chain command ID of chain registration CCM.
+|===
+
+* General Constants
+
+[cols="2,1,2,4"]
+|===
+|Name|Type|Value|Description
+|MIN_FEE_PER_BYTE|uint64|1000|Minimum fee per byte.
+|REGISTRATION_FEE|uint64|1000000000|Fee to pay for a sidechain registration command.
+|MAX_NUM_VALIDATORS|uint32|199|	Maximum number of validators in a sidechain.
+|MAX_LENGTH_NAME|uint32|40|Maximum allowed name for a sidechain.
+|TAG_CHAINREG_MESSAGE|bytes|ASCII encoded string “LSK_CHAIN_REGISTRATION_”|
+|===
+
+
+
+
+
+=== Posting Cross-chain Updates on Mainchain and on Sidechains//?
+As the roles of both mainchain and sidechain are quite different, so are the transactions used to post cross-chain updates. The most notable differences are:
+
+On the mainchain, all CCMs included in the inboxUpdate must have their sendingChainID equal to the chainID sending the cross-chain update.
+On sidechains, all CCMs included in the inboxUpdate must have their receivingChainID equal to the chainID of the sidechain receiving the cross-chain update.
+As the mainchain accepts CCMs with receivingChainID corresponding to another sidechain, the cross-chain update processing on the mainchain is responsible for the inclusion of those CCMs in the corresponding outbox.
+These points guarantee that the CCMs are always forwarded to the correct chains and that the receiving chain can be confident that the chain specified in CCM.sendingChainID was truly the chain issuing the CCM.
+
+
+dd
+
+
+d
 ccccc
 ccccccccccc
 The command ID of this transaction is `COMMAND_ID_SIDECHAIN_REG`.
@@ -281,94 +395,3 @@ This message allows to inform sidechains about other terminated sidechains effic
 == How to recover information from a sidechain
 Explain steps to recover information from sidechain
 
-
-=== Mainchain registration on a sidechain
-
-ddd (use section fom lip 043)
-
-=== Mainchain Registration Command
-The mainchain registration command is used to register the Lisk mainchain on a sidechain.
-When this command is processed, a new account for the mainchain is created in the sidechain state under the <<interoperability store>>.
-The account is initialized with an empty inbox and outbox, while the initial validators set is given in the command parameters.
-The name and network ID of the mainchain are global protocol constants in the whole ecosystem.
-
-This command also initializes another data structure in the interoperability store, containing certain information about the sidechain.
-In particular, it sets the sidechain name and chain ID to the ones that have been previously registered on the mainchain via the <<Sidechain Registration Command>>.
-//To do create entry in glossary for nteroperability store and add in link
-
-Once the sidechain has been registered on the mainchain, a similar registration process should happen in the sidechain before the interoperable channel is opened between the two chains.
-This is done by submitting a transaction with the mainchain registration command in the sidechain, which implies the creation of a mainchain account in the sidechain state associated with the Lisk mainchain.
-The mainchain account possesses a similar structure as depicted in the chain interoperability store diagram above in figure 1.
-
-* `mainchainValidators`
-
-xxxx
-
-* `name`
-
-xxx
-
-* `ownChainID`
-
-xx
-
-* `ownName`
-
-xxx
-
-// etc from lip 43
-* Interoperability Constants
-
-[cols="2,1,2,4"]
-|===
-|Name|Type|Value|Description
-|MODULE_ID_INTEROPERABILITY|uint32|64|ID of the interoperability module.
-|MAINCHAIN_ID|bytes|1|Chain ID of the Lisk mainchain.
-|MAINCHAIN_NAME|string|"lisk-mainchain"|Name of the Lisk mainchain.
-//|MAINCHAIN_NETWORK_ID|bytes|TBD|Network identifier of the Lisk mainchain.
-|===
-
-* Interoperability Store
-
-[cols="2,1,2,4"]
-|===
-|Name|Type|Value|Description
-|STORE_PREFIX_OUTBOX_ROOT|bytes|0x0000|Store prefix of the outbox root substore.
-|STORE_PREFIX_CHAIN_DATA|bytes|0x8000|Store prefix of the chain data substore.
-|STORE_PREFIX_REGISTERED_NAMES|bytes|0xe000|Store prefix of the chain names substore.
-|STORE_PREFIX_REGISTERED_NETWORK_IDS|bytes|0xf000|Store prefix of the chain network IDs substore.
-|===
-
-* Interoperability Command IDs
-
-[cols="2,1,2,4"]
-|===
-|Name|Type|Value|Description
-|COMMAND_ID_SIDECHAIN_REG|uint32|0|Command ID of sidechain registration command.
-|COMMAND_ID_MAINCHAIN_REG|uint32|1|Command ID of mainchain registration command.
-|CROSS_CHAIN_COMMAND_ID_REGISTRATION|uint32|0|Cross-chain command ID of chain registration CCM.
-|===
-
-* General Constants
-
-[cols="2,1,2,4"]
-|===
-|Name|Type|Value|Description
-|MIN_FEE_PER_BYTE|uint64|1000|Minimum fee per byte.
-|REGISTRATION_FEE|uint64|1000000000|Fee to pay for a sidechain registration command.
-|MAX_NUM_VALIDATORS|uint32|199|	Maximum number of validators in a sidechain.
-|MAX_LENGTH_NAME|uint32|40|Maximum allowed name for a sidechain.
-|TAG_CHAINREG_MESSAGE|bytes|ASCII encoded string “LSK_CHAIN_REGISTRATION_”|
-|===
-
-
-
-
-
-=== Posting Cross-chain Updates on Mainchain and on Sidechains//?
-As the roles of both mainchain and sidechain are quite different, so are the transactions used to post cross-chain updates. The most notable differences are:
-
-On the mainchain, all CCMs included in the inboxUpdate must have their sendingChainID equal to the chainID sending the cross-chain update.
-On sidechains, all CCMs included in the inboxUpdate must have their receivingChainID equal to the chainID of the sidechain receiving the cross-chain update.
-As the mainchain accepts CCMs with receivingChainID corresponding to another sidechain, the cross-chain update processing on the mainchain is responsible for the inclusion of those CCMs in the corresponding outbox.
-These points guarantee that the CCMs are always forwarded to the correct chains and that the receiving chain can be confident that the chain specified in CCM.sendingChainID was truly the chain issuing the CCM.

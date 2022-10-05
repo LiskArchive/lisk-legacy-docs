@@ -243,14 +243,276 @@ It ensures that the sidechain validators agree on registering the mainchain in t
 
 The `aggregationBits` property is a bit vector used to validate the aggregated signature.
 
-The transactions executing the mainchain registration command and the required parameters and verification are listed below:
+=== Sidechain & Mainchain Registration Transaction Commands
+
+Firstly, the
+
+
+
+
+Secondly, the transactions executing the mainchain registration command and the required parameters, verification and execution are listed below:
 
 * `module = MODULE_NAME_INTEROPERABILITY`
 * `command = COMMAND_MAINCHAIN_REG`
 
+.Parameters
 
-Parameters
+[source,js]
+----
+mainchainRegParams = {
+"type": "object",
+"required": [
+"ownChainID",
+"ownName",
+"mainchainValidators",
+"signature",
+"aggregationBits"
+],
+"properties": {
+"ownChainID": {
+"dataType": "bytes",
+"length": CHAIN_ID_LENGTH,
+"fieldNumber": 1
+},
+"ownName": {
+"dataType": "string",
+"minLength": MIN_CHAIN_NAME_LENGTH,
+"maxLength": MAX_CHAIN_NAME_LENGTH,
+"fieldNumber": 2
+},
+"mainchainValidators": {
+"type": "array",
+"fieldNumber": 3,
+"items": {
+"type": "object",
+"required": ["blsKey", "bftWeight"],
+"properties": {
+"blsKey": {
+"dataType": "bytes",
+"length": BLS_PUBLIC_KEY_LENGTH,
+"fieldNumber": 1
+},
+"bftWeight": {
+"dataType": "uint64",
+"fieldNumber": 2
+}
+}
+}
+},
+"signature": {
+"dataType": "bytes",
+"length": BLS_SIGNATURE_LENGTH,
+"fieldNumber": 4
+},
+"aggregationBits": {
+"dataType": "bytes",
+"fieldNumber": 5
+}
+}
+}
+----
 
+.Verification
+
+[source,js]
+----
+def verify(trs: Transaction) -> None:
+# The ownChainID property has to match with the chain identifier.
+chainID = chain identifier of the current chain
+if trs.params.ownChainID != chainID:
+raise Exception("Invalid ownChainID property.")
+
+    # The ownName property has to contain only characters from the set [a-z0-9!@$&_.].
+    if not re.match(r"^[a-z0-9!@$&_.]+$", trs.params.ownName):
+        raise Exception("Invalid ownName property. It should contain only characters from the set [a-z0-9!@$&_.].")
+
+    # mainchainValidators must have exactly MAINCHAIN_NUMBER_ACTIVE_VALIDATORS elements.
+    if len(trs.params.mainchainValidators) != MAINCHAIN_NUMBER_ACTIVE_VALIDATORS:
+        raise Exception(f"Invalid mainchainValidators property. It must have exactly {MAINCHAIN_NUMBER_ACTIVE_VALIDATORS} elements.")
+
+    validatorKeys = [validator.blsKey for validator in trs.params.mainchainValidators]
+    # All validator keys must be distinct.
+    if len(validatorKeys) != len(set(validatorKeys)):
+        raise Exception("Duplicate BLS keys.")
+
+    # Validator keys must be in lexicographic order.
+    if not all(validatorKeys[i] < validatorKeys[i + 1] for i in range(len(validatorKeys) - 1)):
+        raise Exception("Validator keys are not in lexicographic order.")
+
+    for validator in trs.params.initValidators:
+        # The bftWeight property of each element is equal to 1.
+        if validator.bftWeight != 1:
+            raise Exception("Invalid bftWeight property.")
+----
+
+.Execution
+
+[source,js]
+----
+
+def execute(trs: Transaction) -> None:
+# Check signature property.
+height = height of the block in which trs was included
+sidechainValidators = validatorsModule.getCurrentValidators()
+certificateThreshold = validatorsModule.getCertificateThreshold()
+# Sort sidechainValidators by BLS key.
+sidechainValidators.sort(key=lambda v: validatorsModule.getValidatorAccount(v.address).blsKey)
+blsKeys = [validatorsModule.getValidatorAccount(v.address).blsKey for v in sidechainValidators]
+bftWeights = [v.bftWeight for v in sidechainValidators]
+
+    registrationSignatureMessageSchema = {
+        "type": "object",
+        "required": ["ownChainID", "ownName", "mainchainValidators"],
+        "properties": {
+            "ownChainID": {
+                "dataType": "bytes",
+                "length": CHAIN_ID_LENGTH,
+                "fieldNumber": 1
+            },
+            "ownName": {
+                "dataType": "string",
+                "minLength": MIN_CHAIN_NAME_LENGTH,
+                "maxLength": MAX_CHAIN_NAME_LENGTH,
+                "fieldNumber": 2
+            },
+            "mainchainValidators": {
+                "type": "array",
+                "fieldNumber": 3,
+                "items": {
+                    "type": "object",
+                    "required": ["blsKey", "bftWeight"],
+                    "properties": {
+                        "blsKey": {
+                            "dataType": "bytes",
+                            "length": BLS_PUBLIC_KEY_LENGTH,
+                            "fieldNumber": 1
+                        },
+                        "bftWeight": {
+                            "dataType": "uint64",
+                            "fieldNumber": 2
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    message = encode(registrationSignatureMessageSchema,
+        {
+        "ownChainID": trs.params.ownChainID,
+        "ownName": trs.params.ownName,
+        "mainchainValidators": trs.params.mainchainValidators
+        }
+    )
+
+    # verifyWeightedAggSig is specified in LIP 0062.
+    if verifyWeightedAggSig(blsKeys, MESSAGE_TAG_CHAIN_REG, trs.params.ownChainID, trs.params.aggregationBits, trs.params.signature, bftWeights, certificateThreshold, message) == False:
+        emitPersistentEvent(
+            module = MODULE_NAME_INTEROPERABILITY,
+            name = EVENT_NAME_INVALID_REGISTRATION_SIGNATURE,
+            data = {},
+            topics = [trs.params.ownChainID]
+        raise Exception("Invalid signature property.")
+
+    # Create chain account.
+    mainchainAccount = {
+        "name": CHAIN_NAME_MAINCHAIN,
+        "lastCertificate": {
+            "height": 0,
+            "timestamp": 0,
+            "stateRoot": EMPTY_HASH,
+            "validatorsHash": computeValidatorsHash(trs.params.mainchainValidators, THRESHOLD_MAINCHAIN)
+        },
+        "status": CHAIN_STATUS_REGISTERED
+    }
+    create an entry in the chain data substore with
+        storeKey = CHAIN_ID_MAINCHAIN
+        storeValue = encode(chainAccountSchema, mainchainAccount)
+
+    # Create channel.
+    mainchainChannel = {
+        "inbox": {
+            "appendPath": [],
+            "size": 0,
+            "root": EMPTY_HASH
+        },
+        "outbox": {
+            "appendPath": [],
+            "size": 0,
+            "root": EMPTY_HASH
+        },
+        "partnerChainOutboxRoot": EMPTY_HASH,
+        "messageFeeTokenID": TOKEN_ID_LSK_MAINCHAIN
+    }
+    create an entry in the channel data substore with
+        storeKey = CHAIN_ID_MAINCHAIN
+        storeValue = encode(channelSchema, mainchainChannel)
+
+    # Create validators account.
+    mainchainValidators = {
+        "activeValidators": trs.params.mainchainValidators,
+        "certificateThreshold": THRESHOLD_MAINCHAIN
+    }
+    create an entry in the chain validators data substore with
+        storeKey = CHAIN_ID_MAINCHAIN
+        storeValue = encode(validatorsSchema, mainchainValidators)
+
+    # Create outbox root entry.
+    create an entry in the outbox root substore with
+        storeKey = CHAIN_ID_MAINCHAIN
+        storeValue = encode(outboxRootSchema, {"root": mainchainChannel.outbox.root})
+
+    # Create own chain account.
+    ownChainAccount = {
+        "name": trs.params.ownName,
+        "chainID": trs.params.ownChainID,
+        "nonce": 0
+    }
+    create an entry in the own chain data substore with
+        storeKey = EMPTY_BYTES
+        storeValue = encode(ownChainAccountSchema, ownChainAccount)
+
+    # Emit chain account updated event.
+    emitEvent(
+        module = MODULE_NAME_INTEROPERABILITY,
+        name = EVENT_NAME_CHAIN_ACCOUNT_UPDATED,
+        data = mainchainAccount,
+        topics = [CHAIN_ID_MAINCHAIN]
+    )
+
+    # Send registration CCM to the mainchain.
+    # Notice that we do not use the send function because the channel
+    # has not been activated yet.
+    registrationCCMParams = {
+        "chainID": CHAIN_ID_MAINCHAIN,
+        "name": CHAIN_NAME_MAINCHAIN,
+        "messageFeeTokenID": mainchainChannel.messageFeeTokenID
+    }
+
+    ccm = {
+        "nonce": ownChainAccount.nonce,
+        "module": MODULE_NAME_INTEROPERABILITY,
+        "crossChainCommand": CROSS_CHAIN_COMMAND_REGISTRATION,
+        "sendingChainID": ownChainAccount.chainID,
+        "receivingChainID": CHAIN_ID_MAINCHAIN,
+        "fee": 0,
+        "status": CCM_STATUS_CODE_OK,
+        "params": encode(registrationCCMParamsSchema, registrationCCMParams) # registrationCCMParamsSchema is defined in LIP0049
+    }
+
+    # We cannot use the send function because the channel is not active yet.
+    addToOutbox(CHAIN_ID_MAINCHAIN, ccm)
+    ownChainAccount.nonce += 1
+
+    # Emit CCM Processed Event.
+    ccmID = sha256(encode(crossChainMessageSchema, ccm))
+    emitEvent(
+        module = MODULE_NAME_INTEROPERABILITY,
+        name = EVENT_NAME_CCM_SEND_SUCCESS,
+        data = {"ccmID": ccmID},
+        topics = [ccm.sendingChainID, ccm.receivingChainID, ccmID]
+    )
+----
 
 
 

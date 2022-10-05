@@ -243,20 +243,243 @@ It ensures that the sidechain validators agree on registering the mainchain in t
 
 The `aggregationBits` property is a bit vector used to validate the aggregated signature.
 
-=== Sidechain & Mainchain Registration Transaction Commands
+=== Sidechain Registration Transaction Commands
 
-Firstly, the
+Firstly, the transactions executing the sidechain registration command and the required parameters, verification and execution are listed below:
 
+* `module = MODULE_NAME_INTEROPERABILITY`
+* `command = COMMAND_SIDECHAIN_REG`
 
+.Sidechain Parameters
+[%collapsible]
+=====
+[source,js]
+----
+sidechainRegParams = {
+    "type": "object",
+    "required": [
+        "name",
+        "chainID",
+        "initValidators",
+        "certificateThreshold",
+        "sidechainRegistrationFee"
+    ],
+    "properties": {
+        "name": {
+            "dataType": "string",
+            "minLength": MIN_CHAIN_NAME_LENGTH,
+            "maxLength": MAX_CHAIN_NAME_LENGTH,
+            "fieldNumber": 1
+        },
+        "chainID": {
+            "dataType": "bytes",
+            "length": CHAIN_ID_LENGTH,
+            "fieldNumber": 2
+        },
+        "initValidators": {
+            "type": "array",
+            "fieldNumber": 3,
+            "items": {
+                "type": "object",
+                "required": ["blsKey", "bftWeight"],
+                "properties": {
+                    "blsKey": {
+                        "dataType": "bytes",
+                        "length": BLS_PUBLIC_KEY_LENGTH,
+                        "fieldNumber": 1
+                    },
+                    "bftWeight": {
+                        "dataType": "uint64",
+                        "fieldNumber": 2
+                    }
+                }
+            }
+        },
+        "certificateThreshold": {
+            "dataType": "uint64",
+            "fieldNumber": 4
+        },
+        "sidechainRegistrationFee": {
+            "type": "uint64",
+            "fieldNumber": 5
+        }
+    }
+}
+----
+.Verification
 
+[source,js]
+----
+def verify(trs: Transaction) -> None:
+    # The name property has to contain only characters from the set [a-z0-9!@$&_.].
+    if not re.match(r"^[a-z0-9!@$&_.]+$", trs.params.name):
+        raise Exception("Invalid name property. It should contain only characters from the set [a-z0-9!@$&_.].")
+    # The name property has to be unique with respect to the set of already registered sidechain names.
+    if there exists an entry in the registered names substore with store key equal to trs.params.name.encode("utf-8"):
+        raise Exception("Name already registered.")
+
+    # Chain ID has to be unique with respect to the set of already registered sidechains.
+    if there exists an entry in the chain data substore with store key equal to trs.params.chainID:
+        raise Exception("Chain ID already registered.")
+
+    # Check that the first byte of the chainID, indication the network, matches.
+    if trs.params.chainID[0] != CHAIN_ID_MAINCHAIN[0]:
+        raise Exception("Chain ID does not match the mainchain network.")
+
+    # initValidators must have at least 1 element and at most MAX_NUM_VALIDATORS elements.
+    if len(trs.params.initValidators) < 1 or len(trs.params.initValidators) > MAX_NUM_VALIDATORS:
+        raise Exception(f"Invalid initValidators array. It must have at least 1 element and at most {MAX_NUM_VALIDATORS} elements.")
+
+    validatorKeys = [validator.blsKey for validator in trs.params.initValidators]
+    # All validator keys must be distinct.
+    if len(validatorKeys) != len(set(validatorKeys)):
+        raise Exception("Duplicate BLS keys.")
+
+    # Validator keys must be in lexicographic order.
+    if not all(validatorKeys[i] < validatorKeys[i + 1] for i in range(len(validatorKeys) - 1)):
+        raise Exception("Validator keys are not in lexicographic order.")
+
+    totalWeight = 0
+    for validator in trs.params.initValidators:
+        # The bftWeight property of each element is a positive integer.
+        if validator.bftWeight == 0:
+            raise Exception("Invalid bftWeight property.")
+        totalWeight += validator.bftWeight
+    # Total BFT weight has to be less than or equal to MAX_UINT64.
+    if totalWeight > MAX_UINT64:
+        raise Exception("Total BFT weight exceeds maximum value.")
+
+    # The range of valid values of the certificateThreshold property is given by the total sum of the validators weights:
+    # Minimum value: floor(1/3 * total BFT weight) + 1.
+    # Maximum value = total BFT weight.
+    if trs.params.certificateThreshold < totalWeight//3 + 1:
+        raise Exception("Certificate threshold is too small.")
+    if trs.params.certificateThreshold > totalWeight:
+        raise Exception("Certificate threshold is too large.")
+
+    # sidechainRegistrationFee must equal REGISTRATION_FEE.
+    if trs.params.sidechainRegistrationFee != REGISTRATION_FEE:
+        raise Exception("Invalid extra command fee.")
+    # Sender must have enough balance to pay for extra command fee.
+    senderAddress = sha256(trs.senderPublicKey)[:ADDRESS_LENGTH]
+    if Token.getAvailableBalance(senderAddress, TOKEN_ID_LSK_MAINCHAIN) < REGISTRATION_FEE:
+        raise Exception("Sender does not have enough balance.")
+----
+
+.Execution
+[source,js]
+----
+def execute(trs: Transaction) -> None:
+    senderAddress = sha256(trs.senderPublicKey)[:ADDRESS_LENGTH]
+
+    # Create chain account.
+    sidechainAccount = {
+        "name": trs.params.name,
+        "lastCertificate": {
+            "height": 0,
+            "timestamp": 0,
+            "stateRoot": EMPTY_HASH,
+            "validatorsHash": computeValidatorsHash(trs.params.initValidators, trs.params.certificateThreshold)
+        },
+        "status": CHAIN_STATUS_REGISTERED
+    }
+
+    chainID = trs.params.chainID
+    create an entry in the chain data substore with
+        storeKey = chainID,
+        storeValue = encode(chainAccountSchema, sidechainAccount)
+
+    # Create channel.
+    sidechainChannel = {
+        "inbox": {
+            "appendPath": [],
+            "size": 0,
+            "root": EMPTY_HASH
+        },
+        "outbox": {
+            "appendPath": [],
+            "size": 0,
+            "root": EMPTY_HASH
+        },
+        "partnerChainOutboxRoot": EMPTY_HASH,
+        "messageFeeTokenID": TOKEN_ID_LSK_MAINCHAIN
+    }
+    create an entry in the channel data substore with
+        storeKey = chainID
+        storeValue = encode(channelSchema, sidechainChannel)
+
+    # Create validators account.
+    sidechainValidators = {
+        "activeValidators": trs.params.initValidators,
+        "certificateThreshold": trs.params.certificateThreshold
+    }
+    create an entry in the chain validators data substore with
+        storeKey = chainID
+        storeValue = encode(validatorsSchema, sidechainValidators)
+
+    # Create outbox root entry.
+    create an entry in the outbox root substore with
+        storeKey = chainID
+        storeValue = encode(outboxRootSchema, {"root": sidechainChannel.outbox.root})
+
+    # Create registered names entry.
+    create an entry in the registered names substore with
+        storeKey = trs.params.name
+        storeValue = encode(chainIDSchema, {"chainID": chainID})
+
+    # Burn the registration fee.
+    Token.burn(senderAddress, TOKEN_ID_LSK_MAINCHAIN, REGISTRATION_FEE)
+
+    # Emit chain account updated event.
+    emitEvent(
+        module = MODULE_NAME_INTEROPERABILITY,
+        name = EVENT_NAME_CHAIN_ACCOUNT_UPDATED,
+        data = sidechainAccount,
+        topics = [chainID]
+    )
+
+    # Send registration CCM to the sidechain.
+    registrationCCMParams = {
+        "chainID": chainID,
+        "name": trs.params.name,
+        "messageFeeTokenID": sidechainChannel.messageFeeTokenID
+    }
+
+    ccm = {
+        "nonce": ownChainAccount.nonce,
+        "module": MODULE_NAME_INTEROPERABILITY,
+        "crossChainCommand": CROSS_CHAIN_COMMAND_REGISTRATION,
+        "sendingChainID": ownChainAccount.chainID,
+        "receivingChainID": chainID,
+        "fee": 0,
+        "status": CCM_STATUS_CODE_OK,
+        "params": encode(registrationCCMParamsSchema, registrationCCMParams) # registrationCCMParamsSchema is defined in LIP0049
+    }
+
+    addToOutbox(chainID, ccm)
+    ownChainAccount.nonce += 1
+
+    # Emit CCM Processed Event.
+    ccmID = sha256(encode(crossChainMessageSchema, ccm))
+    emitEvent(
+        module = MODULE_NAME_INTEROPERABILITY,
+        name = EVENT_NAME_CCM_SEND_SUCCESS,
+        data = {"ccmID": ccmID},
+        topics = [ccm.sendingChainID, ccm.receivingChainID, ccmID]
+    )
+----
+
+=== Mainchain Registration Transaction Commands
 
 Secondly, the transactions executing the mainchain registration command and the required parameters, verification and execution are listed below:
 
 * `module = MODULE_NAME_INTEROPERABILITY`
 * `command = COMMAND_MAINCHAIN_REG`
 
-.Parameters
 
+.Mainchain Parameters
+[%collapsible]
+====
 [source,js]
 ----
 mainchainRegParams = {
@@ -517,187 +740,4 @@ bftWeights = [v.bftWeight for v in sidechainValidators]
 
 
 
-
-
-
-//The account is initialized with an empty inbox and outbox, while the initial validators set is given in the command parameters.
-The name and network ID of the mainchain are global protocol constants in the whole ecosystem.
-
-This command also initializes another data structure in the interoperability store, containing certain information about the sidechain.
-In particular, it sets the sidechain name and chain ID to the ones that have been previously registered on the mainchain via the <<Sidechain Registration Command>>.
-//To do create entry in glossary for nteroperability store and add in link
-
-Once the sidechain has been registered on the mainchain, a similar registration process should happen in the sidechain before the interoperable channel is opened between the two chains.
-This is done by submitting a transaction with the mainchain registration command in the sidechain, which implies the creation of a mainchain account in the sidechain state associated with the Lisk mainchain.
-The mainchain account possesses a similar structure as depicted in the chain interoperability store diagram above in figure 1.
-
-* `mainchainValidators`
-
-xxxx
-
-* `name`
-
-xxx
-
-* `ownChainID`
-
-xx
-
-* `ownName`
-
-xxx
-
-// etc from lip 43
-* Interoperability Constants
-
-[cols="2,1,2,4"]
-|===
-|Name|Type|Value|Description
-|MODULE_ID_INTEROPERABILITY|uint32|64|ID of the interoperability module.
-|MAINCHAIN_ID|bytes|1|Chain ID of the Lisk mainchain.
-|MAINCHAIN_NAME|string|"lisk-mainchain"|Name of the Lisk mainchain.
-//|MAINCHAIN_NETWORK_ID|bytes|TBD|Network identifier of the Lisk mainchain.
-|===
-
-* Interoperability Store
-
-[cols="2,1,2,4"]
-|===
-|Name|Type|Value|Description
-|STORE_PREFIX_OUTBOX_ROOT|bytes|0x0000|Store prefix of the outbox root substore.
-|STORE_PREFIX_CHAIN_DATA|bytes|0x8000|Store prefix of the chain data substore.
-|STORE_PREFIX_REGISTERED_NAMES|bytes|0xe000|Store prefix of the chain names substore.
-|STORE_PREFIX_REGISTERED_NETWORK_IDS|bytes|0xf000|Store prefix of the chain network IDs substore.
-|===
-
-* Interoperability Command IDs
-
-[cols="2,1,2,4"]
-|===
-|Name|Type|Value|Description
-|COMMAND_ID_SIDECHAIN_REG|uint32|0|Command ID of sidechain registration command.
-|COMMAND_ID_MAINCHAIN_REG|uint32|1|Command ID of mainchain registration command.
-|CROSS_CHAIN_COMMAND_ID_REGISTRATION|uint32|0|Cross-chain command ID of chain registration CCM.
-|===
-
-* General Constants
-
-[cols="2,1,2,4"]
-|===
-|Name|Type|Value|Description
-|MIN_FEE_PER_BYTE|uint64|1000|Minimum fee per byte.
-|REGISTRATION_FEE|uint64|1000000000|Fee to pay for a sidechain registration command.
-|MAX_NUM_VALIDATORS|uint32|199|	Maximum number of validators in a sidechain.
-|MAX_LENGTH_NAME|uint32|40|Maximum allowed name for a sidechain.
-|TAG_CHAINREG_MESSAGE|bytes|ASCII encoded string “LSK_CHAIN_REGISTRATION_”|
-|===
-
-
-
-
-
-=== Posting Cross-chain Updates on Mainchain and on Sidechains//?
-As the roles of both mainchain and sidechain are quite different, so are the transactions used to post cross-chain updates. The most notable differences are:
-
-On the mainchain, all CCMs included in the inboxUpdate must have their sendingChainID equal to the chainID sending the cross-chain update.
-On sidechains, all CCMs included in the inboxUpdate must have their receivingChainID equal to the chainID of the sidechain receiving the cross-chain update.
-As the mainchain accepts CCMs with receivingChainID corresponding to another sidechain, the cross-chain update processing on the mainchain is responsible for the inclusion of those CCMs in the corresponding outbox.
-These points guarantee that the CCMs are always forwarded to the correct chains and that the receiving chain can be confident that the chain specified in CCM.sendingChainID was truly the chain issuing the CCM.
-
-
-dd
-
-
-d
-ccccc
-ccccccccccc
-The command ID of this transaction is `COMMAND_ID_SIDECHAIN_REG`.
-
-This command has an additional fee, whereby the REGISTRATION_FEE is a constant in the protocol.
-[source,js]
-----
-extra fee = REGISTRATION_FEE
-----
-
-* Parameters
-
-[source,js]
-----
-sidechainRegParams = {
-  "type":"object",
-  "properties":{
-     "name":{
-        "dataType":"string",
-        "fieldNumber":1
-     },
-     "genesisBlockID":{
-        "dataType":"bytes",
-        "fieldNumber":2
-     },
-     "initValidators":{
-        "type":"object",
-        "properties":{
-           "keys":{
-              "type":"array",
-              "items":{
-                 "dataType":"bytes"
-              },
-              "fieldNumber":1
-           },
-           "weights":{
-              "type":"array",
-              "items":{
-                 "dataType":"uint64"
-              },
-              "fieldNumber":2
-           },
-           "certificateThreshold":{
-              "dataType":"uint64",
-              "fieldNumber":3
-           },
-           "required":[
-              "keys",
-              "weights",
-              "certificateThreshold"
-           ],
-           "fieldNumber":3
-        }
-     }
-  },
-  "required":[
-     "name",
-     "genesisBlockID",
-     "initValidators"
-  ]
-}
-
-
-----
-
-==== Sidechain Network Identifier
-
-The network identifier, or network ID, is a byte sequence unique to a chain that has to be prepended to the input of the signing function of every transaction, block, or message of the chain.
-It is necessary to avoid transaction replays between different chains in the ecosystem.
-
-In the Lisk ecosystem, the network ID for a sidechain is computed as the hash digest of the sidechain genesis block ID given in a transaction with the registration command and the address of the account sending this transaction.
-This is beneficial, as sidechain developers can pre-compute the network ID of their sidechain as soon as they set the genesis block and an account to send the transaction on the mainchain.
-It is then possible to start the sidechain at this point without being registered on the mainchain.
-In addition, the network ID is known to the mainchain as soon as the sidechain is registered, therefore it can validate cross-chain update commands coming from the sidechain without any further context.
-
-
-dd
-
-
-== Sidechain termination
-
-wwwww
-
-=== Sidechain Terminated Message
-
-The role of the sidechain terminated message is to inform sidechains that another sidechain has been terminated on the mainchain and is unable to receive messages. The message contains the ID of the terminated chain as well as the last certified state root of the terminated sidechain (as certified on the mainchain). This value is used for the creation of the terminated state account (on the sidechain receiving the CCM), allowing state recoveries.
-This message allows to inform sidechains about other terminated sidechains efficiently. Indeed, this message will automatically trigger the creation of the terminated sidechain account as soon as the first message is unable to be delivered. This also prevents further messages to be sent to already terminated sidechains.
-
-
-== How to recover information from a sidechain
-Explain steps to recover information from sidechain
 

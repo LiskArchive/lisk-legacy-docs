@@ -942,7 +942,7 @@ createTerminatedStateAccount(trs.params.chainID, sidechainAccount.lastCertificat
 ----
 
 ====
-For further information, including the `createTerminatedStateAccount` function can be found in {url_lip}[LIP 0045^}
+For further information, including the `createTerminatedStateAccount` function can be found in {url_lip}[LIP 0045^].
 
 ==== State Recovery Command
 
@@ -950,18 +950,138 @@ This command is used to recover a certain state (for example, fungible and non-f
 The user proves the existence of an entry in the terminated state substore with an inclusion proof against the state root stored in the sidechain terminated account.
 The recovery of the state is then handled by the relevant module (for example, the token module would refund the user), and the state root is updated.
 
-
 The proof is validated against the current state root stored in the terminated chain account.
 The recovery of the state is then handled by the relevant module (for example the token module would refund the user).
 
-xx (Add in description, and  command ID, params, and state recovery command schema)
+The command ID is `COMMAND_ID_STATE_RECOVERY` and the state recovery command schema can be seen below:
 
-ten state recovery command verification (and code) and state recovery execution
-then recover function then state recovery initialization command execution
+.State Recovery Command Schema
+[%collapsible]
+====
+[source,js]
+----
+stateRecoveryParams = {
+    "type": "object",
+    "required": ["chainID", "moduleID", "storeEntries", "siblingHashes"],
+    "properties": {
+        "chainID": {
+            "dataType": "uint32",
+            "fieldNumber": 1
+        },
+        "moduleID": {
+            "dataType": "uint32",
+            "fieldNumber": 2
+        },
+        "storeEntries": {
+            "type": "array",
+            "fieldNumber": 3,
+            "items": {
+                "type": "object",
+                "properties": {
+                    "storePrefix": {
+                        "dataType": "uint32",
+                        "fieldNumber": 1
+                    },
+                    "storeKey": {
+                        "dataType": "bytes",
+                        "fieldNumber": 2
+                    },
+                    "storeValue": {
+                        "dataType": "bytes",
+                        "fieldNumber": 3
+                    },
+                    "bitmap": {
+                        "dataType": "bytes",
+                        "fieldNumber": 4
+                    }
+                },
+                "required": ["storePrefix", "storeKey", "storeValue", "bitmap"]
+            }
+        },
+        "siblingHashes": {
+            "type": "array",
+            "items": {
+                "dataType": "bytes"
+            },
+            "fieldNumber": 4
+        }
+    }
+}
+----
+
+====
+
+Assuming `trs` is a transaction with the module `ID MODULE_ID_INTEROPERABILITY`, and the command ID `COMMAND_ID_STATE_RECOVERY` is to be verified.
+Then `trs` will be valid if the following logic returns `True`, as can be seen below:
+
+.State Recovery Command Verification
+[%collapsible]
+====
+[source,js]
+----
+# The terminated account has to exist for this sidechain
+if terminatedStateAccount(trs.params.chainID) does not exists or terminatedStateAccount(trs.params.chainID).initialized == False:
+    return False
+
+terminatedStateRoot = terminatedStateAccount(trs.params.chainID).stateRoot
+
+let queryKeys and storeQueries be empty arrays
+
+for each entry in trs.params.storeEntries:
+    push entry.storeKey to queryKeys
+    query = { key: entry.storeKey,
+            value: SHA-256(entry.storeValue),
+            bitmap: entry.bitmap}
+    push query to storeQueries
+
+proofOfInclusionStores = { siblingHashes: trs.params.siblingHashes, queries : storeQueries}
+
+return SMTVerify(queryKeys, proofOfInclusionStores, terminatedStateRoot)
+----
+
+====
+
+Finally, for processing a transaction `trs` with the module ID `MODULE_ID_INTEROPERABILITY`, and the command ID `COMMAND_ID_STATE_RECOVERY`, this implies the following logic as can be seen in the schema below:
+
+.State Recovery Command Execution
+[%collapsible]
+====
+[source,js]
+----
+let storeQueries be an empty array
+
+for each entry in trs.params.storeEntries:
+    # The recover function corresponding to the module ID applies the recovery logic
+    route processing logic to the module given by trs.params.moduleID
+    recover(trs.params.chainID, trs.params.moduleID, entry.storePrefix, entry.storeKey, entry.storeValue)
+    if the previous call fails:
+        execution fails and trs is invalid
+
+    emptyStore = empty bytes # Define an empty store entry
+    query = { key: entry.storekey,
+              value: SHA-256(emptyStore),
+              bitmap: entry.bitmap}
+    push query to storeQueries
+
+terminatedStateAccount(trs.params.chainID).stateRoot = SMTCalculateRoot(trs.params.siblingHashes, storeQueries)
+----
+
+====
+
+Regarding the recover function, for the verification and application of this command it is assumed that the module given by `trs.params.moduleID` exposes a `recover` function, with the following interface:
+
+[source:js]
+----
+recover(terminatedChainID, moduleID, storePrefix, storeKey, storeValue),
+----
 
 ==== Message Recovery Command
 
-xxx add in basic description first,, then go to message recovery command id, and schema and message recovery command verification and message recovery execution
+This command is used to recover pending messages from the outbox of a terminated sidechain.
+The user proves with an inclusion proof validated against the outbox root stored in the terminated outbox account that the message is in the terminated sidechain outbox.
+The message nonce is compared to the size of the inbox (also stored in the terminated outbox account) to check that the message had not been processed yet.
+The recovered message is then bounced back to the original sending chain or processed directly if the sending chain is the mainchain.
+
 
 ==== Message Recovery Initialization Command
 

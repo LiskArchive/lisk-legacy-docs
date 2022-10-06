@@ -14,6 +14,10 @@ Chris Braithwaite <christopher.braithwaite@lightcurve.io> Mona Bärenfänger <mo
 :url_bft_weights: pages/glossary.adoc#bft-weight
 :url_outbox_rootwitness: understand-blockchain/interoperability/communication.adoc
 :url_sdk_token_module: lisk-sdk::modules/token-module.adoc
+:url_custom_module: understand-blockchain/sdk/modules-commands
+:url_nft_module: tutorial/nft.adoc#the-nft-module
+:url_lip: https://github.com/LiskHQ/lips/blob/master/proposals/lip-0045.md
+
 //:url_how_blockchain_works: intro/how-blockchain-works.adoc
 //:url_transactions: understand-blockchain/lisk-protocol/transactions.adoc
 
@@ -781,24 +785,28 @@ As previously mentioned, active sidechains are required to prove they are still 
 Therefore violating the liveness requirement (only on the mainchain), result in terminating the sidechain.
 This rule guarantees that users do not send funds to inactive sidechains, and that users who have tokens in a sidechain which stops communicating with the ecosystem can recover their tokens.
 
-* Violation of Token-Module Protocol
+* Violation of the Token-Module Protocol
 
 With regard to the xref:{url_sdk_token_module}[token module], when tokens are transferred across the ecosystem, the native chain of the token keeps track of their location in an escrow account.
 When tokens are returned back from a chain, the amount stored in the escrow account is reduced, hence ensuring that no extra tokens were minted in the other chain.
 
 However, if a cross-chain message tries to transfer back an amount of tokens greater than the one stored in the escrow account, the sending chain is terminated and a terminated state account is created.
-If the native chain is the mainchain (hence, the token is the LSK token), the terminated state account stores the state root of the sidechain; otherwise it stores the root of the mainchain, which can then be used to initialize the recovery with a state recovery initialization command.
+If the native chain is the mainchain (hence, the token is the LSK token), the terminated state account stores the state root of the sidechain; otherwise it stores the root of the mainchain, which can then be used to initialize the recovery with a <<State Recovery Initialization Command>>.
 
-// why  sidechain will be termnated..?wwwww
+* Violation of the Custom-Module Protocol
 
-
+Sidechains can be terminated if they violate the protocol of a xref:{:url_custom_module}[custom module].
+This is done by calling the `terminateChain` API of the Interoperability module.
+Notice that a sidechain terminated for this reason is not terminated in the whole ecosystem.
+For example, it could very well still be active and able to exchange messages with other chains.
+However, communication with the sidechain that terminated it is interrupted.
 
 == How to recover information from a sidechain
 // Explain steps to recover information from sidechain
 
-The commands introduced to the Lisk ecosystem to provide a recovery mechanism for sidechain users are part of the Interoperability module (add link).
-
-
+The commands introduced to the Lisk ecosystem to provide a recovery mechanism for sidechain users are part of the Interoperability module.
+There are 4 recovery commands which can be used and are described further in this section below.
+These consist of the <<State Recovery Command>>, the <<Message Recovery Command>>, the <<State Recovery Initialization Command>>, and the <<Message Recovery Initialization Command>>.
 
 * On the Lisk mainchain:
 
@@ -808,34 +816,141 @@ The users can recover a pending cross-chain message (CCM) from the sidechain acc
 * On sidechains:
 
 The users can recover the balance of any custom token they had on a terminated sidechain by submitting a transaction with a state recovery command.
-The users can recover any NFT they had on a terminated sidechain by submitting a transaction with a state recovery command.
+The users can recover any assets they had on a terminated sidechain by submitting a transaction with a state recovery command.
 The stored data of certain custom modules can be recovered from a terminated sidechain by submitting a transaction with a state recovery command.
 
 === State recovery from the Sidechain Root
 
+This mechanism has been enabled in order to ensure that it is possible to recover a specific entry from a substore (i.e. the collection of key-value pairs with a common store prefix), of a module store of a terminated sidechain.
+In this context, the term "recover" is referring to triggering a specific state transition defined as part of the relevant module protocol logic.
+Specifically it is based on the sidechain state root, `stateRoot`, set in the last certificate before sidechain termination.
 
-xxx
+In the context of the mainchain, a valid state recovery command can recover the assets that were held in the terminated sidechain.
+In the context of a sidechain, it can recover an entry in a recoverable module store from a terminated sidechain.
+A recoverable module is classed as any module that exposes a recover function, which includes the Token module (for any custom token), and the xref:{url_nft_module}[NFT module].
+This recovery mechanism requires the initialization commands.
 
 ==== State Recovery Initialization Command
 
-xx add in basic description, then command ID and schema and state recovery initialization command validation
+// xx add in basic description, then command ID and schema and state recovery initialization command validation
+This command has two purposes.
+It can be used to set the state root of a terminated state account on a sidechain, or to directly terminate another sidechain.
 
-=== Sidechain Terminated Message
+In the first case, the command contains an inclusion proof against the mainchain state root stored in the terminated state account, proving the value of the state root of the terminated sidechain.
+Any user on the corresponding sidechain can send a transaction with this command and initiate the state recoveries with respect to the terminated sidechain.
+A sidechain account can be terminated on a sidechain using the `terminateChain` function exposed by the Interoperability module.
+n this case, the state root is generally not available and the terminated state account is created without setting the sidechain state root. Instead, the account stores the mainchain state root at the time of termination.
+A state recovery initialization command will in the future set the sidechain state root by giving an inclusion proof against this mainchain state root.
 
-The role of the sidechain terminated message is to inform sidechains that another sidechain has been terminated on the mainchain, and is unable to receive messages.
-The message contains the ID of the terminated chain as well as the last certified state root of the terminated sidechain (as certified on the mainchain).
-This value is used for the creation of the terminated state account (on the sidechain receiving the CCM), allowing state recoveries.
-This message allows to inform sidechains about other terminated sidechains efficiently.
-Subsequently, this message will automatically trigger the creation of the terminated sidechain account as soon as the first message is unable to be delivered.
-This also prevents further messages to be sent to sidechains that have already been terminated.
-
-when a CCM reaches a receiving chain that has been terminated, a sidechain terminated message is created and sent back to the sending chain carrying the `stateRoot` of the terminated sidechain.
+In the second case, the command contains an inclusion proof against the mainchain state root, proving that another sidechain is either terminated (the status in the chain account is set to 'terminated'), or the liveness condition is violated (as the timestamp of the last certificate is too old).
+Therefore, when a CCM reaches a receiving chain that has been terminated, a sidechain terminated message is created and sent back to the sending chain carrying the `stateRoot` of the terminated sidechain.
 The application of this CCM on the sidechain will effectively initiate the recovery process.
+
+In both cases, the command sets the sidechain state root in the terminated state account, so that state recovery commands can be issued.
+The relevant schemas can be seen below.
+
+The command ID is `COMMAND_ID_STATE_RECOVERY_INITIALIZATION` and the state recovery initialization command schema can be seen below:
+
+.State Recovery Initialization Command Schema
+[%collapsible]
+====
+[source,js]
+----
+stateRecoveryInitializationParams = {
+    "type": "object",
+    "required": [
+        "chainID",
+        "sidechainChainAccount",
+        "bitmap",
+        "siblingHashes"
+    ],
+    "properties": {
+        "chainID": {
+            "dataType": "uint32",
+            "fieldNumber": 1
+        },
+        "sidechainChainAccount": {
+            "dataType": "bytes",
+            "fieldNumber": 2
+        },
+        "bitmap": {
+            "dataType": "bytes",
+            "fieldNumber": 3
+        },
+        "siblingHashes": {
+            "type": "array",
+            "items": {
+                "dataType": "bytes"
+            },
+            "fieldNumber": 4
+        }
+    }
+}
+----
+====
+
+As can be seen in the following schema below, this assumes that `trs` is a transaction with module ID `MODULE_ID_INTEROPERABILITY`, and the command ID `COMMAND_ID_STATE_RECOVERY_INITIALIZATION` is to be verified.
+
+.State Recovery Initialization Command Validation
+[%collapsible]
+====
+[source,js]
+----
+if trs.params.chainID == MAINCHAIN_ID or trs.params.chainID == ownChainAccount.ID:
+    return False
+
+# The commands fails if the sidechain is already terminated on this chain
+if terminatedStateAccount(trs.params.chainID) exists and terminatedStateAccount(trs.params.chainID).initialized == True:
+    return False
+
+let deserializedInteropAccount be the deserialization of trs.params.sidechainChainAccount
+# The commands fails if the sidechain is not terminated on the mainchain but the sidechain already violated the liveness requirement
+if (deserializedInteropAccount.status != CHAIN_TERMINATED
+    and chainAccount(MAINCHAIN_ID).lastCertificate.timestamp - deserializedInteropAccount.lastCertificate.timestamp <= LIVENESS_LIMIT):
+    return False
+
+interopAccKey = uint32be(MODULE_ID_INTEROPERABILITY) || STORE_PREFIX_CHAIN_DATA || uint32be(trs.params.chainID)
+
+query = { key: interopAccKey,
+          value: SHA-256(trs.params.sidechainChainAccount),
+          bitmap: trs.params.bitmap }
+
+proofOfInclusion = { siblingHashes: trs.params.siblingHashes, queries : [query] }
+
+if terminatedStateAccount(trs.params.chainID) exists:
+    return SMTVerify([interopAccKey], proofOfInclusion, terminatedStateAccount(trs.params.chainID).mainchainStateRoot)
+else:
+    return SMTVerify([interopAccKey], proofOfInclusion, chainAccount(MAINCHAIN_ID).lastCertificate.stateRoot)
+----
+
+====
+
+To continue and process a transaction `trs` with the module ID `MODULE_ID_INTEROPERABILITY` and the command `ID COMMAND_ID_STATE_RECOVERY_INITIALIZATION`, this implies the following logic as displayed below in the state recovery initialization command execution:
+
+.State Recovery Initialization Command Execution
+[%collapsible]
+====
+[source,js]
+----
+let sidechainAccount be the deserialization of trs.params.sidechainChainAccount
+if terminatedStateAccount(trs.params.chainID) exists:
+terminatedStateAccount(trs.params.chainID).stateRoot = sidechainAccount.lastCertificate.stateRoot
+terminatedStateAccount(trs.params.chainID).mainchainStateRoot = EMPTY_BYTES
+terminatedStateAccount(trs.params.chainID).initialized = True
+else:
+createTerminatedStateAccount(trs.params.chainID, sidechainAccount.lastCertificate.stateRoot)
+----
+
+====
+For further information, including the `createTerminatedStateAccount` function can be found in {url_lip}[LIP 0045^}
 
 ==== State Recovery Command
 
-This command is used to recover a certain state (for example fungible and non-fungible tokens) from a sidechain that has been terminated.
-The user proves the existence of an entry in the terminated state substore with an inclusion proof.
+This command is used to recover a certain state (for example, fungible and non-fungible tokens), from a sidechain that has been terminated.
+The user proves the existence of an entry in the terminated state substore with an inclusion proof against the state root stored in the sidechain terminated account.
+The recovery of the state is then handled by the relevant module (for example, the token module would refund the user), and the state root is updated.
+
+
 The proof is validated against the current state root stored in the terminated chain account.
 The recovery of the state is then handled by the relevant module (for example the token module would refund the user).
 
@@ -859,3 +974,17 @@ add in diagram from lip 54 message recovery command
 ==== Recovery Commands as an Off-chain Service
 
 ==== (Add in tabbel of constants)
+
+
+
+==== Sidechain Terminated Message (where to put this?)
+
+The role of the sidechain terminated message is to inform sidechains that another sidechain has been terminated on the mainchain, and is unable to receive messages.
+The message contains the ID of the terminated chain as well as the last certified state root of the terminated sidechain (as certified on the mainchain).
+This value is used for the creation of the terminated state account (on the sidechain receiving the CCM), allowing state recoveries.
+This message allows to inform sidechains about other terminated sidechains efficiently.
+Subsequently, this message will automatically trigger the creation of the terminated sidechain account as soon as the first message is unable to be delivered.
+This also prevents further messages to be sent to sidechains that have already been terminated.
+
+when a CCM reaches a receiving chain that has been terminated, a sidechain terminated message is created and sent back to the sending chain carrying the `stateRoot` of the terminated sidechain.
+The application of this CCM on the sidechain will effectively initiate the recovery process.

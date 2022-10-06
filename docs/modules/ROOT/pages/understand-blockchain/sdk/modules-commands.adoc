@@ -13,6 +13,9 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_understand_block_generation: understand-blockchain/index.adoc#block-generation
 :url_understand_block_execution: understand-blockchain/index.adoc#block-execution
 :url_understand_genesis_block_execution: understand-blockchain/index.adoc#genesis-block-execution
+:url_understand_valid_invalid_txs: understand-blockchain/index.adoc##valid-vs-invalid-transactions
+:url_understand_rpc_events: understand-blockchain/sdk/rpc.adoc#events
+:url_understand_rpc_request: understand-blockchain/sdk/rpc.adoc#how-to-invoke-endpoints
 // Footnotes
 :fn_jsonschema: footnote:jsonSchema[See the {url_json_schema} for more information about the JSON schema.]
 
@@ -32,7 +35,7 @@ Modules perform state changes on Blockchain by::
 All important parts of a module are shown in the diagram below.
 
 .Anatomy of a module
-image::understand-blockchain/sdk/module.png[right thumb,"Module Anatomy",600, align="center"]
+image::understand-blockchain/sdk/module.png[600,"Module Anatomy", align="center"]
 
 Each module is constructed as a class which extends from the **BaseModule** interface.
 
@@ -53,7 +56,7 @@ export abstract class BaseModule {
 	}
 
 	public abstract endpoint: BaseEndpoint;
-	public abstract api: BaseAPI;
+	public abstract method: BaseMethod;
 
 	public async init?(args: ModuleInitArgs): Promise<void>;
 	public async insertAssets?(context: InsertAssetContext): Promise<void>;
@@ -153,16 +156,16 @@ The metadata of a module provides information about the module to external servi
 
 It provides information about the following module properties:
 
-* *endpoints*: A list of endpoints of the respective module.
+* *endpoints*: A list of <<endpoints>> of the respective module.
 Each item has the following properties:
 ** `name`: The name of the endpoint.
 ** `request`: Required parameters for the endpoint (optional).
 ** `response`: A schema of the expected response to a request to the endpoint.
-* *commands*: The list of commands belonging to the module.
+* *commands*: The list of <<commands>> belonging to the module.
 Each item has the following properties:
 ** `name`: The command name.
 ** `params`: The required and optional parameters to execute the command (optional).
-* *events*: A list of events that are emitted by the module.
+* *events*: A list of <<blockchain-events>> that are emitted by the module.
 Each item has the following properties:
 ** `typeId`: The event type ID.
 ** `data`: The event data.
@@ -175,7 +178,7 @@ Each item has the following properties:
 The metadata can be obtained by requesting the metadata from the blockchain application via RPC request to the `system_getMetadata` endpoint.
 
 [[interface-metadata]]
-.Interface for the Module metadata
+.Module metadata interface
 [%collapsible]
 ====
 [source,typescript]
@@ -283,84 +286,18 @@ export const getDelegateRequestSchema = {
 ----
 ====
 
-== Endpoints
-
-An endpoint is an interface between a module and an external system.
-Lisk endpoints support RPC communication.
-The module-specific RPC endpoints can be invoked by external services, like UIs, to get relevant data from the application.
-
-The endpoints are defined individually for each module, depending on the module's purpose.
-
-IMPORTANT: Endpoints allow to conveniently *get data from the blockchain application*.
-It is never possible to set data / mutate the state via module endpoints.
-
-Every module endpoint always extends from the `BaseEndpoint` class.
-
-.The BaseEndpoint class
-[source,typescript]
-----
-export abstract class BaseEndpoint {
-	[key: string]: unknown;
-	protected moduleID: Buffer;
-	public constructor(moduleID: Buffer) {
-		this.moduleID = moduleID;
-	}
-}
-----
-
-=== Exposing endpoints to plugins and external services
-The module endpoints are usually defined in a file called `endpoint.ts` inside of the folder of the respective module.
-
-.Example: Module endpoint
-[source,typescript]
-----
-import { HelloEndpoint } from './endpoint';
-import { cryptography } from 'lisk-sdk';
-
-export class HelloModule extends BaseModule {
-	public id = cryptography.utils.intToBuffer(1000, 4);
-	public name = 'hello';
-	public endpoint = new HelloEndpoint(this.id);
-}
-----
-
-//TODO: Update code snippet to use Hello app example
-.Example: `HelloEndpoint` in `endpoint.ts`
-[%collapsible]
-====
-[source,typescript]
-----
-export class DPoSEndpoint extends BaseEndpoint {
-
-	public async getVoter(ctx: ModuleEndpointContext): Promise<VoterDataJSON> {
-		const voterSubStore = ctx.getStore(this.moduleID, STORE_PREFIX_VOTER);
-		const { address } = ctx.params;
-		if (typeof address !== 'string') {
-			throw new Error('Parameter address must be a string.');
-		}
-		const voterData = await voterSubStore.getWithSchema<VoterData>(
-			Buffer.from(address, 'hex'),
-			voterStoreSchema,
-		);
-
-		return codec.toJSON(voterStoreSchema, voterData);
-	}
-}
-----
-====
-
 == Stores
 
 Modules have access to two kind of stores:
 
-. an <<on-chain--module-stores,on-chain store, a.k.a module store>>
+. an <<on-chain-stores,on-chain store, a.k.a module store>>
 . an <<off-chain-store>>
 
 Both stores are included in the state machine of the blockchain application, though only the data on the on-chain stores is shared and synchronized with other nodes in the network.
 
-=== On-chain- / Module Stores
+=== On-chain Stores
 
-A module can define one or multiple on-chain stores, to store data in the blockchain that is part of the blockchain state.
+A module can define one or multiple on-chain- or module stores, to store data in the blockchain that is part of the blockchain state.
 
 For example, data like account balances, delegate names and multisignature keys are values that are stored in the on-chain module store.
 
@@ -650,6 +587,99 @@ export class HelloModule extends BaseModule {
 }
 ----
 
+== Endpoints
+
+An endpoint is an *interface between a module and an external system.*
+Lisk endpoints support RPC communication.
+The module-specific RPC endpoints can be invoked by external services, like UIs, to get relevant data from the application.
+
+The endpoints are defined individually for each module, depending on the module's purpose.
+
+IMPORTANT: Endpoints allow to conveniently *get data from the blockchain application*.
+It is never possible to set data / mutate the state via module endpoints.
+
+Every module endpoint always extends from the `BaseEndpoint` class.
+
+.The BaseEndpoint class
+[source,typescript]
+----
+export abstract class BaseEndpoint {
+	[key: string]: unknown;
+	protected moduleID: Buffer;
+	public constructor(moduleID: Buffer) {
+		this.moduleID = moduleID;
+	}
+}
+----
+
+=== How to define module endpoints
+
+The module endpoints are usually defined in a file called `endpoint.ts` inside of the folder of the respective module.
+
+//TODO: Update code snippet to use Hello app example
+.Example: `endpoint.ts` of the DPoS module
+[%collapsible]
+====
+[source,typescript]
+----
+export class DPoSEndpoint extends BaseEndpoint {
+    // ...
+
+	public async getVoter(ctx: ModuleEndpointContext): Promise<VoterDataJSON> {
+		const voterSubStore = ctx.getStore(this.moduleID, STORE_PREFIX_VOTER);
+		const { address } = ctx.params;
+		if (typeof address !== 'string') {
+			throw new Error('Parameter address must be a string.');
+		}
+		const voterData = await voterSubStore.getWithSchema<VoterData>(
+			Buffer.from(address, 'hex'),
+			voterStoreSchema,
+		);
+
+		return codec.toJSON(voterStoreSchema, voterData);
+	}
+
+    // ...
+}
+----
+====
+
+All module endpoints have access to the on-chain and off-chain <<stores>> of a module and can receive data from there, to answer RPC requests with the expected data.
+
+.`ModuleEndpointContext` interface
+[%collapsible]
+====
+[source,typescript]
+----
+export interface ModuleEndpointContext extends PluginEndpointContext {
+	getStore: (moduleID: Buffer, storePrefix: Buffer) => ImmutableSubStore;
+	getOffchainStore: (moduleID: Buffer, storePrefix: Buffer) => SubStore;
+	getImmutableMethodContext: () => ImmutableMethodContext;
+	chainID: Buffer;
+}
+----
+====
+
+Once the module endpoints are defined in `endpoints.ts`, they can be added to the module under the `endpoint` attribute:
+
+.How to add endpoints to a module
+[source,typescript]
+----
+import { DPoSEndpoint } from './endpoint';
+
+export class DPoSModule extends BaseModule {
+	public endpoint = new DPoSEndpoint(this.stores, this.offchainStores);
+    // ...
+}
+----
+
+=== Calling a module endpoint
+
+To call a method of a module, simply send the respective RPC request.
+
+A convenient way to send RPC requests to the node is the *API client*.
+See section xref:{url_understand_rpc_request}[How to invoke endpoints] of the page "Communicating to a Lisk node via RPC".
+
 == Methods
 
 A method is an interface for module-to-module communication, and *can perform state mutations* on the blockchain.
@@ -670,38 +700,36 @@ export abstract class BaseMethod {
 }
 ----
 
-=== Exposing methods to other modules
+=== How to define module methods
 
 The module methods are usually defined in a file called `methods.ts` inside of the folder of the respective module.
 
-.Example: Module methods
-[source,typescript]
-----
-import { HelloMethod } from './api';
-import { cryptography } from 'lisk-sdk';
-
-export class HelloModule extends BaseModule {
-	public id = cryptography.utils.intToBuffer(1000, 4);
-	public name = 'hello';
-	public api = new HelloMethod(this.id);
-}
-----
-
 //TODO: Update code snippet to use Hello app example
-.Example: `HelloMethod` in `methods.ts`
+.Example: `getAvailableBalance` method in the Token module
 [%collapsible]
 ====
 [source,typescript]
 ----
-export class HelloMethod extends BaseMethod {
+export class TokenMethod extends BaseMethod {
 
     // ...
 
-	public async getVoter(apiContext: ImmutableAPIContext, address: Buffer): Promise<VoterData> {
-		const voterSubStore = apiContext.getStore(this.moduleID, STORE_PREFIX_VOTER);
-		const voterData = await voterSubStore.getWithSchema<VoterData>(address, voterStoreSchema);
-
-		return voterData;
+	public async getAvailableBalance(
+		methodContext: ImmutableMethodContext,
+		address: Buffer,
+		tokenID: TokenID,
+	): Promise<bigint> {
+		const canonicalTokenID = await this.getCanonicalTokenID(methodContext, tokenID);
+		const userStore = this.stores.get(UserStore);
+		try {
+			const user = await userStore.get(methodContext, userStore.getKey(address, canonicalTokenID));
+			return user.availableBalance;
+		} catch (error) {
+			if (!(error instanceof NotFoundError)) {
+				throw error;
+			}
+			return BigInt(0);
+		}
 	}
 
     // ...
@@ -709,27 +737,298 @@ export class HelloMethod extends BaseMethod {
 ----
 ====
 
+Once the module methods are defined in `methods.ts`, they can be added to the module under the `method` attribute:
+
+.How to add methods to a module
+[source,typescript]
+----
+import { TokenMethod } from './method';
+
+export class TokenModule extends BaseInteroperableModule {
+	public method = new TokenMethod(this.stores, this.events, this.name);
+    // ...
+}
+----
+
 === Calling a module method from another module
 
-//TODO: Link to example of calling a module in a command/hook
-To see an example of how to call a module method from another module, look at the following example in the module hooks.
+An example of how to call a module method from another module:
+
+The method `getAvailableBalance` from the Token module is called inside the sidechain registration command verification of the Interoperability module to verify, if the sender of a transaction has enough balance to pay the transaction fee.
+
+Methods from other modules are made available to the module by importing them, and adding them as private properties in the `addDependencies()` method, like shown in the code snippet below.
+.`interoperability/mainchain/commands/sidechain_registration.ts
+[source,typescript]
+----
+import { TokenMethod } from '../../../token';
+// ...
+
+export class SidechainRegistrationCommand extends BaseInteroperabilityCommand {
+	public schema = sidechainRegParams;
+	private _tokenMethod!: TokenMethod;
+
+	public addDependencies(tokenMethod: TokenMethod) {
+		this._tokenMethod = tokenMethod;
+	}
+    public async verify(
+		context: CommandVerifyContext<SidechainRegistrationParams>,
+	): Promise<VerificationResult> {
+        // ...
+        // Sender must have enough balance to pay for extra command fee.
+		const availableBalance = await this._tokenMethod.getAvailableBalance(
+			context.getMethodContext(),
+			senderAddress,
+			TOKEN_ID_LSK,
+		);
+		if (availableBalance < REGISTRATION_FEE) {
+            // ...
+		}
+        // ...
+	}
+}
+----
 
 == Blockchain Events
 
 // TODO: update content here, once https://github.com/LiskHQ/lisk-sdk/pull/7415 is merged
-Blockchain events are logs of events that occurred in the blockchain network.
+Blockchain events, or module events, are logs of events that occurred in the blockchain network during block execution.
+Events occur per block, and are stored in the respective block header, from where they can be queried.
 
-NOTE: Blockchain events are part of the on-chain logic: Each block includes the **event root in the block header**, which is the root of a Sparse-Merkle-Tree of all events, that are included in that particular block.
+.Do not confuse blockchain events with RPC events.
+IMPORTANT: In contrast to xref:{url_understand_rpc_events}[RPC events], Blockchain events are part of the on-chain logic: Each block includes the **event root in the block header**, which is the root of a Sparse-Merkle-Tree of all blockchain events, that are occured in that particular block.
 
-Certain blockchain events are published by default, for example
+Every module event always extends from the `BaseEvent` class.
 
-=== The BaseEvent
+.The BaseEvent class
+[%collapsible]
+====
+[source,typescript]
+----
+export abstract class BaseEvent<T> {
+	private readonly _moduleName: string;
 
-=== Creating events
+	public abstract schema: Schema;
+
+	public get key(): Buffer {
+		return Buffer.from(this._moduleName + this.name, 'utf-8');
+	}
+
+	public get name(): string {
+		const name = this.constructor.name.replace('Store', '');
+		return name.charAt(0).toLowerCase() + name.substr(1);
+	}
+
+	public constructor(moduleName: string) {
+		this._moduleName = moduleName;
+	}
+
+	public add(ctx: EventQueuer, data: T, topics?: Buffer[], noRevert?: boolean): void {
+		if (!this.schema) {
+			throw new Error('Schema is not set');
+		}
+
+		ctx.eventQueue.add(
+			this._moduleName,
+			this.name,
+			codec.encode(this.schema, data as Record<string, unknown>),
+			topics,
+			noRevert,
+		);
+	}
+}
+----
+====
+
+=== Default module event
+
+The default event is indicating the result of a transaction processing (success/fail).
+It is automatically emitted everytime a transaction is processed by a module.
+
+NOTE: Only valid transactions are processed, and therefore *only valid transaction emit the default module event.*
+See section xref:{url_understand_valid_invalid_txs}[Valid vs invalid transactions] for more ifnormation.
+
+The default event is therefore the only blockchain event, that is not defined manually by the developer of a module.
+
+.state_machine.ts
+[source,typescript]
+----
+public async executeTransaction(ctx: TransactionContext): Promise<TransactionExecutionResult> {
+    // ...
+    try {
+			await command.execute(commandContext);
+			ctx.eventQueue.unsafeAdd(
+				ctx.transaction.module,
+				EVENT_TRANSACTION_NAME,
+				codec.encode(standardEventDataSchema, { success: true }),
+				[ctx.transaction.id],
+			);
+		} catch (error) {
+            ctx.eventQueue.restoreSnapshot(commandEventQueueSnapshotID);
+			ctx.stateStore.restoreSnapshot(commandStateStoreSnapshotID);
+			ctx.eventQueue.unsafeAdd(
+				ctx.transaction.module,
+				EVENT_TRANSACTION_NAME,
+				codec.encode(standardEventDataSchema, { success: false }),
+				[ctx.transaction.id],
+			);
+			status = TransactionExecutionResult.FAIL;
+			this._logger.debug(
+				{ err: error as Error, module: ctx.transaction.module, command: ctx.transaction.command },
+				'Transaction execution failed',
+			);
+		}
+        // ...
+}
+----
+
+=== Creating new blockchain event types
+
+To create new event types that complement the on-chain business logic of the module, extend from the `BaseEvent` class.
+
+The only mandatory property to define in the event is the `schema`, which defines what custom `data` is required by the event to publish the correct information.
+
+For example, the following data is required by the `TransferEvent` of thr Token module:
+
+.TransferEventData
+[%collapsible]
+====
+[source,typescript]
+----
+export interface TransferEventData {
+	senderAddress: Buffer;
+	tokenID: Buffer;
+	amount: bigint;
+	recipientAddress: Buffer;
+}
+----
+====
+
+This is the corresponding schema for the `TransferEvent` data:
+
+.transferEventSchema
+[%collapsible]
+====
+[source,typescript]
+----
+export const transferEventSchema = {
+	$id: '/token/events/transfer',
+	type: 'object',
+	required: ['senderAddress', 'recipientAddress', 'tokenID', 'amount', 'result'],
+	properties: {
+		senderAddress: {
+			dataType: 'bytes',
+			format: 'lisk32',
+			fieldNumber: 1,
+		},
+		tokenID: {
+		recipientAddress: {
+			dataType: 'bytes',
+			format: 'lisk32',
+			fieldNumber: 2,
+		},
+		amount: {
+			dataType: 'uint64',
+		tokenID: {
+			dataType: 'bytes',
+			minLength: TOKEN_ID_LENGTH,
+			maxLength: TOKEN_ID_LENGTH,
+			fieldNumber: 3,
+		},
+		recipientAddress: {
+			dataType: 'bytes',
+		amount: {
+			dataType: 'uint64',
+			fieldNumber: 4,
+		},
+		result: {
+			dataType: 'uint32',
+			fieldNumber: 5,
+		},
+	},
+};
+----
+====
+
+TIP:  The only limitation to what `data` can be included in the event is the data size:
+*The maximum size of the event data is 1 kB.*
+
+Beside the event `data`, `topics` are the second property that can be defined by the developer, when emitting/ publishing a blockhain event.
+Topics are similar to tags or labels, categorizing the event by a list of the relevant keywords.
+
+Both `data` and `topics` are passed as parameters to the `add()` method of a blockchain event:
+
+.events/transfer.ts
+[source,js]
+----
+this.add(context, data, topics[]);
+----
+
+Add utility functions like `log()` and `error()` to omit duplicate code and/or to simplify the publishing of the event later.
+
+.Example: TransferEvent of the Token module
+[source,typescript]
+----
+export class TransferEvent extends BaseEvent<TransferEventData & { result: TokenEventResult }> {
+	public schema = transferEventSchema;
+
+	public log(ctx: EventQueuer, data: TransferEventData): void {
+		this.add(ctx, { ...data, result: TokenEventResult.SUCCESSFUL }, [
+			data.senderAddress,
+			data.recipientAddress,
+		]);
+	}
+
+	public error(ctx: EventQueuer, data: TransferEventData, result: TokenErrorEventResult): void {
+		this.add(ctx, { ...data, result }, [data.senderAddress, data.recipientAddress], true);
+	}
+}
+----
 
 === Registering events
 
+To make an event available in the module, register it to `this.events` in the <<module-constructor>>.
+
+.module.ts
+[source,typescript]
+----
+public constructor() {
+		super();
+		this.events.register(TransferEvent, new TransferEvent(this.name));
+	}
+----
+
 === Publishing events
+
+To emit or publish the event, add the following code snippet to the intended place, e.g. inside a module method:
+
+.method.ts
+[source,typescript]
+----
+import { TransferEvent, TransferEventResult } from './events/transfer';
+// ...
+export class TokenMethod extends BaseMethod {
+    // ...
+    public async transfer(
+		methodContext: MethodContext,
+		senderAddress: Buffer,
+		recipientAddress: Buffer,
+		tokenID: TokenID,
+		amount: bigint,
+	): Promise<void> {
+        // ...
+        const transferEvent = this.events.get(TransferEvent);
+        transferEvent.log(methodContext, {
+            amount,
+            recipientAddress,
+            result: TransferEventResult.SUCCESSFUL,
+            senderAddress,
+            tokenID,
+        });
+	}
+    // ...
+}
+
+----
 
 == Commands
 
@@ -1041,7 +1340,7 @@ For example, the `seedReveal` property is added to the block asset in this hook 
 public async insertAssets(context: InsertAssetContext): Promise<void> {}
 ----
 
-.Interface for `InsertAssets` context
+.`InsertAssetContext` interface
 [%collapsible]
 ====
 [source,js]

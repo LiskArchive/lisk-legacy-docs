@@ -32,6 +32,8 @@ In turn, the advent of sidechains will further increase the performance of the p
 
 image:understand-blockchain/interop/sidechain.png[, align="center" ,500]
 
+Figure 1: Sidechain overview.
+
 == Sidechains in Lisk
 
 Within the Lisk network, the sidechain technique deployed collects a series of xref:{url_ccm}[cross-chain messages], (CCM) before to executing a transaction.
@@ -136,7 +138,7 @@ The following substores are used:
 //This chain ID integer is also part of the key of the interoperability store entries for the registered sidechain as shown below in Figure 1.
 image:understand-blockchain/interop/interoperability-module-store.png[ align="center" ,800]
 
-*Figure 1: The Interoperability module store.*
+Figure 2: The Interoperability module store.
 
 Each box represents a substore, where we indicate the `storeKey --> storeValue relation`.
 For the Lisk mainchain, the 'own chain' substore exists by default in the state whereas there is one entry per registered sidechain for five other substores (outbox root, chain data, channel data, chain validators, registered names), created by a sidechain registration command.
@@ -1321,7 +1323,9 @@ createTerminatedOutboxAccount(
 As the relevant commands have been described above the process to iniate a recovery is covered in this section.
 As can be seen here, the process is slightly different on the mainchain and the sidechain.
 
-Firstly regarding the mainchain, the process required is as follows, and is depicted in the illustration in figure 2 below:
+==== Mainchain
+
+Firstly regarding the mainchain, the process required is as follows, and is depicted in the illustration in figure 3 below:
 
 1. The sidechain is terminated for violating the liveness requirement or the token-module protocol.
 
@@ -1339,10 +1343,76 @@ b. A user can now recover pending messages with a *message recovery command*.
 
 image:understand-blockchain/interop/mainchain-recovery.png[, align="center" ,500]
 
-.Figure 2: Recovery process from the mainchain.
+Figure 3: Recovery process from the mainchain.
+
+==== Sidechain
+
+On a sidechain, the process flow can occur in 3 scenarios which are described below, and are also depicted in the corresponding 3 diagrams.
+
+1. The sidechain is terminated for violating the protocol of the token module or of a custom module.
+
+a. A terminated *state account* containing the mainchain last certified state root is created in the sidechain state.
+
+b. A *state recovery initialization command* is sent.
+This command contains the last certified state root (on the mainchain), of the terminated sidechain and an inclusion proof against the mainchain state root stored in the terminated state account.
+
+c. A user is able to recover assets native to the sidechain with a *state recovery command*.
+
+2. The sidechain receives a *sidechain terminated message* from the mainchain, indicating that a cross-chain message could not be delivered because the receiving chain was terminated.
+This message contains the last certified state root (on the mainchain), of the terminated sidechain.
+
+a. A *terminated state account* containing the sidechain’s last certified state root is created in the state.
+However, it is important to note that in this case, the terminated sidechain state root is set immediately, and there is no need for a state recovery initialization command.
+
+b. A user can recover assets native to the sidechain with a *state recovery command*.
+
+3. The sidechain is terminated on the mainchain.
+
+a. A *state recovery initialization command* is sent.
+This command contains the last certified state root (on the mainchain), of the terminated sidechain and an inclusion proof against the last certified mainchain state root, proving the termination.
+
+b. A *terminated state account* containing the sidechain’s last certified state root is created in the state.
+
+c. A user can recover assets that are native to the sidechain with a *state recovery command*.
+
+As mentioned above these 3 steps are depicted graphically below in figure 4.
 
 
-xx
+image:understand-blockchain/interop/sidechain-recovery.png[, align="center" ,500]
+
+image:understand-blockchain/interop/sidechain-recovery2.png[, align="center" ,500]
+
+image:understand-blockchain/interop/sidechain-recovery3.png[, align="center" ,500]
+
+Figure 4: Recovery process from the sidechain.
+
+==== Recovery Process Summary Overview
+
+In order to summarize the recovery process, a brief example of recovering assets/tokens from the state of a terminated sidechain is provided below:
+
+1. A sidechain is terminated on the mainchain due to inactivity.
+2. The last certified state root, i.e. the state root contained in the last certificate received from the sidechain, is stored in the terminated state account of the sidechain.
+3. The user can recover the assets/tokens by sending a state recovery command.
+This command contains an inclusion proof, proving the user balance on the sidechain against the state root stored in the terminated state account.
+4. The funds are credited to the user's account on the mainchain.
+5. Finally, the state root of the terminated sidechain is then updated accordingly.
+
+Finally, there are certain data-availability requirements necessary to prepare a recovery transaction as listed below:
+
+*Message recovery commands*:
+
+- Access to the cross-chain messages in the sidechain outbox.
+- The entire tree of the sidechain outbox must to be able to provide the inclusion proof.
+
+*State recovery commands*:
+
+- Access to the specific asset to recover from the sidechain.
+- The entire state tree authenticated by the last certified state root must to be able to provide the inclusion proof.
+
+
+Furthermore, this information has to be kept updated every time a recovery command is processed.
+
+
 
 ==== Message Recovery from the Sidechain Account Outbox
 

@@ -6,14 +6,18 @@ Mona Bärenfänger <mona@lightcurve.io>
 :idprefix:
 :idseparator: -
 :docs_sdk: lisk-sdk::
+:fn_random: footnote:randomModule[See LIP 0046 https://github.com/LiskHQ/lips/blob/main/proposals/lip-0046.md[Define state and state transitions of Random module^] for more information about the Random module.]
 // URLs
 :url_json_schema: https://json-schema.org/specification.html
 :url_json_schema_id: https://json-schema.org/understanding-json-schema/structuring.html#id
 // Project URLs
-:url_understand_block_generation: understand-blockchain/index.adoc#block-generation
-:url_understand_block_execution: understand-blockchain/index.adoc#block-execution
-:url_understand_genesis_block_execution: understand-blockchain/index.adoc#genesis-block-execution
-:url_understand_valid_invalid_txs: understand-blockchain/index.adoc##valid-vs-invalid-transactions
+:url_understand_block_generation: understand-blockchain/blocks-txs.adoc#block-generation
+:url_understand_block_execution: understand-blockchain/blocks-txs.adoc#block-execution
+:url_understand_genesis_block_execution: understand-blockchain/blocks-txs.adoc#genesis-block-execution
+:url_understand_valid_invalid_txs: understand-blockchain/blocks-txs.adoc#valid-vs-invalid-transactions
+:url_understand_blockstxs_assets: understand-blockchain/blocks-txs.adoc#block-assets
+:url_understand_blockstxs_json: understand-blockchain/blocks-txs.adoc#json-schema
+:url_understand_statemachine: understand-blockchain/state-machine.adoc
 :url_understand_rpc_events: understand-blockchain/sdk/rpc.adoc#events
 :url_understand_rpc_request: understand-blockchain/sdk/rpc.adoc#how-to-invoke-endpoints
 // Footnotes
@@ -169,7 +173,7 @@ Each item has the following properties:
 Each item has the following properties:
 ** `typeId`: The event type ID.
 ** `data`: The event data.
-* *assets*: The schemas to decode module assets in blocks.
+* *assets*: The schemas to decode xref:{url_understand_blockstxs_assets}[block assets] that are relevant to the module.
 Each item has the following properties:
 ** `version`: The block version.
 ** `data`: The asset schema.
@@ -269,7 +273,7 @@ class HelloModule extends BaseModule {
 ----
 
 //TODO: Replace the snippet below with a code example from Hello app
-.Example: Schema of the getAllDelegatesResponse endpoint of the DPoS module
+.Example: Response schema of the getAllDelegates endpoint of the DPoS module
 [source,typescript]
 ----
 export const getDelegateRequestSchema = {
@@ -288,16 +292,16 @@ export const getDelegateRequestSchema = {
 
 == Stores
 
-Modules have access to two kind of stores:
+Modules have access to two kind of data stores:
 
-. an <<on-chain-stores,on-chain store, a.k.a module store>>
+. an <<on-chain-store>>
 . an <<off-chain-store>>
 
-Both stores are included in the state machine of the blockchain application, though only the data on the on-chain stores is shared and synchronized with other nodes in the network.
+Both stores are included in the xref:{url_understand_statemachine}[] of the blockchain application, though only the data on the on-chain stores is shared and synchronized with other nodes in the network.
 
-=== On-chain Stores
+=== On-chain Store
 
-A module can define one or multiple on-chain- or module stores, to store data in the blockchain that is part of the blockchain state.
+A module can define one or multiple **on-chain stores**, to store data in the blockchain, i.e. to include it in the blockchain state.
 
 For example, data like account balances, delegate names and multisignature keys are values that are stored in the on-chain module store.
 
@@ -614,7 +618,7 @@ export abstract class BaseEndpoint {
 
 === How to define module endpoints
 
-The module endpoints are usually defined in a file called `endpoint.ts` inside of the folder of the respective module.
+The module endpoints are usually defined in a file called `endpoint.ts` inside of the root folder of the respective module.
 
 //TODO: Update code snippet to use Hello app example
 .Example: `endpoint.ts` of the DPoS module
@@ -1165,7 +1169,7 @@ export class TransferCommand extends BaseCommand {
 
 === Command Lifecycle Hooks
 
-Each command has the following lifecycle hooks, which are executed separately for each command in a block.
+Each command has the following <<lifecycle-hooks>>, which are executed separately for each command in a block.
 
 ==== Command initialization
 
@@ -1221,7 +1225,7 @@ The `context` is available in every `Command.execute()` hook.
 It allows convenient access to:
 
 * `logger`: Logger interface, to create log messages.
-* `networkIdentifier`: The identifier of the blockchain network, in which this command is executed.
+* `chainID`: The identifier of the blockchain network, in which this command is executed.
 * `transaction`: The transaction triggering the command.
 * `params`: The command params, which were attached to the transaction.
 * `getMethodContext`: Module method interface, to invoke modules methods.
@@ -1234,11 +1238,11 @@ It allows convenient access to:
 ----
 export interface CommandVerifyContext<T = undefined> {
 	logger: Logger;
-	networkIdentifier: Buffer;
+	chainID: Buffer;
 	transaction: Transaction; // without decoding params
 	params: T;
 	getMethodContext: () => ImmutableMethodContext;
-	getStore: (moduleID: Buffer, storePrefix: number) => ImmutableSubStore;
+	getStore: (moduleID: Buffer, storePrefix: Buffer) => ImmutableSubStore;
 }
 ----
 ====
@@ -1277,7 +1281,7 @@ The `context` is available in every `Command.execute()` hook.
 It allows convenient access to:
 
 * `logger`: Logger interface, to create log messages.
-* `networkIdentifier`: The identifier of the blockchain network, in which this command is executed.
+* `chainID`: The identifier of the blockchain network, in which this command is executed.
 * `eventQueue`: The event queue.
 See <<blockchain-events>> for more information.
 * `header`: Block header.
@@ -1299,18 +1303,18 @@ See <<blockchain-events>> for more information.
 ----
 export interface CommandExecuteContext<T = undefined> {
 	logger: Logger;
-	networkIdentifier: Buffer;
-	eventQueue: EventQueue; // see "Events" section for more info
+	chainID: Buffer;
+	eventQueue: EventQueue;
 	header: BlockHeader;
 	assets: BlockAssets;
 	currentValidators: Validator[];
 	impliesMaxPrevote: boolean;
 	maxHeightCertified: number;
 	certificateThreshold: bigint;
-	transaction: Transaction; // See the "Lisk key concepts" page for more information about transactions
+	transaction: Transaction; // without decoding params
 	params: T;
 	getMethodContext: () => MethodContext;
-	getStore: (moduleID: Buffer, storePrefix: number) => SubStore;
+	getStore: (moduleID: Buffer, storePrefix: Buffer) => SubStore;
 }
 ----
 ====
@@ -1333,7 +1337,7 @@ The hook `insertAssets` is called at the very beginning of the xref:{url_underst
 The assets added during the execution of this hook can be used in all the execution hooks afterwards.
 
 //TODO: Add link to random module
-For example, the `seedReveal` property is added to the block asset in this hook by the Random module.
+For example, the `seedReveal` property is added to the block asset in this hook by the Random module{fn_random}.
 
 [source,typescript]
 ----

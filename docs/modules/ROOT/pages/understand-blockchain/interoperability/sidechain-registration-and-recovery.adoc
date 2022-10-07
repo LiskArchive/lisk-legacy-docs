@@ -801,6 +801,16 @@ Notice that a sidechain terminated for this reason is not terminated in the whol
 For example, it could very well still be active and able to exchange messages with other chains.
 However, communication with the sidechain that terminated it is interrupted.
 
+=== Sidechain Terminated Message
+
+The role of the sidechain terminated message is to inform sidechains that another sidechain has been terminated on the mainchain, and is unable to receive messages.
+The message contains the ID of the terminated chain as well as the last certified state root of the terminated sidechain (as certified on the mainchain).
+This value is used for the creation of the terminated state account (on the sidechain receiving the CCM), allowing state recoveries.
+This message allows to inform sidechains about other terminated sidechains efficiently.
+Subsequently, this message will automatically trigger the creation of the terminated sidechain account as soon as the first message is unable to be delivered.
+This also prevents further messages to be sent to sidechains that have already been terminated.
+
+
 == How to recover information from a sidechain
 // Explain steps to recover information from sidechain
 
@@ -889,7 +899,7 @@ stateRecoveryInitializationParams = {
 ----
 ====
 
-As can be seen in the following schema below, this assumes that `trs` is a transaction with module ID `MODULE_ID_INTEROPERABILITY`, and the command ID `COMMAND_ID_STATE_RECOVERY_INITIALIZATION` is to be verified.
+Assumming that `trs` is a transaction with module ID `MODULE_ID_INTEROPERABILITY`, and the command ID `COMMAND_ID_STATE_RECOVERY_INITIALIZATION` is to be verified, this can be seen as shown in the following validation schema below:
 
 .State Recovery Initialization Command Validation
 [%collapsible]
@@ -953,7 +963,7 @@ The recovery of the state is then handled by the relevant module (for example, t
 The proof is validated against the current state root stored in the terminated chain account.
 The recovery of the state is then handled by the relevant module (for example the token module would refund the user).
 
-The command ID is `COMMAND_ID_STATE_RECOVERY` and the state recovery command schema can be seen below:
+The command ID is `COMMAND_ID_STATE_RECOVERY` and the state recovery command schema, verification, and execution can be seen below:
 
 .State Recovery Command Schema
 [%collapsible]
@@ -1041,7 +1051,7 @@ return SMTVerify(queryKeys, proofOfInclusionStores, terminatedStateRoot)
 
 ====
 
-Finally, for processing a transaction `trs` with the module ID `MODULE_ID_INTEROPERABILITY`, and the command ID `COMMAND_ID_STATE_RECOVERY`, this implies the following logic as can be seen in the schema below:
+Finally, for processing a transaction `trs` with the module ID `MODULE_ID_INTEROPERABILITY`, and the command ID `COMMAND_ID_STATE_RECOVERY`, this implies the following logic as can be seen in the execution schema below:
 
 .State Recovery Command Execution
 [%collapsible]
@@ -1078,14 +1088,261 @@ recover(terminatedChainID, moduleID, storePrefix, storeKey, storeValue),
 ==== Message Recovery Command
 
 This command is used to recover pending messages from the outbox of a terminated sidechain.
-The user proves with an inclusion proof validated against the outbox root stored in the terminated outbox account that the message is in the terminated sidechain outbox.
-The message nonce is compared to the size of the inbox (also stored in the terminated outbox account) to check that the message had not been processed yet.
+The user proves with an inclusion proof validated against the outbox root stored in the terminated outbox account, that the message is in the terminated sidechain outbox.
+The message nonce is compared to the size of the inbox (this also stored in the terminated outbox account), to check that the message had not been processed yet.
 The recovered message is then bounced back to the original sending chain or processed directly if the sending chain is the mainchain.
 
+The command ID is `COMMAND_ID_MESSAGE_RECOVERY` and the state recovery command schema can be seen below:
+
+.Message Recovery Command Schema
+[%collapsible]
+====
+[source,js]
+----
+messageRecoveryParams = {
+    "type": "object",
+    "required": ["chainID", "crossChainMessages", "idxs", "siblingHashes"],
+    "properties": {
+        "chainID": {
+            "dataType": "uint32",
+            "fieldNumber": 1
+        },
+        "crossChainMessages": {
+            "type": "array",
+            "items": {
+                "dataType": "bytes"
+            },
+            "fieldNumber": 2
+        },
+        "idxs": {
+            "type": "array",
+            "items": {
+                "dataType": "uint64"
+            },
+            "fieldNumber": 3
+        },
+        "siblingHashes": {
+            "type": "array",
+            "items": {
+                "dataType": "bytes"
+            },
+            "fieldNumber": 4
+        }
+    }
+}
+----
+
+====
+
+Assuming `trs` is a transaction with the module ID `MODULE_ID_INTEROPERABILITY` and the command ID `COMMAND_ID_MESSAGE_RECOVERY` is to be verified, then also if the `deserializedCCMs` are an array with the deserialization of every element in the `trs.params.crossChainMessages`, then the set of validity rules to validate `trs.params` are as follows:
+
+.Message Recovery Command Verification Schema
+[%collapsible]
+====
+[source,js]
+----
+if terminatedOutboxAccount(trs.params.chainID) does not exist:
+    return False
+
+# Check that the CCMs are still pending
+for index in trs.params.idxs:
+    if index < terminatedOutboxAccount(trs.params.chainID).partnerChainInboxSize:
+        return False
+
+# Check the validity of the CCMs to be recovered
+for ccm in deserializedCCMs:
+    if ccm.status != CCM_STATUS_OK:
+        return False
+
+# Check the inclusion proof against the sidechain outbox root
+proof = { size: terminatedOutboxAccount(trs.params.chainID).outboxSize,
+    idxs: trs.params.idxs,
+    siblingHashes: trs.params.siblingHashes}
+
+return RMTVerify(
+  [SHA-256(ccmData) for ccmData in trs.params.crossChainMessages],
+  proof,
+  terminatedOutboxAccount(trs.params.chainID).outboxRoot
+  )
+----
+
+====
+
+When processing a transaction `trs` with the module ID `MODULE_ID_INTEROPERABILITY`, and the command ID `COMMAND_ID_MESSAGE_RECOVERY` this implies the following logic as can be seen in the schema below:
+
+.Message Recovery Command Execution Schema
+[%collapsible]
+====
+[source,js]
+----
+let trsSenderAddress be the address of the trs.senderPublicKey
+
+# Set CCM status to recovered and assign fee to trs sender
+updatedCCMs = []
+for ccm in deserializedCCMs:
+
+    for each module mdl for which beforeRecoverCCM exists:
+        mdl.beforeRecoverCCM(trsSenderAddress, ccm)
+        if the previous call fails:
+            execution fails and trs is invalid
+    ccm.status = CCM_STATUS_RECOVERED
+    ccm.fee = 0
+    push serialized(ccm) to updatedCCMs # CCM is serialized again
+
+# Update sidechain outbox root
+proof = { size: terminatedOutboxAccount(trs.params.chainID).outboxSize,
+    idxs: trs.params.idxs,
+    siblingHashes: trs.params.siblingHashes}
+
+terminatedOutboxAccount(trs.params.chainID).outboxRoot = RMTCalculateRoot([SHA-256(ccmData) for CCMData in updatedCCMs], proof)
+
+# Process recovery
+for ccm in deserializedCCMs:
+    swap ccm.sendingChainID and ccm.receivingChainID
+
+    # On sidechain, this case is always triggered and the message logic should be supported
+    if ccm.receivingChainID == ownChainAccount.ID:
+        if (ccm.moduleID, ccm.crossChainCommandID) is supported:
+            call the logic associated with (ccm.moduleID, ccm.crossChainCommandID) on ccm
+    elif ownChainAccount.ID == MAINCHAIN_ID:
+        # Only send messages to active and live chains
+        if (chainAccount(ccm.receivingChainID) exists
+            and chainAccount(ccm.receivingChainID).status == CHAIN_ACTIVE
+            and isLive(ccm.receivingChainID):
+            addToOutbox(ccm.receivingChainID, ccm)
+----
+
+====
 
 ==== Message Recovery Initialization Command
 
-xx dsescription, command ID and schema and message recovery initialization command validation and executin
+Once a terminated state account has been created on the mainchain, users can send this command to initialize the corresponding terminated outbox account.
+This command contains the channel account of the mainchain stored in the state of the terminated sidechain, and an inclusion proof for it against the state root stored in the corresponding terminated state account.
+The mainchain channel data is needed to acquire the number of messages that were processed in the terminated sidechain (corresponding to the inbox size of the channel).
+
+This command sets the outbox root and the inbox size in the terminated outbox account, so that message recovery commands can be issued.
+
+The command ID is `COMMAND_ID_MESSAGE_RECOVERY_INITIALIZATION` and the message recovery initialization command schema can be seen below:
+
+.Message Recovery Initialization Command Schema
+[%collapsible]
+====
+[source,js]
+----
+messageRecoveryInitializationParams = {
+    "type": "object",
+    "required": [
+        "chainID",
+        "channel",
+        "bitmap",
+        "siblingHashes"
+    ],
+    "properties": {
+        "chainID": {
+            "dataType": "uint32",
+            "fieldNumber": 1
+        },
+        "channel": {
+            "dataType": "bytes",
+            "fieldNumber": 2
+        },
+        "bitmap": {
+            "dataType": "bytes",
+            "fieldNumber": 3
+        },
+        "siblingHashes": {
+            "type": "array",
+            "items": {
+                "dataType": "bytes"
+            },
+            "fieldNumber": 4
+        }
+    }
+}
+----
+
+====
+
+Assuming `trs` is a transaction with the module ID `MODULE_ID_INTEROPERABILITY` and the command ID `COMMAND_ID_MESSAGE_RECOVERY_INITIALIZATION` then this can be verified as shown below:
+
+.Message Recovery Initialization Command Validation Schema
+[%collapsible]
+====
+[source,js]
+----
+if trs.params.chainID == MAINCHAIN_ID or trs.params.chainID == ownChainAccount.ID:
+    return False
+
+# The commands fails if the  chain is not registered
+if chainAccount(trs.params.chainID) does not exists:
+    return False
+
+# The commands fails if the chain is not terminated
+if terminatedStateAccount(trs.params.chainID) does not exists or terminatedStateAccount(trs.params.chainID).initialized == False:
+    return False
+
+# The commands fails if there exist already a terminated outbox account
+if terminatedOutboxAccount(trs.params.chainID) exists:
+    return False
+
+channelKey = uint32be(MODULE_ID_INTEROPERABILITY) || STORE_PREFIX_CHANNEL_DATA || uint32be(MAINCHAIN_ID)
+
+query = { key: channelKey,
+          value: SHA-256(trs.params.channel),
+          bitmap: trs.params.bitmap }
+
+proofOfInclusion = { siblingHashes: trs.params.siblingHashes, queries : [query]}
+
+return SMTVerify([channelKey], proofOfInclusion, terminatedStateAccount(trs.params.chainID).stateRoot)
+----
+
+====
+
+Finally, processing a transaction `trs` with the module ID `MODULE_ID_INTEROPERABILITY`, and the command ID `COMMAND_ID_MESSAGE_RECOVERY_INITIALIZATION` implies the following logic as can be seen below:
+
+.Message Recovery Initialization Command Execution Schema
+[%collapsible]
+====
+[source,js]
+----
+let deserializedChannel be the deserialization of trs.params.channel
+createTerminatedOutboxAccount(
+  trs.params.chainID,
+  channel(trs.params.chainID).outbox.root,
+  channel(trs.params.chainID).outbox.size,
+  deserializedChannel.inbox.size
+  )
+----
+
+====
+
+== Recovery Process Workflow
+
+As the relevant commands have been described above the process to iniate a recovery is covered in this section.
+As can be seen here, the process is slightly different on the mainchain and the sidechain.
+
+Firstly regarding the mainchain, the process required is as follows, and is depicted in the illustration in figure 2 below:
+
+1. The sidechain is terminated for violating the liveness requirement or the token-module protocol.
+
+a. A *terminated state account* containing the last certified state root of the sidechain is created in the state.
+
+b. A User can start recovering assets with a *state recovery command* as covered above.
+
+2. A *message recovery initialization command* is then sent.
+This command contains the inbox size of the mainchain stored on the terminated sidechain, which indicates how many cross-chain messages were processed.
+
+a. A *terminated outbox account* is created in the state.
+This contains the outbox root of the terminated sidechain channel, and the inbox size provided with the message recovery initialization command.
+
+b. A user can mow recover pending messages with a *message recovery command*.
+
+
+
+
+
+
+xx
 
 ==== Message Recovery from the Sidechain Account Outbox
 
@@ -1096,15 +1353,3 @@ add in diagram from lip 54 message recovery command
 ==== (Add in tabbel of constants)
 
 
-
-==== Sidechain Terminated Message (where to put this?)
-
-The role of the sidechain terminated message is to inform sidechains that another sidechain has been terminated on the mainchain, and is unable to receive messages.
-The message contains the ID of the terminated chain as well as the last certified state root of the terminated sidechain (as certified on the mainchain).
-This value is used for the creation of the terminated state account (on the sidechain receiving the CCM), allowing state recoveries.
-This message allows to inform sidechains about other terminated sidechains efficiently.
-Subsequently, this message will automatically trigger the creation of the terminated sidechain account as soon as the first message is unable to be delivered.
-This also prevents further messages to be sent to sidechains that have already been terminated.
-
-when a CCM reaches a receiving chain that has been terminated, a sidechain terminated message is created and sent back to the sending chain carrying the `stateRoot` of the terminated sidechain.
-The application of this CCM on the sidechain will effectively initiate the recovery process.

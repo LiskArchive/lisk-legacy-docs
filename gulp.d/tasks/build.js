@@ -49,6 +49,8 @@ module.exports = (src, dest, preview) => () => {
       },
     ]),
     postcssVar({ preserve: preview }),
+    // NOTE to make vars.css available to all top-level stylesheets, use the next line in place of the previous one
+    //postcssVar({ importFrom: path.join(src, 'css', 'vars.css'), preserve: preview }),
     preview ? postcssCalc : () => {},
     autoprefixer,
     preview
@@ -99,7 +101,7 @@ module.exports = (src, dest, preview) => () => {
     vfs
       .src('js/vendor/*.min.js', opts)
       .pipe(map((file, enc, next) => next(null, Object.assign(file, { extname: '' }, { extname: '.js' })))),
-    // NOTE use this statement to bundle a JavaScript library that cannot be browserified, like jQuery
+    // NOTE use the next line to bundle a JavaScript library that cannot be browserified, like jQuery
     //vfs.src(require.resolve('<package-name-or-require-path>'), opts).pipe(concat('js/vendor/<library-name>.js')),
     vfs
       .src(['css/site.css', 'css/vendor/*.css'], { ...opts, sourcemaps })

@@ -691,29 +691,45 @@ The module endpoints are usually defined in a file called `endpoint.ts` inside o
 ====
 [source,typescript]
 ----
-export class DPoSEndpoint extends BaseEndpoint {
-    // ...
+import { BaseEndpoint, ModuleEndpointContext, cryptography } from 'lisk-sdk';
+import { CounterStore, CounterStoreData } from './stores/counter';
+import { MessageStore, MessageStoreData } from './stores/message';
 
-	public async getVoter(ctx: ModuleEndpointContext): Promise<VoterDataJSON> {
-		const voterSubStore = ctx.getStore(this.moduleID, STORE_PREFIX_VOTER);
+export class HelloEndpoint extends BaseEndpoint {
+
+	public async getHelloCounter(ctx: ModuleEndpointContext): Promise<CounterStoreData> {
+		const counterSubStore = this.stores.get(CounterStore);
+
+		const helloCounter = await counterSubStore.get(
+			ctx,
+			Buffer.from('hello','utf8'),
+		);
+
+		return helloCounter;
+	}
+
+	public async getHello(ctx: ModuleEndpointContext): Promise<MessageStoreData> {
+		const messageSubStore = this.stores.get(MessageStore);
+
 		const { address } = ctx.params;
 		if (typeof address !== 'string') {
 			throw new Error('Parameter address must be a string.');
 		}
-		const voterData = await voterSubStore.getWithSchema<VoterData>(
-			Buffer.from(address, 'hex'),
-			voterStoreSchema,
+		cryptography.address.validateLisk32Address(address);
+		const helloMessage = await messageSubStore.get(
+			ctx,
+			cryptography.address.getAddressFromLisk32Address(address),
 		);
-
-		return codec.toJSON(voterStoreSchema, voterData);
+		return helloMessage;
 	}
-
-    // ...
 }
 ----
 ====
 
 All module endpoints have access to the on-chain and off-chain <<stores>> of a module and can receive data from there, to answer RPC requests with the expected data.
+
+The parameter `ctx` of an endpoint is expected to be of type `ModuleEndpointContext`.
+Meaning, `ctx` provides the following methods for the endpoint:
 
 .`ModuleEndpointContext` interface
 [%collapsible]

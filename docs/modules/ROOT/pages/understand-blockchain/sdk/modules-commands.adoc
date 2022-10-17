@@ -2,7 +2,7 @@
 Mona Bärenfänger <mona@lightcurve.io>
 //Settings
 :toc: preamble
-:toclevels: 1
+:toclevels: 2
 :idprefix:
 :idseparator: -
 :docs_sdk: lisk-sdk::
@@ -20,6 +20,8 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_understand_statemachine: understand-blockchain/state-machine.adoc
 :url_understand_rpc_events: understand-blockchain/sdk/rpc.adoc#events
 :url_understand_rpc_request: understand-blockchain/sdk/rpc.adoc#how-to-invoke-endpoints
+:url_build_app: build-blockchain/create-blockchain-app.adoc
+:url_build_module: build-blockchain/create-module.adoc
 // Footnotes
 :fn_jsonschema: footnote:jsonSchema[See the {url_json_schema} for more information about the JSON schema.]
 
@@ -34,13 +36,76 @@ Modules perform state changes on the blockchain by::
 * Defining logic that is executed per block.
 * Defining logic that is executed per transaction.
 
-== Module anatomy & the BaseModule
+== Module overview
+
+=== Module anatomy
 
 All important parts of a module are shown in the diagram below.
 
 .Anatomy of a module
 image::understand-blockchain/sdk/module.png[600,"Module Anatomy", align="center"]
 
+For more information about the different module components, check out the corresponding sub-sections:
+
+Initialization::
+* <<calling-a-module-method-from-another-module,addDependencies()>>
+* <<module-constructor>>
+* <<config-initialization>>
+* <<config-schema>>
+Name & Metadata::
+* <<module-name>>
+* <<module-metadata>>
+State changes::
+* <<methods>>
+* <<blockchain-events>>
+* <<commands>>
+* <<lifecycle-hooks>>
+Public API::
+* <<endpoints>>
+Datastores::
+* <<stores>>
+
+=== Module file structure
+
+The default file structure for modules looks as follows:
+
+.blockchain-app/src/app/
+----
+├── app.ts
+├── index.ts
+├── modules
+│   ├──  module1
+│   │   ├── commands
+│   │   │   ├── some_command.ts
+│   │   │   └── another_command.ts
+│   │   ├── endpoint.ts
+│   │   ├── events
+│   │   │   └── some_event.ts
+│   │   ├── method.ts
+│   │   ├── module.ts
+│   │   └── stores
+│   │       ├── some_store.ts
+│   │       └── another_store.ts
+│   └── module2
+│       ├── commands
+│       │   └── example_command.ts
+│       ├── endpoint.ts
+│       ├── events
+│       │   └── some_event.ts
+│       ├── method.ts
+│       ├── module.ts
+│       └── stores
+│           └── example_store.ts
+├── modules.ts
+├── plugins
+└── plugins.ts
+----
+
+TIP: The default file structure of a module is automatically created for the developer, if the module is generated using Lisk Commander.
+
+For a more detailed description of the different folders and files of a module, please check out the corresponding guides xref:{url_build_app}[] and xref:{url_build_module}[].
+
+=== The `BaseModule`
 Each module is constructed as a class that extends from the **BaseModule** interface.
 
 The `BaseModule` interface defines all optional and required properties and hooks of a module that must be implemented for the blockchain application to recognize it as a valid module.
@@ -626,29 +691,45 @@ The module endpoints are usually defined in a file called `endpoint.ts` inside o
 ====
 [source,typescript]
 ----
-export class DPoSEndpoint extends BaseEndpoint {
-    // ...
+import { BaseEndpoint, ModuleEndpointContext, cryptography } from 'lisk-sdk';
+import { CounterStore, CounterStoreData } from './stores/counter';
+import { MessageStore, MessageStoreData } from './stores/message';
 
-	public async getVoter(ctx: ModuleEndpointContext): Promise<VoterDataJSON> {
-		const voterSubStore = ctx.getStore(this.moduleID, STORE_PREFIX_VOTER);
+export class HelloEndpoint extends BaseEndpoint {
+
+	public async getHelloCounter(ctx: ModuleEndpointContext): Promise<CounterStoreData> {
+		const counterSubStore = this.stores.get(CounterStore);
+
+		const helloCounter = await counterSubStore.get(
+			ctx,
+			Buffer.from('hello','utf8'),
+		);
+
+		return helloCounter;
+	}
+
+	public async getHello(ctx: ModuleEndpointContext): Promise<MessageStoreData> {
+		const messageSubStore = this.stores.get(MessageStore);
+
 		const { address } = ctx.params;
 		if (typeof address !== 'string') {
 			throw new Error('Parameter address must be a string.');
 		}
-		const voterData = await voterSubStore.getWithSchema<VoterData>(
-			Buffer.from(address, 'hex'),
-			voterStoreSchema,
+		cryptography.address.validateLisk32Address(address);
+		const helloMessage = await messageSubStore.get(
+			ctx,
+			cryptography.address.getAddressFromLisk32Address(address),
 		);
-
-		return codec.toJSON(voterStoreSchema, voterData);
+		return helloMessage;
 	}
-
-    // ...
 }
 ----
 ====
 
 All module endpoints have access to the on-chain and off-chain <<stores>> of a module and can receive data from there, to answer RPC requests with the expected data.
+
+The parameter `ctx` of an endpoint is expected to be of type `ModuleEndpointContext`.
+Meaning, `ctx` provides the following methods for the endpoint:
 
 .`ModuleEndpointContext` interface
 [%collapsible]
@@ -756,7 +837,7 @@ export class TokenModule extends BaseInteroperableModule {
 
 === Calling a module method from another module
 
-An example of how to call a module method from another module:
+A module method can be called from another module.
 
 For example, the method `getAvailableBalance` of the **Token** module is called from the **Interoperability** module at the sidechain registration and command verification step. This method is called to verify if the sender of a transaction has enough balance to pay the transaction fee.
 
@@ -1116,7 +1197,7 @@ To avoid mixing any schema with other registered schemas, use a fixed identifier
 title:: A short description of the schema.
 type or dataType::
 If the data type of a property is either an `object` or an `array`, the `type` property must be used instead of `dataType`.
-Root type of the schema must be type object.
+The root type of the schema must be of type `object`.
 required::
 A list of all required parameters.
 

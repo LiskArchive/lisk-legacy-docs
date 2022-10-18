@@ -14,6 +14,7 @@ Mona Bärenfänger <mona@lightcurve.io> Muhammad Talha <muhammad.talha@lightcurv
 :url_github_srs_api_plugin: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/social-recovery/blockchain_app/plugins/srs_api_plugin/index.js
 :url_github_srs_data_plugin: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/social-recovery/blockchain_app/plugins/srs_data_plugin/index.js
 :url_github_base_plugin: https://github.com/LiskHQ/lisk-sdk/blob/development/framework/src/plugins/base_plugin.ts
+:url_github_base_endpoint: https://github.com/LiskHQ/lisk-sdk/blob/development/framework/src/plugins/base_plugin_endpoint.ts
 
 :url_github_faucet_endpoints: https://github.com/LiskHQ/lisk-sdk/blob/development/framework-plugins/lisk-framework-faucet-plugin/src/plugin/endpoint.ts
 
@@ -43,7 +44,7 @@ In other words, a plugin will never change the state of the blockchain itself, c
 
 .When to create a plugin
 ****
-Plugins are able to perform the following:
+Plugins can perform the following:
 
 * Search the blockchain data.
 * Aggregate the blockchain data.
@@ -53,7 +54,7 @@ Plugins are able to perform the following:
 ****
 
 == Creating a Plugin
-Lisk provides a no-brainer method to create a plugin using xref:{url_lisk_commander}[Lisk Commander]. 
+Lisk provides an extremely simple method to create a plugin using xref:{url_lisk_commander}[Lisk Commander]. 
 By executing the following command in a terminal, a plugin can be created and registered to a blockchain application.
 
 [source,bash]
@@ -63,7 +64,7 @@ lisk generate:plugin NAME_OF_PLUGIN
 
 [TIP]
 ====
-For a more practical guide how to create a new plugin, check out the guide xref:{url_guides_plugin}[].
+For more practical guidance on how to create a new plugin, check out the guide xref:{url_guides_plugin}[].
 
 If you wish to view an example of a fully implemented plugin, check out the following examples:
 
@@ -72,8 +73,9 @@ If you wish to view an example of a fully implemented plugin, check out the foll
 * The {url_github_srs_api_plugin}[SRS API plugin] and the {url_github_srs_data_plugin}[SRS data plugin] from the xref:{url_tutorials_srs}[].
 ====
 
-Each plugin can have a set of files for defining schemas, types and endpoints of a plugin.
-By default, Lisk Commander only creates the *example_plugin.ts* file and registers into the *plugins.ts* file. The structure of the plugins folder can similar to one mentioned below:
+Each plugin can have a set of files for defining the schemas, types, and endpoints of a plugin.
+By default, Lisk Commander only creates the plugin's class file such as *example_plugin.ts*, and registers it into the *plugins.ts* file. 
+The structure of the plugins folder can be similar to the one mentioned below:
 
 .Sample "plugins" directory inside a blockchain application
 ----
@@ -83,18 +85,46 @@ src/
 │   │   ├── example_plugin.ts
 │   │   ├── types.ts
 │   │   ├── endpoint.ts
-│   │   └── schema.ts
+│   │   └── schemas.ts
 │   └── faucet/
 │   │   ├── faucet_plugin.ts
 │   │   ├── types.ts
 │   │   ├── endpoint.ts
-│   │   └── schema.ts
+│   │   └── schemas.ts
 └── plugins.ts
 ----
 
-It's worth noting that the directory structure of a plugin can be customized as per need by the blockchain application developer and the separation of *types*, *schemas* and *endpoints* is purely made to ease scalability.
+It's worth noting that the directory structure of a plugin can be customized as per the requirement of a blockchain application. 
+The separation of *types*, *schemas*, and *endpoints* is purely made to segregate different parts of a plugin.
 
-Once a plugin is bootstrapped, it is registered with the `plugins.ts` file.
+As mentioned earlier, a part of the plugin's bootstrapping process is to create a new class such as the `ExamplePlugin` in the *example_plugin.ts* file. 
+For a plugin to work correctly, functions like `nodeModulePath()`, `load()`, and `unload()` are mandatory to have in a plugin. These functions are automatically created during the bootstrapping process. 
+
+The following code snippet shows a bare-bone plugin class.
+
+.src/plugins/example/example_plugin.ts
+[source,typescript]
+----
+import { BasePlugin } from 'lisk-sdk';
+
+export class ExamplePlugin extends BasePlugin {
+
+	public name: 'example';
+	//Mandatory
+	public get nodeModulePath(): string {
+		return __filename;
+	}
+
+	//Mandatory
+	public async load(): Promise<void> {}
+
+	//Mandatory
+	public async unload(): Promise<void> {}
+
+}
+----
+
+Once a plugin is bootstrapped, it is registered inside the *plugins.ts* file automatically by the Lisk Commander.
 
 .src/plugins.ts
 [source,typescript]
@@ -107,32 +137,29 @@ export const registerPlugins = (app: Application): void => {
 };
 ----
 
-
-
 == Plugin Anatomy
+Every plugin in a blockchain application must be based on the `BasePlugin` class.
+The `BasePlugin` class provides a basic skeleton for what is required of a plugin.
+For more information, check out the {url_github_base_plugin}[*base_plugin.ts*^] file on GitHub.
 
-
-
-
-Every plugin in a blockchain application must be based on the `base_Plugin` class. The `base_Plugin` class provides a basic skeleton for what is required of a custom plugin created by a developer of BAap. For more information see {url_github_base_plugin}[base_plugin.ts^] on GitHub.
- 
-Each Plugin has three essentials parts, that are:
+Every plugin has three essential parts, such as:
 
 * Elements
-* Interfaces
+* Interface
 * Execution Logic
 
-.Anotomy of an ExamplePlugin class based on the BasePlugin class
+.Anatomy of an "ExamplePlugin" class based on the "BasePlugin" class
 image::intro/plugin-diagram.png[plugin-diagram, 1000 ,align="center"]
 
-
 === Elements
-Each plugin inherits functions and properties from the `base_Plugin` class. These are the elements of a plugin.  
+Each plugin inherits functions and properties from the `BasePlugin` class.
 
-==== nodeModulePath() 
-Whenever a plugin is bootstrapped with the Lisk Commander, a `nodeModulePath()` function is created automatically. This function return the path of the *plugin.ts* file. The plugin.ts file contains links to all the plugins registered with a blockchain application.
+==== nodeModulePath()
+Whenever a plugin is bootstrapped with the Lisk Commander, a `nodeModulePath()` function is created automatically.
+This function returns the path of the *plugin.ts* file.
+The plugin.ts file contains information on all the plugins registered with a blockchain application.
 
-.Example: nodeModulePath() function of a custom plugin
+.Example: nodeModulePath() function of a plugin
 [source,typescript]
 ----
 public get nodeModulePath(): string {
@@ -141,9 +168,10 @@ public get nodeModulePath(): string {
 ----
 
 ==== name()
-The `name()` function returns the name of the Plugin. It is inherited from the `base_plugin` class. The plugin names are used for routing RPC requests to or from the plugin.
+The `name()` function returns the name of the Plugin. It is inherited from the `BasePlugin` class.
+The plugin name is used for routing RPC requests to or from the plugin.
 
-.Example: name() function of the base_Plugin class
+.Example: name() function of the BasePlugin class
 [source,typescript]
 ----
 public get name(): string {
@@ -153,9 +181,10 @@ public get name(): string {
 ----
 
 ==== datapath()
-Lisk stores the blockchain application's data to the `~/.lisk/APPLICATION_NAME` directory. The `datapath()` function returns that path to the plugin so that data specific to the application can be retrieved.
+Lisk stores the blockchain application's data in the `~/.lisk/APPLICATION_NAME` directory. 
+The `datapath()` function returns this path to the plugin so that data specific to the application can be retrieved.
 
-.Example: datapath() function of the base_Plugin class
+.Example: datapath() function of the BasePlugin class
 [source,typescript]
 ----
 public get dataPath(): string {
@@ -164,60 +193,50 @@ public get dataPath(): string {
 }
 ----
 
-
 ==== Configuration
-Each plugin either inherits the default application's configuration or it can inject custom configurations relating to a plugin. For more information about default configuration see, xref:{url_references_config_default}[Configuration].
+Each plugin either inherits the default application's configuration or can inject custom configurations relating to a plugin. 
+For more information about default configuration, see xref:{url_references_config_default}[Configuration].
 
 ===== Default Configuration
-Whenever your create a plugin with Lisk Commander, by default, it inherits the application's configurations as defined in the `base_Plugin` class. A plugin with default configurations will look similar to the following: 
+Whenever you create a plugin with Lisk Commander, by default, it inherits the application's configurations as defined in the `BasePlugin` class. 
+A plugin that uses the default configurations looks similar to the following: 
 
-.Example: 
+."ExamplePlugin" class with the default configurations
 [source,typescript]
 ----
 import { BasePlugin } from 'lisk-sdk';
-
+// A plugin with default configuration doesn't need to define a configuration-specific schema and types objects.
 export class ExamplePlugin extends BasePlugin {
-
-	public name: 'example';
-
-	public get nodeModulePath(): string {
-		return __filename;
-	}
-
-	public async load(): Promise<void> {}
-
-	public async unload(): Promise<void> { }
 }
 ----
 
 ===== Custom Configuration
-A plugin can also have its own set of configurations that are passed to it as shown in the following code snippet. 
+A plugin can also have its own set of configurations that are passed to it as shown in the following code snippet:
 
-.Example: plugins/faucet/faucet_plugin.ts
+."FaucetPlugin" class with the custom configurations
 [source,typescript]
 ----
 import { BasePlugin, PluginInitContext, cryptography } from 'lisk-sdk';
-import * as express from 'express';
-import { join } from 'path';
-import { Server } from 'http';
-import { configSchema } from './schemas';
-import { FaucetPluginConfig, State } from './types';
+import { configSchema } from './schemas'; //Configuration Schema
+import { FaucetPluginConfig, State } from './types'; // Types Object
 import { Endpoint } from './endpoint';
 
-export class FaucetPlugin extends BasePlugin<FaucetPluginConfig> {
-	public configSchema = configSchema;
+// A plugin with Custom Plugin configuration needs a configuration schema and types objects.
+export class FaucetPlugin extends BasePlugin<FaucetPluginConfig> { //Config Type Object
+    public configSchema = configSchema; //Schema Object
 
 }
 ----
-Each custom configuration's schema and type of values must be defined for each plugin.
-
-NOTE: It is not necassary to follow the directory structure defined earlier, however, schemas and types must be defined somewhere and passed to the plugin for a plugin to work correctly.
-
+Each custom configuration's schema and type of values must be defined for each plugin and should be passed to the plugin class.
 
 ==== Schemas
-A Schemas of a plugin contains the structural information of the data accepted by a plugin. A schema can be for a custom configuration or for a specific kind of data that must be passed to a plugin to fulfill the business logic. Schemas are passed to the plugin class and are later verified by the Lisk framework. Schemas are present inside the `schema.ts` file inside a plugin's folder.
+A Schemas of a plugin contains the structural information of the data accepted by a plugin. 
+A schema can be for a custom configuration or for a specific kind of data that must be passed to a plugin to accommodate the business logic. 
+Schemas are passed to the plugin class and are later verified by the Lisk framework. 
+Usually, schemas are present inside the *schemas.ts* file inside a plugin's folder.
+The contents of the schemas.ts file are described below:
 
-.Example: plugins/faucet/schema.ts
+.Example: plugins/faucet/schemas.ts
 [source,typescript]
 ----
 export const configSchema = {
@@ -298,9 +317,10 @@ export const fundParamsSchema = {
 ----
 
 ==== Types
-All the types of variables used by a plugin are usually defined in the `types.ts` file. Whilst Schemas describe the schema of data, the *Types* file contains the definitions of all the variables that are used by a plugin.
+All the types of variables used by a plugin are usually defined in the *types.ts* file.
+Whilst schemas describe the schema of data, the types.ts file contains the definitions of all the variables that are used by a plugin.
 
-.Example: 
+.Example: plugins/faucet/types.ts
 [source,typescript]
 ----
 export interface FaucetPluginConfig {
@@ -323,20 +343,23 @@ export interface State {
 }
 ----
 
+=== Interface
 
-=== Interfaces
-
-Plugins can expose <<endpoints>>, which allow other plugins and external tools to interact with the plugin. Plugins can also subscribe to <<events>> emitted by the Lisk Blockchain. 
+Plugins can expose <<endpoints>>, which allows other plugins and external tools to interact with the plugin.
+Plugins can also invoke endpoints exposed by other plugins and the blockchain application. Plugins can also subscribe to <<events>> emitted by a blockchain application. 
 
 TIP: View the "Interfaces" section of the xref:{url_advanced_communication_interfaces}[Communication] page to see an overview of the different interfaces and their accessibility in modules, plugins, and external services.
 
 ==== Endpoints
 
-Endpoints are functions which can be xref:{url_advanced_communication_invoke_endpoints}[invoked] via Remote-Procedure-Calls (RPC) by plugins and external services, to request data from the plugin.
+Endpoints are functions that can be xref:{url_advanced_communication_invoke_endpoints}[invoked] via Remote-Procedure-Calls (RPC) by other plugins and external services, to request data from a plugin.
 
-Endpoints of a plugins should be defined in the `Endpoint` class. The `Endpoint` class usually resides in the endpoint.ts file inside each plugin's directory. The `Endpoint` class inherits from the `BasePluginEndpoint` class. A sample `Endpoint` class and its endpoint is available in the following code snippet:
+The endpoints of a plugin should be defined in the `Endpoint` class. 
+The `Endpoint` class usually resides in the *endpoint.ts* file inside each plugin's directory and it inherits from the `BasePluginEndpoint` class. 
+For more information, check out the {url_github_base_endpoint}[*base_plugin_endpoint.ts*^] file on GitHub. 
+A {url_github_faucet_endpoints}[sample endpoint class] and one of its endpoints are available in the following code snippet:
 
-.Example: Endpoints of the Faucet plugin
+.Example: plugins/faucet/endpoint.ts
 [source,typescript]
 ----
 
@@ -371,15 +394,16 @@ export class Endpoint extends BasePluginEndpoint {
     // ...
 }
 ----
-For more information, see {url_github_faucet_endpoints}[Faucet_endpoints.ts].
 
 ==== Events
-A plugin can subscribe to RPC events emitted by the blockchain. To subscribe to an event see, xref:{url_subscribe_events}[How to subscribe events].
-
-
-
+A plugin can subscribe to RPC events emitted by the blockchain. 
+To subscribe to an event see, xref:{url_subscribe_events}[How to subscribe to events].
 
 === Execution Logic
+The execution logic consists of functions that execute the business logic for a plugin.
+By default, a bootstrapped plugin has the `load()` and `unload` functions.
+More can be added if needed and all the functions have access to the methods and properties defined in the `BasePlugin` class.
+The aforementioned can be accessed using `this.variable` or `this.function()` from within the plugin class.
 
 ==== load()
 
@@ -388,13 +412,8 @@ It contains the plugin logic that is executed when the plugin is loaded in the a
 
 It can be used to retrieve, mutate, store and/or publish data in a specific manner, depending on the purpose of the plugin.
 
-The `channel`, which is available inside of the `load()` function, allows access to the xref:{url_rpc_endpoints}[] in order to subscribe to events or to invoke certain actions within the application to retrieve the desired data.
-
-
-The following variables are accessible in the `load()` function:
-
-* `channel`: See xref:{url_advanced_communication_pluginschannel}[Channel for plugins].
-* `this.options`: The <<plugin-defaults>>, as defined in the xref:{url_advanced_architecture_config}[application configuration].
+With the help of the RPC protocol, access to blockchain events and endpoints is available. 
+The xref:{url_rpc_endpoints}[RPC Protocol] can be used to subscribe to events or to invoke certain endpoints within the application to retrieve the desired data.
 
 .Example: load() function of the "faucet" plugin
 [source,typescript]
@@ -439,120 +458,3 @@ public async unload(): Promise<void> {
     });
 }
 ----
-
-
-
-
-// == Adding a plugin to the application
-
-// Plugins need to be registered to become available in the application.
-// If the application was xref:{url_guides_setup}[bootstrapped] with Lisk Commander, they are registered in the file `src/app/plugins.ts`.
-
-// .Example: How to register a plugin with the application in `plugins.ts`
-// [source,typescript]
-// ----
-// /* eslint-disable @typescript-eslint/no-empty-function */
-// import { Application } from 'lisk-sdk';
-// import { LatestHelloPlugin } from "./plugins/latest_hello/latest_hello_plugin";
-
-// export const registerPlugins = (app: Application): void => {
-
-//     app.registerPlugin(new LatestHelloPlugin());
-// };
-// ----
-
-// If no custom config option is provided, the plugin will use the default config options, defined in <<plugin-defaults>>.
-
-// == Plugin anatomy
-
-// image::intro/plugin-diagram.png[plugin-diagram ,500 ,align="center"]
-
-// == The plugin class
-
-// All custom plugins must extend the `BasePlugin` exposed by the SDK.
-// The interface for the `BasePlugin` is described in the xref:{url_references_framework_baseplugin}[Lisk Framework reference].
-
-// [source,js]
-// ----
-// const { BasePlugin } = require("lisk-sdk");
-
-// class somePlugin extends BasePlugin {
-
-// }
-// ----
-
-// == Plugin Name
-
-// The unique identifier of the plugin.
-
-// It is used as prefix in the xref:{url_advanced_communication_alias}[alias] of events and endpoints, and as a key label to to add the properties of the <<plugin-defaults>> to the xref:{url_advanced_architecture_config}[application configuration].
-
-// .Example: Alias of the forger plugin
-// [source,typescript]
-// ----
-// public static get alias(): string {
-//     return 'forger';
-// }
-// ----
-
-// == Plugin defaults
-
-// The configuration schema for this plugin.
-
-// After registering the plugin with the application, it can be configured in the xref:{url_advanced_architecture_config}[application configuration], using the defined schema here.
-// The configuration options can then be accessed in the plugin under the variable `this.options`.
-
-// .Example: Config schema of the Dashboard plugin
-// [source,js]
-// ----
-// get defaults() {
-//     return {
-//         $id: '#/plugins/lisk-dashboard/config',
-//         type: 'object',
-//         properties: {
-//             applicationName: {
-//                 type: 'string',
-//                 description: 'Application name to be shown near Logo',
-//             },
-//             applicationUrl: {
-//                 type: 'string',
-//                 format: 'uri',
-//                 description: 'URL to connect',
-//             },
-//             port: {
-//                 type: 'integer',
-//                 minimum: 1,
-//                 maximum: 65535,
-//             },
-//             host: {
-//                 type: 'string',
-//                 format: 'ip',
-//             },
-//         },
-//         required: [],
-//         default: {
-//             applicationUrl: 'ws://localhost:8080/ws',
-//             port: 4005,
-//             host: '127.0.0.1',
-//             applicationName: 'Lisk',
-//         },
-//     }
-// };
-// ----
-
-
-
-
-// ----
-// .
-// ├── plugins/
-// │   ├── faucet/
-// │   │   ├── faucet_plugin.ts
-// │   │   ├── types.ts
-// │   │   └── schema.ts
-// │   └── example/
-// │   │   ├── example_plugin.ts
-// │   │   ├── types.ts
-// │   │   └── schema.ts
-// └── 
-// ----

@@ -1211,6 +1211,12 @@ The mainchain channel data is needed to acquire the number of messages that were
 
 This command sets the outbox root and the inbox size in the terminated outbox account, so that message recovery commands can be issued.
 
+Transactions executing this command have the following:
+
+* module = `MODULE_NAME_INTEROPERABILITY`
+* command = `COMMAND_MESSAGE_RECOVERY_INITIALIZATION`
+
+
 The command ID is `COMMAND_ID_MESSAGE_RECOVERY_INITIALIZATION` and the message recovery initialization command schema can be seen below:
 
 .Message Recovery Initialization Command Schema
@@ -1228,7 +1234,8 @@ messageRecoveryInitializationParams = {
     ],
     "properties": {
         "chainID": {
-            "dataType": "uint32",
+            "dataType": "bytes",
+            "length": CHAIN_ID_LENGTH,
             "fieldNumber": 1
         },
         "channel": {
@@ -1242,7 +1249,8 @@ messageRecoveryInitializationParams = {
         "siblingHashes": {
             "type": "array",
             "items": {
-                "dataType": "bytes"
+                "dataType": "bytes",
+                "length": HASH_LENGTH
             },
             "fieldNumber": 4
         }
@@ -1252,55 +1260,60 @@ messageRecoveryInitializationParams = {
 
 ====
 
-Assuming `trs` is a transaction with the module ID `MODULE_ID_INTEROPERABILITY` and the command ID `COMMAND_ID_MESSAGE_RECOVERY_INITIALIZATION` then this can be verified as shown below:
+* `chainID` : The ID of the sidechain whose terminated outbox account is to be initialized.
+* `channel` : The channel of this chain stored on the terminated sidechain.
+* `bitmap` : The bitmap of the inclusion proof of the channel in the sidechain state tree.
+* `siblingHashes` : The sibling hashes of the inclusion proof of the channel in the sidechain state tree.
 
-.Message Recovery Initialization Command Validation Schema
+.Message Recovery Initialization Command Verification Schema
 [%collapsible]
 ====
 [source,js]
 ----
-if trs.params.chainID == MAINCHAIN_ID or trs.params.chainID == ownChainAccount.ID:
-    return False
+def verify(trs: Transaction) -> None:
+    if trs.params.chainID == CHAIN_ID_MAINCHAIN or trs.params.chainID == ownChainAccount.chainID:
+        raise Exception("Chain ID is not valid.")
 
-# The commands fails if the  chain is not registered
-if chainAccount(trs.params.chainID) does not exists:
-    return False
+    # The commands fails if the  chain is not registered
+    if chainAccount(trs.params.chainID) does not exist:
+        raise Exception("Chain is not registered.")
 
-# The commands fails if the chain is not terminated
-if terminatedStateAccount(trs.params.chainID) does not exists or terminatedStateAccount(trs.params.chainID).initialized == False:
-    return False
+    # The commands fails if the chain is not terminated
+    if terminatedStateAccount(trs.params.chainID) does not exist or terminatedStateAccount(trs.params.chainID).initialized == False:
+        raise Exception("Chain is not terminated.")
 
-# The commands fails if there exist already a terminated outbox account
-if terminatedOutboxAccount(trs.params.chainID) exists:
-    return False
+    # The commands fails if there exist already a terminated outbox account
+    if terminatedOutboxAccount(trs.params.chainID) exists:
+        raise Exception("Terminated outbox account already exists.")
 
-channelKey = uint32be(MODULE_ID_INTEROPERABILITY) || STORE_PREFIX_CHANNEL_DATA || uint32be(MAINCHAIN_ID)
+    queryKey = STORE_PREFIX_INTEROPERABILITY + SUBSTORE_PREFIX_CHANNEL_DATA + sha256(CHAIN_ID_MAINCHAIN)
 
-query = { key: channelKey,
-          value: SHA-256(trs.params.channel),
-          bitmap: trs.params.bitmap }
+    query = {
+        key: queryKey,
+        value: sha256(trs.params.channel),
+        bitmap: trs.params.bitmap
+    }
 
-proofOfInclusion = { siblingHashes: trs.params.siblingHashes, queries : [query]}
+    proofOfInclusion = { siblingHashes: trs.params.siblingHashes, queries : [query] }
 
-return SMTVerify([channelKey], proofOfInclusion, terminatedStateAccount(trs.params.chainID).stateRoot)
+    if SMTVerify([queryKey], proofOfInclusion, terminatedStateAccount(trs.params.chainID).stateRoot) == False:
+        raise Exception("Message recovery initialization proof of inclusion is not valid.")
 ----
 
 ====
-
-Finally, processing a transaction `trs` with the module ID `MODULE_ID_INTEROPERABILITY`, and the command ID `COMMAND_ID_MESSAGE_RECOVERY_INITIALIZATION` implies the following logic as can be seen below:
 
 .Message Recovery Initialization Command Execution Schema
 [%collapsible]
 ====
 [source,js]
 ----
-let deserializedChannel be the deserialization of trs.params.channel
-createTerminatedOutboxAccount(
-  trs.params.chainID,
-  channel(trs.params.chainID).outbox.root,
-  channel(trs.params.chainID).outbox.size,
-  deserializedChannel.inbox.size
-  )
+def execute(trs: Transaction) -> None:
+    partnerChannel = decode(channelSchema, trs.params.channel)
+    createTerminatedOutboxAccount(
+        trs.params.chainID,
+        channel(trs.params.chainID).outbox.root,
+        channel(trs.params.chainID).outbox.size,
+        partnerChannel.inbox.size
 ----
 
 ====

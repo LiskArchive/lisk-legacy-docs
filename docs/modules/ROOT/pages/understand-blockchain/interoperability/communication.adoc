@@ -104,18 +104,16 @@ This property contains three elements:
 . `crossChainMessages`:
 An array of cross-chain messages.
 The `crossChainMessages` property must contain consecutive messages from the outbox.
-. `messageWitness`:
-an inclusion witness into the outbox root:
+. `messageWitnessHashes`:
 In the sending chain, all cross-chain messages are added to a regular Merkle tree attested by the outbox root.
-The `messageWitness` contains two values relative to that Merkle tree:
-.. the `partnerChainOutboxSize`, giving the total messages sent by the partner chain, and
-.. the `siblingHashes`, which is part of a regular Merkle proof.
+The `messageWitnessHashes` are the sibling hashes necessary for the Merkle proof.
 This Merkle proof is required if not all messages necessary to recompute the outbox root were given in `crossChainMessages`.
-If all messages required to compute the outbox root are included in `crossChainMessages` then `siblingHashes` can be left empty.
+If all messages required to compute the outbox root are included in `crossChainMessages` then `messageWitnessHashes` can be left empty.
 . `outboxRootWitness`:
 An inclusion witness of this outbox root into the state root.
 The outbox root of the sending chain is part of a sparse Merkle tree attested by the state root (provided in the certificate).
-The `outboxRootWitness` property is an inclusion proof into the state root of the outbox root computed from the receiving chain inbox, `crossChainMessages` and `messageWitness`.
+The `outboxRootWitness` property is an inclusion proof into the state root of the outbox root.
+The outbox root itself can be computed from the receiving chain inbox, `crossChainMessages` and `messageWitnessHashes`.
 If the cross-chain update transaction contains an empty certificate, this property can also be left empty, as the required root was already attested in a previous cross-chain update.
 
 === Creating and Posting CCUs
@@ -152,9 +150,9 @@ This proof is then used to compute `inboxUpdate.outboxRootWitness`.
 --
 image:understand-blockchain/interop/ccc-2.png[,300,role="right"]
 
-After the CCM has been created in step <<using-cross-chain-transactions-to-generate-ccms>>, it is added to the outbox of the sending chain X.
+After the CCM has been created in step <<sending-cross-chain-transactions-to-generate-ccms>>, it is added to the outbox of the sending chain X.
 
-From the outbox, a *relayer* collects the CCMs and creates a CCU with the properties described in step <<transferring-ccms-in-a-ccu>>.
+From the outbox, a *relayer* collects the CCMs and creates a CCU with the properties described in step <<relaying-ccms-in-a-ccu>>.
 
 A *relayer* is a blockchain node that collects CCMs in a CCU and, as the name suggests, relays them cross-chain.
 
@@ -171,7 +169,7 @@ NOTE: Because all information to create CCUs is publicly available, anyone can a
 --
 image:understand-blockchain/interop/ccc-3.png[,300,role="right"]
 
-After the CCM is included in the inbox of the mainchain, the mainchain performs the most important validations on the CCM.
+After the CCM is included in the inbox of the mainchain in step <<sidechain-to-mainchain>>, the mainchain performs the most important validations on the CCM.
 
 If the validation on the mainchain is passed successfully, the CCM is added to the outbox of the mainchain, ready to be picked up by a relayer.
 
@@ -182,7 +180,7 @@ This can be either because some CCMs have been included in the outbox and need t
 
 --
 
-== Executing the CCC on the receiving chain
+== Executing the cross-chain command on the receiving chain
 
 [.float-group]
 --
@@ -209,10 +207,10 @@ This design choice allows sidechains to send messages to other chains without th
 |===
 |Status|Type|Value|Description
 |OK|uint32|0|The default status of a cross-chain message.
-|MODULE NOT SUPPORTED|uint32|1|Status assigned on the receiving chain if it does not implement any module with ID equal to the message module ID.
-|CROSS CHAIN COMMAND NOT SUPPORTED|uint32|2|Status assigned on the receiving chain if it does not implement any command with ID equal to the message command ID.
-|CHANNEL UNAVAILABLE|uint32|3|Status assigned on the mainchain if the receiving chain is not available (it does not exist, it is not active, or it has been terminated).
-|RECOVERED|uint32|4|Status assigned on the mainchain to a cross-chain message after it has been recovered from the outbox of a terminated sidechain.
+|CHANNEL UNAVAILABLE|uint32|1|Status assigned on the mainchain if the receiving chain is not available (it does not exist, it is not active, or it has been terminated).
+|MODULE NOT SUPPORTED|uint32|2|Status assigned on the receiving chain if it does not implement any module with ID equal to the message module ID.
+|CROSS CHAIN COMMAND NOT SUPPORTED|uint32|3|Status assigned on the receiving chain if it does not implement any command with ID equal to the message command ID.
+|CCM EXECUTION FAILED|uint32|4|Status assigned on the mainchain to a cross-chain message after it has been recovered from the outbox of a terminated sidechain.
 |===
 
 The status code provides crucial information to the blockchain application on how to process/forward a CCM.

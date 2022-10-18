@@ -1320,6 +1320,59 @@ The required parameters, verification, and execution are listed below:
 * `command = COMMAND_LIVENESS_TERMINATION`
 
 
+.Liveness Termination Command Schema
+[%collapsible]
+====
+[source,js]
+----
+livenessTerminationParams = {
+    "type": "object",
+    "required": ["chainID"],
+    "properties": {
+        "chainID": {
+            "dataType": "bytes",
+            "length": CHAIN_ID_LENGTH,
+            "fieldNumber": 1
+        }
+}
+----
+
+====
+
+* `The chainID` is the ID of the respective sidechan to be terminated.
+
+.Liveness Termination Verification Schema
+[%collapsible]
+====
+[source,js]
+----
+def verify(trs: Transaction) -> None:
+
+    if chainAccount(trs.params.chainID) does not exist:
+        raise Exception("Chain account does not exist.")
+
+    # The commands fails if the sidechain is already terminated
+    if chainAccount(trs.params.chainID).status == CHAIN_STATUS_TERMINATED:
+        raise Exception("Sidechain is already terminated.")
+
+    # or if the sidechain did not violate the liveness condition
+    if isLive(trs.params.chainID):
+        raise Exception("Sidechain did not violate the liveness condition.")
+----
+
+====
+
+.Liveness Termination Execution Schema
+[%collapsible]
+====
+[source,js]
+----
+def execute(trs: Transaction) -> None:
+    terminateChain(trs.params.chainID)
+----
+
+====
+
 == Recovery Process Workflow
 
 As the relevant commands have been described above the process to initiate a recovery is covered in this section.

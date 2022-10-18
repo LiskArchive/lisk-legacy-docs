@@ -837,20 +837,16 @@ This recovery mechanism requires the initialization commands.
 
 ==== State Recovery Initialization Command
 
-This command has two purposes.
-It can be used to set the state root of a terminated state account on a sidechain or to directly terminate another sidechain.
+This command is used to initialize a terminated state account, or to update the state root stored in it, if it was not actually set yet.
+It can only be submitted on a sidechain.
 
-In the first case, the command contains an inclusion proof against the mainchain state root stored in the terminated state account, proving the value of the state root of the terminated sidechain.
+It contains an inclusion proof against the mainchain state root stored in the terminated state account, proving the value of the state root of the terminated sidechain.
 Any user on the corresponding sidechain can send a transaction with this command and initiate the state recoveries with respect to the terminated sidechain.
 A sidechain account can be terminated on a sidechain using the `terminateChain` function exposed by the Interoperability module.
-n this case, the state root is generally not available and the terminated state account is created without setting the sidechain state root. Instead, the account stores the mainchain state root at the time of termination.
+In this case, the state root is generally not available and the terminated state account is created without setting the sidechain state root. Instead, the account stores the mainchain state root at the time of termination.
 A state recovery initialization command will in the future set the sidechain state root by giving an inclusion proof against this mainchain state root.
 
-In the second case, the command contains an inclusion proof against the mainchain state root, proving that another sidechain is either terminated (the status in the chain account is set to 'terminated'), or the liveness condition is violated (as the timestamp of the last certificate is too old).
-Therefore, when a CCM reaches a receiving chain that has been terminated, a sidechain terminated message is created and sent back to the sending chain carrying the `stateRoot` of the terminated sidechain.
-The application of this CCM on the sidechain will effectively initiate the recovery process.
-
-In both cases, the command sets the sidechain state root in the terminated state account, so that state recovery commands can be issued.
+The command sets the sidechain state root in the terminated state account, so that state recovery commands can be issued.
 The relevant schemas can be seen below.
 
 The command ID is `COMMAND_ID_STATE_RECOVERY_INITIALIZATION` and the state recovery initialization command schema can be seen below:
@@ -1382,7 +1378,7 @@ As can be seen here, the process is slightly different on the mainchain and the 
 
 Firstly regarding the mainchain, the process required is as follows, and is depicted in the illustration in figure 3 below:
 
-1. The sidechain is terminated for violating the liveness requirement or the token-module protocol.
+1. The sidechain is terminated by submitting a <<Liveness Termination Command>>, or violating the token-module protocol.
 
 a. A *terminated state account* containing the last certified state root of the sidechain is created in the state.
 
@@ -1394,7 +1390,7 @@ This command contains the inbox size of the mainchain stored on the terminated s
 a. A *terminated outbox account* is created in the state.
 This contains the outbox root of the terminated sidechain channel, and the inbox size provided with the message recovery initialization command.
 
-b. A user can now recover pending messages with a *message recovery command*.
+b. A user can now recover pending messages with a <<Message Recovery Command>>.
 
 image:understand-blockchain/interop/mainchain-recovery.png[, align="center" ,500]
 
@@ -1430,8 +1426,19 @@ b. A *terminated state account* containing the sidechain’s last certified stat
 
 c. A user can recover assets that are native to the sidechain with a *state recovery command*.
 
-As mentioned above these 3 steps are depicted graphically below in figure 4.
+As mentioned above the steps from 1 to 3 are depicted graphically below in figure 4.
 
+===== Message Recovery from the Sidechain Outbox
+
+This message recovery mechanism is able to recover any CCM that is pending in the sidechain outbox.
+Specifically, those CCMs that have not yet been included in the receiving sidechain.
+Hence, this includes all the CCMs whose indices are larger than the last message index that the receiving sidechain reported to have included in its inbox on the mainchain.
+Any user can submit a message recovery command to recover several CCMs simultaneously.
+When the command is processed, the recovery is dependent on whether the sending chain is the mainchain or a sidechain.
+
+However, it is important to note that users are not guaranteed to recover their CCMs in every situation.
+Certain state information of the terminated sidechain might have been modified before the termination occurred, and this would make the recovered CCM application fail.
+For example, in the case whereby escrowed LSK exists in the sidechain account on the mainchain, which could have been subtracted by prior malicious behavior in the terminated sidechain.
 
 image:understand-blockchain/interop/sidechain-recovery.png[, align="center" ,500]
 

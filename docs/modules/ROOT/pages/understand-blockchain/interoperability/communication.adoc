@@ -35,7 +35,7 @@ This fee must be transferred from the sending chain account to the receiving cha
 The token ID for this fee is stored in the channel account and is by default the token ID of the LSK token.
 As it is stored in the channel account, it does not need to be repeated in the message.
 Being the main utility token of the Lisk ecosystem, the LSK token is always the token ID for this fee for the channels between the Lisk mainchain and registered sidechains.
-parameters:: The params property of the messages is defined by each module and can follow any schema, similar to the `params` property of a transaction.
+parameters:: The `params` property of the messages is defined by each module and can follow any schema, similar to the `params` property of a transaction.
 The `params` property is not deserialized or validated by the Interoperability module.
 In the Lisk ecosystem, all cross-chain messages are routed through the mainchain.
 This means that messages should always have a sufficiently small size in order to be easily included in mainchain blocks.
@@ -51,7 +51,7 @@ Other modules may use other status codes larger or equal to 64.
 :sectnums:
 == Sending cross-chain transactions to generate CCMs
 
-Let's look at a example of a simple cross-chain transfer between Alice and Bob.
+Let's look at an example of a simple cross-chain transfer between Alice and Bob.
 
 image:understand-blockchain/interop/ccc-1.png[,300,role="right"]
 
@@ -90,8 +90,8 @@ Only cross-chain update transactions coming from registered chains are valid, re
 active validators update:: The chain account stores an array containing the BLS keys and BFT weights required to validate the certificate signature.
 This array has to be updated if the set of active validators changes in the chain sending the certificate.
 The difference between the stored array and the new one is included in this property.
-certificate:: Verifies the correctness of the data sent in the CCU.
-Consists of aggregated signatures of a set of the current validators of the sending chain.
+certificate:: Authenticates the data sent in the CCU.
+It contains an aggregate signature of a set of the current validators of the sending chain.
 Anyone can obtain the full certificate from the blockchain by obtaining the corresponding block header, computing the unsigned certificate, and then obtaining the `aggregateCommit` once the block is finalized.
 certificate threshold:: The threshold of block generators required to validate the certificate signature.
 This certificate threshold has to be updated if its value changes in the chain sending the certificate.
@@ -188,7 +188,7 @@ image:understand-blockchain/interop/ccc-4.png[,300,role="right"]
 
 Once the CCM is included in the inbox on the receiving chain Y, the remaining validations of the CCM are performed.
 
-If the validation is completed successfully, the CC-Transfer command is performing the intended state changes on the receiving chain, i.e. adding 5 LSK to Bobs account.
+If the validation is completed successfully, the cross-chain command is performing the intended state changes on the receiving chain, i.e. adding 5 LSK to Bobs account.
 --
 :!sectnums:
 
@@ -232,7 +232,7 @@ When a CCU is relayed from a sending chain to the mainchain, the mainchain check
 If the validation fails, the `status` of the CCM is updated by the mainchain with the corresponding error code.
 
 If the status is NOT OK, the CCM will NOT be forwarded to the receiving chain.
-Instead, a relayer on the mainchain will include the CCM in a new CCU and post it *back to the sending chain.*
+Instead, the CCM is added to the outbox of the sending chain, i.e., it will eventually be included in a new CCU and posted *back to the sending chain.*
 
 The sending chain may then revert the state changes related to the CCM that happened on the sending chain.
 
@@ -240,9 +240,9 @@ For example, if Alice on Sidechain X sends 5 LSK to Bob on Sidechain Y, but Side
 
 . Alice sends CC-Transfer: 5 LSK + Fee is deducted from Alices balance on Sidechain X.
 . Mainchain receives corresponding CCM & performs validations.
-. Mainchain cannot find the receiving chain: CCM status is updated to 3 (`CHANNEL_UNAVAILABLE`) on the mainchain.
+. Mainchain cannot find the receiving chain: CCM status is updated to `CHANNEL UNAVAILABLE` on the mainchain.
 . Errored CCM is relayed back to the sending chain.
-. Sending chain undoes related state changes: 5 LSK are added back to Alice's account, because the cross-chain transfer was not successfull.
+. Sending chain undoes related state changes: 5 LSK are added back to Alice's account, because the cross-chain transfer was unsuccessful.
 
 NOTE: Alice always needs to pay the fee for the cross-chain transfer, even if it fails.
 --
@@ -257,13 +257,14 @@ image:understand-blockchain/interop/ccc-3b.png[,300]
 
 When a CCU is relayed from the mainchain to the receiving chain, the receiving chain checks for all CCMs in the inbox update, if the following criteria are met:
 
-* the receiving application understands the particular command, i.e. if it includes the required module to interpret the command name.
+* the receiving application understands the particular command, i.e. it includes the required module to interpret the command name.
 * the CCM includes all parameters required for the CC-command.
 
 If the validation fails the `status` of the CCM is updated by the receiving chain with the corresponding error code.
 
-If the status is NOT OK, the CCM will NOT be processed to the receiving chain.
-Instead, a relayer on the receiving chain will include the CCM in a new CCU and post it *back to the mainchain*, and from there to the sending chain.
+If the status is NOT OK, the state changes of the CCM will NOT be performed on the receiving chain.
+Instead, the CCM will be added to the outbox of the mainchain on the receiving chain.
+Thus, the CCM will eventually be included in a new CCU and posted *back to the mainchain*, and from there to the sending chain.
 
 Once the CCM is added to the inbox of the sending chain, it may then revert the invalid state changes.
 
@@ -272,7 +273,7 @@ For example, if Alice on Sidechain X sends 5 LSK to Bob on Sidechain Y, but Side
 . Alice sends CC-Transfer: 5 LSK + Fee is deducted from Alices balance on Sidechain X.
 . Mainchain receives corresponding CCM & performs validations.
 . Mainchain relays CCM to the receiving chain via a CCU.
-. Sidechain does not support module: CCM status is updated to 1 (`MODULE_NOT_SUPPORTED`) on the mainchain.
+. Sidechain does not support module: CCM status is updated to `MODULE NOT SUPPORTED` on the receiving chain.
 . Errored CCM is relayed back to the mainchain.
 . Errored CCM is relayed back to the sending chain.
 . Sending chain undoes related state changes: 5 LSK are added back to Alices account, because the cross-chain transfer was unsuccessful.

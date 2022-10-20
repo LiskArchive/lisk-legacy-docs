@@ -64,8 +64,8 @@ Here is where *cross-chain transactions (CCTs)* come into play.
 
 NOTE: A cross-chain transaction (CCT) is a transaction that, upon its execution, creates one or more cross-chain messages.
 
-In fact, a cross-chain transaction uses the identical schema as normal transactions.
-The only difference is that a CCT refers to a **cross-chain command**, instead of a normal command.
+In fact, a cross-chain transaction uses the identical schema as normal transactions, but it refers to a cross-chain command instead of a regular command.
+Unlike regular commands, cross-chain commands can create CCMs.
 
 A cross-chain command will perform the following:
 
@@ -88,12 +88,12 @@ image::understand-blockchain/interop/ccu.png[,300,role=right]
 sending chain ID:: Identifies the chain sending the cross-chain update.
 Only cross-chain update transactions coming from registered chains are valid, registered chains are the ones with an entry in the interoperability store corresponding to their `chainID`.
 active validators update:: The chain account stores an array containing the BLS keys and BFT weights required to validate the certificate signature.
-This array has to be updated if the set of active validators changes in the chain sending the certificate.
+This array has to be updated if the set of active validators changes in the chain sending the CCU.
 The difference between the stored array and the new one is included in this property.
 certificate:: Authenticates the data sent in the CCU.
 It contains an aggregate signature of a set of the current validators of the sending chain.
 Anyone can obtain the full certificate from the blockchain by obtaining the corresponding block header, computing the unsigned certificate, and then obtaining the `aggregateCommit` once the block is finalized.
-certificate threshold:: The threshold of block generators required to validate the certificate signature.
+certificate threshold:: The threshold of block generators in terms of BFT weight required to validate the certificate signature.
 This certificate threshold has to be updated if its value changes in the chain sending the certificate.
 In that case, the updated value is set in the `certificateThreshold` property of the CCU.
 If `certificateThreshold` is set to `0`, it implies that the certificate threshold has not been changed in the sending chain.
@@ -141,7 +141,7 @@ In this case, the `messageWitness` will be empty.
 This proof is then used to compute `inboxUpdate.outboxRootWitness`.
 .. Compute the required update to the active validators stored in the chain account and the validators that were used to create `certificate.validatorsHash`.
 //This update can be obtained by following the logic of `getActiveValidatorsDiff` as detailed in the Appendix.
-.. If the certificateThreshold used to create `certificate.validatorsHash` is different from the one stored in the chain account, include the new value in the `newCertificateThreshold` property.
+.. If the certificateThreshold used to create `certificate.validatorsHash` is different from the one stored in the chain account, include the new value in the `certificateThreshold` property.
 .. Post the cross-chain update transaction on the sidechain.
 
 === Sidechain to mainchain
@@ -208,9 +208,9 @@ This design choice allows sidechains to send messages to other chains without th
 |Status|Type|Value|Description
 |OK|uint32|0|The default status of a cross-chain message.
 |CHANNEL UNAVAILABLE|uint32|1|Status assigned on the mainchain if the receiving chain is not available (it does not exist, it is not active, or it has been terminated).
-|MODULE NOT SUPPORTED|uint32|2|Status assigned on the receiving chain if it does not implement any module with ID equal to the message module ID.
-|CROSS CHAIN COMMAND NOT SUPPORTED|uint32|3|Status assigned on the receiving chain if it does not implement any command with ID equal to the message command ID.
-|CCM EXECUTION FAILED|uint32|4|Status assigned on the mainchain to a cross-chain message after it has been recovered from the outbox of a terminated sidechain.
+|MODULE NOT SUPPORTED|uint32|2|Status assigned on the receiving chain if it does not implement any module with the name equal to the `module` property of the CCM.
+|CROSS CHAIN COMMAND NOT SUPPORTED|uint32|3|Status assigned on the receiving chain if it does not implement any command with the name equal to the `crossChainCommand` property of the CCM.
+|CCM EXECUTION FAILED|uint32|4|Status assigned on the receiving chain to a cross-chain message when the cross-chain command execution failed.
 |===
 
 The status code provides crucial information to the blockchain application on how to process/forward a CCM.

@@ -172,7 +172,7 @@ export class HelloModule extends BaseModule {
 
 The module name is the unique identifier for the module.
 
-The module name is automatically calculated from the class name of the module, if it extends from the <<module-anatomy-the-basemodule,BaseModule>>:
+The module name is automatically calculated from the class name of the module, if it extends from the <<the-basemodule,BaseModule>>:
 The `Module` suffix of the class name is removed, and the first character is converted to lowercase.
 
 TIP: For example, the module class `HelloModule` will have the module name `hello`.
@@ -988,46 +988,34 @@ export abstract class BaseEvent<T> {
 ----
 ====
 
-=== Default module event
+=== Standard event
 
-The default event is indicating the result of a transaction processing (success/failure).
+The standard event is indicating the result of a transaction processing (success/failure).
 It is automatically emitted every time a transaction is processed by a module.
 
-NOTE: Only valid transactions are processed, and therefore *only valid transactions emit the default module event.*
+Only valid transactions are processed, and therefore *only valid transactions emit the standard event.*
 See the section xref:{url_understand_valid_invalid_txs}[Valid vs invalid transactions] for more information.
 
-The default event is therefore the only blockchain event, that is not defined manually by the developer of a module.
+NOTE: The standard event is therefore the only blockchain event, that is not defined manually by the developer of a module.
 
-.state_machine.ts
+The standard event is added to the event queue in the state machine during the `executeTransaction` xref:{url_understand_block_execution}[lifecycle hook].
+
+If the transaction execution as successful, the `success` property is set to `true`, otherwise, it is set to `false`.
+
+.Schema for the standard event
 [source,typescript]
 ----
-public async executeTransaction(ctx: TransactionContext): Promise<TransactionExecutionResult> {
-    // ...
-    try {
-			await command.execute(commandContext);
-			ctx.eventQueue.unsafeAdd(
-				ctx.transaction.module,
-				EVENT_TRANSACTION_NAME,
-				codec.encode(standardEventDataSchema, { success: true }),
-				[ctx.transaction.id],
-			);
-		} catch (error) {
-            ctx.eventQueue.restoreSnapshot(commandEventQueueSnapshotID);
-			ctx.stateStore.restoreSnapshot(commandStateStoreSnapshotID);
-			ctx.eventQueue.unsafeAdd(
-				ctx.transaction.module,
-				EVENT_TRANSACTION_NAME,
-				codec.encode(standardEventDataSchema, { success: false }),
-				[ctx.transaction.id],
-			);
-			status = TransactionExecutionResult.FAIL;
-			this._logger.debug(
-				{ err: error as Error, module: ctx.transaction.module, command: ctx.transaction.command },
-				'Transaction execution failed',
-			);
-		}
-        // ...
-}
+export const standardEventDataSchema = {
+	$id: '/block/event/standard',
+	type: 'object',
+	required: ['success'],
+	properties: {
+		success: {
+			dataType: 'boolean',
+			fieldNumber: 1,
+		},
+	},
+};
 ----
 
 === Creating new blockchain event types
@@ -1052,7 +1040,7 @@ export interface TransferEventData {
 ----
 ====
 
-This is the corresponding schema for the `TransferEvent` data:
+The corresponding schema for the `TransferEvent` data interface defined above looks as follows:
 
 .transferEventSchema
 [%collapsible]

@@ -1083,7 +1083,9 @@ Transactions executing this command are as follows:
 
 * module = `MODULE_ID_INTEROPERABILITY`
 
-* command ID = `COMMAND_MESSAGE_RECOVERY` and the state recovery command schema can be seen below:
+* command ID = `COMMAND_MESSAGE_RECOVERY`
+
+The state recovery command schema can be seen below:
 
 .Message Recovery Command Schema
 [%collapsible]
@@ -1187,41 +1189,190 @@ def verify(trs: Transaction) -> None:
 ====
 [source,js]
 ----
-let trsSenderAddress be the address of the trs.senderPublicKey
+def execute(trs: Transaction) -> None:
+    senderAddress = sha256(trs.senderPublicKey)[:ADDRESS_LENGTH]
+    # Set CCM status to recovered and assign fee to trs sender
+    crossChainMessages = [decode(crossChainMessageSchema, ccmBytes) for ccmBytes in trs.params.crossChainMessages]
+    recoveredCCMs = []
 
-# Set CCM status to recovered and assign fee to trs sender
-updatedCCMs = []
-for ccm in deserializedCCMs:
+    for ccmBytes in crossChainMessages:
+        ccmID = sha256(ccmBytes)
+        # Set ccmID as default topic to all events emitted in applyRecovery and forwardRecovery
+        # (instead of the transaction ID).
+        defaultEventsTopic = ccmID
 
-    for each module mdl for which beforeRecoverCCM exists:
-        mdl.beforeRecoverCCM(trsSenderAddress, ccm)
-        if the previous call fails:
-            execution fails and trs is invalid
-    ccm.status = CCM_STATUS_RECOVERED
-    ccm.fee = 0
-    push serialized(ccm) to updatedCCMs # CCM is serialized again
+        ccm = decode(crossChainMessageSchema, ccmBytes)
+        # If the sending chain is the mainchain, recover the CCM.
+        # This function never raises an error.
+        if ccm.sendingChainID == CHAIN_ID_MAINCHAIN:
+            applyRecovery(trs, ccm)
+        # If the sending chain is not the mainchain, forward the CCM.
+        # This function never raises an error.
+        elif ccm.sendingChainID != CHAIN_ID_MAINCHAIN:
+            forwardRecovery(trs, ccm)
 
-# Update sidechain outbox root
-proof = { size: terminatedOutboxAccount(trs.params.chainID).outboxSize,
-    idxs: trs.params.idxs,
-    siblingHashes: trs.params.siblingHashes}
+        # Append the recovered CCM to the list of recovered CCMs.
+        # Notice that the ccm has been mutated in the applyRecovery and forwardRecovery functions
+        # as the status is set to CCM_STATUS_CODE_RECOVERED (so that it cannot be recovered again).
+        recoveredCCMs.append(encode(crossChainMessageSchema, ccm))
 
-terminatedOutboxAccount(trs.params.chainID).outboxRoot = RMTCalculateRoot([SHA-256(ccmData) for CCMData in updatedCCMs], proof)
+    # Update sidechain outbox root
+    proof = {
+        "size": terminatedOutboxAccount(trs.params.chainID).outboxSize,
+        "idxs": trs.params.idxs,
+        "siblingHashes": trs.params.siblingHashes
+    }
 
-# Process recovery
-for ccm in deserializedCCMs:
-    swap ccm.sendingChainID and ccm.receivingChainID
+    terminatedOutboxAccount(trs.params.chainID).outboxRoot = RMTCalculateRoot([sha256(ccmBytes) for ccmBytes in recoveredCCMs], proof)
 
-    # On sidechain, this case is always triggered and the message logic should be supported
-    if ccm.receivingChainID == ownChainAccount.ID:
-        if (ccm.moduleID, ccm.crossChainCommandID) is supported:
-            call the logic associated with (ccm.moduleID, ccm.crossChainCommandID) on ccm
-    elif ownChainAccount.ID == MAINCHAIN_ID:
-        # Only send messages to active and live chains
-        if (chainAccount(ccm.receivingChainID) exists
-            and chainAccount(ccm.receivingChainID).status == CHAIN_ACTIVE
-            and isLive(ccm.receivingChainID):
-            addToOutbox(ccm.receivingChainID, ccm)
+
+
+def applyRecovery(trs: Transaction, ccm: CCM) -> None:
+    # Calculate CCM ID, used later in events.
+    ccmID = sha256(encode(crossChainMessageSchema, ccm))
+    ccm.status = CCM_STATUS_CODE_RECOVERED
+    ccm.sendingChainID, ccm.receivingChainID = ccm.receivingChainID, ccm.sendingChainID
+
+    try:
+        # Modules can verify the CCM.
+        # The Token module verifies the escrowed balance in the CCM sending chain for the message fee.
+        for each module mdl for which verifyCrossChainMessage exists:
+            mdl.verifyCrossChainMessage(trs, ccm)
+    except:
+        emitEvent(
+            module = MODULE_NAME_INTEROPERABILITY,
+            name = EVENT_NAME_CCM_PROCESSED,
+            data = {"ccmID": ccmID, "result": CCM_PROCESSED_RESULT_DISCARDED, "code": CCM_PROCESSED_CODE_INVALID_CCM_VERIFY_CCM_EXCEPTION},
+            topics = [ccm.sendingChainID, ccm.receivingChainID]
+        )
+        return
+
+    if ccm.module is not supported:
+        emitEvent(
+            module = MODULE_NAME_INTEROPERABILITY,
+            name = EVENT_NAME_CCM_PROCESSED,
+            data = {"ccmID": ccmID, "result": CCM_PROCESSED_RESULT_DISCARDED, "code": CCM_PROCESSED_CODE_MODULE_NOT_SUPPORTED},
+            topics = [ccm.sendingChainID, ccm.receivingChainID]
+        )
+        return
+    elif crossChainCommand is not supported:
+        emitEvent(
+            module = MODULE_NAME_INTEROPERABILITY,
+            name = EVENT_NAME_CCM_PROCESSED,
+            data = {"ccmID": ccmID, "result": CCM_PROCESSED_RESULT_DISCARDED, "code": CCM_PROCESSED_CODE_CROSS_CHAIN_COMMAND_NOT_SUPPORTED},
+            topics = [ccm.sendingChainID, ccm.receivingChainID]
+        )
+        return
+
+    crossChainCommand = cross-chain command associated with (ccm.module, ccm.crossChainCommand)
+    try:
+        crossChainCommand.verify(trs, ccm)
+    except:
+        emitEvent(
+            module = MODULE_NAME_INTEROPERABILITY,
+            name = EVENT_NAME_CCM_PROCESSED,
+            data = {"ccmID": ccmID, "result": CCM_PROCESSED_RESULT_DISCARDED, "code": CCM_PROCESSED_CODE_INVALID_CCM_VERIFY_EXCEPTION},
+            topics = [ccm.sendingChainID, ccm.receivingChainID]
+        )
+        return
+
+    # Create a state snapshot.
+    baseSnapshot = snapshot of the current state
+    try:
+        # Call the beforeCrossChainCommandExecution functions from other modules.
+        # For example, the Token module assigns the message fee to the transaction sender.
+        for each module mdl for which beforeCrossChainCommandExecution exists:
+            mdl.beforeCrossChainCommandExecution(trs, ccm)
+    except:
+        revert state to baseSnapshot
+        emitEvent(
+            module = MODULE_NAME_INTEROPERABILITY,
+            name = EVENT_NAME_CCM_PROCESSED,
+            data = {"ccmID": ccmID, "result": CCM_PROCESSED_RESULT_DISCARDED, "code": CCM_PROCESSED_CODE_INVALID_CCM_BEFORE_CCC_EXECUTION_EXCEPTION},
+            topics = [ccm.sendingChainID, ccm.receivingChainID]
+        )
+        return
+    # Create a state snapshot.
+    executionSnapshot = snapshot of the current state
+    try:
+        # Execute the cross-chain command.
+        crossChainCommand.execute(trs, ccm)
+        emitEvent(
+            module = MODULE_NAME_INTEROPERABILITY,
+            name = EVENT_NAME_CCM_PROCESSED,
+            data = {"ccmID": ccmID, "result": CCM_PROCESSED_RESULT_APPLIED, "code": CCM_PROCESSED_CODE_SUCCESS},
+            topics = [ccm.sendingChainID, ccm.receivingChainID]
+        )
+    except:
+        revert state to executionSnapshot
+        emitEvent(
+            module = MODULE_NAME_INTEROPERABILITY,
+            name = EVENT_NAME_CCM_PROCESSED,
+            data = {"ccmID": ccmID, "result": CCM_PROCESSED_RESULT_DISCARDED, "code": CCM_PROCESSED_CODE_FAILED_CCM},
+            topics = [ccm.sendingChainID, ccm.receivingChainID]
+        )
+
+    try:
+        # Call the afterCrossChainCommandExecution functions from other modules.
+        for each module mdl for which afterCrossChainCommandExecution exists:
+            mdl.afterCrossChainCommandExecution(trs, ccm)
+    except:
+        revert state to baseSnapshot
+        emitEvent(
+            module = MODULE_NAME_INTEROPERABILITY,
+            name = EVENT_NAME_CCM_PROCESSED,
+            data = {"ccmID": ccmID, "result": CCM_PROCESSED_RESULT_DISCARDED, "code": CCM_PROCESSED_CODE_INVALID_CCM_AFTER_CCC_EXECUTION_EXCEPTION},
+            topics = [ccm.sendingChainID, ccm.receivingChainID
+
+
+def forwardRecovery(trs: Transaction, ccm: CCM) -> None:
+    # Calculate CCM ID, used later in events.
+    ccmID = sha256(encode(crossChainMessageSchema, ccm))
+
+    ccm.status = CCM_STATUS_CODE_RECOVERED
+    ccm.sendingChainID, ccm.receivingChainID = ccm.receivingChainID, ccm.sendingChainID
+
+    try:
+        # Modules can verify the CCM.
+        # The Token module verifies the escrowed balance in the CCM sending chain for the message fee.
+        for each module mdl for which verifyCrossChainMessage exists:
+            mdl.verifyCrossChainMessage(trs, ccm)
+    except:
+        emitEvent(
+            module = MODULE_NAME_INTEROPERABILITY,
+            name = EVENT_NAME_CCM_PROCESSED,
+            data = {"ccmID": ccmID, "result": CCM_PROCESSED_RESULT_DISCARDED, "code": CCM_PROCESSED_CODE_INVALID_CCM_VERIFY_CCM_EXCEPTION},
+            topics = [ccm.sendingChainID, ccm.receivingChainID]
+        )
+        return
+
+    # Create a state snapshot.
+    baseSnapshot = snapshot of the current state
+    try:
+        # Call the beforeCrossChainMessageForwarding functions from other modules.
+        # For example, the Token module transfers the fee from escrow to escrow.
+        for each module mdl for which beforeCrossChainMessageForwarding exists:
+            mdl.beforeCrossChainMessageForwarding(trs, ccm)
+    except:
+        revert state to baseSnapshot
+        emitEvent(
+            module = MODULE_NAME_INTEROPERABILITY,
+            name = EVENT_NAME_CCM_PROCESSED,
+            data = {"ccmID": ccmID, "result": CCM_PROCESSED_RESULT_DISCARDED, "code": CCM_PROCESSED_CODE_INVALID_CCM_BEFORE_CCC_FORWARDING_EXCEPTION},
+            topics = [ccm.sendingChainID, ccm.receivingChainID]
+        )
+        return
+
+    addToOutbox(ccm.receivingChainID, ccm)
+    # Emit CCM forwarded event.
+    # Recalculate CCM ID. This differs because of new status, sending, and receiving chains.
+    # We use the updated ID as this CCM is appended to the outbox.
+    recoveredCCMID = sha256(encode(crossChainMessageSchema, ccm))
+    emitEvent(
+        module = MODULE_NAME_INTEROPERABILITY,
+        name = EVENT_NAME_CCM_PROCESSED,
+        data = {"ccmID": recoveredCCMID, "result": CCM_PROCESSED_RESULT_FORWARDED, "code": CCM_PROCESSED_CODE_SUCCESS},
+        topics = [ccm.sendingChainID, ccm.receivingChainID]
 ----
 
 ====

@@ -882,7 +882,7 @@ stateRecoveryInitializationParams = {
 ----
 ====
 
-Assumming that `trs` is a transaction with module ID `MODULE_ID_INTEROPERABILITY`, and the command ID `COMMAND_STATE_RECOVERY_INITIALIZATION` is to be verified, this can be seen as shown in the following validation schema below:
+Assumming that `trs` is a transaction with module ID `MODULE_NAME_INTEROPERABILITY`, and the command ID `COMMAND_STATE_RECOVERY_INITIALIZATION` is to be verified, this can be seen as shown in the following validation schema below:
 
 .State Recovery Initialization Command Validation
 [%collapsible]
@@ -918,7 +918,7 @@ else:
 
 ====
 
-To continue and process a transaction `trs` with the module ID `MODULE_INTEROPERABILITY` and the command ID 'COMMAND_STATE_RECOVERY_INITIALIZATION`, this implies the following logic as displayed below in the state recovery initialization command execution:
+To continue and process a transaction `trs` with the module ID `MODULE_NAME_INTEROPERABILITY` and the command ID 'COMMAND_STATE_RECOVERY_INITIALIZATION`, this implies the following logic as displayed below in the state recovery initialization command execution:
 
 .State Recovery Initialization Command Execution
 [%collapsible]
@@ -1072,12 +1072,18 @@ recover(terminatedChainID, storePrefix, storeKey, storeValue),
 
 ==== Message Recovery Command
 
-This command is used to recover pending messages from the outbox of a terminated sidechain.
-The user proves with an inclusion proof validated against the outbox root stored in the terminated outbox account, that the message is in the terminated sidechain outbox.
-The message nonce is compared to the size of the inbox (which is taken from the channel stored on the terminated sidechain), to check that the message had not been processed yet.
-The recovered message is then bounced back to the original sending chain or processed directly if the sending chain is the mainchain.
+This command is used to recover cross-chain messages from a terminated outbox.
+Hence, this mechanism allows to recover any CCM pending in the sidechain channel outbox.
+That is, those CCMs sent from the sidechain that have not been included in the (terminated), receiving chain yet.
+//The user proves with an inclusion proof validated against the outbox root stored in the terminated outbox account, that the message is in the terminated sidechain outbox.
+//The message nonce is compared to the size of the inbox (which is taken from the channel stored on the terminated sidechain), to check that the message had not been processed yet.
+//The recovered message is then bounced back to the original sending chain or processed directly if the sending chain is the mainchain.
 
-The command ID is `COMMAND_MESSAGE_RECOVERY` and the state recovery command schema can be seen below:
+Transactions executing this command are as follows:
+
+* module = `MODULE_ID_INTEROPERABILITY`
+
+* command ID = `COMMAND_MESSAGE_RECOVERY` and the state recovery command schema can be seen below:
 
 .Message Recovery Command Schema
 [%collapsible]
@@ -1089,7 +1095,8 @@ messageRecoveryParams = {
     "required": ["chainID", "crossChainMessages", "idxs", "siblingHashes"],
     "properties": {
         "chainID": {
-            "dataType": "uint32",
+            "dataType": "bytes",
+            "length": CHAIN_ID_LENGTH,
             "fieldNumber": 1
         },
         "crossChainMessages": {
@@ -1102,14 +1109,15 @@ messageRecoveryParams = {
         "idxs": {
             "type": "array",
             "items": {
-                "dataType": "uint64"
+                "dataType": "uint32"
             },
             "fieldNumber": 3
         },
         "siblingHashes": {
             "type": "array",
             "items": {
-                "dataType": "bytes"
+                "dataType": "bytes",
+                "length": HASH_LENGTH
             },
             "fieldNumber": 4
         }
@@ -1119,41 +1127,60 @@ messageRecoveryParams = {
 
 ====
 
-Assuming `trs` is a transaction with the module ID `MODULE_ID_INTEROPERABILITY` and the command ID `COMMAND_MESSAGE_RECOVERY` is to be verified, then also if the `deserializedCCMs` are an array with the deserialization of every element in the `trs.params.crossChainMessages`, then the set of validity rules to validate `trs.params` are as follows:
+* `chainID`: The ID of the terminated sidechain identifying the terminated outbox from which messages will be recovered.
+* `crossChainMessages`: The cross-chain messages to be recovered.
+* `idxs`: The indices of the messages to be recovered.
+* `siblingHashes`: The sibling hashes of the inclusion proof of the cross-shain messages in the sidechain outbox.
 
 .Message Recovery Command Verification Schema
 [%collapsible]
 ====
 [source,js]
 ----
-if terminatedOutboxAccount(trs.params.chainID) does not exist:
-    return False
+def verify(trs: Transaction) -> None:
+    if terminatedOutboxAccount(trs.params.chainID) does not exist:
+        raise Exception("Terminated outbox account does not exist.")
 
-# Check that the CCMs are still pending
-for index in trs.params.idxs:
-    if index < terminatedOutboxAccount(trs.params.chainID).partnerChainInboxSize:
-        return False
+    # Check that the idxs are sorted in ascending order
+    if trs.params.idxs != sorted(trs.params.idxs):
+        raise Exception("Cross-chain message indexes are not sorted in ascending order.")
 
-# Check the validity of the CCMs to be recovered
-for ccm in deserializedCCMs:
-    if ccm.status != CCM_STATUS_OK:
-        return False
+    # Check that the CCMs are still pending
+    for index in trs.params.idxs:
+        if index < terminatedOutboxAccount(trs.params.chainID).partnerChainInboxSize:
+            raise Exception("Cross-chain message is not pending.")
 
-# Check the inclusion proof against the sidechain outbox root
-proof = { size: terminatedOutboxAccount(trs.params.chainID).outboxSize,
-    idxs: trs.params.idxs,
-    siblingHashes: trs.params.siblingHashes}
+    # Process basic checks for all CCMs.
+    for ccmBytes in crossChainMessages:
+        # Verify general format. Past this point, we can access ccm root properties.
+        ccm = decode(crossChainMessageSchema, ccmBytes)
+        validateFormat(ccm)
 
-return RMTVerify(
-  [SHA-256(ccmData) for ccmData in trs.params.crossChainMessages],
-  proof,
-  terminatedOutboxAccount(trs.params.chainID).outboxRoot
-  )
+        if ccm.status != CCM_STATUS_CODE_OK:
+            raise Exception("Cross-chain message status is not valid.")
+        # The receiving chain must be the terminated chain
+        if ccm.receivingChainID != trs.params.chainID:
+            raise Exception("Cross-chain message receiving chain ID is not valid.")
+        # The sending chain must be live
+        if not isLive(ccm.sendingChainID):
+            raise Exception("Cross-chain message sending chain is not live.")
+
+    # Check the inclusion proof against the sidechain outbox root
+    proof = {
+        size: terminatedOutboxAccount(trs.params.chainID).outboxSize,
+        idxs: trs.params.idxs,
+        siblingHashes: trs.params.siblingHashes
+    }
+
+    if RMTVerify(
+        [sha256(ccmBytes) for ccmBytes in trs.params.crossChainMessages],
+        proof,
+        terminatedOutboxAccount(trs.params.chainID).outboxRoot
+        ) == False:
+        raise Exception("Message recovery proof of inclusion is not valid.")
 ----
 
 ====
-
-When processing a transaction `trs` with the module ID `MODULE_ID_INTEROPERABILITY`, and the command ID `COMMAND_MESSAGE_RECOVERY` this implies the following logic as can be seen in the schema below:
 
 .Message Recovery Command Execution Schema
 [%collapsible]

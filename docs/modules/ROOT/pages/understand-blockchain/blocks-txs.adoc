@@ -16,8 +16,8 @@
 :url_understand_consensus: understand-blockchain/consensus/index.adoc
 :url_understand_network: understand-blockchain/network.adoc
 :url_understand_state_machine_tree: understand-blockchain/state-machine.adoc#the-blockchain-state-as-sparse-merkle-tree
-:url_understand_sdk_commands: understand-blockchain/sdk/modules-assets.adoc#assets
-:url_understand_sdk_modules: understand-blockchain/sdk/modules-assets.adoc
+:url_understand_sdk_commands: understand-blockchain/sdk/modules-commands.adoc#commands
+:url_understand_sdk_modules: understand-blockchain/sdk/modules-commands.adoc
 
 In the "Understand blockchain" category you learn the basic concepts of blockchain applications, including how they are structured and which topics and terms are important to know when developing within the Lisk ecosystem.
 
@@ -33,7 +33,8 @@ image::understand-blockchain/3-domains.png["3 domains of blockchain", 300, align
 . **Application domain**: Responsible for verifying data and transitioning the blockchain state with deterministic logic via the xref:{url_understand_state_machine}[state machine].
 . xref:{url_understand_consensus}[Consensus domain]: Responsible for the replication of the same sequence of states among all nodes in the network.
 This is achieved by nodes in the network following a xref:{url_intro_consensus}[consensus protocol] and utilizing the application and network domains.
-. xref:{url_understand_network}[Network domain]: Responsible for the communication of the peer-to-peer network.
+//TODO: Add below line, once the network page is created
+//. xref:{url_understand_network}[Network domain]: Responsible for the communication of the peer-to-peer network.
 
 == Blocks
 
@@ -273,7 +274,7 @@ assetSchema = {
 
 Transactions are sent to the blockchain application by its users to trigger state mutations on the blockchain.
 
-To be accepted by the blockchain application, the transactions must be transmitted in the expected format, including all the required properties of a transaction, and pass the transaction & command verification steps explained in the <<block-processing>> process description.
+To be accepted by the blockchain application, the transactions must be transmitted in the expected format, including all the required properties of a transaction, and pass the transaction & command verification steps explained in the <<block-execution>> process description.
 
 Valid transactions trigger the corresponding xref:{url_understand_sdk_commands}[command] of a module that accepts this transaction type.
 Therefore, each transaction always needs to include the IDs of the module and command that the transaction wants to trigger.
@@ -383,7 +384,7 @@ transactionSchema = {
 
 Only valid transactions should be added to a block during the block generation, as an invalid transaction makes the whole block invalid, meaning that it would be discarded by any node in the network.
 
-A transaction is *valid*, if the following stages associated to the transaction of <<block-processing>> are executed successfully without errors:
+A transaction is *valid*, if the following stages associated to the transaction of <<block-execution>> are executed successfully without errors:
 
 * "transaction verification"
 * "command verification"
@@ -393,7 +394,7 @@ A transaction is *valid*, if the following stages associated to the transaction 
 Otherwise, a transaction is *invalid*.
 
 === Successful vs failed transactions
-A valid transaction is executed *successfully* if additionally the "command execution" stage of <<block-processing>> is executed successfully without errors.
+A valid transaction is executed *successfully* if additionally the "command execution" stage of <<block-execution>> is executed successfully without errors.
 
 A valid transaction *fails* if on the other hand an error occurs during the command execution.
 In this case, all state transitions of the "command execution" stage are reverted.
@@ -405,6 +406,7 @@ The result of the transaction execution is logged using an event emitted at the 
 The block generation flow offers a lot of flexibility for custom business logic of the blockchain application by providing hooks for executing additional custom logic before and after each execution of a transaction and/or command.
 The gradual steps make all important verification steps explicit and obvious.
 
+.Block generation steps
 image::understand-blockchain/block-generation.png["Block generation steps",500, align="center"]
 
 The full generation of a block is organized as follows.
@@ -434,16 +436,19 @@ In that case, the block generation continues with step 4 for another transaction
 . **Header finalization**: Block header properties, which require accessing the state store after all state transitions implied by the block have been executed, are inserted.
 +
 Sets the `transactionRoot`, `assetRoot`, `eventRoot`, `stateRoot`, `validatorsHash`, and `signature` properties of the <<block-header>>.
-. **Block processing**: The block goes through the <<block-processing>> stages.
+. **Block processing**: The block goes through the <<block-execution>> stages.
 
-== Block processing
+== Block execution
 
-The block processing flow offers a lot of flexibility for custom business logic of the blockchain application by providing hooks for executing additional custom logic before and after each execution of a transaction and/or command.
+Block execution happens when the consensus domain receives a new block from a peer.
+
+The block execution flow offers a lot of flexibility for custom business logic of the blockchain application by providing hooks for executing additional custom logic before and after each execution of a transaction and/or command.
 The gradual steps make all important verification steps explicit and obvious.
 
-image::understand-blockchain/block-processing.png["Block prosessing steps",500, align="center"]
+.Block execution steps
+image::understand-blockchain/block-processing.png["Block execution steps",500, align="center"]
 
-The full processing of a block is organized as follows.
+The full processing of a block is organized as follows:
 
 . **Block reception**: A new block is received from the P2P network.
 //TODO: Add link to definition of the fork choice rule
@@ -486,8 +491,19 @@ Verifies the `stateRoot`, `eventRoot`, and `validatorsHash` properties of the <<
 . **Block storage**: The block is persisted into the database.
 . **Peers notification**: Other peers in the P2P network are notified of the new block.
 
+== Genesis block execution
 
+The genesis block describes the very first block in the blockchain.
+It defines the *initial state* of the blockchain at the start of the network.
 
+[NOTE]
+The genesis block is not forged by a delegate, such as all the other blocks which come after the genesis block.
+Instead, it is defined by the developer, when creating the Application instance of the blockchain application.
+
+.Genesis block execution steps
+image::understand-blockchain/genesis-block-execution.png["Genesis Block execution steps",500, align="center"]
+
+Each step in the application layer is repeated for each module registered in the application.
 
 ////
 === Default transaction types

@@ -930,7 +930,7 @@ The recovery of the state is then handled by the relevant module (for example th
 
 The module name is `MODULE_NAME_INTEROPERABILITY`, and the command name is `COMMAND_STATE_RECOVERY` and the state recovery command schema, verification, and execution can be seen below:
 
-.State Recovery Command Schema
+.State Recovery Command
 [%collapsible]
 ====
 [source,js]
@@ -988,68 +988,99 @@ stateRecoveryParams = {
 
 ====
 
-Assuming `trs` is a transaction with the module `MODULE_NAME_INTEROPERABILITY`, and the command name `COMMAND_STATE_RECOVERY` is to be verified.
-Then `trs` will be valid if the following logic returns `True`, as can be seen below:
+* `chainID`: The ID of the terminated sidechain identifying the terminated state account from which assets will be recovered.
+* `module`: The ID of the module store to recover.
+* `storeEntries`: An array of store entries to recover. Each store entry is an object with the following properties:
+** `substorePrefix`: The substore prefix of the substore to recover.
+** `storeKey`: The store key of the entry to recover.
+** `storeValue`: The value of the entry to recover.
+** `bitmap`: The bitmap of inclusion proof.
+* `siblingHashes`: The sibling hashes of the inclusion proof of the store entries in the terminated sidechain state account.
 
 .State Recovery Command Verification
 [%collapsible]
 ====
 [source,js]
 ----
-# The terminated account has to exist for this sidechain
-if terminatedStateAccount(trs.params.chainID) does not exists or terminatedStateAccount(trs.params.chainID).initialized == False:
-    return False
+def verify(trs: Transaction) -> None:
+    # The terminated account has to exist for this sidechain.
+    if terminatedStateAccount(trs.params.chainID) does not exist:
+        raise Exception("Terminated state account does not exist.")
+    if terminatedStateAccount(trs.params.chainID).initialized == False:
+        raise Exception("Terminated state account is not initialized.")
 
-terminatedStateRoot = terminatedStateAccount(trs.params.chainID).stateRoot
+    # Interoperability module cannot be recovered.
+    if trs.params.module == MODULE_NAME_INTEROPERABILITY:
+        raise Exception("Interoperability module cannot be recovered.")
 
-let queryKeys and storeQueries be empty arrays
+    if trs.params.module is not associated with a module registered on the chain:
+        raise Exception("Module is not registered on the chain.")
+    # The module indicated in the transaction params must have a recover function.
+    recoveryModule = module associated with trs.params.module
+    if recoveryModule does not have a recover function:
+        raise Exception("Module is not recoverable.")
 
-for each entry in trs.params.storeEntries:
-    push entry.storeKey to queryKeys
-    query = { key: entry.storeKey,
-            value: SHA-256(entry.storeValue),
-            bitmap: entry.bitmap}
-    push query to storeQueries
+    terminatedStateRoot = terminatedStateAccount(trs.params.chainID).stateRoot
 
-proofOfInclusionStores = { siblingHashes: trs.params.siblingHashes, queries : storeQueries}
+    queryKeys = []
+    storeQueries = []
 
-return SMTVerify(queryKeys, proofOfInclusionStores, terminatedStateRoot)
+    # Calculate store prefix from the module name according to LIP 0040.
+    storePrefix = module_name_to_store_prefix(trs.params.module)
+
+    for entry in trs.params.storeEntries:
+        if entry.value is EMPTY_BYTES:
+            raise Exception("Recovered store value cannot be empty.")
+
+        queryKeys.append(entry.storeKey)
+        query = {
+            "key": storePrefix + entry.substorePrefix + entry.storeKey,
+            "value": sha256(entry.storeValue),
+            "bitmap": entry.bitmap
+        }
+        storeQueries.append(query)
+
+    proofOfInclusionStores = { siblingHashes: trs.params.siblingHashes, queries : storeQueries }
+
+    if SMTVerify(queryKeys, proofOfInclusionStores, terminatedStateRoot) == False:
+        raise Exception("State recovery proof of inclusion is not valid.")
 ----
 
 ====
-
-Finally, for processing a transaction `trs` with the module name `MODULE`, and the command name `COMMAND_STATE_RECOVERY`, this implies the following logic as can be seen in the execution schema below:
 
 .State Recovery Command Execution
 [%collapsible]
 ====
 [source,js]
 ----
-let storeQueries be an empty array
+def execute(trs: Transaction) -> None:
+    storeQueries = []
 
-for each entry in trs.params.storeEntries:
-    # The recover function corresponding to the module name applies the recovery logic
-    route processing logic to the module given by trs.params.moduleID
-    recover(trs.params.chainID, trs.params.moduleID, entry.storePrefix, entry.storeKey, entry.storeValue)
-    if the previous call fails:
-        execution fails and trs is invalid
+    recoveryModule = module associated with trs.params.module
+    for entry in trs.params.storeEntries:
+        # The recover function corresponding to trs.params.module applies the recovery logic.
+        recoveryModule.recover(trs.params.chainID, entry.substorePrefix, entry.storeKey, entry.storeValue)
 
-    emptyStore = empty bytes # Define an empty store entry
-    query = { key: entry.storekey,
-              value: SHA-256(emptyStore),
-              bitmap: entry.bitmap}
-    push query to storeQueries
+        emptyStore = EMPTY_BYTES
+        query = {
+            "key": trs.params.module + entry.substorePrefix + entry.storeKey,
+            "value": sha256(emptyStore),
+            "bitmap": entry.bitmap
+        }
+        storeQueries.append(query)
 
-terminatedStateAccount(trs.params.chainID).stateRoot = SMTCalculateRoot(trs.params.siblingHashes, storeQueries)
+    terminatedStateAccount(trs.params.chainID).stateRoot = SMTCalculateRoot(trs.params.siblingHashes, storeQueries)
 ----
 
 ====
 
-Regarding the recover function, for the verification and application of this command it is assumed that the module given by `trs.params.module` exposes a `recover` function, with the following interface:
+Regarding the recovery function, the module given by the `trs.params.module` must expose a `recover` function for the execution of this command.
+This can be achieved with the following interface:
 
 [source:js]
 ----
-recover(terminatedChainID, storePrefix, storeKey, storeValue),
+def recover(terminatedChainID: ChainID, substorePrefix: bytes, storeKey: bytes, storeValue: bytes) -> None:
+...
 ----
 
 === Message Recovery Command

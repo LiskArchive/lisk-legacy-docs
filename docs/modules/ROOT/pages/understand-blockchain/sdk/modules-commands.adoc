@@ -2,7 +2,7 @@
 Mona Bärenfänger <mona@lightcurve.io>
 //Settings
 :toc: preamble
-:toclevels: 1
+:toclevels: 2
 :idprefix:
 :idseparator: -
 :docs_sdk: lisk-sdk::
@@ -20,6 +20,8 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_understand_statemachine: understand-blockchain/state-machine.adoc
 :url_understand_rpc_events: understand-blockchain/sdk/rpc.adoc#events
 :url_understand_rpc_request: understand-blockchain/sdk/rpc.adoc#how-to-invoke-endpoints
+:url_build_app: build-blockchain/create-blockchain-app.adoc
+:url_build_module: build-blockchain/create-module.adoc
 // Footnotes
 :fn_jsonschema: footnote:jsonSchema[See the {url_json_schema} for more information about the JSON schema.]
 
@@ -34,17 +36,89 @@ Modules perform state changes on the blockchain by::
 * Defining logic that is executed per block.
 * Defining logic that is executed per transaction.
 
-== Module anatomy & the BaseModule
+[IMPORTANT]
+====
+Modules are a central part of the on-chain logic of a blockchain application, and any code changes inside of a module which is registered in a running blockchain application, will most likely result in a hardfork of the network.
+
+Therefore, changing the module logic of a running blockchain application should always be done in consensus and coordination of the majority of active validators of the blockchain application, if it is required.
+====
+
+
+== Module overview
+
+=== Module anatomy
 
 All important parts of a module are shown in the diagram below.
 
 .Anatomy of a module
 image::understand-blockchain/sdk/module.png[600,"Module Anatomy", align="center"]
 
-Each module is constructed as a class that extends from the **BaseModule** interface.
+For more information about the different module components, check out the corresponding sub-sections:
 
-The `BaseModule` interface defines all optional and required properties and hooks of a module that must be implemented for the blockchain application to recognize it as a valid module.
+Initialization::
+* <<calling-a-module-method-from-another-module,addDependencies()>>
+* <<module-constructor>>
+* <<config-initialization>>
+* <<config-schema>>
+Name & Metadata::
+* <<module-name>>
+* <<module-metadata>>
+State changes::
+* <<methods>>
+* <<blockchain-events>>
+* <<commands>>
+* <<lifecycle-hooks>>
+Public API::
+* <<endpoints>>
+Datastores::
+* <<stores>>
+
+=== Module file structure
+
+The default file structure for modules looks as follows:
+
+.blockchain-app/src/app/
+----
+├── app.ts
+├── index.ts
+├── modules
+│   ├──  module1
+│   │   ├── commands
+│   │   │   ├── some_command.ts
+│   │   │   └── another_command.ts
+│   │   ├── endpoint.ts
+│   │   ├── events
+│   │   │   └── some_event.ts
+│   │   ├── method.ts
+│   │   ├── module.ts
+│   │   └── stores
+│   │       ├── some_store.ts
+│   │       └── another_store.ts
+│   └── module2
+│       ├── commands
+│       │   └── example_command.ts
+│       ├── endpoint.ts
+│       ├── events
+│       │   └── some_event.ts
+│       ├── method.ts
+│       ├── module.ts
+│       └── stores
+│           └── example_store.ts
+├── modules.ts
+├── plugins
+└── plugins.ts
+----
+
+TIP: The default file structure of a module is automatically created for the developer, if the module is generated using Lisk Commander.
+
+For a more detailed description of the different folders and files of a module, please check out the corresponding guides xref:{url_build_app}[] and xref:{url_build_module}[].
+
+=== The `BaseModule`
+Each module is constructed as a class that extends from the **BaseModule** class.
+
+The `BaseModule` class defines all optional and required properties and hooks of a module that must be implemented for the blockchain application to recognize it as a valid module.
 The `BaseModule` class is shown in the following code snippet below:
+
 .The BaseModule
 [source,typescript]
 ----
@@ -106,7 +180,7 @@ export class HelloModule extends BaseModule {
 
 The module name is the unique identifier for the module.
 
-The module name is automatically calculated from the class name of the module, if it extends from the <<module-anatomy-the-basemodule,BaseModule>>:
+The module name is automatically calculated from the class name of the module, if it extends from the <<the-basemodule,BaseModule>>:
 The `Module` suffix of the class name is removed, and the first character is converted to lowercase.
 
 TIP: For example, the module class `HelloModule` will have the module name `hello`.
@@ -292,7 +366,7 @@ export const getDelegateRequestSchema = {
 
 == Stores
 
-Modules have access to two kind of data stores:
+Modules have access to two kinds of data stores:
 
 . An <<on-chain-store>>
 . An <<off-chain-store>>
@@ -400,7 +474,7 @@ In a module, the off-chain store is available in: <<insertAssets>> & <<endpoints
 
 It complements the on-chain module store, by allowing to store various additional data in the blockchain application, that does not need to be included in the on-chain store.
 
-IMPORTANT: The data stored in the off-chain store is not part of the blockchain protocol, and it may be different from machine to machine.
+IMPORTANT: The data stored in the off-chain store is not part of the blockchain protocol, and it may differ from machine to machine.
 
 Every off-chain store is extended from the `BaseOffchainStore`:
 
@@ -487,8 +561,8 @@ export abstract class BaseOffchainStore<T> {
 
 A module can access specific configuration options of the blockchain application:
 
-. Module-specific configuration options
-. Genesis config options
+. Module-specific configuration options, defined under `modules.MODULENAME`, where `MODULENAME` is the name of the specific module, that the config options belong to.
+. Genesis config options, defined under `genesis` are config options available to whole blockchain application.
 
 Both configuration options are defined by the node operator in the `config.json` file, generally located in the `config/default/` directory.
 //TODO: include example snippets of module and genesis configurations
@@ -498,39 +572,23 @@ Both configuration options are defined by the node operator in the `config.json`
 ----
 {
     // ...
-    plugins: {},
-    genesis: {
-        blockTime: 10,
-        bftBatchSize: 103,
-        communityIdentifier: 'sdk',
-        maxTransactionsSize: 15 * 1024, // Kilo Bytes
-        minFeePerByte: 1000,
-        baseFees: [],
-        modules: {},
-    },
-    generation: {
-        force: false,
-        waitThreshold: 2,
-        generators: [],
-        modules: {},
-    },
-}
-----
-
-All needed configuration options are identified by the module name, followed by a list of properties.
-
-The module config properties must follow the naming pattern defined in the `moduleConfigSchema`, otherwise, there are no restrictions.
-
-.moduleConfigSchema
-[source,js]
-----
-const moduleConfigSchema = {
-	type: 'object',
-	propertyNames: {
-		pattern: '^[a-zA-Z][a-zA-Z0-9_]*$',
+    "genesis": {
+		"block": {
+			"fromFile": "./config/genesis_block.blob"
+		},
+		"blockTime": 10,
+		"bftBatchSize": 103,
+		"maxTransactionsSize": 15 * 1024, // Kilo Bytes,
+		"minFeePerByte": 1000
 	},
-	additionalProperties: { type: 'object' },
-};
+	"generator": {
+		"keys": {
+			"fromFile": "./config/dev-validators.json"
+		}
+	},
+	"modules": {},
+	"plugins": {}
+}
 ----
 
 === Config schema
@@ -539,41 +597,119 @@ If the module expects certain options to be present in the configuration, it is 
 
 //TODO: Update with Hello app config schema
 .Example: Module config schema
+[%collapsible]
+====
 [source,typescript]
 ----
-export class HelloModule extends BaseModule {
-    // ...
-    public configSchema = {
-        $id: '/dpos/config',
-        type: 'object',
-        properties: {
-            numberActiveDelegates: {
-                type: 'integer',
-                format: 'uint32',
-            },
-            numberStandbyDelegates: {
-                type: 'integer',
-                format: 'uint32',
-            },
-            tokenIDDPoS: {
-                type: 'string',
-                format: 'hex',
-            },
-        },
-        required: [
-            'numberActiveDelegates',
-            'numberStandbyDelegates',
-            'tokenIDDPoS',
-        ],
-    };
-    // ...
-}
+export const configSchema = {
+	$id: '/dpos/config',
+	type: 'object',
+	properties: {
+		factorSelfVotes: {
+			type: 'integer',
+			format: 'uint32',
+		},
+		maxLengthName: {
+			type: 'integer',
+			format: 'uint32',
+		},
+		maxNumberSentVotes: {
+			type: 'integer',
+			format: 'uint32',
+		},
+		maxNumberPendingUnlocks: {
+			type: 'integer',
+			format: 'uint32',
+		},
+		failSafeMissedBlocks: {
+			type: 'integer',
+			format: 'uint32',
+		},
+		failSafeInactiveWindow: {
+			type: 'integer',
+			format: 'uint32',
+		},
+		punishmentWindow: {
+			type: 'integer',
+			format: 'uint32',
+		},
+		roundLength: {
+			type: 'integer',
+			format: 'uint32',
+		},
+		bftThreshold: {
+			type: 'integer',
+			format: 'uint32',
+		},
+		minWeightStandby: {
+			type: 'string',
+			format: 'uint64',
+		},
+		numberActiveDelegates: {
+			type: 'integer',
+			format: 'uint32',
+		},
+		numberStandbyDelegates: {
+			type: 'integer',
+			format: 'uint32',
+		},
+		tokenIDDPoS: {
+			type: 'string',
+			format: 'hex',
+		},
+	},
+	required: [
+		'factorSelfVotes',
+		'maxLengthName',
+		'maxNumberSentVotes',
+		'maxNumberPendingUnlocks',
+		'failSafeMissedBlocks',
+		'failSafeInactiveWindow',
+		'punishmentWindow',
+		'roundLength',
+		'bftThreshold',
+		'minWeightStandby',
+		'numberActiveDelegates',
+		'numberStandbyDelegates',
+		'tokenIDDPoS',
+	],
+};
 ----
+====
+
+=== Default configuration
+
+If the module expects certain options to be present in the configuration, it is recommended to define a default configuration that is used, if no config options are set in the `config.json` file by the user.
+
+//TODO: Update with Hello app default config
+.Example: Default module config
+[%collapsible]
+====
+[source,typescript]
+----
+export const defaultConfig = {
+	factorSelfVotes: 10,
+	maxLengthName: 20,
+	maxNumberSentVotes: 10,
+	maxNumberPendingUnlocks: 20,
+	failSafeMissedBlocks: 50,
+	failSafeInactiveWindow: 260000,
+	punishmentWindow: PUNISHMENT_PERIOD,
+	roundLength: 103,
+	bftThreshold: 68,
+	minWeightStandby: '100000000000',
+	numberActiveDelegates: 101,
+	numberStandbyDelegates: 2,
+	tokenIDDPoS: '0000000000000000',
+};
+----
+====
 
 === Config initialization
 
 If a module needs to access certain configuration options, it is required to validate and cache the respective configurations in the `init()` method of a module, as described in the code snippet below:
 
+//TODO: Update with Hello app init method
 .Example: Module init() hook
 [source,typescript]
 ----
@@ -599,7 +735,7 @@ The module-specific RPC endpoints can be invoked by external services, like UIs,
 
 The endpoints are defined individually for each module, depending on the module's purpose.
 
-IMPORTANT: Endpoints allow to conveniently *get data from the blockchain application*.
+IMPORTANT: Endpoints allow us to conveniently *get data from the blockchain application*.
 It is never possible to set data / mutate the state via module endpoints.
 
 Every module endpoint always extends from the `BaseEndpoint` class.
@@ -626,29 +762,45 @@ The module endpoints are usually defined in a file called `endpoint.ts` inside o
 ====
 [source,typescript]
 ----
-export class DPoSEndpoint extends BaseEndpoint {
-    // ...
+import { BaseEndpoint, ModuleEndpointContext, cryptography } from 'lisk-sdk';
+import { CounterStore, CounterStoreData } from './stores/counter';
+import { MessageStore, MessageStoreData } from './stores/message';
 
-	public async getVoter(ctx: ModuleEndpointContext): Promise<VoterDataJSON> {
-		const voterSubStore = ctx.getStore(this.moduleID, STORE_PREFIX_VOTER);
+export class HelloEndpoint extends BaseEndpoint {
+
+	public async getHelloCounter(ctx: ModuleEndpointContext): Promise<CounterStoreData> {
+		const counterSubStore = this.stores.get(CounterStore);
+
+		const helloCounter = await counterSubStore.get(
+			ctx,
+			Buffer.from('hello','utf8'),
+		);
+
+		return helloCounter;
+	}
+
+	public async getHello(ctx: ModuleEndpointContext): Promise<MessageStoreData> {
+		const messageSubStore = this.stores.get(MessageStore);
+
 		const { address } = ctx.params;
 		if (typeof address !== 'string') {
 			throw new Error('Parameter address must be a string.');
 		}
-		const voterData = await voterSubStore.getWithSchema<VoterData>(
-			Buffer.from(address, 'hex'),
-			voterStoreSchema,
+		cryptography.address.validateLisk32Address(address);
+		const helloMessage = await messageSubStore.get(
+			ctx,
+			cryptography.address.getAddressFromLisk32Address(address),
 		);
-
-		return codec.toJSON(voterStoreSchema, voterData);
+		return helloMessage;
 	}
-
-    // ...
 }
 ----
 ====
 
 All module endpoints have access to the on-chain and off-chain <<stores>> of a module and can receive data from there, to answer RPC requests with the expected data.
+
+The parameter `ctx` of an endpoint is expected to be of type `ModuleEndpointContext`.
+Meaning, `ctx` provides the following methods for the endpoint:
 
 .`ModuleEndpointContext` interface
 [%collapsible]
@@ -756,11 +908,11 @@ export class TokenModule extends BaseInteroperableModule {
 
 === Calling a module method from another module
 
-An example of how to call a module method from another module:
+A module method can be called from another module.
 
 For example, the method `getAvailableBalance` of the **Token** module is called from the **Interoperability** module at the sidechain registration and command verification step. This method is called to verify if the sender of a transaction has enough balance to pay the transaction fee.
 
-Methods from other modules are made available to the module by importing them, and adding them as private properties in the `addDependencies()` method, like shown in the code snippet below.
+Methods from other modules are made available to the module by importing them, and adding them as private properties in the `addDependencies()` method, as shown in the code snippet below.
 
 .interoperability/mainchain/commands/sidechain_registration.ts
 [source,typescript]
@@ -800,7 +952,7 @@ Blockchain events, or module events, are logs of events that occur in the blockc
 Events occur per block, and are stored in the respective block header, from where they can be queried.
 
 .Do not confuse blockchain events with RPC events.
-IMPORTANT: In contrast to xref:{url_understand_rpc_events}[RPC events], Blockchain events are part of the on-chain logic: Each block includes the **event root in the block header**, which is the root of a Sparse-Merkle-Tree of all blockchain events, that are occured in that particular block.
+IMPORTANT: In contrast to xref:{url_understand_rpc_events}[RPC events], Blockchain events are part of the on-chain logic: Each block includes the **event root in the block header**, which is the root of a Sparse-Merkle-Tree of all blockchain events, that occur in that particular block.
 
 Every module event always extends from the `BaseEvent` class.
 
@@ -844,46 +996,34 @@ export abstract class BaseEvent<T> {
 ----
 ====
 
-=== Default module event
+=== Standard event
 
-The default event is indicating the result of a transaction processing (success/failure).
+The standard event is indicating the result of a transaction processing (success/failure).
 It is automatically emitted every time a transaction is processed by a module.
 
-NOTE: Only valid transactions are processed, and therefore *only valid transactions emit the default module event.*
-See section xref:{url_understand_valid_invalid_txs}[Valid vs invalid transactions] for more information.
+Only valid transactions are processed, and therefore *only valid transactions emit the standard event.*
+See the section xref:{url_understand_valid_invalid_txs}[Valid vs invalid transactions] for more information.
 
-The default event is therefore the only blockchain event, that is not defined manually by the developer of a module.
+NOTE: The standard event is therefore the only blockchain event, that is not defined manually by the developer of a module.
 
-.state_machine.ts
+The standard event is added to the event queue in the state machine during the `executeTransaction` xref:{url_understand_block_execution}[lifecycle hook].
+
+If the transaction execution as successful, the `success` property is set to `true`, otherwise, it is set to `false`.
+
+.Schema for the standard event
 [source,typescript]
 ----
-public async executeTransaction(ctx: TransactionContext): Promise<TransactionExecutionResult> {
-    // ...
-    try {
-			await command.execute(commandContext);
-			ctx.eventQueue.unsafeAdd(
-				ctx.transaction.module,
-				EVENT_TRANSACTION_NAME,
-				codec.encode(standardEventDataSchema, { success: true }),
-				[ctx.transaction.id],
-			);
-		} catch (error) {
-            ctx.eventQueue.restoreSnapshot(commandEventQueueSnapshotID);
-			ctx.stateStore.restoreSnapshot(commandStateStoreSnapshotID);
-			ctx.eventQueue.unsafeAdd(
-				ctx.transaction.module,
-				EVENT_TRANSACTION_NAME,
-				codec.encode(standardEventDataSchema, { success: false }),
-				[ctx.transaction.id],
-			);
-			status = TransactionExecutionResult.FAIL;
-			this._logger.debug(
-				{ err: error as Error, module: ctx.transaction.module, command: ctx.transaction.command },
-				'Transaction execution failed',
-			);
-		}
-        // ...
-}
+export const standardEventDataSchema = {
+	$id: '/block/event/standard',
+	type: 'object',
+	required: ['success'],
+	properties: {
+		success: {
+			dataType: 'boolean',
+			fieldNumber: 1,
+		},
+	},
+};
 ----
 
 === Creating new blockchain event types
@@ -908,7 +1048,7 @@ export interface TransferEventData {
 ----
 ====
 
-This is the corresponding schema for the `TransferEvent` data:
+The corresponding schema for the `TransferEvent` data interface defined above looks as follows:
 
 .transferEventSchema
 [%collapsible]
@@ -1116,7 +1256,7 @@ To avoid mixing any schema with other registered schemas, use a fixed identifier
 title:: A short description of the schema.
 type or dataType::
 If the data type of a property is either an `object` or an `array`, the `type` property must be used instead of `dataType`.
-Root type of the schema must be type object.
+The root type of the schema must be of type `object`.
 required::
 A list of all required parameters.
 

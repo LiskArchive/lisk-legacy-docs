@@ -1,14 +1,11 @@
 = How to create a module
 Mona Bärenfänger <mona@lightcurve.io>
 :toc:
-:sectnums:
 :idprefix:
 :idseparator: -
 :docs_sdk: lisk-sdk::
 // URLs
 :url_github_guides_module: https://github.com/LiskHQ/lisk-sdk-examples/tree/development/tutorials/hello/hello_client/
-:url_github_nft_module: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/nft/blockchain_app/nft_module/index.js
-:url_github_srs_module: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/social-recovery/blockchain_app/srs_module/index.js
 
 // Project URLS
 :url_build_blockchain_event: build-blockchain/module/blockchain-event.adoc
@@ -22,6 +19,11 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_guides_testing: build-blockchain/test-app.adoc
 :url_intro_modules: understand-blockchain/sdk/modules-commands.adoc
 :url_intro_modules_name: {url_intro_modules}#module-name
+:url_intro_modules_commands: {url_intro_modules}#commands
+:url_intro_modules_endpoints: {url_intro_modules}#endpoints
+:url_intro_modules_stores: {url_intro_modules}#stores
+:url_intro_modules_methods: {url_intro_modules}#methods
+:url_intro_modules_event: {url_intro_modules}#blockchain-events
 :url_references_commander_commands_module: {docs_sdk}references/lisk-commander
 
 How to create a new xref:{url_intro_modules}[module] for a sidechain client.
@@ -55,8 +57,7 @@ Expects account `address` as parameter
 ** `hello_getHelloCounter`: Returns the counter of total Hello messages sent in the network.
 Doesn't expect any parameters.
 * One module method:
-** `hello_getHello`: Works equally to the `hello_getHello`, but can be used by other modules.
-
+** `hello_getHello`: Works equally to the corresponding endpoint, but can be used by other modules.
 
 .Prerequisites
 ****
@@ -117,18 +118,24 @@ This will generate the following file- & folder structure:
 ----
 
 <1> The root folder `hello/` for the module is created under `src/app/modules/`.
-<2> The `commands/` folder contains the commands of the module.
+<2> The `commands/` folder contains the xref:{url_intro_modules_commands}[commands] of the module.
 This folder is empty at first.
-For more information how to create a command, check out the guide xref:{url_guides_command}[].
-<3> text
-<4> text
-<5> text
-<6> text
-<7> text
-<8> text.
-For more information on how to write a unit test for the blockchain application, check out the xref:{url_guides_testing}[] guide.
+For more information how to create a command, check out the guide xref:{url_build_command}[].
+<3> `endpoint.ts`: Contains the xref:{url_intro_modules_endpoints}[module endpoints].
+For more information how to create endpoints for a module, check out the guide xref:{url_build_endpoints_methods}[].
+<4> `events/`: Contains the xref:{url_intro_modules_event}[blockchain events] of the module.
+This folder is empty at first.
+For more information how to create a blockchain event, check out the guide xref:{url_build_blockchain_event}[].
+<5> `method.ts`: Contains the xref:{url_intro_modules_methods}[module methods].
+For more information how to create module methods, check out the guide xref:{url_build_endpoints_methods}[].
+<6> `module.ts`: Registers modules with the sidechain client.
+<7> `stores/`: Contains on-chain and off-chain xref:{url_intro_modules_stores}[stores] of the module.
+This folder is empty at first.
+For more information how to create a module store, check out the guide xref:{url_build_stores}[].
+<8> `modules.spec.ts`: Will contain unit tests for the module.
+For more information on how to write a unit test for a module, check out the xref:{url_guides_testing}[] guide.
 
-Lisk Commander will also automatically register the module with the application, by adding it to the file `src/app/modules.ts`.
+Lisk Commander will also automatically register the module with the application, by adding it to the file `src/app/modules.ts`:
 
 .src/app/modules.ts
 [source,typescript]
@@ -155,9 +162,8 @@ To give the module a purpose, it is necessary to implement certain logic inside 
 The following guides explain how the different components of a module can be used to implement the desired logic for the module.
 
 . xref:{url_build_config}[]
-. Creating a command:
-.. xref:{url_build_stores}[]
-.. xref:{url_build_command}[]
+. xref:{url_build_stores}[]
+. xref:{url_build_command}[]
 . xref:{url_build_endpoints_methods}[]
 . xref:{url_build_blockchain_event}[]
 
@@ -254,192 +260,3 @@ export class HelloModule extends BaseModule {
 ----
 ====
 =====
-
-
-
-== Commands
-
-A module can include various assets, each allowing the module to handle a new transaction type.
-
-Before a new asset can be added, it is first required to create the custom asset as described in the xref:{url_guides_asset}[] guide.
-
-Assuming an asset `CreateHelloAsset` has been created for the module, then it will be included in the module as shown below:
-
-.src/app/modules/hello/hello_module.ts
-[source,typescript]
-----
-import { BaseModule } from 'lisk-sdk';
-const { CreateHelloAsset } = require('./assets/create_hello_asset');
-
-export class HelloModule extends BaseModule {
-
-    // ...
-
-    public transactionAssets = [
-       new CreateHelloAsset()
-    ];
-
-    // ...
-}
-----
-
-== Blockchain Events
-
-A list of events that this module is able to emit is covered here.
-
-Modules, plugins, and external services can subscribe to these events.
-
-TIP: See the xref:{url_intro_modules_events}[Events] section of the "Modules" introduction page and the xref:{url_advanced_communication_aliases}[Aliases] section of the "Communication" page for more information.
-
-Add a new event `newHello`.
-This event shall be published every time a user is updating their hello message.
-The `events` defined can be published to the application in the <<lifecycle-hooks>> of the module.
-
-.src/app/modules/hello/hello_module.ts
-[source,typescript]
-----
-export class HelloModule extends BaseModule {
-
-    // ...
-    public events = ['newHello'];
-
-    // ...
-}
-----
-
-== Lifecycle Hooks
-
-Lifecycle hooks allow a module to execute certain logic, before or after blocks or transactions are applied to the blockchain.
-
-Inside of the lifecycle hooks, it's possible to *publish* the above defined events to the application and to filter for certain transactions and blocks, before applying the logic.
-
-TIP: See the "Lifecycle Hooks" section of the xref:{url_intro_modules_lifecyclehooks}[Modules] introduction page for more information.
-
-In the hello module, two different lifecycle hooks are defined.
-
-afterTransactionApply::
-Publishes a new event `hello:newHello` for every applied `hello` transaction asset, and adds information about the sender of the transaction, and the corresponding hello message.
-
-afterGenesisBlockApply::
-If the genesis block is applied, it will set the counter for posted hello transactions to zero.
-
-.src/app/modules/hello/hello_module.ts
-[source,typescript]
-----
-export class HelloModule extends BaseModule {
-
-    // ...
-
-     // Lifecycle hooks
-    public async afterTransactionApply(_input: TransactionApplyContext) {
-        // Publish a `newHello` event for every received hello transaction
-        // 1. Check for correct module and asset IDs
-        if (_input.transaction.moduleID === this.id && _input.transaction.assetID === 0) {
-
-            // 2. Decode the transaction asset
-            const helloAsset = codec.decode(
-                helloAssetSchema,
-                _input.transaction.asset
-            );
-
-            // 3. Publish the event 'hello:newHello' and
-            // attach information about the sender address and the posted hello message.
-            this._channel.publish('hello:newHello', {
-                sender: _input.transaction._senderAddress.toString('hex'),
-                hello: helloAsset.helloString
-            });
-        }
-    }
-
-    public async afterGenesisBlockApply(_input: AfterGenesisBlockApplyContext) {
-        // Set the hello counter to zero after the genesis block is applied
-        await _input.stateStore.chain.set(
-            CHAIN_STATE_HELLO_COUNTER,
-            codec.encode(helloCounterSchema, { helloCounter: 0 })
-        );
-    }
-
-    // ...
-}
-----
-
-It is recommended to store the different schemas in a separate file, e.g. `schemas.js`, and import them in to the module and asset where required.
-
-TIP: For more information about schemas, check out the xref:{url_references_schemas}[] page.
-
-The following schemas are used in the lifecycle hooks:
-
-.src/app/modules/hello/schemas.js
-[source,js]
-----
-// This key is used to save the data for the hello counter in the database
-const CHAIN_STATE_HELLO_COUNTER = "hello:helloCounter";
-
-// This schema is used to decode/encode the data of the hello counter from/for the database
-const helloCounterSchema = {
-  $id: "lisk/hello/counter",
-  type: "object",
-  required: ["helloCounter"],
-  properties: {
-    helloCounter: {
-      dataType: "uint32",
-      fieldNumber: 1,
-    },
-  },
-};
-
-// This schema is used to decode/encode the data of the asset of the hello transaction from/for the database
-const helloAssetSchema = {
-  $id: "lisk/hello/asset",
-  type: "object",
-  required: ["helloString"],
-  properties: {
-    helloString: {
-      dataType: "string",
-      fieldNumber: 1,
-    },
-  },
-};
-
-module.exports = {
-  CHAIN_STATE_HELLO_COUNTER,
-  helloCounterSchema,
-  helloAssetSchema
-};
-----
-
-== Endpoints
-
-A list of actions that plugins and external services can invoke.
-
-TIP: See the "Actions" section of the xref:{url_intro_modules_actions}[Modules] introduction page for more information.
-
-Add a new action `amountOfHellos`.
-
-If the action is invoked, it will return the total amount of sent hello messages in the network.
-The hello counter is set to zero after applying the genesis block in the <<lifecycle-hooks>>, and incremented in the <<transaction-assets,asset>>.
-This action simply returns the current value of the hello counter, which is retrieved from the database.
-
-.src/app/modules/hello/hello_module.ts
-[source,typescript]
-----
-export class HelloModule extends BaseModule {
-
-    // ...
-
-    public actions = {
-        amountOfHellos: async () => {
-            const res = await this._dataAccess.getChainState(CHAIN_STATE_HELLO_COUNTER);
-            const count = codec.decode(
-                helloCounterSchema,
-                res
-            );
-            return count;
-        },
-    };
-
-    // ...
-}
-----
-
-

@@ -1,1 +1,126 @@
 = How to create a blockchain event
+
+== Blockchain Events
+
+A list of events that this module is able to emit is covered here.
+
+Modules, plugins, and external services can subscribe to these events.
+
+TIP: See the xref:{url_intro_modules_events}[Events] section of the "Modules" introduction page and the xref:{url_advanced_communication_aliases}[Aliases] section of the "Communication" page for more information.
+
+Add a new event `newHello`.
+This event shall be published every time a user is updating their hello message.
+The `events` defined can be published to the application in the <<lifecycle-hooks>> of the module.
+
+.src/app/modules/hello/hello_module.ts
+[source,typescript]
+----
+export class HelloModule extends BaseModule {
+
+    // ...
+    public events = ['newHello'];
+
+    // ...
+}
+----
+
+== Lifecycle Hooks
+
+Lifecycle hooks allow a module to execute certain logic, before or after blocks or transactions are applied to the blockchain.
+
+Inside of the lifecycle hooks, it's possible to *publish* the above defined events to the application and to filter for certain transactions and blocks, before applying the logic.
+
+TIP: See the "Lifecycle Hooks" section of the xref:{url_intro_modules_lifecyclehooks}[Modules] introduction page for more information.
+
+In the hello module, two different lifecycle hooks are defined.
+
+afterTransactionApply::
+Publishes a new event `hello:newHello` for every applied `hello` transaction asset, and adds information about the sender of the transaction, and the corresponding hello message.
+
+afterGenesisBlockApply::
+If the genesis block is applied, it will set the counter for posted hello transactions to zero.
+
+.src/app/modules/hello/hello_module.ts
+[source,typescript]
+----
+export class HelloModule extends BaseModule {
+
+    // ...
+
+     // Lifecycle hooks
+    public async afterTransactionApply(_input: TransactionApplyContext) {
+        // Publish a `newHello` event for every received hello transaction
+        // 1. Check for correct module and asset IDs
+        if (_input.transaction.moduleID === this.id && _input.transaction.assetID === 0) {
+
+            // 2. Decode the transaction asset
+            const helloAsset = codec.decode(
+                helloAssetSchema,
+                _input.transaction.asset
+            );
+
+            // 3. Publish the event 'hello:newHello' and
+            // attach information about the sender address and the posted hello message.
+            this._channel.publish('hello:newHello', {
+                sender: _input.transaction._senderAddress.toString('hex'),
+                hello: helloAsset.helloString
+            });
+        }
+    }
+
+    public async afterGenesisBlockApply(_input: AfterGenesisBlockApplyContext) {
+        // Set the hello counter to zero after the genesis block is applied
+        await _input.stateStore.chain.set(
+            CHAIN_STATE_HELLO_COUNTER,
+            codec.encode(helloCounterSchema, { helloCounter: 0 })
+        );
+    }
+
+    // ...
+}
+----
+
+It is recommended to store the different schemas in a separate file, e.g. `schemas.js`, and import them in to the module and asset where required.
+
+TIP: For more information about schemas, check out the xref:{url_references_schemas}[] page.
+
+The following schemas are used in the lifecycle hooks:
+
+.src/app/modules/hello/schemas.js
+[source,js]
+----
+// This key is used to save the data for the hello counter in the database
+const CHAIN_STATE_HELLO_COUNTER = "hello:helloCounter";
+
+// This schema is used to decode/encode the data of the hello counter from/for the database
+const helloCounterSchema = {
+  $id: "lisk/hello/counter",
+  type: "object",
+  required: ["helloCounter"],
+  properties: {
+    helloCounter: {
+      dataType: "uint32",
+      fieldNumber: 1,
+    },
+  },
+};
+
+// This schema is used to decode/encode the data of the asset of the hello transaction from/for the database
+const helloAssetSchema = {
+  $id: "lisk/hello/asset",
+  type: "object",
+  required: ["helloString"],
+  properties: {
+    helloString: {
+      dataType: "string",
+      fieldNumber: 1,
+    },
+  },
+};
+
+module.exports = {
+  CHAIN_STATE_HELLO_COUNTER,
+  helloCounterSchema,
+  helloAssetSchema
+};
+----

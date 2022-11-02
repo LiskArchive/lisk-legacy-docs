@@ -1,6 +1,6 @@
 = How to create a module
 Mona Bärenfänger <mona@lightcurve.io>
-:toc: preamble
+:toc:
 :sectnums:
 :idprefix:
 :idseparator: -
@@ -11,26 +11,15 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_github_srs_module: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/social-recovery/blockchain_app/srs_module/index.js
 
 // Project URLS
-:url_guides_setup: build-blockchain/create-blockchain-app.adoc
-:url_guides_index_helloapp: build-blockchain/index.adoc#the-hello-world-application
-:url_guides_asset: build-blockchain/create-asset.adoc
+:url_build_config: build-blockchain/configure-app.adoc
+:url_build_setup: build-blockchain/create-blockchain-app.adoc
+:url_build_index_helloapp: build-blockchain/index.adoc#the-hello-world-application
+:url_build_command: build-blockchain/create-command.adoc
 :url_guides_genesis: build-blockchain/create-genesis-block.adoc
 :url_guides_testing: build-blockchain/test-app.adoc
 :url_intro_modules: understand-blockchain/sdk/modules-commands.adoc
-:url_intro_modules_accountschema: {url_intro_modules}#account-schema
-:url_intro_modules_actions: {url_intro_modules}#actions
-:url_intro_modules_events: {url_intro_modules}#events
-:url_intro_modules_id: {url_intro_modules}#module-id
-:url_intro_modules_lifecyclehooks: {url_intro_modules}#lifecycle-hooks
 :url_intro_modules_name: {url_intro_modules}#module-name
-:url_modules_dpos: {docs_sdk}modules/dpos-module.adoc
-:url_advanced_communication: understand-blockchain/sdk/rpc.adoc
-:url_advanced_communication_aliases: {url_advanced_communication}#aliases
-:url_rpc_endpoints: api/lisk-node-rpc.adoc#actions
-:url_references_schemas: understand-blockchain/sdk/codec-schema.adoc
 :url_references_commander_commands_module: {docs_sdk}references/lisk-commander
-:url_tutorials_nft: tutorial/nft.adoc
-:url_tutorials_srs: tutorial/srs.adoc
 
 How to create a new xref:{url_intro_modules}[module] for a sidechain client.
 
@@ -44,15 +33,15 @@ This already inlcudes module, plugin and UI, and can be directly tried out by an
 
 As defined on page xref:{url_guides_index_helloapp}[Building blockchain applications with the Lisk SDK], the module shall provide the following functionalities:
 
+* A module config, where the node operator can define:
+** maximum message length
+** minimum message length
+** word blacklist
 * A hello message shall be stored in the user accounts.
 ** The hello message has to be of type `string`.
 ** The hello message shall have a minimum and maximum length.
 ** A blacklist of excluded words should exist.
 The hello message should be rejected, if it includes one of the words in the blacklist.
-* A module config, where the node operator can define:
-** maximum message length
-** minimum message length
-** word blacklist
 * A counter, counting the total number of sent hello messages.
 Anyone can request the current value of the hello counter.
 * Emit blockchain event immediately if a new hello message was sent.
@@ -73,7 +62,7 @@ To use this guide, the following criteria is assumed:
 * Lisk Commander is installed, and a basic blockchain application is already initialized, as explained in the previous guide xref:{url_guides_setup}[].
 ****
 
-== Generating the module skeleton
+== Generating the module file- & folder structure
 
 While in the root folder of your blockchain application, generate a skeleton for the new module with Lisk Commander.
 
@@ -82,7 +71,7 @@ The command `lisk generate:module` expects one argument:
 . The xref:{url_intro_modules_name}[module name].
 Needs to be unique within the application.
 
-For a complete overview of all available options of the `generate:module` command, visit the xref:{url_references_commander_commands_module}[Lisk Commander command reference].
+For a complete overview of all available options of the `generate:module` command, visit the xref:{url_references_commander_commands_module}[Lisk Commander command reference] or type `generate:module --help`.
 
 As an example, we use the module name `hello`:
 
@@ -92,198 +81,177 @@ As an example, we use the module name `hello`:
 lisk generate:module hello
 ----
 
-This will generate the following files:
+This will generate the following file- & folder structure:
 
+.hello/hello_client/src/app/
 ----
-   create src/app/modules/hello/hello_module.ts
-   create test/unit/modules/hello/hello_module.spec.ts
+├── bin/
+├── config/
+├── src/
+│    ├── app/
+│    │    ├── app.ts
+│    │    ├── index.ts
+│    │    ├── modules/
+│    │    │   └──  hello/ <1>
+│    │    │      ├── commands/ <2>
+│    │    │      ├── endpoint.ts <3>
+│    │    │      ├── events/ <4>
+│    │    │      ├── method.ts <5>
+│    │    │      ├── module.ts <6>
+│    │    │      └── stores/ <7>
+│    │    ├── modules.ts
+│    │    ├── plugins/
+│    │    └── plugins.ts
+│    └── commands/
+└── test/
+    ├── integration/
+    ├── network/
+    └── unit/
+        ├── modules/
+        │    └── hello/
+        │        └── modules.spec.ts <8>
+        └── plugins/
 ----
 
-It will also automatically register the module with the application, by adding it to `src/app/modules.ts`.
+<1> The root folder `hello/` for the module is created under `src/app/modules/`.
+<2> The `commands/` folder contains the commands of the module.
+This folder is empty at first.
+For more information how to create a command, check out the guide xref:{url_guides_command}[].
+<3> text
+<4> text
+<5> text
+<6> text
+<7> text
+<8> text.
+For more information on how to write a unit test for the blockchain application, check out the xref:{url_guides_testing}[] guide.
 
-//TODO: check, if this note is still valid
-[IMPORTANT]
-====
-Once the first module is added to the application, a manual change in `modules.ts` is required:
-
-- Remove the underscore from the `_app` parameter and change it to `app`
-
-Otherwise, you will run into the following error, when trying to start the application:
-
- reference error : app is not defined
-====
+Lisk Commander will also automatically register the module with the application, by adding it to the file `src/app/modules.ts`.
 
 .src/app/modules.ts
 [source,typescript]
 ----
 import { Application } from 'lisk-sdk';
-import { HelloModule } from "./modules/hello/hello_module";
+import { HelloModule } from "./modules/hello/module";
 
 export const registerModules = (app: Application): void => {
-
-    app.registerModule(HelloModule);
+    app.registerModule(new HelloModule());
 };
 ----
 
-Please be aware that once the <<defining-an-account-schema,account schema>> is implemented into the module, that the application will not start successfully anymore.
-This is due to the fact that the accounts in the genesis block are not including the account schema for the new module yet.
+Now, let's open the file `hello/module.ts` to take a look at the module skeleton:
 
-In order to solve this, simply generate a new genesis block by using the application CLI, as explained in the next guide xref:{url_guides_genesis}[].
+== Module class & skeleton
 
-The file `hello_module.ts` contains the module skeleton and the file `hello_module.spec.ts` contains the related unit tests for the new module.
+The command `generate:module` already created the class `HelloModule` which contains skeletons for the most important components of the module.
 
-TIP: For more information on how to write a unit test for the blockchain application, check out the xref:{url_guides_testing}[] guide.
+The module class always extends from the `BaseModule`, which is imported from the `lisk-sdk` package.
 
-The module skeleton can be viewed in `hello_module.ts`:
+However, this module is not performing any functions yet.
+To give the module a purpose, it is necessary to implement certain logic inside of the module.
 
-.src/app/modules/hello/hello_module.ts
+The following guides explain how the different components of a module can be used to implement the desired logic for the module.
+
+. xref:{url_build_config}[]
+. Creating a command:
+.. xref:{url_build_stores}[]
+.. xref:{url_build_command}[]
+.. xref:{}[]
+
+.Module skeleton of the Hello module
+[%collapsible]
+====
+.src/app/modules/hello/module.ts
 [source,typescript]
 ----
 import {
     BaseModule,
-    AfterBlockApplyContext,
-    TransactionApplyContext,
-    BeforeBlockApplyContext,
-    AfterGenesisBlockApplyContext,
-    // GenesisConfig
+    ModuleInitArgs,
+    InsertAssetContext,
+	BlockVerifyContext,
+	TransactionVerifyContext,
+	VerificationResult,
+	TransactionExecuteContext,
+	GenesisBlockExecuteContext,
+	ModuleMetadata,
+	BlockExecuteContext,
+	BlockAfterExecuteContext,
 } from 'lisk-sdk';
+import { HelloEndpoint } from './endpoint';
+import { HelloMethod } from './method';
 
 export class HelloModule extends BaseModule {
-    public actions = {
-        // Example below
-        // getBalance: async (params) => this._dataAccess.account.get(params.address).token.balance,
-        // getBlockByID: async (params) => this._dataAccess.blocks.get(params.id),
-    };
-    public reducers = {
-        // Example below
-        // getBalance: async (
-		// 	params: Record<string, unknown>,
-		// 	stateStore: StateStore,
-		// ): Promise<bigint> => {
-		// 	const { address } = params;
-		// 	if (!Buffer.isBuffer(address)) {
-		// 		throw new Error('Address must be a buffer');
-		// 	}
-		// 	const account = await stateStore.account.getOrDefault<TokenAccount>(address);
-		// 	return account.token.balance;
-		// },
-    };
-    public name = 'hello';
-    public transactionAssets = [];
-    public events = [
-        // Example below
-        // 'hello:newBlock',
-    ];
-    public id = 1000;
+    public endpoint = new HelloEndpoint(this.stores, this.offchainStores);
+    public method = new HelloMethod(this.stores, this.events);
+    public commands = [];
 
-    // public constructor(genesisConfig: GenesisConfig) {
-    //     super(genesisConfig);
-    // }
+	public constructor() {
+		super();
+		// registeration of stores and events
+	}
+
+	public metadata(): ModuleMetadata {
+		return {
+			name: '',
+			endpoints: [],
+			commands: this.commands.map(command => ({
+				name: command.name,
+				params: command.schema,
+			})),
+			events: this.events.values().map(v => ({
+				name: v.name,
+				data: v.schema,
+			})),
+			assets: [],
+		};
+	}
 
     // Lifecycle hooks
-    public async beforeBlockApply(_input: BeforeBlockApplyContext) {
-        // Get any data from stateStore using block info, below is an example getting a generator
-        // const generatorAddress = getAddressFromPublicKey(_input.block.header.generatorPublicKey);
-		// const generator = await _input.stateStore.account.get<TokenAccount>(generatorAddress);
-    }
+    public async init(_args: ModuleInitArgs): Promise<void> {
+		// initialize this module when starting a node
+	}
 
-    public async afterBlockApply(_input: AfterBlockApplyContext) {
-        // Get any data from stateStore using block info, below is an example getting a generator
-        // const generatorAddress = getAddressFromPublicKey(_input.block.header.generatorPublicKey);
-		// const generator = await _input.stateStore.account.get<TokenAccount>(generatorAddress);
-    }
+	public async insertAssets(_context: InsertAssetContext) {
+		// initialize block generation, add asset
+	}
 
-    public async beforeTransactionApply(_input: TransactionApplyContext) {
-        // Get any data from stateStore using transaction info, below is an example
-        // const sender = await _input.stateStore.account.getOrDefault<TokenAccount>(_input.transaction.senderAddress);
-    }
+	public async verifyAssets(_context: BlockVerifyContext): Promise<void> {
+		// verify block
+	}
 
-    public async afterTransactionApply(_input: TransactionApplyContext) {
-        // Get any data from stateStore using transaction info, below is an example
-        // const sender = await _input.stateStore.account.getOrDefault<TokenAccount>(_input.transaction.senderAddress);
-    }
+    // Lifecycle hooks
+	public async verifyTransaction(_context: TransactionVerifyContext): Promise<VerificationResult> {
+		// verify transaction will be called multiple times in the transaction pool
+	}
 
-    public async afterGenesisBlockApply(_input: AfterGenesisBlockApplyContext) {
-        // Get any data from genesis block, for example get all genesis accounts
-        // const genesisAccoounts = genesisBlock.header.asset.accounts;
-    }
+	public async beforeCommandExecute(_context: TransactionExecuteContext): Promise<void> {
+	}
+
+	public async afterCommandExecute(_context: TransactionExecuteContext): Promise<void> {
+
+	}
+	public async initGenesisState(_context: GenesisBlockExecuteContext): Promise<void> {
+
+	}
+
+	public async finalizeGenesisState(_context: GenesisBlockExecuteContext): Promise<void> {
+
+	}
+
+	public async beforeTransactionsExecute(_context: BlockExecuteContext): Promise<void> {
+
+	}
+
+	public async afterTransactionsExecute(_context: BlockAfterExecuteContext): Promise<void> {
+
+	}
 }
 ----
-
-The command `generate:module` already created the class `HelloModule` which contains skeletons for the most important components of a module.
-The only properties which are set at this point are the module ID and the module name, which were defined previously while <<generate-module,generating the module skeleton>>.
-
-In fact it can be stated that with these 2 properties, it is already a complete module that can be registered with the application.
-However, this module is not performing any functions yet.
-To give the module a purpose, it is necessary to implement certain logic inside of the module.
-
-The following sections explain how the different components of a module can be used to implement the desired logic for the module.
-
-== The module class
-
-The module class always extends from the `BaseModule`, which is imported from the `lisk-sdk` package.
-
-The properties `name` and `id` are pre-filled by the values that were used when <<generate-module,generating the module skeleton>> in the previous step.
-
-.src/app/modules/hello/hello_module.ts
-[source,typescript]
-----
-export class HelloModule extends BaseModule {
-
-    // ...
-
-    public name = 'hello';
-    public id = 1000;
-
-    // ...
-}
-----
-
-== Defining an account schema
-
-In some cases, the new module will require storing some new data in the user accounts.
-If that is the case, then it is required to define the corresponding account schema in the module.
-
-TIP: For more information about the account schema in modules, check out the section that covers the account schemas in the xref:{url_intro_modules_accountschema}[Modules] introduction page.
-
-For the Hello application, it is required to store a hello message in each user account, as defined in the application overview of the guide xref:{url_guides_setup_helloapp}[Creating a new blockchain application].
-The hello message should be of type `string` and it should have a minium length of 3, and a maximum length of 64 characters.
-All of this can be defined in the account schema.
-
-The account schema for the Hello module is defined as follows:
-
-.src/app/modules/hello/hello_module.ts
-[source,typescript]
-----
-export class HelloModule extends BaseModule {
-
-    // ...
-
-    public accountSchema = {
-        type: 'object',
-        properties: {
-            helloMessage: {
-                fieldNumber: 1,
-                dataType: 'string',
-                maxLength: 64,
-            },
-        },
-        default: {
-            helloMessage: '',
-        },
-    };
-
-    // ...
-}
-----
-
-[IMPORTANT]
-
-====
-If a module includes an account schema, it is necessary to xref:{url_guides_genesis}[update the genesis block] after registering the module to the application.
 ====
 
-== Assets
+
+
+
+== Commands
 
 A module can include various assets, each allowing the module to handle a new transaction type.
 
@@ -309,7 +277,7 @@ export class HelloModule extends BaseModule {
 }
 ----
 
-== Events
+== Blockchain Events
 
 A list of events that this module is able to emit is covered here.
 
@@ -434,7 +402,7 @@ module.exports = {
 };
 ----
 
-== Actions
+== Endpoints
 
 A list of actions that plugins and external services can invoke.
 
@@ -467,3 +435,5 @@ export class HelloModule extends BaseModule {
     // ...
 }
 ----
+
+

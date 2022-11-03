@@ -71,6 +71,8 @@ With the latest version of Lisk Core, there will be new configurable settings an
 
 NOTE: To migrate from Lisk Core V3 to V4 please follow the migration process as covered in the xref:{migration}[migration guide].
 
+For the Lisk Migrator, Node.js v16 LTS is installed globally.
+
 ==== Migration overview
 
 The Lisk SDK v6 has introduced some new configurable settings, including certain constants that need to be specified for each chain, which must also be specified in Lisk Core v4.
@@ -111,17 +113,18 @@ If not, stop the initialization here.
 If yes then the following in (a) and (b) below must be applied:
 - (a) Fetch these blocks from the highest to the lowest height.
 Each block is then validated, and assuming the validation step passes, the block and its transactions are continued in the database.
-- (b) Then the following steps 4 and 5 below can be skipped.
+- (b) The following steps 4 and 5 below can be skipped.
 4. Fetch all blocks between heights `HEIGHT_PREVIOUS_SNAPSHOT_BLOCK + 1` and `HEIGHT_SNAPSHOT` (inclusive) via peer-to-peer network from highest to lowest height.
-Each block is validated using minimal validation steps as defined below.
-If this validation passes, the block along with its transactions is persisted in the database.
-5. The snapshot block for the height `HEIGHT_PREVIOUS_SNAPSHOT_BLOCK` is downloaded from a server. The URL for the source can be configured. When downloaded, it is validated using minimal validation steps as defined below. If this validation step passes, the block is persisted in the database.
+Each block is validated using minimal validation steps.
+If the validation passes, the block along with its transactions is continued in the database.
+5. The snapshot block for the height `HEIGHT_PREVIOUS_SNAPSHOT_BLOCK` is downloaded from a server.
+The URL for the source can be configured.
+When downloaded, it is validated using minimal validation steps.
+If this validation step passes, the block is continued in the database.
 The steps 3 to 5 from above could run in the background with low priority.
 
-Due to step 1.(a) above, it is a requirement to run Lisk Core v3 and the migrator tool before running Lisk Core v4. However, nodes starting some time after the migration may fetch the snapshot block and its preceding blocks without running Lisk Core v3 and migrator tool, as described in the following subsection.
-
-
-
+NOTE: Note that due to step 1.(a) above, it is a requirement to run Lisk Core v3 and the migrator tool before running Lisk Core v4.
+However, it may occur that nodes starting some time after the migration, may fetch the snapshot block and its preceding blocks without running Lisk Core v3 and the migrator tool.
 
 === Modules
 
@@ -151,6 +154,47 @@ It is composed of a state store definition used to store tokens in the state.
 * Legacy
 - The Legacy module maintains all accounts on the Lisk mainchain that received balance transfers to their address in the old 8-byte format, and for which no public key is associated.
 The Legacy module also implements a command allowing delegates without a BLS key to register one.
+
+==== Module State Store
+
+Within the chain each module that is registered defines its own state and the possible state transitions.
+For example, this could be the transactions defined within the module or the reducers that can be called by other modules.
+
+This new state architecture is now substantially different, as previously, the state of a chain was organized per account rather than per module.
+For example, a user's balance would be stored together with all the other properties related to that specific user.
+Alternatively, with the new state model, the balance of a user is stored in the token module state and is separated from all other properties.
+
+
+
+In addition, the chain also maintains a *global state store*, which can be determined as a collection of key-value pairs defining the state of the blockchain.
+Following the modular architecture, the state store is further split into several *module stores*, namely, collections of key-value pairs that are defined within the state specific to the module.
+This is achieved by imposing a specific format for keys in the global state store.
+Hence, each key is given by the concatenation of the module store prefix, a substore prefix, and a store key.
+A module store can be defined as the collection of key-value pairs whose keys share the same module store prefix (which identifies the specific module store).
+
+
+
+
+Separating the state store into several key-value maps allows us to logically compartmentalize each module, following the same mantra behind our chain architecture, each module defines its part of the state and its own state transitions.
+
+- *Module State* The key-value pairs stored in the map of the module.
+For example, the user balance, and the escrow accounts are stored in the token module.
+- *Module state transitions*: The transactions defined in a module (for example, the token transfer transaction in the token module), as well as the logic executed with every block or transactions, such as the reward assigned to the generator after a block has been processed.
+
+
+
+
+
+The state tree is the sparse Merkle tree built on top of the state store.
+Organizing the state of a blockchain in a Merkle tree allows to cryptographically authenticate the whole state with a single hash, the state root.
+The state root property is calculated at the end of the block processing as the Merkle root of the state tree and included in the block header.
+Information from the block header is then used to create a certificate and signed by the chain validators.
+
+The following constants for the module store have been defined and are shown below:
+
+
+
+
 
 
 == Getting started

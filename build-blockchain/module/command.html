@@ -502,10 +502,9 @@ The Hello message should be rejected, if it includes one of the words in the bla
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
 <li><a href="#generating-the-command-skeleton">Generating the command skeleton</a></li>
-<li><a href="#the-asset-class">The asset class</a></li>
-<li><a href="#the-asset-schema">The asset schema</a></li>
-<li><a href="#validating-the-asset-data">Validating the asset data</a></li>
-<li><a href="#defining-the-asset-logic">Defining the asset logic</a></li>
+<li><a href="#command-class-skeleton">Command class &amp; skeleton</a></li>
+<li><a href="#command-verification">Command verification</a></li>
+<li><a href="#command-execution">Command execution</a></li>
 </ul>
 </div>
 </div>
@@ -542,8 +541,11 @@ No numbers, hyphens, etc., are allowed.</p>
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">lisk generate:command hello createHello</code></pre>
 </div>
 </div>
+<div class="paragraph">
+<p>This will generate the following files:</p>
+</div>
 <div class="listingblock">
-<div class="title">hello/hello_client/src/app/</div>
+<div class="title">hello/hello_client/</div>
 <div class="content">
 <pre>├── bin/
 ├── config/
@@ -570,8 +572,8 @@ No numbers, hyphens, etc., are allowed.</p>
     └── unit/
         ├── modules/
         │    └── hello/
-        │       ├── commands/ <i class="conum" data-value="2"></i><b>(2)</b>
-        │       │     └──  create_hello_command.ts <i class="conum" data-value="3"></i><b>(3)</b>
+        │       ├── commands/
+        │       │     └──  create_hello_command.ts <i class="conum" data-value="2"></i><b>(2)</b>
         │       └── modules.spec.ts
         └── plugins/</pre>
 </div>
@@ -580,46 +582,61 @@ No numbers, hyphens, etc., are allowed.</p>
 <table>
 <tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>text</td>
+<td>Will contain the code for the command.
+Currently, it contains the auto-generated command skeleton.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>text</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>text</td>
+<td>Will contain unit tests for the command.
+Currently, it contains the auto-generated test skeletons.</td>
 </tr>
 </table>
 </div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="command-class-skeleton"><a class="anchor" href="#command-class-skeleton"></a>Command class &amp; skeleton</h2>
+<div class="sectionbody">
 <div class="paragraph">
-<p>Open the asset skeleton in <code>create_hello_asset.ts</code>:</p>
+<p>The command <code>lisk generate:command</code> already created the class <code>CreateHelloCommand</code> which contains skeletons for the most important components of the command.</p>
+</div>
+<div class="paragraph">
+<p>The command class always extends from the <code>BaseCommand</code>, which is imported from the <code>lisk-sdk</code> package.</p>
+</div>
+<div class="paragraph">
+<p>However, this command is not performing any functions yet.
+To change this, we implement the methods of the command in the following chapters.</p>
+</div>
+<div class="paragraph">
+<p>Open the command skeleton in <code>create_hello_command.ts</code>:</p>
 </div>
 <div class="listingblock">
-<div class="title">src/app/modules/hello/assets/create_hello_asset.ts</div>
+<div class="title">src/app/modules/hello/commands/create_hello_command.ts</div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import { BaseAsset, ApplyAssetContext, ValidateAssetContext } from 'lisk-sdk';
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import {
+    BaseCommand,
+    CommandVerifyContext,
+    CommandExecuteContext,
+	VerificationResult,
+	VerifyStatus,
+} from 'lisk-sdk';
 
-export class CreateHelloAsset extends BaseAsset {
-  public name = 'createHello';
-  public id = 0;
+interface Params {
+}
 
-  // Define schema for asset
+export class CreateHelloCommand extends BaseCommand {
 	public schema = {
-    $id: 'hello/createHello-asset',
-		title: 'CreateHelloAsset transaction asset for hello module',
+		$id: 'CreateHelloCommand',
 		type: 'object',
-		required: [],
 		properties: {},
-  };
-
-  public validate({ asset }: ValidateAssetContext&lt;{}&gt;): void {
-    // Validate your asset
-  }
+	};
 
 	// eslint-disable-next-line @typescript-eslint/require-await
-  public async apply({ asset, transaction, stateStore }: ApplyAssetContext&lt;{}&gt;): Promise&lt;void&gt; {
-		throw new Error('Asset "createHello" apply hook is not implemented.');
+	public async verify(_context: CommandVerifyContext&lt;Params&gt;): Promise&lt;VerificationResult&gt; {
+		return { status: VerifyStatus.OK };
+	}
+
+	public async execute(_context: CommandExecuteContext&lt;Params&gt;): Promise&lt;void&gt; {
 	}
 }</code></pre>
 </div>
@@ -647,198 +664,15 @@ To give the asset a purpose, it is necessary to implement certain logic inside o
 </div>
 </div>
 <div class="sect1">
-<h2 id="the-asset-class"><a class="anchor" href="#the-asset-class"></a>The asset class</h2>
+<h2 id="command-verification"><a class="anchor" href="#command-verification"></a>Command verification</h2>
 <div class="sectionbody">
-<div class="paragraph">
-<p>The asset class always extends from the <code>BaseAsset</code>, which is imported from the <code>lisk-sdk</code> package.</p>
-</div>
-<div class="paragraph">
-<p>The properties <code>name</code> and <code>id</code> are prefilled by the values used when <a href="#generate-asset">generating the asset skeleton</a> was completed in the previous step.</p>
-</div>
-<div class="listingblock">
-<div class="title">src/app/modules/hello/assets/create_hello_asset.ts</div>
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import { BaseAsset, ApplyAssetContext, ValidateAssetContext } from 'lisk-sdk';
 
-export class CreateHelloAsset extends BaseAsset {
-  public name = 'createHello';
-  public id = 0;
-
-  // ...
-}</code></pre>
-</div>
-</div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="the-asset-schema"><a class="anchor" href="#the-asset-schema"></a>The asset schema</h2>
+<h2 id="command-execution"><a class="anchor" href="#command-execution"></a>Command execution</h2>
 <div class="sectionbody">
-<div class="paragraph">
-<p>The <a href="../../understand-blockchain/sdk/modules-commands.html#transaction asset schema" class="xref page">asset schema</a> defines in which format data is sent in the transaction asset.</p>
-</div>
-<div class="admonitionblock tip">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-tip" title="Tip"></i>
-</td>
-<td class="content">
-For more information about schemas and how they are used in the Lisk SDK, check out the <a href="../../understand-blockchain/sdk/codec-schema.html" class="xref page">Codec &amp; schema</a>.
-</td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-<p>We expect the following data in a transaction to be able to create a new hello message:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><code>helloString</code>: The string which will be saved under <code>helloMessage</code> in the senders user account.</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>Therefore, the asset schema is adjusted accordingly as shown below:</p>
-</div>
-<div class="listingblock">
-<div class="title">src/app/modules/hello/assets/create_hello_asset.ts</div>
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public schema = {
-    $id: 'lisk/hello/asset',
-    type: 'object',
-    required: ["helloString"], <i class="conum" data-value="1"></i><b>(1)</b>
-    properties: {
-        helloString: {
-            dataType: 'string', <i class="conum" data-value="2"></i><b>(2)</b>
-            fieldNumber: 1, <i class="conum" data-value="3"></i><b>(3)</b>
-            minLength: 3, <i class="conum" data-value="4"></i><b>(4)</b>
-            maxLength: 64, <i class="conum" data-value="5"></i><b>(5)</b>
-        },
-    }
-};</code></pre>
-</div>
-</div>
-<div class="colist arabic">
-<table>
-<tr>
-<td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>The property <code>helloString</code> is required to create a hello message.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="2"></i><b>2</b></td>
-<td><code>string</code> is defined as a data type for <code>helloString</code>.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>The <code>fieldNumber</code> increments by +1 for each property in the transaction asset.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="4"></i><b>4</b></td>
-<td>The minimum length of <code>helloString</code> is set to 3 characters.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="5"></i><b>5</b></td>
-<td>The maximum length of <code>helloString</code> is set to 64 characters.</td>
-</tr>
-</table>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="validating-the-asset-data"><a class="anchor" href="#validating-the-asset-data"></a>Validating the asset data</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>The optional function <code>validate()</code> validates the data of a transaction asset, before it is passed to the <code>apply()</code> function.</p>
-</div>
-<div class="paragraph">
-<p>If one of these conditions is not fulfilled, then the transaction will not be processed, and an error should be thrown.</p>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-The minimum and maximum values for the different properties which are defined in <a href="#the-asset-schema">The asset schema</a> do not need to be validated again in the <code>validate()</code> function.
-</td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-<p>In this example, we want to validate that it is not possible to create a hello message with some illegal statement.</p>
-</div>
-<div class="paragraph">
-<p>If any account sends a <code>createHello</code> transaction, with <code>asset.helloString</code> equal to <code>Some illegal statement</code>, it will throw the error <code>Illegal hello message: Some illegal statement</code>.</p>
-</div>
-<div class="listingblock">
-<div class="title">src/app/modules/hello/assets/create_hello_asset.ts</div>
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public validate({ asset }: ValidateAssetContext&lt;{}&gt;): void {
-  if (asset.helloString == "Some illegal statement") {
-      throw new Error(
-          'Illegal hello message: Some illegal statement'
-      );
-  }
-}</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>If the validation does not throw any errors, it means the validation has been successful, and the <code>apply()</code> function will be executed as the next step.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="defining-the-asset-logic"><a class="anchor" href="#defining-the-asset-logic"></a>Defining the asset logic</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>The most important part of the module asset is the <code>apply()</code> function.
-It contains the logic of how the data in the transaction asset should be applied on the blockchain.</p>
-</div>
-<div class="paragraph">
-<p>In this example, we use the transaction data to create a new hello message, which is added to the senders account.</p>
-</div>
-<div class="paragraph">
-<p>Additionally, the hello counter is incremented by +1 for each applied hello transaction.</p>
-</div>
-<div class="paragraph">
-<p>To get and set the blockchain state, the <a href="../../understand-blockchain/sdk/modules-commands.html#the-state-store" class="xref page">stateStore</a> is used again, which is already known from the lifecycle hooks of the <a href="index.html" class="xref page">module guide</a>.</p>
-</div>
-<div class="listingblock">
-<div class="title">src/app/modules/hello/assets/create_hello_asset.ts</div>
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async apply({ asset, transaction, stateStore }: ApplyAssetContext&lt;{}&gt;): Promise&lt;void&gt; {
-    // 1. Get account data of the sender of the hello transaction
-    const senderAddress = transaction.senderAddress;
-    const senderAccount = await stateStore.account.get(senderAddress);
 
-    // 2. Update hello message in the senders account with thehelloString of the transaction asset
-    senderAccount.hello.helloMessage = asset.helloString;
-    stateStore.account.set(senderAccount.address, senderAccount);
-
-    // 3. Get the hello counter from the database
-    let counterBuffer = await stateStore.chain.get(
-        CHAIN_STATE_HELLO_COUNTER
-    );
-
-    // 4. Decode the hello counter
-    let counter = codec.decode(
-        helloCounterSchema,
-        counterBuffer
-    );
-
-    // 5. Increment the hello counter +1
-    counter.helloCounter++;
-
-    // 6. Encode the hello counter and save it back to the database
-    await stateStore.chain.set(
-        CHAIN_STATE_HELLO_COUNTER,
-        codec.encode(helloCounterSchema, counter)
-    );
-}</code></pre>
-</div>
-</div>
 </div>
 </div>
 <nav class="pagination">

@@ -29,7 +29,6 @@
     var link = document.createElement('a')
     link.textContent = heading.textContent
     links[(link.href = '#' + heading.id)] = link
-    link.addEventListener('click', reclick.bind(null, link))
     var listItem = document.createElement('li')
     listItem.dataset.level = parseInt(heading.nodeName.slice(1), 10) - 1
     listItem.appendChild(link)
@@ -111,12 +110,5 @@
 
   function getNumericStyleVal (el, prop) {
     return parseFloat(window.getComputedStyle(el)[prop])
-  }
-
-  function reclick (el, e) {
-    if (!e.isTrusted) return
-    window.setTimeout(function () {
-      el.click()
-    }, 0)
   }
 })()

@@ -1,8 +1,6 @@
 ;(function () {
   'use strict'
 
-  var ie = /*@cc_on!@*/false || !!document.documentMode
-  if (!ie) return
   var article = document.querySelector('article.doc')
   var toolbar = document.querySelector('.toolbar')
 

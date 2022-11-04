@@ -737,7 +737,8 @@ export class CreateHelloCommand extends BaseCommand {
 <h2 id="getting-the-module-config"><a class="anchor" href="#getting-the-module-config"></a>Getting the module config</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Next, we need to get the blacklist of words from the <a href="configuration.html" class="xref page">module config</a>, because we will need it in the next stepp during the command verification.</p>
+<p>Next, we need to get the blacklist of words from the <a href="configuration.html" class="xref page">module config</a>, because it is required in the next step during the <a href="#command-verification">Command verification</a>.
+Also, we want to update the minimum and maximum message length of the command schema with the values from the module configuration.</p>
 </div>
 <div class="paragraph">
 <p>To do this, create a new method <code>init()</code> in the command, that can be called int he <code>init()</code> function of the module, after the module received the values from the config:</p>
@@ -747,17 +748,20 @@ export class CreateHelloCommand extends BaseCommand {
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">// [...]
 export class CreateHelloCommand extends BaseCommand {
-    // [...]
-    // eslint-disable-next-line @typescript-eslint/require-await
-    public async init(blacklist: string[]): Promise&lt;void&gt; {
-        this._blacklist = blacklist;
-    }
+    public schema = createHelloSchema;
+	private _blacklist!: string[];
+
+    public async init(blacklist: string[], maxLength: number, minLength: number): Promise&lt;void&gt; {
+		this._blacklist = blacklist;
+		this.schema.properties.message.maxLength = maxLength;
+		this.schema.properties.message.minLength = minLength;
+	}
     // [...]
 }</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Then, call the method at the bottom of the <code>init()</code> function of the module:</p>
+<p>Then, call the method at the bottom of the <code>init()</code> function of the module and use the respective config values as parameters:</p>
 </div>
 <div class="listingblock">
 <div class="title">hello/module.ts</div>
@@ -768,10 +772,7 @@ export class HelloModule extends BaseModule {
     // eslint-disable-next-line @typescript-eslint/require-await
     public async init(blacklist: string[]): Promise&lt;void&gt; {
         // [...]
-        this._blacklist = config.blacklist;
-        createHelloSchema.properties.message.maxLength = config.maxMessageLength;
-        createHelloSchema.properties.message.minLength = config.minMessageLength;
-        this.commands[0].init(this._blacklist).then(res =&gt; {
+        this.commands[0].init(config.blacklist,config.maxMessageLength,config.minMessageLength).then(res =&gt; {
             console.log("Result: ", res);
         }).catch(err =&gt; {
             console.log("Error: ", err);

@@ -179,6 +179,9 @@
   <li class="nav-item" data-depth="2">
     <a class="nav-link" href="../../understand-blockchain/sdk/rpc.html">Communicating to a Lisk node via RPC</a>
   </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../understand-blockchain/sdk/codec-schema.html">Codec &amp; schema</a>
+  </li>
 </ul>
   </li>
   <li class="nav-item parent" data-depth="1">
@@ -503,6 +506,8 @@ The Hello message should be rejected, if it includes one of the words in the bla
 <ul class="sectlevel1">
 <li><a href="#generating-the-command-skeleton">Generating the command skeleton</a></li>
 <li><a href="#command-class-skeleton">Command class &amp; skeleton</a></li>
+<li><a href="#command-params-schema">Command params &amp; schema</a></li>
+<li><a href="#getting-the-module-config">Getting the module config</a></li>
 <li><a href="#command-verification">Command verification</a></li>
 <li><a href="#command-execution">Command execution</a></li>
 </ul>
@@ -530,10 +535,10 @@ No numbers, hyphens, etc., are allowed.</p>
 </ol>
 </div>
 <div class="paragraph">
-<p>For a complete overview of all available options of the <code>lisk generate:asset</code> command, see the <a href="#lisk-sdk::references/lisk-commander">Lisk Commander command reference</a>.</p>
+<p>For a complete overview of all available options of <code>lisk generate:command</code>, see the <a href="#lisk-sdk::references/lisk-commander">Lisk Commander reference</a> or type <code>lisk generate:command --help</code>.</p>
 </div>
 <div class="paragraph">
-<p>In our example, we choose <code>createHello</code> as command name, and <code>hello</code>  as module name:</p>
+<p>For our example, we choose <code>createHello</code> as command name, and <code>hello</code>  as module name:</p>
 </div>
 <div id="generate-command" class="listingblock">
 <div class="title">In the client root folder</div>
@@ -592,6 +597,20 @@ Currently, it contains the auto-generated test skeletons.</td>
 </tr>
 </table>
 </div>
+<div class="paragraph">
+<p>Additionally, it will already import and register the new command in the Hello module:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import { CreateHelloCommand } from "./commands/create_hello_command";
+// [...]
+export class HelloModule extends BaseModule {
+    // [...]
+	public commands = [new CreateHelloCommand(this.stores, this.events)];
+    // [...]
+}</code></pre>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -641,25 +660,129 @@ export class CreateHelloCommand extends BaseCommand {
 }</code></pre>
 </div>
 </div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="command-params-schema"><a class="anchor" href="#command-params-schema"></a>Command params &amp; schema</h2>
+<div class="sectionbody">
 <div class="paragraph">
-<p>As can be seen above, the command <code>generate:asset</code> already created the asset class <code>CreateHelloAsset</code> which contains skeletons of all important components of an asset.
-The only properties which are set at this point are the asset ID and the asset name, which were defined when generating the asset.</p>
+<p>The command parameters are data that is provided by the transaction, that is required by the command to execute its' business logic.
+The parameters interface and schema define the data type, order of the command.</p>
 </div>
 <div class="paragraph">
-<p>If the application is started at this point, it is already possible to create a basic <code>createHello</code> transaction with an empty <a href="../../glossary.html#transaction-asset" class="xref page">transaction asset</a>, sign it, and send it to the node.
-The node will then throw the following error:</p>
+<p>The command schema can also define additional properties like min and max length of a parameter.</p>
 </div>
-<div class="literalblock">
+<div class="paragraph">
+<p>For creating a Hello message, define the parameters like so:</p>
+</div>
+<div class="listingblock">
 <div class="content">
-<pre>Asset "createHello" apply hook is not implemented.</pre>
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">interface Params {
+	message: string;
+}</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>This is due to the fact that the <code>apply()</code> function of the asset is not implemented yet.
-To give the asset a purpose, it is necessary to implement certain logic inside of the <code>apply()</code> function of an asset.</p>
+<p>The only property needed by the module is the <code>message</code> that the sender posted.</p>
 </div>
 <div class="paragraph">
-<p>The following sections describe an example implementation of each component of a <a href="../../glossary.html#module-asset" class="xref page">module asset</a> in detail.</p>
+<p>For the corresponding schema, create a new file <code>schema.ts</code> in the root folder of the Hello module.</p>
+</div>
+<div class="paragraph">
+<p>This file will be used to store all schemas that the module requires, for a better overview.</p>
+</div>
+<div class="listingblock">
+<div class="title">schema.ts</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export const createHelloSchema = {
+	$id: 'hello/createHello-params',
+	title: 'CreateHelloCommand transaction parameter for the Hello module',
+	type: 'object',
+	required: ['message'],
+	properties: {
+		message: {
+			dataType: 'string',
+			fieldNumber: 1,
+			minLength: 3,
+			maxLength: 256,
+		},
+	},
+};</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note that we add two additional properties to the schema: <a href="https://json-schema.org/understanding-json-schema/reference/string.html#length">minLength &amp; maxLength</a>.
+These properties define the minimum and maximum length of the message, according to the <strong>JSON schema</strong>.</p>
+</div>
+<div class="paragraph">
+<p>By setting these properties already in the schema, we don&#8217;t need to validate these properties later in the <a href="#command-verification">Command verification</a>.
+Please check the <a href="https://json-schema.org/understanding-json-schema/reference/index.html" target="_blank" rel="noopener">JSON schema reference</a> for information about other available keywords.</p>
+</div>
+<div class="paragraph">
+<p>Now, import the schema to the Hello module and use it for the <code>schema</code> attribute of the module.:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import { createHelloSchema } from '../schema';
+// [...]
+export class CreateHelloCommand extends BaseCommand {
+    public schema = createHelloSchema;
+    // [...]
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="getting-the-module-config"><a class="anchor" href="#getting-the-module-config"></a>Getting the module config</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Next, we need to get the blacklist of words from the <a href="configuration.html" class="xref page">module config</a>, because we will need it in the next stepp during the command verification.</p>
+</div>
+<div class="paragraph">
+<p>To do this, create a new method <code>init()</code> in the command, that can be called int he <code>init()</code> function of the module, after the module received the values from the config:</p>
+</div>
+<div class="listingblock">
+<div class="title">hello/commands/create_hello_command.ts</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">// [...]
+export class CreateHelloCommand extends BaseCommand {
+    // [...]
+    // eslint-disable-next-line @typescript-eslint/require-await
+    public async init(blacklist: string[]): Promise&lt;void&gt; {
+        this._blacklist = blacklist;
+    }
+    // [...]
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Then, call the method at the bottom of the <code>init()</code> function of the module:</p>
+</div>
+<div class="listingblock">
+<div class="title">hello/module.ts</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">// [...]
+export class HelloModule extends BaseModule {
+    // [...]
+    // eslint-disable-next-line @typescript-eslint/require-await
+    public async init(blacklist: string[]): Promise&lt;void&gt; {
+        // [...]
+        this._blacklist = config.blacklist;
+        createHelloSchema.properties.message.maxLength = config.maxMessageLength;
+        createHelloSchema.properties.message.minLength = config.minMessageLength;
+        this.commands[0].init(this._blacklist).then(res =&gt; {
+            console.log("Result: ", res);
+        }).catch(err =&gt; {
+            console.log("Error: ", err);
+        });
+    }
+    // [...]
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now, the blacklist which is defined in the config is available in the command.</p>
 </div>
 </div>
 </div>

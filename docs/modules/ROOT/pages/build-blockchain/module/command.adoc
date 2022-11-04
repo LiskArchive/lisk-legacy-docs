@@ -244,6 +244,9 @@ export class CreateHelloCommand extends BaseCommand {
 }
 ----
 
+To store the blacklisted words form the module config in the command, create a new private command attribute `_blacklist`.
+Inside the method, assign the blacklist defined in the module config to `this._blacklist`, and also update the command schema with the minimum and maximum message length values defined in the config.
+
 Then, call the method at the bottom of the `init()` function of the module and use the respective config values as parameters:
 
 .hello/module.ts
@@ -265,163 +268,125 @@ export class HelloModule extends BaseModule {
 }
 ----
 
-Now, the blacklist which is defined in the config is available in the command.
+Now, the `blacklist`, `minMessageLength` and `maxMessageLength`, which are defined in the config, are available in the command.
 
 == Command verification
 
+The command is always verified, before it is executed by the node like defined in the <<command-execution>>.
+The verification of the command is defined in the `verify()` method of the command.
+
+There `CreateHello` command expects only one single parameter in the transaction, and this is the Hello message.
+Therefore, only the message needs to be verified here.
+
+The following points should be validated:
+
+. the message should not be shorter than the minimum message length defined in the command schema.
+. the message should not be longer than the maximum message length defined in the command schema.
+. the message should not contain any of the words defined in the blacklist of module config.
+
+We don't need to validate point 1. and 2. in the `verify()` method, because it is already validated by the schema.
+
+Point 3. however, the blacklisted words, cannot be checked with the schema.
+So let's implement the `verify()` method to filter the message for words in the blacklist, and throw an error if any word is found.
+
+.hello/commands/create_hello_command.ts
+[source,typecript]
+----
+// [...]
+export class CreateHelloCommand extends BaseCommand {
+    public schema = createHelloSchema;
+	private _blacklist!: string[];
+    // [...]
+    // eslint-disable-next-line @typescript-eslint/require-await
+	public async verify(context: CommandVerifyContext<Params>): Promise<VerificationResult> {
+		let validation: VerificationResult;
+		const wordList = context.params.message.split(" ");
+		const found = this._blacklist.filter(value => wordList.includes(value));
+		if (found.length > 0) {
+			validation = {
+				status: VerifyStatus.FAIL,
+				error: new Error(
+					`Illegal word in hello message: ${  found.toString()}`
+				)
+			};
+		} else {
+			validation = {
+				status: VerifyStatus.OK
+			};
+		}
+		context.logger.info(validation,"validation");
+		return validation;
+	}
+    // [...]
+}
+----
+
+The `context` of the `verify(context)` method contains the parameters of the command to be verified.
+So first, access the `message` parameter through `context.params.message` and split the different words of the message by space, and save the resulting words in a word list.
+Now, filter the blacklisted words, and store any word which is also present in the message word list in a new list called `found`.
+
+Next, check the length of the `found` list. If it is greater than 0, it means, the message contains at least one word that is also included in the blacklist.
+In that case, set the status to `VerifyStatus.FAIL` and include a descriptive error message under the `error` property as well.
+
+If no blacklisted words are found, set the status to `VerifyStatus.OK`.
+
 == Command execution
 
-////
-== The asset class
+The `execute()` function is the place in the command where the state changes on the blockchain are made.
 
-The asset class always extends from the `BaseAsset`, which is imported from the `lisk-sdk` package.
+A command will only be executed, if the <<command-verification>> was successful.
 
-The properties `name` and `id` are prefilled by the values used when <<generate-asset,generating the asset skeleton>> was completed in the previous step.
+The purpose of this command is to save a Hello message for the corresponding sender account.
+Also, we need to increment the Hello counter by one, each time a command is executed.
 
-.src/app/modules/hello/assets/create_hello_asset.ts
-[source,typescript]
+Following this, the general business logic of the `execute()` method looks like this:
+
+. Get account data of the sender of the CreateHello transaction.
+. Get message and counter stores.
+. Save the Hello message to the message store, using the senderAddress as key, and the message as value
+. Get the Hello counter from the counter store.
+. Increment the Hello counter +1.
+. Save the Hello counter to the counter store.
+
+The corresponding code is shown below:
+
+.hello/commands/create_hello_command.ts
+[source,typecript]
 ----
-import { BaseAsset, ApplyAssetContext, ValidateAssetContext } from 'lisk-sdk';
+// [...]
+export class CreateHelloCommand extends BaseCommand {
+    public schema = createHelloSchema;
+	private _blacklist!: string[];
+    // [...]
+    public async execute(context: CommandExecuteContext<Params>): Promise<void> {
+		// 1. Get account data of the sender of the CreateHello transaction.
+		const {senderAddress} = context.transaction;
+        // 2. Get message and counter stores.
+		const messageSubstore = this.stores.get(MessageStore);
+		const counterSubstore = this.stores.get(CounterStore);
 
-export class CreateHelloAsset extends BaseAsset {
-  public name = 'createHello';
-  public id = 0;
+		// 3. Save the Hello message to the message store, using the senderAddress as key, and the message as value.
+		await messageSubstore.set(context, senderAddress, {
+			message: context.params.message,
+		});
 
-  // ...
+		// 4. Get the Hello counter from the counter store.
+		const helloBuffer = Buffer.from('hello','utf8');
+		let helloCounter: CounterStoreData;
+		try {
+			helloCounter = await counterSubstore.get(context, helloBuffer);
+		} catch (error) {
+			helloCounter = {
+				counter: 0,
+			}
+		}
+		// 5. Increment the Hello counter +1.
+		helloCounter.counter+=1;
+
+		// 6. Save the Hello counter to the counter store.
+		await counterSubstore.set(context, helloBuffer, helloCounter);
+	}
 }
 ----
 
-== The asset schema
-
-The xref:{url_intro_modules_asset_schema}[asset schema] defines in which format data is sent in the transaction asset.
-
-TIP: For more information about schemas and how they are used in the Lisk SDK, check out the xref:{url_references_schemas}[].
-
-We expect the following data in a transaction to be able to create a new hello message:
-
-* `helloString`: The string which will be saved under `helloMessage` in the senders user account.
-
-Therefore, the asset schema is adjusted accordingly as shown below:
-
-.src/app/modules/hello/assets/create_hello_asset.ts
-[source,typescript]
-----
-public schema = {
-    $id: 'lisk/hello/asset',
-    type: 'object',
-    required: ["helloString"], // <1>
-    properties: {
-        helloString: {
-            dataType: 'string', // <2>
-            fieldNumber: 1, // <3>
-            minLength: 3, // <4>
-            maxLength: 64, // <5>
-        },
-    }
-};
-----
-
-<1> The property `helloString` is required to create a hello message.
-<2> `string` is defined as a data type for `helloString`.
-<3> The `fieldNumber` increments by +1 for each property in the transaction asset.
-<4> The minimum length of `helloString` is set to 3 characters.
-<5> The maximum length of `helloString` is set to 64 characters.
-
-== Validating the asset data
-
-The optional function `validate()` validates the data of a transaction asset, before it is passed to the `apply()` function.
-
-If one of these conditions is not fulfilled, then the transaction will not be processed, and an error should be thrown.
-
-NOTE: The minimum and maximum values for the different properties which are defined in <<the-asset-schema>> do not need to be validated again in the `validate()` function.
-
-In this example, we want to validate that it is not possible to create a hello message with some illegal statement.
-
-If any account sends a `createHello` transaction, with `asset.helloString` equal to `Some illegal statement`, it will throw the error `Illegal hello message: Some illegal statement`.
-
-.src/app/modules/hello/assets/create_hello_asset.ts
-[source,typescript]
-----
-public validate({ asset }: ValidateAssetContext<{}>): void {
-  if (asset.helloString == "Some illegal statement") {
-      throw new Error(
-          'Illegal hello message: Some illegal statement'
-      );
-  }
-}
-----
-
-If the validation does not throw any errors, it means the validation has been successful, and the `apply()` function will be executed as the next step.
-
-== Defining the asset logic
-
-The most important part of the module asset is the `apply()` function.
-It contains the logic of how the data in the transaction asset should be applied on the blockchain.
-
-In this example, we use the transaction data to create a new hello message, which is added to the senders account.
-
-Additionally, the hello counter is incremented by +1 for each applied hello transaction.
-
-To get and set the blockchain state, the xref:{url_intro_modules_statestore}[stateStore] is used again, which is already known from the lifecycle hooks of the xref:{url_guides_module}[module guide].
-
-.src/app/modules/hello/assets/create_hello_asset.ts
-[source,typescript]
-----
-public async apply({ asset, transaction, stateStore }: ApplyAssetContext<{}>): Promise<void> {
-    // 1. Get account data of the sender of the hello transaction
-    const senderAddress = transaction.senderAddress;
-    const senderAccount = await stateStore.account.get(senderAddress);
-
-    // 2. Update hello message in the senders account with thehelloString of the transaction asset
-    senderAccount.hello.helloMessage = asset.helloString;
-    stateStore.account.set(senderAccount.address, senderAccount);
-
-    // 3. Get the hello counter from the database
-    let counterBuffer = await stateStore.chain.get(
-        CHAIN_STATE_HELLO_COUNTER
-    );
-
-    // 4. Decode the hello counter
-    let counter = codec.decode(
-        helloCounterSchema,
-        counterBuffer
-    );
-
-    // 5. Increment the hello counter +1
-    counter.helloCounter++;
-
-    // 6. Encode the hello counter and save it back to the database
-    await stateStore.chain.set(
-        CHAIN_STATE_HELLO_COUNTER,
-        codec.encode(helloCounterSchema, counter)
-    );
-}
-----
-
-
-== Commands
-
-A module can include various assets, each allowing the module to handle a new transaction type.
-
-Before a new asset can be added, it is first required to create the custom asset as described in the xref:{url_guides_asset}[] guide.
-
-Assuming an asset `CreateHelloAsset` has been created for the module, then it will be included in the module as shown below:
-
-.src/app/modules/hello/hello_module.ts
-[source,typescript]
-----
-import { BaseModule } from 'lisk-sdk';
-const { CreateHelloAsset } = require('./assets/create_hello_asset');
-
-export class HelloModule extends BaseModule {
-
-    // ...
-
-    public transactionAssets = [
-       new CreateHelloAsset()
-    ];
-
-    // ...
-}
-----
-////
+== Using the new command

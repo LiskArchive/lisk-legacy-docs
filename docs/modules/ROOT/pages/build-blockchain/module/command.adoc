@@ -6,17 +6,17 @@ Mona Bärenfänger <mona@lightcurve.io>
 :idprefix:
 :docs_sdk: lisk-sdk::
 // URLs
+:url_json_schema: https://json-schema.org/understanding-json-schema/reference/index.html
+:url_json_schema_length: https://json-schema.org/understanding-json-schema/reference/string.html#length
 :url_github_hello_command: https://github.com/LiskHQ/lisk-sdk-examples/tree/188-hello-v6/tutorials/hello/hello_client/src/app/modules/hello/commands/create-hello.ts
 // Project URLs
 :url_guides_setup: build-blockchain/create-blockchain-app.adoc
 :url_guides_module: build-blockchain/module/index.adoc
+:url_guides_module_config: build-blockchain/module/configuration.adoc
 :url_guides_index_helloapp: build-blockchain/index.adoc#the-hello-world-application
-:url_intro_modules: understand-blockchain/sdk/modules-commands.adoc
-:url_intro_modules_asset: {url_intro_modules}#asset
-:url_intro_modules_asset_schema: {url_intro_modules}#transaction asset schema
-:url_intro_modules_statestore: {url_intro_modules}#the-state-store
-:url_references_schemas: understand-blockchain/sdk/codec-schema.adoc
-:url_references_commander_commands_asset: {docs_sdk}references/lisk-commander
+:url_understand_modules: understand-blockchain/sdk/modules-commands.adoc
+:url_understand_modules_commands: {url_understand_modules}#commands
+:url_sdk_references_commander: {docs_sdk}references/lisk-commander
 :url_transaction_asset: glossary.adoc#transaction-asset
 :url_module_asset: glossary.adoc#module-asset
 
@@ -55,9 +55,9 @@ The command `lisk generate:command` expects two arguments:
 It needs to be a string that only consists of lower case and upper case letters [a-z, A-Z].
 No numbers, hyphens, etc., are allowed.
 
-For a complete overview of all available options of the `lisk generate:asset` command, see the xref:{url_references_commander_commands_asset}[Lisk Commander command reference].
+For a complete overview of all available options of `lisk generate:command`, see the xref:{url_sdk_references_commander}[Lisk Commander reference] or type `lisk generate:command --help`.
 
-In our example, we choose `createHello` as command name, and `hello`  as module name:
+For our example, we choose `createHello` as command name, and `hello`  as module name:
 
 [[generate-command]]
 .In the client root folder
@@ -106,6 +106,19 @@ Currently, it contains the auto-generated command skeleton.
 <2> Will contain unit tests for the command.
 Currently, it contains the auto-generated test skeletons.
 
+Additionally, it will already import and register the new command in the Hello module:
+
+[source,typescript]
+----
+import { CreateHelloCommand } from "./commands/create_hello_command";
+// [...]
+export class HelloModule extends BaseModule {
+    // [...]
+	public commands = [new CreateHelloCommand(this.stores, this.events)];
+    // [...]
+}
+----
+
 == Command class & skeleton
 
 The command `lisk generate:command` already created the class `CreateHelloCommand` which contains skeletons for the most important components of the command.
@@ -148,18 +161,111 @@ export class CreateHelloCommand extends BaseCommand {
 }
 ----
 
-As can be seen above, the command `generate:asset` already created the asset class `CreateHelloAsset` which contains skeletons of all important components of an asset.
-The only properties which are set at this point are the asset ID and the asset name, which were defined when generating the asset.
+== Command params & schema
 
-If the application is started at this point, it is already possible to create a basic `createHello` transaction with an empty xref:{url_transaction_asset}[transaction asset], sign it, and send it to the node.
-The node will then throw the following error:
+The command parameters are data that is provided by the transaction, that is required by the command to execute its' business logic.
+The parameters interface and schema define the data type, order of the command.
 
- Asset "createHello" apply hook is not implemented.
+The command schema can also define additional properties like min and max length of a parameter.
 
-This is due to the fact that the `apply()` function of the asset is not implemented yet.
-To give the asset a purpose, it is necessary to implement certain logic inside of the `apply()` function of an asset.
+For creating a Hello message, define the parameters like so:
 
-The following sections describe an example implementation of each component of a xref:{url_module_asset}[module asset] in detail.
+[source,typescript]
+----
+interface Params {
+	message: string;
+}
+----
+
+The only property needed by the module is the `message` that the sender posted.
+
+For the corresponding schema, create a new file `schema.ts` in the root folder of the Hello module.
+
+This file will be used to store all schemas that the module requires, for a better overview.
+
+.schema.ts
+[source,typescript]
+----
+export const createHelloSchema = {
+	$id: 'hello/createHello-params',
+	title: 'CreateHelloCommand transaction parameter for the Hello module',
+	type: 'object',
+	required: ['message'],
+	properties: {
+		message: {
+			dataType: 'string',
+			fieldNumber: 1,
+			minLength: 3,
+			maxLength: 256,
+		},
+	},
+};
+----
+
+Note that we add two additional properties to the schema: {url_json_schema_length}[minLength & maxLength].
+These properties define the minimum and maximum length of the message, according to the *JSON schema*.
+
+By setting these properties already in the schema, we don't need to validate these properties later in the <<command-verification>>.
+Please check the {url_json_schema}[JSON schema reference^] for information about other available keywords.
+
+Now, import the schema to the Hello module and use it for the `schema` attribute of the module.:
+
+[source,typescript]
+----
+import { createHelloSchema } from '../schema';
+// [...]
+export class CreateHelloCommand extends BaseCommand {
+    public schema = createHelloSchema;
+    // [...]
+}
+----
+
+== Getting the module config
+
+Next, we need to get the blacklist of words from the xref:{url_guides_module_config}[module config], because we will need it in the next stepp during the command verification.
+
+To do this, create a new method `init()` in the command, that can be called int he `init()` function of the module, after the module received the values from the config:
+
+.hello/commands/create_hello_command.ts
+[source,typescript]
+----
+// [...]
+export class CreateHelloCommand extends BaseCommand {
+    // [...]
+    // eslint-disable-next-line @typescript-eslint/require-await
+    public async init(blacklist: string[]): Promise<void> {
+        this._blacklist = blacklist;
+    }
+    // [...]
+}
+----
+
+
+Then, call the method at the bottom of the `init()` function of the module:
+
+.hello/module.ts
+[source,typescript]
+----
+// [...]
+export class HelloModule extends BaseModule {
+    // [...]
+    // eslint-disable-next-line @typescript-eslint/require-await
+    public async init(blacklist: string[]): Promise<void> {
+        // [...]
+        this._blacklist = config.blacklist;
+        createHelloSchema.properties.message.maxLength = config.maxMessageLength;
+        createHelloSchema.properties.message.minLength = config.minMessageLength;
+        this.commands[0].init(this._blacklist).then(res => {
+            console.log("Result: ", res);
+        }).catch(err => {
+            console.log("Error: ", err);
+        });
+    }
+    // [...]
+}
+----
+
+Now, the blacklist which is defined in the config is available in the command.
 
 == Command verification
 

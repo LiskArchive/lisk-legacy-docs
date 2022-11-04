@@ -389,20 +389,83 @@ export class CreateHelloCommand extends BaseCommand {
 
 == Try the new command out
 
-. rebuild app
-. restart app
-. create tx
+As a final step, let's try out the command that we just created, by posting a "Create Hello" transaction to the node.
+
+In the root folder of the Hello client, execute the following steps in the terminal:
+
+. Rebuild the client:
+
+  npm run build
+
+. Start the client:
+
+ ./bin/run start --config=config/custom_config.json
+
+. In another terminal window, create the transaction:
 
  % ./bin/run transaction:create hello createHello 10000000 --params='{"message":"hi, this is a test, illegalWord and so on"}' --json --key-derivation-path="m/44'/134'/0'" --pretty
++
+Use the password contained in the file `config/default/passphrase.json` when prompted for it.
+You can ignore the warning `Warning: Passphrase contains 24 words instead of expected 12. Passphrase contains 23 whitespaces instead of expected 11.`
+The output of the command looks like this:
++
+[source,bash]
+----
+{
+  "transaction": "0a0568656c6c6f120b63726561746548656c6c6f18002080ade2042a205412b41c5bf15b68c779c87fc44baafdf5d2301556227a91a60599b86b4ab51e322b0a2968692c2074686973206973206120746573742c20696c6c6567616c576f726420616e6420736f206f6e3a400cd91d8980e057b87186563def7ec3c33d4c00cab40dcaadd222d8e4ddc95402edfafd6e4f387ef7cb4eca88b36c8dd774448163388d08c4c1522efd5bc23102"
+}
+{
+  "transaction": {
+    "module": "hello",
+    "command": "createHello",
+    "fee": "10000000",
+    "nonce": "0",
+    "senderPublicKey": "5412b41c5bf15b68c779c87fc44baafdf5d2301556227a91a60599b86b4ab51e",
+    "signatures": [
+      "0cd91d8980e057b87186563def7ec3c33d4c00cab40dcaadd222d8e4ddc95402edfafd6e4f387ef7cb4eca88b36c8dd774448163388d08c4c1522efd5bc23102"
+    ],
+    "params": {
+      "message": "hi, this is a test, illegalWord and so on"
+    },
+    "id": "7ffb4283f0ecc765b7ddb1494e97c22471e136824b437594945f0a8224bc7abf"
+  }
+}
+----
++
+The first object is the transaction in binary format, and the second object is the same transaction in JSON format, because we added the flags `--json` and `pretty`.
 
-. post tx
+. Send the transaction:
+Use the transaction in binary format to post the transaction to the node like shown below.
+Note: When you use `curl`, make sure you have `http` enabled in the config under `rpc.modes`.
++
+[source,bash]
+----
+curl --location --request POST 'http://localhost:7887/rpc' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "jsonrpc": "2.0",
+    "id": "1",
+    "method": "txpool_postTransaction",
+    "params": {
+        "transaction": "0a0568656c6c6f120b63726561746548656c6c6f18002080ade2042a205412b41c5bf15b68c779c87fc44baafdf5d2301556227a91a60599b86b4ab51e322b0a2968692c2074686973206973206120746573742c20696c6c6567616c576f726420616e6420736f206f6e3a400cd91d8980e057b87186563def7ec3c33d4c00cab40dcaadd222d8e4ddc95402edfafd6e4f387ef7cb4eca88b36c8dd774448163388d08c4c1522efd5bc23102"
+    }
+}'
+----
+If the transaction was posted successfully, it will respond with the transaction ID.
 
- http://127.0.0.1:7887/rpc
- { "jsonrpc": "2.0", "id": "1", "method": "txpool_postTransaction", "params": { "transaction": "0a0568656c6c6f120b63726561746548656c6c6f18002080ade2042a205412b41c5bf15b68c779c87fc44baafdf5d2301556227a91a60599b86b4ab51e322b0a2968692c2074686973206973206120746573742c20696c6c6567616c576f726420616e6420736f206f6e3a400cd91d8980e057b87186563def7ec3c33d4c00cab40dcaadd222d8e4ddc95402edfafd6e4f387ef7cb4eca88b36c8dd774448163388d08c4c1522efd5bc23102" } }
+. Check the logs of the node:
+To verify that the transaction was included in a block, check for the corresponding node logs:
++
+Transaction was included in Transaction pool:
 
-. check logs
+ 2022-11-04T10:18:47.826Z INFO engine 33965 [id=7ffb4283f0ecc765b7ddb1494e97c22471e136824b437594945f0a8224bc7abf nonce=0 senderPublicKey=5412b41c5bf15b68c779c87fc44baafdf5d2301556227a91a60599b86b4ab51e] Added transaction to pool
++
+Transaction was included in a block:
 
- 2022-11-04T10:18:47.826Z INFO Monas-MBP.fritz.box engine 33965 [id=7ffb4283f0ecc765b7ddb1494e97c22471e136824b437594945f0a8224bc7abf nonce=0 senderPublicKey=5412b41c5bf15b68c779c87fc44baafdf5d2301556227a91a60599b86b4ab51e] Added transaction to pool
- 2022-11-04T10:18:50.422Z INFO Monas-MBP.fritz.box engine 33965 [id=a58eed5296010bb0fbd8ae4118b101d137c24697c457f86dab9ac29879b2ab8f height=99 generator=lskaz4tmrvjnuz5fx956mh8b6x6g4d8fr5vdnk3ha numberOfTransactions=1 numberOfAssets=1 numberOfEvents=5] Block executed
+ 2022-11-04T10:18:50.422Z INFO engine 33965 [id=a58eed5296010bb0fbd8ae4118b101d137c24697c457f86dab9ac29879b2ab8f height=99 generator=lskaz4tmrvjnuz5fx956mh8b6x6g4d8fr5vdnk3ha numberOfTransactions=1 numberOfAssets=1 numberOfEvents=5] Block executed
 
-To get Hello messages and the counter from the module, we need to implement xref:{url_guides_module_endpoints_methods}[Endpoints and Methods].
+But how to actually get the hello messages back?
+Right now, there is only a way to post the hello message.
+Also the counter is created and incremented, but there is no way for an external service to request the data.
+
+To get Hello messages and the counter from the module, implement xref:{url_guides_module_endpoints_methods}[Endpoints and Methods] as explained in the next chapter.

@@ -1,37 +1,113 @@
 = How to create endpoints and methods
+Mona Bärenfänger <mona@lightcurve.io>
+// Settings
+:toc: preamble
+:sectnums:
+:docs_sdk: lisk-sdk::
+// Project URLs
+:url_guides_module: build-blockchain/module/command.adoc#try-the-new-command-out
 
-////
+
 == Endpoints
-
-A list of actions that plugins and external services can invoke.
-
-TIP: See the "Actions" section of the xref:{url_intro_modules_actions}[Modules] introduction page for more information.
-
-Add a new action `amountOfHellos`.
-
-If the action is invoked, it will return the total amount of sent hello messages in the network.
-The hello counter is set to zero after applying the genesis block in the <<lifecycle-hooks>>, and incremented in the <<transaction-assets,asset>>.
-This action simply returns the current value of the hello counter, which is retrieved from the database.
-
-.src/app/modules/hello/hello_module.ts
 [source,typescript]
 ----
-export class HelloModule extends BaseModule {
+import { BaseEndpoint } from 'lisk-sdk';
 
-    // ...
+export class HelloEndpoint extends BaseEndpoint {
 
-    public actions = {
-        amountOfHellos: async () => {
-            const res = await this._dataAccess.getChainState(CHAIN_STATE_HELLO_COUNTER);
-            const count = codec.decode(
-                helloCounterSchema,
-                res
-            );
-            return count;
-        },
-    };
-
-    // ...
 }
 ----
-////
+
+=== Get Hello counter
+
+[source,typescript]
+----
+import { BaseEndpoint } from 'lisk-sdk';
+import { CounterStore, CounterStoreData } from './stores/counter';
+
+export class HelloEndpoint extends BaseEndpoint {
+    public async getHelloCounter(ctx: ModuleEndpointContext): Promise<CounterStoreData> {
+		const counterSubStore = this.stores.get(CounterStore);
+
+		const helloCounter = await counterSubStore.get(
+			ctx,
+			Buffer.from('hello','utf8'),
+		);
+
+		return helloCounter;
+	}
+
+}
+----
+
+=== Get Hello message by address
+
+[source,typescript]
+----
+import { BaseEndpoint, ModuleEndpointContext, cryptography } from 'lisk-sdk';
+import { CounterStore, CounterStoreData } from './stores/counter';
+import { MessageStore, MessageStoreData } from './stores/message';
+
+export class HelloEndpoint extends BaseEndpoint {
+	// [...]
+
+	public async getHello(ctx: ModuleEndpointContext): Promise<MessageStoreData> {
+		const messageSubStore = this.stores.get(MessageStore);
+
+		const { address } = ctx.params;
+		if (typeof address !== 'string') {
+			throw new Error('Parameter address must be a string.');
+		}
+		cryptography.address.validateLisk32Address(address);
+		const helloMessage = await messageSubStore.get(
+			ctx,
+			cryptography.address.getAddressFromLisk32Address(address),
+		);
+		return helloMessage;
+	}
+}
+----
+
+[source,typescript]
+----
+----
+
+== Methods
+
+[source,typescript]
+----
+import { BaseMethod } from 'lisk-sdk';
+
+export class HelloMethod extends BaseMethod {
+
+}
+----
+
+=== Get Hello message by address
+
+[source,typescript]
+----
+import { BaseMethod } from 'lisk-sdk';
+import { MessageStore, MessageStoreData } from './stores/message';
+
+export class HelloMethod extends BaseMethod {
+	public async getHello(
+		methodContext,
+		address: Buffer,
+	): Promise<MessageStoreData> {
+		const messageSubStore = this.stores.get(MessageStore);
+		const helloMessage = await messageSubStore.get(methodContext, address);
+
+		return helloMessage;
+	}
+}
+----
+
+== Requesting data from the module
+
+. rebuild app
+. restart app
+. post tx, see xref:{url_guides_module}[How to create a command > Try the new command out]
+. sent RPC requests
+.. getHello
+.. getHelloCounter

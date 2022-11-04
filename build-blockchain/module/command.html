@@ -510,6 +510,7 @@ The Hello message should be rejected, if it includes one of the words in the bla
 <li><a href="#getting-the-module-config">Getting the module config</a></li>
 <li><a href="#command-verification">Command verification</a></li>
 <li><a href="#command-execution">Command execution</a></li>
+<li><a href="#using-the-new-command">Using the new command</a></li>
 </ul>
 </div>
 </div>
@@ -761,6 +762,10 @@ export class CreateHelloCommand extends BaseCommand {
 </div>
 </div>
 <div class="paragraph">
+<p>To store the blacklisted words form the module config in the command, create a new private command attribute <code>_blacklist</code>.
+Inside the method, assign the blacklist defined in the module config to <code>this._blacklist</code>, and also update the command schema with the minimum and maximum message length values defined in the config.</p>
+</div>
+<div class="paragraph">
 <p>Then, call the method at the bottom of the <code>init()</code> function of the module and use the respective config values as parameters:</p>
 </div>
 <div class="listingblock">
@@ -783,18 +788,174 @@ export class HelloModule extends BaseModule {
 </div>
 </div>
 <div class="paragraph">
-<p>Now, the blacklist which is defined in the config is available in the command.</p>
+<p>Now, the <code>blacklist</code>, <code>minMessageLength</code> and <code>maxMessageLength</code>, which are defined in the config, are available in the command.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="command-verification"><a class="anchor" href="#command-verification"></a>Command verification</h2>
 <div class="sectionbody">
-
+<div class="paragraph">
+<p>The command is always verified, before it is executed by the node like defined in the <a href="#command-execution">Command execution</a>.
+The verification of the command is defined in the <code>verify()</code> method of the command.</p>
+</div>
+<div class="paragraph">
+<p>There <code>CreateHello</code> command expects only one single parameter in the transaction, and this is the Hello message.
+Therefore, only the message needs to be verified here.</p>
+</div>
+<div class="paragraph">
+<p>The following points should be validated:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>the message should not be shorter than the minimum message length defined in the command schema.</p>
+</li>
+<li>
+<p>the message should not be longer than the maximum message length defined in the command schema.</p>
+</li>
+<li>
+<p>the message should not contain any of the words defined in the blacklist of module config.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>We don&#8217;t need to validate point 1. and 2. in the <code>verify()</code> method, because it is already validated by the schema.</p>
+</div>
+<div class="paragraph">
+<p>Point 3. however, the blacklisted words, cannot be checked with the schema.
+So let&#8217;s implement the <code>verify()</code> method to filter the message for words in the blacklist, and throw an error if any word is found.</p>
+</div>
+<div class="listingblock">
+<div class="title">hello/commands/create_hello_command.ts</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typecript hljs" data-lang="typecript">// [...]
+export class CreateHelloCommand extends BaseCommand {
+    public schema = createHelloSchema;
+	private _blacklist!: string[];
+    // [...]
+    // eslint-disable-next-line @typescript-eslint/require-await
+	public async verify(context: CommandVerifyContext&lt;Params&gt;): Promise&lt;VerificationResult&gt; {
+		let validation: VerificationResult;
+		const wordList = context.params.message.split(" ");
+		const found = this._blacklist.filter(value =&gt; wordList.includes(value));
+		if (found.length &gt; 0) {
+			validation = {
+				status: VerifyStatus.FAIL,
+				error: new Error(
+					`Illegal word in hello message: ${  found.toString()}`
+				)
+			};
+		} else {
+			validation = {
+				status: VerifyStatus.OK
+			};
+		}
+		context.logger.info(validation,"validation");
+		return validation;
+	}
+    // [...]
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>context</code> of the <code>verify(context)</code> method contains the parameters of the command to be verified.
+So first, access the <code>message</code> parameter through <code>context.params.message</code> and split the different words of the message by space, and save the resulting words in a word list.
+Now, filter the blacklisted words, and store any word which is also present in the message word list in a new list called <code>found</code>.</p>
+</div>
+<div class="paragraph">
+<p>Next, check the length of the <code>found</code> list. If it is greater than 0, it means, the message contains at least one word that is also included in the blacklist.
+In that case, set the status to <code>VerifyStatus.FAIL</code> and include a descriptive error message under the <code>error</code> property as well.</p>
+</div>
+<div class="paragraph">
+<p>If no blacklisted words are found, set the status to <code>VerifyStatus.OK</code>.</p>
+</div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="command-execution"><a class="anchor" href="#command-execution"></a>Command execution</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>execute()</code> function is the place in the command where the state changes on the blockchain are made.</p>
+</div>
+<div class="paragraph">
+<p>A command will only be executed, if the <a href="#command-verification">Command verification</a> was successful.</p>
+</div>
+<div class="paragraph">
+<p>The purpose of this command is to save a Hello message for the corresponding sender account.
+Also, we need to increment the Hello counter by one, each time a command is executed.</p>
+</div>
+<div class="paragraph">
+<p>Following this, the general business logic of the <code>execute()</code> method looks like this:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Get account data of the sender of the CreateHello transaction.</p>
+</li>
+<li>
+<p>Get message and counter stores.</p>
+</li>
+<li>
+<p>Save the Hello message to the message store, using the senderAddress as key, and the message as value</p>
+</li>
+<li>
+<p>Get the Hello counter from the counter store.</p>
+</li>
+<li>
+<p>Increment the Hello counter +1.</p>
+</li>
+<li>
+<p>Save the Hello counter to the counter store.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>The corresponding code is shown below:</p>
+</div>
+<div class="listingblock">
+<div class="title">hello/commands/create_hello_command.ts</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typecript hljs" data-lang="typecript">// [...]
+export class CreateHelloCommand extends BaseCommand {
+    public schema = createHelloSchema;
+	private _blacklist!: string[];
+    // [...]
+    public async execute(context: CommandExecuteContext&lt;Params&gt;): Promise&lt;void&gt; {
+		// 1. Get account data of the sender of the CreateHello transaction.
+		const {senderAddress} = context.transaction;
+        // 2. Get message and counter stores.
+		const messageSubstore = this.stores.get(MessageStore);
+		const counterSubstore = this.stores.get(CounterStore);
+
+		// 3. Save the Hello message to the message store, using the senderAddress as key, and the message as value.
+		await messageSubstore.set(context, senderAddress, {
+			message: context.params.message,
+		});
+
+		// 4. Get the Hello counter from the counter store.
+		const helloBuffer = Buffer.from('hello','utf8');
+		let helloCounter: CounterStoreData;
+		try {
+			helloCounter = await counterSubstore.get(context, helloBuffer);
+		} catch (error) {
+			helloCounter = {
+				counter: 0,
+			}
+		}
+		// 5. Increment the Hello counter +1.
+		helloCounter.counter+=1;
+
+		// 6. Save the Hello counter to the counter store.
+		await counterSubstore.set(context, helloBuffer, helloCounter);
+	}
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="using-the-new-command"><a class="anchor" href="#using-the-new-command"></a>Using the new command</h2>
 <div class="sectionbody">
 
 </div>

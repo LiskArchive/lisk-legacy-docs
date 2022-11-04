@@ -222,7 +222,9 @@ export class CreateHelloCommand extends BaseCommand {
 
 == Getting the module config
 
-Next, we need to get the blacklist of words from the xref:{url_guides_module_config}[module config], because we will need it in the next stepp during the command verification.
+Next, we need to get the blacklist of words from the xref:{url_guides_module_config}[module config], because we will need it in the next step during the command verification.
+
+Also, we want to update the minimum and maximum message length of the command schema with the values from the module configuration.
 
 To do this, create a new method `init()` in the command, that can be called int he `init()` function of the module, after the module received the values from the config:
 
@@ -231,17 +233,19 @@ To do this, create a new method `init()` in the command, that can be called int 
 ----
 // [...]
 export class CreateHelloCommand extends BaseCommand {
-    // [...]
-    // eslint-disable-next-line @typescript-eslint/require-await
-    public async init(blacklist: string[]): Promise<void> {
-        this._blacklist = blacklist;
-    }
+    public schema = createHelloSchema;
+	private _blacklist!: string[];
+
+    public async init(blacklist: string[], maxLength: number, minLength: number): Promise<void> {
+		this._blacklist = blacklist;
+		this.schema.properties.message.maxLength = maxLength;
+		this.schema.properties.message.minLength = minLength;
+	}
     // [...]
 }
 ----
 
-
-Then, call the method at the bottom of the `init()` function of the module:
+Then, call the method at the bottom of the `init()` function of the module and use the respective config values as parameters:
 
 .hello/module.ts
 [source,typescript]
@@ -252,10 +256,7 @@ export class HelloModule extends BaseModule {
     // eslint-disable-next-line @typescript-eslint/require-await
     public async init(blacklist: string[]): Promise<void> {
         // [...]
-        this._blacklist = config.blacklist;
-        createHelloSchema.properties.message.maxLength = config.maxMessageLength;
-        createHelloSchema.properties.message.minLength = config.minMessageLength;
-        this.commands[0].init(this._blacklist).then(res => {
+        this.commands[0].init(config.blacklist,config.maxMessageLength,config.minMessageLength).then(res => {
             console.log("Result: ", res);
         }).catch(err => {
             console.log("Error: ", err);

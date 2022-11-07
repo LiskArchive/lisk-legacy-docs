@@ -9,15 +9,30 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_build_plugin: build-blockchain/create-plugin.adoc
 
 ====
-On this page, you'll learn how to...:
+On this page, you'll learn how to:
 
-* [x] Define a config schema for a module.
-* [x] Set a default module config.
-* [x] Set custom configurations for a module.
-* [x] Make module configurations accessible inside the command of a module.
+* [x] Define a config schema for a module
+* [x] Set a default module config
+* [x] Set custom configurations for a module
+* [x] Make module configurations accessible inside the command of a module
 ====
 
+To allow the developer to configure a module in the `config.json` file, create the corresponding configuration schema and pass the values to the module in the `init()` method of the module.
+
+This allows to overwrite the default configurations of a module conveniently by updating the `config.json` file of the Hello client.
+
 == Define a module schema
+
+At first, define a default configuration inside of `module.ts`.
+This configuration values will be used, if no custom values are set by the developer in `config.json`.
+
+For the Hello module, we want to provide configuration options for the following values:
+
+. maximum Hello message length
+. minimum Hello message length
+. List of blacklisted words
+
+Therefore, we define the module default config as follows:
 
 ./hello/module.ts
 [source,typescript]
@@ -28,6 +43,15 @@ export const defaultConfig = {
     blacklist: ["illegalWord1"]
 };
 ----
+
+In our example, we define the following default config:
+
+.Default config values
+. maximum Hello message length: 256
+. minimum Hello message length: 3
+. List of blacklisted words: "illegalWord1"
+
+Once the default config is created, define the corresponding module config interface in `types.ts`:
 
 .hello/types.ts
 [source,typescript]
@@ -42,6 +66,8 @@ export interface ModuleConfig {
 
 export type ModuleConfigJSON = JSONObject<ModuleConfig>;
 ----
+
+The config schema is required to validate the module config defined in `config.json`, so add the respective config schema to `schema.ts` as well:
 
 ./hello/schema.ts
 [source,typescript]
@@ -78,6 +104,8 @@ export const configSchema = {
 
 == Use a custom module configuration
 
+Now, open the configuration file and add the config option for the Hello module like this:
+
 .custom_config.json
 [source,json]
 ----
@@ -94,7 +122,11 @@ export const configSchema = {
 }
 ----
 
+In the example, we increase the max message length to `300`, the min message length to `5`, and we add two additional words to the blacklist: `badWord2` and `censoredWord3`
+
 == Initialize the module config
+
+To make the custom config that we defined in the previous step <<use-a-custom-module-configuration>> accessible in the module, retieve the config option in the `init()` method like so:
 
 ./hello/module.ts
 [source,typescript]
@@ -125,8 +157,8 @@ export class HelloModule extends BaseModule {
         const config = utils.objects.mergeDeep({}, defaultConfig, moduleConfig) as ModuleConfigJSON;
         // Validate the provided config with the config schema
         validator.validate(configSchema, config);
-        // Call the command init() method with config values as parameters
-        this.commands[0].init(config.blacklist,config.maxMessageLength,config.minMessageLength).catch(err => {
+        // Call the command init() method with config as parameter
+        this.commands[0].init(config).catch(err => {
             console.log("Error: ", err);
         });
     }
@@ -134,7 +166,17 @@ export class HelloModule extends BaseModule {
 }
 ----
 
+The custom config is merged with the default config.
+This will overwrite every value of the default config with the value of the custom config, if it is set.
+If no value is set in the custom config, it will use the value of the default config.
+
+Once the configs are merged, the module config is validated against the config schema defined in step <<define-a-module-schema>>.
+
+As a last step, the config values are passed to the command by calling the commands' `init()` method, with the config as parameter.
+
 == Use the config values in the command
+
+In the command, create a new method `init()` to update the command blacklist and schema wih the values from the module config.
 
 ./hello/command/create_hello_command.ts
 [source,typescript]
@@ -146,14 +188,17 @@ export class CreateHelloCommand extends BaseCommand {
     private _blacklist!: string[];
 
     // Create init() method for command
-    public async init(blacklist: string[], maxLength: number, minLength: number): Promise<void> {
-        // Set _blacklist to the value of the blacklist defined in the module config
-        this._blacklist = blacklist;
-        // Set the max message length to the value defined in the module config
-        this.schema.properties.message.maxLength = maxLength;
-        // Set the min message length to the value defined in the module config
-        this.schema.properties.message.minLength = minLength;
-    }
+    public async init(config: ModuleConfig): Promise<void> {
+		// Set _blacklist to the value of the blacklist defined in the module config
+		this._blacklist = config.blacklist;
+		// Set the max message length to the value defined in the module config
+		this.schema.properties.message.maxLength = config.maxMessageLength;
+		// Set the min message length to the value defined in the module config
+		this.schema.properties.message.minLength = config.minMessageLength;
+		console.log("this.schema: ", this.schema);
+	}
     // [...]
 }
 ----
+
+== Try the new config out

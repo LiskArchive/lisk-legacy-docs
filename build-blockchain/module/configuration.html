@@ -433,7 +433,195 @@
 </aside>
 <article class="doc">
 <h1 class="page">How to create a module configuration</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="exampleblock">
+<div class="content">
+<div class="paragraph">
+<p>On this page, you&#8217;ll learn how to&#8230;&#8203;:</p>
+</div>
+<div class="ulist checklist">
+<ul class="checklist">
+<li>
+<p><i class="fa fa-check-square-o"></i> Define a config schema for a module.</p>
+</li>
+<li>
+<p><i class="fa fa-check-square-o"></i> Set a default module config.</p>
+</li>
+<li>
+<p><i class="fa fa-check-square-o"></i> Set custom configurations for a module.</p>
+</li>
+<li>
+<p><i class="fa fa-check-square-o"></i> Make module configurations accessible inside the command of a module.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#define-a-module-schema">Define a module schema</a></li>
+<li><a href="#use-a-custom-module-configuration">Use a custom module configuration</a></li>
+<li><a href="#initialize-the-module-config">Initialize the module config</a></li>
+<li><a href="#use-the-config-values-in-the-command">Use the config values in the command</a></li>
+</ul>
+</div>
+</div>
+<div class="sect1">
+<h2 id="define-a-module-schema"><a class="anchor" href="#define-a-module-schema"></a>Define a module schema</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="title">/hello/module.ts</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export const defaultConfig = {
+    maxMessageLength: 256,
+    minMessageLength: 3,
+    blacklist: ["illegalWord1"]
+};</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">hello/types.ts</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import { JSONObject } from 'lisk-sdk';
 
+export interface ModuleConfig {
+    maxMessageLength: number;
+    minMessageLength: number;
+    blacklist: string[];
+}
+
+export type ModuleConfigJSON = JSONObject&lt;ModuleConfig&gt;;</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">/hello/schema.ts</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export const configSchema = {
+    $id: '/hello/config',
+    type: 'object',
+    properties: {
+        maxMessageLength: {
+            dataType: 'uint32',
+            fieldNumber: 1,
+        },
+        minMessageLength: {
+            dataType: 'uint32',
+            fieldNumber: 2,
+        },
+        blacklist: {
+            type: 'array',
+            fieldNumber: 3,
+            items: {
+                dataType: 'string',
+                minLength: 1,
+                maxLength: 40,
+            },
+        },
+    },
+    required: [
+        'maxMessageLength',
+        'minMessageLength',
+        'blacklist'
+    ],
+};</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="use-a-custom-module-configuration"><a class="anchor" href="#use-a-custom-module-configuration"></a>Use a custom module configuration</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="title">custom_config.json</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  // [...]
+  "modules": {
+    "hello": {
+      "maxMessageLength": 300,
+      "minMessageLength": 5,
+      "blacklist": ["illegalWord1", "badWord2", "censoredWord3"]
+    }
+  },
+  "plugins": {}
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="initialize-the-module-config"><a class="anchor" href="#initialize-the-module-config"></a>Initialize the module config</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="title">/hello/module.ts</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import {
+    BaseModule, BlockAfterExecuteContext, BlockExecuteContext, BlockVerifyContext,
+    GenesisBlockExecuteContext, InsertAssetContext, ModuleInitArgs,
+    ModuleMetadata, TransactionExecuteContext, TransactionVerifyContext,
+    VerificationResult, codec, utils
+} from 'lisk-sdk';
+import { validator } from '@liskhq/lisk-validator';
+import { createHelloSchema, CreateHelloParams, configSchema } from './schema';
+import { ModuleConfigJSON } from './types';
+// [...]
+export const defaultConfig = {
+	blacklist: ["illegalWord1"],
+	maxMessageLength: 256,
+	minMessageLength: 3
+};
+
+export class HelloModule extends BaseModule {
+    // [...]
+
+    public async init(args: ModuleInitArgs): Promise&lt;void&gt; {
+        // Get the module config defined in the config.json file
+        const { moduleConfig } = args;
+        // Overwrite the default module config with values from config.json, if set
+        const config = utils.objects.mergeDeep({}, defaultConfig, moduleConfig) as ModuleConfigJSON;
+        // Validate the provided config with the config schema
+        validator.validate(configSchema, config);
+        // Call the command init() method with config values as parameters
+        this.commands[0].init(config.blacklist,config.maxMessageLength,config.minMessageLength).catch(err =&gt; {
+            console.log("Error: ", err);
+        });
+    }
+    // [...]
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="use-the-config-values-in-the-command"><a class="anchor" href="#use-the-config-values-in-the-command"></a>Use the config values in the command</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="title">/hello/command/create_hello_command.ts</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">// [...]
+export class CreateHelloCommand extends BaseCommand {
+    public schema = createHelloSchema;
+    // Create private attribute _blacklist
+    private _blacklist!: string[];
+
+    // Create init() method for command
+    public async init(blacklist: string[], maxLength: number, minLength: number): Promise&lt;void&gt; {
+        // Set _blacklist to the value of the blacklist defined in the module config
+        this._blacklist = blacklist;
+        // Set the max message length to the value defined in the module config
+        this.schema.properties.message.maxLength = maxLength;
+        // Set the min message length to the value defined in the module config
+        this.schema.properties.message.minLength = minLength;
+    }
+    // [...]
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
 <nav class="pagination">
   <span class="prev"><a href="index.html">How to create a module</a></span>
   <span class="next"><a href="stores.html">2. How to create stores</a></span>

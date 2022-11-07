@@ -1,1 +1,159 @@
 = How to create a module configuration
+Mona Bärenfänger <mona@lightcurve.io>
+:toc: preamble
+:idprefix:
+:idseparator: -
+:docs_sdk: lisk-sdk::
+// URLs
+// Project URLS
+:url_build_plugin: build-blockchain/create-plugin.adoc
+
+====
+On this page, you'll learn how to...:
+
+* [x] Define a config schema for a module.
+* [x] Set a default module config.
+* [x] Set custom configurations for a module.
+* [x] Make module configurations accessible inside the command of a module.
+====
+
+== Define a module schema
+
+./hello/module.ts
+[source,typescript]
+----
+export const defaultConfig = {
+    maxMessageLength: 256,
+    minMessageLength: 3,
+    blacklist: ["illegalWord1"]
+};
+----
+
+.hello/types.ts
+[source,typescript]
+----
+import { JSONObject } from 'lisk-sdk';
+
+export interface ModuleConfig {
+    maxMessageLength: number;
+    minMessageLength: number;
+    blacklist: string[];
+}
+
+export type ModuleConfigJSON = JSONObject<ModuleConfig>;
+----
+
+./hello/schema.ts
+[source,typescript]
+----
+export const configSchema = {
+    $id: '/hello/config',
+    type: 'object',
+    properties: {
+        maxMessageLength: {
+            dataType: 'uint32',
+            fieldNumber: 1,
+        },
+        minMessageLength: {
+            dataType: 'uint32',
+            fieldNumber: 2,
+        },
+        blacklist: {
+            type: 'array',
+            fieldNumber: 3,
+            items: {
+                dataType: 'string',
+                minLength: 1,
+                maxLength: 40,
+            },
+        },
+    },
+    required: [
+        'maxMessageLength',
+        'minMessageLength',
+        'blacklist'
+    ],
+};
+----
+
+== Use a custom module configuration
+
+.custom_config.json
+[source,json]
+----
+{
+  // [...]
+  "modules": {
+    "hello": {
+      "maxMessageLength": 300,
+      "minMessageLength": 5,
+      "blacklist": ["illegalWord1", "badWord2", "censoredWord3"]
+    }
+  },
+  "plugins": {}
+}
+----
+
+== Initialize the module config
+
+./hello/module.ts
+[source,typescript]
+----
+import {
+    BaseModule, BlockAfterExecuteContext, BlockExecuteContext, BlockVerifyContext,
+    GenesisBlockExecuteContext, InsertAssetContext, ModuleInitArgs,
+    ModuleMetadata, TransactionExecuteContext, TransactionVerifyContext,
+    VerificationResult, codec, utils
+} from 'lisk-sdk';
+import { validator } from '@liskhq/lisk-validator';
+import { createHelloSchema, CreateHelloParams, configSchema } from './schema';
+import { ModuleConfigJSON } from './types';
+// [...]
+export const defaultConfig = {
+	blacklist: ["illegalWord1"],
+	maxMessageLength: 256,
+	minMessageLength: 3
+};
+
+export class HelloModule extends BaseModule {
+    // [...]
+
+    public async init(args: ModuleInitArgs): Promise<void> {
+        // Get the module config defined in the config.json file
+        const { moduleConfig } = args;
+        // Overwrite the default module config with values from config.json, if set
+        const config = utils.objects.mergeDeep({}, defaultConfig, moduleConfig) as ModuleConfigJSON;
+        // Validate the provided config with the config schema
+        validator.validate(configSchema, config);
+        // Call the command init() method with config values as parameters
+        this.commands[0].init(config.blacklist,config.maxMessageLength,config.minMessageLength).catch(err => {
+            console.log("Error: ", err);
+        });
+    }
+    // [...]
+}
+----
+
+== Use the config values in the command
+
+./hello/command/create_hello_command.ts
+[source,typescript]
+----
+// [...]
+export class CreateHelloCommand extends BaseCommand {
+    public schema = createHelloSchema;
+    // Create private attribute _blacklist
+    private _blacklist!: string[];
+
+    // Create init() method for command
+    public async init(blacklist: string[], maxLength: number, minLength: number): Promise<void> {
+        // Set _blacklist to the value of the blacklist defined in the module config
+        this._blacklist = blacklist;
+        // Set the max message length to the value defined in the module config
+        this.schema.properties.message.maxLength = maxLength;
+        // Set the min message length to the value defined in the module config
+        this.schema.properties.message.minLength = minLength;
+    }
+    // [...]
+}
+----

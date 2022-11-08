@@ -400,7 +400,11 @@ The Hello message should be rejected, if it includes one of the words in the bla
 <li><a href="#getting-the-module-config">4. Getting the module config</a></li>
 <li><a href="#command-verification">5. Command verification</a></li>
 <li><a href="#command-execution">6. Command execution</a></li>
-<li><a href="#try-the-new-command-out">7. Try the new command out</a></li>
+<li><a href="#try-the-new-command-out">7. Try the new command out</a>
+<ul class="sectlevel2">
+<li><a href="#verifying-the-command-verification">7.1. Verifying the command verification</a></li>
+</ul>
+</li>
 </ul>
 </div>
 </div>
@@ -628,7 +632,8 @@ export class CreateHelloCommand extends BaseCommand {
 <h2 id="getting-the-module-config"><a class="anchor" href="#getting-the-module-config"></a>4. Getting the module config</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Next, we need to get the blacklist of words from the <a href="configuration.html" class="xref page">module config</a>, because it is required in the next step during the <a href="#command-verification">Command verification</a>.
+<p>Next, we need to get the blacklist, because it is required in the next step during the <a href="#command-verification">Command verification</a>.
+The blacklist can be retrieved from the module config, which was defined in guide <a href="configuration.html" class="xref page">How to create a module configuration</a>.
 Also, we want to update the minimum and maximum message length of the command schema with the values from the module configuration.</p>
 </div>
 <div class="paragraph">
@@ -642,21 +647,25 @@ export class CreateHelloCommand extends BaseCommand {
     public schema = createHelloSchema;
 	private _blacklist!: string[];
 
-    public async init(blacklist: string[], maxLength: number, minLength: number): Promise&lt;void&gt; {
-		this._blacklist = blacklist;
-		this.schema.properties.message.maxLength = maxLength;
-		this.schema.properties.message.minLength = minLength;
+    public async init(config: ModuleConfig): Promise&lt;void&gt; {
+		// Set _blacklist to the value of the blacklist defined in the module config
+		this._blacklist = config.blacklist;
+		// Set the max message length to the value defined in the module config
+		this.schema.properties.message.maxLength = config.maxMessageLength;
+		// Set the min message length to the value defined in the module config
+		this.schema.properties.message.minLength = config.minMessageLength;
+		console.log("this.schema: ", this.schema);
 	}
     // [...]
 }</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>To store the blacklisted words form the module config in the command, create a new private command attribute <code>_blacklist</code>.
-Inside the method, assign the blacklist defined in the module config to <code>this._blacklist</code>, and also update the command schema with the minimum and maximum message length values defined in the config.</p>
+<p>To store the blacklisted words from the module config in the command, create a new private command attribute <code>_blacklist</code>.
+Inside the <code>init()</code> method of the command, assign the blacklist defined in the module config to <code>this._blacklist</code>, and also update the command schema with the minimum and maximum message length values defined in the config.</p>
 </div>
 <div class="paragraph">
-<p>Then, call the method at the bottom of the <code>init()</code> function of the module and use the respective config values as parameters:</p>
+<p>Then, call the method at the bottom of the <code>init()</code> method of the module and use the respective config values as parameters:</p>
 </div>
 <div class="listingblock">
 <div class="title">hello/module.ts</div>
@@ -667,9 +676,8 @@ export class HelloModule extends BaseModule {
     // eslint-disable-next-line @typescript-eslint/require-await
     public async init(blacklist: string[]): Promise&lt;void&gt; {
         // [...]
-        this.commands[0].init(config.blacklist,config.maxMessageLength,config.minMessageLength).then(res =&gt; {
-            console.log("Result: ", res);
-        }).catch(err =&gt; {
+        // Call the command init() method with config as parameter
+        this.commands[0].init(config).catch(err =&gt; {
             console.log("Error: ", err);
         });
     }
@@ -678,7 +686,7 @@ export class HelloModule extends BaseModule {
 </div>
 </div>
 <div class="paragraph">
-<p>Now, the <code>blacklist</code>, <code>minMessageLength</code> and <code>maxMessageLength</code>, which are defined in the config, are available in the command.</p>
+<p>Now, the <code>blacklist</code>, <code>minMessageLength</code> and <code>maxMessageLength</code>, which are defined in the config.json file, are available in the command, and we can move on to implement the <a href="#command-verification">Command verification</a>.</p>
 </div>
 </div>
 </div>
@@ -961,6 +969,45 @@ Also the counter is created and incremented, but there is no way for an external
 </div>
 <div class="paragraph">
 <p>To get Hello messages and the counter from the module, implement <a href="endpoints-methods.html" class="xref page">Endpoints and Methods</a> as explained in the next chapter.</p>
+</div>
+<div class="sect2">
+<h3 id="verifying-the-command-verification"><a class="anchor" href="#verifying-the-command-verification"></a>7.1. Verifying the command verification</h3>
+<div class="paragraph">
+<p>For this, create a transaction, similar to how it is done in the previous section <a href="#try-the-new-command-out">Try the new command out</a>.
+But in this case, we want the transaction to be invalid, to verify it is using the values defined in the custom module config, that we created in guide <a href="configuration.html" class="xref page">How to create a module configuration</a>.
+Therefore, it should violate at least one of the three command validations:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>minimum Hello message Length: 5</p>
+</li>
+<li>
+<p>maximum Hello message Length: 300</p>
+</li>
+<li>
+<p>the Hello message contains none of the blacklisted words</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>If the message violates one of the three requirements, the command verification fails and the node returns the following response, indicating that the transaction was not accepted:</p>
+</div>
+<div class="paragraph">
+<p>+</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+    "jsonrpc": "2.0",
+    "id": "1",
+    "error": {
+        "message": "Transaction verification failed.",
+        "code": -32600
+    }
+}</code></pre>
+</div>
+</div>
 </div>
 </div>
 </div>

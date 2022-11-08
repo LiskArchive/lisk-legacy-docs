@@ -361,7 +361,6 @@
 <li><a href="#define-a-module-schema">Define a module schema</a></li>
 <li><a href="#define-a-custom-module-configuration">Define a custom module configuration</a></li>
 <li><a href="#initialize-the-module-config">Initialize the module config</a></li>
-<li><a href="#use-the-config-values-in-the-command">Use the config values in the command</a></li>
 <li><a href="#testing-the-custom-module-config">Testing the custom module config</a></li>
 </ul>
 </div>
@@ -536,10 +535,6 @@ export class HelloModule extends BaseModule {
         const config = utils.objects.mergeDeep({}, defaultConfig, moduleConfig) as ModuleConfigJSON;
         // Validate the provided config with the config schema
         validator.validate(configSchema, config);
-        // Call the command init() method with config as parameter
-        this.commands[0].init(config).catch(err =&gt; {
-            console.log("Error: ", err);
-        });
     }
     // [...]
 }</code></pre>
@@ -553,165 +548,16 @@ If no value is set in the custom config, it will use the value of the default co
 <div class="paragraph">
 <p>Once the configs are merged, the module config is validated against the config schema defined in step <a href="#define-a-module-schema">Define a module schema</a>.</p>
 </div>
-<div class="paragraph">
-<p>As a last step, the config values are passed to the command by calling the commands' <code>init()</code> method, with the config as parameter.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="use-the-config-values-in-the-command"><a class="anchor" href="#use-the-config-values-in-the-command"></a>Use the config values in the command</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>In the command, create a new method <code>init()</code> to update the command blacklist and schema wih the values from the module config.</p>
-</div>
-<div class="listingblock">
-<div class="title">/hello/command/create_hello_command.ts</div>
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">// [...]
-export class CreateHelloCommand extends BaseCommand {
-    public schema = createHelloSchema;
-    // Create private attribute _blacklist
-    private _blacklist!: string[];
-
-    // Create init() method for command
-    public async init(config: ModuleConfig): Promise&lt;void&gt; {
-		// Set _blacklist to the value of the blacklist defined in the module config
-		this._blacklist = config.blacklist;
-		// Set the max message length to the value defined in the module config
-		this.schema.properties.message.maxLength = config.maxMessageLength;
-		// Set the min message length to the value defined in the module config
-		this.schema.properties.message.minLength = config.minMessageLength;
-		console.log("this.schema: ", this.schema);
-	}
-    // [...]
-}</code></pre>
-</div>
-</div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="testing-the-custom-module-config"><a class="anchor" href="#testing-the-custom-module-config"></a>Testing the custom module config</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>As a final step, let&#8217;s verify that the config options which we defined in <code>custom_config.json</code> in step <a href="#define-a-custom-module-configuration">Define a custom module configuration</a> are really used during the verification of a command.</p>
+<p>To verify that the config options which we defined in <code>custom_config.json</code> in step <a href="#define-a-custom-module-configuration">Define a custom module configuration</a> are really used during the verification of a command, we first need to create the new command type and then send some "Create Hello" transactions to the node.</p>
 </div>
 <div class="paragraph">
-<p>For this, we create a transaction, similar to how it is done in <a href="command.html#try-the-new-command-out" class="xref page">How to create a command &#8594; Try the new command out</a>.
-But in this case, we want the transaction to be invalid, to verify it is using the custom module config.
-Therefore, it should violate at least one of the three command validations:</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>minimum Hello message Length: 5</p>
-</li>
-<li>
-<p>maximum Hello message Length: 300</p>
-</li>
-<li>
-<p>the Hello message contains none of the blacklisted words</p>
-</li>
-</ol>
-</div>
-<div class="paragraph">
-<p>In the root folder of the Hello client, execute the following steps in the terminal:</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Rebuild the client:</p>
-<div class="literalblock">
-<div class="content">
-<pre>npm run build</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Start the client:</p>
-<div class="literalblock">
-<div class="content">
-<pre>./bin/run start --config=config/custom_config.json</pre>
-</div>
-</div>
-</li>
-<li>
-<p>In another terminal window, create the transaction:</p>
-<div class="literalblock">
-<div class="content">
-<pre>% ./bin/run transaction:create hello createHello 10000000 --params='{"message":"foo"}' --json --key-derivation-path="m/44'/134'/0'" --pretty</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>With the message <code>foo</code>, we go below the minimum message length which we defined as <code>5</code> in <code>custom_config.json</code>, to test if the command fails in the verification, as expected.
-Alternatively, you can include a word from the blacklist in the message, or exceed the maximum message length, to make the transaction invalid.</p>
-</div>
-<div class="paragraph">
-<p>Use the password contained in the file <code>config/default/passphrase.json</code> when prompted for it.
-You can ignore the warning <code>Warning: Passphrase contains 24 words instead of expected 12. Passphrase contains 23 whitespaces instead of expected 11.</code>
-The output of the command looks like this:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">{
-  "transaction": "0a0568656c6c6f120b63726561746548656c6c6f18002080ade2042a205412b41c5bf15b68c779c87fc44baafdf5d2301556227a91a60599b86b4ab51e322b0a2968692c2074686973206973206120746573742c20696c6c6567616c576f726420616e6420736f206f6e3a400cd91d8980e057b87186563def7ec3c33d4c00cab40dcaadd222d8e4ddc95402edfafd6e4f387ef7cb4eca88b36c8dd774448163388d08c4c1522efd5bc23102"
-}
-{
-  "transaction": {
-    "module": "hello",
-    "command": "createHello",
-    "fee": "10000000",
-    "nonce": "0",
-    "senderPublicKey": "5412b41c5bf15b68c779c87fc44baafdf5d2301556227a91a60599b86b4ab51e",
-    "signatures": [
-      "0cd91d8980e057b87186563def7ec3c33d4c00cab40dcaadd222d8e4ddc95402edfafd6e4f387ef7cb4eca88b36c8dd774448163388d08c4c1522efd5bc23102"
-    ],
-    "params": {
-      "message": "foo"
-    },
-    "id": "7ffb4283f0ecc765b7ddb1494e97c22471e136824b437594945f0a8224bc7abf"
-  }
-}</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>The first object is the transaction in binary format, and the second object is the same transaction in JSON format, because we added the flags <code>--json</code> and <code>pretty</code>.</p>
-</div>
-</li>
-<li>
-<p>Send the transaction:
-Use the transaction in binary format to post the transaction to the node like shown below.
-Note: When you use <code>curl</code>, make sure you have <code>http</code> enabled in the config under <code>rpc.modes</code>.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl --location --request POST 'http://localhost:7887/rpc' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "jsonrpc": "2.0",
-    "id": "1",
-    "method": "txpool_postTransaction",
-    "params": {
-        "transaction": "0a0568656c6c6f120b63726561746548656c6c6f18002080ade2042a205412b41c5bf15b68c779c87fc44baafdf5d2301556227a91a60599b86b4ab51e322b0a2968692c2074686973206973206120746573742c20696c6c6567616c576f726420616e6420736f206f6e3a400cd91d8980e057b87186563def7ec3c33d4c00cab40dcaadd222d8e4ddc95402edfafd6e4f387ef7cb4eca88b36c8dd774448163388d08c4c1522efd5bc23102"
-    }
-}'</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Because the message length is below to minimum message length we defined in <code>custom_config.json</code>, the command verification fails and the node returns the following response, indicating that the transaction was not accepted:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
-    "jsonrpc": "2.0",
-    "id": "1",
-    "error": {
-        "message": "Transaction verification failed.",
-        "code": -32600
-    }
-}</code></pre>
-</div>
-</div>
-</li>
-</ol>
+<p>Please check out the guide <a href="command.html" class="xref page">How to create a command</a>, especially the section <a href="command.html#try-the-new-command-out" class="xref page">&#8594; Try the new command out</a> for further details how to test and verify the config values.</p>
 </div>
 </div>
 </div>

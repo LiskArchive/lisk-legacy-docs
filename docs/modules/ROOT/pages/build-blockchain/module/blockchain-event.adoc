@@ -28,8 +28,15 @@ By default, a blockchain event is only stored for 300 blocks on-chain, then it i
 If desired, the time that events are kept in the database can be increased in the node config under `system.keepEventsForHeights`.
 ====
 
+For the Hello module, we implement a simple blockchain event as an example: The "New Hello" event.
+
+This event should be emitted every time a new "Create Hello" command is executed on a node.
+
 
 == Create a new event type
+
+First, define the corresponding interface for the event in `tpes.ts`.
+The event data shall contain the address of the sender of the Hello message, and the Hello message that was sent.
 
 .hello/types.ts
 [source,typescript]
@@ -39,6 +46,8 @@ export interface NewHelloEventData {
 	message: string;
 }
 ----
+
+Define the corresponding schema in `schema.ts`, too.
 
 .hello/schema.ts
 [source,typescript]
@@ -60,6 +69,10 @@ export const newHelloEventSchema = {
 };
 ----
 
+Create a new file inside the `events/` folder of the module, and import the above defined interface and schema.
+To create the event class, also import the `BaseEvent` and `EventQueuer` from the `lisk-sdk`.
+
+.hello/events/new_hello.ts
 [source,typescript]
 ----
 import { BaseEvent, EventQueuer } from 'lisk-sdk';
@@ -75,7 +88,16 @@ export class NewHelloEvent extends BaseEvent<NewHelloEventData> {
 }
 ----
 
+The new event class is created by extending from the `BaseEvent`.
+
+Inside of the event class, we need to define the following properties:
+
+* `schema`: Defines the schema of the event data
+* `log()`: A method to emit the event and add it to the event queue of the node.
+
 == Register the event
+
+Now that we created a new event type, import it into the `module.ts` file, and register the event in the module constructor.
 
 [source,typescript]
 ----
@@ -96,6 +118,10 @@ export class HelloModule extends BaseModule {
 ----
 
 == Emit the event
+
+Now that the event is registered with the module, you can call the `log()` method of the event any time inside the module.
+
+In this example, we want to emit the "New Hello" event every time a "Create Hello" command was executed, so we add the corresponding logic to the `afterCommandExecute()` module lifecycle hook.
 
 [source,typescript]
 ----
@@ -122,6 +148,10 @@ export class HelloModule extends BaseModule {
     // [...]
 }
 ----
+
+Now, the module will create a new event everytime a "Create Hello" command is executed, and the event will include the sender address and the sent Hello message.
+
+NOTE: An example of how to listen to a specific event can be found in the guide xref:{url_build_plugin}[].
 
 ////
 == Blockchain Events

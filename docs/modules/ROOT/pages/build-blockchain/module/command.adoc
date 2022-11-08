@@ -2,6 +2,8 @@
 Mona Bärenfänger <mona@lightcurve.io>
 // Settings
 :toc: preamble
+:idprefix:
+:idseparator: -
 :sectnums:
 :docs_sdk: lisk-sdk::
 // URLs
@@ -220,7 +222,8 @@ export class CreateHelloCommand extends BaseCommand {
 
 == Getting the module config
 
-Next, we need to get the blacklist of words from the xref:{url_guides_module_config}[module config], because it is required in the next step during the <<command-verification>>.
+Next, we need to get the blacklist, because it is required in the next step during the <<command-verification>>.
+The blacklist can be retrieved from the module config, which was defined in guide xref:{url_guides_module_config}[].
 Also, we want to update the minimum and maximum message length of the command schema with the values from the module configuration.
 
 To do this, create a new method `init()` in the command, that can be called int he `init()` function of the module, after the module received the values from the config:
@@ -233,19 +236,23 @@ export class CreateHelloCommand extends BaseCommand {
     public schema = createHelloSchema;
 	private _blacklist!: string[];
 
-    public async init(blacklist: string[], maxLength: number, minLength: number): Promise<void> {
-		this._blacklist = blacklist;
-		this.schema.properties.message.maxLength = maxLength;
-		this.schema.properties.message.minLength = minLength;
+    public async init(config: ModuleConfig): Promise<void> {
+		// Set _blacklist to the value of the blacklist defined in the module config
+		this._blacklist = config.blacklist;
+		// Set the max message length to the value defined in the module config
+		this.schema.properties.message.maxLength = config.maxMessageLength;
+		// Set the min message length to the value defined in the module config
+		this.schema.properties.message.minLength = config.minMessageLength;
+		console.log("this.schema: ", this.schema);
 	}
     // [...]
 }
 ----
 
-To store the blacklisted words form the module config in the command, create a new private command attribute `_blacklist`.
-Inside the method, assign the blacklist defined in the module config to `this._blacklist`, and also update the command schema with the minimum and maximum message length values defined in the config.
+To store the blacklisted words from the module config in the command, create a new private command attribute `_blacklist`.
+Inside the `init()` method of the command, assign the blacklist defined in the module config to `this._blacklist`, and also update the command schema with the minimum and maximum message length values defined in the config.
 
-Then, call the method at the bottom of the `init()` function of the module and use the respective config values as parameters:
+Then, call the method at the bottom of the `init()` method of the module and use the respective config values as parameters:
 
 .hello/module.ts
 [source,typescript]
@@ -256,9 +263,8 @@ export class HelloModule extends BaseModule {
     // eslint-disable-next-line @typescript-eslint/require-await
     public async init(blacklist: string[]): Promise<void> {
         // [...]
-        this.commands[0].init(config.blacklist,config.maxMessageLength,config.minMessageLength).then(res => {
-            console.log("Result: ", res);
-        }).catch(err => {
+        // Call the command init() method with config as parameter
+        this.commands[0].init(config).catch(err => {
             console.log("Error: ", err);
         });
     }
@@ -266,7 +272,7 @@ export class HelloModule extends BaseModule {
 }
 ----
 
-Now, the `blacklist`, `minMessageLength` and `maxMessageLength`, which are defined in the config, are available in the command.
+Now, the `blacklist`, `minMessageLength` and `maxMessageLength`, which are defined in the config.json file, are available in the command, and we can move on to implement the <<command-verification>>.
 
 == Command verification
 
@@ -469,3 +475,29 @@ Right now, there is only a way to post the hello message.
 Also the counter is created and incremented, but there is no way for an external service to request the data.
 
 To get Hello messages and the counter from the module, implement xref:{url_guides_module_endpoints_methods}[Endpoints and Methods] as explained in the next chapter.
+
+=== Verifying the command verification
+
+For this, create a transaction, similar to how it is done in the previous section <<try-the-new-command-out>>.
+But in this case, we want the transaction to be invalid, to verify it is using the values defined in the custom module config, that we created in guide xref:{url_guides_module_config}[].
+Therefore, it should violate at least one of the three command validations:
+
+. minimum Hello message Length: 5
+. maximum Hello message Length: 300
+. the Hello message contains none of the blacklisted words
+
+//TODO: Update this section + code example, once the error message includes the command verification error message
+//Because the message contains `badWord2`, which is also inlcuded in the blacklisted words of the module, the command verification fails and the node returns the following response, indicating that the transaction was not accepted:
+If the message violates one of the three requirements, the command verification fails and the node returns the following response, indicating that the transaction was not accepted:
++
+[source,json]
+----
+{
+    "jsonrpc": "2.0",
+    "id": "1",
+    "error": {
+        "message": "Transaction verification failed.",
+        "code": -32600
+    }
+}
+----

@@ -1,0 +1,146 @@
+= How to register a sidechain
+Chris Braithwaite <christopher.braithwaite@lightcurve.io> Mona Bärenfänger <mona@lightcurve.io>
+// Settings
+// :page-aliases: configuration.adoc
+:toc:
+:idprefix:
+:idseparator: -
+:v_sdk: v5.2.2
+:docs-sdk: lisk-sdk::
+// URLs
+:url_github_config_devnet: https://github.com/LiskHQ/lisk-sdk/blob/{v_sdk}/sdk/src/samples/config_devnet.json
+:url_github_config_schema_genesiscfg: https://github.com/LiskHQ/lisk-sdk/blob/{v_sdk}/framework/src/schema/application_config_schema.ts#L61
+:url_github_config_schema_default: https://github.com/LiskHQ/lisk-sdk/blob/{v_sdk}/framework/src/schema/application_config_schema.ts#L362
+:url_github_genesis_block: https://github.com/LiskHQ/lisk-sdk/blob/{v_sdk}/sdk/src/samples/genesis_block_devnet.json
+:url_github_sdk: https://github.com/LiskHQ/lisk-sdk/tree/{v_sdk}
+// Project URLs
+:url_architecture_communication: understand-blockchain/sdk/rpc.adoc
+:url_guides_asset: build-blockchain/create-asset.adoc
+:url_guides_dashboard: build-blockchain/using-dashboard.adoc
+:url_guides_module: build-blockchain/create-module.adoc
+:url_guides_plugin: build-blockchain/create-plugin.adoc
+:url_guides_setup: build-blockchain/create-blockchain-app.adoc
+:url_guides_non_forging_protection: run-blockchain/non-forging-node-protection.adoc
+:url_intro_modules_genesiscfg: understand-blockchain/sdk/modules-commands.adoc#genesis-config
+:url_references_config: {docs-sdk}config.adoc
+:url_references_cli_start: {docs-sdk}application-cli.adoc#start
+:url_rpc_endpoints: understand-blockchain/sdk/rpc.adoc
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// How to configure a blockchain application.
+
+// The `Application` instance expects two arguments:
+
+. A configuration file
+. A genesis block
+
+.src/app/app.ts
+[source,js]
+----
+import { Application, PartialApplicationConfig } from 'lisk-sdk';
+import { registerModules } from './modules';
+import { registerPlugins } from './plugins';
+
+export const getApplication = (
+	genesisBlock: Record<string, unknown>,
+	config: PartialApplicationConfig,
+): Application => {
+	const app = Application.defaultApplication(genesisBlock, config);
+
+	registerModules(app);
+	registerPlugins(app);
+
+	return app;
+};
+----
+
+== Setting a custom configuration
+
+To start the application with a custom `config.json`, add the `--config` flag to the xref:{url_references_cli_start}[start command] with a custom path to the configuration file, e.g. `--config my_custom_config.json`.
+
+[source,bash]
+----
+bin/run start --config my_custom_config.json --overwrite-config
+----
+
+=== How to create a custom config
+
+The optimal method to create a custom configuration for your app is to copy an existing `config.json` and adjust it to suit your requirements.
+
+For example, copy the default `config.json` of the blockchain application:
+
+.In the root directory of the blockchain application
+[source,bash]
+----
+cp config/default/config.json my_custom_config.json
+----
+
+=== Example: Configuration of the Hello World application
+
+Until now, it was not necessary to use any custom configurations for the Hello World application.
+However, if we want to interact with the application as described in the next guide xref:{url_guides_dashboard}[], it is necessary to change the RPC (Remote-Procedure-Call), configuration of the application, so that the dashboard plugin can connect to it.
+
+By default, the RPC API is disabled, and the communication protocol is set to `ipc`.
+It is now necessary to enable the RPC API and change the communication protocol to `ws`.
+
+Adjust the RPC configuration as follows:
+
+.my_custom_config.json
+[source,js]
+----
+{
+
+  // ...
+
+    "rpc": {
+        "enable": true,
+        "mode": "ws",
+        "port": 8080
+    },
+
+   // ...
+
+}
+----
+
+Restart the app to apply the new configuration.
+
+== Config file location
+
+The current configuration of a blockchain application is stored under the following path after the application is started for the first time:
+
+ ~/.lisk/APP_NAME/config/default/config.json <1>
+
+<1> Replace `APP_NAME` with the name of the blockchain application.
+
+== List of all available config options
+
+To get a complete overview of all configuration options for the Lisk SDK, please refer to the xref:{url_references_config}[].
+
+[TIP]
+
+It is not necessary to include all options that are included in the schema.
+The application will use {url_github_config_schema_default}[the default configuration options^] in the case whereby a config option is not specified.

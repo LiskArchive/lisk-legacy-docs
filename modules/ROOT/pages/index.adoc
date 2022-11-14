@@ -3,10 +3,15 @@ Mona Bärenfänger <mona@lightcurve.io> Christopher Braithwaite <christopher.bra
 // Settings
 :description: References and guides how to setup, update and manage a Lisk Core node.
 :toc: preamble
+:idprefix:
+:idseparator: -
+:v_sdk: v5.2.2
+:docs-sdk: lisk-sdk::
 :page-no-previous: true
 :docs_general: ROOT::
 :page-aliases: monitoring.adoc
 :imagesdir: ../assets/images
+
 // External URLs
 :url_faucet_testnet: https://testnet-faucet.lisk.com/
 :url_lisk_blog_betanet5: https://lisk.com/blog/development/launch-betanet-v5
@@ -48,6 +53,7 @@ Mona Bärenfänger <mona@lightcurve.io> Christopher Braithwaite <christopher.bra
 :url_lip44: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0044.md
 :url_lip40: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0040.md
 :url_lip39:  https://github.com/LiskHQ/lips/blob/main/proposals/lip-0039.md.
+:url_lip37: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0037.md#chain-identifiers-1
 
 image:banner_core.png[Core]
 
@@ -66,7 +72,7 @@ To provide a high level overview, the main functionalities are listed below:
 // => Lisk Core node stores all current account balances and transactions
 * To maintain the transaction pool, which might contain a subset of unconfirmed transactions.
 * To request and forward the unconfirmed transactions.
-* To possibly generate new blocks when running a delegate node.
+* To possibly generate new blocks when running a validator node.
 
 Furthermore, Lisk Core nodes are able to store all current addresses, balances, and transactions.
 
@@ -183,7 +189,7 @@ image::state_tree.png[align=center]
 The Lisk blockchain is a decentralized network that consists of many different servers, (or nodes).
 Node operators are required to set up Lisk Core on a server, and then connect it to the desired network.
 
-There are over 600 nodes around the world that are maintained by individuals, and these nodes communicate with the network.
+There are almost 2,000 nodes around the world that are maintained by individuals, and these nodes communicate with the network.
 For example, by broadcasting and receiving blocks or transactions from their peers.
 In addition, Lisk Core nodes are also required to generate/add new blocks to the blockchain.
 
@@ -192,7 +198,7 @@ In addition, Lisk Core nodes are also required to generate/add new blocks to the
 If you fall under one of the following categories listed below, then it is recommended to set up your own node:
 
 * *Exchanges* and other services that rely on a stable API interface to the network.
-* *Delegates* who have registered as a delegate and would like to actively generate new blocks.
+* *Validators* who have registered as a validator and would like to actively generate new blocks.
 * *Users* who do not trust external sources and want to be in full control over their node.
 
 === Why operate a node?
@@ -201,7 +207,7 @@ If you fall under one of the following categories listed below, then it is recom
 This is especially important when running an exchange and implementing LSK tokens.
 - To create your own snapshots of the blockchain.
 - To create transactions and send them to the network.
-- To have the option to xref:{url_config_block_generation}[generate] new blocks, (assuming you are an active delegate).
+- To have the option to xref:{url_config_block_generation}[generate] new blocks, (assuming you are an active validator).
 - To acquire full control in order to xref:{url_config}[configure] the node to your specific requirements.
 
 NOTE: To learn how to set up a node, please see the xref:{url_getting_started}[NPM setup] page.
@@ -214,43 +220,62 @@ Please be aware that there are two key accessible public networks existing which
 These networks are covered below.
 //Note: ChainIDs & ports could be further updated according to Manu.
 
-The network identifiers (nethash), are not exposed anymore.
-Therefore the network can be determined based on the `chainID`.
+==== Chain Identifiers
+
+The usage of the chain identifiers (previously known as network identifiers), which are currently used for transaction and block header signatures, to arbitrary signatures; are able to prevents replay attacks and the re-usage of signatures.
+More information on chain identifiers can be found in here in xref:{url_lip37}[LIP 37].
+
+Therefore, network identifiers (nethash), are not exposed anymore, and the network can be determined based on the `chainID`.
+Chain identifiers are 4-byte values, and the first byte is set to `CHAIN_ID_PREFIX_MAINNET` for chains running in the mainnet network, and hence to `CHAIN_ID_PREFIX_TESTNET` for chains running in the testnet network.
 The most significant byte within the `chainID` can be used to determine the network, and the remaining 3 bytes used to determine the chain.
 
 
+
 .Public networks of Lisk
-[cols="1h,1m,1m",options="header"]
+[cols="1h,1m",options="header"]
 |===
-| Network | Port (default) | Network Identifier
+| Network | Port (default)
 
 | Mainnet
 | `8001`
-| 00
 
 | Testnet
 | `7001`
-| 01
+
 
 |===
 
 // Used to identify the chains exchanging the cross-chain messages, the chainID can be seen below:
 
-[cols="1h,1m",options="header"]
-|===
-| Network | Lisk mainchain chainID
+// cols="1h,1m",options="header"]
+// |===
+// | Network | Lisk chainID
 
-| Mainnet
-| 00000000
+// | Mainnet
+// | 00000000
+// |Testnet
+// | 01000000
+
+[cols="1h,1m,1m,1m" options="header"]
+|===
+| Network | Name | Type | Value
+
+|Mainnet
+| `CHAIN_ID_PREFIX_MAINNET`
+| bytes
+| 0x00
+
 |Testnet
-| 01000000
+| `CHAIN_ID_PREFIX_TESTNET`
+|Bytes
+| 0x01
 
 |===
 
 === Mainnet
 
 The Mainnet is where the true Lisk economy exists.
-Within this network the Lisk users can transfer LSK tokens from one account to another, register accounts as delegates; and vote for other delegates.
+Within this network the Lisk users can transfer LSK tokens from one account to another, register accounts as delegates; and vote for other validators.
 
 ==== Mainnet blockchain explorer
 
@@ -293,17 +318,18 @@ The Lisk API documentation can be found xref:{url_lisk_api}[here].
 
 == Token
 
-The native token for the Lisk Mainnet is the *LSK*.
+The native token for the Lisk Mainchain is the *LSK*.
 Each LSK is further subdivided into 10^8^ *Beddows*.
+At this time there are no other tokens supported.
 
 // == Custom modules
 
 // Lisk Core includes the `legacyAccount` module which contains the following transaction.
 
-=== LSK Reclaim
+// === LSK Reclaim
 
-This transaction allows to access the balance that was sent to a legacy address without any associated public key.
-Legacy addresses, generated from the first eight bytes of the public key, were used in older versions of the protocol.
-This legacy address is deduced from the `senderPublicKey` of the transaction, and the amount specified in the transaction asset must correspond to the amount in the legacy account.
+// This transaction allows to access the balance that was sent to a legacy address without any associated public key.
+// Legacy addresses, generated from the first eight bytes of the public key, were used in older versions of the protocol.
+// This legacy address is deduced from the `senderPublicKey` of the transaction, and the amount specified in the transaction asset must correspond to the amount in the legacy account.
 
-image::ReclaimAsset.png[ReclaimAsset,330,147]
+// image::ReclaimAsset.png[ReclaimAsset,330,147]

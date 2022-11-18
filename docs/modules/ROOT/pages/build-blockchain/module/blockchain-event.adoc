@@ -15,7 +15,7 @@ On this page, you'll learn how to:
 * [x] Register the event in the module
 * [x] Emit the event in the module inside a module life cycle hook
 * [ ] Listen to the event.
-For an example how to listen to the event, check out the guide xref:{url_build_plugin}[]
+For an example of how to listen to the event, check out the guide xref:{url_build_plugin}[]
 ====
 
 Blockchain events, or module events, are logs of events that occur in the blockchain network during block execution.
@@ -35,10 +35,10 @@ This event should be emitted every time a new "Create Hello" command is executed
 
 == Create a new event type
 
-First, define the corresponding interface for the event in `tpes.ts`.
+First, define the corresponding interface for the event in `types.ts`.
 The event data shall contain the address of the sender of the Hello message, and the Hello message that was sent.
 
-.hello/types.ts
+.hello_client/src/app/modules/hello/types.ts
 [source,typescript]
 ----
 export interface NewHelloEventData {
@@ -49,7 +49,7 @@ export interface NewHelloEventData {
 
 Define the corresponding schema in `schema.ts`, too.
 
-.hello/schema.ts
+.hello_client/src/app/modules/hello/schema.ts
 [source,typescript]
 ----
 export const newHelloEventSchema = {
@@ -69,10 +69,10 @@ export const newHelloEventSchema = {
 };
 ----
 
-Create a new file inside the `events/` folder of the module, and import the above defined interface and schema.
+Create a new file called `new_hello.ts` inside the `events/` folder of the module, and import the above-defined interface and schema.
 To create the event class, also import the `BaseEvent` and `EventQueuer` from the `lisk-sdk`.
 
-.hello/events/new_hello.ts
+.hello_client/src/app/modules/hello/events/new_hello.ts
 [source,typescript]
 ----
 import { BaseEvent, EventQueuer } from 'lisk-sdk';
@@ -99,6 +99,7 @@ Inside of the event class, we need to define the following properties:
 
 Now that we created a new event type, import it into the `module.ts` file, and register the event in the module constructor.
 
+.hello_client/src/app/modules/hello/module.ts
 [source,typescript]
 ----
 import { NewHelloEvent } from './events/new_hello';
@@ -119,10 +120,11 @@ export class HelloModule extends BaseModule {
 
 == Emit the event
 
-Now that the event is registered with the module, you can call the `log()` method of the event any time inside the module.
+Now that the event is registered with the module, you can call the `log()` method of the event at any time inside the module.
 
 In this example, we want to emit the "New Hello" event every time a "Create Hello" command was executed, so we add the corresponding logic to the `afterCommandExecute()` module lifecycle hook.
 
+.hello_client/src/app/modules/hello/module.ts
 [source,typescript]
 ----
 import { NewHelloEvent } from './events/new_hello';
@@ -149,133 +151,6 @@ export class HelloModule extends BaseModule {
 }
 ----
 
-Now, the module will create a new event everytime a "Create Hello" command is executed, and the event will include the sender address and the sent Hello message.
+Now, the module will create a new event every time a "Create Hello" command is executed, and the event will include the sender address and the sent Hello message.
 
 NOTE: An example of how to listen to a specific event can be found in the guide xref:{url_build_plugin}[].
-
-////
-== Blockchain Events
-
-A list of events that this module is able to emit is covered here.
-
-Modules, plugins, and external services can subscribe to these events.
-
-TIP: See the xref:{url_intro_modules_events}[Events] section of the "Modules" introduction page and the xref:{url_advanced_communication_aliases}[Aliases] section of the "Communication" page for more information.
-
-Add a new event `newHello`.
-This event shall be published every time a user is updating their hello message.
-The `events` defined can be published to the application in the <<lifecycle-hooks>> of the module.
-
-.src/app/modules/hello/hello_module.ts
-[source,typescript]
-----
-export class HelloModule extends BaseModule {
-
-    // ...
-    public events = ['newHello'];
-
-    // ...
-}
-----
-
-== Lifecycle Hooks
-
-Lifecycle hooks allow a module to execute certain logic, before or after blocks or transactions are applied to the blockchain.
-
-Inside of the lifecycle hooks, it's possible to *publish* the above defined events to the application and to filter for certain transactions and blocks, before applying the logic.
-
-TIP: See the "Lifecycle Hooks" section of the xref:{url_intro_modules_lifecyclehooks}[Modules] introduction page for more information.
-
-In the hello module, two different lifecycle hooks are defined.
-
-afterTransactionApply::
-Publishes a new event `hello:newHello` for every applied `hello` transaction asset, and adds information about the sender of the transaction, and the corresponding hello message.
-
-afterGenesisBlockApply::
-If the genesis block is applied, it will set the counter for posted hello transactions to zero.
-
-.src/app/modules/hello/hello_module.ts
-[source,typescript]
-----
-export class HelloModule extends BaseModule {
-
-    // ...
-
-     // Lifecycle hooks
-    public async afterTransactionApply(_input: TransactionApplyContext) {
-        // Publish a `newHello` event for every received hello transaction
-        // 1. Check for correct module and asset IDs
-        if (_input.transaction.moduleID === this.id && _input.transaction.assetID === 0) {
-
-            // 2. Decode the transaction asset
-            const helloAsset = codec.decode(
-                helloAssetSchema,
-                _input.transaction.asset
-            );
-
-            // 3. Publish the event 'hello:newHello' and
-            // attach information about the sender address and the posted hello message.
-            this._channel.publish('hello:newHello', {
-                sender: _input.transaction._senderAddress.toString('hex'),
-                hello: helloAsset.helloString
-            });
-        }
-    }
-
-    public async afterGenesisBlockApply(_input: AfterGenesisBlockApplyContext) {
-        // Set the hello counter to zero after the genesis block is applied
-        await _input.stateStore.chain.set(
-            CHAIN_STATE_HELLO_COUNTER,
-            codec.encode(helloCounterSchema, { helloCounter: 0 })
-        );
-    }
-
-    // ...
-}
-----
-
-It is recommended to store the different schemas in a separate file, e.g. `schemas.js`, and import them in to the module and asset where required.
-
-TIP: For more information about schemas, check out the xref:{url_references_schemas}[] page.
-
-The following schemas are used in the lifecycle hooks:
-
-.src/app/modules/hello/schemas.js
-[source,js]
-----
-// This key is used to save the data for the hello counter in the database
-const CHAIN_STATE_HELLO_COUNTER = "hello:helloCounter";
-
-// This schema is used to decode/encode the data of the hello counter from/for the database
-const helloCounterSchema = {
-  $id: "lisk/hello/counter",
-  type: "object",
-  required: ["helloCounter"],
-  properties: {
-    helloCounter: {
-      dataType: "uint32",
-      fieldNumber: 1,
-    },
-  },
-};
-
-// This schema is used to decode/encode the data of the asset of the hello transaction from/for the database
-const helloAssetSchema = {
-  $id: "lisk/hello/asset",
-  type: "object",
-  required: ["helloString"],
-  properties: {
-    helloString: {
-      dataType: "string",
-      fieldNumber: 1,
-    },
-  },
-};
-
-module.exports = {
-  CHAIN_STATE_HELLO_COUNTER,
-  helloCounterSchema,
-  helloAssetSchema
-};
-----
-////

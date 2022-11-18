@@ -18,7 +18,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_guides_module_endpoints_methods: build-blockchain/module/endpoints-methods.adoc
 :url_understand_modules: understand-blockchain/sdk/modules-commands.adoc
 :url_understand_modules_commands: {url_understand_modules}#commands
-:url_sdk_references_commander: {docs_sdk}references/lisk-commander
+:url_sdk_references_commander: {docs_sdk}references/lisk-commander/index.adoc
 
 ====
 On this page, you'll learn how to:
@@ -50,14 +50,14 @@ In the root folder of the blockchain application, generate a skeleton for the ne
 
 The command `lisk generate:command` expects two arguments:
 
-. *Module name*: The name of the module the asset belongs to.
+. *Module name*: The name of the module the command belongs to.
 . *Command name*: The name of the new command.
 It needs to be a string that only consists of lower case and upper case letters [a-z, A-Z].
 No numbers, hyphens, etc., are allowed.
 
 For a complete overview of all available options of `lisk generate:command`, see the xref:{url_sdk_references_commander}[Lisk Commander reference] or type `lisk generate:command --help`.
 
-For our example, we choose `createHello` as command name, and `hello`  as module name:
+For our example, we choose `createHello` as the command name, and `hello`  as the module name:
 
 [[generate-command]]
 .In the client root folder
@@ -78,8 +78,8 @@ This will generate the following files:
 │    │    ├── index.ts
 │    │    ├── modules/
 │    │    │   └── hello/
-│    │    │      ├── commands/
-│    │    │      │     └──  create_hello_command.ts <1>
+│    │    │      ├── commands/ <1>
+│    │    │      │     └──  create_hello_command.ts <2>
 │    │    │      ├── endpoint.ts
 │    │    │      ├── events/
 │    │    │      ├── method.ts
@@ -96,18 +96,21 @@ This will generate the following files:
         ├── modules/
         │    └── hello/
         │       ├── commands/
-        │       │     └──  create_hello_command.ts <2>
+        │       │     └──  create_hello_command.ts <3>
         │       └── modules.spec.ts
         └── plugins/
 ----
 
-<1> Will contain the code for the command.
+<1> The `commands/` folder contains the xref:{url_intro_modules_commands}[commands] of the module.
+This folder is empty at first.
+<2> Will contain the code for the command.
 Currently, it contains the auto-generated command skeleton.
-<2> Will contain unit tests for the command.
+<3> Will contain unit tests for the command.
 Currently, it contains the auto-generated test skeletons.
 
 Additionally, it will already import and register the new command in the Hello module:
 
+.hello_client/src/app/modules/hello/module.ts
 [source,typescript]
 ----
 import { CreateHelloCommand } from "./commands/create_hello_command";
@@ -130,7 +133,7 @@ To change this, we implement the methods of the command in the following chapter
 
 Open the command skeleton in `create_hello_command.ts`:
 
-.src/app/modules/hello/commands/create_hello_command.ts
+.hello_client/src/app/modules/hello/commands/create_hello_command.ts
 [source,typescript]
 ----
 import {
@@ -163,13 +166,14 @@ export class CreateHelloCommand extends BaseCommand {
 
 == Command params & schema
 
-The command parameters are data that is provided by the transaction, that is required by the command to execute its' business logic.
-The parameters interface and schema define the data type, order of the command.
+The command parameters are data that is provided by the transaction, that is required by the command to execute its business logic.
+The parameters interface and schema define the data type, and order of the command.
 
 The command schema can also define additional properties like min and max length of a parameter.
 
 For creating a Hello message, define the parameters like so:
 
+.hello_client/src/app/modules/hello/commands/create_hello_command.ts
 [source,typescript]
 ----
 interface Params {
@@ -183,7 +187,7 @@ For the corresponding schema, create a new file `schema.ts` in the root folder o
 
 This file will be used to store all schemas that the module requires, for a better overview.
 
-.schema.ts
+.hello_client/src/app/modules/hello/schema.ts
 [source,typescript]
 ----
 export const createHelloSchema = {
@@ -210,6 +214,7 @@ Please check the {url_json_schema}[JSON schema reference^] for information about
 
 Now, import the schema to the Hello module and use it for the `schema` attribute of the module.:
 
+.hello_client/src/app/modules/hello/commands/create_hello_command.ts
 [source,typescript]
 ----
 import { createHelloSchema } from '../schema';
@@ -223,12 +228,12 @@ export class CreateHelloCommand extends BaseCommand {
 == Getting the module config
 
 Next, we need to get the blacklist, because it is required in the next step during the <<command-verification>>.
-The blacklist can be retrieved from the module config, which was defined in guide xref:{url_guides_module_config}[].
+The blacklist can be retrieved from the module config, which was defined in the guide on xref:{url_guides_module_config}[].
 Also, we want to update the minimum and maximum message length of the command schema with the values from the module configuration.
 
-To do this, create a new method `init()` in the command, that can be called int he `init()` function of the module, after the module received the values from the config:
+To do this, create a new method `init()` in the command, that can be called in the `init()` function of the module, after the module received the values from the config:
 
-.hello/commands/create_hello_command.ts
+.hello_client/src/app/modules/hello/commands/create_hello_command.ts
 [source,typescript]
 ----
 // [...]
@@ -254,7 +259,7 @@ Inside the `init()` method of the command, assign the blacklist defined in the m
 
 Then, call the method at the bottom of the `init()` method of the module and use the respective config values as parameters:
 
-.hello/module.ts
+.hello_client/src/app/modules/hello/module.ts
 [source,typescript]
 ----
 // [...]
@@ -272,28 +277,28 @@ export class HelloModule extends BaseModule {
 }
 ----
 
-Now, the `blacklist`, `minMessageLength` and `maxMessageLength`, which are defined in the config.json file, are available in the command, and we can move on to implement the <<command-verification>>.
+Now, the `blacklist`, `minMessageLength`, and `maxMessageLength`, which are defined in the **config.json** file, are available in the command, and we can move on to implement the <<command-verification>>.
 
 == Command verification
 
-The command is always verified, before it is executed by the node like defined in the <<command-execution>>.
+The command is always verified before it is executed by the node as defined in the <<command-execution>>.
 The verification of the command is defined in the `verify()` method of the command.
 
-There `CreateHello` command expects only one single parameter in the transaction, and this is the Hello message.
+The `CreateHello` command expects only one single parameter inside of the transaction, and this is the Hello message.
 Therefore, only the message needs to be verified here.
 
 The following points should be validated:
 
-. the message should not be shorter than the minimum message length defined in the command schema.
-. the message should not be longer than the maximum message length defined in the command schema.
-. the message should not contain any of the words defined in the blacklist of module config.
+. The message should not be shorter than the minimum message length defined in the command schema.
+. The message should not be longer than the maximum message length defined in the command schema.
+. The message should not contain any of the words defined in the blacklist of module config.
 
-We don't need to validate point 1. and 2. in the `verify()` method, because it is already validated by the schema.
+We don't need to validate points 1. and 2. in the `verify()` method, because they are already validated by the schema.
 
-Point 3. however, the blacklisted words, cannot be checked with the schema.
+For point 3. however, the blacklisted words, cannot be checked with the schema.
 So let's implement the `verify()` method to filter the message for words in the blacklist, and throw an error if any word is found.
 
-.hello/commands/create_hello_command.ts
+.hello_client/src/app/modules/hello/commands/create_hello_command.ts
 [source,typescript]
 ----
 // [...]
@@ -345,16 +350,16 @@ Also, we need to increment the Hello counter by one, each time a command is exec
 
 Following this, the general business logic of the `execute()` method looks like this:
 
-. Get account data of the sender of the CreateHello transaction.
-. Get message and counter stores, that we created in the example in xref:{url_guides_module_stores}[].
-. Save the Hello message to the message store, using the senderAddress as key, and the message as value
+. Get the account data of the sender of the "Create Hello" transaction.
+. Get the message and counter stores, that we created in the example in xref:{url_guides_module_stores}[].
+. Save the Hello message to the message store, using the `senderAddress` as the key, and the `message` as the value.
 . Get the Hello counter from the counter store.
 . Increment the Hello counter +1.
 . Save the Hello counter to the counter store.
 
 The corresponding code is shown below:
 
-.hello/commands/create_hello_command.ts
+.hello_client/src/app/modules/hello/commands/create_hello_command.ts
 [source,typescript]
 ----
 // [...]
@@ -411,7 +416,7 @@ In the root folder of the Hello client, execute the following steps in the termi
 
  % ./bin/run transaction:create hello createHello 10000000 --params='{"message":"Hello Lisk SDK v6!"}' --json --key-derivation-path="m/44'/134'/0'" --pretty
 +
-Use the password contained in the file `config/default/passphrase.json` when prompted for it.
+Use the passphrase contained in the file `config/default/passphrase.json` when prompted for it.
 You can ignore the warning `Warning: Passphrase contains 24 words instead of expected 12. Passphrase contains 23 whitespaces instead of expected 11.`
 The output of the command looks like this:
 +
@@ -441,7 +446,7 @@ The output of the command looks like this:
 The first object is the transaction in binary format, and the second object is the same transaction in JSON format, because we added the flags `--json` and `pretty`.
 
 . Send the transaction:
-Use the transaction in binary format to post the transaction to the node like shown below.
+Use the transaction in binary format to post the transaction to the node as shown below.
 Note: When you use `curl`, make sure you have `http` enabled in the config under `rpc.modes`.
 +
 [source,bash]
@@ -471,8 +476,8 @@ Transaction was included in a block:
  2022-11-04T10:18:50.422Z INFO engine 33965 [id=a58eed5296010bb0fbd8ae4118b101d137c24697c457f86dab9ac29879b2ab8f height=99 generator=lskaz4tmrvjnuz5fx956mh8b6x6g4d8fr5vdnk3ha numberOfTransactions=1 numberOfAssets=1 numberOfEvents=5] Block executed
 
 But how to actually get the hello messages back?
-Right now, there is only a way to post the hello message.
-Also the counter is created and incremented, but there is no way for an external service to request the data.
+Right now, there is only one way to post a hello message.
+Also, although the counter is created and incremented, however, there is no way for an external service to request the data.
 
 To get Hello messages and the counter from the module, implement xref:{url_guides_module_endpoints_methods}[Endpoints and Methods] as explained in the next chapter.
 
@@ -482,14 +487,13 @@ For this, create a transaction, similar to how it is done in the previous sectio
 But in this case, we want the transaction to be invalid, to verify it is using the values defined in the custom module config, that we created in guide xref:{url_guides_module_config}[].
 Therefore, it should violate at least one of the three command validations:
 
-. minimum Hello message Length: 5
-. maximum Hello message Length: 300
-. the Hello message contains none of the blacklisted words
+. Minimum Hello message length: 5.
+. Maximum Hello message length: 300.
+. The Hello message contains none of the blacklisted words.
 
 //TODO: Update this section + code example, once the error message includes the command verification error message
 //Because the message contains `badWord2`, which is also inlcuded in the blacklisted words of the module, the command verification fails and the node returns the following response, indicating that the transaction was not accepted:
 If the message violates one of the three requirements, the command verification fails and the node returns the following response, indicating that the transaction was not accepted:
-+
 [source,json]
 ----
 {

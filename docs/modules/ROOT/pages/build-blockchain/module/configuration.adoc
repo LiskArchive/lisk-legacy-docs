@@ -8,6 +8,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 // Project URLS
 :url_build_plugin: build-blockchain/create-plugin.adoc
 :url_build_command: build-blockchain/module/command.adoc
+:url_build_config: build-blockchain/configuration.adoc
 :url_build_command_try: build-blockchain/module/command.adoc#try-the-new-command-out
 
 ====
@@ -39,7 +40,7 @@ For the Hello module, we want to provide configuration options for the following
 
 Therefore, we define the module default config as follows:
 
-./hello/module.ts
+.hello_client/src/app/modules/hello/module.ts
 [source,typescript]
 ----
 export const defaultConfig = {
@@ -58,7 +59,7 @@ In our example, we define the following default config:
 
 Once the default config is created, define the corresponding module config interface in `types.ts`:
 
-.hello/types.ts
+.hello_client/src/app/modules/hello/types.ts
 [source,typescript]
 ----
 import { JSONObject } from 'lisk-sdk';
@@ -74,7 +75,7 @@ export type ModuleConfigJSON = JSONObject<ModuleConfig>;
 
 The config schema is required to validate the module config defined in `config.json`, so add the respective config schema to `schema.ts` as well:
 
-./hello/schema.ts
+.hello_client/src/app/modules/hello/schema.ts
 [source,typescript]
 ----
 export const configSchema = {
@@ -107,11 +108,11 @@ export const configSchema = {
 };
 ----
 
-== Define a custom module configuration
+== Define a module configuration file
 
-Now, open the configuration file and add the config option for the Hello module like this:
+Open the configuration file that was created in the guide xref:{url_build_config}[], and add the config option for the Hello module like this:
 
-.custom_config.json
+.hello_client/config/custom_config.json
 [source,json]
 ----
 {
@@ -131,9 +132,9 @@ In the example, we increase the max message length to `300`, the min message len
 
 == Initialize the module config
 
-To make the custom config which was defined in the previous step <<define-a-custom-module-configuration>> accessible in the module, retrieve the config options in the `init()` method like so:
+Now, to make the custom config accessible in the module, retrieve the config options in the `init()` method like so:
 
-./hello/module.ts
+.hello_client/src/app/modules/hello/module.ts
 [source,typescript]
 ----
 import {
@@ -156,151 +157,25 @@ export class HelloModule extends BaseModule {
     // [...]
 
     public async init(args: ModuleInitArgs): Promise<void> {
-        // Get the module config defined in the config.json file
+        // Get the module config defined in the config.json of the node
         const { moduleConfig } = args;
         // Overwrite the default module config with values from config.json, if set
         const config = utils.objects.mergeDeep({}, defaultConfig, moduleConfig) as ModuleConfigJSON;
-        // Validate the provided config with the config schema
+        // Validate the config with the config schema
         validator.validate<ModuleConfigJSON>(configSchema, config);
     }
     // [...]
 }
 ----
 
-The custom config is merged with the default config.
-This will overwrite every value of the default config with the value of the custom config, if it is set.
-If no value is set in the custom config, it will use the value of the default config.
+The configuration options which we defined in the `custom_config.json` file used by the node, are merged with the `defaultConfig` that is defined above the `HelloModule` class.
+This will overwrite every value of the default config with the value of the user defined config.
+If no value is set in the node config, it will use the value of the `defaultConfig`.
 
 Once the configs are merged, the module config is validated against the config schema defined in step <<define-a-module-schema>>.
 
-// As a last step, the config values are passed to the command by calling the commands' `init()` method, with the config as parameter.
-
 == Testing the custom module config
 
-To verify that the config options which we defined in step <<define-a-custom-module-configuration>> are really used during the verification of a command, we first need to create the new command type and then send some "Create Hello" transactions to the node.
+To verify that the config options which we defined in step <<define-a-module-configuration-file>> are really used during the verification of a command, we first need to create the new command type and then send some "Create Hello" transactions to the node.
 
 Please check out the guide xref:{url_build_command}[], especially the section xref:{url_build_command_try}[-> Try the new command out] for further details on how to test and verify the config values.
-
-
-////
-== Use the config values in the command
-
-In the command, create a new method `init()` to update the command blacklist and schema wih the values from the module config.
-
-./hello/command/create_hello_command.ts
-[source,typescript]
-----
-// [...]
-export class CreateHelloCommand extends BaseCommand {
-    public schema = createHelloSchema;
-    // Create private attribute _blacklist
-    private _blacklist!: string[];
-
-    // Create init() method for command
-    public async init(config: ModuleConfig): Promise<void> {
-		// Set _blacklist to the value of the blacklist defined in the module config
-		this._blacklist = config.blacklist;
-		// Set the max message length to the value defined in the module config
-		this.schema.properties.message.maxLength = config.maxMessageLength;
-		// Set the min message length to the value defined in the module config
-		this.schema.properties.message.minLength = config.minMessageLength;
-		console.log("this.schema: ", this.schema);
-	}
-    // [...]
-}
-----
-
-== Testing the custom module config
-
-To verify that the config options which we defined in `custom_config.json` in step <<define-a-custom-module-configuration>> are really used during the verification of a command, we first need to create the new command type and then send some "Create Hello" transactions to the node.
-
-Please check out the guide xref:{}[], especially the section xref:{}[] for further details how to do it.
-
-For this, we create a transaction, similar to how it is done in xref:{url_build_command_try}[How to create a command -> Try the new command out].
-But in this case, we want the transaction to be invalid, to verify it is using the custom module config.
-Therefore, it should violate at least one of the three command validations:
-
-. minimum Hello message Length: 5
-. maximum Hello message Length: 300
-. the Hello message contains none of the blacklisted words
-
-In the root folder of the Hello client, execute the following steps in the terminal:
-
-. Rebuild the client:
-
-  npm run build
-
-. Start the client:
-
- ./bin/run start --config=config/custom_config.json
-
-. In another terminal window, create the transaction:
-
- % ./bin/run transaction:create hello createHello 10000000 --params='{"message":"foo"}' --json --key-derivation-path="m/44'/134'/0'" --pretty
-+
-With the message `foo`, we go below the minimum message length which we defined as `5` in `custom_config.json`, to test if the command fails in the verification, as expected.
-Alternatively, you can include a word from the blacklist in the message, or exceed the maximum message length, to make the transaction invalid.
-+
-Use the password contained in the file `config/default/passphrase.json` when prompted for it.
-You can ignore the warning `Warning: Passphrase contains 24 words instead of expected 12. Passphrase contains 23 whitespaces instead of expected 11.`
-The output of the command looks like this:
-+
-[source,bash]
-----
-{
-  "transaction": "0a0568656c6c6f120b63726561746548656c6c6f18002080ade2042a205412b41c5bf15b68c779c87fc44baafdf5d2301556227a91a60599b86b4ab51e322b0a2968692c2074686973206973206120746573742c20696c6c6567616c576f726420616e6420736f206f6e3a400cd91d8980e057b87186563def7ec3c33d4c00cab40dcaadd222d8e4ddc95402edfafd6e4f387ef7cb4eca88b36c8dd774448163388d08c4c1522efd5bc23102"
-}
-{
-  "transaction": {
-    "module": "hello",
-    "command": "createHello",
-    "fee": "10000000",
-    "nonce": "0",
-    "senderPublicKey": "5412b41c5bf15b68c779c87fc44baafdf5d2301556227a91a60599b86b4ab51e",
-    "signatures": [
-      "0cd91d8980e057b87186563def7ec3c33d4c00cab40dcaadd222d8e4ddc95402edfafd6e4f387ef7cb4eca88b36c8dd774448163388d08c4c1522efd5bc23102"
-    ],
-    "params": {
-      "message": "foo"
-    },
-    "id": "7ffb4283f0ecc765b7ddb1494e97c22471e136824b437594945f0a8224bc7abf"
-  }
-}
-----
-+
-The first object is the transaction in binary format, and the second object is the same transaction in JSON format, because we added the flags `--json` and `pretty`.
-
-. Send the transaction:
-Use the transaction in binary format to post the transaction to the node like shown below.
-Note: When you use `curl`, make sure you have `http` enabled in the config under `rpc.modes`.
-+
-[source,bash]
-----
-curl --location --request POST 'http://localhost:7887/rpc' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "jsonrpc": "2.0",
-    "id": "1",
-    "method": "txpool_postTransaction",
-    "params": {
-        "transaction": "0a0568656c6c6f120b63726561746548656c6c6f18002080ade2042a205412b41c5bf15b68c779c87fc44baafdf5d2301556227a91a60599b86b4ab51e322b0a2968692c2074686973206973206120746573742c20696c6c6567616c576f726420616e6420736f206f6e3a400cd91d8980e057b87186563def7ec3c33d4c00cab40dcaadd222d8e4ddc95402edfafd6e4f387ef7cb4eca88b36c8dd774448163388d08c4c1522efd5bc23102"
-    }
-}'
-----
-+
-//TODO: Update this section + code example, once the error message includes the command verification error message
-//Because the message contains `badWord2`, which is also inlcuded in the blacklisted words of the module, the command verification fails and the node returns the following response, indicating that the transaction was not accepted:
-Because the message length is below to minimum message length we defined in `custom_config.json`, the command verification fails and the node returns the following response, indicating that the transaction was not accepted:
-+
-[source,json]
-----
-{
-    "jsonrpc": "2.0",
-    "id": "1",
-    "error": {
-        "message": "Transaction verification failed.",
-        "code": -32600
-    }
-}
-----
-////

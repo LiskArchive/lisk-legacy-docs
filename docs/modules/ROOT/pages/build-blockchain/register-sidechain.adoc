@@ -1,7 +1,8 @@
 = How to register a sidechain
 Chris Braithwaite <christopher.braithwaite@lightcurve.io> Mona Bärenfänger <mona@lightcurve.io>
+:description: How to register a sidechain to the mainchain and vice versa.
 // Settings
-// :page-aliases: configuration.adoc
+// :page-aliases:
 :toc:
 :idprefix:
 :idseparator: -
@@ -26,34 +27,201 @@ Chris Braithwaite <christopher.braithwaite@lightcurve.io> Mona Bärenfänger <mo
 :url_references_cli_start: {docs-sdk}application-cli.adoc#start
 :url_rpc_endpoints: understand-blockchain/sdk/rpc.adoc
 
+:url_ccu: lisk-docs::understand-blockchain/interoperability/communication.adoc#creating-and-posting-ccus
+:url_xxx: lisk-docs::understand-blockchain/interoperability/sidechain-registration-and-recovery.adoc
+
+:url_lip34: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0034.md
+:url_sha_256: https://blog.boot.dev/cryptography/how-sha-2-works-step-by-step-sha-256/
+:url_bls_key: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0038.md#public-key-registration-and-proof-of-possession
+:url_nonce: lisk-docs::understand-blockchain/lisk-protocol/transactions.adoc#nonce
+:url_lip56: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0056.md
+:url_sidechain_reg_recovery: lisk-docs::understand-blockchain/interoperability/sidechain-registration-and-recovery.adoc
+:url_update_cross_chain-transactions_lipxx: https://github.com/LiskHQ/lips/blob/main/proposals/lip-00xx.md
+:url_reg_recovery: lisk-docs::understand-blockchain/interoperability/sidechain-registration-and-recovery.adoc#sidechain-registration-command
+:url_reg_commands: lisk-docs::understand-blockchain/interoperability/sidechain-registration-and-recovery.adoc#sidechain-registration-transaction-commands
+
 // Explain how to register a sidechain to a mainchain in build blockchain section.
 // Explain command to register a sidechain
 // Explain how to define chainID with concept of networkID
 // Explain how to register mainchain to a sidechain
 
 
-== Sidechains in Lisk
+== Lisk sidechains
 
-As previously covered a  sidechain can be defined as a separate blockchain next to the mainchain, and the inclusion of a transaction in one of the blockchains can have an effect on the other blockchain. In this section, the registration process is explained.
-
+Within the Lisk ecosystem a sidechain can be in one of three status modes: “registered”, “active”, and “terminated”.
+These correspond to the three stages of the sidechain lifecycle.
+The sidechain account is automatically set to “registered” when it is created.
+As previously covered in the xref:{url_sidechain_reg_recovery}[Sidechain registration and recovery page], a  sidechain can be defined as a separate blockchain next to the mainchain, and the inclusion of a transaction in one of the blockchains can have an effect on the other blockchain.
+In this section, the registration process is explained.
 
 === Sidechain registration overview
 
+Out of the 3 messages used within the interoperability module, we will focus here on the registration message, namely,  used when registering a chain.
+This message must be the first message added to the inbox for a xref:{url_ccu}[CCU] to activate the channel between the chains.
+Furthermore, it serves as a guarantee that the correct chain ID, name, and message fee token were used when the registration transaction was sent on the sidechain.
+
+=== Sidechain registration procedure
+
+A sidechain registration command can be sent by any user account in the Lisk Mainchain that has adequate funds to pay the required fee.
+The processing of this command is designed to create of a sidechain account in the mainchain state associated with a unique network identifier and a name.
+Hence, every new sidechain occupies a certain namespace within the ecosystem.
+Additionally, every newly registered sidechain can increase the size of every cross-chain update command posted on the mainchain (due to the increasing size of the xref:{update_cross_chain-transactions_lipxx}[outboxRootWitness] property of the command).
+For these two reasons, the minimum fee for this command has an added constant similar to the extra fee in a delegate registration command.
+The value of this extra registration fee is 10 LSK tokens.
+
+Once the sidechain registration command is processed, the sidechain account status is set to registered.
+In this state, the cross-chain channel is still not active, so the users on the mainchain or other chains cannot send cross-chain messages (CCMs) to this sidechain yet.
+Moreover, the liveness requirement to maintain the channel is not enforced, this means that there is no specific time requirement for a sidechain to be activated on the mainchain, it can stay in the registered status for any period of time.
+When a first valid cross-chain update command from this sidechain is processed, the sidechain status is changed to active, making it active in the ecosystem.
+Now it is possible to send CCMs to the sidechain and the liveness condition is enforced.
+
+
+
+=== Connecting a Sidechain
+
+The sidechain registration command is used to register a sidechain on the Lisk mainchain.
+Once this command is processed, a new account for the sidechain is created in the mainchain state under the interoperability store.
+The account is initialized with an empty inbox and outbox, while the sidechain name and the initial validators set are given in the command parameters.
+The network ID is calculated from the address of the command sender and the genesis block ID, also given in the command parameters.
+
+
+The following parameters below are included in the registration command:
+
+* `name` -  The name property sets the name of the sidechain as a string of characters, and has to be unique within the Lisk ecosystem.
+
+// * `genesisBlockid` - The ID of the genesis block ID  (as is defined in xref:{url_lip34}[LIP34]), is computed from the xref:{url_sha_256}[SHA-256] digest of the serialized bytes of the sidechain genesis block.
+// It can also help future sidechain node operators to identify the sidechain genesis block with respect to its value.
+
+* `initValidators` - This property defines the set of eligible keys with their respective weights and the certificate threshold required to sign the first certificate from the sidechain.
+It is an object containing the following properties:
+
+.. `keys`: An array of xref:{url_bls_key}[BLS public keys].
+The set of public keys that are eligible to sign the next certificate.
+
+.. xref:{url_lip56}[weights]: An array of integers of the same size as the keys property, where each element is the weight of the corresponding key.
+For PoS chains, the value of the elements of this array is usually 1 as every active validator has the same finality weight to sign the next certificate.
+
+.. `certificateThreshold`: An integer setting the minimum signatures weight required for the first sidechain certificate to be valid.
+
+
+
+=== Chain Identifiers
+
+
+The chain identifiers for both transaction and block signatures were previously known as network identifiers.
+The chain ID can be considered as a development of the network ID concept.
+It is used to prevent transaction replay attacks in different networks, and now also helps to identify the chain in the ecosystem.
+
+Chain identifiers are 4-byte values that follow a specific format: the first byte is used to identify the network in which the chain is running (either the mainnet, official testnet, or any other test network); the other 3 bytes identify the chain within the network.
+The network-specific prefix is included explicitly to ensure that a chain does not use the same chain identifier in the test network as in the mainnet.
+
+By using 4 bytes instead of 32 bytes this provides the distinct advantage whereby users are able to easily verify that they are signing a transaction for the correct blockchain.
+In addition, the chain identifier can be directly set by the blockchain creator, which is far more convenient than generating a random 32-byte value.
+
+The first byte is set to `CHAIN_ID_PREFIX_MAINNET` for chains running in the mainnet network and to `CHAIN_ID_PREFIX_TESTNET` for chains running in the testnet network.
+The other 3 bytes must be chosen uniquely for the respective blockchain, i.e., no other blockchain created with the Lisk SDK should use the same 3 bytes.
+
+The chain-identifiers prefixes currently specified can be found here in the xref:{url_reg_recovery}[Sidechain registration and recovery page].
+
+
+
+==== Chain ID
+
+
+When processing the sidechain registration command, the chain ID for a sidechain is deterministically computed.
+Specifically, the chain ID of a new sidechain is assigned as an incremental integer similar to xref:{url_nonce}[transaction nonces].
+//To do source link for transaction nonces
+
+The format of the chain IDs has been designed to provide an efficient and consolidated technique to uniquely identify chains in the ecosystem.
+Furthermore, an additional advantage, is that the integer assigned as the chain ID for a users favorite blockchain application can easily be remembered.
+
+The command ID of this transaction is `COMMAND_ID_SIDECHAIN_REG`.
+
+This command has an additional fee, whereby the `REGISTRATION_FEE` is a constant in the protocol.
+[source,js]
+----
+extra fee = REGISTRATION_FEE
+----
+
+* Parameters
+
+[source,js]
+----
+sidechainRegParams = {
+ "type":"object",
+ "properties":{
+    "name":{
+       "dataType":"string",
+       "fieldNumber":1
+    },
+    "genesisBlockID":{
+       "dataType":"bytes",
+       "fieldNumber":2
+    },
+    "initValidators":{
+       "type":"object",
+       "properties":{
+          "keys":{
+             "type":"array",
+             "items":{
+                "dataType":"bytes"
+             },
+             "fieldNumber":1
+          },
+          "weights":{
+             "type":"array",
+             "items":{
+                "dataType":"uint64"
+             },
+             "fieldNumber":2
+          },
+          "certificateThreshold":{
+             "dataType":"uint64",
+             "fieldNumber":3
+          },
+          "required":[
+             "keys",
+             "weights",
+             "certificateThreshold"
+          ],
+          "fieldNumber":3
+       }
+    }
+ },
+ "required":[
+    "name",
+    "genesisBlockID",
+    "initValidators"
+ ]
+}
+
+
+----
+
+
+The sidechain registration commands and parameters can be found here in the xref:{url_reg_commands}[Sidechain registration and recovery page].
 
 
 
 
 
 
+jjjj
 
 
+=== Mainchain Registration on a Sidechain
 
+...This is in the sidechain reg and recovery page............Once the sidechain has been registered on the mainchain, a similar registration process should happen in the sidechain before the interoperable channel is opened between the two chains.
+This is done by submitting a transaction with the mainchain registration command in the sidechain, which implies the creation of a _mainchain account_ in the sidechain state associated with the Lisk mainchain and other structures needed for interoperability.
+This mainchain account has a similar structure as the one depicted in Figure 1.
+By protocol, the chain ID of the mainchain is a constant equal to `CHAIN_ID_MAINCHAIN` in the ecosystem.
 
+A similar registration process has to be initiated within the sidechain to enable an interoperable channel to fuction.
+This is achieved by performing a transaction with the mainchain registration command within the respective sidechain.
+Therefore, a
 
+The mainchain command has the following parameters:
 
-
-
-
-
+Link to the sidechain reg and recovery page for the commands
 
 

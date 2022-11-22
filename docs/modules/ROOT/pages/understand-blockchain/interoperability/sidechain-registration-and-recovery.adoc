@@ -1,0 +1,1688 @@
+= Sidechain Registration & Recovery
+Chris Braithwaite <christopher.braithwaite@lightcurve.io> Mona Bärenfänger <mona@lightcurve.io>
+:description: How to register, terminate, and recover a sidechain.
+:toc:
+:idprefix:
+:idseparator: -
+:docs-sdk: lisk-sdk::
+:imagesdir: ../../assets/images
+
+:url_cct: understand-blockchain/interoperability/communication.adoc
+:url_ccm: understand-blockchain/interoperability/communication.adoc#sending-cross-chain-transactions-to-generate-ccms
+:url_ccu: understand-blockchain/interoperability/communication.adoc#relaying-ccms-in-a-ccu
+//:url_ccm1: understand-blockchain/interoperability/communication.adoc#inducing-state-changes-across-chains-with-ccms
+//:url_bls: pages/glossary.adoc#bls
+// :url_bft_weights: pages/glossary.adoc#bft-weight
+:url_outbox_rootwitness: understand-blockchain/interoperability/communication.adoc
+:url_sdk_token_module: {docs_sdk}modules/token-module.adoc
+:url_custom_module: understand-blockchain/sdk/modules-commands
+:url_nft_module: tutorial/nft.adoc#the-nft-module
+:url_lip: https://github.com/LiskHQ/lips/blob/master/proposals/lip-0045.md
+
+//:url_how_blockchain_works: intro/how-blockchain-works.adoc
+//:url_transactions: understand-blockchain/lisk-protocol/transactions.adoc
+
+== Overview - What is a Sidechain?
+
+A sidechain is a separate blockchain next to the mainchain, where the inclusion of a transaction in one of the blockchains can have an effect on the other blockchain.
+These effects on the other blockchain can facilitate, for example, moving digital assets between the mainchain and the sidechain.
+Having a mainchain and some sidechains in parallel results in a higher overall transaction throughput.
+
+== Sidechains in Lisk
+
+Within the Lisk network, a transaction that can have an effect on another blockchain is called a xref:{url_cct}[cross-chain transaction].
+Such a transaction emits one or more xref:{url_ccm}[cross-chain messages] from the sending chain.
+The emitted cross-chain messages on the sending chain are then collected by a relayer and transferred to the receiving chain via a so-called xref:{url_ccu}[cross-chain updated transaction] (CCU).
+When the CCU is included in the receiving chain, the cross-chain messages induce some state changes.
+This is how a transaction from a sidechain can have an effect on the mainchain.
+
+The main purpose of deploying sidechains in the Lisk ecosystem is to increase scalability. Therefore, the more sidechains that exist in the ecosystem mean the more transactions can be processed per second.
+It is intended that each sidechain serves one application, which means, for instance, there could be a sidechain dedicated to a decentralized exchange application.
+
+== Life Cycle of a Sidechain
+
+The life cycle of a sidechain can be broken down into 3 parts, corresponding to the following 3 values of the account status property: ''registered'', ''active'', and ''terminated''.
+
+Firstly, a sidechain registers on the mainchain with a *sidechain registration command*.
+This command creates the sidechain account on the mainchain with the initial status set to `registered`.
+Thereafter, the mainchain account is similarly created on a sidechain with a *mainchain registration command*.
+
+After a sidechain has been registered on the mainchain, it cannot receive any cross-chain message and does not need to follow the liveness rule, until the first sidechain CCU containing some cross-chain messages has been included in the mainchain.
+The liveness rule requires active sidechains to prove their liveness once every 30 days by including a CCU in the mainchain, or the sidechain account is terminated.
+At this point, the status of the sidechain account on the mainchain is updated to ''active'' and the liveness requirement rule is then enforced.
+
+Therefore, if no CCU is received within 30 days, the *chain account is terminated* and no more CCMs can be sent to or received from the sidechain.
+A sidechain account can also be terminated if the sidechain posts a CCU containing a CCM with an invalid schema or with an invalid sending `chainID`.
+A message targeting a terminated chain is bounced back to the mainchain instead of being forwarded.
+When this happens, a "terminated sidechain" message is emitted by the mainchain, targeting the original sending chain.
+When this message is processed, the chain is also terminated in the sending chain, blocking future messages.
+
+When a chain is terminated, a "terminated state" account is created, storing the last certified state root of the terminated chain.
+Then, users can recover tokens from the terminated sidechain with a <<State Recovery Command>> or proceed with the <<Message Recovery Initialization Command>> to kick off the recovery of pending cross-chain messages.
+The sidechain termination and recovery process is covered later on this page.
+
+== How to register a sidechain
+
+As mentioned in the previous paragraph to enable a sidechain to operate, it first has to be registered in the Lisk mainchain via a sidechain registration command.
+This requires that the sidechain registration command is processed, which will then result in the sidechain account status being set to registered.
+However, at this point, the channel is not active, so no cross-chain messages (CCMs) can be sent yet.
+Hence, a sidechain account that is already associated with a name and a unique chain ID, exists in the mainchain state.
+Therefore, each new sidechain occupies a certain namespace in the ecosystem.
+
+=== Sidechain Registration Process
+
+A transaction with a <<Sidechain Registration Command>> can be sent by any user account in the Lisk Mainchain that possesses adequate funds to pay the required fee.
+As described in the <<Life Cycle of a Sidechain>> section above, once the Sidechains registration process has been completed, it does not need to be activated on the mainchain, and will remain inactive until the first valid CCU containing some cross-chain messages has been sent and processed.
+At this point, it will become active in the ecosystem.
+
+==== Registration Message
+
+The role of the registration message is to allow for a safe activation of the channel between the sending and receiving chains.
+It guarantees that when the CCU activating the channel is executed, a registration transaction has been included on the partner chain.
+When a sidechain is registered on the mainchain, as previously mentioned, an ecosystem-wide chain ID and name are assigned to this chain.
+The chain name, network ID, and the token used for the message fees are included in a registration message that is appended to the sidechain outbox.
+When the first cross-chain update containing messages is sent to the sidechain, the equality between the properties in the registration message and the ones in the interoperability store is verified.
+
+==== Sidechain Structure on the Mainchain
+
+As discussed, once a new sidechain is registered on the mainchain by using the registration command, this results in a sidechain account being created in the Lisk mainchain state.
+// TO DO Therefore, this implies that the corresponding key-value entries for the sidechain are added to the interoperability module store as shown below in Figure 1.
+// TO DO (LIP 0045 - properties of the interoperability module store to refer to this...)
+
+The values of the account entries are initialized, and the `name`, `chainID`, and `initValidators`, properties are computed from the sidechain registration command.
+
+This <<Sidechain Registration Command>> assigns a unique bytes value as the chain ID that identifies the sidechain in the ecosystem.
+Furthermore, new data structures are inserted for the sidechain in the Lisk mainchain state.
+This results in a new entry being created in the five different substores of the interoperability module store listed below, and can also be seen in the diagram below in figure 2.
+
+The following substores are used:
+*outbox root substore*, *chain data substore*, *channel data substore*, *chain validators substore*, and *registered names*.
+
+.The Interoperability module store.
+image::understand-blockchain/interop/interop-store_v1.png[ align="center" ,800]
+
+Each box represents a substore, where we indicate the `storeKey -> storeValue relation`.
+For the Lisk mainchain, the 'own chain' substore exists by default in the state whereas there is one entry per registered sidechain for five other substores (outbox root, chain data, channel data, chain validators, registered names), created by a sidechain registration command.
+For sidechains, the 'own chain' and one entry for the mainchain account for four other substores (outbox root, chain data, channel data, and chain validators) are created by the <<Mainchain Registration Command>>.
+
+=== Sidechain Registration Command
+
+The sidechain registration command is used to register a sidechain on the Lisk mainchain.
+Once this command is processed, a new account for the sidechain is created in the mainchain state under the interoperability store.
+The account is initialized with an empty inbox and outbox, while the sidechain name, chain ID, and the initial validators set are given in the command parameters.
+
+In order to connect a new sidechain to the ecosystem, the sidechain registration command contains the following parameters:
+
+* *name*
+
+The `name` property sets the name of the sidechain as a string of characters. It has to be unique within the Lisk ecosystem, and should contain only characters from the set *a-z0-9!@$&_.*
+
+* *initValidators*
+
+The `initValidators` property defines the set of eligible BLS public keys with their respective BFT weights required to sign the first certificate from the sidechain.
+
+* *certificateThreshold*
+
+The `certificateThreshold` property is an integer setting the minimum signatures weight required for the first sidechain certificate to be valid.
+
+* *sidechainRegistrationFee*
+
+The `sidechainRegistrationFee` property accounts for the extra fee required to register the sidechain. It should be set to the value of the `REGISTRATION_FEE` constant.
+
+* *chainID*
+
+The `chainID` property is responsible for uniquely identifying a chain in the Lisk ecosystem.
+Just as addresses are used for the identification of user accounts, the chain ID has a similar purpose.
+When processing the sidechain registration command, the chain ID for a sidechain is given as a parameter in the registration transaction.
+// Specifically, the chainID of a new sidechain is assigned as an incremental integer similar to transaction nonces.
+// The format of chainIDs aims to provide an efficient and compact way to uniquely identify chains in the ecosystem.
+// Furthermore, an additional advantage, is that it is easy to remember the integer assigned as the chainID for a users favorite blockchain application.
+The `chainID` is a 4-byte (8-character) hexadecimal string, which is set in the chain's configuration.
+
+The `chainID` properties serve the following two purposes:
+
+*(1)* The `chainID` properties are prepended to the input of the signing function of every transaction, block, or message of the chain to avoid transaction replays between different chains in the ecosystem.
+
+*(2)* The `chainID` properties uniquely identify a chain in the Lisk ecosystem.
+// Specifically, the Interoperability module, it serves a similar purpose for chains as addresses do for user accounts, as it is used to identify the chain account in the Interoperability module store.
+Furthermore, the chain ID has to be stated in every cross-chain interaction.
+For example, it has to be specified in the `receivingChainID` property of a CCM and in the `sendingChainID` property of a cross-chain update command.
+
+In the sidechain registration command, the `chainID` property of the sidechain is given as a parameter.
+In the case whereby the given value is already taken by another sidechain, the sidechain registration fails.
+Therefore, the sidechain has to change the chain ID with a hardfork and resubmit the sidechain registration command with a new value.
+The chain identifiers are of a value of 4 bytes, and dependent on the network on which the chain is running, the first byte must always be set to the correct value.
+
+An example can be seen below in the following table depicting the chain-identifiers prefixes currently specified.
+The first byte is set to  `CHAIN_ID_PREFIX_MAINNET` for chains running in the mainnet network and to `CHAIN_ID_PREFIX_TESTNET` for chains running in the testnet network.
+The other 3 bytes must be uniquely chosen for the respective blockchain, hence, no other blockchain created with the Lisk SDK should use the same 3 bytes.
+
+[cols="2,1,2,4"]
+|===
+|Name|Type|Value|Description
+|`CHAIN_ID_PREFIX_MAINNET`|bytes|0x00|Chain-identifier prefix for mainnet blockchains.
+|`CHAIN_ID_PREFIX_TESTNET`|bytes|0x01|Chain-identifier prefix for testnet blockchains.
+|===
+
+The chain ID is known to the mainchain as soon as the sidechain is registered, therefore it can validate cross-chain update commands coming from the sidechain without any further context.
+
+=== Mainchain Registration on a Sidechain
+
+Once the sidechain has been registered on the mainchain, a similar registration process should happen in the sidechain before the interoperable channel is opened between the two chains.
+This is performed by submitting a transaction with the mainchain registration command in the sidechain, which implies the creation of a mainchain account in the sidechain state associated with the Lisk mainchain, and other structures needed for interoperability.
+This mainchain account has a similar structure as the one depicted in Figure 2 above.
+By protocol, the chain ID of the mainchain is a constant equal to `0x00000000` in the ecosystem.
+
+This registration process always has to occur after the sidechain registration on the mainchain, since the sidechain has no prior knowledge of its name and must be certain that the correct chain ID has been registered.
+Similar to the sidechain registration case, the mainchain account status will not change to active until a valid cross-chain update command from the mainchain containing a valid registration xref:{url_ccm}[CCM] is processed.
+
+=== Mainchain Registration Command
+
+The mainchain registration command is used to register the Lisk mainchain on a sidechain.
+When this command is processed, a new account for the mainchain is created in the sidechain state under the interoperability store.
+
+Certain parameters are set by the mainchain registration command in the sidechain that is related to the interoperability module. It also initializes the corresponding mainchain data structures.
+This command requires the approval of the sidechain validators, as they have to agree on the content of this command and provide their signature accordingly.
+Based on the individual signatures, an aggregate signature must be added to the transaction.
+It is of key importance that the sidechain validators ensure that they are signing the registration command with the correct information, otherwise the sidechain interoperable functionality may be unusable.
+
+The command has the following parameters:
+
+* *ownChainID*
+
+The chain ID is set on the mainchain after processing the corresponding sidechain registration command.
+
+* *ownName*
+
+The `ownName` property sets the name of the sidechain in its own state according to the name given in the mainchain.
+
+* *mainchainValidators*
+
+This is similar to the `initValidators` property in the sidechain registration command, it defines the set of mainchain validators with their respective xref:{url_bft_weights}[BFT weight] expected to sign the first certificate from the mainchain.
+
+* *signature*
+
+The `signature` property is an aggregate signature of the sidechain validators.
+It ensures that the sidechain validators agree on registering the mainchain in the sidechain.
+
+* *aggregationBits*
+
+The `aggregationBits` property is a bit vector used to validate the aggregate signature.
+
+=== Sidechain Registration Transaction Commands
+
+Firstly, the transactions executing the sidechain registration command and the required parameters, verification, and execution are listed below:
+
+* `module = MODULE_NAME_INTEROPERABILITY`
+* `command = COMMAND_SIDECHAIN_REG`
+
+.Sidechain Registration Parameters
+[%collapsible]
+====
+[source,js]
+----
+sidechainRegParams = {
+    "type": "object",
+    "required": [
+        "name",
+        "chainID",
+        "initValidators",
+        "certificateThreshold",
+        "sidechainRegistrationFee"
+    ],
+    "properties": {
+        "name": {
+            "dataType": "string",
+            "minLength": MIN_CHAIN_NAME_LENGTH,
+            "maxLength": MAX_CHAIN_NAME_LENGTH,
+            "fieldNumber": 1
+        },
+        "chainID": {
+            "dataType": "bytes",
+            "length": CHAIN_ID_LENGTH,
+            "fieldNumber": 2
+        },
+        "initValidators": {
+            "type": "array",
+            "fieldNumber": 3,
+            "items": {
+                "type": "object",
+                "required": ["blsKey", "bftWeight"],
+                "properties": {
+                    "blsKey": {
+                        "dataType": "bytes",
+                        "length": BLS_PUBLIC_KEY_LENGTH,
+                        "fieldNumber": 1
+                    },
+                    "bftWeight": {
+                        "dataType": "uint64",
+                        "fieldNumber": 2
+                    }
+                }
+            }
+        },
+        "certificateThreshold": {
+            "dataType": "uint64",
+            "fieldNumber": 4
+        },
+        "sidechainRegistrationFee": {
+            "type": "uint64",
+            "fieldNumber": 5
+        }
+    }
+}
+----
+
+====
+.Sidechain Verification Parameters
+[%collapsible]
+====
+[source,js]
+----
+def verify(trs: Transaction) -> None:
+    # The name property has to contain only characters from the set [a-z0-9!@$&_.].
+    if not re.match(r"^[a-z0-9!@$&_.]+$", trs.params.name):
+        raise Exception("Invalid name property. It should contain only characters from the set [a-z0-9!@$&_.].")
+    # The name property has to be unique with respect to the set of already registered sidechain names.
+    if there exists an entry in the registered names substore with store key equal to trs.params.name.encode("utf-8"):
+        raise Exception("Name already registered.")
+
+    # Chain ID has to be unique with respect to the set of already registered sidechains.
+    if there exists an entry in the chain data substore with store key equal to trs.params.chainID:
+        raise Exception("Chain ID already registered.")
+
+    # Check that the first byte of the chainID, indication the network, matches.
+    if trs.params.chainID[0] != CHAIN_ID_MAINCHAIN[0]:
+        raise Exception("Chain ID does not match the mainchain network.")
+    # Chain ID cannot be the mainchain chain ID.
+    if trs.params.chainID == CHAIN_ID_MAINCHAIN:
+        raise Exception("Chain ID cannot be the mainchain chain ID.")
+    # initValidators must have at least 1 element and at most MAX_NUM_VALIDATORS elements.
+    if len(trs.params.initValidators) < 1 or len(trs.params.initValidators) > MAX_NUM_VALIDATORS:
+        raise Exception(f"Invalid initValidators array. It must have at least 1 element and at most {MAX_NUM_VALIDATORS} elements.")
+
+    validatorKeys = [validator.blsKey for validator in trs.params.initValidators]
+    # All validator keys must be distinct.
+    if len(validatorKeys) != len(set(validatorKeys)):
+        raise Exception("Duplicate BLS keys.")
+
+    # Validator keys must be in lexicographic order.
+    if not all(validatorKeys[i] < validatorKeys[i + 1] for i in range(len(validatorKeys) - 1)):
+        raise Exception("Validator keys are not in lexicographic order.")
+
+    totalWeight = 0
+    for validator in trs.params.initValidators:
+        # The bftWeight property of each element is a positive integer.
+        if validator.bftWeight == 0:
+            raise Exception("Invalid bftWeight property.")
+        totalWeight += validator.bftWeight
+    # Total BFT weight has to be less than or equal to MAX_UINT64.
+    if totalWeight > MAX_UINT64:
+        raise Exception("Total BFT weight exceeds maximum value.")
+
+    # The range of valid values of the certificateThreshold property is given by the total sum of the validators weights:
+    # Minimum value: floor(1/3 * total BFT weight) + 1.
+    # Maximum value = total BFT weight.
+    if trs.params.certificateThreshold < totalWeight//3 + 1:
+        raise Exception("Certificate threshold is too small.")
+    if trs.params.certificateThreshold > totalWeight:
+        raise Exception("Certificate threshold is too large.")
+
+    # sidechainRegistrationFee must equal REGISTRATION_FEE.
+    if trs.params.sidechainRegistrationFee != REGISTRATION_FEE:
+        raise Exception("Invalid extra command fee.")
+    # Sender must have enough balance to pay for extra command fee.
+    senderAddress = sha256(trs.senderPublicKey)[:ADDRESS_LENGTH]
+    if Token.getAvailableBalance(senderAddress, TOKEN_ID_LSK_MAINCHAIN) < REGISTRATION_FEE:
+        raise Exception("Sender does not have enough balance.")
+----
+
+====
+.Sidechain Execution Parameters
+[%collapsible]
+====
+[source,js]
+----
+def execute(trs: Transaction) -> None:
+    senderAddress = sha256(trs.senderPublicKey)[:ADDRESS_LENGTH]
+
+    # Create chain account.
+    sidechainAccount = {
+        "name": trs.params.name,
+        "lastCertificate": {
+            "height": 0,
+            "timestamp": 0,
+            "stateRoot": EMPTY_HASH,
+            "validatorsHash": computeValidatorsHash(trs.params.initValidators, trs.params.certificateThreshold)
+        },
+        "status": CHAIN_STATUS_REGISTERED
+    }
+
+    chainID = trs.params.chainID
+    create an entry in the chain data substore with
+        storeKey = chainID,
+        storeValue = encode(chainAccountSchema, sidechainAccount)
+
+    # Create channel.
+    sidechainChannel = {
+        "inbox": {
+            "appendPath": [],
+            "size": 0,
+            "root": EMPTY_HASH
+        },
+        "outbox": {
+            "appendPath": [],
+            "size": 0,
+            "root": EMPTY_HASH
+        },
+        "partnerChainOutboxRoot": EMPTY_HASH,
+        "messageFeeTokenID": TOKEN_ID_LSK_MAINCHAIN
+    }
+    create an entry in the channel data substore with
+        storeKey = chainID
+        storeValue = encode(channelSchema, sidechainChannel)
+
+    # Create validators account.
+    sidechainValidators = {
+        "activeValidators": trs.params.initValidators,
+        "certificateThreshold": trs.params.certificateThreshold
+    }
+    create an entry in the chain validators data substore with
+        storeKey = chainID
+        storeValue = encode(validatorsSchema, sidechainValidators)
+
+    # Create outbox root entry.
+    create an entry in the outbox root substore with
+        storeKey = chainID
+        storeValue = encode(outboxRootSchema, {"root": sidechainChannel.outbox.root})
+
+    # Create registered names entry.
+    create an entry in the registered names substore with
+        storeKey = trs.params.name
+        storeValue = encode(chainIDSchema, {"chainID": chainID})
+
+    # Burn the registration fee.
+    Token.burn(senderAddress, TOKEN_ID_LSK_MAINCHAIN, REGISTRATION_FEE)
+
+    # Emit chain account updated event.
+    emitEvent(
+        module = MODULE_NAME_INTEROPERABILITY,
+        name = EVENT_NAME_CHAIN_ACCOUNT_UPDATED,
+        data = sidechainAccount,
+        topics = [chainID]
+    )
+
+    # Send registration CCM to the sidechain.
+    registrationCCMParams = {
+        "name": trs.params.name,
+        "messageFeeTokenID": sidechainChannel.messageFeeTokenID
+    }
+
+    ccm = {
+        "nonce": ownChainAccount.nonce,
+        "module": MODULE_NAME_INTEROPERABILITY,
+        "crossChainCommand": CROSS_CHAIN_COMMAND_REGISTRATION,
+        "sendingChainID": ownChainAccount.chainID,
+        "receivingChainID": chainID,
+        "fee": 0,
+        "status": CCM_STATUS_CODE_OK,
+        "params": encode(registrationCCMParamsSchema, registrationCCMParams) # registrationCCMParamsSchema is defined in LIP0049
+    }
+
+    addToOutbox(chainID, ccm)
+    ownChainAccount.nonce += 1
+
+    # Emit CCM Sent Event.
+    ccmID = sha256(encode(crossChainMessageSchema, ccm))
+    emitEvent(
+        module = MODULE_NAME_INTEROPERABILITY,
+        name = EVENT_NAME_CCM_SENT_SUCCESS,
+        data = {"ccmID": ccmID},
+        topics = [ccm.sendingChainID, ccm.receivingChainID, ccmID]
+    )
+----
+====
+
+=== Mainchain Registration Transaction Commands
+
+Secondly, the transactions executing the mainchain registration command and the required parameters, verification, and execution are listed below:
+
+* `module = MODULE_NAME_INTEROPERABILITY`
+* `command = COMMAND_MAINCHAIN_REG`
+
+.Mainchain Registration Parameters
+[%collapsible]
+====
+[source,js]
+----
+mainchainRegParams = {
+    "type": "object",
+    "required": [
+        "ownChainID",
+        "ownName",
+        "mainchainValidators",
+        "signature",
+        "aggregationBits"
+    ],
+    "properties": {
+        "ownChainID": {
+            "dataType": "uint32",
+            "fieldNumber": 1
+        },
+        "ownName": {
+            "dataType": "string",
+            "minLength": MIN_CHAIN_NAME_LENGTH,
+            "maxLength": MAX_CHAIN_NAME_LENGTH,
+            "fieldNumber": 2
+        },
+        "mainchainValidators": {
+            "type": "array",
+            "fieldNumber": 3,
+            "items": {
+                "type": "object",
+                "required": ["blsKey", "bftWeight"],
+                "properties": {
+                    "blsKey": {
+                        "dataType": "bytes",
+                        "length": BLS_PUBLIC_KEY_LENGTH,
+                        "fieldNumber": 1
+                    },
+                    "bftWeight": {
+                        "dataType": "uint64",
+                        "fieldNumber": 2
+                    }
+                }
+            }
+        },
+        "signature": {
+            "dataType": "bytes",
+            "length": BLS_SIGNATURE_LENGTH,
+            "fieldNumber": 4
+        },
+        "aggregationBits": {
+            "dataType": "bytes",
+            "fieldNumber": 5
+        }
+    }
+}
+----
+
+====
+.Mainchain Verification Parameters
+[%collapsible]
+====
+[source,js]
+----
+def verify(trs: Transaction) -> None:
+# The ownChainID property has to match with the chain identifier.
+chainID = chain identifier of the current chain
+if trs.params.ownChainID != chainID:
+raise Exception("Invalid ownChainID property.")
+
+    # The ownName property has to contain only characters from the set [a-z0-9!@$&_.].
+    if not re.match(r"^[a-z0-9!@$&_.]+$", trs.params.ownName):
+        raise Exception("Invalid ownName property. It should contain only characters from the set [a-z0-9!@$&_.].")
+
+    # mainchainValidators must have exactly MAINCHAIN_NUMBER_ACTIVE_VALIDATORS elements.
+    if len(trs.params.mainchainValidators) != MAINCHAIN_NUMBER_ACTIVE_VALIDATORS:
+        raise Exception(f"Invalid mainchainValidators property. It must have exactly {MAINCHAIN_NUMBER_ACTIVE_VALIDATORS} elements.")
+
+    validatorKeys = [validator.blsKey for validator in trs.params.mainchainValidators]
+    # All validator keys must be distinct.
+    if len(validatorKeys) != len(set(validatorKeys)):
+        raise Exception("Duplicate BLS keys.")
+
+    # Validator keys must be in lexicographic order.
+    if not all(validatorKeys[i] < validatorKeys[i + 1] for i in range(len(validatorKeys) - 1)):
+        raise Exception("Validator keys are not in lexicographic order.")
+
+    for validator in trs.params.initValidators:
+        # The bftWeight property of each element is equal to 1.
+        if validator.bftWeight != 1:
+            raise Exception("Invalid bftWeight property.")
+----
+
+====
+.Mainchain Execution Parameters
+[%collapsible]
+====
+[source,js]
+----
+
+def execute(trs: Transaction) -> None:
+# Check signature property.
+height = height of the block in which trs was included
+sidechainValidators = validatorsModule.getCurrentValidators()
+certificateThreshold = validatorsModule.getCertificateThreshold()
+# Sort sidechainValidators by BLS key.
+sidechainValidators.sort(key=lambda v: validatorsModule.getValidatorAccount(v.address).blsKey)
+blsKeys = [validatorsModule.getValidatorAccount(v.address).blsKey for v in sidechainValidators]
+bftWeights = [v.bftWeight for v in sidechainValidators]
+
+    registrationSignatureMessageSchema = {
+        "type": "object",
+        "required": ["ownChainID", "ownName", "mainchainValidators"],
+        "properties": {
+            "ownChainID": {
+                "dataType": "bytes",
+                "length": CHAIN_ID_LENGTH,
+                "fieldNumber": 1
+            },
+            "ownName": {
+                "dataType": "string",
+                "minLength": MIN_CHAIN_NAME_LENGTH,
+                "maxLength": MAX_CHAIN_NAME_LENGTH,
+                "fieldNumber": 2
+            },
+            "mainchainValidators": {
+                "type": "array",
+                "fieldNumber": 3,
+                "items": {
+                    "type": "object",
+                    "required": ["blsKey", "bftWeight"],
+                    "properties": {
+                        "blsKey": {
+                            "dataType": "bytes",
+                            "length": BLS_PUBLIC_KEY_LENGTH,
+                            "fieldNumber": 1
+                        },
+                        "bftWeight": {
+                            "dataType": "uint64",
+                            "fieldNumber": 2
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    message = encode(registrationSignatureMessageSchema,
+        {
+        "ownChainID": trs.params.ownChainID,
+        "ownName": trs.params.ownName,
+        "mainchainValidators": trs.params.mainchainValidators
+        }
+    )
+
+    # verifyWeightedAggSig is specified in LIP 0062.
+    if verifyWeightedAggSig(blsKeys, MESSAGE_TAG_CHAIN_REG, trs.params.ownChainID, trs.params.aggregationBits, trs.params.signature, bftWeights, certificateThreshold, message) == False:
+        emitPersistentEvent(
+            module = MODULE_NAME_INTEROPERABILITY,
+            name = EVENT_NAME_INVALID_REGISTRATION_SIGNATURE,
+            data = {},
+            topics = [trs.params.ownChainID]
+        raise Exception("Invalid signature property.")
+
+    # Create chain account.
+    mainchainAccount = {
+        "name": CHAIN_NAME_MAINCHAIN,
+        "lastCertificate": {
+            "height": 0,
+            "timestamp": 0,
+            "stateRoot": EMPTY_HASH,
+            "validatorsHash": computeValidatorsHash(trs.params.mainchainValidators, THRESHOLD_MAINCHAIN)
+        },
+        "status": CHAIN_STATUS_REGISTERED
+    }
+    create an entry in the chain data substore with
+        storeKey = CHAIN_ID_MAINCHAIN
+        storeValue = encode(chainAccountSchema, mainchainAccount)
+
+    # Create channel.
+    mainchainChannel = {
+        "inbox": {
+            "appendPath": [],
+            "size": 0,
+            "root": EMPTY_HASH
+        },
+        "outbox": {
+            "appendPath": [],
+            "size": 0,
+            "root": EMPTY_HASH
+        },
+        "partnerChainOutboxRoot": EMPTY_HASH,
+        "messageFeeTokenID": TOKEN_ID_LSK_MAINCHAIN
+    }
+    create an entry in the channel data substore with
+        storeKey = CHAIN_ID_MAINCHAIN
+        storeValue = encode(channelSchema, mainchainChannel)
+
+    # Create validators account.
+    mainchainValidators = {
+        "activeValidators": trs.params.mainchainValidators,
+        "certificateThreshold": THRESHOLD_MAINCHAIN
+    }
+    create an entry in the chain validators data substore with
+        storeKey = CHAIN_ID_MAINCHAIN
+        storeValue = encode(validatorsSchema, mainchainValidators)
+
+    # Create outbox root entry.
+    create an entry in the outbox root substore with
+        storeKey = CHAIN_ID_MAINCHAIN
+        storeValue = encode(outboxRootSchema, {"root": mainchainChannel.outbox.root})
+
+    # Create own chain account.
+    ownChainAccount = {
+        "name": trs.params.ownName,
+        "chainID": trs.params.ownChainID,
+        "nonce": 0
+    }
+    create an entry in the own chain data substore with
+        storeKey = EMPTY_BYTES
+        storeValue = encode(ownChainAccountSchema, ownChainAccount)
+
+    # Emit chain account updated event.
+    emitEvent(
+        module = MODULE_NAME_INTEROPERABILITY,
+        name = EVENT_NAME_CHAIN_ACCOUNT_UPDATED,
+        data = mainchainAccount,
+        topics = [CHAIN_ID_MAINCHAIN]
+    )
+
+    # Send registration CCM to the mainchain.
+    # Notice that we do not use the send function because the channel
+    # has not been activated yet.
+    registrationCCMParams = {
+        "name": CHAIN_NAME_MAINCHAIN,
+        "messageFeeTokenID": mainchainChannel.messageFeeTokenID
+    }
+
+    ccm = {
+        "nonce": ownChainAccount.nonce,
+        "module": MODULE_NAME_INTEROPERABILITY,
+        "crossChainCommand": CROSS_CHAIN_COMMAND_REGISTRATION,
+        "sendingChainID": ownChainAccount.chainID,
+        "receivingChainID": CHAIN_ID_MAINCHAIN,
+        "fee": 0,
+        "status": CCM_STATUS_CODE_OK,
+        "params": encode(registrationCCMParamsSchema, registrationCCMParams) # registrationCCMParamsSchema is defined in LIP0049
+    }
+
+    # We cannot use the send function because the channel is not active yet.
+    addToOutbox(CHAIN_ID_MAINCHAIN, ccm)
+    ownChainAccount.nonce += 1
+
+    # Emit CCM Sent Event.
+    ccmID = sha256(encode(crossChainMessageSchema, ccm))
+    emitEvent(
+        module = MODULE_NAME_INTEROPERABILITY,
+        name = EVENT_NAME_CCM_SENT_SUCCESS,
+        data = {"ccmID": ccmID},
+        topics = [ccm.sendingChainID, ccm.receivingChainID, ccmID]
+    )
+----
+====
+
+== Sidechain termination
+
+Once a sidechain is terminated, it is not possible to send or receive cross-chain messages anymore.
+Therefore, the ability of a sidechain to interoperate with other chains can be revoked, i.e., terminated, permanently.
+In effect, the sidechain is disconnected from the rest of the ecosystem, and any assets (e.g. fungible or non-fungible tokens), cannot be moved either to or from the respective sidechain.
+Therefore, this means that users will not be able to send any assets that they originally held on the sidechain, back to the original native chain, in other words, the chain where the assets were initially created.
+
+The following section covers the recovery mechanism deployed by Lisk to address this problem, which will noticeably improve the user experience of the Lisk ecosystem without affecting the security guarantees of the general interoperability solution.
+Using dedicated commands that are part of the Interoperability module, users can recover their assets directly on the native chain.
+Furthermore, pending messages that were stuck unprocessed in the outbox of the terminated chain can be recovered as well, and their effect reverted on the sending chain.
+
+Sidechain termination specifically occurs when the sidechain in question has been inactive for too long, or in the case whereby a malicious cross-chain message is sent.
+For example, this could be caused by not posting a transaction with a cross-chain update (CCU) command for more than 30 days, or in the case whereby one was posted with a malicious CCU command on the mainchain.
+Hence, it is useful to provide a trustless on-chain mechanism to recover tokens, messages, and information from terminated sidechains.
+
+=== Termination causes
+
+A sidechain can be terminated for various reasons as described below in the following paragraphs.
+
+* Liveness requirement
+
+As previously mentioned, active sidechains are required to prove they are still live and functioning by posting a CCU at least once within 30 days.
+Therefore violating the liveness requirement (only on the mainchain), result in terminating the sidechain.
+This rule guarantees that users do not send funds to inactive sidechains and that users who have tokens in a sidechain that stops communicating with the ecosystem can recover their tokens.
+Furthermore, whenever a sidechain has violated the liveness condition, any user can submit a liveness termination on the mainchain, and this will result in the sidechain being terminated.
+
+* Violation of the Token-Module Protocol
+
+With regard to the xref:{url_sdk_token_module}[token module], when tokens are transferred across the ecosystem, the native chain of the token keeps track of their location in an escrow account.
+When tokens are returned back from a chain, the amount stored in the escrow account is reduced, hence ensuring that no extra tokens were minted in the other chain.
+
+However, if a cross-chain message tries to transfer back a number of tokens greater than the one stored in the escrow account, the sending chain is terminated and a terminated state account is created.
+If the native chain is the mainchain (hence, the token is the LSK token), the terminated state account stores the state root of the sidechain; otherwise it stores the root of the mainchain, which can then be used to initialize the recovery with a <<State Recovery Initialization Command>>.
+
+* Violation of the Custom-Module Protocol
+
+Sidechains can be terminated if they violate the protocol of a xref:{:url_custom_module}[custom module].
+This is done by calling the `terminateChain` API of the Interoperability module.
+Notice that a sidechain terminated for this reason is not terminated in the whole ecosystem.
+For example, it could very well still be active and able to exchange messages with other chains.
+However, communication with the sidechain that terminated it is interrupted.
+
+=== Sidechain Terminated Message
+
+The role of the sidechain terminated message is to inform sidechains that another sidechain has been terminated on the mainchain, and is unable to receive messages.
+The message contains the ID of the terminated chain as well as the last certified state root of the terminated sidechain (as certified on the mainchain).
+This value is used for the creation of the terminated state account (on the sidechain receiving the CCM), allowing state recoveries.
+This message allows informing sidechains about other terminated sidechains efficiently.
+Subsequently, this message will automatically trigger the creation of the terminated sidechain account as soon as the first message is unable to be delivered.
+This also prevents further messages to be sent to sidechains that have already been terminated.
+
+
+== How to recover information from a sidechain
+// Explain steps to recover information from sidechain
+
+The commands introduced to the Lisk ecosystem to provide a recovery mechanism for sidechain users are part of the Interoperability module.
+There are 5 recovery commands which can be used and are described further in this section below.
+These consist of the <<State Recovery Command>>, the <<Message Recovery Command>>, the <<State Recovery Initialization Command>>, the <<Message Recovery Initialization Command>>, and the <<Liveness Termination Command>>.
+
+* On the Lisk mainchain:
+
+The users can recover the balance of LSK they had on a terminated sidechain by submitting a transaction with a <<State Recovery Command>>.
+The users can recover a pending cross-chain message (CCM) from the sidechain account outbox by submitting a transaction with a <<Message Recovery Command>> on the Lisk mainchain.
+
+* On sidechains:
+
+The users can recover the balance of any custom token they had on a terminated sidechain by submitting a transaction with a state recovery command.
+The users can recover any assets they had on a terminated sidechain by submitting a transaction with a state recovery command.
+The stored data of certain custom modules can be recovered from a terminated sidechain by submitting a transaction with a state recovery command.
+
+=== State recovery from the Sidechain Root
+
+This mechanism has been enabled in order to ensure that it is possible to recover a specific entry from a substore (i.e. the collection of key-value pairs with a common store prefix), of a module store of a terminated sidechain.
+In this context, the term "recover" is referring to triggering a specific state transition defined as part of the relevant module protocol logic.
+Specifically, it is based on the sidechain state root, `stateRoot`, set in the last certificate before sidechain termination.
+
+In the context of the mainchain, a valid state recovery command can recover the assets that were held in the terminated sidechain.
+In the context of a sidechain, it can recover an entry in a recoverable module store from a terminated sidechain.
+A recoverable module is classed as any module that exposes a recover function, which includes the Token module (for any custom token), and the xref:{url_nft_module}[NFT module].
+This recovery mechanism requires the initialization commands.
+
+==== State Recovery Initialization Command
+
+This command is used to initialize a terminated state account, or to update the state root stored in it if it was not actually set yet.
+It can only be submitted on a sidechain.
+
+It contains an inclusion proof against the mainchain state root stored in the terminated state account, proving the value of the state root of the terminated sidechain.
+Any user on the corresponding sidechain can send a transaction with this command and initiate the state recoveries with respect to the terminated sidechain.
+A sidechain account can be terminated on a sidechain using the `terminateChain` function exposed by the Interoperability module.
+In this case, the state root is generally not available and the terminated state account is created without setting the sidechain state root.
+Instead, the account stores the mainchain state root at the time of termination.
+A state recovery initialization command will in the future set the sidechain state root by giving an inclusion proof against this mainchain state root.
+
+The command sets the sidechain state root in the terminated state account so that state recovery commands can be issued.
+
+The transactions executing this command have the following:
+
+* `module = MODULE_NAME_INTEROPERABILITY`
+
+* `command = COMMAND_STATE_RECOVERY_INITIALIZATION`
+
+The state recovery initialization command schema can be seen below:
+
+.State Recovery Initialization Command
+[%collapsible]
+====
+[source,js]
+----
+stateRecoveryInitializationParams = {
+    "type": "object",
+    "required": [
+        "chainID",
+        "sidechainAccount",
+        "bitmap",
+        "siblingHashes"
+    ],
+    "properties": {
+        "chainID": {
+            "dataType": "bytes",
+            "length": CHAIN_ID_LENGTH,
+            "fieldNumber": 1
+        },
+        "sidechainAccount": {
+            "dataType": "bytes",
+            "fieldNumber": 2
+        },
+        "bitmap": {
+            "dataType": "bytes",
+            "fieldNumber": 3
+        },
+        "siblingHashes": {
+            "type": "array",
+            "items": {
+                "dataType": "bytes",
+                "length": HASH_LENGTH
+            },
+            "fieldNumber": 4
+        }
+    }
+}
+----
+====
+
+* `chainID`: The ID of the sidechain whose terminated state account is to be initialized or updated.
+* `sidechainAccount`: The sidechain chain account stored on the mainchain.
+* `bitmap`: The bitmap of the inclusion proof of the sidechain account in the mainchain state tree.
+* `siblingHashes`: The sibling hashes of the inclusion proof of the sidechain account in the mainchain state tree.
+// Assumming that `trs` is a transaction with module ID `MODULE_NAME_INTEROPERABILITY`, and the command ID `COMMAND_STATE_RECOVERY_INITIALIZATION` is to be verified, this can be seen as shown in the following validation schema below:
+
+.State Recovery Initialization Command Validation
+[%collapsible]
+====
+[source,js]
+----
+def verify(trs: Transaction) -> None:
+    if trs.params.chainID == CHAIN_ID_MAINCHAIN or trs.params.chainID == ownChainAccount.chainID:
+        raise Exception("Chain ID is not valid.")
+
+    # The commands fails if the sidechain is already terminated on this chain
+    if terminatedStateAccount(trs.params.chainID) exists and terminatedStateAccount(trs.params.chainID).initialized == True:
+        raise Exception("Sidechain is already terminated.")
+
+    sidechainAccount = decode(chainAccountSchema, trs.params.sidechainAccount)
+    # The commands fails if the sidechain is not terminated and did not violate the liveness requirement
+    if sidechainAccount.status != CHAIN_STATUS_TERMINATED
+        and chainAccount(CHAIN_ID_MAINCHAIN).lastCertificate.timestamp - sidechainAccount.lastCertificate.timestamp <= LIVENESS_LIMIT:
+        raise Exception("Sidechain is not terminated.")
+
+    queryKey = STORE_PREFIX_INTEROPERABILITY + SUBSTORE_PREFIX_CHAIN_DATA + sha256(trs.params.chainID)
+
+    query = {
+        "key": queryKey,
+        "value": sha256(trs.params.sidechainAccount),
+        "bitmap": trs.params.bitmap
+    }
+
+    proofOfInclusion = { "siblingHashes": trs.params.siblingHashes, "queries" : [query] }
+
+    if terminatedStateAccount(trs.params.chainID) exists:
+        if SMTVerify([queryKey], proofOfInclusion, terminatedStateAccount(trs.params.chainID).mainchainStateRoot) == False:
+            raise Exception("State recovery initialization proof of inclusion is not valid.")
+    else:
+        if SMTVerify([queryKey], proofOfInclusion, chainAccount(CHAIN_ID_MAINCHAIN).lastCertificate.stateRoot) == False:
+            raise Exception("State recovery initialization proof of inclusion is not valid.")
+
+----
+
+====
+
+// To continue and process a transaction `trs` with the module ID `MODULE_NAME_INTEROPERABILITY` and the command ID 'COMMAND_STATE_RECOVERY_INITIALIZATION`, this implies the following logic as displayed below in the state recovery initialization command execution:
+
+.State Recovery Initialization Command Execution
+[%collapsible]
+====
+[source,js]
+----
+def execute(trs: Transaction) -> None:
+    sidechainAccount = decode(chainAccountSchema, trs.params.sidechainAccount)
+    if terminatedStateAccount(trs.params.chainID) exists:
+        terminatedStateAccount(trs.params.chainID).stateRoot = sidechainAccount.lastCertificate.stateRoot
+        terminatedStateAccount(trs.params.chainID).mainchainStateRoot = EMPTY_BYTES
+        terminatedStateAccount(trs.params.chainID).initialized = True
+    else:
+        createTerminatedStateAccount(trs.params.chainID, sidechainAccount.lastCertificate.stateRoot)
+----
+
+====
+Further information including, the `createTerminatedStateAccount` function can be found in {url_lip}[LIP 0045].
+
+==== State Recovery Command
+
+This command is used to recover a certain state (for example, fungible and non-fungible tokens), from a sidechain that has been terminated.
+The user proves the existence of an entry in the terminated state substore with an inclusion proof against the state root stored in the sidechain terminated account.
+The recovery of the state is then handled by the relevant module (for example, the token module would refund the user), and the state root is updated.
+
+The proof is validated against the current state root stored in the terminated chain account.
+The recovery of the state is then handled by the relevant module (for example the token module would refund the user).
+
+The module name is `MODULE_NAME_INTEROPERABILITY`, and the command name is `COMMAND_STATE_RECOVERY`. The state recovery command schema, verification, and execution can be seen in the following code snippet below:
+
+.State Recovery Command
+[%collapsible]
+====
+[source,js]
+----
+stateRecoveryParams = {
+    "type": "object",
+    "required": ["chainID", "module", "storeEntries", "siblingHashes"],
+    "properties": {
+        "chainID": {
+            "dataType": "bytes",
+            "length": CHAIN_ID_LENGTH,
+            "fieldNumber": 1
+        },
+        "module": {
+            "dataType": "bytes",
+            "length": MODULE_ID_LENGTH,
+            "fieldNumber": 2
+        },
+        "storeEntries": {
+            "type": "array",
+            "fieldNumber": 3,
+            "items": {
+                "type": "object",
+                "properties": {
+                    "substorePrefix": {
+                        "dataType": "bytes",
+                        "fieldNumber": 1
+                    },
+                    "storeKey": {
+                        "dataType": "bytes",
+                        "fieldNumber": 2
+                    },
+                    "storeValue": {
+                        "dataType": "bytes",
+                        "fieldNumber": 3
+                    },
+                    "bitmap": {
+                        "dataType": "bytes",
+                        "fieldNumber": 4
+                    }
+                },
+                "required": ["substorePrefix", "storeKey", "storeValue", "bitmap"]
+            }
+        },
+        "siblingHashes": {
+            "type": "array",
+            "items": {
+                "dataType": "bytes"
+            },
+            "fieldNumber": 4
+        }
+    }
+}
+----
+
+====
+
+* `chainID`: The ID of the terminated sidechain identifying the terminated state account from which assets will be recovered.
+* `module`: The ID of the module store to recover.
+* `storeEntries`: An array of store entries to recover. Each store entry is an object with the following properties:
+** `substorePrefix`: The substore prefix of the substore to recover.
+** `storeKey`: The store key of the entry to recover.
+** `storeValue`: The value of the entry to recover.
+** `bitmap`: The bitmap of inclusion proof.
+* `siblingHashes`: The sibling hashes of the inclusion proof of the store entries in the terminated sidechain state account.
+
+.State Recovery Command Verification
+[%collapsible]
+====
+[source,js]
+----
+def verify(trs: Transaction) -> None:
+    # The terminated account has to exist for this sidechain.
+    if terminatedStateAccount(trs.params.chainID) does not exist:
+        raise Exception("Terminated state account does not exist.")
+    if terminatedStateAccount(trs.params.chainID).initialized == False:
+        raise Exception("Terminated state account is not initialized.")
+
+    # Interoperability module cannot be recovered.
+    if trs.params.module == MODULE_NAME_INTEROPERABILITY:
+        raise Exception("Interoperability module cannot be recovered.")
+
+    if trs.params.module is not associated with a module registered on the chain:
+        raise Exception("Module is not registered on the chain.")
+    # The module indicated in the transaction params must have a recover function.
+    recoveryModule = module associated with trs.params.module
+    if recoveryModule does not have a recover function:
+        raise Exception("Module is not recoverable.")
+
+    terminatedStateRoot = terminatedStateAccount(trs.params.chainID).stateRoot
+
+    queryKeys = []
+    storeQueries = []
+
+    # Calculate store prefix from the module name according to LIP 0040.
+    storePrefix = module_name_to_store_prefix(trs.params.module)
+
+    for entry in trs.params.storeEntries:
+        if entry.value is EMPTY_BYTES:
+            raise Exception("Recovered store value cannot be empty.")
+
+        queryKeys.append(entry.storeKey)
+        query = {
+            "key": storePrefix + entry.substorePrefix + entry.storeKey,
+            "value": sha256(entry.storeValue),
+            "bitmap": entry.bitmap
+        }
+        storeQueries.append(query)
+
+    proofOfInclusionStores = { siblingHashes: trs.params.siblingHashes, queries : storeQueries }
+
+    if SMTVerify(queryKeys, proofOfInclusionStores, terminatedStateRoot) == False:
+        raise Exception("State recovery proof of inclusion is not valid.")
+----
+
+====
+
+.State Recovery Command Execution
+[%collapsible]
+====
+[source,js]
+----
+def execute(trs: Transaction) -> None:
+    storeQueries = []
+
+    recoveryModule = module associated with trs.params.module
+    for entry in trs.params.storeEntries:
+        # The recover function corresponding to trs.params.module applies the recovery logic.
+        recoveryModule.recover(trs.params.chainID, entry.substorePrefix, entry.storeKey, entry.storeValue)
+
+        emptyStore = EMPTY_BYTES
+        query = {
+            "key": trs.params.module + entry.substorePrefix + entry.storeKey,
+            "value": sha256(emptyStore),
+            "bitmap": entry.bitmap
+        }
+        storeQueries.append(query)
+
+    terminatedStateAccount(trs.params.chainID).stateRoot = SMTCalculateRoot(trs.params.siblingHashes, storeQueries)
+----
+
+====
+
+Regarding the recovery function, the module given by the `trs.params.module` must expose a `recover` function for the execution of this command.
+This can be achieved with the following interface:
+
+[source:js]
+----
+def recover(terminatedChainID: ChainID, substorePrefix: bytes, storeKey: bytes, storeValue: bytes) -> None:
+...
+----
+
+=== Message Recovery Command
+
+This command is used to recover cross-chain messages from a terminated outbox.
+Hence, this mechanism allows recovering any CCM that are pending in the sidechain channel outbox.
+That is, those CCMs sent from the sidechain that have not been included in the (terminated), receiving chain yet.
+//The user proves with an inclusion proof validated against the outbox root stored in the terminated outbox account, that the message is in the terminated sidechain outbox.
+//The message nonce is compared to the size of the inbox (which is taken from the channel stored on the terminated sidechain), to check that the message had not been processed yet.
+//The recovered message is then bounced back to the original sending chain or processed directly if the sending chain is the mainchain.
+
+Transactions executing this command are as follows:
+
+* module = `MODULE_NAME_INTEROPERABILITY`
+
+* command name = `COMMAND_MESSAGE_RECOVERY`
+
+The state recovery command schema can be seen below:
+
+.Message Recovery Command
+[%collapsible]
+====
+[source,js]
+----
+messageRecoveryParams = {
+    "type": "object",
+    "required": ["chainID", "crossChainMessages", "idxs", "siblingHashes"],
+    "properties": {
+        "chainID": {
+            "dataType": "bytes",
+            "length": CHAIN_ID_LENGTH,
+            "fieldNumber": 1
+        },
+        "crossChainMessages": {
+            "type": "array",
+            "items": {
+                "dataType": "bytes"
+            },
+            "fieldNumber": 2
+        },
+        "idxs": {
+            "type": "array",
+            "items": {
+                "dataType": "uint32"
+            },
+            "fieldNumber": 3
+        },
+        "siblingHashes": {
+            "type": "array",
+            "items": {
+                "dataType": "bytes",
+                "length": HASH_LENGTH
+            },
+            "fieldNumber": 4
+        }
+    }
+}
+----
+
+====
+
+* `chainID`: The ID of the terminated sidechain identifying the terminated outbox from which messages will be recovered.
+* `crossChainMessages`: The cross-chain messages to be recovered.
+* `idxs`: The indices of the messages to be recovered.
+* `siblingHashes`: The sibling hashes of the inclusion proof of the cross-chain messages in the sidechain outbox.
+
+.Message Recovery Command Verification
+[%collapsible]
+====
+[source,js]
+----
+def verify(trs: Transaction) -> None:
+    if terminatedOutboxAccount(trs.params.chainID) does not exist:
+        raise Exception("Terminated outbox account does not exist.")
+
+    # Check that the idxs are sorted in ascending order
+    if trs.params.idxs != sorted(trs.params.idxs):
+        raise Exception("Cross-chain message indexes are not sorted in ascending order.")
+
+    # Check that the CCMs are still pending
+    for index in trs.params.idxs:
+        if index < terminatedOutboxAccount(trs.params.chainID).partnerChainInboxSize:
+            raise Exception("Cross-chain message is not pending.")
+
+    # Process basic checks for all CCMs.
+    for ccmBytes in crossChainMessages:
+        # Verify general format. Past this point, we can access ccm root properties.
+        ccm = decode(crossChainMessageSchema, ccmBytes)
+        validateFormat(ccm)
+
+        if ccm.status != CCM_STATUS_CODE_OK:
+            raise Exception("Cross-chain message status is not valid.")
+        # The receiving chain must be the terminated chain
+        if ccm.receivingChainID != trs.params.chainID:
+            raise Exception("Cross-chain message receiving chain ID is not valid.")
+        # The sending chain must be live
+        if not isLive(ccm.sendingChainID):
+            raise Exception("Cross-chain message sending chain is not live.")
+
+    # Check the inclusion proof against the sidechain outbox root
+    proof = {
+        size: terminatedOutboxAccount(trs.params.chainID).outboxSize,
+        idxs: trs.params.idxs,
+        siblingHashes: trs.params.siblingHashes
+    }
+
+    if RMTVerify(
+        [sha256(ccmBytes) for ccmBytes in trs.params.crossChainMessages],
+        proof,
+        terminatedOutboxAccount(trs.params.chainID).outboxRoot
+        ) == False:
+        raise Exception("Message recovery proof of inclusion is not valid.")
+----
+
+====
+
+.Message Recovery Command Execution
+[%collapsible]
+====
+[source,js]
+----
+def execute(trs: Transaction) -> None:
+    senderAddress = sha256(trs.senderPublicKey)[:ADDRESS_LENGTH]
+    # Set CCM status to recovered and assign fee to trs sender
+    crossChainMessages = [decode(crossChainMessageSchema, ccmBytes) for ccmBytes in trs.params.crossChainMessages]
+    recoveredCCMs = []
+
+    for ccmBytes in crossChainMessages:
+        ccmID = sha256(ccmBytes)
+        # Set ccmID as default topic to all events emitted in applyRecovery and forwardRecovery
+        # (instead of the transaction ID).
+        defaultEventsTopic = ccmID
+
+        ccm = decode(crossChainMessageSchema, ccmBytes)
+        # If the sending chain is the mainchain, recover the CCM.
+        # This function never raises an error.
+        if ccm.sendingChainID == CHAIN_ID_MAINCHAIN:
+            applyRecovery(trs, ccm)
+        # If the sending chain is not the mainchain, forward the CCM.
+        # This function never raises an error.
+        elif ccm.sendingChainID != CHAIN_ID_MAINCHAIN:
+            forwardRecovery(trs, ccm)
+
+        # Append the recovered CCM to the list of recovered CCMs.
+        # Notice that the ccm has been mutated in the applyRecovery and forwardRecovery functions
+        # as the status is set to CCM_STATUS_CODE_RECOVERED (so that it cannot be recovered again).
+        recoveredCCMs.append(encode(crossChainMessageSchema, ccm))
+
+    # Update sidechain outbox root
+    proof = {
+        "size": terminatedOutboxAccount(trs.params.chainID).outboxSize,
+        "idxs": trs.params.idxs,
+        "siblingHashes": trs.params.siblingHashes
+    }
+
+    terminatedOutboxAccount(trs.params.chainID).outboxRoot = RMTCalculateRoot([sha256(ccmBytes) for ccmBytes in recoveredCCMs], proof)
+
+
+
+def applyRecovery(trs: Transaction, ccm: CCM) -> None:
+    # Calculate CCM ID, used later in events.
+    ccmID = sha256(encode(crossChainMessageSchema, ccm))
+    ccm.status = CCM_STATUS_CODE_RECOVERED
+    ccm.sendingChainID, ccm.receivingChainID = ccm.receivingChainID, ccm.sendingChainID
+
+    try:
+        # Modules can verify the CCM.
+        # The Token module verifies the escrowed balance in the CCM sending chain for the message fee.
+        for each module mdl for which verifyCrossChainMessage exists:
+            mdl.verifyCrossChainMessage(trs, ccm)
+    except:
+        emitEvent(
+            module = MODULE_NAME_INTEROPERABILITY,
+            name = EVENT_NAME_CCM_PROCESSED,
+            data = {"ccmID": ccmID, "result": CCM_PROCESSED_RESULT_DISCARDED, "code": CCM_PROCESSED_CODE_INVALID_CCM_VERIFY_CCM_EXCEPTION},
+            topics = [ccm.sendingChainID, ccm.receivingChainID]
+        )
+        return
+
+    if ccm.module is not supported:
+        emitEvent(
+            module = MODULE_NAME_INTEROPERABILITY,
+            name = EVENT_NAME_CCM_PROCESSED,
+            data = {"ccmID": ccmID, "result": CCM_PROCESSED_RESULT_DISCARDED, "code": CCM_PROCESSED_CODE_MODULE_NOT_SUPPORTED},
+            topics = [ccm.sendingChainID, ccm.receivingChainID]
+        )
+        return
+    elif crossChainCommand is not supported:
+        emitEvent(
+            module = MODULE_NAME_INTEROPERABILITY,
+            name = EVENT_NAME_CCM_PROCESSED,
+            data = {"ccmID": ccmID, "result": CCM_PROCESSED_RESULT_DISCARDED, "code": CCM_PROCESSED_CODE_CROSS_CHAIN_COMMAND_NOT_SUPPORTED},
+            topics = [ccm.sendingChainID, ccm.receivingChainID]
+        )
+        return
+
+    crossChainCommand = cross-chain command associated with (ccm.module, ccm.crossChainCommand)
+    try:
+        crossChainCommand.verify(trs, ccm)
+    except:
+        emitEvent(
+            module = MODULE_NAME_INTEROPERABILITY,
+            name = EVENT_NAME_CCM_PROCESSED,
+            data = {"ccmID": ccmID, "result": CCM_PROCESSED_RESULT_DISCARDED, "code": CCM_PROCESSED_CODE_INVALID_CCM_VERIFY_EXCEPTION},
+            topics = [ccm.sendingChainID, ccm.receivingChainID]
+        )
+        return
+
+    # Create a state snapshot.
+    baseSnapshot = snapshot of the current state
+    try:
+        # Call the beforeCrossChainCommandExecution functions from other modules.
+        # For example, the Token module assigns the message fee to the transaction sender.
+        for each module mdl for which beforeCrossChainCommandExecution exists:
+            mdl.beforeCrossChainCommandExecution(trs, ccm)
+    except:
+        revert state to baseSnapshot
+        emitEvent(
+            module = MODULE_NAME_INTEROPERABILITY,
+            name = EVENT_NAME_CCM_PROCESSED,
+            data = {"ccmID": ccmID, "result": CCM_PROCESSED_RESULT_DISCARDED, "code": CCM_PROCESSED_CODE_INVALID_CCM_BEFORE_CCC_EXECUTION_EXCEPTION},
+            topics = [ccm.sendingChainID, ccm.receivingChainID]
+        )
+        return
+    # Create a state snapshot.
+    executionSnapshot = snapshot of the current state
+    try:
+        # Execute the cross-chain command.
+        crossChainCommand.execute(trs, ccm)
+        emitEvent(
+            module = MODULE_NAME_INTEROPERABILITY,
+            name = EVENT_NAME_CCM_PROCESSED,
+            data = {"ccmID": ccmID, "result": CCM_PROCESSED_RESULT_APPLIED, "code": CCM_PROCESSED_CODE_SUCCESS},
+            topics = [ccm.sendingChainID, ccm.receivingChainID]
+        )
+    except:
+        revert state to executionSnapshot
+        emitEvent(
+            module = MODULE_NAME_INTEROPERABILITY,
+            name = EVENT_NAME_CCM_PROCESSED,
+            data = {"ccmID": ccmID, "result": CCM_PROCESSED_RESULT_DISCARDED, "code": CCM_PROCESSED_CODE_FAILED_CCM},
+            topics = [ccm.sendingChainID, ccm.receivingChainID]
+        )
+
+    try:
+        # Call the afterCrossChainCommandExecution functions from other modules.
+        for each module mdl for which afterCrossChainCommandExecution exists:
+            mdl.afterCrossChainCommandExecution(trs, ccm)
+    except:
+        revert state to baseSnapshot
+        emitEvent(
+            module = MODULE_NAME_INTEROPERABILITY,
+            name = EVENT_NAME_CCM_PROCESSED,
+            data = {"ccmID": ccmID, "result": CCM_PROCESSED_RESULT_DISCARDED, "code": CCM_PROCESSED_CODE_INVALID_CCM_AFTER_CCC_EXECUTION_EXCEPTION},
+            topics = [ccm.sendingChainID, ccm.receivingChainID
+
+
+def forwardRecovery(trs: Transaction, ccm: CCM) -> None:
+    # Calculate CCM ID, used later in events.
+    ccmID = sha256(encode(crossChainMessageSchema, ccm))
+
+    ccm.status = CCM_STATUS_CODE_RECOVERED
+    ccm.sendingChainID, ccm.receivingChainID = ccm.receivingChainID, ccm.sendingChainID
+
+    try:
+        # Modules can verify the CCM.
+        # The Token module verifies the escrowed balance in the CCM sending chain for the message fee.
+        for each module mdl for which verifyCrossChainMessage exists:
+            mdl.verifyCrossChainMessage(trs, ccm)
+    except:
+        emitEvent(
+            module = MODULE_NAME_INTEROPERABILITY,
+            name = EVENT_NAME_CCM_PROCESSED,
+            data = {"ccmID": ccmID, "result": CCM_PROCESSED_RESULT_DISCARDED, "code": CCM_PROCESSED_CODE_INVALID_CCM_VERIFY_CCM_EXCEPTION},
+            topics = [ccm.sendingChainID, ccm.receivingChainID]
+        )
+        return
+
+    # Create a state snapshot.
+    baseSnapshot = snapshot of the current state
+    try:
+        # Call the beforeCrossChainMessageForwarding functions from other modules.
+        # For example, the Token module transfers the fee from escrow to escrow.
+        for each module mdl for which beforeCrossChainMessageForwarding exists:
+            mdl.beforeCrossChainMessageForwarding(trs, ccm)
+    except:
+        revert state to baseSnapshot
+        emitEvent(
+            module = MODULE_NAME_INTEROPERABILITY,
+            name = EVENT_NAME_CCM_PROCESSED,
+            data = {"ccmID": ccmID, "result": CCM_PROCESSED_RESULT_DISCARDED, "code": CCM_PROCESSED_CODE_INVALID_CCM_BEFORE_CCC_FORWARDING_EXCEPTION},
+            topics = [ccm.sendingChainID, ccm.receivingChainID]
+        )
+        return
+
+    addToOutbox(ccm.receivingChainID, ccm)
+    # Emit CCM forwarded event.
+    # Recalculate CCM ID. This differs because of new status, sending, and receiving chains.
+    # We use the updated ID as this CCM is appended to the outbox.
+    recoveredCCMID = sha256(encode(crossChainMessageSchema, ccm))
+    emitEvent(
+        module = MODULE_NAME_INTEROPERABILITY,
+        name = EVENT_NAME_CCM_PROCESSED,
+        data = {"ccmID": recoveredCCMID, "result": CCM_PROCESSED_RESULT_FORWARDED, "code": CCM_PROCESSED_CODE_SUCCESS},
+        topics = [ccm.sendingChainID, ccm.receivingChainID]
+----
+
+====
+
+==== Message Recovery Initialization Command
+
+Once a terminated state account has been created on the mainchain, users can send this command to initialize the corresponding terminated outbox account.
+This command contains the channel account of the mainchain stored in the state of the terminated sidechain and an inclusion proof for it against the state root stored in the corresponding terminated state account.
+The mainchain channel data is needed to acquire the number of messages that were processed in the terminated sidechain (corresponding to the inbox size of the channel).
+
+This command sets the outbox root and the inbox size in the terminated outbox account, so that message recovery commands can be issued.
+
+Transactions executing this command have the following:
+
+* module = `MODULE_NAME_INTEROPERABILITY`
+* command = `COMMAND_MESSAGE_RECOVERY_INITIALIZATION`
+
+
+The command name is `COMMAND_MESSAGE_RECOVERY_INITIALIZATION` and the message recovery initialization command schema can be seen below:
+
+.Message Recovery Initialization Command
+[%collapsible]
+====
+[source,js]
+----
+messageRecoveryInitializationParams = {
+    "type": "object",
+    "required": [
+        "chainID",
+        "channel",
+        "bitmap",
+        "siblingHashes"
+    ],
+    "properties": {
+        "chainID": {
+            "dataType": "bytes",
+            "length": CHAIN_ID_LENGTH,
+            "fieldNumber": 1
+        },
+        "channel": {
+            "dataType": "bytes",
+            "fieldNumber": 2
+        },
+        "bitmap": {
+            "dataType": "bytes",
+            "fieldNumber": 3
+        },
+        "siblingHashes": {
+            "type": "array",
+            "items": {
+                "dataType": "bytes",
+                "length": HASH_LENGTH
+            },
+            "fieldNumber": 4
+        }
+    }
+}
+----
+
+====
+
+* `chainID` : The ID of the sidechain whose terminated outbox account is to be initialized.
+* `channel` : The channel of this chain stored on the terminated sidechain.
+* `bitmap` : The bitmap of the inclusion proof of the channel in the sidechain state tree.
+* `siblingHashes` : The sibling hashes of the inclusion proof of the channel in the sidechain state tree.
+
+.Message Recovery Initialization Command Verification
+[%collapsible]
+====
+[source,js]
+----
+def verify(trs: Transaction) -> None:
+    if trs.params.chainID == CHAIN_ID_MAINCHAIN or trs.params.chainID == ownChainAccount.chainID:
+        raise Exception("Chain ID is not valid.")
+
+    # The commands fails if the  chain is not registered
+    if chainAccount(trs.params.chainID) does not exist:
+        raise Exception("Chain is not registered.")
+
+    # The commands fails if the chain is not terminated
+    if terminatedStateAccount(trs.params.chainID) does not exist or terminatedStateAccount(trs.params.chainID).initialized == False:
+        raise Exception("Chain is not terminated.")
+
+    # The commands fails if there exist already a terminated outbox account
+    if terminatedOutboxAccount(trs.params.chainID) exists:
+        raise Exception("Terminated outbox account already exists.")
+
+    queryKey = STORE_PREFIX_INTEROPERABILITY + SUBSTORE_PREFIX_CHANNEL_DATA + sha256(CHAIN_ID_MAINCHAIN)
+
+    query = {
+        key: queryKey,
+        value: sha256(trs.params.channel),
+        bitmap: trs.params.bitmap
+    }
+
+    proofOfInclusion = { siblingHashes: trs.params.siblingHashes, queries : [query] }
+
+    if SMTVerify([queryKey], proofOfInclusion, terminatedStateAccount(trs.params.chainID).stateRoot) == False:
+        raise Exception("Message recovery initialization proof of inclusion is not valid.")
+----
+
+====
+
+.Message Recovery Initialization Command Execution
+[%collapsible]
+====
+[source,js]
+----
+def execute(trs: Transaction) -> None:
+    partnerChannel = decode(channelSchema, trs.params.channel)
+    createTerminatedOutboxAccount(
+        trs.params.chainID,
+        channel(trs.params.chainID).outbox.root,
+        channel(trs.params.chainID).outbox.size,
+        partnerChannel.inbox.size
+----
+
+====
+
+==== Liveness Termination Command
+
+This command is used to terminate a sidechain that violated the liveness condition.
+As such, it can only be submitted on the mainchain.
+The required parameters, verification, and execution are listed below:
+
+* `module = MODULE_NAME_INTEROPERABILITY`
+* `command = COMMAND_LIVENESS_TERMINATION`
+
+
+.Liveness Termination Command
+[%collapsible]
+====
+[source,js]
+----
+livenessTerminationParams = {
+    "type": "object",
+    "required": ["chainID"],
+    "properties": {
+        "chainID": {
+            "dataType": "bytes",
+            "length": CHAIN_ID_LENGTH,
+            "fieldNumber": 1
+        }
+}
+----
+
+====
+
+* The chain ID is the ID of the respective sidechain to be terminated.
+
+.Liveness Termination Verification
+[%collapsible]
+====
+[source,js]
+----
+def verify(trs: Transaction) -> None:
+
+    if chainAccount(trs.params.chainID) does not exist:
+        raise Exception("Chain account does not exist.")
+
+    # The commands fails if the sidechain is already terminated
+    if chainAccount(trs.params.chainID).status == CHAIN_STATUS_TERMINATED:
+        raise Exception("Sidechain is already terminated.")
+
+    # or if the sidechain did not violate the liveness condition
+    if isLive(trs.params.chainID):
+        raise Exception("Sidechain did not violate the liveness condition.")
+----
+
+====
+
+.Liveness Termination Execution
+[%collapsible]
+====
+[source,js]
+----
+def execute(trs: Transaction) -> None:
+    terminateChain(trs.params.chainID)
+----
+
+====
+
+== Recovery Process Workflow
+
+This final section covers how the recovery process mechanism functions, and how to initiate a recovery from both the mainchain and the sidechain.
+As the relevant commands required have already been described above, the process flow is described below.
+As can also be seen further below in this section, the process is slightly different on the mainchain and the sidechain.
+
+==== Recovery from the terminated chain outbox
+
+Regarding the terminated chain outbox, it is possible to recover any pending messages that may have been unprocessed in the outbox of the terminated chain, and subsequently, their effect can be reverted on the sending chain.
+A message recovery initialization command is responsible for setting the outbox root and the inbox size in the terminated outbox account.
+This is followed by issuing a message recovery command in order to recover any pending messages present in the outbox of the terminated sidechain.
+
+
+
+
+==== Mainchain
+
+Firstly regarding the mainchain, the process required is as follows, and is depicted in the illustration in figure 3 below:
+
+1. The sidechain is terminated by submitting a <<Liveness Termination Command>>, or violating the token-module protocol.
+
+a. A *terminated state account* containing the last certified state root of the sidechain is created in the state.
+
+b. A User can start recovering assets with a *state recovery command* as covered above.
+
+2. A *message recovery initialization command* is then sent.
+This command contains the inbox size of the mainchain stored on the terminated sidechain, which indicates how many cross-chain messages were processed.
+
+a. A *terminated outbox account* is created in the state.
+This contains the outbox root of the terminated sidechain channel, and the inbox size provided with the message recovery initialization command.
+
+b. A user can now recover pending messages with a <<Message Recovery Command>>.
+
+.Recovery process from the mainchain.
+image::understand-blockchain/interop/mainchain-recovery_v1.png[, align="center" ,500]
+
+==== Sidechain
+
+On a sidechain, the process flow can occur in 3 scenarios which are described below and are also depicted in the corresponding 3 diagrams.
+
+1. The sidechain is terminated for violating the protocol of the token module or of a custom module.
+
+a. A terminated *state account* containing the mainchain last certified state root is created in the sidechain state.
+
+b. A *state recovery initialization command* is sent.
+This command contains the last certified state root (on the mainchain), of the terminated sidechain and an inclusion proof against the mainchain state root stored in the terminated state account.
+
+c. A user is able to recover assets native to the sidechain with a *state recovery command*.
+
+2. The sidechain receives a *sidechain terminated message* from the mainchain, indicating that a cross-chain message could not be delivered because the receiving chain was terminated.
+This message contains the last certified state root (on the mainchain), of the terminated sidechain.
+
+a. A *terminated state account* containing the sidechain’s last certified state root is created in the state.
+However, it is important to note that in this case, the terminated sidechain state root is set immediately, and there is no need for a state recovery initialization command.
+
+b. A user can recover assets native to the sidechain with a *state recovery command*.
+
+3. The sidechain is terminated on the mainchain.
+
+a. A *state recovery initialization command* is sent.
+This command contains the last certified state root (on the mainchain), of the terminated sidechain and an inclusion proof against the last certified mainchain state root, proving the termination.
+
+b. A *terminated state account* containing the sidechain’s last certified state root is created in the state.
+
+c. A user can recover assets that are native to the sidechain with a *state recovery command*.
+
+As mentioned above the steps from 1 to 3 are depicted graphically below in figure 4.
+
+===== Message Recovery from the Sidechain Outbox
+
+This message recovery mechanism is able to recover any CCM that is pending in the sidechain outbox.
+Specifically, those CCMs that have not yet been included in the receiving sidechain.
+Hence, this includes all the CCMs whose indices are larger than the last message index that the receiving sidechain reported to have included in its inbox on the mainchain.
+Any user can submit a message recovery command to recover several CCMs simultaneously.
+When the command is processed, the recovery is dependent on whether the sending chain is the mainchain or a sidechain.
+
+However, it is important to note that users are not guaranteed to recover their CCMs in every situation.
+Certain state information of the terminated sidechain might have been modified before the termination occurred, and this would make the recovered CCM application fail.
+For example, in the case whereby escrowed LSK exists in the sidechain account on the mainchain, which could have been subtracted by prior malicious behavior in the terminated sidechain.
+
+.Recovery process from the sidechain (Step 1)
+image::understand-blockchain/interop/sidechain-recovery1-v2.png[, align="center" ,500]
+.Recovery process from the sidechain (Step 2)
+image::understand-blockchain/interop/sidechain-recovery2_v2.png[, align="center" ,500]
+.Recovery process from the sidechain (Step 3)
+image::understand-blockchain/interop/sidechain-recovery3-v2.png[, align="center" ,500]
+
+
+==== Recovery Process Summary Overview
+
+In order to summarize the recovery process, a brief example of recovering assets/tokens from the state of a terminated sidechain is provided below:
+
+1. A sidechain is terminated on the mainchain due to inactivity.
+2. The last certified state root, i.e. the state root contained in the last certificate received from the sidechain, is stored in the terminated state account of the sidechain.
+3. The user can recover the assets/tokens by sending a state recovery command.
+This command contains an inclusion proof, proving the user balance on the sidechain against the state root stored in the terminated state account.
+4. The funds are credited to the user's account on the mainchain.
+5. Finally, the state root of the terminated sidechain is then updated accordingly.
+
+Finally, there are certain data-availability requirements necessary to prepare a recovery transaction as listed below:
+
+*Message recovery commands*:
+
+- Access to the cross-chain messages in the sidechain outbox.
+- The entire tree of the sidechain outbox must be able to provide the inclusion proof.
+
+*State recovery commands*:
+
+- Access to the specific asset to recover from the sidechain.
+- The entire state tree authenticated by the last certified state root must be able to provide the inclusion proof.
+
+
+Furthermore, this information has to be kept updated every time a recovery command is processed.
+Additionally, it would be possible to employ third-party services that could offer to recover assets/tokens/messages for a nominal fee on behalf of the users.
+It is envisaged that such services would deploy a mainchain and sidechain node to provide the data availability required to perform the recovery.

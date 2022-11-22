@@ -761,23 +761,21 @@ export class CreateHelloCommand extends BaseCommand {
     // eslint-disable-next-line @typescript-eslint/require-await
     public async verify(context: CommandVerifyContext&lt;Params&gt;): Promise&lt;VerificationResult&gt; {
         let validation: VerificationResult;
-        const wordList = context.params.message.split(" ");
-        const found = this._blacklist.filter(value =&gt; wordList.includes(value));
-        if (found.length &gt; 0) {
-            validation = {
-                status: VerifyStatus.FAIL,
-                error: new Error(
-                    `Illegal word in hello message: ${  found.toString()}`
-                )
-            };
-        } else {
-            validation = {
-                status: VerifyStatus.OK
-            };
-        }
-        context.logger.info(validation,"validation");
-        return validation;
-    }
+		const wordList = context.params.message.split(" ");
+		const found = this._blacklist.filter(value =&gt; wordList.includes(value));
+		if (found.length &gt; 0) {
+		  context.logger.info("==== FOUND: Message contains a blacklisted word ====");
+			throw new Error(
+					`Illegal word in hello message: ${  found.toString()}`
+				);
+		} else {
+		  context.logger.info("==== NOT FOUND: Message contains no blacklisted words ====");
+			validation = {
+				status: VerifyStatus.OK
+			};
+		}
+		return validation;
+	}
     // [...]
 }</code></pre>
 </div>
@@ -909,8 +907,31 @@ export class CreateHelloCommand extends BaseCommand {
 <p>In another terminal window, create the transaction:</p>
 <div class="literalblock">
 <div class="content">
-<pre>% ./bin/run transaction:create hello createHello 10000000 --params='{"message":"Hello Lisk SDK v6!"}' --json --key-derivation-path="m/44'/134'/0'" --pretty</pre>
+<pre>% ./bin/run transaction:create hello createHello 10000000 --params='{"message":"Hello Lisk SDK v6!"}' --json --pretty</pre>
 </div>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The <code>transaction:create</code> command uses the default key derivation path by default.
+The default key derivation path is <code>m/44'/134'/0</code>, which always corresponds to the first account listed in <code>dev-validators.json</code>.</p>
+</div>
+<div class="paragraph">
+<p>If you want to use another account, for example the second account of the <code>dev-validators.json</code> file, you need to specify the corresponding key derivation path by using the flag <code>--key-derivation-path</code> like so:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>% ./bin/run transaction:create hello createHello 10000000 --params='{"message":"Hello Lisk SDK v6!"}' --json --key-derivation-path="m/44'/134'/1'" --pretty</pre>
+</div>
+</div>
+</td>
+</tr>
+</table>
 </div>
 <div class="paragraph">
 <p>Use the passphrase contained in the file <code>config/default/passphrase.json</code> when prompted for it.
@@ -1023,11 +1044,11 @@ Therefore, it should violate at least one of the three command validations:</p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>% ./bin/run transaction:create hello createHello 10000000 --params='{"message":"Hello this is an illegalWord1"}' --json --key-derivation-path="m/44'/134'/0'" --pretty</pre>
+<pre>% ./bin/run transaction:create hello createHello 10000000 --params='{"message":"Hello this is an illegalWord1"}' --json --pretty</pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Then, &lt;&lt;<a href="#send-transaction">send the transaction</a> to the node, and wait for the response.</p>
+<p>Then, <a href="#send-transaction">send the transaction</a> to the node, and wait for the response.</p>
 </div>
 <div class="paragraph">
 <p>If the message violates one of the three requirements, the command verification fails and the node returns the following response, indicating that the transaction was not accepted:</p>

@@ -357,7 +357,7 @@
 <p><i class="fa fa-check-square-o"></i> Register the event in the module</p>
 </li>
 <li>
-<p><i class="fa fa-check-square-o"></i> Emit the event in the module inside a module life cycle hook</p>
+<p><i class="fa fa-check-square-o"></i> Emit the event in the command execution hook</p>
 </li>
 <li>
 <p><i class="fa fa-square-o"></i> Listen to the event.
@@ -408,11 +408,14 @@ Events occur per block, and are stored in the respective block header, from wher
 <h2 id="create-a-new-event-type"><a class="anchor" href="#create-a-new-event-type"></a>Create a new event type</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>First, define the corresponding interface for the event in <code>types.ts</code>.
-The event data shall contain the address of the sender of the Hello message, and the Hello message that was sent.</p>
+<p>First, define the corresponding interface for the event.
+Create a new file called <code>new_hello.ts</code> inside the <code>events/</code> folder of the module.</p>
+</div>
+<div class="paragraph">
+<p>The event data shall contain the address of the sender of the Hello message, and the Hello message which was sent.</p>
 </div>
 <div class="listingblock">
-<div class="title">hello_client/src/app/modules/hello/types.ts</div>
+<div class="title">hello_client/src/app/modules/hello/events/new_hello.ts</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export interface NewHelloEventData {
 	senderAddress: Buffer;
@@ -421,10 +424,10 @@ The event data shall contain the address of the sender of the Hello message, and
 </div>
 </div>
 <div class="paragraph">
-<p>Define the corresponding schema in <code>schema.ts</code>, too.</p>
+<p>Define the corresponding schema directly below.</p>
 </div>
 <div class="listingblock">
-<div class="title">hello_client/src/app/modules/hello/schema.ts</div>
+<div class="title">hello_client/src/app/modules/hello/events/new_hello.ts</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export const newHelloEventSchema = {
 	$id: '/hello/events/new_hello',
@@ -432,7 +435,7 @@ The event data shall contain the address of the sender of the Hello message, and
 	required: ['senderAddress', 'message'],
 	properties: {
 		senderAddress: {
-			dataType: 'bytes',
+			dataType: 'lisk32',
 			fieldNumber: 1,
 		},
 		message: {
@@ -444,22 +447,23 @@ The event data shall contain the address of the sender of the Hello message, and
 </div>
 </div>
 <div class="paragraph">
-<p>Create a new file called <code>new_hello.ts</code> inside the <code>events/</code> folder of the module, and import the above-defined interface and schema.
-To create the event class, also import the <code>BaseEvent</code> and <code>EventQueuer</code> from the <code>lisk-sdk</code>.</p>
+<p>To create the event class, import the <code>BaseEvent</code> and <code>EventQueuer</code> from the <code>lisk-sdk</code>.</p>
 </div>
 <div class="listingblock">
 <div class="title">hello_client/src/app/modules/hello/events/new_hello.ts</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import { BaseEvent, EventQueuer } from 'lisk-sdk';
-import { newHelloEventSchema } from '../schema';
-import { NewHelloEventData } from '../types';
+
+export interface NewHelloEventData {
+    //...
+};
+
+export const newHelloEventSchema = {
+    //...
+};
 
 export class NewHelloEvent extends BaseEvent&lt;NewHelloEventData&gt; {
 	public schema = newHelloEventSchema;
-
-	public log(ctx: EventQueuer, data: NewHelloEventData): void {
-		this.add(ctx, data, [data.senderAddress]);
-	}
 }</code></pre>
 </div>
 </div>
@@ -467,17 +471,14 @@ export class NewHelloEvent extends BaseEvent&lt;NewHelloEventData&gt; {
 <p>The new event class is created by extending from the <code>BaseEvent</code>.</p>
 </div>
 <div class="paragraph">
-<p>Inside of the event class, we need to define the following properties:</p>
+<p>Inside the event class, set the schema of the event data to <code>newHelloEventSchema</code>, which is defined above.</p>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p><code>schema</code>: Defines the schema of the event data</p>
-</li>
-<li>
-<p><code>log()</code>: A method to emit the event and add it to the event queue of the node.</p>
-</li>
-</ul>
+<div class="paragraph">
+<p>The <code>BaseEvent</code> class implements already a method <code>add()</code>, which can be used to emit the event, so there is nothing else required to be defined in the event.</p>
+</div>
+<div class="paragraph">
+<p>The <code>schema</code> property is optional as well, and only required, if the event emits custom data.
+Even without schema, it is still possible signal something happened by logging an event.</p>
 </div>
 </div>
 </div>
@@ -512,40 +513,53 @@ export class HelloModule extends BaseModule {
 <h2 id="emit-the-event"><a class="anchor" href="#emit-the-event"></a>Emit the event</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Now that the event is registered with the module, you can call the <code>log()</code> method of the event at any time inside the module.</p>
+<p>Now that the event is registered with the module, you can call the <code>add()</code> method of the event at any time inside the module.</p>
 </div>
 <div class="paragraph">
-<p>In this example, we want to emit the "New Hello" event every time a "Create Hello" command was executed, so we add the corresponding logic to the <code>afterCommandExecute()</code> module lifecycle hook.</p>
+<p>In this example, we want to emit the "New Hello" event every time a "Create Hello" command was executed, so we add the corresponding logic at the end of the <code>execute()</code> command hook.</p>
 </div>
 <div class="listingblock">
-<div class="title">hello_client/src/app/modules/hello/module.ts</div>
+<div class="title">hello_client/src/app/modules/hello/commands/create_hello_command.ts</div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import { NewHelloEvent } from './events/new_hello';
-import { createHelloSchema, CreateHelloParams, configSchema } from './schema';
-// [...]
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">// [...]
+import { NewHelloEvent } from '../events/new_hello';
 
-export class HelloModule extends BaseModule {
-    // [...]
+interface Params {
+	message: string;
+}
 
-    public async afterCommandExecute(context: TransactionExecuteContext): Promise&lt;void&gt; {
-        // Get the "New Hello" event
-        const newHelloEvent = this.events.get(NewHelloEvent);
-        // Decode the command parameters
-        const createHelloParams: CreateHelloParams = codec.decode&lt;CreateHelloParams&gt;(createHelloSchema, context.transaction.params);
-        context.logger.info(createHelloParams,"createHelloParams")
-        // Use the log() method of the event to emit the event
-        newHelloEvent.log(context.getMethodContext(), {
-            senderAddress: context.transaction.senderAddress,
-            message: createHelloParams.message
-        });
+export class CreateHelloCommand extends BaseCommand {
+	public schema = createHelloSchema;
+	private _blacklist!: string[];
 
-    }
-    // [...]
+	// eslint-disable-next-line @typescript-eslint/require-await
+	public async init(config: ModuleConfig): Promise&lt;void&gt; {
+        // [...]
+	}
+
+	// eslint-disable-next-line @typescript-eslint/require-await
+	public async verify(context: CommandVerifyContext&lt;Params&gt;): Promise&lt;VerificationResult&gt; {
+        // [...]
+	}
+
+	public async execute(context: CommandExecuteContext&lt;Params&gt;): Promise&lt;void&gt; {
+		// [...]
+
+		// 6. Save the Hello counter to the counter store.
+		await counterSubstore.set(context, helloCounterBuffer, helloCounter);
+
+		// 7. Emit a "New Hello" event
+		const newHelloEvent = this.events.get(NewHelloEvent);
+		newHelloEvent.add(context, {
+			senderAddress: context.transaction.senderAddress,
+			message: context.params.message
+		},[context.transaction.senderAddress]);
+	}
 }</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Now, the module will create a new event every time a "Create Hello" command is executed, and the event will include the sender address and the sent Hello message.</p>
+<p>Now, the module will create a new event every time a "Create Hello" command is executed, and the event will include the sender address and the Hello message which has been sent.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -554,7 +568,7 @@ export class HelloModule extends BaseModule {
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-An example of how to listen to a specific event can be found in the guide <a href="../create-plugin.html" class="xref page">Creating a new plugin</a>.
+An example of how to listen to a specific event, can be found in the guide <a href="../create-plugin.html" class="xref page">Creating a new plugin</a>.
 </td>
 </tr>
 </table>

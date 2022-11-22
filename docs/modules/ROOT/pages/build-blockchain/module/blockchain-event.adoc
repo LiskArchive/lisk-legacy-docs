@@ -13,7 +13,7 @@ On this page, you'll learn how to:
 
 * [x] Create a new blockchain event
 * [x] Register the event in the module
-* [x] Emit the event in the module inside a module life cycle hook
+* [x] Emit the event in the command execution hook
 * [ ] Listen to the event.
 For an example of how to listen to the event, check out the guide xref:{url_build_plugin}[]
 ====
@@ -32,13 +32,14 @@ For the Hello module, we implement a simple blockchain event as an example: The 
 
 This event should be emitted every time a new "Create Hello" command is executed on a node.
 
-
 == Create a new event type
 
-First, define the corresponding interface for the event in `types.ts`.
-The event data shall contain the address of the sender of the Hello message, and the Hello message that was sent.
+First, define the corresponding interface for the event.
+Create a new file called `new_hello.ts` inside the `events/` folder of the module.
 
-.hello_client/src/app/modules/hello/types.ts
+The event data shall contain the address of the sender of the Hello message, and the Hello message which was sent.
+
+.hello_client/src/app/modules/hello/events/new_hello.ts
 [source,typescript]
 ----
 export interface NewHelloEventData {
@@ -47,9 +48,9 @@ export interface NewHelloEventData {
 }
 ----
 
-Define the corresponding schema in `schema.ts`, too.
+Define the corresponding schema directly below.
 
-.hello_client/src/app/modules/hello/schema.ts
+.hello_client/src/app/modules/hello/events/new_hello.ts
 [source,typescript]
 ----
 export const newHelloEventSchema = {
@@ -58,7 +59,7 @@ export const newHelloEventSchema = {
 	required: ['senderAddress', 'message'],
 	properties: {
 		senderAddress: {
-			dataType: 'bytes',
+			dataType: 'lisk32',
 			fieldNumber: 1,
 		},
 		message: {
@@ -69,31 +70,34 @@ export const newHelloEventSchema = {
 };
 ----
 
-Create a new file called `new_hello.ts` inside the `events/` folder of the module, and import the above-defined interface and schema.
-To create the event class, also import the `BaseEvent` and `EventQueuer` from the `lisk-sdk`.
+To create the event class, import the `BaseEvent` and `EventQueuer` from the `lisk-sdk`.
 
 .hello_client/src/app/modules/hello/events/new_hello.ts
 [source,typescript]
 ----
 import { BaseEvent, EventQueuer } from 'lisk-sdk';
-import { newHelloEventSchema } from '../schema';
-import { NewHelloEventData } from '../types';
+
+export interface NewHelloEventData {
+    //...
+};
+
+export const newHelloEventSchema = {
+    //...
+};
 
 export class NewHelloEvent extends BaseEvent<NewHelloEventData> {
 	public schema = newHelloEventSchema;
-
-	public log(ctx: EventQueuer, data: NewHelloEventData): void {
-		this.add(ctx, data, [data.senderAddress]);
-	}
 }
 ----
 
 The new event class is created by extending from the `BaseEvent`.
 
-Inside of the event class, we need to define the following properties:
+Inside the event class, set the schema of the event data to `newHelloEventSchema`, which is defined above.
 
-* `schema`: Defines the schema of the event data
-* `log()`: A method to emit the event and add it to the event queue of the node.
+The `BaseEvent` class implements already a method `add()`, which can be used to emit the event, so there is nothing else required to be defined in the event.
+
+The `schema` property is optional as well, and only required, if the event emits custom data.
+Even without schema, it is still possible signal something happened by logging an event.
 
 == Register the event
 
@@ -120,37 +124,50 @@ export class HelloModule extends BaseModule {
 
 == Emit the event
 
-Now that the event is registered with the module, you can call the `log()` method of the event at any time inside the module.
+Now that the event is registered with the module, you can call the `add()` method of the event at any time inside the module.
 
-In this example, we want to emit the "New Hello" event every time a "Create Hello" command was executed, so we add the corresponding logic to the `afterCommandExecute()` module lifecycle hook.
+In this example, we want to emit the "New Hello" event every time a "Create Hello" command was executed, so we add the corresponding logic at the end of the `execute()` command hook.
 
-.hello_client/src/app/modules/hello/module.ts
+.hello_client/src/app/modules/hello/commands/create_hello_command.ts
 [source,typescript]
 ----
-import { NewHelloEvent } from './events/new_hello';
-import { createHelloSchema, CreateHelloParams, configSchema } from './schema';
 // [...]
+import { NewHelloEvent } from '../events/new_hello';
 
-export class HelloModule extends BaseModule {
-    // [...]
+interface Params {
+	message: string;
+}
 
-    public async afterCommandExecute(context: TransactionExecuteContext): Promise<void> {
-        // Get the "New Hello" event
-        const newHelloEvent = this.events.get(NewHelloEvent);
-        // Decode the command parameters
-        const createHelloParams: CreateHelloParams = codec.decode<CreateHelloParams>(createHelloSchema, context.transaction.params);
-        context.logger.info(createHelloParams,"createHelloParams")
-        // Use the log() method of the event to emit the event
-        newHelloEvent.log(context.getMethodContext(), {
-            senderAddress: context.transaction.senderAddress,
-            message: createHelloParams.message
-        });
+export class CreateHelloCommand extends BaseCommand {
+	public schema = createHelloSchema;
+	private _blacklist!: string[];
 
-    }
-    // [...]
+	// eslint-disable-next-line @typescript-eslint/require-await
+	public async init(config: ModuleConfig): Promise<void> {
+        // [...]
+	}
+
+	// eslint-disable-next-line @typescript-eslint/require-await
+	public async verify(context: CommandVerifyContext<Params>): Promise<VerificationResult> {
+        // [...]
+	}
+
+	public async execute(context: CommandExecuteContext<Params>): Promise<void> {
+		// [...]
+
+		// 6. Save the Hello counter to the counter store.
+		await counterSubstore.set(context, helloCounterBuffer, helloCounter);
+
+		// 7. Emit a "New Hello" event
+		const newHelloEvent = this.events.get(NewHelloEvent);
+		newHelloEvent.add(context, {
+			senderAddress: context.transaction.senderAddress,
+			message: context.params.message
+		},[context.transaction.senderAddress]);
+	}
 }
 ----
 
-Now, the module will create a new event every time a "Create Hello" command is executed, and the event will include the sender address and the sent Hello message.
+Now, the module will create a new event every time a "Create Hello" command is executed, and the event will include the sender address and the Hello message which has been sent.
 
-NOTE: An example of how to listen to a specific event can be found in the guide xref:{url_build_plugin}[].
+NOTE: An example of how to listen to a specific event, can be found in the guide xref:{url_build_plugin}[].

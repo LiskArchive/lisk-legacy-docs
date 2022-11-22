@@ -309,23 +309,21 @@ export class CreateHelloCommand extends BaseCommand {
     // eslint-disable-next-line @typescript-eslint/require-await
     public async verify(context: CommandVerifyContext<Params>): Promise<VerificationResult> {
         let validation: VerificationResult;
-        const wordList = context.params.message.split(" ");
-        const found = this._blacklist.filter(value => wordList.includes(value));
-        if (found.length > 0) {
-            validation = {
-                status: VerifyStatus.FAIL,
-                error: new Error(
-                    `Illegal word in hello message: ${  found.toString()}`
-                )
-            };
-        } else {
-            validation = {
-                status: VerifyStatus.OK
-            };
-        }
-        context.logger.info(validation,"validation");
-        return validation;
-    }
+		const wordList = context.params.message.split(" ");
+		const found = this._blacklist.filter(value => wordList.includes(value));
+		if (found.length > 0) {
+		  context.logger.info("==== FOUND: Message contains a blacklisted word ====");
+			throw new Error(
+					`Illegal word in hello message: ${  found.toString()}`
+				);
+		} else {
+		  context.logger.info("==== NOT FOUND: Message contains no blacklisted words ====");
+			validation = {
+				status: VerifyStatus.OK
+			};
+		}
+		return validation;
+	}
     // [...]
 }
 ----
@@ -415,7 +413,17 @@ In the root folder of the Hello client, execute the following steps in the termi
 [#create-transaction]
 . In another terminal window, create the transaction:
 
- % ./bin/run transaction:create hello createHello 10000000 --params='{"message":"Hello Lisk SDK v6!"}' --json --key-derivation-path="m/44'/134'/0'" --pretty
+ % ./bin/run transaction:create hello createHello 10000000 --params='{"message":"Hello Lisk SDK v6!"}' --json --pretty
++
+[TIP]
+====
+The `transaction:create` command uses the default key derivation path by default.
+The default key derivation path is `m/44'/134'/0`, which always corresponds to the first account listed in `dev-validators.json`.
+
+If you want to use another account, for example the second account of the `dev-validators.json` file, you need to specify the corresponding key derivation path by using the flag `--key-derivation-path` like so:
+
+ % ./bin/run transaction:create hello createHello 10000000 --params='{"message":"Hello Lisk SDK v6!"}' --json --key-derivation-path="m/44'/134'/1'" --pretty
+====
 +
 Use the passphrase contained in the file `config/default/passphrase.json` when prompted for it.
 You can ignore the warning `Warning: Passphrase contains 24 words instead of expected 12. Passphrase contains 23 whitespaces instead of expected 11.`
@@ -496,9 +504,9 @@ Therefore, it should violate at least one of the three command validations:
 
 For example, create the following Hello trasnaction, which is violating the third requirement by including a blacklisted word:
 
-  % ./bin/run transaction:create hello createHello 10000000 --params='{"message":"Hello this is an illegalWord1"}' --json --key-derivation-path="m/44'/134'/0'" --pretty
+  % ./bin/run transaction:create hello createHello 10000000 --params='{"message":"Hello this is an illegalWord1"}' --json --pretty
 
-Then, <<<<send-transaction,send the transaction>> to the node, and wait for the response.
+Then, <<send-transaction,send the transaction>> to the node, and wait for the response.
 
 //TODO: Update this section + code example, once the error message includes the command verification error message
 //Because the message contains `badWord2`, which is also inlcuded in the blacklisted words of the module, the command verification fails and the node returns the following response, indicating that the transaction was not accepted:

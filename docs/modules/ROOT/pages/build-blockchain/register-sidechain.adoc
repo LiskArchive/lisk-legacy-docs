@@ -34,14 +34,14 @@ The sidechain account is automatically set to “registered” when it is create
 As previously covered in the xref:{url_sidechain_reg_recovery}[Sidechain registration and recovery page], a  sidechain can be defined as a separate blockchain next to the mainchain, and the inclusion of a transaction in one of the blockchains can have an effect on the other blockchain.
 In this section, the registration process is explained.
 
-=== Registration overview
+== Registration overview
 
 The interoperability module is responsible for storing and validating the properties necessary to process the registration commands.
 In this section we will focus on the both the sidechain and mainchain registration requirements necessary when registering a sidechain.
 Each interoperable sidechain maintains a chain account, channel, and the chain validators for the mainchain.
 In addition, the mainchain maintains these afore-mentioned data structures for each registered sidechain.
 
-=== Sidechain registration procedure
+== Sidechain registration procedure
 
 A sidechain registration command can be sent by any user account in the Lisk Mainchain that has adequate funds to pay the required fee.
 The processing of this command is designed to create of a sidechain account in the mainchain state associated with a unique network identifier and a name.
@@ -81,7 +81,7 @@ For PoS chains, the value of the elements of this array is usually 1 as every ac
 
 .. `certificateThreshold`: An integer setting the minimum signatures weight required for the first sidechain certificate to be valid.
 
-==== Chain Identifiers
+=== Chain Identifiers
 
 The chain identifiers for both transaction and block signatures were previously known as network identifiers.
 The chain ID can be considered as a development of the network ID concept.
@@ -98,7 +98,7 @@ The other 3 bytes must be chosen uniquely for the respective blockchain, i.e., n
 
 The chain-identifiers prefixes currently specified can be found here in the xref:{url_reg_recovery}[Sidechain registration and recovery page].
 
-==== Chain ID
+=== Chain ID
 
 When processing the sidechain registration command, the chain ID for a sidechain is deterministically computed.
 Specifically, the chain ID of a new sidechain is assigned as an incremental integer similar to xref:{url_nonce}[transaction nonces].
@@ -106,72 +106,76 @@ Specifically, the chain ID of a new sidechain is assigned as an incremental inte
 The format of the chain IDs has been designed to provide an efficient and consolidated technique to uniquely identify chains in the ecosystem.
 Furthermore, an additional advantage, is that the integer assigned as the chain ID for a users favorite blockchain application can easily be remembered.
 
-The command ID of this transaction is `COMMAND_ID_SIDECHAIN_REG`.
+// The command ID of this transaction is `COMMAND_ID_SIDECHAIN_REG`.
 
-This command has an additional fee, whereby the `REGISTRATION_FEE` is a constant in the protocol.
-[source,js]
-----
-extra fee = REGISTRATION_FEE
-----
+// This command has an additional fee, whereby the `REGISTRATION_FEE` is a constant in the protocol.
+// [source,js]
+// ----
+// extra fee = REGISTRATION_FEE
+// ----
 
-* The sidechain registration parameters can be seen below:
+=== Sidechain registration command
+
+The transactions executing this command have the following:
+
+- module = `MODULE_NAME_INTEROPERABILITY`,
+
+- command = `COMMAND_SIDECHAIN_REG`.
+
+The sidechain registration parameters can be seen below:
 
 [source,js]
 ----
 sidechainRegParams = {
- "type":"object",
- "properties":{
-    "name":{
-       "dataType":"string",
-       "fieldNumber":1
-    },
-    "genesisBlockID":{
-       "dataType":"bytes",
-       "fieldNumber":2
-    },
-    "initValidators":{
-       "type":"object",
-       "properties":{
-          "keys":{
-             "type":"array",
-             "items":{
-                "dataType":"bytes"
-             },
-             "fieldNumber":1
-          },
-          "weights":{
-             "type":"array",
-             "items":{
-                "dataType":"uint64"
-             },
-             "fieldNumber":2
-          },
-          "certificateThreshold":{
-             "dataType":"uint64",
-             "fieldNumber":3
-          },
-          "required":[
-             "keys",
-             "weights",
-             "certificateThreshold"
-          ],
-          "fieldNumber":3
-       }
+    "type": "object",
+    "required": [
+        "name",
+        "chainID",
+        "initValidators",
+        "certificateThreshold"
+    ],
+    "properties": {
+        "name": {
+            "dataType": "string",
+            "minLength": MIN_CHAIN_NAME_LENGTH,
+            "maxLength": MAX_CHAIN_NAME_LENGTH,
+            "fieldNumber": 1
+        },
+        "chainID": {
+            "dataType": "bytes",
+            "length": CHAIN_ID_LENGTH,
+            "fieldNumber": 2
+        },
+        "initValidators": {
+            "type": "array",
+            "fieldNumber": 3,
+            "items": {
+                "type": "object",
+                "required": ["blsKey", "bftWeight"],
+                "properties": {
+                    "blsKey": {
+                        "dataType": "bytes",
+                        "length": BLS_PUBLIC_KEY_LENGTH,
+                        "fieldNumber": 1
+                    },
+                    "bftWeight": {
+                        "dataType": "uint64",
+                        "fieldNumber": 2
+                    }
+                }
+            }
+        },
+        "certificateThreshold": {
+            "dataType": "uint64",
+            "fieldNumber": 4
+        }
     }
- },
- "required":[
-    "name",
-    "genesisBlockID",
-    "initValidators"
- ]
 }
-
-
 ----
 
 All the sidechain registration, verification, and execution parameters can be found  xref:{url_sidechain_reg_commands}[here].
 
-=== Mainchain registration
+== Mainchain registration
 
 A similar registration process has to be initiated within the sidechain to enable an interoperable channel to fuction.
 This is achieved by performing a transaction with the xref:{url_mainchain_reg}[Mainchain Registration Command] within the respective sidechain.
@@ -180,13 +184,15 @@ Furthermore, based on these signatures an aggregate signature must also be added
 
 Therefore, it is critical that the sidechain validators ensure the correct information is present in the registration command, otherwise this may impede the interoperability functionality from working.
 
-The moudule and command ID can be seen below.
+=== Mainchain registration command
 
-module = `MODULE_NAME_INTEROPERABILITY`
+The module and command ID are listed below.
 
-command = `COMMAND_MAINCHAIN_REG`
+- module = `MODULE_NAME_INTEROPERABILITY`
 
-* The mainchain registration parameters can be seen below:
+- command = `COMMAND_MAINCHAIN_REG`
+
+The mainchain registration parameters can be seen below:
 
 [source,js]
 ----
@@ -201,7 +207,8 @@ mainchainRegParams = {
     ],
     "properties": {
         "ownChainID": {
-            "dataType": "uint32",
+            "dataType": "bytes",
+            "length": CHAIN_ID_LENGTH,
             "fieldNumber": 1
         },
         "ownName": {
@@ -240,7 +247,6 @@ mainchainRegParams = {
         }
     }
 }
-
 ----
 
 All the mainchain registration, verification, and execution parameters can be found  xref:{url_mainchain_reg_commands}[here].

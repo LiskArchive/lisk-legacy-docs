@@ -22,10 +22,19 @@ module.exports = (src, previewSrc, previewDest, sink = () => map()) => (done) =>
     ),
   ])
     .then(([baseUiModel, { layouts }]) => {
-      const { asciidoc: { extensions = [] } = {} } = baseUiModel
+      const extensions = ((baseUiModel.asciidoc || {}).extensions || []).map((request) => {
+        ASCIIDOC_ATTRIBUTES[request.replace(/^@|\.js$/, '').replace(/[/]/g, '-') + '-loaded'] = ''
+        const extension = require(request)
+        extension.register.call(Asciidoctor.Extensions)
+        return extension
+      })
+      const asciidoc = { extensions }
+      for (const component of baseUiModel.site.components) {
+        for (const version of component.versions || []) version.asciidoc = asciidoc
+      }
+      baseUiModel = { ...baseUiModel, env: process.env }
       delete baseUiModel.asciidoc
-      extensions.forEach((request) => require(request).register())
-      return [{ ...baseUiModel, env: process.env }, layouts]
+      return [baseUiModel, layouts]
     })
     .then(([baseUiModel, layouts]) =>
       vfs

@@ -2,7 +2,6 @@
 
 const autoprefixer = require('autoprefixer')
 const browserify = require('browserify')
-const buffer = require('vinyl-buffer')
 const concat = require('gulp-concat')
 const cssnano = require('cssnano')
 const fs = require('fs-extra')
@@ -68,36 +67,8 @@ module.exports = (src, dest, preview) => () => {
       .pipe(concat('js/site.js')),
     vfs
       .src('js/vendor/*([^.])?(.bundle).js', { ...opts, read: false })
-      .pipe(
-        // see https://gulpjs.org/recipes/browserify-multiple-destination.html
-        map((file, enc, next) => {
-          if (file.relative.endsWith('.bundle.js')) {
-            const mtimePromises = []
-            const bundlePath = file.path
-            browserify(file.relative, { basedir: src, detectGlobals: false })
-              .plugin('browser-pack-flat/plugin')
-              .on('file', (bundledPath) => {
-                if (bundledPath !== bundlePath) mtimePromises.push(fs.stat(bundledPath).then(({ mtime }) => mtime))
-              })
-              .bundle((bundleError, bundleBuffer) =>
-                Promise.all(mtimePromises).then((mtimes) => {
-                  const newestMtime = mtimes.reduce((max, curr) => (curr > max ? curr : max), file.stat.mtime)
-                  if (newestMtime > file.stat.mtime) file.stat.mtimeMs = +(file.stat.mtime = newestMtime)
-                  if (bundleBuffer !== undefined) file.contents = bundleBuffer
-                  file.path = file.path.slice(0, file.path.length - 10) + '.js'
-                  next(bundleError, file)
-                })
-              )
-          } else {
-            fs.readFile(file.path, 'UTF-8').then((contents) => {
-              file.contents = Buffer.from(contents)
-              next(null, file)
-            })
-          }
-        })
-      )
-      .pipe(buffer())
-      .pipe(uglify()),
+      .pipe(bundle(opts))
+      .pipe(uglify({ output: { comments: /^! / } })),
     vfs
       .src('js/vendor/*.min.js', opts)
       .pipe(map((file, enc, next) => next(null, Object.assign(file, { extname: '' }, { extname: '.js' })))),
@@ -130,6 +101,32 @@ module.exports = (src, dest, preview) => () => {
     vfs.src('partials/*.hbs', opts),
     vfs.src('static/**/*[!~]', { ...opts, base: ospath.join(src, 'static'), dot: true })
   ).pipe(vfs.dest(dest, { sourcemaps: sourcemaps && '.' }))
+}
+
+function bundle ({ base: basedir, ext: bundleExt = '.bundle.js' }) {
+  return map((file, enc, next) => {
+    if (bundleExt && file.relative.endsWith(bundleExt)) {
+      const mtimePromises = []
+      const bundlePath = file.path
+      browserify(file.relative, { basedir, detectGlobals: false })
+        .plugin('browser-pack-flat/plugin')
+        .on('file', (bundledPath) => {
+          if (bundledPath !== bundlePath) mtimePromises.push(fs.stat(bundledPath).then(({ mtime }) => mtime))
+        })
+        .bundle((bundleError, bundleBuffer) =>
+          Promise.all(mtimePromises).then((mtimes) => {
+            const newestMtime = mtimes.reduce((max, curr) => (curr > max ? curr : max), file.stat.mtime)
+            if (newestMtime > file.stat.mtime) file.stat.mtimeMs = +(file.stat.mtime = newestMtime)
+            if (bundleBuffer !== undefined) file.contents = bundleBuffer
+            next(bundleError, Object.assign(file, { path: file.path.slice(0, file.path.length - 10) + '.js' }))
+          })
+        )
+      return
+    }
+    fs.readFile(file.path, 'UTF-8').then((contents) => {
+      next(null, Object.assign(file, { contents: Buffer.from(contents) }))
+    })
+  })
 }
 
 function postcssPseudoElementFixer (css, result) {

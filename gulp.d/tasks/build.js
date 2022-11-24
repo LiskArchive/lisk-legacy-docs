@@ -58,11 +58,11 @@ module.exports = (src, dest, preview) => () => {
   ]
 
   return merge(
+    vfs.src('ui.yml', { ...opts, allowEmpty: true }),
     vfs
-      .src('ui.yml', { ...opts, allowEmpty: true }),
-    vfs
-      .src('js/+([0-9])-*.js', { ...opts, sourcemaps })
-      .pipe(uglify())
+      .src('js/+([0-9])-*.js', { ...opts, read: false, sourcemaps })
+      .pipe(bundle(opts))
+      .pipe(uglify({ output: { comments: /^! / } }))
       // NOTE concat already uses stat from newest combined file
       .pipe(concat('js/site.js')),
     vfs

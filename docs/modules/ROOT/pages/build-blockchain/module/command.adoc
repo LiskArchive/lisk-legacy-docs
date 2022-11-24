@@ -263,9 +263,13 @@ Then, call the method at the bottom of the `init()` method of the module and use
 // [...]
 export class HelloModule extends BaseModule {
     // [...]
-    // eslint-disable-next-line @typescript-eslint/require-await
     public async init(blacklist: string[]): Promise<void> {
-        // [...]
+        // Get the module config defined in the config.json file
+		const { moduleConfig } = args;
+		// Overwrite the default module config with values from config.json, if set
+		const config = utils.objects.mergeDeep({}, defaultConfig, moduleConfig) as ModuleConfigJSON;
+		// Validate the provided config with the config schema
+		validator.validate<ModuleConfigJSON>(configSchema, config);
         // Call the command init() method with config as parameter
         this.commands[0].init(config).catch(err => {
             console.log("Error: ", err);
@@ -303,8 +307,11 @@ So let's implement the `verify()` method to filter the message for words in the 
 export class CreateHelloCommand extends BaseCommand {
     public schema = createHelloSchema;
     private _blacklist!: string[];
-    // [...]
-    // eslint-disable-next-line @typescript-eslint/require-await
+
+    public async init(config: ModuleConfig): Promise<void> {
+		// [...]
+	}
+
     public async verify(context: CommandVerifyContext<Params>): Promise<VerificationResult> {
         let validation: VerificationResult;
 		const wordList = context.params.message.split(" ");
@@ -352,43 +359,71 @@ Following this, the general business logic of the `execute()` method looks like 
 . Get the Hello counter from the counter store.
 . Increment the Hello counter +1.
 . Save the Hello counter to the counter store.
+. Emit a "New Hello" event.
 
 The corresponding code is shown below:
 
 .hello_client/src/app/modules/hello/commands/create_hello_command.ts
 [source,typescript]
 ----
-// [...]
+import {
+	BaseCommand,
+	CommandVerifyContext,
+	CommandExecuteContext,
+	VerificationResult,
+	VerifyStatus,
+} from 'lisk-sdk';
+import { createHelloSchema } from '../schema';
+import { MessageStore } from '../stores/message';
+import { counterKey, CounterStore, CounterStoreData } from '../stores/counter';
+import { ModuleConfig } from '../types';
+import { NewHelloEvent } from '../events/new_hello';
+
 export class CreateHelloCommand extends BaseCommand {
     public schema = createHelloSchema;
     private _blacklist!: string[];
-    // [...]
+    public async init(config: ModuleConfig): Promise<void> {
+		// [...]
+	}
+
+	// eslint-disable-next-line @typescript-eslint/require-await
+	public async verify(context: CommandVerifyContext<Params>): Promise<VerificationResult> {
+		// [...]
+	}
+
     public async execute(context: CommandExecuteContext<Params>): Promise<void> {
-        // 1. Get account data of the sender of the CreateHello transaction.
-        const {senderAddress} = context.transaction;
-        // 2. Get message and counter stores.
-        const messageSubstore = this.stores.get(MessageStore);
-        const counterSubstore = this.stores.get(CounterStore);
+		// 1. Get account data of the sender of the Hello transaction.
+		const { senderAddress } = context.transaction;
+		// 2. Get message and counter stores.
+		const messageSubstore = this.stores.get(MessageStore);
+		const counterSubstore = this.stores.get(CounterStore);
 
-        // 3. Save the Hello message to the message store, using the senderAddress as key, and the message as value.
-        await messageSubstore.set(context, senderAddress, {
-            message: context.params.message,
-        });
+		// 3. Save the Hello message to the message store, using the senderAddress as key, and the message as value.
+		await messageSubstore.set(context, senderAddress, {
+			message: context.params.message,
+		});
 
-        // 4. Get the Hello counter from the counter store.
-        let helloCounter: CounterStoreData;
-        try {
-            helloCounter = await counterSubstore.get(context, helloBuffer);
-        } catch (error) {
-            helloCounter = {
-                counter: 0,
-            }
-        }
-        // 5. Increment the Hello counter +1.
-        helloCounter.counter+=1;
+		// 3. Get the Hello counter from the counter store.
+		let helloCounter: CounterStoreData;
+		try {
+			helloCounter = await counterSubstore.get(context, counterKey);
+		} catch (error) {
+			helloCounter = {
+				counter: 0,
+			}
+		}
+		// 5. Increment the Hello counter +1.
+		helloCounter.counter+=1;
 
-        // 6. Save the Hello counter to the counter store.
-        await counterSubstore.set(context, helloBuffer, helloCounter);
+		// 6. Save the Hello counter to the counter store.
+		await counterSubstore.set(context, counterKey, helloCounter);
+
+		// 7. Emit a "New Hello" event
+		const newHelloEvent = this.events.get(NewHelloEvent);
+		newHelloEvent.add(context, {
+			senderAddress: context.transaction.senderAddress,
+			message: context.params.message
+		},[context.transaction.senderAddress]);
 	}
 }
 ----
@@ -407,7 +442,7 @@ In the root folder of the Hello client, execute the following steps in the termi
 
  ./bin/run start --config=config/custom_config.json
 +
-[#create-transaction]
+[[create-transaction]]
 . In another terminal window, create the transaction:
 
  % ./bin/run transaction:create hello createHello 10000000 --params='{"message":"Hello Lisk SDK v6!"}' --json --pretty
@@ -451,7 +486,7 @@ The output of the command looks like this:
 +
 The first object is the transaction in binary format, and the second object is the same transaction in JSON format, because we added the flags `--json` and `pretty`.
 +
-[#send-transaction]
+[[send-transaction]]
 . Send the transaction:
 Use the transaction in binary format to post the transaction to the node as shown below.
 Note: When you use `curl`, make sure you have `http` enabled in the config under `rpc.modes`.

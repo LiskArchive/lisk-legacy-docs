@@ -1,4 +1,4 @@
-= Creating endpoints of a plugin
+= Creating endpoint & Testing the application
 Muhammad Talha <muhammad.talha@lightcurve.io>
 
 :toc: preamble
@@ -13,3 +13,169 @@ Muhammad Talha <muhammad.talha@lightcurve.io>
 // Project URLS
 :url_lisk_db: {docs_sdk}references/lisk-elements/db.adoc
 :url_plugin_schema: build-blockchain/plugin/schema-types.adoc#NewHelloEvent
+
+Now that we have our core logic in place, it is time to create an endpoint for our plugin which will fetch all the NewHello message, sender's address, and height of the block, as stored in our database for each event. So, on this page, you'll learn.
+
+====
+* [x] Creating the Endpoint class
+* [x] Creating an endpoint for HelloInfo plugin. 
+* [x] Testing our plugin.
+====
+
+
+== Creating an Endpoint
+
+All endpoints of a plugin exist in an `endpoint.ts` file, which exist in the root folder of the plugin. So, let's create an `endpoint.ts` file in the `hello_info` directory. This file will contain the `Endpoint` class and an endpoint `getMessageList()`.
+
+The Endpoint class is based on the `BasePluginEndpoint` class, which is available in the `lisk-sdk` package.
+
+.Endpoint class
+[source,typescript]
+----
+import {
+    BasePluginEndpoint,
+    db as liskDB,
+    cryptography,
+
+} from 'lisk-sdk';
+import {
+    getEventHelloInfo,
+    getLastCounter,
+
+} from './db';
+
+import { Event as helloEvent } from './types';
+
+export class Endpoint extends BasePluginEndpoint {
+
+    private _pluginDB!: liskDB.Database;
+
+    // initialize your database intance here
+    public init(db: liskDB.Database) {
+        this._pluginDB = db;
+    }
+
+    // [...]
+}
+----
+
+Since our data exists on an off-chain database, we would like to have an instance of our plugin database so that an endpoint can query data from there. 
+
+Next up is our endpoint function, every `public` function present in the Endpoint class gets registered to the sidechain client. Our endpoint will return a list of all the hellomessages so we call our endpoint `getMessageList()`.
+
+Our endpoint will have an `addressList` and a `data[]` which will house the information retrived from the database.
+
+.Endpoint class
+[source,typescript]
+----
+// Returns all Sender Addresses, Hello Messages and Block Height of the block where the Hello Event was emitted.
+public async getMessageList(): Promise<unknown[]> {
+    // 1. Define data to be fetched 
+    let messageList: helloEvent;
+    const data: {
+        ID: number;
+        senderAddress: string;
+        message: string;
+        blockHeight;
+    }[] = [];
+
+    // [...]
+}
+----
+
+We get the last counter from the database via `getLastCounter()` and on the basis of that counter, we loop through the list of total events stored in the plugin's database.
+
+With in each iteration, we push each event's data into our `data` array and once the loop finishes, we return all NewHello events generated and stored on the plugin's database.
+
+.Endpoint class
+[source,typescript]
+----
+public async getMessageList(): Promise<unknown[]> {
+    
+    // [...]
+
+    //2. Request data
+    const lastCounter = await getLastCounter(this._pluginDB);
+    for (let index = 1; index <= lastCounter.counter; index += 1) {
+        messageList = await getEventHelloInfo(this._pluginDB, index);
+        data.push({
+            ID: index,
+            senderAddress: cryptography.address.getLisk32AddressFromAddress(messageList['senderAddress']), // Convert Buffer address to Lisk32 format.
+            message: messageList['message'],
+            blockHeight: messageList['height'],
+        })
+    }
+    return data;
+}
+----
+
+[TIP]
+====
+It is worth mentioning that an endpoint can also have various input arguments. These arguments are passed via the `PluginEndpointContext` class available in `lisk-sdk`. If we need to pass an argument to the `getMessageList()`, we can do it like this:
+
+[source,typescript]
+----
+public async getMessageList(_context: PluginEndpointContext): Promise<unknown[]> {
+    // [...]
+}
+----
+====
+
+After you add all the aforementioned code, your `endpoint.ts` file should like this:
+
+.Endpoint of HelloInfoPlugin
+[%collapsible]
+====
+.hello_client/src/app/plugins/hello_info/endpoint.ts
+[source,typescript]
+----
+/* eslint-disable dot-notation */
+import {
+    BasePluginEndpoint,
+    db as liskDB,
+    cryptography,
+
+} from 'lisk-sdk';
+import {
+    getEventHelloInfo,
+    getLastCounter,
+
+} from './db';
+
+import { Event as helloEvent } from './types';
+
+export class Endpoint extends BasePluginEndpoint {
+    // private _client!: BasePlugin['apiClient'];
+    private _pluginDB!: liskDB.Database;
+
+    // public init(db: liskDB.Database, apiClient: BasePlugin['apiClient']) {
+    public init(db: liskDB.Database) {
+        this._pluginDB = db;
+        // this._client = apiClient;
+    }
+    // Returns all Sender Addresses, Hello Messages and Block Height of the block where the Hello Event was emitted.
+    public async getMessageList(): Promise<unknown[]> {
+        let messageList: helloEvent;
+        const data: {
+            ID: number;
+            senderAddress: string;
+            message: string;
+            blockHeight;
+        }[] = [];
+        const lastCounter = await getLastCounter(this._pluginDB);
+        console.log(lastCounter);
+        for (let index = 1; index <= lastCounter.counter; index += 1) {
+            messageList = await getEventHelloInfo(this._pluginDB, index);
+            console.log(messageList);
+            data.push({
+                ID: index,
+                senderAddress: cryptography.address.getLisk32AddressFromAddress(messageList['senderAddress']),
+                message: messageList['message'],
+                blockHeight: messageList['height'],
+            })
+        }
+        return data;
+    }
+}
+----
+====

@@ -13,6 +13,8 @@ Muhammad Talha <muhammad.talha@lightcurve.io>
 // Project URLS
 :url_lisk_db: {docs_sdk}references/lisk-elements/db.adoc
 :url_plugin_schema: build-blockchain/plugin/schema-types.adoc#NewHelloEvent
+:url_block_height: glossary.adoc#block-height
+:url_module_event_schema: build-blockchain/module/blockchain-event.adoc#create-a-new-event-type
 
 The Plugin class contains the starting, conculding logic of a plugin. In our case we want our plugin to sync the off-chain database with new events on-chain after regular intervals.
 So, in this guide, you'll learn:
@@ -23,13 +25,224 @@ So, in this guide, you'll learn:
 * [x] Storing NewHello event in db.
 ====
 
+== Instantiate database & define on-chain schema
+As mentioned in the hello Module guide, Our Hello Client is capable of emitting an event in response to every hello transaction. 
+Our goal is to check for the event emitted by the hello module and then sync it with our off-chain database.
 
-== Loading DB
+Whenever our node application starts, we want our plugin to start checking for any new hello events available on chain after regular intervals. 
+We have already defined the time of each interval in the `syncInterval` config property. 
 
+So let's instantiate our plugin instance and set an interval for the synching process in our already available `load()` function.
 
-.Endpoint class
+.HelloInfoPlugin class
 [source,typescript]
 ----
+import { BasePlugin, db as liskDB, codec } from 'lisk-sdk';
+import {
+	getDBInstance,
+	getLastCounter,
+	getLastEventHeight,
+	setEventHelloInfo,
+	setLastCounter,
+	setLastEventHeight
+} from './db';
+import { configSchema, chainEventSchema } from './schemas';
+import { HelloInfoPluginConfig, Height, Counter } from './types';
+import { Endpoint } from './endpoint';
+
+export class HelloInfoPlugin extends BasePlugin<HelloInfoPluginConfig> {
+	public configSchema = configSchema;
+	private _pluginDB!: liskDB.Database;
+
+	public get nodeModulePath(): string {
+		return __filename;
+	}
+
+	public async load(): Promise<void> {
+		// loads DB instance
+		this._pluginDB = await getDBInstance(this.dataPath);
+	}
+
+	// eslint-disable-next-line @typescript-eslint/require-await
+	public async unload(): Promise<void> {
+		this._pluginDB.close();
+	}
+
+}
+----
+
+We also need a schema for validating and decoding event's *on-chain* data recieved from the sidechain. 
+The schema will have the `senderAddress` and `message` properties similar to how they are defined in the xref:{url_module_event_schema} [Module's event schema]. 
+
+Paste the following schema into your `schemas.ts` file.
+
+.hello_client/src/app/plugins/hello_info/schemas.ts
+[source,typescript]
+----
+
+// [...]
+export const chainEventSchema = {
+    $id: '/helloInfo/new_hello/chainEvent',
+    type: 'object',
+    required: ['senderAddress', 'message'],
+    properties: {
+        senderAddress: {
+            dataType: 'bytes',
+            fieldNumber: 1,
+        },
+        message: {
+            dataType: 'string',
+            fieldNumber: 2,
+        },
+    },
+};
+----
+
+
+== Get or Set Counter and Height
+Since our database is essentially a key-value store, we want to make sure that the keys for a counter value and a value of height are instantiated if they don't exist. 
+
+Let's do that, our counter is a number so if there isn't a counter present in the database, it should return a `NOTFOUNDERROR` and set the value of counter to zero. This value will increment after an event is stored in the database.
+
+._getLastCounter()
+[source,typescript]
+----
+// [...]
+export class HelloInfoPlugin extends BasePlugin<HelloInfoPluginConfig> {
+
+    // [...]
+	private async _getLastCounter(): Promise<Counter> {
+		try {
+			const counter = await getLastCounter(this._pluginDB);
+			return counter;
+		} catch (error) {
+			if (!(error instanceof liskDB.NotFoundError)) {
+				throw error;
+			}
+			await setLastCounter(this._pluginDB, 0);
+			return { counter: 0 };
+		}
+	}
+
+    // [...]
+}
+----
+
+To ensure that our plugin is efficient, and it doesn't look for events in the already checked blocks of the sidechain, we would like to store the height of the last block that was checked for a NewHelloEvent.
+Similar to counter, we want to make sure that the height key-value pair has been instantiated at the first start of the client.
+
+._getLastHeight()
+[source,typescript]
+----
+// [...]
+export class HelloInfoPlugin extends BasePlugin<HelloInfoPluginConfig> {
+
+    // [...]
+	private async _getLastHeight(): Promise<Height> {
+		try {
+			const height = await getLastEventHeight(this._pluginDB);
+			return height;
+		} catch (error) {
+			if (!(error instanceof liskDB.NotFoundError)) {
+				throw error;
+			}
+			await setLastEventHeight(this._pluginDB, 0);
+			return { height: 0 };
+		}
+	}
+
+    // [...]
+}
+----
+
+== Sync and Store new event
+Let's now work on the synching logic, To make sure that we don't miss a block, we will loop through the last checked block (stored in database) until the latest block on the basis of xref:{url_block_height}[block height] which will be fetched from the sidechain. 
+
+._syncChainEvents()
+[source,typescript]
+----
+// [...]
+export class HelloInfoPlugin extends BasePlugin<HelloInfoPluginConfig> {
+    // [...]
+	private async _syncChainEvents(): Promise<void> {
+		// 1. Get latest block height from the sidechain 
+		const res = await this.apiClient.invoke<{ header: { height: number } }>("chain_getLastBlock", {
+		})
+		// 2. Get block height stored in the database
+		const heightObj = await this._getLastHeight();
+		const lastStoredHeight = heightObj.height + 1;
+		const { height } = res.header;
+		// 3. Loop through new blocks, starting from the lastStoredHeight + 1
+		for (let index = lastStoredHeight; index <= height; index += 1) {
+			const result = await this.apiClient.invoke<{ data: string; height: number; module: string; name: string }[]>("chain_getEvents", {
+				height: index
+			});
+			// 3a. Once an event is found, decode it's data and pass it to the _saveEventInfoToDB() function
+			const helloEvents = result.filter(e => e.module === 'hello' && e.name === 'newHello');
+			for (const helloEvent of helloEvents) {
+				const parsedData = codec.decode<{ senderAddress: Buffer; message: string }>(chainEventSchema, Buffer.from(helloEvent.data, 'hex'));
+				const { counter } = await this._getLastCounter();
+				await this._saveEventInfoToDB(parsedData, helloEvent.height, counter + 1);
+			}
+		}
+		// 4. At the end of the loop, save the last checked block height in the database. 
+		await setLastEventHeight(this._pluginDB, height);
+	}
+
+    // [...]
+}
+----
+
+The `_saveEventInfoToDB` function will take the decoded data, the block height where a NewHelloEvent is found and an incremented counter value and will store all in their corresponding data structures.
+
+._saveEventInfoToDB()
+[source,typescript]
+----
+// [...]
+export class HelloInfoPlugin extends BasePlugin<HelloInfoPluginConfig> {
+    // [...]
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	private async _saveEventInfoToDB(parsedData: { senderAddress: Buffer; message: string }, chainHeight: number, counterValue: number): Promise<string> {
+		// 1. Saves newly generated hello events to the database
+		const { senderAddress, message } = parsedData;
+		await setEventHelloInfo(this._pluginDB, senderAddress, message, chainHeight, counterValue);
+		// 2. Saves incremented counter value
+		await setLastCounter(this._pluginDB, counterValue);
+		// 3. Saves last checked block's height
+		await setLastEventHeight(this._pluginDB, chainHeight);
+		return "Data Saved";
+	}
+    // [...]
+}
+----
+
+The last step is to add the interval logic to the HelloInfo plugin. Inside the `load()`, fetch the configured `syncInterval` and pass it to a `setInterval()` function.
+
+._saveEventInfoToDB()
+[source,typescript]
+----
+// [...]
+export class HelloInfoPlugin extends BasePlugin<HelloInfoPluginConfig> {
+    // [...]
+	public async load(): Promise<void> {
+		// [...]
+
+		// Syncs plugin's database after an interval.
+		setInterval(() => { this._syncChainEvents(); }, this.config.syncInterval);
+	}
+    // [...]
+}
+----
+
+After you add all the aforementioned code, your `hello_info_plugin.ts` file should look like this:
+
+.HelloInfoPlugin class
+[%collapsible]
+====
+.hello_client/src/app/plugins/hello_info/hello_info_plugin.ts
+[source,typescript]
+----
+/* eslint-disable @typescript-eslint/no-floating-promises */
 import { BasePlugin, db as liskDB, codec } from 'lisk-sdk';
 import {
 	getDBInstance,
@@ -67,18 +280,7 @@ export class HelloInfoPlugin extends BasePlugin<HelloInfoPluginConfig> {
 		this._pluginDB.close();
 	}
 
-}
-----
-
-
-
-.Endpoint class
-[source,typescript]
-----
-// [...]
-export class HelloInfoPlugin extends BasePlugin<HelloInfoPluginConfig> {
-
-    // [...]
+	// Syncs on-chain event's data with plugin's database.
 	private async _syncChainEvents(): Promise<void> {
 		const res = await this.apiClient.invoke<{ header: { height: number } }>("chain_getLastBlock", {
 		})
@@ -100,22 +302,6 @@ export class HelloInfoPlugin extends BasePlugin<HelloInfoPluginConfig> {
 		await setLastEventHeight(this._pluginDB, height);
 	}
 
-    // [...]
-}
-----
-
-
-
-
-
-
-.Endpoint class
-[source,typescript]
-----
-// [...]
-export class HelloInfoPlugin extends BasePlugin<HelloInfoPluginConfig> {
-
-    // [...]
 	private async _getLastCounter(): Promise<Counter> {
 		try {
 			const counter = await getLastCounter(this._pluginDB);
@@ -129,20 +315,6 @@ export class HelloInfoPlugin extends BasePlugin<HelloInfoPluginConfig> {
 		}
 	}
 
-    // [...]
-}
-----
-
-
-
-
-.Endpoint class
-[source,typescript]
-----
-// [...]
-export class HelloInfoPlugin extends BasePlugin<HelloInfoPluginConfig> {
-
-    // [...]
 	private async _getLastHeight(): Promise<Height> {
 		try {
 			const height = await getLastEventHeight(this._pluginDB);
@@ -156,23 +328,6 @@ export class HelloInfoPlugin extends BasePlugin<HelloInfoPluginConfig> {
 		}
 	}
 
-    // [...]
-}
-----
-
-
-
-
-
-
-
-.Endpoint class
-[source,typescript]
-----
-// [...]
-export class HelloInfoPlugin extends BasePlugin<HelloInfoPluginConfig> {
-
-    // [...]
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	private async _saveEventInfoToDB(parsedData: { senderAddress: Buffer; message: string }, chainHeight: number, counterValue: number): Promise<string> {
 		// Saves newly generated hello events to the database.
@@ -182,6 +337,11 @@ export class HelloInfoPlugin extends BasePlugin<HelloInfoPluginConfig> {
 		await setLastEventHeight(this._pluginDB, chainHeight);
 		return "Data Saved";
 	}
-    // [...]
 }
 ----
+====
+
+
+
+
+

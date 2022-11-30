@@ -2,7 +2,9 @@
 Mona Bärenfänger <mona@lightcurve.io>
 // Settings
 :toc:
+:docs-general: lisk-docs::
 // Project URLs
+:url_api_rpc_getEvents: {docs-general}api/lisk-node-rpc.adoc
 
 == Terminology changes
 
@@ -36,10 +38,6 @@ Mona Bärenfänger <mona@lightcurve.io>
 |Sidechain application
 |Description
 
-|Delegate weight
-|DPoS weight
-|Description
-
 |Module/Plugin action
 |Module/Plugin endpoint
 |Description
@@ -59,15 +57,80 @@ Mona Bärenfänger <mona@lightcurve.io>
 |X
 |Blockchain event
 |Description
-
-
-
-
 |===
 
 == Migration of store from v5 to v6
 
-== Addition of events
+== Failed transactions are included in blocks
+
+== Addition of blockchain events
+
+Blockchain events are
+
+[cols="1,2,2",options="header"]
+|===
+|
+|Module events (v5)
+|Blockchain events (v6)
+
+|Description
+|Analog to the application events from v5, module events could be subscribed to via the RPC API of a node.
+
+An event informs services that subscribed to it, if a certain event happened (e.g. a transaction was executed), and often contain additional data, providing more information or context about the event.
+|Blockchain events are still defined and emitted inside the module, but it is not possible to subscribe to them via the RPC API of a node.
+
+Instead, blockchain events are directly included in the block header and can be queried by requesting the RPC endpoint `chain_getEvents`.
+
+Blockchain events are defined individually for each module, which one exception: The xref:{}[standard event] is emitted for every transaction included in the particular block, and it informs, if that particular transaction was successful or failed.
+
+|Purpose
+|Events were used to communicate about certain events in real time, and to prevent reoccuring RPC request, just to check if there are any changes.
+|Blockchain events are a way for modules to store important information for third-party services on-chain, directly inside the block header.
+
+They are part of the overall state of the blockchain, as the event root is stored in the block header and remains.
+
+They can include a lot of additional data, if required, as the events themselves can be removed from the stores of the node after a certain time, and therefore don't "pollute" the blockchain itself.
+
+|Definition
+a|
+[source,js]
+----
+public events = ['newHello'];
+----
+a|
+[source,js]
+----
+public constructor() {
+    super();
+    // registration of stores and events
+    this.events.register(NewHelloEvent, new NewHelloEvent(this.name));
+}
+----
+
+For more information how to create the corresponding event class, please check out the guide xref:{}[]
+
+|Publishing
+a|
+[source,js]
+----
+this._channel.publish('hello:newHello', {
+    sender: _input.transaction.senderAddress.toString('hex'),
+    hello: helloAsset.helloString
+});
+----
+a|
+[source,js]
+----
+const newHelloEvent = this.events.get(NewHelloEvent);
+newHelloEvent.add(context, {
+    senderAddress: context.transaction.senderAddress,
+    message: context.params.message
+},[context.transaction.senderAddress]);
+----
+
+|===
+
+
 
 == Migration of reducer => method
 

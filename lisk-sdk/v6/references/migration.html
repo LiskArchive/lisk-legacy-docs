@@ -408,14 +408,36 @@
 <div class="sect1">
 <h2 id="failed-transactions-are-included-in-blocks"><a class="anchor" href="#failed-transactions-are-included-in-blocks"></a>Failed transactions are included in blocks</h2>
 <div class="sectionbody">
-
+<div class="paragraph">
+<p>Transaction fee is paid for every transaction included in a block.
+So by including failed transactions in blocks, the transaction fee for a transaction is always paid even if it failed and didn&#8217;t introduce any state changes on the blockchain.</p>
+</div>
+<div class="paragraph">
+<p>The main benefits for this change are as follows:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Increased rewards for validators</dt>
+<dd>
+<p>By doing this, validators will still be rewarded for executing the logic of the transaction until the point where it failed.</p>
+</dd>
+<dt class="hdlist1">Increased security</dt>
+<dd>
+<p>Additionally, it mitigates the danger of DDoSing sidechains by spamming transactions that will fail, because the transaction fee has to be paid in any case.</p>
+</dd>
+</dl>
+</div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="addition-of-blockchain-events"><a class="anchor" href="#addition-of-blockchain-events"></a>Addition of blockchain events</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Blockchain events are</p>
+<p><strong>Blockchain events</strong> are newly introduced, and <strong>Module events</strong> are completely removed in Lisk SDK v6.</p>
+</div>
+<div class="paragraph">
+<p>Although similar in name, <strong>Blockchain events</strong> follow a completely different approach.
+To avoid confusion between the two events, please read the summary below, which is comparing the new and old events inside modules.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
@@ -435,15 +457,16 @@
 <td class="tableblock halign-left valign-top"><p class="tableblock">Description</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Analog to the application events from v5, module events could be subscribed to via the RPC API of a node.</p>
 <p class="tableblock">An event informs services that subscribed to it, if a certain event happened (e.g. a transaction was executed), and often contain additional data, providing more information or context about the event.</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Blockchain events are still defined and emitted inside the module, but it is not possible to subscribe to them via the RPC API of a node.</p>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Blockchain events are introduced newly in Lisk SDK v6, and are following a very similar concept to the <a href="https://medium.com/mycrypto/understanding-event-logs-on-the-ethereum-blockchain-f4ae7ba50378" target="_blank" rel="noopener">Ethereum event log</a>.
+Blockchain events are still defined and emitted inside the module, but it is not possible to subscribe to them via the RPC API of a node.</p>
 <p class="tableblock">Instead, blockchain events are directly included in the block header and can be queried by requesting the RPC endpoint <code>chain_getEvents</code>.</p>
-<p class="tableblock">Blockchain events are defined individually for each module, which one exception: The <a href="#{}">standard event</a> is emitted for every transaction included in the particular block, and it informs, if that particular transaction was successful or failed.</p></td>
+<p class="tableblock">Blockchain events are defined individually for each module, which one exception: The <a href="#ROOT::understand-blockchain/modules-commands.adoc#standard-event" class="xref unresolved">standard event</a> is emitted for every transaction included in the particular block, and it informs, if that particular transaction was successful or failed.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Purpose</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Events were used to communicate about certain events in real time, and to prevent reoccuring RPC request, just to check if there are any changes.</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Blockchain events are a way for modules to store important information for third-party services on-chain, directly inside the block header.</p>
-<p class="tableblock">They are part of the overall state of the blockchain, as the event root is stored in the block header and remains.</p>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Events are used to communicate about certain events in real time, and to prevent reoccuring RPC request, just to check if there are any changes.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Blockchain events are a way for modules to store important information which is not included in the transactions or block assets, directly inside the block header.</p>
+<p class="tableblock">They are part of the overall state of the blockchain, as an event root of all events included in a particular block is stored in the block header.</p>
 <p class="tableblock">They can include a lot of additional data, if required, as the events themselves can be removed from the stores of the node after a certain time, and therefore don&#8217;t "pollute" the blockchain itself.</p></td>
 </tr>
 <tr>
@@ -463,7 +486,7 @@
 </div>
 </div>
 <div class="paragraph">
-<p>For more information how to create the corresponding event class, please check out the guide <a href="#{}">[{}]</a></p>
+<p>For more information how to create the corresponding event class, please check out the guide <a href="../../../build-blockchain/module/blockchain-event.html" class="xref page">How to create a blockchain event</a></p>
 </div></div></td>
 </tr>
 <tr>
@@ -483,6 +506,51 @@ newHelloEvent.add(context, {
     senderAddress: context.transaction.senderAddress,
     message: context.params.message
 },[context.transaction.senderAddress]);</code></pre>
+</div>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Retrieving</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>In Lisk SDK v5, events could be subscribed directly via the API client.</p>
+</div>
+<div class="paragraph">
+<p>If an event was missed, there was no way of retrieving the event, after it was emitted by a node.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">client.subscribe('app:block:new', ( data ) =&gt; {
+  console.log('new block:',data);
+});</code></pre>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>In Lisk SDK v6, events are requested per block height after an event is emitted.</p>
+</div>
+<div class="paragraph">
+<p>Retrieving events from a node:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl --location --request POST 'http://localhost:7887/rpc' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "jsonrpc": "2.0",
+    "id": "1",
+    "method": "chain_getEvents",
+    "params": {
+        "height": 123
+    }
+}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Lisk Service now offers additional endpoints to query for events more conveniently.
+Retrieving events from a Lisk Service:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"></code></pre>
 </div>
 </div></div></td>
 </tr>

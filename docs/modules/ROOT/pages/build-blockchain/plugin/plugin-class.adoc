@@ -11,7 +11,7 @@ Muhammad Talha <muhammad.talha@lightcurve.io>
 
 // Project URLS
 :url_blockchain_event: build-blockchain/module/blockchain-event.adoc#emit-the-event
-:url_module_event_schema: build-blockchain/module/blockchain-event.adoc#create-a-new-event-type
+:url_module_event_schema: build-blockchain/module/blockchain-event.adoc#helloEvent
 
 The Plugin class contains the starting, ongoing, and concluding logic of a plugin. 
 In our case, we want HelloInfoPlugin to update the database with NewHelloEvents after regular intervals.
@@ -27,7 +27,7 @@ On this page, you'll learn:
 TIP: The relevant files discussed in this guide are {url_github_schemas}[schemas.ts] and {url_github_hello_info_plugin}[hello_info_plugin.ts].
 
 == Instantiate database & define the on-chain schema
-As mentioned in the xref:{url_blockchain_event}[hello Module guide], the Hello Client is capable of emitting an event in response to every hello transaction. 
+As mentioned in the xref:{url_blockchain_event}[Hello Module guide], the Hello Client is capable of emitting an event in response to every hello transaction. 
 Our goal is to check for the event emitted by the `HelloModule` and then sync it with our off-chain database.
 
 Whenever the client starts, we want our plugin to start checking for any new hello events available on the chain after regular intervals. 
@@ -47,7 +47,7 @@ import {
 	setLastCounter,
 	setLastEventHeight,
 } from './db';
-import { configSchema, onChainEventSchema } from './schemas';
+import { configSchema } from './schemas';
 import { HelloInfoPluginConfig, Height, Counter } from './types';
 
 export class HelloInfoPlugin extends BasePlugin<HelloInfoPluginConfig> {
@@ -72,30 +72,17 @@ export class HelloInfoPlugin extends BasePlugin<HelloInfoPluginConfig> {
 ----
 
 We also need a schema for validating and decoding *on-chain* event data received from the sidechain. 
-The schema will have the `senderAddress` and `message` properties similar to how they are defined in the xref:{url_module_event_schema} [Module's event schema]. 
+The schema will have the `senderAddress` and `message` properties as defined in the xref:{url_module_event_schema}[Module's event schema]. 
 
-Paste the following schema into your `schemas.ts` file.
+Import the existing Module's event schema to your `hello_info_plugin.ts` file. 
 
-.hello_client/src/app/plugins/hello_info/schemas.ts
+.hello_client/src/app/plugins/hello_info/hello_info_plugin.ts
 [source,typescript]
 ----
 
 // [...]
-export const onChainEventSchema = {
-	$id: '/helloInfo/newHello/chainEvent',
-	type: 'object',
-	required: ['senderAddress', 'message'],
-	properties: {
-		senderAddress: {
-			dataType: 'bytes',
-			fieldNumber: 1,
-		},
-		message: {
-			dataType: 'string',
-			fieldNumber: 2,
-		},
-	},
-};
+import { newHelloEventSchema } from '../../modules/hello/events/new_hello';
+// [...]
 ----
 
 
@@ -182,7 +169,7 @@ export class HelloInfoPlugin extends BasePlugin<HelloInfoPluginConfig> {
 			// 3a. Once an event is found, decode its data and pass it to the _saveEventInfoToDB() function
 			const helloEvents = result.filter(e => e.module === 'hello' && e.name === 'newHello');
 			for (const helloEvent of helloEvents) {
-				const parsedData = codec.decode<{ senderAddress: Buffer; message: string }>(onChainEventSchema, Buffer.from(helloEvent.data, 'hex'));
+				const parsedData = codec.decode<{ senderAddress: Buffer; message: string }>(newHelloEventSchema, Buffer.from(helloEvent.data, 'hex'));
 				const { counter } = await this._getLastCounter();
 				await this._saveEventInfoToDB(parsedData, helloEvent.height, counter + 1);
 			}

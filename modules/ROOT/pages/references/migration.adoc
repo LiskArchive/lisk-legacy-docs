@@ -7,6 +7,8 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_ethereum_events: https://medium.com/mycrypto/understanding-event-logs-on-the-ethereum-blockchain-f4ae7ba50378
 // Project URLs
 :url_api_rpc_getEvents: {docs-general}api/lisk-node-rpc.adoc
+:url_understand_modules_standardevent: {docs-general}understand-blockchain/modules-commands.adoc#standard-event
+:url_build_module_event: {docs-general}build-blockchain/module/blockchain-event.adoc
 
 == Terminology changes
 
@@ -65,9 +67,20 @@ Mona Bärenfänger <mona@lightcurve.io>
 
 == Failed transactions are included in blocks
 
+Transaction fee is paid for every transaction included in a block.
+So by including failed transactions in blocks, the transaction fee for a transaction is always paid even if it failed and didn't introduce any state changes on the blockchain.
+
+The main benefits for this change are as follows:
+
+Increased rewards for validators:: By doing this, validators will still be rewarded for executing the logic of the transaction until the point where it failed.
+Increased security:: Additionally, it mitigates the danger of DDoSing sidechains by spamming transactions that will fail, because the transaction fee has to be paid in any case.
+
 == Addition of blockchain events
 
-Blockchain events are
+**Blockchain events** are newly introduced, and **Module events** are completely removed in Lisk SDK v6.
+
+Although similar in name, **Blockchain events** follow a completely different approach.
+To avoid confusion between the two events, please read the summary below, which is comparing the new and old events inside modules.
 
 [cols="1,2,2",options="header"]
 |===
@@ -84,10 +97,10 @@ Blockchain events are still defined and emitted inside the module, but it is not
 
 Instead, blockchain events are directly included in the block header and can be queried by requesting the RPC endpoint `chain_getEvents`.
 
-Blockchain events are defined individually for each module, which one exception: The xref:{}[standard event] is emitted for every transaction included in the particular block, and it informs, if that particular transaction was successful or failed.
+Blockchain events are defined individually for each module, which one exception: The xref:{url_understand_modules_standardevent}[standard event] is emitted for every transaction included in the particular block, and it informs, if that particular transaction was successful or failed.
 
 |Purpose
-|Events were used to communicate about certain events in real time, and to prevent reoccuring RPC request, just to check if there are any changes.
+|Events are used to communicate about certain events in real time, and to prevent reoccuring RPC request, just to check if there are any changes.
 |Blockchain events are a way for modules to store important information which is not included in the transactions or block assets, directly inside the block header.
 
 They are part of the overall state of the blockchain, as an event root of all events included in a particular block is stored in the block header.
@@ -110,7 +123,7 @@ public constructor() {
 }
 ----
 
-For more information how to create the corresponding event class, please check out the guide xref:{}[]
+For more information how to create the corresponding event class, please check out the guide xref:{url_build_module_event}[]
 
 |Publishing
 a|
@@ -129,6 +142,44 @@ newHelloEvent.add(context, {
     senderAddress: context.transaction.senderAddress,
     message: context.params.message
 },[context.transaction.senderAddress]);
+----
+|Retrieving
+a|
+In Lisk SDK v5, events could be subscribed directly via the API client.
+
+If an event was missed, there was no way of retrieving the event, after it was emitted by a node.
+
+[source,js]
+----
+client.subscribe('app:block:new', ( data ) => {
+  console.log('new block:',data);
+});
+----
+a|
+In Lisk SDK v6, events are requested per block height after an event is emitted.
+
+Retrieving events from a node:
+
+[source,bash]
+----
+curl --location --request POST 'http://localhost:7887/rpc' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "jsonrpc": "2.0",
+    "id": "1",
+    "method": "chain_getEvents",
+    "params": {
+        "height": 123
+    }
+}'
+----
+
+Lisk Service now offers additional endpoints to query for events more conveniently.
+Retrieving events from a Lisk Service:
+
+[source,bash]
+----
+
 ----
 
 |===

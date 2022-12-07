@@ -462,7 +462,10 @@
 <div class="sectionbody">
 <div class="paragraph">
 <p>Transaction fee is paid for every transaction included in a block.
-So by including failed transactions in blocks, the transaction fee for a transaction is always paid even if it failed and didn&#8217;t introduce any state changes on the blockchain.</p>
+By including failed transactions in blocks, the transaction fee for a transaction is always paid even if it failed and didn&#8217;t introduce any state changes on the blockchain.</p>
+</div>
+<div class="paragraph">
+<p>To verify, if a transaction which is included in a block was executed successfully, Lisk SDK v6 introduces the <a href="#addition-of-blockchain-events">Addition of blockchain events</a>.</p>
 </div>
 <details>
 <summary class="title">Main benefits for this change</summary>
@@ -695,6 +698,12 @@ Retrieving events from a Lisk Service:</p>
 <div class="sect1">
 <h2 id="migration-of-reducer-method"><a class="anchor" href="#migration-of-reducer-method"></a>7. Migration of reducer &#8658; method</h2>
 <div class="sectionbody">
+<div class="paragraph">
+<p>The module reducers are renamed to <a href="../../../understand-blockchain/sdk/modules-commands.html#methods" class="xref page">methods</a>.</p>
+</div>
+<div class="paragraph">
+<p>Methods still have the same purpose as reducers inv5, but beside the name change, they are also defined slightly different, as summarized below:</p>
+</div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
 <col style="width: 11.1111%;">
@@ -704,25 +713,145 @@ Retrieving events from a Lisk Service:</p>
 <thead>
 <tr>
 <th class="tableblock halign-left valign-top"></th>
-<th class="tableblock halign-left valign-top">SDKv5</th>
 <th class="tableblock halign-left valign-top">SDKv6</th>
+<th class="tableblock halign-left valign-top">SDKv5</th>
 </tr>
 </thead>
 <tbody>
 <tr>
+<th class="tableblock halign-left valign-top"><p class="tableblock">Name</p></th>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Method</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Reducer</p></td>
+</tr>
+<tr>
 <th class="tableblock halign-left valign-top"><p class="tableblock">Description</p></th>
-<td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">An interface for module-to-module communication.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">An interface for module-to-module communication.</p></td>
 </tr>
 <tr>
 <th class="tableblock halign-left valign-top"><p class="tableblock">Definition</p></th>
-<td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Define methods in a class which extends from the <code>BaseMethod</code>:</p>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>export class TokenMethod extends BaseMethod {
+
+    // ...
+
+	public async getAvailableBalance(
+		methodContext: ImmutableMethodContext,
+		address: Buffer,
+		tokenID: TokenID,
+	): Promise&lt;bigint&gt; {
+		const canonicalTokenID = await this.getCanonicalTokenID(methodContext, tokenID);
+		const userStore = this.stores.get(UserStore);
+		try {
+			const user = await userStore.get(methodContext, userStore.getKey(address, canonicalTokenID));
+			return user.availableBalance;
+		} catch (error) {
+			if (!(error instanceof NotFoundError)) {
+				throw error;
+			}
+			return BigInt(0);
+		}
+	}
+
+    // ...
+}</pre>
+</div>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Assign the <code>method</code> attribute of the module to an instance of the Method class, which was created above:</p>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>import { TokenMethod } from './method';
+
+export class TokenModule extends BaseInteroperableModule {
+	public method = new TokenMethod(this.stores, this.events, this.name);
+    // ...
+}</pre>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export class TokenModule extends BaseModule {
+	// [...]
+	public reducers = {
+		credit: async (params: Record&lt;string, unknown&gt;, stateStore: StateStore): Promise&lt;void&gt; =&gt; {
+			// [...]
+		},
+		debit: async (params: Record&lt;string, unknown&gt;, stateStore: StateStore): Promise&lt;void&gt; =&gt; {
+			// [...]
+		},
+		getBalance: async (
+			params: Record&lt;string, unknown&gt;,
+			stateStore: StateStore,
+		): Promise&lt;bigint&gt; =&gt; {
+			const { address } = params;
+			if (!Buffer.isBuffer(address)) {
+				throw new Error('Address must be a buffer');
+			}
+			const account = await stateStore.account.getOrDefault&lt;TokenAccount&gt;(address);
+			return account.token.balance;
+		}
+	};
+    // [...]
+}</code></pre>
+</div>
+</div></div></td>
 </tr>
 <tr>
 <th class="tableblock halign-left valign-top"><p class="tableblock">Usage</p></th>
-<td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import { TokenMethod } from '../../../token';
+
+export class SidechainRegistrationCommand extends BaseInteroperabilityCommand {
+	public schema = sidechainRegParams;
+	private _tokenMethod!: TokenMethod;
+
+	public addDependencies(tokenMethod: TokenMethod) {
+		this._tokenMethod = tokenMethod;
+	}
+    public async verify(
+		context: CommandVerifyContext&lt;SidechainRegistrationParams&gt;,
+	): Promise&lt;VerificationResult&gt; {
+        // ...
+        // Sender must have enough balance to pay for extra command fee.
+		const availableBalance = await this._tokenMethod.getAvailableBalance(
+			context.getMethodContext(),
+			senderAddress,
+			TOKEN_ID_LSK,
+		);
+		if (availableBalance &lt; REGISTRATION_FEE) {
+            // ...
+		}
+        // ...
+	}
+}</code></pre>
+</div>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Reducers can be invoked through the <code>reducerHandler</code>, which is available inside the lifecycle hooks and assets of a module.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">await reducerHandler.invoke("token:debit", {
+  address: senderAddress,
+  amount: asset.initValue,
+});</code></pre>
+</div>
+</div></div></td>
 </tr>
 </tbody>
 </table>
@@ -740,8 +869,8 @@ Retrieving events from a Lisk Service:</p>
 <thead>
 <tr>
 <th class="tableblock halign-left valign-top"></th>
-<th class="tableblock halign-left valign-top">SDKv5</th>
 <th class="tableblock halign-left valign-top">SDKv6</th>
+<th class="tableblock halign-left valign-top">SDKv5</th>
 </tr>
 </thead>
 <tbody>

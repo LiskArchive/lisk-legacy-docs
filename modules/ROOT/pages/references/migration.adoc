@@ -5,14 +5,17 @@ Mona Bärenfänger <mona@lightcurve.io>
 :idprefix:
 :idseparator: -
 :docs-general: ROOT::
+:docs-lisk-v5: lisk-sdk::
+:docs-understand-modules: {docs-general}understand-blockchain/sdk/modules-commands.adoc
 :sectnums:
 // URLs
 :url_ethereum_events: https://medium.com/mycrypto/understanding-event-logs-on-the-ethereum-blockchain-f4ae7ba50378
 :url_wiki_pubsub: https://en.wikipedia.org/wiki/Publish%E2%80%93subscribe_pattern
 // Project URLs
-:url_sdkv5_rpc_events: lisk-sdk::events.adoc
+:url_sdkv5_rpc_events: {docs-lisk-v5}events.adoc
 :url_api_rpc_getEvents: {docs-general}api/lisk-node-rpc.adoc
-:url_understand_modules_standardevent: {docs-general}understand-blockchain/sdk/modules-commands.adoc#standard-event
+:url_standardevent: {docs-understand-modules}#standard-event
+:url_methods: {docs-understand-modules}#methods
 :url_understand_rpc_events: {docs-general}understand-blockchain/sdk/rpc.adoc#rpc-events
 :url_build_module_event: {docs-general}build-blockchain/module/blockchain-event.adoc
 
@@ -100,7 +103,9 @@ Improved developer experience:: Reduces the number of required properties and us
 == Failed transactions are included in blocks
 
 Transaction fee is paid for every transaction included in a block.
-So by including failed transactions in blocks, the transaction fee for a transaction is always paid even if it failed and didn't introduce any state changes on the blockchain.
+By including failed transactions in blocks, the transaction fee for a transaction is always paid even if it failed and didn't introduce any state changes on the blockchain.
+
+To verify, if a transaction which is included in a block was executed successfully, Lisk SDK v6 introduces the <<addition-of-blockchain-events>>.
 
 .Main benefits for this change
 [%collapsible]
@@ -132,7 +137,7 @@ This means, if you wish to verify that a transaction was successfully executed, 
 It could happen that the transaction inside a block has failed, and wasn't executed on the blockchain.
 +
 But how to check if the transaction failed, or was executed successfully?
-To transmit this information, the xref:{url_understand_modules_standardevent}[standard event] is emitted for every transaction included in the particular block.
+To transmit this information, the xref:{url_standardevent}[standard event] is emitted for every transaction included in the particular block.
 It informs if that particular transaction was successfully executed, or failed.
 +
 By adding events, it is therefore possible again to check if a transaction was executed successfully.
@@ -273,23 +278,135 @@ client.subscribe('app:block:new', ( data ) => {
 
 == Migration of reducer => method
 
+The module reducers are renamed to xref:{url_methods}[methods].
+
+Methods still have the same purpose as reducers inv5, but beside the name change, they are also defined slightly different, as summarized below:
+
 [cols="1h,4,4",options="header"]
 |===
 |
-|SDKv5
 |SDKv6
+|SDKv5
+
+|Name
+|Method
+|Reducer
 
 |Description
-|
-|
+|An interface for module-to-module communication.
+|An interface for module-to-module communication.
 
 |Definition
-|
-|
+a|
+1. Define methods in a class which extends from the `BaseMethod`:
+[source,typescript]
+----
+export class TokenMethod extends BaseMethod {
+
+    // ...
+
+	public async getAvailableBalance(
+		methodContext: ImmutableMethodContext,
+		address: Buffer,
+		tokenID: TokenID,
+	): Promise<bigint> {
+		const canonicalTokenID = await this.getCanonicalTokenID(methodContext, tokenID);
+		const userStore = this.stores.get(UserStore);
+		try {
+			const user = await userStore.get(methodContext, userStore.getKey(address, canonicalTokenID));
+			return user.availableBalance;
+		} catch (error) {
+			if (!(error instanceof NotFoundError)) {
+				throw error;
+			}
+			return BigInt(0);
+		}
+	}
+
+    // ...
+}
+----
+2. Assign the `method` attribute of the module to an instance of the Method class, which was created above:
+[source,typescript]
+----
+import { TokenMethod } from './method';
+
+export class TokenModule extends BaseInteroperableModule {
+	public method = new TokenMethod(this.stores, this.events, this.name);
+    // ...
+}
+----
+a|
+[source,typescript]
+----
+export class TokenModule extends BaseModule {
+	// [...]
+	public reducers = {
+		credit: async (params: Record<string, unknown>, stateStore: StateStore): Promise<void> => {
+			// [...]
+		},
+		debit: async (params: Record<string, unknown>, stateStore: StateStore): Promise<void> => {
+			// [...]
+		},
+		getBalance: async (
+			params: Record<string, unknown>,
+			stateStore: StateStore,
+		): Promise<bigint> => {
+			const { address } = params;
+			if (!Buffer.isBuffer(address)) {
+				throw new Error('Address must be a buffer');
+			}
+			const account = await stateStore.account.getOrDefault<TokenAccount>(address);
+			return account.token.balance;
+		}
+	};
+    // [...]
+}
+
+----
 
 |Usage
-|
-|
+a|
+[source,typescript]
+----
+import { TokenMethod } from '../../../token';
+// ...
+
+export class SidechainRegistrationCommand extends BaseInteroperabilityCommand {
+	public schema = sidechainRegParams;
+	private _tokenMethod!: TokenMethod;
+
+	public addDependencies(tokenMethod: TokenMethod) {
+		this._tokenMethod = tokenMethod;
+	}
+    public async verify(
+		context: CommandVerifyContext<SidechainRegistrationParams>,
+	): Promise<VerificationResult> {
+        // ...
+        // Sender must have enough balance to pay for extra command fee.
+		const availableBalance = await this._tokenMethod.getAvailableBalance(
+			context.getMethodContext(),
+			senderAddress,
+			TOKEN_ID_LSK,
+		);
+		if (availableBalance < REGISTRATION_FEE) {
+            // ...
+		}
+        // ...
+	}
+}
+----
+a|
+Reducers can be invoked through the `reducerHandler`, which is available inside the lifecycle hooks and assets of a module.
+
+[source,typescript]
+----
+// debit tokens from sender account
+await reducerHandler.invoke("token:debit", {
+  address: senderAddress,
+  amount: asset.initValue,
+});
+----
 |===
 
 == Migration of action => endpoint
@@ -297,8 +414,8 @@ client.subscribe('app:block:new', ( data ) => {
 [cols="1h,4,4",options="header"]
 |===
 |
-|SDKv5
 |SDKv6
+|SDKv5
 
 |Description
 |

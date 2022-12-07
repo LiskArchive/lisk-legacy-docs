@@ -16,6 +16,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_api_rpc_getEvents: {docs-general}api/lisk-node-rpc.adoc
 :url_standardevent: {docs-understand-modules}#standard-event
 :url_methods: {docs-understand-modules}#methods
+:url_endpoints: {docs-understand-modules}#endpoints
 :url_understand_rpc_events: {docs-general}understand-blockchain/sdk/rpc.adoc#rpc-events
 :url_build_module_event: {docs-general}build-blockchain/module/blockchain-event.adoc
 
@@ -72,11 +73,11 @@ The module and command IDs are removed completely in Lisk SDKv6.
 
 Module and command name are used as unique identifiers for modules and commands instead.
 
-.Main benefits for this change
+.Main benefits of this change
 [%collapsible]
 ====
-
-Improved developer experience:: Reduces the number of required properties and uses strings which are more associative than numbers.
+Improved developer experience::
+Reduces the number of required properties and uses strings which are more associative than numbers.
 ====
 
 == Migration of store from v5 to v6
@@ -107,7 +108,7 @@ By including failed transactions in blocks, the transaction fee for a transactio
 
 To verify, if a transaction which is included in a block was executed successfully, Lisk SDK v6 introduces the <<addition-of-blockchain-events>>.
 
-.Main benefits for this change
+.Main benefits of this change
 [%collapsible]
 ====
 Increased rewards for validators::
@@ -123,7 +124,7 @@ Additionally, it mitigates the danger of DDoSing sidechains by spamming transact
 Although similar in name, **Blockchain events** follow a completely different approach.
 To avoid confusion between the two events, please read the summary below, which is comparing the new and old events inside modules.
 
-.Main benefits for this change
+.Main benefits of this change
 [%collapsible]
 =====
 Required, if failed transactions are included in blocks::
@@ -214,15 +215,9 @@ curl --location --request POST 'http://localhost:7887/rpc' \
     }
 }'
 ----
-
+////
 Lisk Service now offers additional endpoints to query for events more conveniently.
-Retrieving events from a Lisk Service:
-
-[source,bash]
-----
-
-----
-
+////
 |===
 --
 Module events - SDKv5::
@@ -275,30 +270,38 @@ client.subscribe('app:block:new', ( data ) => {
 --
 =====
 
-
-== Migration of reducer => method
+== Methods replace reducers
 
 The module reducers are renamed to xref:{url_methods}[methods].
 
-Methods still have the same purpose as reducers inv5, but beside the name change, they are also defined slightly different, as summarized below:
+Methods in Lisk SDK v6 still have the same purpose as reducers in v5, but beside the name change, they are also defined slightly different, as summarized below:
 
-[cols="1h,4,4",options="header"]
+.Main benefits of this change
+[%collapsible]
+====
+Improved developer experience::
+* By providing a base class for the creation of module methods, developers can follow a dedicated pattern to include methods into a module in a straightforward manner.
+* The renaming from reducers to methods was introduced to improve intuitive understanding of the meaning behind this data structure.
+====
+
+[tabs]
+=====
+Methods - SDKv6::
++
+--
+[cols="1h,6"]
 |===
-|
-|SDKv6
-|SDKv5
 
 |Name
 |Method
-|Reducer
 
 |Description
-|An interface for module-to-module communication.
 |An interface for module-to-module communication.
 
 |Definition
 a|
 1. Define methods in a class which extends from the `BaseMethod`:
+
 [source,typescript]
 ----
 export class TokenMethod extends BaseMethod {
@@ -326,6 +329,7 @@ export class TokenMethod extends BaseMethod {
     // ...
 }
 ----
+
 2. Assign the `method` attribute of the module to an instance of the Method class, which was created above:
 [source,typescript]
 ----
@@ -335,34 +339,6 @@ export class TokenModule extends BaseInteroperableModule {
 	public method = new TokenMethod(this.stores, this.events, this.name);
     // ...
 }
-----
-a|
-[source,typescript]
-----
-export class TokenModule extends BaseModule {
-	// [...]
-	public reducers = {
-		credit: async (params: Record<string, unknown>, stateStore: StateStore): Promise<void> => {
-			// [...]
-		},
-		debit: async (params: Record<string, unknown>, stateStore: StateStore): Promise<void> => {
-			// [...]
-		},
-		getBalance: async (
-			params: Record<string, unknown>,
-			stateStore: StateStore,
-		): Promise<bigint> => {
-			const { address } = params;
-			if (!Buffer.isBuffer(address)) {
-				throw new Error('Address must be a buffer');
-			}
-			const account = await stateStore.account.getOrDefault<TokenAccount>(address);
-			return account.token.balance;
-		}
-	};
-    // [...]
-}
-
 ----
 
 |Usage
@@ -396,6 +372,48 @@ export class SidechainRegistrationCommand extends BaseInteroperabilityCommand {
 	}
 }
 ----
+|===
+--
+Reducers - SDKv5::
++
+--
+[cols="1h,6"]
+|===
+
+|Description
+|An interface for module-to-module communication.
+
+|Definition
+a|
+[source,typescript]
+----
+export class TokenModule extends BaseModule {
+	// [...]
+	public reducers = {
+		credit: async (params: Record<string, unknown>, stateStore: StateStore): Promise<void> => {
+			// [...]
+		},
+		debit: async (params: Record<string, unknown>, stateStore: StateStore): Promise<void> => {
+			// [...]
+		},
+		getBalance: async (
+			params: Record<string, unknown>,
+			stateStore: StateStore,
+		): Promise<bigint> => {
+			const { address } = params;
+			if (!Buffer.isBuffer(address)) {
+				throw new Error('Address must be a buffer');
+			}
+			const account = await stateStore.account.getOrDefault<TokenAccount>(address);
+			return account.token.balance;
+		}
+	};
+    // [...]
+}
+
+----
+
+|Usage
 a|
 Reducers can be invoked through the `reducerHandler`, which is available inside the lifecycle hooks and assets of a module.
 
@@ -408,33 +426,160 @@ await reducerHandler.invoke("token:debit", {
 });
 ----
 |===
+--
+=====
 
-== Migration of action => endpoint
+== Endpoints replace actions
 
-[cols="1h,4,4",options="header"]
+The module actions are renamed to xref:{url_endpoints}[endpoints].
+
+Endpoints in Lisk SDK v6 still have the same purpose as actions in v5, but beside the name change, they are also defined slightly different, as summarized below:
+
+.Main benefits of this change
+[%collapsible]
+====
+Improved developer experience::
+* By providing a base class for the creation of module endpoints, developers can follow a dedicated pattern to include endpoints into a module in a straightforward manner.
+* The renaming from actions to endpoints was introduced to improve intuitive understanding of the meaning behind this data structure.
+====
+
+[tabs]
+=====
+Endpoints - SDKv6::
++
+--
+[cols="1h,6"]
 |===
-|
-|SDKv6
-|SDKv5
+
+|Name
+|Endpoints
+
+|Description
+|An interface between a module and an external system via an RPC endpoint.
+
+|Definition
+a|
+[source,typescript]
+----
+import { BaseEndpoint, ModuleEndpointContext, cryptography } from 'lisk-sdk';
+import { MessageStore, MessageStoreData } from './stores/message';
+
+export class HelloEndpoint extends BaseEndpoint {
+    public async getHello(ctx: ModuleEndpointContext): Promise<MessageStoreData> {
+        // 1. Get message store
+        const messageSubStore = this.stores.get(MessageStore);
+        // 2. Get the address from the endpoint params
+        const { address } = ctx.params;
+        // 3. Validate address
+        if (typeof address !== 'string') {
+            throw new Error('Parameter address must be a string.');
+        }
+        cryptography.address.validateLisk32Address(address);
+        // 4. Get the Hello message for the address from the message store
+        const helloMessage = await messageSubStore.get(
+            ctx,
+            cryptography.address.getAddressFromLisk32Address(address),
+        );
+        // 5. Return the Hello message
+        return helloMessage;
+    }
+}
+----
+|Usage
+a|
+[source,bash]
+----
+curl --location --request GET 'http://localhost:7887/rpc' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "jsonrpc": "2.0",
+    "id": "1",
+    "method": "hello_getHello",
+    "params": {
+        "address": "lskuz5p98kz3mqzxnu68qdrjxtvdvr2o7pprtj4yv"
+    }
+}'
+----
+
+[source,typescript]
+----
+// How to invoke an endpoint that needs some data input.
+const data = await client.invoke('namespace_endpointName', input);
+console.log(data);
+----
+|===
+--
+Actions - SDKv5::
++
+--
+[cols="1h,6"]
+|===
 
 |Description
 |
-|
 
 |Definition
-|
-|
+a|
+[source,typescript]
+----
+export class HelloModule extends BaseModule {
+
+    // ...
+
+    public actions = {
+        amountOfHellos: async () => {
+            const res = await this._dataAccess.getChainState(CHAIN_STATE_HELLO_COUNTER);
+            const count = codec.decode(
+                helloCounterSchema,
+                res
+            );
+            return count;
+        },
+    };
+
+    // ...
+}
+----
 
 |Usage
-|
-|
+a|
+[source,typescript]
+----
+const data = await client.invoke('app:actionName', input);
+----
 |===
+--
+=====
 
 == Addition of metadata
 
+.Main benefits of this change
+[%collapsible]
+====
+Improved developer experience::
+* By providing a base class for the creation of module methods, developers can follow a dedicated pattern to include methods into a module in a straightforward manner.
+* The renaming from reducers to methods was introduced to improve intuitive understanding of the meaning behind this data structure.
+====
+
 == Removing account schema
 
+.Main benefits of this change
+[%collapsible]
+====
+Improved developer experience::
+* By providing a base class for the creation of module methods, developers can follow a dedicated pattern to include methods into a module in a straightforward manner.
+* The renaming from reducers to methods was introduced to improve intuitive understanding of the meaning behind this data structure.
+====
+
 == Update of how to register module and dependencies
+
+.Main benefits of this change
+[%collapsible]
+====
+Improved developer experience::
+* By providing a base class for the creation of module methods, developers can follow a dedicated pattern to include methods into a module in a straightforward manner.
+* The renaming from reducers to methods was introduced to improve intuitive understanding of the meaning behind this data structure.
+====
 
 [cols="1h,4,4",options="header"]
 |===

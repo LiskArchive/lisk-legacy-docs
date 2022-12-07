@@ -284,40 +284,34 @@ a|
 +
 [source,typescript]
 ----
-export class TokenMethod extends BaseMethod {
+import { BaseMethod, ImmutableMethodContext } from 'lisk-sdk';
+import { MessageStore, MessageStoreData } from './stores/message';
 
-    // ...
+export class HelloMethod extends BaseMethod {
 
-	public async getAvailableBalance(
+	public async getHello(
 		methodContext: ImmutableMethodContext,
 		address: Buffer,
-		tokenID: TokenID,
-	): Promise<bigint> {
-		const canonicalTokenID = await this.getCanonicalTokenID(methodContext, tokenID);
-		const userStore = this.stores.get(UserStore);
-		try {
-			const user = await userStore.get(methodContext, userStore.getKey(address, canonicalTokenID));
-			return user.availableBalance;
-		} catch (error) {
-			if (!(error instanceof NotFoundError)) {
-				throw error;
-			}
-			return BigInt(0);
-		}
+	): Promise<MessageStoreData> {
+        // 1. Get message store
+		const messageSubStore = this.stores.get(MessageStore);
+        // 2. Get the Hello message for the address from the message store
+		const helloMessage = await messageSubStore.get(methodContext, address);
+        // 3. Return the Hello message
+		return helloMessage;
 	}
-
-    // ...
 }
 ----
 . Assign the `method` attribute of the module to an instance of the Method class, which was created above:
 +
 [source,typescript]
 ----
-import { TokenMethod } from './method';
+import { HelloMethod } from './method';
 
-export class TokenModule extends BaseInteroperableModule {
-	public method = new TokenMethod(this.stores, this.events, this.name);
-    // ...
+export class HelloModule extends BaseModule {
+	// [...]
+	public method = new HelloMethod(this.stores, this.events);
+    // [...]
 }
 ----
 

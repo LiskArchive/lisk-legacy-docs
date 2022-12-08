@@ -321,8 +321,7 @@
 <li><a href="#module-command-ids-are-removed">7. Module &amp; command IDs are removed</a></li>
 <li><a href="#migration-of-store-from-v5-to-v6">8. Migration of store from v5 to v6</a></li>
 <li><a href="#addition-of-metadata">9. Addition of metadata</a></li>
-<li><a href="#removing-account-schema">10. Removing account schema</a></li>
-<li><a href="#update-of-how-to-register-module-and-dependencies">11. Update of how to register module and dependencies</a></li>
+<li><a href="#update-of-how-to-register-module-and-dependencies">10. Update of how to register module and dependencies</a></li>
 </ul>
 </div>
 <div class="sect1">
@@ -462,7 +461,7 @@ To transmit this information, the <a href="../../../understand-blockchain/sdk/mo
 It informs if that particular transaction was successfully executed, or failed.</p>
 </div>
 <div class="paragraph">
-<p>By adding events, it is therefore possible again to check if a transaction was executed successfully.
+<p>By adding events, it is therefore possible to check if a transaction was executed successfully.
 At the same time, events can store various additional information on-chain, which can be valuable for other services.
 Additional events can be defined per module by the sidechain developer.</p>
 </div>
@@ -872,10 +871,6 @@ export class SidechainRegistrationCommand extends BaseInteroperabilityCommand {
 </colgroup>
 <tbody>
 <tr>
-<th class="tableblock halign-left valign-top"><p class="tableblock">Name</p></th>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Endpoints</p></td>
-</tr>
-<tr>
 <th class="tableblock halign-left valign-top"><p class="tableblock">Description</p></th>
 <td class="tableblock halign-left valign-top"><p class="tableblock">An interface between a module and an external system via an RPC endpoint.</p></td>
 </tr>
@@ -944,7 +939,7 @@ console.log(data);</code></pre>
 <tbody>
 <tr>
 <th class="tableblock halign-left valign-top"><p class="tableblock">Description</p></th>
-<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">An interface between a module and an external system via an RPC endpoint.</p></td>
 </tr>
 <tr>
 <th class="tableblock halign-left valign-top"><p class="tableblock">Definition</p></th>
@@ -1026,39 +1021,127 @@ console.log(data);</code></pre>
 Each module has an own dedicated store, which only the module itself can access.</p>
 </div>
 <div class="paragraph">
-<p>Each module store needs a unique key under which it is added to the Merkle tree, which defines the overall state of the blockchain.
-In Lisk SDK v5, this key was derived from the module ID.
-In Lisk SDK v6, the module ID was removed, as described in <a href="#module-command-ids-are-removed">Module &amp; command IDs are removed</a>.
-Therefore, the store ID is now derived from the module name.</p>
+<p>In Lisk SDK v5, this principle was not followed consistently: There were the chain store and the account store, and the account store was accessible by every module.</p>
 </div>
+<div class="paragraph">
+<p>In Lisk SDK v6, <strong>the account store is removed completely</strong>, and integrated in the respective module stores.
+Additionally, the <strong>implementation of stores into modules is improved</strong>, to store any key-value pair in the database consistently.</p>
+</div>
+<details>
+<summary class="title">Main benefits of this change</summary>
+<div class="content">
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Improved developer experience</dt>
+<dd>
+<div class="ulist">
+<ul>
+<li>
+<p>By providing a base class for the creation of module stores, developers can follow a dedicated pattern to include stores into a module in a consistent manner.</p>
+</li>
+</ul>
+</div>
+</dd>
+<dt class="hdlist1">Improved modularity</dt>
+<dd>
+<div class="ulist">
+<ul>
+<li>
+<p>Confines data per module</p>
+</li>
+</ul>
+</div>
+</dd>
+</dl>
+</div>
+</div>
+</details>
 <table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 1. Stores in Lisk SDK v6</caption>
 <colgroup>
-<col style="width: 11.1111%;">
-<col style="width: 44.4444%;">
-<col style="width: 44.4445%;">
+<col style="width: 14.2857%;">
+<col style="width: 85.7143%;">
 </colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top"></th>
-<th class="tableblock halign-left valign-top">SDKv5</th>
-<th class="tableblock halign-left valign-top">SDKv6</th>
-</tr>
-</thead>
 <tbody>
 <tr>
-<th class="tableblock halign-left valign-top"><p class="tableblock">Description</p></th>
-<td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
 <th class="tableblock halign-left valign-top"><p class="tableblock">Definition</p></th>
-<td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
+<div class="title">How to define a new module store</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import { BaseStore } from 'lisk-sdk';
+
+export interface MessageStoreData {
+	message: String;
+}
+
+export const messageStoreSchema = {
+	$id: '/hello/message',
+	type: 'object',
+	required: ['message'],
+	properties: {
+		message: {
+			dataType: 'string',
+			fieldNumber: 1,
+		},
+	},
+};
+
+export class MessageStore extends BaseStore&lt;MessageStoreData&gt; {
+	public schema = messageStoreSchema;
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">How to register stores with the module</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import { CounterStore } from './stores/counter';
+import { MessageStore } from './stores/message';
+
+
+export class HelloModule extends BaseModule {
+    // [...]
+
+    public constructor() {
+        super();
+        // registration of stores and events
+        this.stores.register(CounterStore, new CounterStore(this.name));
+        this.stores.register(MessageStore, new MessageStore(this.name));
+    }
+    // [...]
+ }</code></pre>
+</div>
+</div></div></td>
 </tr>
 <tr>
 <th class="tableblock halign-left valign-top"><p class="tableblock">Usage</p></th>
-<td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
+<div class="title">Example: How to get data from the store</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import { BaseEndpoint, ModuleEndpointContext, cryptography } from 'lisk-sdk';
+import { MessageStore, MessageStoreData } from './stores/message';
+
+export class HelloEndpoint extends BaseEndpoint {
+    public async getHello(ctx: ModuleEndpointContext): Promise&lt;MessageStoreData&gt; {
+        // 1. Get message store
+        const messageSubStore = this.stores.get(MessageStore);
+        // 2. Get the address from the endpoint params
+        const { address } = ctx.params;
+        // 3. Validate address
+        if (typeof address !== 'string') {
+            throw new Error('Parameter address must be a string.');
+        }
+        cryptography.address.validateLisk32Address(address);
+        // 4. Get the Hello message for the address from the message store
+        const helloMessage = await messageSubStore.get(
+            ctx,
+            cryptography.address.getAddressFromLisk32Address(address),
+        );
+        // 5. Return the Hello message
+        return helloMessage;
+    }
+}</code></pre>
+</div>
+</div></div></td>
 </tr>
 </tbody>
 </table>
@@ -1092,7 +1175,7 @@ Therefore, the store ID is now derived from the module name.</p>
 </div>
 </div>
 <div class="sect1">
-<h2 id="removing-account-schema"><a class="anchor" href="#removing-account-schema"></a>10. Removing account schema</h2>
+<h2 id="update-of-how-to-register-module-and-dependencies"><a class="anchor" href="#update-of-how-to-register-module-and-dependencies"></a>10. Update of how to register module and dependencies</h2>
 <div class="sectionbody">
 <details>
 <summary class="title">Main benefits of this change</summary>
@@ -1116,33 +1199,85 @@ Therefore, the store ID is now derived from the module name.</p>
 </div>
 </div>
 </details>
-</div>
-</div>
-<div class="sect1">
-<h2 id="update-of-how-to-register-module-and-dependencies"><a class="anchor" href="#update-of-how-to-register-module-and-dependencies"></a>11. Update of how to register module and dependencies</h2>
-<div class="sectionbody">
-<details>
-<summary class="title">Main benefits of this change</summary>
-<div class="content">
-<div class="dlist">
-<dl>
-<dt class="hdlist1">Improved developer experience</dt>
-<dd>
-<div class="ulist">
+<div class="tabset is-loading">
+<div class="ulist tabs">
 <ul>
 <li>
-<p>By providing a base class for the creation of module methods, developers can follow a dedicated pattern to include methods into a module in a straightforward manner.</p>
+<p><a id="tabset4_stores---sdkv6"></a>Stores - SDKv6</p>
 </li>
 <li>
-<p>The renaming from reducers to methods was introduced to improve intuitive understanding of the meaning behind this data structure.</p>
+<p><a id="tabset4_stores---sdkv5"></a>Stores - SDKv5</p>
 </li>
 </ul>
 </div>
-</dd>
-</dl>
+<div class="content">
+<div class="tab-pane" aria-labelledby="tabset4_stores---sdkv6">
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 14.2857%;">
+<col style="width: 85.7143%;">
+</colgroup>
+<tbody>
+<tr>
+<th class="tableblock halign-left valign-top"><p class="tableblock">Description</p></th>
+<td class="tableblock halign-left valign-top"><p class="tableblock">An interface between a module and an external system via an RPC endpoint.</p></td>
+</tr>
+<tr>
+<th class="tableblock halign-left valign-top"><p class="tableblock">Definition</p></th>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript"></code></pre>
+</div>
+</div></div></td>
+</tr>
+<tr>
+<th class="tableblock halign-left valign-top"><p class="tableblock">Usage</p></th>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"></code></pre>
 </div>
 </div>
-</details>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript"></code></pre>
+</div>
+</div></div></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="tab-pane" aria-labelledby="tabset4_stores---sdkv5">
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 14.2857%;">
+<col style="width: 85.7143%;">
+</colgroup>
+<tbody>
+<tr>
+<th class="tableblock halign-left valign-top"><p class="tableblock">Description</p></th>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<th class="tableblock halign-left valign-top"><p class="tableblock">Definition</p></th>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript"></code></pre>
+</div>
+</div></div></td>
+</tr>
+<tr>
+<th class="tableblock halign-left valign-top"><p class="tableblock">Usage</p></th>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript"></code></pre>
+</div>
+</div></div></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
 <col style="width: 11.1111%;">

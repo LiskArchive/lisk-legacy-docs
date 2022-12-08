@@ -687,82 +687,74 @@ curl --location --request POST 'localhost:7887/rpc' \
 }'
 ----
 
-== Update of how to register module and dependencies
+== Updates of how to register module dependencies
+
+In Lisk SDK v6, module dependencies can be registered in the following methods:
+
+* <<constructor>>
+* <<adddependencies>>
+* <<init>>
 
 .Main benefits of this change
 [%collapsible]
 ====
-Improved developer experience::
-* By providing a base class for the creation of module methods, developers can follow a dedicated pattern to include methods into a module in a straightforward manner.
-* The renaming from reducers to methods was introduced to improve intuitive understanding of the meaning behind this data structure.
+Text::
+* text*
 ====
 
-[tabs]
-=====
-Stores - SDKv6::
-+
---
-[cols="1h,6"]
-|===
-|Description
-|An interface between a module and an external system via an RPC endpoint.
+=== constructor()
 
-|Definition
-a|
-[source,typescript]
-----
-----
-|Usage
-a|
-[source,bash]
-----
-----
+The module constructor is run every time a ne instance of the module is created.
+
+Dependencies added inside the constructor::
+* The stores used by the module
 
 [source,typescript]
 ----
+public constructor() {
+    super();
+    // registration of stores and events
+    this.stores.register(CounterStore, new CounterStore(this.name));
+    this.stores.register(MessageStore, new MessageStore(this.name));
+    this.events.register(NewHelloEvent, new NewHelloEvent(this.name));
+}
 ----
-|===
---
-Stores - SDKv5::
-+
---
-[cols="1h,6"]
-|===
 
-|Description
-|
+=== addDependencies()
 
-|Definition
-a|
+`addDependencies()` is a method that can be implemented inside a module and/or a command to register methods of other modules.
+
+Dependencies added inside the constructor::
+* The methods of other modules used by the module
+
 [source,typescript]
 ----
-
+public addDependencies(tokenMethod: TokenMethod) {
+    this._tokenMethod = tokenMethod;
+}
 ----
 
-|Usage
-a|
+=== init()
+
+`init()` is a method that can be implemented inside a module and/or a command to get the configuration options for the module from the `config.json` file.
+
+Each command can contain an own `init()` function as well, which can be called inside of the `init()` function of the module to pass config options to a command, if desired.
+
+Dependencies added inside the init() method::
+* Configuration options for the module
+
 [source,typescript]
 ----
+public async init(args: ModuleInitArgs): Promise<void> {
+    // Get the module config defined in the config.json file
+    const { moduleConfig } = args;
+    // Overwrite the default module config with values from config.json, if set
+    const config = utils.objects.mergeDeep({}, defaultConfig, moduleConfig) as ModuleConfigJSON;
+    // Validate the provided config with the config schema
+    validator.validate<ModuleConfigJSON>(configSchema, config);
+    // Call the command init() method with config values as parameters
+    this.commands[0].init(config).catch(err => {
+        console.log("Error: ", err);
+    });
+}
 ----
-|===
---
-=====
-
-[cols="1h,4,4",options="header"]
-|===
-|
-|SDKv5
-|SDKv6
-
-|Description
-|
-|
-
-|Definition
-|
-|
-
-|Usage
-|
-|
-|===

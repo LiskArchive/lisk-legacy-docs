@@ -106,7 +106,7 @@ But how to check if the transaction failed, or was executed successfully?
 To transmit this information, the xref:{url_standardevent}[standard event] is emitted for every transaction included in the particular block.
 It informs if that particular transaction was successfully executed, or failed.
 +
-By adding events, it is therefore possible again to check if a transaction was executed successfully.
+By adding events, it is therefore possible to check if a transaction was executed successfully.
 At the same time, events can store various additional information on-chain, which can be valuable for other services.
 Additional events can be defined per module by the sidechain developer.
 =====
@@ -409,10 +409,6 @@ Endpoints - SDKv6::
 --
 [cols="1h,6"]
 |===
-
-|Name
-|Endpoints
-
 |Description
 |An interface between a module and an external system via an RPC endpoint.
 
@@ -475,7 +471,7 @@ Actions - SDKv5::
 |===
 
 |Description
-|
+|An interface between a module and an external system via an RPC endpoint.
 
 |Definition
 a|
@@ -536,42 +532,109 @@ A module can only access its' own store, and never the stores of other modules d
 If a module requires data from other module stores, it can use the dedicated <<methods-replace-reducers,module methods>> to do so.
 ////
 
+In Lisk SDK v5, this principle was not followed consistently: There were the chain store and the account store, and the account store was accessible by every module.
+
+In Lisk SDK v6, *the account store is removed completely*, and integrated in the respective module stores.
+Additionally, the *implementation of stores into modules is improved*, to store any key-value pair in the database consistently.
+////
 Each module store needs a unique key under which it is added to the Merkle tree, which defines the overall state of the blockchain.
 In Lisk SDK v5, this key was derived from the module ID.
 In Lisk SDK v6, the module ID was removed, as described in <<module-command-ids-are-removed>>.
 Therefore, the store ID is now derived from the module name.
-
-
-[cols="1h,4,4",options="header"]
-|===
-|
-|SDKv5
-|SDKv6
-
-|Description
-|
-|
-
-|Definition
-|
-|
-
-|Usage
-|
-|
-|===
-
-== Addition of metadata
-
+////
 .Main benefits of this change
 [%collapsible]
 ====
 Improved developer experience::
-* By providing a base class for the creation of module methods, developers can follow a dedicated pattern to include methods into a module in a straightforward manner.
-* The renaming from reducers to methods was introduced to improve intuitive understanding of the meaning behind this data structure.
+* By providing a base class for the creation of module stores, developers can follow a dedicated pattern to include stores into a module in a consistent manner.
+Improved modularity::
+* Confines data per module
 ====
 
-== Removing account schema
+.Stores in Lisk SDK v6
+[cols="1h,6"]
+|===
+|Definition
+a|
+.How to define a new module store
+[source,typescript]
+----
+import { BaseStore } from 'lisk-sdk';
+
+export interface MessageStoreData {
+	message: String;
+}
+
+export const messageStoreSchema = {
+	$id: '/hello/message',
+	type: 'object',
+	required: ['message'],
+	properties: {
+		message: {
+			dataType: 'string',
+			fieldNumber: 1,
+		},
+	},
+};
+
+export class MessageStore extends BaseStore<MessageStoreData> {
+	public schema = messageStoreSchema;
+}
+----
+
+.How to register stores with the module
+[source,typescript]
+----
+import { CounterStore } from './stores/counter';
+import { MessageStore } from './stores/message';
+
+// [...]
+
+export class HelloModule extends BaseModule {
+    // [...]
+
+    public constructor() {
+        super();
+        // registration of stores and events
+        this.stores.register(CounterStore, new CounterStore(this.name));
+        this.stores.register(MessageStore, new MessageStore(this.name));
+    }
+    // [...]
+ }
+----
+|Usage
+a|
+.Example: How to get data from the store
+[source,typescript]
+----
+import { BaseEndpoint, ModuleEndpointContext, cryptography } from 'lisk-sdk';
+import { MessageStore, MessageStoreData } from './stores/message';
+
+export class HelloEndpoint extends BaseEndpoint {
+    public async getHello(ctx: ModuleEndpointContext): Promise<MessageStoreData> {
+        // 1. Get message store
+        const messageSubStore = this.stores.get(MessageStore);
+        // 2. Get the address from the endpoint params
+        const { address } = ctx.params;
+        // 3. Validate address
+        if (typeof address !== 'string') {
+            throw new Error('Parameter address must be a string.');
+        }
+        cryptography.address.validateLisk32Address(address);
+        // 4. Get the Hello message for the address from the message store
+        const helloMessage = await messageSubStore.get(
+            ctx,
+            cryptography.address.getAddressFromLisk32Address(address),
+        );
+        // 5. Return the Hello message
+        return helloMessage;
+    }
+}
+----
+|===
+
+
+== Addition of metadata
 
 .Main benefits of this change
 [%collapsible]
@@ -590,6 +653,57 @@ Improved developer experience::
 * By providing a base class for the creation of module methods, developers can follow a dedicated pattern to include methods into a module in a straightforward manner.
 * The renaming from reducers to methods was introduced to improve intuitive understanding of the meaning behind this data structure.
 ====
+
+[tabs]
+=====
+Stores - SDKv6::
++
+--
+[cols="1h,6"]
+|===
+|Description
+|An interface between a module and an external system via an RPC endpoint.
+
+|Definition
+a|
+[source,typescript]
+----
+----
+|Usage
+a|
+[source,bash]
+----
+----
+
+[source,typescript]
+----
+----
+|===
+--
+Stores - SDKv5::
++
+--
+[cols="1h,6"]
+|===
+
+|Description
+|
+
+|Definition
+a|
+[source,typescript]
+----
+
+----
+
+|Usage
+a|
+[source,typescript]
+----
+----
+|===
+--
+=====
 
 [cols="1h,4,4",options="header"]
 |===

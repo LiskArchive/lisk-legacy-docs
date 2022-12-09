@@ -11,13 +11,16 @@ Mona Bärenfänger <mona@lightcurve.io>
 // URLs
 :url_ethereum_events: https://medium.com/mycrypto/understanding-event-logs-on-the-ethereum-blockchain-f4ae7ba50378
 :url_wiki_pubsub: https://en.wikipedia.org/wiki/Publish%E2%80%93subscribe_pattern
+:url_lip_37: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0037.md
 // Project URLs
 :url_sdkv5_rpc_events: {docs-lisk-v5}events.adoc
 :url_api_rpc_getEvents: {docs-general}api/lisk-node-rpc.adoc
 :url_standardevent: {docs-understand-modules}#standard-event
 :url_methods: {docs-understand-modules}#methods
 :url_endpoints: {docs-understand-modules}#endpoints
+:url_metadata: {docs-understand-modules}#metadata
 :url_understand_rpc_events: {docs-general}understand-blockchain/sdk/rpc.adoc#rpc-events
+:url_understand_txs: {docs-general}understand-blockchain/blocks-txs.adoc#transactions
 :url_build_module_event: {docs-general}build-blockchain/module/blockchain-event.adoc
 
 The release of the Lisk SDK v6 introduces many breaking changes and important improvements of the Lisk Protocol and the Lisk Framework.
@@ -79,11 +82,11 @@ It is used when sending tokens to a specific chain and also prepended for signin
 
 If the execution of the business logic of a transaction failed, the transaction gets a `failed` status.
 In Lisk SDK v5, transactions were only included in a block, if they could be executed successfully.
-In Lisk SDK v6, this changes now: *Failed transactions are included in blocks as well.*
+In Lisk SDK v6, this changes now: xref:{url_understand_txs}[Failed transactions] *are included in blocks* as well.
 
+As you know, the transaction fee is paid for every transaction included in a block.
 This has the following consequence:
-*Transaction fee is paid for every transaction included in a block.*
-By including failed transactions in blocks, the transaction fee for a transaction is always paid even if it failed and didn't introduce any state changes on the blockchain.
+By including failed transactions in blocks, the *transaction fee is always paid* even if it failed and didn't introduce any state changes on the blockchain.
 
 .Main benefits of this change
 [%collapsible]
@@ -249,6 +252,76 @@ client.subscribe('app:block:new', ( data ) => {
 |===
 --
 =====
+
+== Chain ID replaces network ID
+
+Chain identifiers (or chain IDs), for transaction signatures and block signatures were already introduced in Lisk SDK v5 as network identifiers to prevent replay attacks on other chains.
+Beside getting a more descriptive name, the chain ID is also constructed differently now:
+
+[cols="1h,4,4"]
+|===
+|
+|Chain ID (Lisk SDK v6)
+|Network ID (Lisk SDK v5)
+
+|Description
+|Unique identifier of a blockchain network for transactions and blocks to prevent replay attacks on other chains.
+|Unique identifier of a blockchain network for transactions and blocks to prevent replay attacks on other chains.
+
+|Bytes
+|4
+|32
+
+|Creation
+|Defined by the blockchain developer
+|Randomly generated
+|===
+
+TIP: Read the {url_lip_37}[LIP 0037^] for more information about the chain ID.
+
+[tabs]
+=====
+Chain ID example::
++
+--
+ 00000000
+
+--
+Network ID example::
++
+--
+ 4c09e6a781fc4c7bdb936ee815de8f94190f8a7519becd9de2081832be309a99
+
+--
+=====
+
+Chain identifiers are 4-byte values that follow a specific format:
+the first byte is used to identify the network in which the chain is running (either the Lisk Mainnet, Lisk Testnet, or any other test network);
+the other 3 bytes identify the sidechain within the network.
+
+NOTE: The network-specific prefix is included explicitly to ensure that a chain does not use the same chain identifier in the test network as in the mainnet.
+
+.Main benefits of this change
+[%collapsible]
+====
+Improved developer experience::
+* The chain identifier can be directly set by the blockchain creator, which is more convenient than generating a random 32-byte value.
+Improved user experience::
+* By using a much shorter ID, users can easily verify that they are signing a transaction for the correct blockchain.
+====
+
+== Module & command IDs are removed
+
+The module and command IDs are removed completely in Lisk SDKv6.
+
+Module and command name are used as unique identifiers for modules and commands instead.
+
+.Main benefits of this change
+[%collapsible]
+====
+Improved developer experience::
+Reduces the number of required properties and uses strings which are more descriptive than numbers.
+====
 
 == Methods replace reducers
 
@@ -521,75 +594,6 @@ const data = await client.invoke('app:actionName', input);
 --
 =====
 
-== Chain ID replaces network ID
-
-Chain identifiers (or chain IDs), for transaction signatures and block signatures were already introduced in Lisk SDK v5 as network identifiers to prevent replay attacks on other chains.
-Beside getting a more descriptive name, the chain ID is also constructed differently now:
-
-[cols="1h,4,4"]
-|===
-|
-|Chain ID (Lisk SDK v6)
-|Network ID (Lisk SDK v5)
-
-|Description
-|Unique identifier of a blockchain network for transactions and blocks to prevent replay attacks on other chains.
-|Unique identifier of a blockchain network for transactions and blocks to prevent replay attacks on other chains.
-
-|Bytes
-|4
-|32
-
-|Creation
-|Defined by the blockchain developer
-|Randomly generated
-|===
-
-[tabs]
-=====
---
-Chain ID example::
-+
---
- 00000000
-
---
-Network ID example::
-+
---
- 4c09e6a781fc4c7bdb936ee815de8f94190f8a7519becd9de2081832be309a99
-
---
-=====
-
-Chain identifiers are 4-byte values that follow a specific format:
-the first byte is used to identify the network in which the chain is running (either the Lisk Mainnet, Lisk Testnet, or any other test network);
-the other 3 bytes identify the sidechain within the network.
-
-NOTE: The network-specific prefix is included explicitly to ensure that a chain does not use the same chain identifier in the test network as in the mainnet.
-
-.Main benefits of this change
-[%collapsible]
-====
-Improved developer experience::
-* The chain identifier can be directly set by the blockchain creator, which is more convenient than generating a random 32-byte value.
-Improved user experience::
-* By using a much shorter ID, users can easily verify that they are signing a transaction for the correct blockchain.
-====
-
-== Module & command IDs are removed
-
-The module and command IDs are removed completely in Lisk SDKv6.
-
-Module and command name are used as unique identifiers for modules and commands instead.
-
-.Main benefits of this change
-[%collapsible]
-====
-Improved developer experience::
-Reduces the number of required properties and uses strings which are more descriptive than numbers.
-====
-
 == Migration of store from v5 to v6
 
 A store, aka key-value store is a special kind of database which follows a data storage paradigm designed for storing, retrieving, and managing associative arrays.
@@ -708,7 +712,7 @@ export class HelloEndpoint extends BaseEndpoint {
 Lisk SDK v6 introduces a new RPC endpoint to get all existing metadata related to a node.
 This includes metadata of all the modules which are registered on the node.
 
-The module developer can now easily define which data should be returned by the endpoint for the particular module by adjusting the newly introduced `metadata` attribute.
+The module developer can now easily define which data should be returned by the endpoint for the particular module by adjusting the newly introduced xref:{url_metadata}[metadata] method.
 
 .Main benefits of this change
 [%collapsible]

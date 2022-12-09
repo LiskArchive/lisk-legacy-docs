@@ -330,11 +330,10 @@
 <li><a href="#module-command-ids-are-removed">7. Module &amp; command IDs are removed</a></li>
 <li><a href="#migration-of-store-from-v5-to-v6">8. Migration of store from v5 to v6</a></li>
 <li><a href="#addition-of-metadata">9. Addition of metadata</a></li>
-<li><a href="#updates-of-how-to-register-module-dependencies">10. Updates of how to register module dependencies</a>
+<li><a href="#module-dependencies-registration-updates">10. Module dependencies registration updates</a>
 <ul class="sectlevel2">
-<li><a href="#constructor">10.1. constructor()</a></li>
+<li><a href="#init">10.1. init()</a></li>
 <li><a href="#adddependencies">10.2. addDependencies()</a></li>
-<li><a href="#init">10.3. init()</a></li>
 </ul>
 </li>
 </ul>
@@ -1256,70 +1255,90 @@ export class HelloEndpoint extends BaseEndpoint {
 </div>
 </div>
 <div class="sect1">
-<h2 id="updates-of-how-to-register-module-dependencies"><a class="anchor" href="#updates-of-how-to-register-module-dependencies"></a>10. Updates of how to register module dependencies</h2>
+<h2 id="module-dependencies-registration-updates"><a class="anchor" href="#module-dependencies-registration-updates"></a>10. Module dependencies registration updates</h2>
 <div class="sectionbody">
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The following changes were introduced to complement the improvements made in the module structure, see <a href="#methods-replace-reducers">Methods replace reducers</a>, <a href="#addition-of-blockchain-events">Addition of blockchain events</a> and <a href="#migration-of-store-from-v5-to-v6">Migration of store from v5 to v6</a>.
+</td>
+</tr>
+</table>
+</div>
 <div class="paragraph">
 <p>In Lisk SDK v6, module dependencies can be registered in the following methods:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p><a href="#constructor">constructor()</a></p>
+<p><a href="#init">init()</a></p>
 </li>
 <li>
 <p><a href="#adddependencies">addDependencies()</a></p>
 </li>
-<li>
-<p><a href="#init">init()</a></p>
-</li>
 </ul>
 </div>
-<details>
-<summary class="title">Main benefits of this change</summary>
-<div class="content">
-<div class="dlist">
-<dl>
-<dt class="hdlist1">Text</dt>
-<dd>
-<div class="ulist">
-<ul>
-<li>
-<p>text*</p>
-</li>
-</ul>
-</div>
-</dd>
-</dl>
-</div>
-</div>
-</details>
 <div class="sect2">
-<h3 id="constructor"><a class="anchor" href="#constructor"></a>10.1. constructor()</h3>
+<h3 id="init"><a class="anchor" href="#init"></a>10.1. init()</h3>
 <div class="paragraph">
-<p>The module constructor is run every time a ne instance of the module is created.</p>
+<p><code>init()</code> is a method that can be implemented inside a module and/or a command to register the required dependencies for the module.</p>
+</div>
+<div class="paragraph">
+<p>The <code>init()</code> function of the command can be called inside the <code>init()</code> function of the module to pass config options to a command, if desired.</p>
 </div>
 <div class="dlist">
 <dl>
-<dt class="hdlist1">Dependencies added inside the constructor</dt>
+<dt class="hdlist1">Dependencies added inside the init() method</dt>
 <dd>
 <div class="ulist">
 <ul>
+<li>
+<p>Configuration options for the module</p>
+</li>
 <li>
 <p>The stores used by the module</p>
 </li>
+<li>
+<p>The events emitted by the module</p>
+</li>
 </ul>
 </div>
 </dd>
 </dl>
 </div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Stores and events can be registered in the constructor of the module alternatively.
+</td>
+</tr>
+</table>
+</div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public constructor() {
-    super();
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async init(args: ModuleInitArgs): Promise&lt;void&gt; {
     // registration of stores and events
     this.stores.register(CounterStore, new CounterStore(this.name));
     this.stores.register(MessageStore, new MessageStore(this.name));
     this.events.register(NewHelloEvent, new NewHelloEvent(this.name));
+    // Get the module config defined in the config.json file
+    const { moduleConfig } = args;
+    // Overwrite the default module config with values from config.json, if set
+    const config = utils.objects.mergeDeep({}, defaultConfig, moduleConfig) as ModuleConfigJSON;
+    // Validate the provided config with the config schema
+    validator.validate&lt;ModuleConfigJSON&gt;(configSchema, config);
+    // Call the command init() method with config values as parameters
+    this.commands[0].init(config).catch(err =&gt; {
+        console.log("Error: ", err);
+    });
 }</code></pre>
 </div>
 </div>
@@ -1347,45 +1366,6 @@ export class HelloEndpoint extends BaseEndpoint {
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public addDependencies(tokenMethod: TokenMethod) {
     this._tokenMethod = tokenMethod;
-}</code></pre>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="init"><a class="anchor" href="#init"></a>10.3. init()</h3>
-<div class="paragraph">
-<p><code>init()</code> is a method that can be implemented inside a module and/or a command to get the configuration options for the module from the <code>config.json</code> file.</p>
-</div>
-<div class="paragraph">
-<p>Each command can contain an own <code>init()</code> function as well, which can be called inside of the <code>init()</code> function of the module to pass config options to a command, if desired.</p>
-</div>
-<div class="dlist">
-<dl>
-<dt class="hdlist1">Dependencies added inside the init() method</dt>
-<dd>
-<div class="ulist">
-<ul>
-<li>
-<p>Configuration options for the module</p>
-</li>
-</ul>
-</div>
-</dd>
-</dl>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async init(args: ModuleInitArgs): Promise&lt;void&gt; {
-    // Get the module config defined in the config.json file
-    const { moduleConfig } = args;
-    // Overwrite the default module config with values from config.json, if set
-    const config = utils.objects.mergeDeep({}, defaultConfig, moduleConfig) as ModuleConfigJSON;
-    // Validate the provided config with the config schema
-    validator.validate&lt;ModuleConfigJSON&gt;(configSchema, config);
-    // Call the command init() method with config values as parameters
-    this.commands[0].init(config).catch(err =&gt; {
-        console.log("Error: ", err);
-    });
 }</code></pre>
 </div>
 </div>

@@ -701,36 +701,45 @@ curl --location --request POST 'localhost:7887/rpc' \
 }'
 ----
 
-== Updates of how to register module dependencies
+== Module dependencies registration updates
+
+NOTE: The following changes were introduced to complement the improvements made in the module structure, see <<methods-replace-reducers>>, <<addition-of-blockchain-events>> and <<migration-of-store-from-v5-to-v6>>.
 
 In Lisk SDK v6, module dependencies can be registered in the following methods:
 
-* <<constructor>>
-* <<adddependencies>>
 * <<init>>
+* <<adddependencies>>
 
-.Main benefits of this change
-[%collapsible]
-====
-Text::
-* text*
-====
+=== init()
 
-=== constructor()
+`init()` is a method that can be implemented inside a module and/or a command to register the required dependencies for the module.
 
-The module constructor is run every time a ne instance of the module is created.
+The `init()` function of the command can be called inside the `init()` function of the module to pass config options to a command, if desired.
 
-Dependencies added inside the constructor::
+Dependencies added inside the init() method::
+* Configuration options for the module
 * The stores used by the module
+* The events emitted by the module
+
+NOTE: Stores and events can be registered in the constructor of the module alternatively.
 
 [source,typescript]
 ----
-public constructor() {
-    super();
+public async init(args: ModuleInitArgs): Promise<void> {
     // registration of stores and events
     this.stores.register(CounterStore, new CounterStore(this.name));
     this.stores.register(MessageStore, new MessageStore(this.name));
     this.events.register(NewHelloEvent, new NewHelloEvent(this.name));
+    // Get the module config defined in the config.json file
+    const { moduleConfig } = args;
+    // Overwrite the default module config with values from config.json, if set
+    const config = utils.objects.mergeDeep({}, defaultConfig, moduleConfig) as ModuleConfigJSON;
+    // Validate the provided config with the config schema
+    validator.validate<ModuleConfigJSON>(configSchema, config);
+    // Call the command init() method with config values as parameters
+    this.commands[0].init(config).catch(err => {
+        console.log("Error: ", err);
+    });
 }
 ----
 
@@ -745,30 +754,5 @@ Dependencies added inside the constructor::
 ----
 public addDependencies(tokenMethod: TokenMethod) {
     this._tokenMethod = tokenMethod;
-}
-----
-
-=== init()
-
-`init()` is a method that can be implemented inside a module and/or a command to get the configuration options for the module from the `config.json` file.
-
-Each command can contain an own `init()` function as well, which can be called inside of the `init()` function of the module to pass config options to a command, if desired.
-
-Dependencies added inside the init() method::
-* Configuration options for the module
-
-[source,typescript]
-----
-public async init(args: ModuleInitArgs): Promise<void> {
-    // Get the module config defined in the config.json file
-    const { moduleConfig } = args;
-    // Overwrite the default module config with values from config.json, if set
-    const config = utils.objects.mergeDeep({}, defaultConfig, moduleConfig) as ModuleConfigJSON;
-    // Validate the provided config with the config schema
-    validator.validate<ModuleConfigJSON>(configSchema, config);
-    // Call the command init() method with config values as parameters
-    this.commands[0].init(config).catch(err => {
-        console.log("Error: ", err);
-    });
 }
 ----

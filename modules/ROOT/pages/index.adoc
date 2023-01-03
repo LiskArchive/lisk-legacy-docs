@@ -1,12 +1,16 @@
 = Lisk Core
-Mona Bärenfänger <mona@lightcurve.io>
+Christopher Braithwaite <christopher.braithwaite@lightcurve.io>
 // Settings
-:description: References and guides how to setup, update and manage a Lisk Core node.
+:description: References and guides how to setup, update and manage a Lisk Core node using Lisk Core v4.
 :toc: preamble
+:idprefix:
+:idseparator: -
+:v_sdk: v6.0.0 (beta)
 :page-no-previous: true
 :docs_general: ROOT::
-:page-aliases: monitoring.adoc
+:docs_sdk: v6@lisk-sdk::
 :imagesdir: ../assets/images
+
 // External URLs
 :url_faucet_testnet: https://testnet-faucet.lisk.com/
 :url_lisk_blog_betanet5: https://lisk.com/blog/development/launch-betanet-v5
@@ -21,30 +25,155 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_liskscan: https://liskscan.com/
 :url_liskscan_testnet: https://testnet.liskscan.com/
 // Project URLs
-:url_config: management/configuration.adoc
-:url_config_forging: management/forging.adoc
-:url_management_accounts: management/account-management.adoc
 :url_getting_started: setup/npm.adoc
-:url_setup: setup/index.adoc#distributions
-:url_setup_binary: setup/application.adoc
-:url_setup_npm: setup/npm.adoc
-:url_setup_snap: setup/snap.adoc
-:url_setup_docker: setup/docker.adoc
-:url_setup_source: setup/source.adoc
-:url_upgrade_binary: update/application.adoc
-:url_upgrade_commander: update/commander.adoc
-:url_upgrade_docker: update/docker.adoc
-:url_upgrade_source: update/source.adoc
-:url_ref_rpc: {docs_general}api/lisk-node-rpc.adoc
+:url_ref_rpc: {docs_general}api/lisk-node-rpc.adoc#endpoints
 :url_configure_rpc: {docs_general}build-blockchain/configure-app.adoc#rpc
 :url_sdk_plugin_httpapi: lisk-sdk::plugins/http-api-plugin.adoc
+// :url_migration: {docs_general}management/migration.adoc
+
+:url_bft: {docs_general}understand-blockchain/consensus/bft.adoc
+:url_cross_chain: {docs_general}understand-blockchain/interoperability/communication.adoc
+// :url_lisk_migrator: {docs_general}migration.adoc#setting-up-the-lisk-migrator
+:url_lisk_api: lisk-sdk::references/lisk-elements/api-client.adoc
+:url_lisk_api: {docs_general}api/lisk-node-rpc.adoc
+:url_configure_rpc: {docs_sdk}/config.adoc#rpc
+// Lips
+:url_lip50: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0050.md
+:url_lip46: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0046.md
+:url_lip45: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0045.md
+:url_lip48: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0048.md
+:url_lip44: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0044.md
+:url_lip41: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0041.md
+:url_lip71: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0071.md
+:url_lip40: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0040.md
+:url_lip39: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0039.md
+:url_lip37: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0037.md#chain-identifiers-1
+:url_lip51: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0051.md
+:url_lip70: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0070.md
+:url_lip57: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0057.md
+:url_sdkv6: {docs_sdk}index.adoc
 
 image:banner_core.png[Core]
 
-ifeval::[{page-component-version} !== master]
+// ifeval::[{page-component-version} !== master]
 
-IMPORTANT: To access the latest Lisk Core version, please xref:master@{page-component-name}::{page-relative}[click here].
-endif::[]
+// IMPORTANT: To access the latest Lisk Core version, please xref:master@{page-component-name}::{page-relative}[click here].
+// endif::[]
+
+== Overview
+
+The Lisk Core can be defined as a blockchain application running on the Lisk Mainnet that implements/enforces the Lisk protocol, enabling a user to easily set up a node and participate in the network.
+To provide a high level overview, the main functionalities are listed below:
+
+* The possibility to connect to a subset of peers in the Lisk mainchain's P2P network.
+* To synchronize with the Lisk blockchain including requesting, forwarding and processing of the blocks, which also contain the transactions.
+// => Lisk Core node stores all current account balances and transactions
+* To maintain the transaction pool, which might contain a subset of unconfirmed transactions.
+* To request and forward the unconfirmed transactions.
+* To possibly generate new blocks when running a validator node.
+
+Furthermore, Lisk Core nodes are able to store all current addresses, balances, and transactions.
+
+With the latest version of Lisk Core, there will be new configurable settings and the modules described in the <<Modules>> sub-section will also be used.
+
+NOTE: To migrate from Lisk Core v3 to v4 please follow the migration process as covered in the migration guide.
+// Add in link to new migration guide when it is ready....xref:{migration}[migration guide]
+
+==== Migration overview
+
+The xref:{url_sdkv6}[Lisk SDK v6] has introduced some new configurable settings, including certain constants that need to be specified for each chain, which must also be specified in Lisk Core v4.
+A brief overview of the migration process from Lisk Core v3 to Lisk Core v4 is depicted graphically in the illustration below in Figure 1.
+
+.Migration process overview
+image::migration-v3-v4.png[align=center]
+
+In Figure 1 above, the blocks in pink are generated by the Lisk Core v3 nodes, including the state snapshot.
+The snapshot block is shown in green, and is generated by the migrator tool.
+// Add in link for the migrator tool when it is ready xref:{url_lisk_migrator}[migrator tool]
+Finally, the blocks in yellow are generated by the Lisk Core v4 nodes post migration.
+
+=== Modules
+
+Within Lisk Core v4, the following modules will be registered and used in the specified order:
+
+* Auth
+- The {url_lip41}[Auth module^] is responsible for handling and verifying nonces and for transaction signature validation, including transactions from multisignature accounts.
+* Validators
+- The {url_lip44}[Validators module^] is responsible for validating the eligibility of a validator for generating a block and the block signature.
+Furthermore, it maintains information about the registered validators in its module store and provides the generator list.
+* Token
+- This module allows any chain in the ecosystem to handle and transfer tokens in a coherent, secure, and controlled manner.
+Furthermore, the {url_lip51}[Token module^] also handles cross-chain token transfers.
+* Fee
+- The {url_lip48}[Fee module^] is responsible for the handling of the transaction fees, including the extra command fees, (e.g., the validator registration fees, relayer fees, etc.).
+It allows chains to choose the token used to pay the fee, and to define a minimum fee for the transactions to be valid.
+* Interoperability
+- The {url_lip45}[Interoperability module^] provides basic functionalities to transmit information between interoperable chains in the Lisk ecosystem using xref:{url_cross_chain}[cross-chain messages].
+In addition, it also supports / defines the chain lifecycle.
+* PoS
+- The {url_lip57}[PoS module, (Proof-of-stake)^] is responsible for handling delegate registration, votes, and computing the validator weight.
+* Random
+- The {url_lip46}[Random module^] handles the validation of the inputs and computation of outputs for the commit and reveal process for a Lisk blockchain.
+Hence, it manages the validation of the inputs for the commit and reveal process, as well as the random seeds that are used for delegate ordering in a round, and also for picking standby validators.
+// Info on Random process in LIP 0022
+* Dynamic Block Rewards Module
+- The {url_lip71}[Dynamic Block Rewards module^] is responsible for providing the base reward system for the Lisk blockchain according to the delegate weight.
+It computes the block rewards according to the delegate weight for active delegates, and includes specific logic for rewarding the standby validators.
+The rewards will now be automatically shared using an on-chain reward sharing mechanism, more details on this can be found {url_lip70}[here^].
+* Legacy
+- The {url_lip50}[Legacy module^] maintains all accounts on the Lisk mainchain that received balance transfers to their address in the old 8-byte format, and for which no public key is associated.
+The Legacy module also implements a command allowing delegates without a BLS key to register one.
+
+Within the protocol used by Lisk Core v4, each validator needs a separate key known as a generator key in order to generate blocks.
+More information on the generator key can be found here in {url_lip44}[LIP 0044^].
+
+The state of an interoperable chain in the Lisk ecosystem is maintained in a global state store.
+// Entries of the state store are inserted in a sparse Merkle tree, the state tree.
+// The whole state is thus authenticated by the tree Merkle root, the state root.
+// More details can found here in {url_lip40}[LIP 0040^].
+Furthermore, as a part of the interoperability solution, validators of each chain certify the current state of the chain.
+The certification is performed by using certificates that are signed once the block is finalized and used in cross-chain communication.
+In addition, the new certificate generation mechanism verifies all the required information for the cross-chain updates, including the state root, which allows the authentication of cross-chain messages, and the validators hash, which authenticates the validators changes, and therefore the signers of future certificates.
+// Maybe need info to add in overview description of changed schemas for better user experience (changing type of most IDs to bytes, etc.).
+// Also maybe need info on added events and event processing..?
+
+Finally, a new event mechanism has been introduced designed to emit events from the application domain during the block processing.
+These events are included in a sparse Merkle tree (SMT), as leaf nodes.
+Hence, the root of the SMT being the event root, is added as a new property to block headers.
+Using the event root, it is possible to provide inclusion or non-inclusion proofs for events, proving whether an event was emitted during the block processing.
+
+==== Module State Store
+
+Within the chain each module that is registered defines its own state and the possible state transitions.
+The state transitions could be induced by the transactions defined within the module or the methods that can be called by other modules.
+
+Within Lisk core v4 an updated state storage will be used. This new state architecture is now substantially different, as previously, the state of a chain was organized per account rather than per module.
+For example, a user's balance would be stored together with all the other properties related to that specific user.
+Alternatively, with the new state model, the balance of a user is stored in the token module state and is separated from the properties of other modules, (e.g. public keys).
+
+The chain maintains a *global state store*, which can be determined as a collection of key-value pairs defining the state of the blockchain.
+Following the modular architecture, the state store is further split into several *module stores*, namely, collections of key-value pairs that are defined within the state specific to the module.
+// This is achieved by imposing a specific format for keys in the global state store.
+// Hence, each key is given by the concatenation of the module store prefix, a substore prefix, and a store key.
+// A module store can be defined as the collection of key-value pairs whose keys share the same module store prefix (which identifies the specific module store).
+
+// Separating the state store into several key-value maps allows us to logically compartmentalize each module, following the same mantra behind our chain architecture, each module defines its part of the state and its own state transitions.
+
+// - *Module State* The key-value pairs stored in the map of the module.
+// For example, the user balance, and the escrow accounts are stored in the token module.
+// - *Module state transactions*: The transactions defined in a module (for example, the token transfer transaction in the token module), as well as the logic executed with every block or transactions, such as the reward assigned to the generator after a block has been processed.
+
+The state tree is the sparse Merkle tree built on top of the state store. More information on SMTs can be found here in {url_lip39}[LIP 0039^].
+// Organizing the state of a blockchain in a Merkle tree allows to cryptographically authenticate the whole state with a single hash, the state root.
+// The state root property is calculated at the end of the block processing as the Merkle root of the state tree and included in the block header.
+// Information from the block header is then used to create a certificate and signed by the chain validators.
+
+The illustration below in Figure 2 depicts the general structure of the state sparse Merkle tree for a Lisk blockchain using two application-specific modules.
+The state root is the Merkle root, and as described above each module defines its own module store.
+The keys of the leaf nodes start with the store prefixes, so that each module subtree is separated from the others. Please note, not all modules are shown in this illustration.
+
+.State sparse Merkle tree
+image::state-tree.png[align=center]
 
 == Getting started
 
@@ -54,16 +183,16 @@ endif::[]
 The Lisk blockchain is a decentralized network that consists of many different servers, (or nodes).
 Node operators are required to set up Lisk Core on a server, and then connect it to the desired network.
 
-There are over 600 nodes around the world that are maintained by individuals, and these nodes communicate with the network.
-For example, by broadcasting and receiving blocks or transactions from their peers.
-In addition, Lisk nodes are also required to forge/add new blocks to the blockchain.
+There are almost 2,000 nodes around the world that are maintained by individuals, and these nodes communicate with the network.
+For example, by broadcasting and receiving blocks or transactions from their peers.
+In addition, Lisk Core nodes are also required to generate/add new blocks to the blockchain.
 
 === Who should operate a node?
 
 If you fall under one of the following categories listed below, then it is recommended to set up your own node:
 
 * *Exchanges* and other services that rely on a stable API interface to the network.
-* *Delegates* who have registered as a delegate and would like to actively forge.
+* *Validators* who have registered as a validator and would like to actively generate new blocks.
 * *Users* who do not trust external sources and want to be in full control over their node.
 
 === Why operate a node?
@@ -72,8 +201,11 @@ If you fall under one of the following categories listed below, then it is recom
 This is especially important when running an exchange and implementing LSK tokens.
 - To create your own snapshots of the blockchain.
 - To create transactions and send them to the network.
-- To have the option to xref:{url_config_forging}[forge] new blocks, (assuming you are an active delegate).
-- To acquire full control in order to xref:{url_config}[configure] the node to your specific requirements.
+//TODO: Add link back, once docs are updated
+//- To have the option to xref:{url_config_forging}[generate] new blocks, (assuming you are an active delegate).
+//- To acquire full control in order to xref:{url_config}[configure] the node to your specific requirements.
+- To have the option to generate new blocks, (assuming you are an active validator).
+- To acquire full control in order to configure the node to your specific requirements.
 
 NOTE: To learn how to set up a node, please see the xref:{url_getting_started}[NPM setup] page.
 
@@ -82,27 +214,64 @@ NOTE: To learn how to set up a node, please see the xref:{url_getting_started}[N
 
 The Lisk Core can be connected to different networks.
 Please be aware that there are two key accessible public networks existing which are entirely independent of each other.
-These networks are described below.
+These networks are covered below in this section.
+//Note: ChainIDs & ports could be further updated according to Manu.
+
+==== Chain Identifiers
+
+The chain identifiers (synonymous to the previously known, network identifiers), are mainly used within the interoperability protocol in order to distinguish between different blockchains running in the ecosystem.
+In addition, they are also used for transaction, block header, and arbitrary signatures, whereby they are able to prevent replay attacks and the re-usage of signatures.
+More information on chain identifiers can be found in here in {url_lip37}[LIP 0037^].
+
+Therefore, network identifiers (nethash), are not exposed anymore, and the network can be determined based on the `chainID`.
+Chain identifiers are 4-byte values, and the first byte is set to the `CHAIN_ID_PREFIX_MAINNET` for chains running in the mainnet network, and hence to the `CHAIN_ID_PREFIX_TESTNET` for chains running in the testnet network.
+The most significant byte within the `chainID` is the first byte which is used to determine the network, and the remaining 3 bytes are used to determine the chain.
 
 .Public networks of Lisk
-[cols="1h,1m,1m",options="header"]
+[cols="1h,1m",options="header"]
 |===
-| Network | Port (default) | Network Identifier
+| Network | Port (default)
 
 | Mainnet
-| 8001
-| 4c09e6a781fc4c7bdb936ee815de8f94190f8a7519becd9de2081832be309a99
+| `8001`
 
 | Testnet
-| 7001
-| 15f0dacc1060e91818224a94286b13aa04279c640bd5d6f193182031d133df7c
+| `7001`
+
+
+|===
+
+// Used to identify the chains exchanging the cross-chain messages, the chainID can be seen below:
+
+// cols="1h,1m",options="header"]
+// |===
+// | Network | Lisk chainID
+
+// | Mainnet
+// | 00000000
+// |Testnet
+// | 01000000
+
+[cols="1h,1m,1m,1m" options="header"]
+|===
+| Network | Name | Type | ChainID Prefix
+
+|Mainnet
+| `CHAIN_ID_PREFIX_MAINNET`
+| bytes
+| 0x00
+
+|Testnet
+| `CHAIN_ID_PREFIX_TESTNET`
+|bytes
+| 0x01
 
 |===
 
 === Mainnet
 
 The Mainnet is where the true Lisk economy exists.
-Within this network the Lisk users can transfer LSK tokens from one account to another, register accounts as delegates; and vote for other delegates.
+Within this network the Lisk users can transfer LSK tokens from one account to another, register accounts as delegates, and vote for other validators.
 
 ==== Mainnet blockchain explorer
 
@@ -136,23 +305,26 @@ To connect to the Testnet via {url_lisk_desktop}[Lisk Desktop^], simply enable t
 | RPC
 | Depends on the network, see: <<networks>>
 | To enable, xref:{url_configure_rpc}[enable RPC websockets] in the node config.
-| xref:{url_ref_rpc}[]
+| xref:{url_ref_rpc}[RPC endpoints]
 
 |===
 
+The Lisk API documentation can be found xref:{url_lisk_api}[here].
+
 == Token
 
-The native token for the Lisk Mainnet is the *LSK*.
+The native token for the Lisk Mainchain is the *LSK*.
 Each LSK is further subdivided into 10^8^ *Beddows*.
+At this time there are no other tokens supported.
 
-== Custom modules
+// == Custom modules
 
-Lisk Core includes the `legacyAccount` module which contains the following transaction.
+// Lisk Core includes the `legacyAccount` module which contains the following transaction.
 
-=== LSK Reclaim
+// === LSK Reclaim
 
-This transaction allows to access the balance that was sent to a legacy address without any associated public key.
-Legacy addresses, generated from the first eight bytes of the public key, were used in older versions of the protocol.
-This legacy address is deduced from the `senderPublicKey` of the transaction, and the amount specified in the transaction asset must correspond to the amount in the legacy account.
+// This transaction allows to access the balance that was sent to a legacy address without any associated public key.
+// Legacy addresses, generated from the first eight bytes of the public key, were used in older versions of the protocol.
+// This legacy address is deduced from the `senderPublicKey` of the transaction, and the amount specified in the transaction asset must correspond to the amount in the legacy account.
 
-image::ReclaimAsset.png[ReclaimAsset,330,147]
+// image::ReclaimAsset.png[ReclaimAsset,330,147]

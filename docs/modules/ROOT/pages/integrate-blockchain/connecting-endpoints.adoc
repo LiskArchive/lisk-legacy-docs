@@ -1,7 +1,5 @@
 = Connecting to endpoints
 Muhammad Talha <muhammad.talha@lightcurve.io>
-
-//Settings
 :toc: preamble
 :toclevels: 5
 :page-toclevels: 4
@@ -11,40 +9,24 @@ Muhammad Talha <muhammad.talha@lightcurve.io>
 :sdk_docs: lisk-sdk::
 //External URLs
 :url_npm_lisk_sdk: https://www.npmjs.com/package/lisk-sdk
-:url_wiki_ipc: https://en.wikipedia.org/wiki/Inter-process_communication
-:url_websocket: https://en.wikipedia.org/wiki/WebSocket
-:url_wiki_http_protocol: https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol
-:url_eda: https://en.wikipedia.org/wiki/Event-driven_architecture
 // Project URLs
-:url_rpc_config: {sdk_docs}config.adoc#rpc
+:v_sdk: v6.0.0 (beta)
+:page-no-previous: true
+:docs_general: ROOT::
+:docs_sdk: v6@lisk-sdk::
 :url_advanced_rpc: api/lisk-node-rpc.adoc
-:url_guides_config_rpc: build-blockchain/configuration.adoc#rpc
-
-
 :url_endpoints_modules: build-blockchain/module/endpoints-methods.adoc#endpoints
 :url_endpoints_plugins: build-blockchain/plugin/plugin-endpoints.adoc#creating-an-endpoint
-
-
+:url_sync_store: build-blockchain/plugin/plugin-class.adoc#sync-and-store-new-event
+:url_cli: {docs_sdk}application-cli.adoc#endpoint
 :url_intro_modules: understand-blockchain/sdk/modules-commands.adoc
 :url_intro_plugins: understand-blockchain/sdk/plugins.adoc
-:url_intro_plugins_load: understand-blockchain/sdk/plugins.adoc#defining-the-plugin-logic
 // :url_references_elements_apiclient: {sdk_docs}references/lisk-elements/api-client.adoc
 // :url_references_elements_client: {sdk_docs}references/lisk-elements/client.adoc
 :url_advanced_rpc_endpoints: {url_advanced_rpc}#endpoints
-:url_advanced_rpc_events: {url_advanced_rpc}#events
-:url_guides_asset: build-blockchain/modules/command.adoc
-:url_lisk_sdk: glossary.adoc#lisk-sdk
-:url_RPC_System_API: {url_advanced_rpc}#system
-:url_RPC_Events: {url_advanced_rpc}#events
 :JSON_RPC_Specs: https://www.jsonrpc.org/specification
-:url_module_endpoints: {sdk_docs}/modules/index.adoc
-:url_module_commands: understand-blockchain/sdk/modules-commands.adoc#blockchain-events
-:url_sidechain_glossary: glossary.adoc#sidechain-application
-:url_sapp: glossary.adoc#sapp
 :url_sidechain_client: glossary.adoc#sidechain-client
 // footnotes
-:fn_sidechain_glossary: footnote:sidechain[See xref:{url_sidechain_glossary}[Sidechain application] for more details.]
-:fn_saap_glossary: footnote:saap[See xref:{url_sapp}[sApp] for more details.]
 :fn_sidechain_client_glossary: footnote:client[See xref:{url_sidechain_client}[Sidechain client] for more details.]
 
 // TODO: Update the page by uncommenting the hyperlinks once the updated pages are available.
@@ -53,10 +35,10 @@ By default, Lisk exposes xref:{url_advanced_rpc_endpoints}[a range of endpoints]
 
 Apart from that, sidechain clients{fn_sidechain_client_glossary}, specifically xref:{url_intro_modules}[Modules] and xref:{url_intro_plugins}[Plugins] of a sidechain client can also expose endpoints as described in the guides about xref:{url_endpoints_modules}[implementing endpoints for a module] and xref:{url_endpoints_plugins}[creating an endpoint for a plugin], respectively.
 
-On this page, you'll learn about all the ways with which the aforementioned endpoints can be called within the Lisk ecosystem.
+On this page, you'll learn about how the aforementioned endpoints can be invoked within the Lisk ecosystem.
 
 [[the-api-client]]
-== The API client
+== Invoking via API client
 
 // The xref:{url_references_elements_apiclient}[] simplifies sending API requests to a blockchain application. 
 The API client simplifies sending API requests to a blockchain application.
@@ -109,7 +91,9 @@ let clientCache;
 
 const getClient = async () => {
     if (!clientCache) {
-        clientCache = await apiClient.createIPCClient('~/.lisk/my-app');
+        // The datapath to the sidechain client should be passed here
+        // In our case, we are passing datapath for the "hello_client"
+        clientCache = await apiClient.createIPCClient('~/.lisk/hello_client');
     }
     return clientCache;
 };
@@ -145,3 +129,57 @@ curl --location --request POST 'http://localhost:7887/rpc' \
 ----
 --
 =====
+
+[TIP]
+====
+Lisk also supports invoking endpoints from within the sidechain client. For more information, check out the xref:{url_sync_store}[syncing and storing] example for the `HelloInfoPlugin`. Specifically, the following:
+
+[source,typescript]
+----
+private async _syncChainEvents(): Promise<void> {
+    // 1. Get the latest block height from the sidechain
+    const res = await this.apiClient.invoke<{ header: { height: number } }>("chain_getLastBlock", {});
+    //[...]
+}
+----
+====
+
+== Invoking via Lisk CLI
+Any endpoint within the Lisk ecosystem can be invoked via Lisk's CLI as well. For more information, check out the xref:{url_cli}[CLI reference page].
+
+To invoke an endpoint via Lisk CLI, simply use the `endpoint:invoke` command as shown below:
+
+[source,bash]
+----
+$./bin/run endpoint:invoke chain_getLastBlock --pretty
+{
+  "header": {
+    "version": 2,
+    "timestamp": 1662742534,
+    "height": 110,
+    "previousBlockID": "4ef1095d3560064dd4a66fb4543680efe65a64020c363571b107be9513628674",
+    "stateRoot": "b2507620beb3be5cd7d0cbb7926e4365b5674b682673dc2423400a497636e13e",
+    "assetRoot": "2aa695e23b36439b56130a490ef38feaaec57d82859ff64f5ca61cc49993afa3",
+    "eventRoot": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "transactionRoot": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "validatorsHash": "84f3ed67cec1eb7bd6dc3ec01b0d0323021c1e86a3dc760b9b92041c28da31ac",
+    "aggregateCommit": {
+      "height": 0,
+      "aggregationBits": "",
+      "certificateSignature": ""
+    },
+    "generatorAddress": "lsk5y2q2tn35xrnpdc4oag8sa3ktdacmdcahvwqot",
+    "maxHeightPrevoted": 0,
+    "maxHeightGenerated": 110,
+    "signature": "6ecd5c6f14d18f84a2125cca4186a6cc493dcd66338f9b13c580cc06be7a33267fe259a074d6f6dc9276aff700a985472fca15cbcf25b2fde1b621fe0810b507",
+    "id": "334416bdc1f8a7ff842728ac4e591337a0e7b80f190934694cad7e2a9afdb416"
+  },
+  "transactions": [],
+  "assets": [
+    {
+      "module": "random",
+      "data": "0a10dde856a212ac5af46e26abb5f941cc8b"
+    }
+  ]
+}
+----

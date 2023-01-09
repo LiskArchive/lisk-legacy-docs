@@ -8,7 +8,7 @@
 :url_blog_tree: https://lisk.com/blog/research/introducing-lisk-tree
 :url_blog_merkle: https://lisk.com/blog/research/sparse-merkle-trees-and-new-state-model
 //Project URLs
-:url_intro_how_blockchain_works: intro/how-blockchain-works.adoc
+:url_intro_how_blockchain_works: intro/how-blockchain-works.adoc#state-machine
 Every blockchain is at its core a replicated {url_wiki_dfsm}[deterministic finite-state machine^].
 
 * A *state machine* is a concept in computer science, consisting of the following elements:
@@ -60,11 +60,12 @@ Then the Merkle root of this tree, the state root, is inserted into each block h
 
 Each module registered in the chain defines its own generic key-value map, where:
 
-* *key*: Module ID | Store prefix | Store key
-** **Module ID**: The ID of the module, identifying the key-value map. We will reserve all module IDs starting with a 0 in their binary representation to modules that are shipped with the SDK by default. The IDs of modules developed as part of each blockchain application will start with a 1. The module ID has a fixed length of 4 bytes.
-** **Store prefix**: Each module can define several buckets, to separate different data structures within the store. Each bucket is identified by the store prefix. The store prefix has a fixed length of 2 bytes.
+* *key*: Module Name + Store prefix + Substore prefix + Store key
+** **Module Name**: The unique identifier of the module, identifying the key-value map. The module name is a unique string that is used to construct store prefix and various module-related operations. 
+** **Store prefix**: The module store prefix is calculated automatically from the first 4 bytes of the hash of the module name, where the first bit of the store prefix is set to 0. On the other hand, the Interoperability module store prefix is set to a constant, with the first bit set to 1. This is done to separate the Interoperability module from other modules in the state tree and make the state tree unbalanced, to shorten inclusion proofs for the Interoperability module store (required for cross-chain update commands).
+** **Substore prefix** The substore prefix identifies a substore within the module store, i.e. a group of key-value pairs with the same scope and typically values in the same format. Substore prefixes are byte values, having a length of 2 bytes.
 ** **Store key**: The store key identifies a certain element within a store bucket.
-* *value*: serialized object (with JSON schema)
+* *Store value*: serialized object (with JSON schema)
 ** **JSON schema**: The schema used in `lisk-codec` to serialize the value
 
 image::understand-blockchain/smt.png[]
@@ -85,7 +86,7 @@ A list of all use cases for SMTs in the Lisk Protocol, and their corresponding S
 
 |Interoperability|`stateRoot`|The `stateRoot` is used during the processing of cross-chain update transactions to authenticate the outgoing messages from one chain.
 |State consistency|`stateRoot`|All nodes in the network will be able to check the consistency of the state just by checking the `stateRoot`.
-For instance, if a block contains a transaction that randomly credits either a user A or a user B with tokens, then any node obtaining a different result from the block forger would immediately reject the block, as the two state roots would differ.
+For instance, if a block contains a transaction that randomly credits either a user A or a user B with tokens, then any node obtaining a different result from the block generator would immediately reject the block, as the two state roots would differ.
 |Light clients|`stateRoot`|The `stateRoot` can be used to provide efficient proofs for the state of a certain account.
 |Decentralized Regenesis|`stateRoot`|A snapshot of the blockchain can be used to perform a hardfork to implement the new protocol.
 Reference to the last blockchain state will be stored as the Merkle root of the hashes of all blocks up to the snapshot.

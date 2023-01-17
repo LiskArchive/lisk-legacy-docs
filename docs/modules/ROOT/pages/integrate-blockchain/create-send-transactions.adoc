@@ -162,14 +162,16 @@ An example script how to create a transaction object via the API client is descr
 [source,js]
 ----
 const { apiClient, cryptography, transactions } = require('@liskhq/lisk-client');
+
 const RPC_ENDPOINT = 'ws://localhost:7887/rpc-ws';
 
 let clientCache;
 
 // Replace with the recipient address
-const recipientAddress = "lskt8ovj2shbxrtno8xqqt7cnmzzygdkbt6brnvmj";
+const recipientAddress = 'lskt8ovj2shbxrtno8xqqt7cnmzzygdkbt6brnvmj';
+
 // Replace with the sender passphrase
-const passphrase = "12 word mnemonic passphrase of an account with sufficient balance"
+const passphrase = '12 word mnemonic passphrase of an account with sufficient balance';
 
 const getClient = async () => {
     if (!clientCache) {
@@ -178,23 +180,59 @@ const getClient = async () => {
     return clientCache;
 };
 
-getClient().then(async (client) => {
-  const address = cryptography.getAddressFromBase32Address(recipientAddress);
-  const tx = await client.transaction.create({
-    moduleID: 2,
-    assetID: 0,
-    fee: BigInt(transactions.convertLSKToBeddows('0.01')),
-    asset: {
-        amount: BigInt(transactions.convertLSKToBeddows('8')),
-        recipientAddress: address,
-        data: 'Happy birthday!'
-    }
-  }, passphrase);
-
-
-  console.log("Transaction object: ", tx);
+getClient().then(async (apiClient) => {
+    const privateKey = await cryptography.ed.getPrivateKeyFromPhraseAndPath(passphrase, "m/25519'/134'/0'/0");
+    const tx = await apiClient.transaction.create({
+        module: 'token',
+        command: 'transfer',
+        fee: BigInt(transactions.convertLSKToBeddows('0.01')),
+        params: {
+            tokenID: Buffer.from('0400000000000000', 'hex'),
+            amount: BigInt(transactions.convertLSKToBeddows('8')),
+            recipientAddress,
+            data: 'Happy birthday!'
+        }
+    }, privateKey);
+    console.log('Transaction object: ', tx);
 });
 ----
+
+// [source,js]
+// ----
+// const { apiClient, cryptography, transactions } = require('@liskhq/lisk-client');
+// const RPC_ENDPOINT = 'ws://localhost:7887/rpc-ws';
+
+// let clientCache;
+
+// Replace with the recipient address....
+// const recipientAddress = "lskt8ovj2shbxrtno8xqqt7cnmzzygdkbt6brnvmj";
+// Replace with the sender passphrase....
+// const passphrase = "12 word mnemonic passphrase of an account with sufficient balance"
+
+// const getClient = async () => {
+//    if (!clientCache) {
+//        clientCache = await apiClient.createWSClient(RPC_ENDPOINT);
+//   }
+//    return clientCache;
+// };
+
+// getClient().then(async (client) => {
+//  const address = cryptography.getAddressFromBase32Address(recipientAddress);
+// const tx = await client.transaction.create({
+//    moduleID: 2,
+//    assetID: 0,
+//   fee: BigInt(transactions.convertLSKToBeddows('0.01')),
+//    asset: {
+//        amount: BigInt(transactions.convertLSKToBeddows('8')),
+//        recipientAddress: address,
+//        data: 'Happy birthday!'
+//    }
+//  }, passphrase);
+
+
+//  console.log("Transaction object: ", tx);
+// });
+// ----
 
 .Example output
 [%collapsible]
@@ -203,8 +241,8 @@ getClient().then(async (client) => {
 [source, js]
 ----
 {
-  moduleID: 2,
-  assetID: 0,
+  module: 'token',
+  asset: 'transfer',
   fee: 1000000n,
   asset: {
     amount: 800000000n,
@@ -421,8 +459,8 @@ const getClient = async () => {
 getClient().then(async (client) => {
   const address = cryptography.getAddressFromBase32Address(recipientAddress);
   const tx = await client.transaction.create({
-    module: xxx,
-    command: xxx,
+    module: 'token',
+    command: 'transfer',
     fee: BigInt(transactions.convertLSKToBeddows('0.01')),
     asset: {
         amount: BigInt(transactions.convertLSKToBeddows('8')),
@@ -475,8 +513,8 @@ const getClient = async () => {
 getClient().then(async (client) => {
     const address = cryptography.getAddressFromBase32Address(recipientAddress);
     const tx = await client.transaction.create({
-        module: xxx,
-        command: xxx,
+        module: 'token',
+        command: 'transfer',
         fee: BigInt(transactions.convertLSKToBeddows('0.01')),
         asset: {
             amount: BigInt(transactions.convertLSKToBeddows('8')),

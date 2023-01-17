@@ -437,17 +437,21 @@ $ lisk-core transaction:send 0802100018022080c2d72f2a20e03c09bdc8c023d94cf66a5d3
 
 A full example how to create and send a transaction via the API client is described in the code snippet below:
 
+.Creating a transaction
+
 [source,js]
 ----
 const { apiClient, cryptography, transactions } = require('@liskhq/lisk-client');
+
 const RPC_ENDPOINT = 'ws://localhost:7887/rpc-ws';
 
 let clientCache;
 
 // Replace with the recipient address
-const recipientAddress = "lskt8ovj2shbxrtno8xqqt7cnmzzygdkbt6brnvmj";
+const recipientAddress = 'lskt8ovj2shbxrtno8xqqt7cnmzzygdkbt6brnvmj';
+
 // Replace with the sender passphrase
-const passphrase = "12 word mnemonic passphrase of an account with sufficient balance"
+const passphrase = 'attract squeeze option inflict dynamic end evoke love proof among random blanket table pumpkin general impose access toast undo extend fun employ agree dash';
 
 const getClient = async () => {
     if (!clientCache) {
@@ -456,26 +460,94 @@ const getClient = async () => {
     return clientCache;
 };
 
-getClient().then(async (client) => {
-  const address = cryptography.getAddressFromBase32Address(recipientAddress);
-  const tx = await client.transaction.create({
-    module: 'token',
-    command: 'transfer',
-    fee: BigInt(transactions.convertLSKToBeddows('0.01')),
-    asset: {
-        amount: BigInt(transactions.convertLSKToBeddows('8')),
-        recipientAddress: address,
-        data: 'Happy birthday!'
-    }
-  }, passphrase);
-
-  console.log("Transaction object: ", tx);
-  console.log("Transaction as JSON compatible object: ", client.transaction.toJSON(tx));
-  console.log("Transaction binary: ", client.transaction.encode(tx).toString('hex'));
-  const res = await client.transaction.send(tx);
-  console.log(res);
-  process.exit(0);
+getClient().then(async (apiClient) => {
+    const privateKey = await cryptography.ed.getPrivateKeyFromPhraseAndPath(passphrase, "m/25519'/134'/0'/0");
+    const tx = await apiClient.transaction.create({
+        module: 'token',
+        command: 'transfer',
+        fee: BigInt(transactions.convertLSKToBeddows('0.01')),
+        params: {
+            tokenID: Buffer.from('0400000000000000', 'hex'),
+            amount: BigInt(transactions.convertLSKToBeddows('8')),
+            recipientAddress,
+            data: 'Happy birthday!'
+        }
+    }, privateKey);
+    console.log('Transaction object: ', tx);
 });
+----
+// [source,js]
+// ----
+// const { apiClient, cryptography, transactions } = require('@liskhq/lisk-client');
+// const RPC_ENDPOINT = 'ws://localhost:7887/rpc-ws';
+//
+// let clientCache;
+//
+// // Replace with the recipient address
+// const recipientAddress = "lskt8ovj2shbxrtno8xqqt7cnmzzygdkbt6brnvmj";
+// // Replace with the sender passphrase
+// const passphrase = "12 word mnemonic passphrase of an account with sufficient balance"
+//
+// const getClient = async () => {
+//     if (!clientCache) {
+//         clientCache = await apiClient.createWSClient(RPC_ENDPOINT);
+//     }
+//     return clientCache;
+// };
+//
+// getClient().then(async (client) => {
+//   const address = cryptography.getAddressFromBase32Address(recipientAddress);
+//   const tx = await client.transaction.create({
+//     module: 'token',
+//     command: 'transfer',
+//     fee: BigInt(transactions.convertLSKToBeddows('0.01')),
+//     asset: {
+//         amount: BigInt(transactions.convertLSKToBeddows('8')),
+//         recipientAddress: address,
+//         data: 'Happy birthday!'
+//     }
+//   }, passphrase);
+//
+//   console.log("Transaction object: ", tx);
+//   console.log("Transaction as JSON compatible object: ", client.transaction.toJSON(tx));
+//   console.log("Transaction binary: ", client.transaction.encode(tx).toString('hex'));
+//   const res = await client.transaction.send(tx);
+//   console.log(res);
+//   process.exit(0);
+// });
+// ----
+.Example Response
+[%collapsible]
+====
+
+.Signed transaction
+[source, js]
+----
+{
+  module: 'token',
+  command: 'transfer',
+  fee: '1000000',
+  params: {
+    tokenID: '0400000000000000',
+    amount: '800000000',
+    recipientAddress: 'lskt8ovj2shbxrtno8xqqt7cnmzzygdkbt6brnvmj',
+    data: 'Happy birthday!'
+  },
+  nonce: '0',
+  senderPublicKey: 'ec2680a7aece02c468fca50d8fe4c19b75affaed04862d39817bbb26919b16cd',
+  signatures: [
+    '3856ce36042214871d383a6de16d05f25c86d5f0ef407c6530911cb63063ecd31843db1c2382c893d323b9f8a1a41bbb50f3cfd88ec4b2b52cfd5fcec9f9ae0e'
+  ],
+  id: '137f7f67cd55fd246fbe11f733aecc218fbf72d9f3de9c01241bb9dcc4ddaa93'
+}
+----
+====
+
+Sending a transaction
+
+[source, js]
+----
+
 ----
 
 .Example Response
@@ -489,7 +561,7 @@ getClient().then(async (client) => {
 ----
 ====
 
-==== By invoking the action `app:postTransaction`
+==== By invoking the action `txpool_postTransaction`
 
 If the xref:{url_api_node_rpc}[] is enabled on a node, it is possible to send a transaction via WebSockets or IPC, depending on which protocol is enabled in the config.
 
@@ -523,7 +595,7 @@ getClient().then(async (client) => {
         }
     }, passphrase);
 
-	client.invoke("app:postTransaction", {
+	client.invoke("txpool_postTransaction", {
 		transaction: client.transaction.encode(tx).toString('hex')
 	}).then(res => {
 		console.log("Response: ", res);

@@ -1,4 +1,4 @@
-= Subscribing to endpoints
+= Retrieving on-chain events
 Muhammad Talha <muhammad.talha@lightcurve.io>
 :toc: preamble
 :toclevels: 5
@@ -7,60 +7,189 @@ Muhammad Talha <muhammad.talha@lightcurve.io>
 :idseparator: -
 :imagesdir: ../../assets/images
 :sdk_docs: lisk-sdk::
+
 //External URLs
 :url_npm_lisk_sdk: https://www.npmjs.com/package/lisk-sdk
+:url_lip_65: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0065.md
+:JSON_RPC_Specs: https://www.jsonrpc.org/specification
+
 // Project URLs
 :v_sdk: v6.0.0 (beta)
 :page-no-previous: true
 :docs_general: ROOT::
 :docs_sdk: v6@lisk-sdk::
 :url_advanced_rpc: api/lisk-node-rpc.adoc
-:url_endpoints_modules: build-blockchain/module/endpoints-methods.adoc#endpoints
-:url_endpoints_plugins: build-blockchain/plugin/plugin-endpoints.adoc#creating-an-endpoint
-:url_sync_store: build-blockchain/plugin/plugin-class.adoc#sync-and-store-new-event
-:url_cli: {docs_sdk}application-cli.adoc#endpoint
-:url_intro_modules: understand-blockchain/sdk/modules-commands.adoc
-:url_intro_plugins: understand-blockchain/sdk/plugins.adoc
 // :url_references_elements_apiclient: {sdk_docs}references/lisk-elements/api-client.adoc
 // :url_references_elements_client: {sdk_docs}references/lisk-elements/client.adoc
 :url_understand_events: {url_advanced_rpc}#events
-:url_understand_rpc_events: understand-blockchain/sdk/rpc.adoc#events
+:url_understand_rpc_events: understand-blockchain/sdk/rpc.adoc#rpc-events
 :url_understand_blockchain_events: understand-blockchain/sdk/modules-commands.adoc#blockchain-events
-:JSON_RPC_Specs: https://www.jsonrpc.org/specification
+:url_sync_store: build-blockchain/plugin/plugin-class.adoc#sync-and-store-new-event
+:url_create_blockchain_event: build-blockchain/module/blockchain-event.adoc
+:url_chain_get_event: api/lisk-node-rpc.adoc#chain_getevents
+:url_sidechain_glossary: glossary.adoc#sidechain-application
+:url_sapp: glossary.adoc#sapp
 :url_sidechain_client: glossary.adoc#sidechain-client
 // footnotes
+:fn_sidechain_glossary: footnote:sidechain[See the xref:{url_sidechain_glossary}[Sidechain application] for more details.]
+:fn_saap_glossary: footnote:saap[See xref:{url_sapp}[sApp] for more details.]
 :fn_sidechain_client_glossary: footnote:client[See xref:{url_sidechain_client}[Sidechain client] for more details.]
+// TODO: Update the page by uncommenting the hyperlinks once the updated pages are available. 
 
-// TODO: Update the page by uncommenting the hyperlinks once the updated pages are available.
+The Lisk blockchain generates various events that emit on-chain data.
+The emitted events can either be xref:{url_understand_rpc_events}[RPC Events] or xref:{url_understand_blockchain_events}[Blockchain Events].
+The aforementioned events are different in terms of when and how they are *generated* and also how these events can be *accessed*.
 
-By default, Lisk allows subscribing to xref:{url_understand_events}[a range of events] to retrieve on-chain data.
+Lisk makes *RPC events* accessible to everyone by offering xref:{url_understand_events}[a range of RPC-based events]. 
+These events can be subscribed to by anyone in the network.
+The subscribers can then get real-time information about the subscribed event, for example, the generation of a new block on the network, the addition of a new transaction in the transaction pool, etc.
+RPC events offered by Lisk can be subscribed to directly by any plugin, external service, or application.
 
-The emmited events can either be xref:{url_understand_rpc_events}[RPC Events] or xref:{url_understand_rpc_events}[Blockchain Events], however, regardless of their type both can be subscribed to in the same manner.
+The other type of event emitted by Lisk is *blockchain events*. 
+Such events cannot be directly subscribed to with the RPC protocol. 
+Blockchain events are usually emitted at a modular level, during block execution and they reside in the event log.
+The event log keeps the blockchain events emitted from the latest and configured number of blocks.
+Blockchain events can have information about a successful or failed transaction, among other information. 
+For more information on events and events root, see {url_lip_65}[LIP 65].
 
-It is pertinant to mention that events usually emmit 
-
-On this page, you'll learn about how the aforementioned events can be subscribed to within the Lisk ecosystem.
-
-// Currently in the Lisk protocol, once a transaction has been included in a block, its effect is completely determined by the data inside of it. However, there are several cases in which this may not be the case anymore:
-
-// The result of advanced transactions might depend on the state at the moment of execution, e.g. the conversion rate at which a swap in a DEX is executed, and cannot be read only from the transaction data.
-// In the Lisk interoperability solution the effect of a cross-chain message that is part of a cross-chain update included in a block, does not necessarily depend only on its data: In some cases, the cross-chain message can be returned or its execution can fail.
-// After the implementation of LIP 0055, transactions can fail, i.e. their execution can trigger an error but the transaction is still included in the block.
-// Furthermore, some state transitions, like assigning the block reward to the block generator, are not induced by transactions but by the block header itself. In all these scenarios, the extra information about the execution of state transitions can be included in events, on-chain data emitted during the processing of a block. Front-end products can query the blockchain for the existence of a certain event and use the information contained to enrich the user experience.
-
-// Events do not need to be explicitly included in the block (like, e.g., transactions), but can be rather authenticated collectively in the block header. This authentication mechanism can be used to ensure that a specific event has been emitted during the block processing, e.g. it can prove a cross-chain payment has been processed successfully.
-
-
-
-
-
+On this page, you'll learn about how the aforementioned events can be subscribed to or retrieved within the Lisk ecosystem.
 
 [[the-api-client]]
-== Subscribing via API client
+== Subscribing to an RPC event
 
+//The xref:{url_references_elements_apiclient}[] simplifies sending API requests to a xref:{url_sidechain_glossary}[Sidechain application (sApp)].
+The API client simplifies sending API requests to a Sidechain Application{fn_sidechain_glossary} (sApp).
+A sApp{fn_saap_glossary} developed with Lisk SDK communicates to a node via RPCs. RPC-based interfaces i.e. IPC, WS, allow applications to subscribe to *RPC events*. 
 
+An API client can be imported into any JS client application as shown in the following snippets.
 
+// TIP: To conveniently communicate with a sidechain application, use the `apiClient` included in the xref:{url_references_elements_client}[@liskhq/lisk-client] and the {url_npm_lisk_sdk}[lisk-sdk^] packages.
+TIP: To conveniently communicate with a sidechain application, use the `apiClient` included in the @liskhq/lisk-client and the lisk-sdk packages.
 
+[tabs]
 
+=====
+WS API client example::
++
+--
+[source,js]
+----
+const { apiClient } = require('@liskhq/lisk-client');
+let clientCache;
+const nodeAPIURL = 'ws://localhost:7887/rpc-ws';
 
+const getClient = async () => {
+    if (!clientCache) {
+        clientCache = await apiClient.createWSClient(nodeAPIURL);
+    }
+    return clientCache;
+};
 
+getClient().then((client) => {
+    client.subscribe('network_newBlock', ( data ) => {
+    console.log('new block: ',data);
+    });
+});
+----
+--
+IPC API client example::
++
+--
+[source,js]
+----
+const { apiClient } = require('@liskhq/lisk-client');
+let clientCache;
+
+const getClient = async () => {
+    if (!clientCache) {
+        clientCache = await apiClient.createIPCClient('~/.lisk/my-app');
+    }
+    return clientCache;
+};
+
+getClient().then((client) => {
+    client.subscribe('network_newBlock', ( data ) => {
+    console.log('new block: ',data);
+    });
+});
+----
+--
+=====
+
+== Retrieving a blockchain event
+
+With each block's execution, an event is generated and stored in the event log.
+For example, modules such as `Reward` emit the `rewardMinted` event after each block's execution.
+
+To fetch such an event, we can use the xref:{url_chain_get_event}[chain_getEvents] endpoint, as shown below:
+
+.fetchBlockchainEvent.js
+[source,js]
+----
+const { apiClient } = require('@liskhq/lisk-client');
+const { codec } = require('@liskhq/lisk-codec');
+let clientCache;
+const nodeAPIURL = 'ws://127.0.0.1:7887/rpc-ws'
+
+const getClient = async () => {
+    if (!clientCache) {
+        clientCache = await apiClient.createWSClient(nodeAPIURL);
+    }
+    return clientCache;
+};
+
+const rewardMintedDataSchema = {
+    $id: '/reward/events/rewardMintedData',
+    type: 'object',
+    required: ['amount', 'reduction'],
+    properties: {
+        amount: {
+            dataType: 'uint64',
+            fieldNumber: 1,
+        },
+        reduction: {
+            dataType: 'uint32',
+            fieldNumber: 2,
+        },
+    },
+};
+
+getClient().then((client) => {
+    // Returns the encoded event based on the 'height' passed
+    client.invoke("chain_getEvents", {
+        height: 60
+    }).then(res => {
+        console.log("Event: ", res);
+        // Decode the aforementioned event's data by passing relevant schema and the encoded 'data'
+        const parsedData = codec.decode(rewardMintedDataSchema, Buffer.from(res[0]['data'], 'hex'));
+        console.log(parsedData);
+    });
+});
+----
+Once an event is retrieved from the event log, its `data` property can be decoded by using the `codec.decode()` function by passing the encoded data and the relevant schema to it.
+
+[TIP]
+====
+A detailed example of xref:{url_create_blockchain_event}[emitting a blockchain event], xref:{url_sync_store}[fetching it, and decoding it] is available in the Hello sidechain application example.
+====
+
+.Response
+[%collapsible]
+====
+.Make sure your sidechain client is running before executing the script
+[source,bash]
+----
+$ node fetchBlockchainEvent.js
+Event:  [
+  {
+    data: '08001000',
+    index: 0,
+    module: 'reward',
+    name: 'rewardMinted',
+    topics: [ '03', 'aa84845c4bc4e75802921fc315a01576c75ade73' ],
+    height: 60
+  }
+]
+Decoded data: { amount: 0n, reduction: 0 }
+----
+====

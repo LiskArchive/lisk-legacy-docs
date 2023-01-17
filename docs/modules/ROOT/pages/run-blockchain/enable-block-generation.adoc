@@ -1,0 +1,193 @@
+= How to enable/disable block generation
+:toc:
+:idprefix:
+:idseparator: -
+// URLs
+:url_run_validator: run-blockchain/become-a-validator.adoc
+:url_run_validator_data: run-blockchain/become-a-validator.adoc#validator-data
+
+====
+On this page, you'll learn how to enable and disable block generation on anode for a validator.
+
+This includes how to:
+
+* [x] Enable block generation
+* [x] Safely re-enable block generation on another node
+* [x] Safely re-enable block generation when the xref:{url_run_validator_data}[validator data] is lost.
+* [x] Disable block generation
+====
+
+== How to enable block generation on a node
+
+[CAUTION]
+====
+. Ensure the node is **fully synchronized** with the network, before enabling block generation on this node.
+. If block generation is enabled for a validator for the **first time**, check out the dedicated guide xref:{url_run_validator}[].
+. Ensure to adhere to the following points to avoid being punished by the network:
+.. Never use outdated xref:{url_run_validator_data}[validator data].
+.. Never activate block generation for the same validator on two or more nodes at the same time.
+====
+
+IMPORTANT: The blockchain application needs to be running to successfully enable block generation on the node.
+
+=== Get the validator data
+
+WARNING: Don't trust xref:{url_run_validator_data}[validator data] from public APIs or explorers, make sure to always use your local data!
+
+
+=== Enable block generation
+
+[tabs]
+=====
+Lisk Core::
++
+--
+//TODO: Update Lisk Core
+.Enable block generation
+[source,bash]
+----
+lisk-core forging:enable 9bd82e637d306533b1e1ad66e19ca0047faa1a6a --use-status-values #<1>
+----
+--
+Sidechain node::
++
+--
+.Enable block generation
+[source,bash]
+----
+./bin/run generator enable lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3 --height=0 --max-height-generated=0 --max-height-prevoted=0
+----
+--
+=====
+
+
+
+== How to disable block generation on a node
+
+Sometimes it is necessary to disable forging, for example to update to the latest Lisk Core version, or if you are moving your node to a different server.
+
+[IMPORTANT]
+====
+If you would like to completely stop forging without being punished by the network, make sure to unvote yourself, see:
+
+* xref:{url_mgmt_accounts}[How to unvote via CLI]
+* Alternatively, use {url_lisk_wallet}[Lisk Desktop^] to unvote.
+====
+
+[tabs]
+=====
+Lisk Core::
++
+--
+.Disable forging
+[source,bash]
+----
+lisk-core forging:disable 9bd82e637d306533b1e1ad66e19ca0047faa1a6a #<1>
+----
+--
+Sidechain node::
++
+--
+.Disable forging
+[source,bash]
+----
+./bin/run forging:disable 9bd82e637d306533b1e1ad66e19ca0047faa1a6a #<1>
+----
+--
+=====
+
+<1> Replace `9bd82e637d306533b1e1ad66e19ca0047faa1a6a` with the hexadecimal representation of your delegate address, which was displayed while <<checking-the-forging-status>>.
+
+.Reference for the `forging:disable` command
+[%collapsible]
+====
+[source,bash]
+----
+Disable forging for the given delegate address.
+
+USAGE
+  $ lisk-core forging:disable ADDRESS
+
+ARGUMENTS
+  ADDRESS  Address of an account in a hexadecimal format.
+
+OPTIONS
+  -d, --data-path=data-path  Directory path to specify where node data is stored. Environment variable "LISK_DATA_PATH" can also be used.
+
+  -w, --password=password    Specifies a source for your secret password. Command will prompt you for input if this option is not set.
+                             	Examples:
+                             	- --password=pass:password123 (should only be used where security is not important)
+
+  --overwrite                Overwrites the forger info
+
+  --pretty                   Prints JSON in pretty format rather than condensed.
+
+EXAMPLES
+  forging:disable ab0041a7d3f7b2c290b5b834d46bdc7b7eb85815
+  forging:disable ab0041a7d3f7b2c290b5b834d46bdc7b7eb85815 --data-path ./data
+  forging:disable ab0041a7d3f7b2c290b5b834d46bdc7b7eb85815 --data-path ./data --password your_password
+----
+====
+
+== Safely enabling block generation on another node
+
+To safely enable block generation on another node, please ensure to follow the steps below:
+
+. Setup a new node on another server.
+. Start the node and let it synchronize with the network.
+If available, it is recommended to synchronize from snapshots to speed up the synchronization process.
+. Login to the server with the old node.
+. <<disable-block-generation>> on the old node.
+. Stop the old node.
+. Dump the data in the `forger_info` table of the db of your node.
++
+[source,bash]
+----
+lisk-core forger-info:export
+----
+. Login to the server with the new node.
+. Restore the `forger_info` table.
++
+[source,bash]
+----
+lisk-core forger-info:import ./forger.db.tar.gz
+----
+. <<add-delegate-data-to-config>>.
+. Ensure the node is fully synchronized with the network.
+The height of your node should be equal to the current network height.
++
+[source,bash]
+----
+lisk-core node:info
+----
+. Fetch the forging data needed to enable forging by <<checking-the-forging-status>>.
+. <<how-to-enable-block-generation-on-a-node>> .
+
+== Safely enabling forging without forger_info data
+
+Configurable Constants::
+
+* `BLOCK_TIME = 10`: The block time of the considered blockchain in seconds, i.e., 10 for Lisk Mainnet.
+* `MAX_FORK_DEPTH = 8640`: An upper boundary on the largest chain of off-chain blocks for which the validator generated a block, i.e., for every block at height `h` generated by the validator, the parent block at height `h - MAX_FORK_DEPTH` must be contained in the canonical chain that is eventually finalized.
+It is recommended to use `MAX_FORK_DEPTH` = 8640 = 24*60 *6 (number of blocks generated in 24 h).
+
+Required Delegate Input::
+
+* `lastHeightActive`: Unix timestamp of the last height when the validator node could have possibly been active and forging, (over estimate with a larger number when uncertain about the exact time).
+
+Instructions::
+. Start a new node with forging deactivated and synchronize with the Lisk blockchain until there is a block `finalizedBlock` that is
+finalized, and that the finalized block header timestamp is greater than the last active height: `finalizedBlock.header.timestamp > lastHeightActive`
+. Obtain a block `parentBlock` which is a parent block of `finalizedBlock` at height `finalizedBlock.header.height - MAX_FORK_DEPTH`.
+
+ parentBlock.header.height = finalizedBlock.header.height - MAX_FORK_DEPTH
+
+. Compute the number of missed blocks in the current chain between the `finalizedBlock` and the `parentBlock`, i.e., as shown below:
+
+ missedBlocks = ceil((finalizedBlock.header.timestamp - parentBlock.header.timestamp)/BLOCK_TIME) - (finalizedBlock.header.height - parentBlock.header.height)
+
+. Use the following forging configuration and activate forging:
+
+ height = finalizedBlock.header.height
+ maxHeightPreviouslyForged = finalizedBlock.header.height + missedBlocks
+ heightPrevoted = finalizedBlock.header.height

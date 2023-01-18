@@ -1,0 +1,162 @@
+= Configuration
+Mona Bärenfänger <mona@lightcurve.io>
+:description: How to configure Lisk Core using custom config files.
+// Settings
+:toc:
+:source-highlighter: coderay
+:v_sdk: master
+// External URLs
+// Project URLs
+:url_config: reference/cli.adoc
+:url_config_clo: reference/cli.adoc#clo
+:url_config_start: reference/cli.adoc#start
+:url_config_structure: reference/cli.adoc#structure
+:url_docker: management/docker.adoc
+:url_enable_pom: management/enabling-misbehavior-report.adoc
+:url_management_forging: management/forging.adoc
+:url_pm2_restart: management/pm2.adoc#refreshing-restarting-lisk-core
+// :url_source: management/source.adoc
+:url_sdk_plugins: lisk-sdk::plugins/index.adoc
+//TODO: Update the commented out hyperlinks once the pages are available.
+//NOTE: A complete command reference with all available options for starting Lisk Core can be found in the xref:{url_config_start}[Lisk Core CLI].
+NOTE: A complete command reference with all available options for starting Lisk Core can be found in Lisk Core CLI's reference page.
+
+== Using a network-specific default configuration
+
+To quickly connect your Lisk Core node to a specific network, specify the desired network with the `--network` or `-n` flag.
+
+This will use the default config file for the specific network when starting Lisk Core.
+The default configurations are located in the `config` folder of Lisk Core.
+
+[source,bash]
+----
+$ lisk-core start --network=NETWORK <1>
+----
+
+<1> `NETWORK` may be `mainnet`, `testnet`, or `devnet`.
+
+== Using a custom config file
+
+Lisk Core uses the default config for connecting to the mainnet by default.
+
+However, it is possible to use Lisk Core with a custom config, by specifying the path to the config file with the `--config` or `-c` flag.
+
+The custom config file needs to follow the JSON config structure of Lisk Core.
+A straightforward method is to copy one of the network-specific default configs of Lisk Core and adjust it to suit your requirements.
+
+./home/lisk/
+[source,bash]
+----
+cp .lisk/lisk-core/config/testnet/config.json custom-config.json
+vim custom-config.json
+----
+
+NOTE: If you intend to connect the node to the mainnet, change the `testnet` to the `mainnet` in the snippet above.
+
+[source,bash]
+----
+$ lisk-core start --config=/home/lisk/custom-config.json --overwrite-config
+----
+
+//NOTE: Remember to xref:{url_pm2_restart}[restart] the node for the new config changes to take effect.
+NOTE: Remember to restart the node for the new config changes to take effect.
+
+== Enabling plugins
+
+Plugins are not enabled by default.
+Use the dedicated flags to enable them on the application start:
+
+[source,bash]
+----
+$ lisk-core start --enable-report-misbehavior-plugin
+----
+
+Alternatively, enable the plugins directly in the config file, see <<using-a-custom-config-file>>.
+
+[TIP]
+====
+For more detailed descriptions of the available plugins, go to the xref:{url_sdk_plugins}[].
+
+// See also xref:{url_enable_pom}[] and xref:{url_config_start}[Lisk Core CLI: start]
+See also the **Report Misbehaviour** plugin and the `Lisk Core CLI: start` command.
+====
+////
+[IMPORTANT]
+====
+If you are using the Docker image, Lisk Core is configured in a slightly different manner.
+Please go to the xref:{url_docker}[Docker image commands] page to find out more regarding the docker-specific configuration of the Lisk Core.
+====
+
+[[network_specific_config]]
+== Network-specific config files
+
+The root folder for all configurations is `config/`.
+The *default* network is `devnet`.
+To connect to another network, specify the `network` when starting the Lisk Core as described in xref:{url_config}[Config reference].
+The *network specific configurations* can be found under `config/<network>/config.json`, whereby `<network>` can be any of these values listed below:
+
+* `devnet`
+* `betanet`
+
+[IMPORTANT]
+====
+Do not override any value in the files mentioned above, as the changes will be overwritten everytime the Lisk Core is upgraded.
+If a custom configuration is required, use the environment variables or alternatively create your own `.json` file and pass it as xref:{url_config_clo}[command line option].
+====
+
+
+== Custom config file
+
+Only the values required to be overwritten are necessary.
+For all other options the pre-defined values will be used as described in the <<order, Config Load Order>> section.
+
+[NOTE]
+====
+The *Application* and *Commander application* both provide a `config.json`, which can be customized as desired.
+
+For the *Source code*, the config file needs to be created separately and needs to be passed as described below:
+====
+
+[tabs]
+=====
+Application::
++
+--
+The Lisk Core application provides a custom `config.json` which is stored in the root folder of your Lisk Core installation by default.
+
+For example, if Lisk Core is installed under `~/lisk-beta`, then the config is stored directly in `~/lisk-beta/config.json`.
+
+The updated `config.json` will be used automatically when reloading the node with the following command:
+
+[source,bash]
+----
+bash lisk.sh reload
+----
+--
+Commander application::
++
+--
+Lisk Commander provides a custom `config.json` which is stored in the root folder of your Lisk Core instance by default.
+
+For example, if Lisk Core is installed under `~/.lisk/instances/lisk-betanet`, then the config is stored directly in `~/.lisk/instances/lisk-beta/config.json`.
+
+The `config.json` will be used automatically when reloading the node with the following command:
+
+[source,bash]
+----
+lisk core:restart lisk-betanet
+----
+--
+Source code::
++
+--
+[source,bash]
+----
+pm2 stop lisk <1>
+LISK_CONFIG_FILE=<CONFIG_PATH> pm2 start lisk <2>
+----
+<1> Stop Lisk Core in the case whereby it is running.
+<2> Replace `<CONFIG_PATH>` with the path to your custom config file.
+--
+=====
+////

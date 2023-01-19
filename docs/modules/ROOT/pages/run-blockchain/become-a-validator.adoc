@@ -8,11 +8,17 @@ Mona Bärenfänger <mona@lightcurve.io>
 :docs_sdk: v6@lisk-sdk::
 //Footnotes
 :fn_lip44: footnote:lip44[For more details about the validator registration process and the related cryptography, check out https://github.com/LiskHQ/lips/blob/main/proposals/lip-0044.md[LIP 0044 - Introduce Validators module^].]
+:fn_lip23: footnote:lip23[For more details about the Lisk staking protocol, please read https://github.com/LiskHQ/lips/blob/main/proposals/lip-0023.md[LIP 0023 - Introduce vote locking periods and new vote weight definition^].]
 // URLs
 :url_lisk_wallet: https://lisk.com/wallet
+:url_liskscan: https://liskscan.com/
+:url_liskobserver: https://lisk.observer/
 // Project URLs
 :url_sdk_elements: {docs_sdk}references/lisk-elements/index.adoc
 :url_guides_config: build-blockchain/configuration.adoc
+:url_run_staking: run-blockchain/staking.adoc
+:url_run_staking_selfstake: run-blockchain/staking.adoc#self-stake
+:url_run_staking_validatorweight: run-blockchain/staking.adoc#validator-weight
 :url_guides_setup_bootstrap: build-blockchain/create-sidechain-app.adoc#bootstrapping-a-new-blockchain-application-with-lisk-commander
 :url_references_cli_forgingconfig: {docs_sdk}application-cli.adoc#forgingconfig
 :url_references_cli_forgingenable: {docs_sdk}application-cli.adoc#forgingenable
@@ -47,14 +53,16 @@ It is possible to generate all relevant validator keys to enable block generatio
 
 To do so, use the command xref:{url_sdk_cli_keyscreate}[keys create].
 
-The command will ask for the validator *passphrase*, and it will also ask for a *password*, in order to symmetrically encrypt the passphrase for the config.
-
 [tabs]
 =====
 Lisk Core::
 +
 --
 //TODO: Update Lisk Core
+[source,bash]
+----
+lisk-core keys create --output config/keys.json
+----
 --
 Sidechain node::
 +
@@ -63,10 +71,10 @@ Sidechain node::
 ----
 ./bin/run keys create --output config/keys.json
 ----
+--
+=====
 
-. The passphrase of the validator account.
-. Define a new password to encrypt the passphrase of the delegate account.
-Store the password somewhere safe.
+Next, you will be prompted for the validator *passphrase*, and it will also ask for a *password*, in order to symmetrically encrypt the passphrase for the config.
 
 ----
 ? Please enter passphrase:  [hidden]
@@ -74,8 +82,6 @@ Store the password somewhere safe.
 ? Please enter password:  [hidden]
 ? Please re-enter password:  [hidden]
 ----
---
-=====
 
 CAUTION: The password is sensitive information.
 Store the password used here for the encryption somewhere safe.
@@ -175,7 +181,15 @@ The parameters 2, 3, 4 are all generated in step <<creating-the-validator-keys>>
 Lisk Core::
 +
 --
-//TODO: Update Lisk Core
+//TODO: Add link to Core CLI reference, once the page is available
+//Use the xref:{url_references_cli_txcreate}[transaction create] command to create the `registerValidator` transaction:
+
+//TODO: Verify Lisk Core command
+[source,bash]
+----
+lisk-core transaction create pos registerValidator 1100000000 \
+--params='{"name":"myuniqueame","generatorKey":"aaecd278a3fadc40a4a824d6f4aa24547d8fb9d075ec4d6967a7084f9a3f2541","blsKey":"815a9e7643cf2bace98d1337f1dca8e39949592cd3fcb79bf3ab5784981468b9987b3340527bc9ca263a2fd061812024","proofOfPossession":"add8669bb57f3dceec04dc0f875906cb52a677f1df911536c01f447c8830bf27cd43713af18d84de5a64ec504aeaf9a30521c09438bb5a4d5fd634946c65e0fc4ea3681fdb4f6949cb6c1bc1ac1ddec3df058a13466af5a13d50737938fd7d5f"}'
+----
 --
 Sidechain node::
 +
@@ -208,7 +222,7 @@ TIP: To return the transaction in JSON format as well, add the flags `--json` an
 
 === Send the transaction
 
-Copy the transaction in binary format and post it to the node.
+Copy the transaction in binary format that was created in the previous step and post it to the node.
 
 [tabs]
 =====
@@ -247,7 +261,11 @@ After the `registerValidator` transaction got included in a block, invoke the `p
 Lisk Core::
 +
 --
-//TODO: Update Lisk Core
+//TODO: Verify Lisk Core command
+[source,bash]
+----
+lisk-core endpoint:invoke pos_getValidator '{ "address":"lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3"}' --pretty
+----
 --
 Sidechain node::
 +
@@ -288,7 +306,11 @@ Import the validator keys which were generated in step <<creating-the-validator-
 Lisk Core::
 +
 --
-//TODO: Update Lisk Core
+//TODO: Verify Lisk Core command
+[source,bash]
+----
+./bin/run keys import --file-path config/keys.json
+----
 --
 Sidechain node::
 +
@@ -311,7 +333,11 @@ Execute the following command:
 Lisk Core::
 +
 --
-//TODO: Update Lisk Core
+//TODO: Verify Lisk Core command
+[source,bash]
+----
+lisk-core generator status --pretty
+----
 --
 Sidechain node::
 +
@@ -407,7 +433,15 @@ This will return a list of all hash onion seeds that are stored in the node.
 Lisk Core::
 +
 --
-//TODO: Update Lisk Core
+//TODO: Add link to Core CLI reference, once the page is available
+//Use the xref:{url_sdk_cli_generatorenable}[generator enable] command to enable block generation on your node.
+
+//TODO: Verify Lisk Core command
+.Enable block generation
+[source,bash]
+----
+lisk-core generator enable lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3 --height=0 --max-height-generated=0 --max-height-prevoted=0
+----
 --
 Sidechain node::
 +
@@ -426,4 +460,22 @@ Replace `lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3` with your validator address.
 
 == How to stake to increase the validator weight
 
+If you followed all of the above steps, your node is now well-prepared to start generating blocks in the network.
+The last remaining step is now to perform a xref:{url_run_staking_selfstake}[self-stake].
 
+Without performing a self-stake, a validator will never be considered by the validator selection algorithm.
+Being selected directly depends on the *validator weight*, and this is computed directly from the stakes and self-stakes of a delegate, as defined in the Lisk PoS protocol{fn_lip23}.
+Please check the xref:{url_run_staking_validatorweight}[validator weight] explanation for further information on the topic.
+
+For each blockchain network, there is a specific *minimum validator weight* that is required for a validator to be considered for the block generation in general.
+
+TIP: In the Lisk Mainnet, the minimum validator weight is 1000 LSK.
+
+The required validator weight to achieve an active position in the block generation is relative to the validator weights of the other validators who are participating in the network.
+A good way to check what concrete validator weight is required to reach an active position, just check the validator weights of the currently 101 active validators.
+For the Lisk Mainnet, this information can be obtained directly from the {url_lisk_wallet}[Lisk Desktop^], or from one of the various Lisk explorers like {url_liskscan}[^] or {url_liskobserver}[^].
+
+NOTE: Please note, that even if you have not enough validator weight to be in one of the active validator positions, there is still a chance each round to be selected as one of the two random validators.
+To be considered for the random selection, a validator just needs to have a weight equal or greater to the minimum validator weight of the network.
+
+To perform the required self-stake for your validator, please follow the steps described in the guide xref:{url_run_staking}[].

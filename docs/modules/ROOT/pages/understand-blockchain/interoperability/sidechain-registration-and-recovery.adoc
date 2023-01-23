@@ -1,60 +1,147 @@
 = Sidechain Registration & Recovery
-Chris Braithwaite <christopher.braithwaite@lightcurve.io> Mona Bärenfänger <mona@lightcurve.io>
-:description: How to register, terminate, and recover a sidechain.
+Chris Braithwaite <christopher.braithwaite@lightcurve.io>, Mona Bärenfänger <mona@lightcurve.io>
 :toc:
 :idprefix:
 :idseparator: -
-:docs_sdk: lisk-sdk::
 :imagesdir: ../../assets/images
-
+//Footnotes
+:fn_lip53: footnote:command[See {url_lip_53}[LIP 0053^] for more information about the verification of certificates.]
+//URLs
+:url_lip: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0045.md
+:url_lip_53: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0053.md#verification
+//Project URLs
 :url_cct: understand-blockchain/interoperability/communication.adoc
-:url_ccm: understand-blockchain/interoperability/communication.adoc#sending-cross-chain-transactions-to-generate-ccms
-:url_ccu: understand-blockchain/interoperability/communication.adoc#relaying-ccms-in-a-ccu
-:url_bft_weights: glossary.adoc#bft-weight
-:url_outbox_rootwitness: understand-blockchain/interoperability/communication.adoc
-:url_sdk_token_module: {docs_sdk}modules/token-module.adoc
+:url_ccm: {url_cct}#inducing-state-changes-across-chains-with-ccms
+:url_ccu: {url_cct}#relaying-ccms-in-a-ccu
 :url_custom_module: understand-blockchain/sdk/modules-commands
-:url_nft_module: tutorial/nft.adoc#the-nft-module
-:url_lip: https://github.com/LiskHQ/lips/blob/master/proposals/lip-0045.md
-
-== Overview - What is a Sidechain?
-
-A sidechain is a separate blockchain registered on the mainchain, where the inclusion of a transaction in one of the blockchains can have an effect on the other blockchain.
-These effects on the other blockchain can facilitate, for example, moving digital assets between the mainchain and the sidechain.
-Having a mainchain and some sidechains in parallel results in a higher overall transaction throughput.
-
-== Sidechains in Lisk
-
-Within the Lisk network, a transaction that can have an effect on another blockchain is called a xref:{url_cct}[cross-chain transaction].
-Such a transaction emits one or more xref:{url_ccm}[cross-chain messages] from the sending chain.
-The emitted cross-chain messages on the sending chain are then collected by a relayer and transferred to the receiving chain via a so-called xref:{url_ccu}[cross-chain updated transaction] (CCU).
-When the CCU is included in the receiving chain, the cross-chain messages induce some state changes.
-This is how a transaction from a sidechain can have an effect on the mainchain.
-
-The main purpose of deploying sidechains in the Lisk ecosystem is to increase scalability. Therefore, the more sidechains that exist in the ecosystem mean the more transactions can be processed per second.
-It is intended that each sidechain serves one application, which means, for instance, there could be a sidechain dedicated to a decentralized exchange application.
+:url_build_regsidechain: build-blockchain/register-sidechain.adoc
+:url_build_regsidechain_sccommand: {url_build_regsidechain}#register-sidechain-command
 
 == Life Cycle of a Sidechain
 
-The life cycle of a sidechain can be broken down into 3 parts, corresponding to the following 3 values of the account status property: ''registered'', ''active'', and ''terminated''.
+The life cycle of a sidechain consists of three states: <<registered>>, <<active>>, and <<terminated>>.
 
+.State diagram of a sidechain account on the Mainchain
+image::understand-blockchain/interop/sidechain-lifecycle.png[]
+
+=== Registered
 Firstly, a sidechain registers on the mainchain with a *sidechain registration command*.
-This command creates the sidechain account on the mainchain with the initial status set to `registered`.
+This command creates the <<chain-account,sidechain account>> on the mainchain with the initial `status` set to `registered`.
 Thereafter, the mainchain account is similarly created on a sidechain with a *mainchain registration command*.
 
-After a sidechain has been registered on the mainchain, it cannot receive any cross-chain message and does not need to follow the liveness rule, until the first sidechain CCU containing some cross-chain messages has been included in the mainchain.
-The liveness rule requires active sidechains to prove their liveness once every 30 days by including a CCU in the mainchain, or the sidechain account is terminated.
-At this point, the status of the sidechain account on the mainchain is updated to ''active'' and the liveness requirement rule is then enforced.
+=== Active
+After a sidechain has been registered on the mainchain, it cannot receive any cross-chain message and does not need to follow the liveness rule, until the first sidechain xref:{url_ccu}[CCU] containing some cross-chain messages has been included in the mainchain.
+The <<liveness-condition>> requires active sidechains to prove their liveness once every 30 days by including a CCU in the mainchain, or the sidechain account is terminated.
+At this point, the status of the sidechain account on the mainchain is updated to `active` and the liveness condition is then enforced.
 
-Therefore, if no CCU is received within 30 days, the *chain account is terminated* and no more CCMs can be sent to or received from the sidechain.
+=== Terminated
+Therefore, if no CCU is received within 30 days, the *chain account is terminated* and no more xref:{url_ccm}[CCMs] can be sent to or received from the sidechain.
 A sidechain account can also be terminated if the sidechain posts a CCU containing a CCM with an invalid schema or with an invalid sending `chainID`.
 A message targeting a terminated chain is bounced back to the mainchain instead of being forwarded.
 When this happens, a "terminated sidechain" message is emitted by the mainchain, targeting the original sending chain.
 When this message is processed, the chain is also terminated in the sending chain, blocking future messages.
 
-When a chain is terminated, a "terminated state" account is created, storing the last certified state root of the terminated chain.
-Then, users can recover tokens from the terminated sidechain with a <<State Recovery Command>> or proceed with the <<Message Recovery Initialization Command>> to kick off the recovery of pending cross-chain messages.
-The sidechain termination and recovery process is covered later on this page.
+When a chain is terminated, a `terminated` state account is created, storing the last certified state root of the terminated chain.
+
+NOTE: Users can recover their tokens and CCMs from a terminated sidechain.
+For more details on this topic, read the <<recovery-process-workflow>> covered later on this page.
+
+== Liveness condition
+Active sidechains are required to prove their liveness to the mainchain at least once every 30 days.
+This is done by including a CCU on the mainchain.
+If a sidechain does not post a CCU within 30 days, the sidechain account is terminated.
+This rule guarantees that users do not send funds to inactive sidechains and that users who have tokens in a sidechain which stops communicating with the ecosystem can recover their tokens.
+
+There are extra requirements for the first CCU posted on the mainchain:
+It must contain a non-empty certificate which follows the schema defined in LIP 0061;
+furthermore, if this first CCU also contains a non-empty inboxUpdate, the certificate is only valid if it allows the sidechain account to remain live for a reasonable amount of time.
+
+////
+== Chain Identifiers
+
+The chain identifiers for both transaction and block signatures were previously known as network identifiers.
+The chain ID can be considered as a development of the network ID concept.
+It is used to prevent transaction replay attacks in different networks, and now also helps to identify the chain in the ecosystem.
+
+Chain identifiers are 4-byte values that follow a specific format: the first byte is used to identify the network in which the chain is running (either the mainnet, official testnet, or any other test network); the other 3 bytes identify the chain within the network.
+The network-specific prefix is included explicitly to ensure that a chain does not use the same chain identifier in the test network as in the mainnet.
+Hence, by checking the chain ID, users can easily verify that they are signing a transaction for the correct blockchain.
+//By using 4 bytes instead of 32 bytes this provides the distinct advantage whereby users are able to easily verify that they are signing a transaction for the correct blockchain.
+//In addition, the chain identifier can be directly set by the blockchain creator, which is far more convenient than generating a random 32-byte value.
+
+The first byte is set to `CHAIN_ID_PREFIX_MAINNET` for chains running in the mainnet network and to `CHAIN_ID_PREFIX_TESTNET` for chains running in the testnet network.
+The other 3 bytes must be chosen uniquely for the respective blockchain, i.e., no other blockchain created with the Lisk SDK should use the same 3 bytes.
+
+The Chain ID is chosen by the sidechain, and has to be specified in the `receivingChainID` property of a CCM to this sidechain, and also in the `sendingChainId` property of a cross-chain update command from this same sidechain.
+Further details regarding the chain ID can be found in the {url_chain_id}[LIP 43].
+////
+
+== Interoperability data stores
+=== Chain account
+
+The properties of sidechain- and mainchain accounts and their default values.
+
+* `name`: This property corresponds to the name of the sidechain as a string of characters.
+It has to be unique in the ecosystem and contain only characters from the set `[a-z0-9!@$&_.]`.
+For the mainchain account on a sidechain, this property is initialized to the string `"lisk_mainchain"`.
+For a sidechain account on the mainchain, this property is set by the sender of the xref:{url_build_regsidechain_sccommand}[Sidechain Registration command].
+* `lastCertificate`: This property holds some information from the certificate posted contained in the last CCU from the partner chain.
+It is an object containing the following properties:
+** `height`: The height contained in the last certificate from the partner chain.
+It is used to validate a certificate{fn_lip53} (certificates must contain block headers with increasing heights).
+The default value of this property is `0`.
+** `timestamp`: The timestamp contained in the last certificate from the partner chain.
+On the mainchain, it is used to check that the sidechain chain fulfills the <<liveness-condition>>.
+The default value of this property is `0`.
+** `stateRoot`: The state root contained in the last certificate from the partner chain.
+It is used to validate the inclusion proof of the cross-chain messages contained in a CCU and to verify the validity of the token recovery command.
+The default value of this property is `sha256(b"")`.
+** `validatorsHash`: The validators hash contained in the last certificate from the partner chain.
+This value always corresponds to the hash calculated from the validators data substore entry for the partner chain.
+The default value of this property is the constant `sha256(b"")`.
+* `status`: This property stores the current status of the partner chain account.
+As explained in <<life-cycle-of-a-sidechain>>, there are 3 possible statuses: `active`(0), `registered`(1), and `terminated`(2).
+The default value of this property is `0`, corresponding to the `registered` status.
+
+=== Channel data
+
+In this section, we describe the properties of a channel and specify their default values.
+
+* `inbox`: The data structure containing information about the cross-chain messages received from the partner chain, organized in a regular Merkle tree (specified for the Lisk protocol in [LIP 0031](https://github.com/LiskHQ/lips/blob/main/proposals/lip-0031.md#regular-merkle-trees)).
+The underlying Merkle tree of the inbox is initialized as an empty tree, as defined in [LIP 0031](https://github.com/LiskHQ/lips/blob/main/proposals/lip-0031.md).
+It contains the following properties:
+** `root`:  The root of the Merkle tree.
+The default value of this property is `sha256(b"")`.
+** `appendPath`: An array of hashes necessary to append new data to the tree efficiently.
+The default value of this property is an empty array.
+** `size`: The current size of the tree, i.e. the number of cross-chain messages received from the partner chain and processed.
+The default value of this property is 0.
+* `outbox`: The data structure containing information about the cross-chain messages sent to the partner chain, organized in a regular Merkle tree.
+The underlying Merkle tree of the outbox is initialized as an empty tree, as defined in [LIP 0031](https://github.com/LiskHQ/lips/blob/main/proposals/lip-0031.md).
+It contains the following properties:
+** `root`:  The root of the Merkle tree.
+The default value of this property is `sha256(b"")`.
+** `appendPath`: An array of hashes necessary to append new data to the tree efficiently.
+The default value of this property is an empty array.
+** `size`: The current size of the tree, i.e. the number of cross-chain messages sent to the partner chain.
+The default value of this property is 0.
+* `partnerChainOutboxRoot`: The value of this property is set to the outbox root computed from the last CCU from the partner chain.
+It is used to validate the cross-chain messages contained in a future CCU when the CCU does not certify a new outbox root.
+The default value of this property is the constant `sha256(b"")`.
+* `messageFeeTokenID`: This property is the token ID of the token used to pay for the cross-chain message fees.
+The default value is `messageFeeTokenID = Token.getTokenIDLSK()`, corresponding to the LSK token.
+
+=== Validator data
+
+In this section, we describe the properties of the chain validators and specify their default values.
+
+* `activeValidators`: An array of objects corresponding to the set of validators eligible to sign the certificates from the partner chain.
+Each entry contains the following properties:
+** `blsKey`: The BLS public key used to sign certificates.
+** `bftWeight`: An integer indicating the weight of the corresponding BLS public key for signing a certificate.
+* `certificateThreshold`: An integer setting the required cumulative weight needed for the certificate signature to be valid.
+For the mainchain account on a sidechain, the `activeValidators` and `certificateThreshold` properties are initialized by the mainchain registration command.
+For a sidechain account on the mainchain, they are set by the sidechain registration command.
 
 == How to register a sidechain
 
@@ -66,8 +153,8 @@ Therefore, each new sidechain occupies a certain namespace in the ecosystem.
 
 === Sidechain Registration Process
 
-A transaction with a <<Sidechain Registration Command>> can be sent by any user account in the Lisk Mainchain that possesses adequate funds to pay the required fee.
-As described in the <<Life Cycle of a Sidechain>> section above, once the Sidechains registration process has been completed, it does not need to be activated on the mainchain, and will remain inactive until the first valid CCU containing some cross-chain messages has been sent and processed.
+A transaction with a xref:{url_build_regsidechain_sccommand}[Sidechain Registration command] can be sent by any user account in the Lisk Mainchain that possesses adequate funds to pay the required fee.
+As described in the <<life-cycle-of-a-sidechain>> section above, once the sidechains registration process has been completed, it does not need to be activated on the mainchain, and will remain inactive until the first valid CCU containing some cross-chain messages has been sent and processed.
 At this point, it will become active in the ecosystem.
 
 ==== Registration Message
@@ -84,9 +171,18 @@ As discussed, once a new sidechain is registered on the mainchain by using the r
 // TO DO Therefore, this implies that the corresponding key-value entries for the sidechain are added to the interoperability module store as shown below in Figure 1.
 // TO DO (LIP 0045 - properties of the interoperability module store to refer to this...)
 
+* The mainchain maintains for each registered sidechain:
+** a <<chain-account,sidechain account>>,
+** a <<channel-data,sidechain channel>>,
+** and the <<validator-data,validators>> for the sidechain.
+* Each sidechain maintains:
+** a <<chain-account,mainchain account>>,
+** a <<channel-data,mainchain channel>>,
+** and the <<validator-data,validators>> for the mainchain.
+
 The values of the account entries are initialized, and the `name`, `chainID`, and `initValidators`, properties are computed from the sidechain registration command.
 
-This <<Sidechain Registration Command>> assigns a unique bytes value as the chain ID that identifies the sidechain in the ecosystem.
+This xref:{url_build_regsidechain_sccommand}[Sidechain Registration command] assigns a unique bytes value as the chain ID that identifies the sidechain in the ecosystem.
 Furthermore, new data structures are inserted for the sidechain in the Lisk mainchain state.
 This results in a new entry being created in the five different substores of the interoperability module store listed below, and can also be seen in the diagram below in figure 2.
 
@@ -100,67 +196,6 @@ Each box represents a substore, where we indicate the `storeKey -> storeValue re
 For the Lisk mainchain, the 'own chain' substore exists by default in the state whereas there is one entry per registered sidechain for five other substores (outbox root, chain data, channel data, chain validators, registered names), created by a sidechain registration command.
 For sidechains, the 'own chain' and one entry for the mainchain account for four other substores (outbox root, chain data, channel data, and chain validators) are created by the <<Mainchain Registration Command>>.
 
-=== Sidechain Registration Command
-
-The sidechain registration command is used to register a sidechain on the Lisk mainchain.
-Once this command is processed, a new account for the sidechain is created in the mainchain state under the interoperability store.
-The account is initialized with an empty inbox and outbox, while the sidechain name, chain ID, and the initial validators set are given in the command parameters.
-
-In order to connect a new sidechain to the ecosystem, the sidechain registration command contains the following parameters:
-
-* *name*
-
-The `name` property sets the name of the sidechain as a string of characters. It has to be unique within the Lisk ecosystem, and should contain only characters from the set *a-z0-9!@$&_.*
-
-* *initValidators*
-
-The `initValidators` property defines the set of eligible BLS public keys with their respective BFT weights required to sign the first certificate from the sidechain.
-
-* *certificateThreshold*
-
-The `certificateThreshold` property is an integer setting the minimum signatures weight required for the first sidechain certificate to be valid.
-
-* *sidechainRegistrationFee*
-
-The `sidechainRegistrationFee` property accounts for the extra fee required to register the sidechain. It should be set to the value of the `REGISTRATION_FEE` constant.
-
-* *chainID*
-
-The `chainID` property is responsible for uniquely identifying a chain in the Lisk ecosystem.
-Just as addresses are used for the identification of user accounts, the chain ID has a similar purpose.
-When processing the sidechain registration command, the chain ID for a sidechain is given as a parameter in the registration transaction.
-// Specifically, the chainID of a new sidechain is assigned as an incremental integer similar to transaction nonces.
-// The format of chainIDs aims to provide an efficient and compact way to uniquely identify chains in the ecosystem.
-// Furthermore, an additional advantage, is that it is easy to remember the integer assigned as the chainID for a users favorite blockchain application.
-The `chainID` is a 4-byte (8-character) hexadecimal string, which is set in the chain's configuration.
-
-The `chainID` properties serve the following two purposes:
-
-*(1)* The `chainID` properties are prepended to the input of the signing function of every transaction, block, or message of the chain to avoid transaction replays between different chains in the ecosystem.
-
-*(2)* The `chainID` properties uniquely identify a chain in the Lisk ecosystem.
-// Specifically, the Interoperability module, it serves a similar purpose for chains as addresses do for user accounts, as it is used to identify the chain account in the Interoperability module store.
-Furthermore, the chain ID has to be stated in every cross-chain interaction.
-For example, it has to be specified in the `receivingChainID` property of a CCM and in the `sendingChainID` property of a cross-chain update command.
-
-In the sidechain registration command, the `chainID` property of the sidechain is given as a parameter.
-In the case whereby the given value is already taken by another sidechain, the sidechain registration fails.
-Therefore, the sidechain has to change the chain ID with a hardfork and resubmit the sidechain registration command with a new value.
-The chain identifiers are of a value of 4 bytes, and dependent on the network on which the chain is running, the first byte must always be set to the correct value.
-
-An example can be seen below in the following table depicting the chain-identifiers prefixes currently specified.
-The first byte is set to  `CHAIN_ID_PREFIX_MAINNET` for chains running in the mainnet network and to `CHAIN_ID_PREFIX_TESTNET` for chains running in the testnet network.
-The other 3 bytes must be uniquely chosen for the respective blockchain, hence, no other blockchain created with the Lisk SDK should use the same 3 bytes.
-
-[cols="2,1,2,4"]
-|===
-|Name|Type|Value|Description
-|`CHAIN_ID_PREFIX_MAINNET`|bytes|0x00|Chain-identifier prefix for mainnet blockchains.
-|`CHAIN_ID_PREFIX_TESTNET`|bytes|0x01|Chain-identifier prefix for testnet blockchains.
-|===
-
-The chain ID is known to the mainchain as soon as the sidechain is registered, therefore it can validate cross-chain update commands coming from the sidechain without any further context.
-
 === Mainchain Registration on a Sidechain
 
 Once the sidechain has been registered on the mainchain, a similar registration process should happen in the sidechain before the interoperable channel is opened between the two chains.
@@ -171,542 +206,18 @@ By protocol, the chain ID of the mainchain is a constant equal to `0x00000000` i
 This registration process always has to occur after the sidechain registration on the mainchain, since the sidechain has no prior knowledge of its name and must be certain that the correct chain ID has been registered.
 Similar to the sidechain registration case, the mainchain account status will not change to active until a valid cross-chain update command from the mainchain containing a valid registration xref:{url_ccm}[CCM] is processed.
 
-=== Mainchain Registration Command
+=== First Cross-chain Update from a Sidechain
+The first cross-chain update containing messages from a given chain has a special function:
+It will change the sending chain status from `CHAIN_STATUS_REGISTERED` to `CHAIN_STATUS_ACTIVE`.
+This change means that the receiving chain is now available to receive cross-chain messages and can interact with the sending chain.
+Additionally, once active, sidechains must follow the <<liveness-condition>> and regularly post cross-chain updates on the mainchain (at least once every 30 days).
+If the sidechain fails to follow the liveness condition, it is terminated on the mainchain.
 
-The mainchain registration command is used to register the Lisk mainchain on a sidechain.
-When this command is processed, a new account for the mainchain is created in the sidechain state under the interoperability store.
-
-Certain parameters are set by the mainchain registration command in the sidechain that is related to the interoperability module. It also initializes the corresponding mainchain data structures.
-This command requires the approval of the sidechain validators, as they have to agree on the content of this command and provide their signature accordingly.
-Based on the individual signatures, an aggregate signature must be added to the transaction.
-It is of key importance that the sidechain validators ensure that they are signing the registration command with the correct information, otherwise the sidechain interoperable functionality may be unusable.
-
-The command has the following parameters:
-
-* *ownChainID*
-
-The chain ID is set on the mainchain after processing the corresponding sidechain registration command.
-
-* *ownName*
-
-The `ownName` property sets the name of the sidechain in its own state according to the name given in the mainchain.
-
-* *mainchainValidators*
-
-This is similar to the `initValidators` property in the sidechain registration command, it defines the set of mainchain validators with their respective xref:{url_bft_weights}[BFT weight] expected to sign the first certificate from the mainchain.
-
-* *signature*
-
-The `signature` property is an aggregate signature of the sidechain validators.
-It ensures that the sidechain validators agree on registering the mainchain in the sidechain.
-
-* *aggregationBits*
-
-The `aggregationBits` property is a bit vector used to validate the aggregate signature.
-
-=== Sidechain Registration Transaction Commands
-
-Firstly, the transactions executing the sidechain registration command and the required parameters, verification, and execution are listed below:
-
-* `module = MODULE_NAME_INTEROPERABILITY`
-* `command = COMMAND_SIDECHAIN_REG`
-
-.Sidechain Registration Parameters
-[%collapsible]
-====
-[source,js]
-----
-sidechainRegParams = {
-    "type": "object",
-    "required": [
-        "name",
-        "chainID",
-        "initValidators",
-        "certificateThreshold",
-        "sidechainRegistrationFee"
-    ],
-    "properties": {
-        "name": {
-            "dataType": "string",
-            "minLength": MIN_CHAIN_NAME_LENGTH,
-            "maxLength": MAX_CHAIN_NAME_LENGTH,
-            "fieldNumber": 1
-        },
-        "chainID": {
-            "dataType": "bytes",
-            "length": CHAIN_ID_LENGTH,
-            "fieldNumber": 2
-        },
-        "initValidators": {
-            "type": "array",
-            "fieldNumber": 3,
-            "items": {
-                "type": "object",
-                "required": ["blsKey", "bftWeight"],
-                "properties": {
-                    "blsKey": {
-                        "dataType": "bytes",
-                        "length": BLS_PUBLIC_KEY_LENGTH,
-                        "fieldNumber": 1
-                    },
-                    "bftWeight": {
-                        "dataType": "uint64",
-                        "fieldNumber": 2
-                    }
-                }
-            }
-        },
-        "certificateThreshold": {
-            "dataType": "uint64",
-            "fieldNumber": 4
-        },
-        "sidechainRegistrationFee": {
-            "type": "uint64",
-            "fieldNumber": 5
-        }
-    }
-}
-----
-
-====
-.Sidechain Verification Parameters
-[%collapsible]
-====
-[source,js]
-----
-def verify(trs: Transaction) -> None:
-    # The name property has to contain only characters from the set [a-z0-9!@$&_.].
-    if not re.match(r"^[a-z0-9!@$&_.]+$", trs.params.name):
-        raise Exception("Invalid name property. It should contain only characters from the set [a-z0-9!@$&_.].")
-    # The name property has to be unique with respect to the set of already registered sidechain names.
-    if there exists an entry in the registered names substore with store key equal to trs.params.name.encode("utf-8"):
-        raise Exception("Name already registered.")
-
-    # Chain ID has to be unique with respect to the set of already registered sidechains.
-    if there exists an entry in the chain data substore with store key equal to trs.params.chainID:
-        raise Exception("Chain ID already registered.")
-
-    # Check that the first byte of the chainID, indication the network, matches.
-    if trs.params.chainID[0] != CHAIN_ID_MAINCHAIN[0]:
-        raise Exception("Chain ID does not match the mainchain network.")
-    # Chain ID cannot be the mainchain chain ID.
-    if trs.params.chainID == CHAIN_ID_MAINCHAIN:
-        raise Exception("Chain ID cannot be the mainchain chain ID.")
-    # initValidators must have at least 1 element and at most MAX_NUM_VALIDATORS elements.
-    if len(trs.params.initValidators) < 1 or len(trs.params.initValidators) > MAX_NUM_VALIDATORS:
-        raise Exception(f"Invalid initValidators array. It must have at least 1 element and at most {MAX_NUM_VALIDATORS} elements.")
-
-    validatorKeys = [validator.blsKey for validator in trs.params.initValidators]
-    # All validator keys must be distinct.
-    if len(validatorKeys) != len(set(validatorKeys)):
-        raise Exception("Duplicate BLS keys.")
-
-    # Validator keys must be in lexicographic order.
-    if not all(validatorKeys[i] < validatorKeys[i + 1] for i in range(len(validatorKeys) - 1)):
-        raise Exception("Validator keys are not in lexicographic order.")
-
-    totalWeight = 0
-    for validator in trs.params.initValidators:
-        # The bftWeight property of each element is a positive integer.
-        if validator.bftWeight == 0:
-            raise Exception("Invalid bftWeight property.")
-        totalWeight += validator.bftWeight
-    # Total BFT weight has to be less than or equal to MAX_UINT64.
-    if totalWeight > MAX_UINT64:
-        raise Exception("Total BFT weight exceeds maximum value.")
-
-    # The range of valid values of the certificateThreshold property is given by the total sum of the validators weights:
-    # Minimum value: floor(1/3 * total BFT weight) + 1.
-    # Maximum value = total BFT weight.
-    if trs.params.certificateThreshold < totalWeight//3 + 1:
-        raise Exception("Certificate threshold is too small.")
-    if trs.params.certificateThreshold > totalWeight:
-        raise Exception("Certificate threshold is too large.")
-
-    # sidechainRegistrationFee must equal REGISTRATION_FEE.
-    if trs.params.sidechainRegistrationFee != REGISTRATION_FEE:
-        raise Exception("Invalid extra command fee.")
-    # Sender must have enough balance to pay for extra command fee.
-    senderAddress = sha256(trs.senderPublicKey)[:ADDRESS_LENGTH]
-    if Token.getAvailableBalance(senderAddress, TOKEN_ID_LSK_MAINCHAIN) < REGISTRATION_FEE:
-        raise Exception("Sender does not have enough balance.")
-----
-
-====
-.Sidechain Execution Parameters
-[%collapsible]
-====
-[source,js]
-----
-def execute(trs: Transaction) -> None:
-    senderAddress = sha256(trs.senderPublicKey)[:ADDRESS_LENGTH]
-
-    # Create chain account.
-    sidechainAccount = {
-        "name": trs.params.name,
-        "lastCertificate": {
-            "height": 0,
-            "timestamp": 0,
-            "stateRoot": EMPTY_HASH,
-            "validatorsHash": computeValidatorsHash(trs.params.initValidators, trs.params.certificateThreshold)
-        },
-        "status": CHAIN_STATUS_REGISTERED
-    }
-
-    chainID = trs.params.chainID
-    create an entry in the chain data substore with
-        storeKey = chainID,
-        storeValue = encode(chainAccountSchema, sidechainAccount)
-
-    # Create channel.
-    sidechainChannel = {
-        "inbox": {
-            "appendPath": [],
-            "size": 0,
-            "root": EMPTY_HASH
-        },
-        "outbox": {
-            "appendPath": [],
-            "size": 0,
-            "root": EMPTY_HASH
-        },
-        "partnerChainOutboxRoot": EMPTY_HASH,
-        "messageFeeTokenID": TOKEN_ID_LSK_MAINCHAIN
-    }
-    create an entry in the channel data substore with
-        storeKey = chainID
-        storeValue = encode(channelSchema, sidechainChannel)
-
-    # Create validators account.
-    sidechainValidators = {
-        "activeValidators": trs.params.initValidators,
-        "certificateThreshold": trs.params.certificateThreshold
-    }
-    create an entry in the chain validators data substore with
-        storeKey = chainID
-        storeValue = encode(validatorsSchema, sidechainValidators)
-
-    # Create outbox root entry.
-    create an entry in the outbox root substore with
-        storeKey = chainID
-        storeValue = encode(outboxRootSchema, {"root": sidechainChannel.outbox.root})
-
-    # Create registered names entry.
-    create an entry in the registered names substore with
-        storeKey = trs.params.name
-        storeValue = encode(chainIDSchema, {"chainID": chainID})
-
-    # Burn the registration fee.
-    Token.burn(senderAddress, TOKEN_ID_LSK_MAINCHAIN, REGISTRATION_FEE)
-
-    # Emit chain account updated event.
-    emitEvent(
-        module = MODULE_NAME_INTEROPERABILITY,
-        name = EVENT_NAME_CHAIN_ACCOUNT_UPDATED,
-        data = sidechainAccount,
-        topics = [chainID]
-    )
-
-    # Send registration CCM to the sidechain.
-    registrationCCMParams = {
-        "name": trs.params.name,
-        "messageFeeTokenID": sidechainChannel.messageFeeTokenID
-    }
-
-    ccm = {
-        "nonce": ownChainAccount.nonce,
-        "module": MODULE_NAME_INTEROPERABILITY,
-        "crossChainCommand": CROSS_CHAIN_COMMAND_REGISTRATION,
-        "sendingChainID": ownChainAccount.chainID,
-        "receivingChainID": chainID,
-        "fee": 0,
-        "status": CCM_STATUS_CODE_OK,
-        "params": encode(registrationCCMParamsSchema, registrationCCMParams) # registrationCCMParamsSchema is defined in LIP0049
-    }
-
-    addToOutbox(chainID, ccm)
-    ownChainAccount.nonce += 1
-
-    # Emit CCM Sent Event.
-    ccmID = sha256(encode(crossChainMessageSchema, ccm))
-    emitEvent(
-        module = MODULE_NAME_INTEROPERABILITY,
-        name = EVENT_NAME_CCM_SENT_SUCCESS,
-        data = {"ccmID": ccmID},
-        topics = [ccm.sendingChainID, ccm.receivingChainID, ccmID]
-    )
-----
-====
-
-=== Mainchain Registration Transaction Commands
-
-Secondly, the transactions executing the mainchain registration command and the required parameters, verification, and execution are listed below:
-
-* `module = MODULE_NAME_INTEROPERABILITY`
-* `command = COMMAND_MAINCHAIN_REG`
-
-.Mainchain Registration Parameters
-[%collapsible]
-====
-[source,js]
-----
-mainchainRegParams = {
-    "type": "object",
-    "required": [
-        "ownChainID",
-        "ownName",
-        "mainchainValidators",
-        "signature",
-        "aggregationBits"
-    ],
-    "properties": {
-        "ownChainID": {
-            "dataType": "uint32",
-            "fieldNumber": 1
-        },
-        "ownName": {
-            "dataType": "string",
-            "minLength": MIN_CHAIN_NAME_LENGTH,
-            "maxLength": MAX_CHAIN_NAME_LENGTH,
-            "fieldNumber": 2
-        },
-        "mainchainValidators": {
-            "type": "array",
-            "fieldNumber": 3,
-            "items": {
-                "type": "object",
-                "required": ["blsKey", "bftWeight"],
-                "properties": {
-                    "blsKey": {
-                        "dataType": "bytes",
-                        "length": BLS_PUBLIC_KEY_LENGTH,
-                        "fieldNumber": 1
-                    },
-                    "bftWeight": {
-                        "dataType": "uint64",
-                        "fieldNumber": 2
-                    }
-                }
-            }
-        },
-        "signature": {
-            "dataType": "bytes",
-            "length": BLS_SIGNATURE_LENGTH,
-            "fieldNumber": 4
-        },
-        "aggregationBits": {
-            "dataType": "bytes",
-            "fieldNumber": 5
-        }
-    }
-}
-----
-
-====
-.Mainchain Verification Parameters
-[%collapsible]
-====
-[source,js]
-----
-def verify(trs: Transaction) -> None:
-# The ownChainID property has to match with the chain identifier.
-chainID = chain identifier of the current chain
-if trs.params.ownChainID != chainID:
-raise Exception("Invalid ownChainID property.")
-
-    # The ownName property has to contain only characters from the set [a-z0-9!@$&_.].
-    if not re.match(r"^[a-z0-9!@$&_.]+$", trs.params.ownName):
-        raise Exception("Invalid ownName property. It should contain only characters from the set [a-z0-9!@$&_.].")
-
-    # mainchainValidators must have exactly MAINCHAIN_NUMBER_ACTIVE_VALIDATORS elements.
-    if len(trs.params.mainchainValidators) != MAINCHAIN_NUMBER_ACTIVE_VALIDATORS:
-        raise Exception(f"Invalid mainchainValidators property. It must have exactly {MAINCHAIN_NUMBER_ACTIVE_VALIDATORS} elements.")
-
-    validatorKeys = [validator.blsKey for validator in trs.params.mainchainValidators]
-    # All validator keys must be distinct.
-    if len(validatorKeys) != len(set(validatorKeys)):
-        raise Exception("Duplicate BLS keys.")
-
-    # Validator keys must be in lexicographic order.
-    if not all(validatorKeys[i] < validatorKeys[i + 1] for i in range(len(validatorKeys) - 1)):
-        raise Exception("Validator keys are not in lexicographic order.")
-
-    for validator in trs.params.initValidators:
-        # The bftWeight property of each element is equal to 1.
-        if validator.bftWeight != 1:
-            raise Exception("Invalid bftWeight property.")
-----
-
-====
-.Mainchain Execution Parameters
-[%collapsible]
-====
-[source,js]
-----
-
-def execute(trs: Transaction) -> None:
-# Check signature property.
-height = height of the block in which trs was included
-sidechainValidators = validatorsModule.getCurrentValidators()
-certificateThreshold = validatorsModule.getCertificateThreshold()
-# Sort sidechainValidators by BLS key.
-sidechainValidators.sort(key=lambda v: validatorsModule.getValidatorAccount(v.address).blsKey)
-blsKeys = [validatorsModule.getValidatorAccount(v.address).blsKey for v in sidechainValidators]
-bftWeights = [v.bftWeight for v in sidechainValidators]
-
-    registrationSignatureMessageSchema = {
-        "type": "object",
-        "required": ["ownChainID", "ownName", "mainchainValidators"],
-        "properties": {
-            "ownChainID": {
-                "dataType": "bytes",
-                "length": CHAIN_ID_LENGTH,
-                "fieldNumber": 1
-            },
-            "ownName": {
-                "dataType": "string",
-                "minLength": MIN_CHAIN_NAME_LENGTH,
-                "maxLength": MAX_CHAIN_NAME_LENGTH,
-                "fieldNumber": 2
-            },
-            "mainchainValidators": {
-                "type": "array",
-                "fieldNumber": 3,
-                "items": {
-                    "type": "object",
-                    "required": ["blsKey", "bftWeight"],
-                    "properties": {
-                        "blsKey": {
-                            "dataType": "bytes",
-                            "length": BLS_PUBLIC_KEY_LENGTH,
-                            "fieldNumber": 1
-                        },
-                        "bftWeight": {
-                            "dataType": "uint64",
-                            "fieldNumber": 2
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    message = encode(registrationSignatureMessageSchema,
-        {
-        "ownChainID": trs.params.ownChainID,
-        "ownName": trs.params.ownName,
-        "mainchainValidators": trs.params.mainchainValidators
-        }
-    )
-
-    # verifyWeightedAggSig is specified in LIP 0062.
-    if verifyWeightedAggSig(blsKeys, MESSAGE_TAG_CHAIN_REG, trs.params.ownChainID, trs.params.aggregationBits, trs.params.signature, bftWeights, certificateThreshold, message) == False:
-        emitPersistentEvent(
-            module = MODULE_NAME_INTEROPERABILITY,
-            name = EVENT_NAME_INVALID_REGISTRATION_SIGNATURE,
-            data = {},
-            topics = [trs.params.ownChainID]
-        raise Exception("Invalid signature property.")
-
-    # Create chain account.
-    mainchainAccount = {
-        "name": CHAIN_NAME_MAINCHAIN,
-        "lastCertificate": {
-            "height": 0,
-            "timestamp": 0,
-            "stateRoot": EMPTY_HASH,
-            "validatorsHash": computeValidatorsHash(trs.params.mainchainValidators, THRESHOLD_MAINCHAIN)
-        },
-        "status": CHAIN_STATUS_REGISTERED
-    }
-    create an entry in the chain data substore with
-        storeKey = CHAIN_ID_MAINCHAIN
-        storeValue = encode(chainAccountSchema, mainchainAccount)
-
-    # Create channel.
-    mainchainChannel = {
-        "inbox": {
-            "appendPath": [],
-            "size": 0,
-            "root": EMPTY_HASH
-        },
-        "outbox": {
-            "appendPath": [],
-            "size": 0,
-            "root": EMPTY_HASH
-        },
-        "partnerChainOutboxRoot": EMPTY_HASH,
-        "messageFeeTokenID": TOKEN_ID_LSK_MAINCHAIN
-    }
-    create an entry in the channel data substore with
-        storeKey = CHAIN_ID_MAINCHAIN
-        storeValue = encode(channelSchema, mainchainChannel)
-
-    # Create validators account.
-    mainchainValidators = {
-        "activeValidators": trs.params.mainchainValidators,
-        "certificateThreshold": THRESHOLD_MAINCHAIN
-    }
-    create an entry in the chain validators data substore with
-        storeKey = CHAIN_ID_MAINCHAIN
-        storeValue = encode(validatorsSchema, mainchainValidators)
-
-    # Create outbox root entry.
-    create an entry in the outbox root substore with
-        storeKey = CHAIN_ID_MAINCHAIN
-        storeValue = encode(outboxRootSchema, {"root": mainchainChannel.outbox.root})
-
-    # Create own chain account.
-    ownChainAccount = {
-        "name": trs.params.ownName,
-        "chainID": trs.params.ownChainID,
-        "nonce": 0
-    }
-    create an entry in the own chain data substore with
-        storeKey = EMPTY_BYTES
-        storeValue = encode(ownChainAccountSchema, ownChainAccount)
-
-    # Emit chain account updated event.
-    emitEvent(
-        module = MODULE_NAME_INTEROPERABILITY,
-        name = EVENT_NAME_CHAIN_ACCOUNT_UPDATED,
-        data = mainchainAccount,
-        topics = [CHAIN_ID_MAINCHAIN]
-    )
-
-    # Send registration CCM to the mainchain.
-    # Notice that we do not use the send function because the channel
-    # has not been activated yet.
-    registrationCCMParams = {
-        "name": CHAIN_NAME_MAINCHAIN,
-        "messageFeeTokenID": mainchainChannel.messageFeeTokenID
-    }
-
-    ccm = {
-        "nonce": ownChainAccount.nonce,
-        "module": MODULE_NAME_INTEROPERABILITY,
-        "crossChainCommand": CROSS_CHAIN_COMMAND_REGISTRATION,
-        "sendingChainID": ownChainAccount.chainID,
-        "receivingChainID": CHAIN_ID_MAINCHAIN,
-        "fee": 0,
-        "status": CCM_STATUS_CODE_OK,
-        "params": encode(registrationCCMParamsSchema, registrationCCMParams) # registrationCCMParamsSchema is defined in LIP0049
-    }
-
-    # We cannot use the send function because the channel is not active yet.
-    addToOutbox(CHAIN_ID_MAINCHAIN, ccm)
-    ownChainAccount.nonce += 1
-
-    # Emit CCM Sent Event.
-    ccmID = sha256(encode(crossChainMessageSchema, ccm))
-    emitEvent(
-        module = MODULE_NAME_INTEROPERABILITY,
-        name = EVENT_NAME_CCM_SENT_SUCCESS,
-        data = {"ccmID": ccmID},
-        topics = [ccm.sendingChainID, ccm.receivingChainID, ccmID]
-    )
-----
-====
+When a sidechain is started and registered, the sidechain developers might decide to not activate the sidechain straight away (maybe to do further testing).
+It could happen then (intentionally or not) that an old block header (almost 30 days old) is submitted to the mainchain to activate the sidechain.
+This could result in the sidechain being terminated for liveness failure very soon after the activation (maybe only a few minutes later).
+To prevent this issue (and without any significant drawbacks) *the first cross-chain update to be submitted on mainchain must contain a certificate less than 15 days old.*
+The sidechain has therefore at least 15 days to submit the next cross-chain update to the mainchain and start the regular posting of cross-chain updates.
 
 == Sidechain termination
 
@@ -760,7 +271,6 @@ This value is used for the creation of the terminated state account (on the side
 This message allows informing sidechains about other terminated sidechains efficiently.
 Subsequently, this message will automatically trigger the creation of the terminated sidechain account as soon as the first message is unable to be delivered.
 This also prevents further messages to be sent to sidechains that have already been terminated.
-
 
 == How to recover information from a sidechain
 // Explain steps to recover information from sidechain

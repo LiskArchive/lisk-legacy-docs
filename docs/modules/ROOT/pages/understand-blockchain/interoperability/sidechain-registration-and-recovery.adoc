@@ -1,11 +1,10 @@
 = Sidechain Registration & Recovery
 Chris Braithwaite <christopher.braithwaite@lightcurve.io>, Mona Bärenfänger <mona@lightcurve.io>
 :toc:
+:toclevels: 1
 :idprefix:
 :idseparator: -
 :imagesdir: ../../assets/images
-//Footnotes
-:fn_lip53: footnote:command[See {url_lip_53}[LIP 0053^] for more information about the verification of certificates.]
 //URLs
 :url_lip: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0045.md
 :url_lip_53: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0053.md#verification
@@ -16,6 +15,8 @@ Chris Braithwaite <christopher.braithwaite@lightcurve.io>, Mona Bärenfänger <m
 :url_custom_module: understand-blockchain/sdk/modules-commands
 :url_build_regsidechain: build-blockchain/register-sidechain.adoc
 :url_build_regsidechain_sccommand: {url_build_regsidechain}#register-sidechain-command
+//Footnotes
+:fn_lip53: footnote:command[See {url_lip_53}[LIP 0053^] for more information about the verification of certificates.]
 
 == Life Cycle of a Sidechain
 
@@ -26,7 +27,7 @@ image::understand-blockchain/interop/sidechain-lifecycle.png[]
 
 === Registered
 Firstly, a sidechain registers on the mainchain with a *sidechain registration command*.
-This command creates the <<chain-account,sidechain account>> on the mainchain with the initial `status` set to `registered`.
+This command creates the <<chain-data-substore,sidechain account>> on the mainchain with the initial `status` set to `registered`.
 Thereafter, the mainchain account is similarly created on a sidechain with a *mainchain registration command*.
 
 === Active
@@ -56,7 +57,6 @@ There are extra requirements for the first CCU posted on the mainchain:
 It must contain a non-empty certificate which follows the schema defined in LIP 0061;
 furthermore, if this first CCU also contains a non-empty inboxUpdate, the certificate is only valid if it allows the sidechain account to remain live for a reasonable amount of time.
 
-////
 == Chain Identifiers
 
 The chain identifiers for both transaction and block signatures were previously known as network identifiers.
@@ -74,12 +74,35 @@ The other 3 bytes must be chosen uniquely for the respective blockchain, i.e., n
 
 The Chain ID is chosen by the sidechain, and has to be specified in the `receivingChainID` property of a CCM to this sidechain, and also in the `sendingChainId` property of a cross-chain update command from this same sidechain.
 Further details regarding the chain ID can be found in the {url_chain_id}[LIP 43].
-////
 
-== Interoperability data stores
-=== Chain account
+== Interoperability data substores
 
-The properties of sidechain- and mainchain accounts and their default values.
+The interoperability module maintains the following data stores:
+
+.The Interoperability module store
+image::understand-blockchain/interop/interop-store.png[,500]
+
+Each box represents a substore, where we indicate the `storeKey` --> `storeValue` relation.
+
+//For sidechains, the 'own chain' and one entry for the mainchain account for four other substores (outbox root, chain data, channel data, and chain validators) are created by the <<Mainchain Registration Command>>.
+
+=== Outbox root substore
+The outbox root substore holds the root of the Merkle tree containing the messages targeting the respective partner chain.
+
+[%collapsible]
+====
+Each entry in the outbox root substore includes the following property:
+
+* `root`: The root of the underlying Merkle tree of the partner chain outbox.
+This value is initialized to `sha256(b"")`.
+====
+
+=== Chain data substore
+The chain data substore holds the sidechain- or mainchain accounts of other partner chains.
+
+[%collapsible]
+====
+Each entry in the chain account substore includes the following properties:
 
 * `name`: This property corresponds to the name of the sidechain as a string of characters.
 It has to be unique in the ecosystem and contain only characters from the set `[a-z0-9!@$&_.]`.
@@ -102,10 +125,14 @@ The default value of this property is the constant `sha256(b"")`.
 * `status`: This property stores the current status of the partner chain account.
 As explained in <<life-cycle-of-a-sidechain>>, there are 3 possible statuses: `active`(0), `registered`(1), and `terminated`(2).
 The default value of this property is `0`, corresponding to the `registered` status.
+====
 
-=== Channel data
+=== Channel substore
+The channel data substore holds information about the inbox and outbox with other partner chains.
 
-In this section, we describe the properties of a channel and specify their default values.
+[%collapsible]
+====
+Each entry in the channel substore includes the following properties:
 
 * `inbox`: The data structure containing information about the cross-chain messages received from the partner chain, organized in a regular Merkle tree (specified for the Lisk protocol in [LIP 0031](https://github.com/LiskHQ/lips/blob/main/proposals/lip-0031.md#regular-merkle-trees)).
 The underlying Merkle tree of the inbox is initialized as an empty tree, as defined in [LIP 0031](https://github.com/LiskHQ/lips/blob/main/proposals/lip-0031.md).
@@ -130,10 +157,17 @@ It is used to validate the cross-chain messages contained in a future CCU when t
 The default value of this property is the constant `sha256(b"")`.
 * `messageFeeTokenID`: This property is the token ID of the token used to pay for the cross-chain message fees.
 The default value is `messageFeeTokenID = Token.getTokenIDLSK()`, corresponding to the LSK token.
+====
 
-=== Validator data
+On a sidechain, the channel substore is initialized as part of the <<first-cross-chain-update-from-a-sidechain>>.
 
-In this section, we describe the properties of the chain validators and specify their default values.
+=== Validator substore
+
+The chain validators substore holds information about the validators of other partner chains.
+
+[%collapsible]
+====
+Each entry in the validator substore includes the following properties:
 
 * `activeValidators`: An array of objects corresponding to the set of validators eligible to sign the certificates from the partner chain.
 Each entry contains the following properties:
@@ -142,61 +176,66 @@ Each entry contains the following properties:
 * `certificateThreshold`: An integer setting the required cumulative weight needed for the certificate signature to be valid.
 For the mainchain account on a sidechain, the `activeValidators` and `certificateThreshold` properties are initialized by the mainchain registration command.
 For a sidechain account on the mainchain, they are set by the sidechain registration command.
+====
 
-== How to register a sidechain
+=== Own chain substore
 
-As mentioned in the previous paragraph to enable a sidechain to operate, it first has to be registered in the Lisk mainchain via a sidechain registration command.
-This requires that the sidechain registration command is processed, which will then result in the sidechain account status being set to registered.
-However, at this point, the channel is not active, so no cross-chain messages (CCMs) can be sent yet.
-Hence, a sidechain account that is already associated with a name and a unique chain ID, exists in the mainchain state.
-Therefore, each new sidechain occupies a certain namespace in the ecosystem.
+The own chain data substore stores the name and ID of the chain.
 
-=== Sidechain Registration Process
+For the Lisk mainchain, the "own chain" substore exists by default in the state, whereas there is one entry per registered sidechain.
+
+[%collapsible]
+====
+Each entry in the validator substore includes the following properties:
+
+* `name`: The name of the sidechain registered on the mainchain with the sidechain registration command.
+* `chainID`: The <<chain-identifiers,chain ID>> assigned to the sidechain on the mainchain after processing the sidechain registration command.
+* `nonce`: The chain nonce, an incremental integer indicating the total number of CCMs sent from the chain.
+====
+
+On the Lisk *mainchain*, the own chain account is present by default, and set to an object with properties:
+
+[source,js]
+----
+{
+    name: "lisk_mainchain",
+    chainID: 00000000,
+    nonce: 0
+}
+----
+
+On a *sidechain*, the own chain account is initialized as part of the <<mainchain-registration-on-a-sidechain>>.
+
+== Sidechain Registration Process
 
 A transaction with a xref:{url_build_regsidechain_sccommand}[Sidechain Registration command] can be sent by any user account in the Lisk Mainchain that possesses adequate funds to pay the required fee.
 As described in the <<life-cycle-of-a-sidechain>> section above, once the sidechains registration process has been completed, it does not need to be activated on the mainchain, and will remain inactive until the first valid CCU containing some cross-chain messages has been sent and processed.
 At this point, it will become active in the ecosystem.
 
-==== Registration Message
-
-The role of the registration message is to allow for a safe activation of the channel between the sending and receiving chains.
-It guarantees that when the CCU activating the channel is executed, a registration transaction has been included on the partner chain.
-When a sidechain is registered on the mainchain, as previously mentioned, an ecosystem-wide chain ID and name are assigned to this chain.
-The chain name, network ID, and the token used for the message fees are included in a registration message that is appended to the sidechain outbox.
-When the first cross-chain update containing messages is sent to the sidechain, the equality between the properties in the registration message and the ones in the interoperability store is verified.
-
-==== Sidechain Structure on the Mainchain
-
-As discussed, once a new sidechain is registered on the mainchain by using the registration command, this results in a sidechain account being created in the Lisk mainchain state.
-// TO DO Therefore, this implies that the corresponding key-value entries for the sidechain are added to the interoperability module store as shown below in Figure 1.
-// TO DO (LIP 0045 - properties of the interoperability module store to refer to this...)
-
 * The mainchain maintains for each registered sidechain:
-** a <<chain-account,sidechain account>>,
-** a <<channel-data,sidechain channel>>,
-** and the <<validator-data,validators>> for the sidechain.
+** a <<chain-data-substore,sidechain account>>,
+** a <<channel-substore,sidechain channel>>,
+** and the <<validator-substore,validators>> for the sidechain.
 * Each sidechain maintains:
-** a <<chain-account,mainchain account>>,
-** a <<channel-data,mainchain channel>>,
-** and the <<validator-data,validators>> for the mainchain.
+** a <<chain-data-substore,mainchain account>>,
+** a <<channel-substore,mainchain channel>>,
+** and the <<validator-substore,validators>> for the mainchain.
 
-The values of the account entries are initialized, and the `name`, `chainID`, and `initValidators`, properties are computed from the sidechain registration command.
-
-This xref:{url_build_regsidechain_sccommand}[Sidechain Registration command] assigns a unique bytes value as the chain ID that identifies the sidechain in the ecosystem.
+=== Sidechain registration on the Lisk Mainchain
+The xref:{url_build_regsidechain_sccommand}[Sidechain Registration command] assigns a unique bytes value as the <<chain-identifiers,chain ID>> that identifies the sidechain in the ecosystem.
 Furthermore, new data structures are inserted for the sidechain in the Lisk mainchain state.
 This results in a new entry being created in the five different substores of the interoperability module store listed below, and can also be seen in the diagram below in figure 2.
 
-The following substores are used:
-*outbox root substore*, *chain data substore*, *channel data substore*, *chain validators substore*, and *registered names*.
+The values of the account entries are initialized, and the `name`, `chainID`, and `initValidators`, properties are computed from the sidechain registration command.
+////
+As mentioned in the previous paragraph to enable a sidechain to operate, it first has to be registered in the Lisk mainchain via a sidechain registration command.
+This requires that the sidechain registration command is processed, which will then result in the sidechain account status being set to registered.
+However, at this point, the channel is not active, so no cross-chain messages (CCMs) can be sent yet.
+Hence, a sidechain account that is already associated with a name and a unique chain ID, exists in the mainchain state.
+Therefore, each new sidechain occupies a certain namespace in the ecosystem.
+////
 
-.The Interoperability module store.
-image::understand-blockchain/interop/interop-store_v1.png[ align="center" ,800]
-
-Each box represents a substore, where we indicate the `storeKey -> storeValue relation`.
-For the Lisk mainchain, the 'own chain' substore exists by default in the state whereas there is one entry per registered sidechain for five other substores (outbox root, chain data, channel data, chain validators, registered names), created by a sidechain registration command.
-For sidechains, the 'own chain' and one entry for the mainchain account for four other substores (outbox root, chain data, channel data, and chain validators) are created by the <<Mainchain Registration Command>>.
-
-=== Mainchain Registration on a Sidechain
+=== Mainchain registration on a sidechain
 
 Once the sidechain has been registered on the mainchain, a similar registration process should happen in the sidechain before the interoperable channel is opened between the two chains.
 This is performed by submitting a transaction with the mainchain registration command in the sidechain, which implies the creation of a mainchain account in the sidechain state associated with the Lisk mainchain, and other structures needed for interoperability.
@@ -218,6 +257,14 @@ It could happen then (intentionally or not) that an old block header (almost 30 
 This could result in the sidechain being terminated for liveness failure very soon after the activation (maybe only a few minutes later).
 To prevent this issue (and without any significant drawbacks) *the first cross-chain update to be submitted on mainchain must contain a certificate less than 15 days old.*
 The sidechain has therefore at least 15 days to submit the next cross-chain update to the mainchain and start the regular posting of cross-chain updates.
+
+==== Registration Message
+
+The role of the registration message is to allow for a safe activation of the channel between the sending and receiving chains.
+It guarantees that when the CCU activating the channel is executed, a registration transaction has been included on the partner chain.
+When a sidechain is registered on the mainchain, as previously mentioned, an ecosystem-wide chain ID and name are assigned to this chain.
+The chain name, network ID, and the token used for the message fees are included in a registration message that is appended to the sidechain outbox.
+When the first cross-chain update containing messages is sent to the sidechain, the equality between the properties in the registration message and the ones in the interoperability store is verified.
 
 == Sidechain termination
 
@@ -298,7 +345,7 @@ Specifically, it is based on the sidechain state root, `stateRoot`, set in the l
 
 In the context of the mainchain, a valid state recovery command can recover the assets that were held in the terminated sidechain.
 In the context of a sidechain, it can recover an entry in a recoverable module store from a terminated sidechain.
-A recoverable module is classed as any module that exposes a recover function, which includes the Token module (for any custom token), and the xref:{url_nft_module}[NFT module].
+//A recoverable module is classed as any module that exposes a recover function, which includes the Token module (for any custom token), and the xref:{url_nft_module}[NFT module].
 This recovery mechanism requires the initialization commands.
 
 ==== State Recovery Initialization Command

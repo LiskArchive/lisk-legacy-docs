@@ -15,13 +15,9 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_liskobserver: https://lisk.observer/
 // Project URLs
 :url_sdk_elements: {docs_sdk}references/lisk-elements/index.adoc
-:url_guides_config: build-blockchain/configuration.adoc
 :url_run_staking: run-blockchain/staking.adoc
 :url_run_staking_selfstake: run-blockchain/staking.adoc#self-stake
 :url_run_staking_validatorweight: run-blockchain/staking.adoc#validator-weight
-:url_guides_setup_bootstrap: build-blockchain/create-sidechain-app.adoc#bootstrapping-a-new-blockchain-application-with-lisk-commander
-:url_references_cli_forgingconfig: {docs_sdk}application-cli.adoc#forgingconfig
-:url_references_cli_forgingenable: {docs_sdk}application-cli.adoc#forgingenable
 :url_sdk_cli_keyscreate: {docs_sdk}application-cli.adoc#keyscreate
 :url_sdk_cli_generatorenable: {docs_sdk}application-cli.adoc#generatorenable
 :url_references_cli_txcreate: {docs_sdk}application-cli.adoc#transactioncreate
@@ -309,7 +305,7 @@ Lisk Core::
 //TODO: Verify Lisk Core command
 [source,bash]
 ----
-./bin/run keys import --file-path config/keys.json
+lisk-core keys import --file-path config/keys.json
 ----
 --
 Sidechain node::
@@ -322,6 +318,7 @@ Sidechain node::
 --
 =====
 
+//TODO: Verify correct position of this paragraph (maybe it is too early position right now)
 === Checking the validator status
 
 After the <<import-the-validator-keys, keys are imported>> to the node, you can check the validator status on the node, to verify that the import worked as expected.
@@ -377,25 +374,42 @@ The following information is displayed for a validator:
 
 The block generation for a validator is disabled right after the keys have been imported.
 How to <<how-to-enable-block-generation-for-the-first-time>> is explained in the following step.
-
+//TODO: Verify correct position of this paragraph (maybe it is too early right now)
 === Validator info data
 
-The validator info data is required for enabling block generation for the corresponding delegate.
+The validator info data is required for enabling block generation for the corresponding validator.
 
 It contains the following three properties:
 
-* `height`: Last forged block height.
+* `height`: Last generated block height.
 * `maxHeightGenerated`: Validators largest previously generated height.
 * `maxHeightPrevoted`: Validators largest prevoted height for a block.
 
 == Set the hash onion
 Without the hash onion, a validator won't be able to receive any rewards for generating new blocks, although the blocks would still be valid in that case.
-To not miss any rewards, it is of high interest for a validator to set the hash onion, before enabling forging on the node.
+To not miss any rewards, it is of high interest for a validator to set the hash onion, before enabling block generation on the node.
 
+
+[tabs]
+=====
+Lisk Core::
++
+--
+//TODO: Verify Lisk Core command
+[source,bash]
+----
+lisk-core endpoint invoke random_setHashOnion '{"address":"lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3"}'
+----
+--
+Sidechain node::
++
+--
 [source,bash]
 ----
 ./bin/run endpoint invoke random_setHashOnion '{"address":"lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3"}'
 ----
+--
+=====
 
 To verify that the hash onion was set correctly, <<get-the-hash-onion>> back from the node.
 
@@ -403,17 +417,41 @@ To verify that the hash onion was set correctly, <<get-the-hash-onion>> back fro
 
 To get the hash onion seed of a validator, request the `random_getHashOnionSeeds` endpoint.
 
+[tabs]
+=====
+Lisk Core::
++
+--
+//TODO: Verify Lisk Core command
 [source,bash]
 ----
-./bin/run endpoint invoke random_getHashOnionSeeds
+lisk-core endpoint invoke random_getHashOnionSeeds --pretty
 ----
+--
+Sidechain node::
++
+--
+[source,bash]
+----
+./bin/run endpoint invoke random_getHashOnionSeeds --pretty
+----
+--
+=====
 
 This will return a list of all hash onion seeds that are stored in the node.
 
-//TODO: Update with real example
 [source,json]
 -----
-{"seeds":[]}
+{
+  "seeds": [
+    {
+      "address": "lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3",
+      "seed": "5be11bacb61de5c1309d50a5548b1834",
+      "count": 1000000,
+      "distance": 1000
+    }
+  ]
+}
 -----
 
 == How to enable block generation for the first time
@@ -458,13 +496,26 @@ Use the xref:{url_sdk_cli_generatorenable}[generator enable] command to enable b
 
 Replace `lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3` with your validator address.
 
+Next, you will be prompted for the password that was defined in step <<creating-the-validator-keys>>.
+
+----
+? Enter password to decrypt the encrypted passphrase:  ********
+----
+
+Block generation should now be enabled for the validator.
+This is confirmed by the following message:
+
+----
+Enabled block generation for lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3
+----
+
 == How to stake to increase the validator weight
 
 If you followed all of the above steps, your node is now well-prepared to start generating blocks in the network.
 The last remaining step is now to perform a xref:{url_run_staking_selfstake}[self-stake].
 
 Without performing a self-stake, a validator will never be considered by the validator selection algorithm.
-Being selected directly depends on the *validator weight*, and this is computed directly from the stakes and self-stakes of a delegate, as defined in the Lisk PoS protocol{fn_lip23}.
+Being selected directly depends on the *validator weight*, and this is computed directly from the stakes and self-stakes of a validator, as defined in the Lisk PoS protocol{fn_lip23}.
 Please check the xref:{url_run_staking_validatorweight}[validator weight] explanation for further information on the topic.
 
 For each blockchain network, there is a specific *minimum validator weight* that is required for a validator to be considered for the block generation in general.

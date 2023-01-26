@@ -7,11 +7,11 @@
 :url_sdk_cli_generatorenable: {docs_sdk}application-cli.adoc#generatorenable
 :url_sdk_cli_generatordisable: {docs_sdk}application-cli.adoc#generatordisable
 :url_run_validator: run-blockchain/become-a-validator.adoc
-:url_run_validator_set_hashonion: run-blockchain/become-a-validator.adoc#set-the-hash-onion
-:url_run_validator_get_hashonion: run-blockchain/become-a-validator.adoc#get-the-hash-onion
-:url_run_validator_import: run-blockchain/become-a-validator.adoc#import-the-validator-keys
-:url_run_validator_validator_keys: run-blockchain/become-a-validator.adoc#creating-the-validator-keys
-:url_run_validator_data: run-blockchain/become-a-validator.adoc#validator-info-data
+:url_run_validator_set_hashonion: {url_run_validator}#set-the-hash-onion
+:url_run_validator_get_hashonion: {url_run_validator}#get-the-hash-onion
+:url_run_validator_import: {url_run_validator}#import-the-validator-keys
+:url_run_validator_validator_keys: {url_run_validator}#creating-the-validator-keys
+:url_run_validator_init_info: {url_run_validator}#initial-validator-info-data
 :url_staking: run-blockchain/staking.adoc
 
 ====
@@ -21,7 +21,7 @@ This includes how to:
 
 * [x] Enable block generation
 * [x] Safely re-enable block generation on another node
-* [x] Safely re-enable block generation when the xref:{url_run_validator_data}[validator info data] is lost.
+* [x] Safely re-enable block generation when the <<validator-info-data>> is lost.
 * [x] Disable block generation
 ====
 
@@ -34,13 +34,23 @@ IMPORTANT: The blockchain application needs to be running to successfully enable
 . Ensure the node is **fully synchronized** with the network, before enabling block generation on this node.
 . If block generation is enabled for a validator for the **first time**, check out the dedicated guide xref:{url_run_validator}[].
 . Ensure to adhere to the following points to avoid being punished by the network:
-.. Never use outdated xref:{url_run_validator_data}[validator info data].
+.. Never use outdated <<validator-info-data>>.
 .. Never activate block generation for the same validator on two or more nodes at the same time.
 ====
 
+=== Validator info data
+
+The validator info data is required for enabling block generation for the corresponding validator.
+
+It consists of the following three properties:
+
+* `height`: Last generated block height.
+* `maxHeightGenerated`: Validators largest previously generated height.
+* `maxHeightPrevoted`: Validators largest prevoted height for a block.
+
 === Get the validator info data
 
-WARNING: Don't trust xref:{url_run_validator_data}[validator info data] from public APIs or explorers, make sure to always use your local data!
+WARNING: Don't trust <<validator-info-data>> from public APIs or explorers, make sure to always use your local data!
 
 [tabs]
 =====
@@ -67,9 +77,8 @@ This will return the following information for a validator who imported her/his 
 
 * `address`: The Lisk32 address of the validator.
 * `enabled`: `true`, if the validator has block generation enabled, `false` if not.
-* The xref:{url_run_validator_data}[validator info data].
+* The <<validator-info-data>>.
 
-//TODO: Update with real example
 .Example output
 [source,json]
 ----
@@ -77,29 +86,30 @@ This will return the following information for a validator who imported her/his 
   "info": {
     "status":
     [{
-        "address": "lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3",
-        "height": 0,
-        "maxHeightPrevoted": 0,
-        "maxHeightGenerated": 0,
-        "enabled": false
+        "address": "lskzpvesvp7p9odszcp3s4dffnj4ozqz7b79tonqp",
+        "height": 574,
+        "maxHeightPrevoted": 487,
+        "maxHeightGenerated": 459,
+        "enabled": true
       }
   ]}
 }
 ----
 
-NOTE: If the command returns an empty array, you probably haven't imported your validators keys to the node.
-In that case, follow the guide xref:{url_run_validator}[] to prepare the node for block generation.
+NOTE: This command returns the validator info data only for validators, who forged at least one block on the node.
+If you enabled block generation newly, it will return an empty array when requesting `generator:status`.
+That means, your validator info data is still `0` for all values.
+See xref:{url_run_validator_init_info}[Initial validator info] for more information.
 
 === Enable block generation
+
+Use the xref:{url_sdk_cli_generatorenable}[generator:enable] command to enable block generation on your node.
 
 [tabs]
 =====
 Lisk Core::
 +
 --
-//TODO: Add link to Core CLI reference, once the page is available
-//Use the xref:{url_sdk_cli_generatorenable}[generator enable] command to enable block generation on your node.
-
 //TODO: Verify Lisk Core command
 .Enable block generation
 [source,bash]
@@ -110,8 +120,6 @@ lisk-core generator:enable lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3 --height=12
 Sidechain node::
 +
 --
-Use the xref:{url_sdk_cli_generatorenable}[generator enable] command to enable block generation on your node.
-
 .Enable block generation
 [source,bash]
 ----
@@ -122,7 +130,7 @@ Use the xref:{url_sdk_cli_generatorenable}[generator enable] command to enable b
 
 Replace `lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3` with your validator address.
 
-Verify the correctness of the values `height`, `max-height-prevoted`, and `max-height-generated` by answering `yes`, and use your password created in step xref:{url_run_validator_validator_keys}[Creating the validator keys] to decrypt the passphrase for block generation.
+Verify the correctness of the values `height`, `max-height-prevoted`, and `max-height-generated` by answering `yes`, and use your password created in step xref:{url_run_validator_validator_keys}[Creating the validator keys] to enable block generation.
 
 [TIP]
 ====
@@ -133,7 +141,7 @@ To prefill the validator info data automatically, add the flag `--use-status-val
 lisk-core generator:enable lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3 --use-status-value
 ----
 
-//TODO: Update example snippet
+//TODO: Verify correctness of snippet
 [source,bash]
 ----
  Current block generation status for validator account lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3 is:
@@ -152,21 +160,20 @@ Updated block generation status:
 
 == How to disable block generation on a node
 
-If you wish to disable block generation on the node, follow the steps as described below.
+If you wish to disable block generation on the node for a validator, follow the steps as described below.
 
 [WARNING]
 ====
 If you would like to *completely stop block generation* without being punished by the network, make sure to xref:{url_staking}[unstake] all self-stakes for a validator, before you disable block generation on the node.
 ====
 
+Use the xref:{url_sdk_cli_generatordisable}[generator:disable] command to disable block generation on your node.
+
 [tabs]
 =====
 Lisk Core::
 +
 --
-//TODO: Add link to Core CLI reference, once the page is available
-//Use the xref:{url_sdk_cli_generatordisable}[generator disable] command to disable block generation on your node.
-
 //TODO: Verify Lisk Core command
 .Disable block generation
 [source,bash]
@@ -177,8 +184,6 @@ lisk-core generator:disable lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3
 Sidechain node::
 +
 --
-Use the xref:{url_sdk_cli_generatordisable}[generator disable] command to disable block generation on your node.
-
 .Disable block generation
 [source,bash]
 ----
@@ -202,6 +207,8 @@ Disabled block generation for lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3
 ----
 
 == Safely enabling block generation on another node
+
+Sometimes it is desired or necessary to move to a new / different node, to generate blocks with a particular validator.
 
 To safely enable block generation on another node, please ensure to follow the steps below:
 

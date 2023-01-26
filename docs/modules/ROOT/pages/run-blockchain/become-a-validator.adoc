@@ -17,6 +17,8 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_sdk_elements: {docs_sdk}references/lisk-elements/index.adoc
 :url_run_staking: run-blockchain/staking.adoc
 :url_run_staking_selfstake: run-blockchain/staking.adoc#self-stake
+:url_run_block_generation_infodata: run-blockchain/enable-block-generation.adoc#validator-info-data
+:url_run_block_generation_move: run-blockchain/enable-block-generation.adoc#safely-enabling-block-generation-on-another-node
 :url_run_staking_validatorweight: run-blockchain/staking.adoc#validator-weight
 :url_sdk_cli_keyscreate: {docs_sdk}application-cli.adoc#keyscreate
 :url_sdk_cli_generatorenable: {docs_sdk}application-cli.adoc#generatorenable
@@ -172,14 +174,13 @@ To increase security, this key is different to the key used to sign transactions
 
 The parameters 2, 3, 4 are all generated in step <<creating-the-validator-keys>>.
 
+Use the xref:{url_references_cli_txcreate}[transaction:create] command to create the `registerValidator` transaction:
+
 [tabs]
 =====
 Lisk Core::
 +
 --
-//TODO: Add link to Core CLI reference, once the page is available
-//Use the xref:{url_references_cli_txcreate}[transaction create] command to create the `registerValidator` transaction:
-
 //TODO: Verify Lisk Core command
 [source,bash]
 ----
@@ -190,8 +191,6 @@ lisk-core transaction:create pos registerValidator 1100000000 \
 Sidechain node::
 +
 --
-Use the xref:{url_references_cli_txcreate}[transaction create] command to create the `registerValidator` transaction:
-
 [source,bash]
 ----
 ./bin/run transaction:create pos registerValidator 1100000000 \
@@ -233,7 +232,7 @@ lisk-core transaction:send 0805100018032080d6c28c042a20bad983c72bed43fd274f85265
 Sidechain node::
 +
 --
-Use the xref:{url_sdk_cli_txsend}[transaction send] command to send the transaction to your node.
+Use the xref:{url_sdk_cli_txsend}[transaction:send] command to send the transaction to your node.
 
 [source,bash]
 ----
@@ -318,12 +317,9 @@ Sidechain node::
 --
 =====
 
-//TODO: Verify correct position of this paragraph (maybe it is too early position right now)
-=== Checking the validator status
+=== Verifying correct import
 
-After the <<import-the-validator-keys, keys are imported>> to the node, you can check the validator status on the node, to verify that the import worked as expected.
-
-Execute the following command:
+After the validator keys are imported to the node, it is possible to verify that the import worked as expected with th following command:
 
 [tabs]
 =====
@@ -333,7 +329,7 @@ Lisk Core::
 //TODO: Verify Lisk Core command
 [source,bash]
 ----
-lisk-core generator:status --pretty
+lisk-core endpoint:invoke generator_getAllKeys --pretty
 ----
 --
 Sidechain node::
@@ -341,54 +337,43 @@ Sidechain node::
 --
 [source,bash]
 ----
-./bin/run generator:status --pretty
+./bin/run endpoint:invoke generator_getAllKeys --pretty
 ----
 --
 =====
 
-The command returns a list of validators who imported their key like described in step <<import-the-validator-keys>> to the particular node.
-Generally, assuming the validator runs a private node (like recommended), the only validator info that will be returned, is the validator account of the node operator.
+That will return the validator keys that are currently imported on the node:
 
-The following information is displayed for a validator:
-
-* `address`: The Lisk32 address of the validator.
-* `enabled`: `true`, if the validator has block generation enabled, `false` if not.
-* The <<validator-info-data>>.
-
-.Example output
 [source,json]
 ----
 {
-  "info": {
-    "status":
-    [{
-        "address": "lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3",
-        "height": 0,
-        "maxHeightPrevoted": 0,
-        "maxHeightGenerated": 0,
-        "enabled": false
+  "keys": [
+    {
+      "address": "lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3",
+      "type": "encrypted",
+      "data": {
+        "version": "1",
+        "ciphertext": "f3612f66cd43bed2a5843feec41f574bfbb3750ca30bc2c5f38d6aced3f1d3ab04f8f77d7a00fd4a801584051dc1fff47c9eaa5c56cc2333936d06ca5fa23272420cc40c10047221c734b75a53baa8a6ee7f9a667b1bdab4b930fa88bd61849f4ba779515dd450c85459ea47eb59727d86c415464b3cdc232fd8b947027a9aab77674b3a226903f7c33f2935804b33ae1f2751b2879873f731b6f4ab6b53f9c1a95d44a670dd05e8ff080f4f3f89322b636a176471443b57",
+        "kdf": "argon2id",
+        "kdfparams": {
+          "parallelism": 4,
+          "iterations": 1,
+          "memorySize": 2024,
+          "salt": "a3fbf751c0defc289603a519af3e09cc"
+        },
+        "cipher": "aes-256-gcm",
+        "cipherparams": {
+          "iv": "9a73a7587fff612fb3f03f63",
+          "tag": "402525e2bf1450ae7352260a7a2fefe8"
+        }
       }
-  ]}
-}
+    }
+]}
 ----
-
-The block generation for a validator is disabled right after the keys have been imported.
-How to <<how-to-enable-block-generation-for-the-first-time>> is explained in the following step.
-//TODO: Verify correct position of this paragraph (maybe it is too early right now)
-=== Validator info data
-
-The validator info data is required for enabling block generation for the corresponding validator.
-
-It contains the following three properties:
-
-* `height`: Last generated block height.
-* `maxHeightGenerated`: Validators largest previously generated height.
-* `maxHeightPrevoted`: Validators largest prevoted height for a block.
 
 == Set the hash onion
 Without the hash onion, a validator won't be able to receive any rewards for generating new blocks, although the blocks would still be valid in that case.
 To not miss any rewards, it is of high interest for a validator to set the hash onion, before enabling block generation on the node.
-
 
 [tabs]
 =====
@@ -414,6 +399,9 @@ Sidechain node::
 To verify that the hash onion was set correctly, <<get-the-hash-onion>> back from the node.
 
 === Get the hash onion
+
+Currently, there is nothing else to do with the hash onion, after it is created.
+There are some situation though, where it is needed to get the seed hash onion back, for example when xref:{url_run_block_generation_move}[moving from one node to another].
 
 To get the hash onion seed of a validator, request the `random_getHashOnionSeeds` endpoint.
 
@@ -454,26 +442,32 @@ This will return a list of all hash onion seeds that are stored in the node.
 }
 -----
 
+== Initial validator info data
+
+If a validator has never created a block on the blockchain before, the initial values of the xref:{url_run_block_generation_infodata}[validator info data] are as follows:
+
+* `height`: `0`
+* `maxHeightGenerated`: `0`
+* `maxHeightPrevoted`: `0`
+
 == How to enable block generation for the first time
 
-.Check this before enabling block generation on a node.
+.Check this before enabling block generation on a node:
 [CAUTION]
 ====
 . Ensure the node is running.
 . Ensure the node is **fully synchronized** with the network.
 . To avoid breaking the BFT rules and being punished by the network, adhere to the following points:
-.. Never use outdated <<validator-info-data>> to enable block generation.
 .. Never activate block generation for the same validator on two or more nodes at the same time.
 ====
+
+Use the xref:{url_sdk_cli_generatorenable}[generator:enable] command to enable block generation on your node.
 
 [tabs]
 =====
 Lisk Core::
 +
 --
-//TODO: Add link to Core CLI reference, once the page is available
-//Use the xref:{url_sdk_cli_generatorenable}[generator enable] command to enable block generation on your node.
-
 //TODO: Verify Lisk Core command
 .Enable block generation
 [source,bash]
@@ -484,8 +478,6 @@ lisk-core generator:enable lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3 --height=0 
 Sidechain node::
 +
 --
-Use the xref:{url_sdk_cli_generatorenable}[generator enable] command to enable block generation on your node.
-
 .Enable block generation
 [source,bash]
 ----
@@ -535,7 +527,7 @@ To perform the required self-stake for your validator, please follow the steps d
 
 To verify the concrete weight of your or any other validator, it is possible to directly request the required information via RPC endpoint.
 
-. <<checking-the-validator-status, Check the validator status>>
+. <<check-validator-details>>
 . Use the values `totalStakeReceived` and `selfStake` to calculate the validator weight, following the formula:
 +
 ----

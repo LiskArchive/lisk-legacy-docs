@@ -26,18 +26,29 @@ The life cycle of a sidechain consists of three states: <<registered>>, <<active
 image::understand-blockchain/interop/sidechain-lifecycle.png[]
 
 === Registered
-Firstly, a sidechain registers on the mainchain with a *sidechain registration command*.
-This command creates the <<chain-data-substore,sidechain account>> on the mainchain with the initial `status` set to `registered`.
-Thereafter, the mainchain account is similarly created on a sidechain with a *mainchain registration command*.
+For every registered sidechain, a <<chain-data-substore,sidechain account>> is created on the mainchain.
+//A sidechain registers on the mainchain by posting a *register sidechain* transaction.
+
+//Thereafter, the mainchain account is similarly created on a sidechain with a *mainchain registration command*.
+
+After a sidechain has been registered on the mainchain, it does not need to follow the <<liveness-condition>>, until the first sidechain xref:{url_ccu}[CCU] containing some cross-chain messages has been included in the mainchain.
+
+The mainchain needs to be registered on the sidechain in an analog way, before the first CCU can be sent.
+This will create a corresponding <<chain-data-substore,mainchain account>> on the sidechain.
 
 === Active
-After a sidechain has been registered on the mainchain, it cannot receive any cross-chain message and does not need to follow the liveness rule, until the first sidechain xref:{url_ccu}[CCU] containing some cross-chain messages has been included in the mainchain.
-The <<liveness-condition>> requires active sidechains to prove their liveness once every 30 days by including a CCU in the mainchain, or the sidechain account is terminated.
+If the mainchain receives the first CCU from the sidechain, or vice versa, the status of a sidechain changes to `active`.
+
 At this point, the status of the sidechain account on the mainchain is updated to `active` and the liveness condition is then enforced.
+The <<liveness-condition>> requires active sidechains to prove their liveness once every 30 days by including a CCU in the mainchain, or the sidechain account is terminated.
 
 === Terminated
-Therefore, if no CCU is received within 30 days, the *chain account is terminated* and no more xref:{url_ccm}[CCMs] can be sent to or received from the sidechain.
-A sidechain account can also be terminated if the sidechain posts a CCU containing a CCM with an invalid schema or with an invalid sending `chainID`.
+
+A sidechain is terminated for the following reasons:
+
+* If no CCU is received within 30 days, <<sidechain-termination,the chain account is terminated>> and no more CCUs can be sent to or received from the sidechain.
+* A sidechain account can also be terminated if the sidechain posts a CCU containing a xref:{url_ccm}[CCM] with an invalid schema or with an invalid sending `chainID`.
+
 A message targeting a terminated chain is bounced back to the mainchain instead of being forwarded.
 When this happens, a "terminated sidechain" message is emitted by the mainchain, targeting the original sending chain.
 When this message is processed, the chain is also terminated in the sending chain, blocking future messages.
@@ -54,26 +65,77 @@ If a sidechain does not post a CCU within 30 days, the sidechain account is term
 This rule guarantees that users do not send funds to inactive sidechains and that users who have tokens in a sidechain which stops communicating with the ecosystem can recover their tokens.
 
 There are extra requirements for the first CCU posted on the mainchain:
-It must contain a non-empty certificate which follows the schema defined in LIP 0061;
-furthermore, if this first CCU also contains a non-empty inboxUpdate, the certificate is only valid if it allows the sidechain account to remain live for a reasonable amount of time.
 
-== Chain Identifiers
+. It must contain a non-empty certificate
+. The certificate is only valid if it allows the sidechain account to remain <<live-sidechains,live>> for at least 15 days.
 
-The chain identifiers for both transaction and block signatures were previously known as network identifiers.
-The chain ID can be considered as a development of the network ID concept.
-It is used to prevent transaction replay attacks in different networks, and now also helps to identify the chain in the ecosystem.
+=== Live sidechains
 
-Chain identifiers are 4-byte values that follow a specific format: the first byte is used to identify the network in which the chain is running (either the mainnet, official testnet, or any other test network); the other 3 bytes identify the chain within the network.
-The network-specific prefix is included explicitly to ensure that a chain does not use the same chain identifier in the test network as in the mainnet.
-Hence, by checking the chain ID, users can easily verify that they are signing a transaction for the correct blockchain.
-//By using 4 bytes instead of 32 bytes this provides the distinct advantage whereby users are able to easily verify that they are signing a transaction for the correct blockchain.
-//In addition, the chain identifier can be directly set by the blockchain creator, which is far more convenient than generating a random 32-byte value.
+A sidechain is  `live`, if it is either in `registered` or `active` status.
+In other words:
+Every sidechain that is not terminated, is considered to be live.
 
-The first byte is set to `CHAIN_ID_PREFIX_MAINNET` for chains running in the mainnet network and to `CHAIN_ID_PREFIX_TESTNET` for chains running in the testnet network.
-The other 3 bytes must be chosen uniquely for the respective blockchain, i.e., no other blockchain created with the Lisk SDK should use the same 3 bytes.
+== Sidechain Registration Process
 
-The Chain ID is chosen by the sidechain, and has to be specified in the `receivingChainID` property of a CCM to this sidechain, and also in the `sendingChainId` property of a cross-chain update command from this same sidechain.
-Further details regarding the chain ID can be found in the {url_chain_id}[LIP 43].
+//A transaction with a xref:{url_build_regsidechain_sccommand}[Sidechain Registration command] can be sent by any user account in the Lisk Mainchain that possesses adequate funds to pay the required fee.
+
+=== Sidechain registration on the Lisk Mainchain
+
+The mainchain maintains for each registered sidechain:
+
+* a <<chain-data-substore,sidechain account>>,
+* a <<channel-substore,sidechain channel>>,
+* and the <<validator-substore,list of active validators>> on the sidechain.
+
+The xref:{url_build_regsidechain_sccommand}[Sidechain Registration command] assigns a unique bytes value as the <<chain-identifiers,chain ID>> that identifies the sidechain in the ecosystem.
+Furthermore, new data structures are inserted for the sidechain in the Lisk mainchain state.
+This results in a new entry being created in the five different substores of the interoperability module store listed below, and can also be seen in the diagram below in figure 2.
+
+The values of the account entries are initialized, and the `name`, `chainID`, and `initValidators`, properties are computed from the sidechain registration command.
+////
+As mentioned in the previous paragraph to enable a sidechain to operate, it first has to be registered in the Lisk mainchain via a sidechain registration command.
+This requires that the sidechain registration command is processed, which will then result in the sidechain account status being set to registered.
+However, at this point, the channel is not active, so no cross-chain messages (CCMs) can be sent yet.
+Hence, a sidechain account that is already associated with a name and a unique chain ID, exists in the mainchain state.
+Therefore, each new sidechain occupies a certain namespace in the ecosystem.
+////
+
+=== Mainchain registration on a sidechain
+
+Each sidechain maintains:
+
+* a <<chain-data-substore,mainchain account>>,
+* a <<channel-substore,mainchain channel>>,
+* and the <<validator-substore,list of active validators>> on the Mainchain.
+
+Once the sidechain has been registered on the mainchain, a similar registration process should happen in the sidechain before the interoperable channel is opened between the two chains.
+This is performed by submitting a transaction with the mainchain registration command in the sidechain, which implies the creation of a mainchain account in the sidechain state associated with the Lisk mainchain, and other structures needed for interoperability.
+This mainchain account has a similar structure as the one depicted in Figure 2 above.
+By protocol, the chain ID of the mainchain is a constant equal to `0x00000000` in the ecosystem.
+
+This registration process always has to occur after the sidechain registration on the mainchain, since the sidechain has no prior knowledge of its name and must be certain that the correct chain ID has been registered.
+Similar to the sidechain registration case, the mainchain account status will not change to active until a valid cross-chain update command from the mainchain containing a valid registration xref:{url_ccm}[CCM] is processed.
+
+=== First Cross-chain Update from a Sidechain
+The first cross-chain update containing messages from a given chain has a special function:
+It will change the sending chain status from `CHAIN_STATUS_REGISTERED` to `CHAIN_STATUS_ACTIVE`.
+This change means that the receiving chain is now available to receive cross-chain messages and can interact with the sending chain.
+Additionally, once active, sidechains must follow the <<liveness-condition>> and regularly post cross-chain updates on the mainchain (at least once every 30 days).
+If the sidechain fails to follow the liveness condition, it is terminated on the mainchain.
+
+When a sidechain is started and registered, the sidechain developers might decide to not activate the sidechain straight away (maybe to do further testing).
+It could happen then (intentionally or not) that an old block header (almost 30 days old) is submitted to the mainchain to activate the sidechain.
+This could result in the sidechain being terminated for liveness failure very soon after the activation (maybe only a few minutes later).
+To prevent this issue (and without any significant drawbacks) *the first cross-chain update to be submitted on mainchain must contain a certificate less than 15 days old.*
+The sidechain has therefore at least 15 days to submit the next cross-chain update to the mainchain and start the regular posting of cross-chain updates.
+
+==== Registration Message
+
+The role of the registration message is to allow for a safe activation of the channel between the sending and receiving chains.
+It guarantees that when the CCU activating the channel is executed, a registration transaction has been included on the partner chain.
+When a sidechain is registered on the mainchain, as previously mentioned, an ecosystem-wide chain ID and name are assigned to this chain.
+The chain name, network ID, and the token used for the message fees are included in a registration message that is appended to the sidechain outbox.
+When the first cross-chain update containing messages is sent to the sidechain, the equality between the properties in the registration message and the ones in the interoperability store is verified.
 
 == Interoperability data substores
 
@@ -206,66 +268,7 @@ On the Lisk *mainchain*, the own chain account is present by default, and set to
 
 On a *sidechain*, the own chain account is initialized as part of the <<mainchain-registration-on-a-sidechain>>.
 
-== Sidechain Registration Process
-
-A transaction with a xref:{url_build_regsidechain_sccommand}[Sidechain Registration command] can be sent by any user account in the Lisk Mainchain that possesses adequate funds to pay the required fee.
-As described in the <<life-cycle-of-a-sidechain>> section above, once the sidechains registration process has been completed, it does not need to be activated on the mainchain, and will remain inactive until the first valid CCU containing some cross-chain messages has been sent and processed.
-At this point, it will become active in the ecosystem.
-
-* The mainchain maintains for each registered sidechain:
-** a <<chain-data-substore,sidechain account>>,
-** a <<channel-substore,sidechain channel>>,
-** and the <<validator-substore,validators>> for the sidechain.
-* Each sidechain maintains:
-** a <<chain-data-substore,mainchain account>>,
-** a <<channel-substore,mainchain channel>>,
-** and the <<validator-substore,validators>> for the mainchain.
-
-=== Sidechain registration on the Lisk Mainchain
-The xref:{url_build_regsidechain_sccommand}[Sidechain Registration command] assigns a unique bytes value as the <<chain-identifiers,chain ID>> that identifies the sidechain in the ecosystem.
-Furthermore, new data structures are inserted for the sidechain in the Lisk mainchain state.
-This results in a new entry being created in the five different substores of the interoperability module store listed below, and can also be seen in the diagram below in figure 2.
-
-The values of the account entries are initialized, and the `name`, `chainID`, and `initValidators`, properties are computed from the sidechain registration command.
-////
-As mentioned in the previous paragraph to enable a sidechain to operate, it first has to be registered in the Lisk mainchain via a sidechain registration command.
-This requires that the sidechain registration command is processed, which will then result in the sidechain account status being set to registered.
-However, at this point, the channel is not active, so no cross-chain messages (CCMs) can be sent yet.
-Hence, a sidechain account that is already associated with a name and a unique chain ID, exists in the mainchain state.
-Therefore, each new sidechain occupies a certain namespace in the ecosystem.
-////
-
-=== Mainchain registration on a sidechain
-
-Once the sidechain has been registered on the mainchain, a similar registration process should happen in the sidechain before the interoperable channel is opened between the two chains.
-This is performed by submitting a transaction with the mainchain registration command in the sidechain, which implies the creation of a mainchain account in the sidechain state associated with the Lisk mainchain, and other structures needed for interoperability.
-This mainchain account has a similar structure as the one depicted in Figure 2 above.
-By protocol, the chain ID of the mainchain is a constant equal to `0x00000000` in the ecosystem.
-
-This registration process always has to occur after the sidechain registration on the mainchain, since the sidechain has no prior knowledge of its name and must be certain that the correct chain ID has been registered.
-Similar to the sidechain registration case, the mainchain account status will not change to active until a valid cross-chain update command from the mainchain containing a valid registration xref:{url_ccm}[CCM] is processed.
-
-=== First Cross-chain Update from a Sidechain
-The first cross-chain update containing messages from a given chain has a special function:
-It will change the sending chain status from `CHAIN_STATUS_REGISTERED` to `CHAIN_STATUS_ACTIVE`.
-This change means that the receiving chain is now available to receive cross-chain messages and can interact with the sending chain.
-Additionally, once active, sidechains must follow the <<liveness-condition>> and regularly post cross-chain updates on the mainchain (at least once every 30 days).
-If the sidechain fails to follow the liveness condition, it is terminated on the mainchain.
-
-When a sidechain is started and registered, the sidechain developers might decide to not activate the sidechain straight away (maybe to do further testing).
-It could happen then (intentionally or not) that an old block header (almost 30 days old) is submitted to the mainchain to activate the sidechain.
-This could result in the sidechain being terminated for liveness failure very soon after the activation (maybe only a few minutes later).
-To prevent this issue (and without any significant drawbacks) *the first cross-chain update to be submitted on mainchain must contain a certificate less than 15 days old.*
-The sidechain has therefore at least 15 days to submit the next cross-chain update to the mainchain and start the regular posting of cross-chain updates.
-
-==== Registration Message
-
-The role of the registration message is to allow for a safe activation of the channel between the sending and receiving chains.
-It guarantees that when the CCU activating the channel is executed, a registration transaction has been included on the partner chain.
-When a sidechain is registered on the mainchain, as previously mentioned, an ecosystem-wide chain ID and name are assigned to this chain.
-The chain name, network ID, and the token used for the message fees are included in a registration message that is appended to the sidechain outbox.
-When the first cross-chain update containing messages is sent to the sidechain, the equality between the properties in the registration message and the ones in the interoperability store is verified.
-
+//TODO: is it possible to reactivate terminated sidechains?
 == Sidechain termination
 
 Once a sidechain is terminated, it is not possible to send or receive cross-chain messages anymore.

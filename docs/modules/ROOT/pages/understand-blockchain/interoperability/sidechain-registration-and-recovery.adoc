@@ -6,13 +6,14 @@ Chris Braithwaite <christopher.braithwaite@lightcurve.io>, Mona Bärenfänger <m
 :idseparator: -
 :imagesdir: ../../assets/images
 //URLs
-:url_lip: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0045.md
+:url_lip_45: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0045.md
+:url_lip_45_terminatechain: {url_lip_45}#terminatechain
 :url_lip_53: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0053.md#verification
 //Project URLs
-:url_cct: understand-blockchain/interoperability/communication.adoc
-:url_ccm: {url_cct}#inducing-state-changes-across-chains-with-ccms
-:url_ccu: {url_cct}#relaying-ccms-in-a-ccu
-:url_custom_module: understand-blockchain/sdk/modules-commands
+:url_ccc: understand-blockchain/interoperability/communication.adoc
+:url_ccm: {url_ccc}#inducing-state-changes-across-chains-with-ccms
+:url_ccu: {url_ccc}#relaying-ccms-in-a-ccu
+:url_understand_module: understand-blockchain/sdk/modules-commands
 :url_build_regsidechain: build-blockchain/register-sidechain.adoc
 :url_build_regsidechain_sccommand: {url_build_regsidechain}#register-sidechain-command
 //Footnotes
@@ -20,85 +21,34 @@ Chris Braithwaite <christopher.braithwaite@lightcurve.io>, Mona Bärenfänger <m
 
 == Life Cycle of a Sidechain
 
-The life cycle of a sidechain consists of three states: <<registered>>, <<active>>, and <<terminated>>.
+The life cycle of a sidechain consists of three states: <<sidechain-registration,registered>>, <<active-sidechains,active>>, and <<terminated-sidechains,terminated>>.
 
 .State diagram of a sidechain account on the Mainchain
 image::understand-blockchain/interop/sidechain-lifecycle.png[]
 
-=== Registered
-For every registered sidechain, a <<chain-data-substore,sidechain account>> is created on the mainchain.
-//A sidechain registers on the mainchain by posting a *register sidechain* transaction.
+:sectnums:
+:sectnumlevels: 2
+== Sidechain registration
 
-//Thereafter, the mainchain account is similarly created on a sidechain with a *mainchain registration command*.
+A sidechain is registered by performing the following steps:
 
-After a sidechain has been registered on the mainchain, it does not need to follow the <<liveness-condition>>, until the first sidechain xref:{url_ccu}[CCU] containing some cross-chain messages has been included in the mainchain.
+. <<sidechain-registration-on-the-lisk-mainchain>>
+. <<mainchain-registration-on-a-sidechain>>
 
-The mainchain needs to be registered on the sidechain in an analog way, before the first CCU can be sent.
-This will create a corresponding <<chain-data-substore,mainchain account>> on the sidechain.
-
-=== Active
-If the mainchain receives the first CCU from the sidechain, or vice versa, the status of a sidechain changes to `active`.
-
-At this point, the status of the sidechain account on the mainchain is updated to `active` and the liveness condition is then enforced.
-The <<liveness-condition>> requires active sidechains to prove their liveness once every 30 days by including a CCU in the mainchain, or the sidechain account is terminated.
-
-=== Terminated
-
-A sidechain is terminated for the following reasons:
-
-* If no CCU is received within 30 days, <<sidechain-termination,the chain account is terminated>> and no more CCUs can be sent to or received from the sidechain.
-* A sidechain account can also be terminated if the sidechain posts a CCU containing a xref:{url_ccm}[CCM] with an invalid schema or with an invalid sending `chainID`.
-
-A message targeting a terminated chain is bounced back to the mainchain instead of being forwarded.
-When this happens, a "terminated sidechain" message is emitted by the mainchain, targeting the original sending chain.
-When this message is processed, the chain is also terminated in the sending chain, blocking future messages.
-
-When a chain is terminated, a `terminated` state account is created, storing the last certified state root of the terminated chain.
-
-NOTE: Users can recover their tokens and CCMs from a terminated sidechain.
-For more details on this topic, read the <<recovery-process-workflow>> covered later on this page.
-
-== Liveness condition
-Active sidechains are required to prove their liveness to the mainchain at least once every 30 days.
-This is done by including a CCU on the mainchain.
-If a sidechain does not post a CCU within 30 days, the sidechain account is terminated.
-This rule guarantees that users do not send funds to inactive sidechains and that users who have tokens in a sidechain which stops communicating with the ecosystem can recover their tokens.
-
-There are extra requirements for the first CCU posted on the mainchain:
-
-. It must contain a non-empty certificate
-. The certificate is only valid if it allows the sidechain account to remain <<live-sidechains,live>> for at least 15 days.
-
-=== Live sidechains
-
-A sidechain is  `live`, if it is either in `registered` or `active` status.
-In other words:
-Every sidechain that is not terminated, is considered to be live.
-
-== Sidechain Registration Process
-
-//A transaction with a xref:{url_build_regsidechain_sccommand}[Sidechain Registration command] can be sent by any user account in the Lisk Mainchain that possesses adequate funds to pay the required fee.
+After a sidechain has been registered on the mainchain, it does not need to follow the <<liveness-condition>>, until the <<first-cross-chain-update-from-a-sidechain>> has been included on the mainchain.
 
 === Sidechain registration on the Lisk Mainchain
 
-The mainchain maintains for each registered sidechain:
+When a sidechain is registered, this creates new entries in the interoperability related data stores on the mainchain.
 
-* a <<chain-data-substore,sidechain account>>,
-* a <<channel-substore,sidechain channel>>,
-* and the <<validator-substore,list of active validators>> on the sidechain.
+* a new <<chain-data-substore,sidechain account>>,
+* a new <<channel-substore,sidechain channel>>,
+* the <<chain-validators-substore,list of active validators>> on the sidechain.
+* an <<outbox-root-substore, outbox>> for cross-chain messages.
+* an new entry in the <<registered-names-substore>>.
 
-The xref:{url_build_regsidechain_sccommand}[Sidechain Registration command] assigns a unique bytes value as the <<chain-identifiers,chain ID>> that identifies the sidechain in the ecosystem.
-Furthermore, new data structures are inserted for the sidechain in the Lisk mainchain state.
-This results in a new entry being created in the five different substores of the interoperability module store listed below, and can also be seen in the diagram below in figure 2.
-
-The values of the account entries are initialized, and the `name`, `chainID`, and `initValidators`, properties are computed from the sidechain registration command.
-////
-As mentioned in the previous paragraph to enable a sidechain to operate, it first has to be registered in the Lisk mainchain via a sidechain registration command.
-This requires that the sidechain registration command is processed, which will then result in the sidechain account status being set to registered.
-However, at this point, the channel is not active, so no cross-chain messages (CCMs) can be sent yet.
-Hence, a sidechain account that is already associated with a name and a unique chain ID, exists in the mainchain state.
-Therefore, each new sidechain occupies a certain namespace in the ecosystem.
-////
+//This results in a new entry being created in the 5 different substores of the interoperability module:
+//For sidechains, the 'own chain' and one entry for the mainchain account for four other substores (outbox root, chain data, channel data, and chain validators) are created by the <<Mainchain Registration Command>>.
 
 === Mainchain registration on a sidechain
 
@@ -106,7 +56,7 @@ Each sidechain maintains:
 
 * a <<chain-data-substore,mainchain account>>,
 * a <<channel-substore,mainchain channel>>,
-* and the <<validator-substore,list of active validators>> on the Mainchain.
+* and the <<chain-validators-substore,list of active validators>> on the Mainchain.
 
 Once the sidechain has been registered on the mainchain, a similar registration process should happen in the sidechain before the interoperable channel is opened between the two chains.
 This is performed by submitting a transaction with the mainchain registration command in the sidechain, which implies the creation of a mainchain account in the sidechain state associated with the Lisk mainchain, and other structures needed for interoperability.
@@ -115,6 +65,12 @@ By protocol, the chain ID of the mainchain is a constant equal to `0x00000000` i
 
 This registration process always has to occur after the sidechain registration on the mainchain, since the sidechain has no prior knowledge of its name and must be certain that the correct chain ID has been registered.
 Similar to the sidechain registration case, the mainchain account status will not change to active until a valid cross-chain update command from the mainchain containing a valid registration xref:{url_ccm}[CCM] is processed.
+
+== Active sidechains
+If the mainchain receives the first CCU from the sidechain, or vice versa, the status of a sidechain changes to `active`.
+
+At this point, the status of the sidechain account on the mainchain is updated to `active` and the liveness condition is then enforced.
+The <<liveness-condition>> requires active sidechains to prove their liveness once every 30 days by including a CCU in the mainchain, or the sidechain account is terminated.
 
 === First Cross-chain Update from a Sidechain
 The first cross-chain update containing messages from a given chain has a special function:
@@ -137,19 +93,81 @@ When a sidechain is registered on the mainchain, as previously mentioned, an eco
 The chain name, network ID, and the token used for the message fees are included in a registration message that is appended to the sidechain outbox.
 When the first cross-chain update containing messages is sent to the sidechain, the equality between the properties in the registration message and the ones in the interoperability store is verified.
 
+== Terminated sidechains
+
+A message targeting a terminated chain is bounced back to the mainchain instead of being forwarded.
+When this happens, a "terminated sidechain" message is emitted by the mainchain, targeting the original sending chain.
+When this message is processed, the chain is also terminated in the sending chain, blocking future messages.
+
+When a chain is terminated, a `terminated` state account is created, storing the last certified state root of the terminated chain.
+
+IMPORTANT: *The termination of a sidechain is permanent* and cannot be undone.
+
+NOTE: Users can recover their tokens and CCMs from a terminated sidechain.
+For more details on this topic, read the <<sidechain-recovery-process>> covered later on this page.
+
+=== Termination causes
+
+A sidechain is terminated for the following reasons:
+
+* The sidechain breaks the <<liveness-condition>>.
+* The sidechain is <<sending-malicious-ccms>>.
+
+=== Liveness condition
+Active sidechains are required to prove their liveness to the mainchain at least once every 30 days.
+This is done by including a CCU on the mainchain.
+If a sidechain does not post a CCU tot he mainchain within 30 days, the sidechain account is terminated on the mainchain.
+This rule guarantees that users do not send funds to inactive sidechains and that users who have tokens in a sidechain which stops communicating with the ecosystem can recover their tokens.
+Whenever a sidechain has violated the liveness condition, any user can submit a liveness termination on the mainchain, and this will result in the sidechain being terminated.
+
+NOTE: *The liveness condition only needs to be fulfilled on the mainchain.*
+That means, the mainchain account on the sidechain is not terminated, if the mainchain doesn't send a CCU to the sidechain withon 30 days.
+
+There are extra requirements for the first CCU posted on the mainchain:
+
+. It must contain a non-empty certificate
+. The certificate is only valid if it allows the sidechain account to remain <<live-sidechains,live>> for at least 15 days.
+
+==== Live sidechains
+
+A sidechain is  `live`, if it is either in `registered` or `active` status.
+In other words:
+Every sidechain that is not terminated, is considered to be live.
+
+=== Sending malicious CCMs
+
+A sidechain is terminated, if it posts a CCU containing one or multiple malicious xref:{url_ccm}[CCMs].
+Any xref:{url_understand_module}[module] of a sidechain client has the ability to terminate a sidechain account.
+If the module receives a CCM that it considers to be malicious, it can call the  xref:{url_lip_45_terminatechain}[`terminateChain`] method of the Interoperability module to terminate the sidechain.
+
+NOTE: Notice that a sidechain terminated for this reason is not terminated in the whole ecosystem.
+For example, it could very well still be active and able to exchange messages with other chains.
+However, communication with the sidechain that terminated it is interrupted.
+
+=== Sidechain Terminated Message
+
+The role of the sidechain terminated message is to inform sidechains that another sidechain has been terminated on the mainchain, and is unable to receive messages.
+The message contains the ID of the terminated chain as well as the last certified state root of the terminated sidechain (as certified on the mainchain).
+This value is used for the creation of the terminated state account (on the sidechain receiving the CCM), allowing state recoveries.
+This message allows informing sidechains about other terminated sidechains efficiently.
+Subsequently, this message will automatically trigger the creation of the terminated sidechain account as soon as the first message is unable to be delivered.
+This also prevents further messages to be sent to sidechains that have already been terminated.
+
+
+:!sectnums:
 == Interoperability data substores
 
-The interoperability module maintains the following data stores:
+Each sidechain maintains several data stores to store data related to cross-chain interoperability.
+
+The following sections describe every data store of the interoperability module, explain what data is stored, and why it is stored.
 
 .The Interoperability module store
 image::understand-blockchain/interop/interop-store.png[,500]
 
 Each box represents a substore, where we indicate the `storeKey` --> `storeValue` relation.
 
-//For sidechains, the 'own chain' and one entry for the mainchain account for four other substores (outbox root, chain data, channel data, and chain validators) are created by the <<Mainchain Registration Command>>.
-
 === Outbox root substore
-The outbox root substore holds the root of the Merkle tree containing the messages targeting the respective partner chain.
+The outbox root substore holds the root of the Merkle tree containing the messages targeting the respective partner chain for every registered sidechain.
 
 [%collapsible]
 ====
@@ -158,6 +176,32 @@ Each entry in the outbox root substore includes the following property:
 * `root`: The root of the underlying Merkle tree of the partner chain outbox.
 This value is initialized to `sha256(b"")`.
 ====
+
+=== Own chain substore
+
+The "own chain" data substore stores the name and ID of the respective chain.
+
+[%collapsible]
+====
+The "own chain" substore consists of the following properties:
+
+* `name`: The name of the sidechain registered on the mainchain with the sidechain registration command.
+* `chainID`: The <<chain-identifiers,chain ID>> assigned to the sidechain on the mainchain after processing the sidechain registration command.
+* `nonce`: The chain nonce, an incremental integer indicating the total number of CCMs sent from the chain.
+====
+
+On the Lisk *mainchain*, the own chain account is present by default, and set to an object with properties:
+
+[source,js]
+----
+{
+    name: "lisk_mainchain",
+    chainID: 00000000,
+    nonce: 0
+}
+----
+
+On a *sidechain*, the own chain account is initialized as part of the <<mainchain-registration-on-a-sidechain>>.
 
 === Chain data substore
 The chain data substore holds the sidechain- or mainchain accounts of other partner chains.
@@ -223,7 +267,7 @@ The default value is `messageFeeTokenID = Token.getTokenIDLSK()`, corresponding 
 
 On a sidechain, the channel substore is initialized as part of the <<first-cross-chain-update-from-a-sidechain>>.
 
-=== Validator substore
+=== Chain validators substore
 
 The chain validators substore holds information about the validators of other partner chains.
 
@@ -240,89 +284,22 @@ For the mainchain account on a sidechain, the `activeValidators` and `certificat
 For a sidechain account on the mainchain, they are set by the sidechain registration command.
 ====
 
-=== Own chain substore
+=== Terminated state substore
 
-The own chain data substore stores the name and ID of the chain.
+=== Terminated outbox substore
 
-For the Lisk mainchain, the "own chain" substore exists by default in the state, whereas there is one entry per registered sidechain.
+=== Registered names substore
+This substore contains the names of all chains in the ecosystem.
+It is present only on the mainchain.
 
-[%collapsible]
-====
-Each entry in the validator substore includes the following properties:
+Entries are created as part of the processing of the sidechain registration command.
 
-* `name`: The name of the sidechain registered on the mainchain with the sidechain registration command.
-* `chainID`: The <<chain-identifiers,chain ID>> assigned to the sidechain on the mainchain after processing the sidechain registration command.
-* `nonce`: The chain nonce, an incremental integer indicating the total number of CCMs sent from the chain.
-====
-
-On the Lisk *mainchain*, the own chain account is present by default, and set to an object with properties:
-
-[source,js]
-----
-{
-    name: "lisk_mainchain",
-    chainID: 00000000,
-    nonce: 0
-}
-----
-
-On a *sidechain*, the own chain account is initialized as part of the <<mainchain-registration-on-a-sidechain>>.
-
-//TODO: is it possible to reactivate terminated sidechains?
-== Sidechain termination
-
-Once a sidechain is terminated, it is not possible to send or receive cross-chain messages anymore.
-Therefore, the ability of a sidechain to interoperate with other chains can be revoked, i.e., terminated, permanently.
-In effect, the sidechain is disconnected from the rest of the ecosystem, and any assets (e.g. fungible or non-fungible tokens), cannot be moved either to or from the respective sidechain.
-Therefore, this means that users will not be able to send any assets that they originally held on the sidechain, back to the original native chain, in other words, the chain where the assets were initially created.
+== Sidechain recovery process
 
 The following section covers the recovery mechanism deployed by Lisk to address this problem, which will noticeably improve the user experience of the Lisk ecosystem without affecting the security guarantees of the general interoperability solution.
 Using dedicated commands that are part of the Interoperability module, users can recover their assets directly on the native chain.
 Furthermore, pending messages that were stuck unprocessed in the outbox of the terminated chain can be recovered as well, and their effect reverted on the sending chain.
 
-Sidechain termination specifically occurs when the sidechain in question has been inactive for too long, or in the case whereby a malicious cross-chain message is sent.
-For example, this could be caused by not posting a transaction with a cross-chain update (CCU) command for more than 30 days, or in the case whereby one was posted with a malicious CCU command on the mainchain.
-Hence, it is useful to provide a trustless on-chain mechanism to recover tokens, messages, and information from terminated sidechains.
-
-=== Termination causes
-
-A sidechain can be terminated for various reasons as described below in the following paragraphs.
-
-* Liveness requirement
-
-As previously mentioned, active sidechains are required to prove they are still live and functioning by posting a CCU at least once within 30 days.
-Therefore violating the liveness requirement (only on the mainchain), result in terminating the sidechain.
-This rule guarantees that users do not send funds to inactive sidechains and that users who have tokens in a sidechain that stops communicating with the ecosystem can recover their tokens.
-Furthermore, whenever a sidechain has violated the liveness condition, any user can submit a liveness termination on the mainchain, and this will result in the sidechain being terminated.
-
-* Violation of the Token-Module Protocol
-
-//TODO: Add link to Token module, once references are updated
-//With regard to the xref:{url_sdk_token_module}[Token module], when tokens are transferred across the ecosystem, the native chain of the token keeps track of their location in an escrow account.
-With regard to the Token module, when tokens are transferred across the ecosystem, the native chain of the token keeps track of their location in an escrow account.
-When tokens are returned back from a chain, the amount stored in the escrow account is reduced, hence ensuring that no extra tokens were minted in the other chain.
-
-However, if a cross-chain message tries to transfer back a number of tokens greater than the one stored in the escrow account, the sending chain is terminated and a terminated state account is created.
-If the native chain is the mainchain (hence, the token is the LSK token), the terminated state account stores the state root of the sidechain; otherwise it stores the root of the mainchain, which can then be used to initialize the recovery with a <<State Recovery Initialization Command>>.
-
-* Violation of the Custom-Module Protocol
-
-Sidechains can be terminated if they violate the protocol of a xref:{:url_custom_module}[custom module].
-This is done by calling the `terminateChain` API of the Interoperability module.
-Notice that a sidechain terminated for this reason is not terminated in the whole ecosystem.
-For example, it could very well still be active and able to exchange messages with other chains.
-However, communication with the sidechain that terminated it is interrupted.
-
-=== Sidechain Terminated Message
-
-The role of the sidechain terminated message is to inform sidechains that another sidechain has been terminated on the mainchain, and is unable to receive messages.
-The message contains the ID of the terminated chain as well as the last certified state root of the terminated sidechain (as certified on the mainchain).
-This value is used for the creation of the terminated state account (on the sidechain receiving the CCM), allowing state recoveries.
-This message allows informing sidechains about other terminated sidechains efficiently.
-Subsequently, this message will automatically trigger the creation of the terminated sidechain account as soon as the first message is unable to be delivered.
-This also prevents further messages to be sent to sidechains that have already been terminated.
-
-== How to recover information from a sidechain
 // Explain steps to recover information from sidechain
 
 The commands introduced to the Lisk ecosystem to provide a recovery mechanism for sidechain users are part of the Interoperability module.
@@ -477,7 +454,7 @@ def execute(trs: Transaction) -> None:
 ----
 
 ====
-Further information including, the `createTerminatedStateAccount` function can be found in {url_lip}[LIP 0045].
+Further information including, the `createTerminatedStateAccount` function can be found in {url_lip_45}[LIP 0045].
 
 ==== State Recovery Command
 

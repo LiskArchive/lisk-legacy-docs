@@ -67,13 +67,13 @@ A sidechain can be registered by any user account on the mainchain that has adeq
 
 TIP: Please check out the guide xref:{url_build_regsidechain_mainchain}[How to register a sidechain on the mainchain] for a step-by-step explanation about the process.
 
-When a sidechain is registered on the mainchain, this creates new entries in the interoperability related data stores of the mainchain.
+When a sidechain is registered on the mainchain, this creates new entries in the interoperability related data stores of the mainchain:
 
-. A new <<chain-data-substore,sidechain account>>.
-. A new <<channel-substore,sidechain channel>>.
-. The <<chain-validators-substore,list of active validators>> on the sidechain.
-. An <<outbox-root-substore, outbox>> for cross-chain messages.
-. An new entry in the <<registered-names-substore>>.
+. A new sidechain account in the <<chain-substore>>.
+. A new channel to the sidechain in the <<channel-substore>>.
+. The list of active validators on the sidechain in the <<chain-validators-substore>>.
+. An outbox root in the <<outbox-root-substore>>
+. An new entry in the <<registered-names-substore>> for the sidechain.
 
 === Mainchain registration on a sidechain
 Once the sidechain has been registered on the mainchain, a similar registration process should happen in the sidechain before the interoperable channel is opened between the two chains.
@@ -82,10 +82,10 @@ TIP: Please check out the guide xref:{url_build_regsidechain_sidechain}[How to r
 
 When the mainchain is registered on a sidechain, this creates new entries in the interoperability related data stores of the sidechain.
 
-. A <<chain-data-substore,mainchain account>>.
-. A <<channel-substore,mainchain channel>>.
-. The <<chain-validators-substore,list of active validators>> on the mainchain.
-. An <<outbox-root-substore, outbox>> for cross-chain messages.
+. A mainchain account in the <<chain-substore>>.
+. A new channel to the mainchain in the <<channel-substore>>.
+. The list of active validators on the mainchain in the <<chain-validators-substore>>.
+. An outbox root in the <<outbox-root-substore>>
 . It also initializes the <<own-chain-substore>> on the sidechain.
 
 === Registration CCM
@@ -133,13 +133,14 @@ Every sidechain that is not <<terminated-sidechains,terminated>>, is considered 
 
 == Terminated sidechains
 
-A message targeting a terminated chain is bounced back to the mainchain instead of being forwarded.
-When this happens, a "terminated sidechain" message is emitted by the mainchain, targeting the original sending chain.
-When this message is processed, the chain is also terminated in the sending chain, blocking future messages.
+A cross-chain message targeting a terminated chain is bounced back to the mainchain instead of being forwarded.
 
-When a chain is terminated, a `terminated` state account is created, storing the last certified state root of the terminated chain.
+When this happens, a "terminated sidechain" CCM is emitted by the mainchain, targeting the original sending chain.
+When this message is processed, the chain is also terminated on the sending chain, blocking future messages.
 
-[IMPORTANT]
+When a chain is terminated, a `terminated` state account is created in the <<terminated-state-substore>>, storing the last certified state root of the terminated chain.
+
+[CAUTION]
 ====
 *The termination of a sidechain is permanent* and cannot be undone.
 
@@ -212,6 +213,8 @@ Each entry in the outbox root substore includes the following property:
 This value is initialized to `sha256(b"")`.
 ====
 
+The "outbox root" substore is initialized on the respective chain as part of the <<sidechain-registration>> process.
+
 === Own chain substore
 
 The "own chain" data substore stores the name and ID of the respective chain.
@@ -238,8 +241,8 @@ On the Lisk *mainchain*, the own chain account is present by default, and set to
 
 On a *sidechain*, the own chain account is initialized as part of the <<mainchain-registration-on-a-sidechain>>.
 
-=== Chain data substore
-The chain data substore holds the sidechain- or mainchain accounts of other partner chains.
+=== Chain substore
+The chain substore holds the chain accounts of other partner chains.
 
 [%collapsible]
 ====
@@ -268,8 +271,10 @@ As explained in <<life-cycle-of-a-sidechain>>, there are 3 possible statuses: `a
 The default value of this property is `0`, corresponding to the `registered` status.
 ====
 
+The chain substore is initialized on the respective chain as part of the <<sidechain-registration>> process.
+
 === Channel substore
-The channel data substore holds information about the inbox and outbox with other partner chains.
+The channel substore holds information about the inbox and outbox with other partner chains.
 
 [%collapsible]
 ====
@@ -300,7 +305,7 @@ The default value of this property is the constant `sha256(b"")`.
 The default value is `messageFeeTokenID = Token.getTokenIDLSK()`, corresponding to the LSK token.
 ====
 
-On a sidechain, the channel substore is initialized as part of the <<first-cross-chain-update>>.
+The channel substore is initialized on the respective chain as part of the <<sidechain-registration>> process.
 
 === Chain validators substore
 
@@ -319,15 +324,18 @@ For the mainchain account on a sidechain, the `activeValidators` and `certificat
 For a sidechain account on the mainchain, they are set by the sidechain registration command.
 ====
 
+The "chain validators" substore is initialized on the respective chain as part of the <<sidechain-registration>> process.
+
 === Terminated state substore
 
 === Terminated outbox substore
 
 === Registered names substore
 This substore contains the names of all chains in the ecosystem.
-It is present only on the mainchain.
 
-Entries are created as part of the processing of the sidechain registration command.
+The "registered names" substore is only present on the mainchain.
+
+Entries are created as part of the <<sidechain-registration-on-the-lisk-mainchain>>.
 
 == Sidechain recovery process
 

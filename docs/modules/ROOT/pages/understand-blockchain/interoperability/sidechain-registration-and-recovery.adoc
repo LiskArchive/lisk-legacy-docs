@@ -1,7 +1,7 @@
 = Sidechain Registration & Recovery
 Chris Braithwaite <christopher.braithwaite@lightcurve.io>, Mona Bärenfänger <mona@lightcurve.io>
 :toc: preamble
-:toclevels: 1
+:toclevels: 2
 :idprefix:
 :idseparator: -
 :imagesdir: ../../assets/images
@@ -10,6 +10,7 @@ Chris Braithwaite <christopher.braithwaite@lightcurve.io>, Mona Bärenfänger <m
 :url_lip_45_terminatechain: {url_lip_45}#terminatechain
 :url_lip_53: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0053.md#verification
 //Project URLs
+:url_understand_interop_chainid: understand-blockchain/interoperability/index.adoc#chain-identifiers
 :url_ccc: understand-blockchain/interoperability/communication.adoc
 :url_ccm: {url_ccc}#inducing-state-changes-across-chains-with-ccms
 :url_ccu: {url_ccc}#relaying-ccms-in-a-ccu
@@ -79,7 +80,7 @@ When the mainchain is registered on a sidechain, this creates new entries in the
 . It also initializes the <<own-chain-substore>> on the sidechain.
 
 === Registration CCM
-The role of the registration message is to allow for a safe activation of the channel between the sending and receiving chains.
+The role of the registration cross-chain message is to allow for a safe activation of the channel between the sending and receiving chains.
 It guarantees that when the CCU activating the channel is executed, a registration transaction has been included on the partner chain.
 When a sidechain is registered on the mainchain, as previously mentioned, an ecosystem-wide chain ID and name are assigned to this chain.
 The chain name, network ID, and the token used for the message fees are included in a registration message that is appended to the sidechain outbox.
@@ -112,6 +113,13 @@ This could result in the sidechain being terminated for liveness failure very so
 To prevent this issue (and without any significant drawbacks) *the first cross-chain update to be submitted on mainchain must contain a certificate less than 15 days old.*
 The sidechain has therefore at least 15 days to submit the next cross-chain update to the mainchain and start the regular posting of cross-chain updates.
 
+=== Live sidechains
+
+A sidechain is  `live`, if it is either in <<sidechain-registration,registered>> or <<active-sidechains,active>> status.
+
+In other words:
+Every sidechain that is not <<terminated-sidechains,terminated>>, is considered to be *live*.
+
 == Terminated sidechains
 
 A message targeting a terminated chain is bounced back to the mainchain instead of being forwarded.
@@ -128,15 +136,6 @@ However, users can recover their tokens and CCMs from a terminated sidechain.
 For more details on this topic, read the <<sidechain-recovery-process>> covered later on this page.
 ====
 
-=== Sidechain Terminated Message
-
-The role of the sidechain terminated message is to inform sidechains that another sidechain has been terminated on the mainchain, and is unable to receive messages.
-The message contains the ID of the terminated chain as well as the last certified state root of the terminated sidechain (as certified on the mainchain).
-This value is used for the creation of the terminated state account (on the sidechain receiving the CCM), allowing state recoveries.
-This message allows informing sidechains about other terminated sidechains efficiently.
-Subsequently, this message will automatically trigger the creation of the terminated sidechain account as soon as the first message is unable to be delivered.
-This also prevents further messages to be sent to sidechains that have already been terminated.
-
 === Termination causes
 
 A sidechain is terminated for the following reasons:
@@ -144,7 +143,7 @@ A sidechain is terminated for the following reasons:
 * The sidechain breaks the <<liveness-condition>>.
 * The sidechain is <<sending-malicious-ccms>>.
 
-=== Liveness condition
+==== Liveness condition
 
 The liveness condition is defined as follows:
 
@@ -157,13 +156,7 @@ That means, the mainchain account on the sidechain is not terminated, if the mai
 Whenever a sidechain has violated the liveness condition, any user can submit a `TerminateSidechainForLiveness` command on the mainchain, and this will result in the sidechain being terminated.
 This rule guarantees that users do not send funds to inactive sidechains and that users who have tokens in a sidechain which stops communicating with the ecosystem can recover their tokens.
 
-==== Live sidechains
-
-A sidechain is  `live`, if it is either in `registered` or `active` status.
-In other words:
-Every sidechain that is not terminated, is considered to be live.
-
-=== Sending malicious CCMs
+==== Sending malicious CCMs
 
 A sidechain is terminated, if it posts a CCU containing one or multiple malicious xref:{url_ccm}[CCMs].
 Any xref:{url_understand_module}[module] of a sidechain client has the ability to terminate a sidechain account.
@@ -172,6 +165,15 @@ If the module receives a CCM that it considers to be malicious, it can call the 
 NOTE: Notice that a sidechain terminated for this reason is not terminated in the whole ecosystem.
 For example, it could very well still be active and able to exchange messages with other chains.
 However, communication with the sidechain that terminated it is interrupted.
+
+=== Sidechain Terminated CCM
+
+The role of the sidechain terminated cross-chain message is to inform sidechains that another sidechain has been terminated on the mainchain, and is unable to receive messages.
+The message contains the ID of the terminated chain as well as the last certified state root of the terminated sidechain (as certified on the mainchain).
+This value is used for the creation of the terminated state account (on the sidechain receiving the CCM), allowing state recoveries.
+This message allows informing sidechains about other terminated sidechains efficiently.
+Subsequently, this message will automatically trigger the creation of the terminated sidechain account as soon as the first message is unable to be delivered.
+This also prevents further messages to be sent to sidechains that have already been terminated.
 
 :!sectnums:
 
@@ -206,7 +208,7 @@ The "own chain" data substore stores the name and ID of the respective chain.
 The "own chain" substore consists of the following properties:
 
 * `name`: The name of the sidechain registered on the mainchain with the sidechain registration command.
-* `chainID`: The <<chain-identifiers,chain ID>> assigned to the sidechain on the mainchain after processing the sidechain registration command.
+* `chainID`: The xref:{url_understand_interop_chainid}[chain ID] assigned to the sidechain on the mainchain after processing the sidechain registration command.
 * `nonce`: The chain nonce, an incremental integer indicating the total number of CCMs sent from the chain.
 ====
 

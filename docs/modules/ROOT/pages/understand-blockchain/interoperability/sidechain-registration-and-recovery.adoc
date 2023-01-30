@@ -53,7 +53,7 @@ image::understand-blockchain/interop/sidechain-lifecycle.png[]
 == Sidechain registration
 
 //TODO: Add link to Lisk Mainchain page once it is created
-The first step for sidechain to become interoperable with other sidechains and the Lisk Mainchain is to register itself to the mainchain.
+The first step for sidechain to become interoperable with other sidechains and the Lisk Mainchain, is to register itself to the mainchain.
 
 A sidechain is registered by performing the following steps:
 
@@ -61,6 +61,9 @@ A sidechain is registered by performing the following steps:
 . <<mainchain-registration-on-a-sidechain>>
 
 NOTE: After a sidechain has been registered on the mainchain, it does not need to follow the <<liveness-condition>>, until the <<first-cross-chain-update>> has been included on the mainchain.
+
+.Sidechain registration flow chart
+image::understand-blockchain/interop/sidechain-registration.png[]
 
 === Sidechain registration on the Lisk Mainchain
 A sidechain can be registered by any user account on the mainchain that has adequate funds to pay the required transaction fee.
@@ -89,14 +92,16 @@ When the mainchain is registered on a sidechain, this creates new entries in the
 . It also initializes the <<own-chain-substore>> on the sidechain.
 
 === Registration CCM
+Every time that a sidechain is registered on th emainchain and vice versa, a corresponding "registration" CCM is created and appended to the chain outbox.
 The role of the registration cross-chain message is to allow for a safe activation of the channel between the sending and receiving chains.
-It guarantees that when the CCU activating the channel is executed, a registration transaction has been included on the partner chain.
-When a sidechain is registered on the mainchain, as previously mentioned, an ecosystem-wide chain ID and name are assigned to this chain.
-The chain name, network ID, and the token used for the message fees are included in a registration message that is appended to the sidechain outbox.
+It guarantees that when the CCU activating the channel is executed, a registration transaction has been included on the partner chain as well.
+
+When a sidechain is registered on the mainchain, an ecosystem-wide chain ID and name are assigned to this chain.
+The chain name, network ID, and the token used for the message fees are included in a registration message.
 When the first cross-chain update containing messages is sent to the sidechain, the equality between the properties in the registration message and the ones in the interoperability store is verified.
 
 == Active sidechains
-If the mainchain receives the <<first-cross-chain-update>>, or vice versa, the status of a sidechain changes from `registered` to `active`.
+If a sidechain receives the <<first-cross-chain-update>> from the mainchain, the status of the sidechain changes from `registered` to `active`.
 
 This change means, that the receiving chain is now available to receive cross-chain messages and can interact with the sending chain.
 
@@ -133,12 +138,12 @@ Every sidechain that is not <<terminated-sidechains,terminated>>, is considered 
 
 == Terminated sidechains
 
-A cross-chain message targeting a terminated chain is bounced back to the mainchain instead of being forwarded.
-
-When this happens, a "terminated sidechain" CCM is emitted by the mainchain, targeting the original sending chain.
-When this message is processed, the chain is also terminated on the sending chain, blocking future messages.
-
+An active sidechain is terminated, if it fulfills any of the <<termination-causes>> described below.
 When a chain is terminated, a `terminated` state account is created in the <<terminated-state-substore>>, storing the last certified state root of the terminated chain.
+
+A cross-chain message targeting a terminated chain is bounced back to the mainchain instead of being forwarded.
+When this happens, a <<sidechain-terminated-ccm>> is emitted by the mainchain, targeting the original sending chain.
+When this message is processed, the chain is also terminated on the sending chain, blocking future messages to the terminated sidechain.
 
 [CAUTION]
 ====
@@ -180,12 +185,13 @@ However, communication with the sidechain that terminated it is interrupted.
 
 === Sidechain Terminated CCM
 
-The role of the sidechain terminated cross-chain message is to inform sidechains that another sidechain has been terminated on the mainchain, and is unable to receive messages.
+The role of the sidechain terminated cross-chain message is to inform sidechains that another sidechain has been terminated on the mainchain and is unable to receive messages.
 The message contains the ID of the terminated chain as well as the last certified state root of the terminated sidechain (as certified on the mainchain).
 This value is used for the creation of the terminated state account (on the sidechain receiving the CCM), allowing state recoveries.
-This message allows informing sidechains about other terminated sidechains efficiently.
-Subsequently, this message will automatically trigger the creation of the terminated sidechain account as soon as the first message is unable to be delivered.
-This also prevents further messages to be sent to sidechains that have already been terminated.
+
+This message allows to inform sidechains about other terminated sidechains efficiently.
+Indeed, this message will automatically trigger the creation of the terminated sidechain account as soon as the first message is unable to be delivered.
+This also prevents further messages to be sent to already terminated sidechains.
 
 :!sectnums:
 
@@ -207,9 +213,20 @@ The "outbox root" substore holds the root of the Merkle tree containing the mess
 
 It is initialized on the respective chain as part of the <<sidechain-registration>> process.
 
+[NOTE]
+====
+The outbox root property is duplicated and additionally stored separately from all other properties of the chain account.
+Storing the outbox root with a different substore prefix allows to separate the subtree corresponding to the outbox roots from the rest of the data in the interoperability store.
+This choice allows for shorter inclusion proofs for the outbox root, as the other properties of the Interoperability module are not needed to recalculate the state root if the outbox root is known.
+In particular, the inclusion proof contained in a CCU from a sidechain posted on the mainchain will contain only one hash.
+====
+
 [%collapsible]
 ====
-Each entry in the outbox root substore includes the following property:
+Key:: Each store key is set to the ID of the partner chain `chainID`.
+
+Value::
+Each entry in the "outbox root" substore includes the following property:
 
 * `root`: The root of the underlying Merkle tree of the partner chain outbox.
 This value is initialized to `sha256(b"")`.
@@ -234,6 +251,9 @@ On a *sidechain*, the own chain account is initialized as part of the <<mainchai
 
 [%collapsible]
 ====
+Key:: The store key is set to an empty string `""`.
+
+Value::
 The "own chain" substore consists of the following properties:
 
 * `name`: The name of the sidechain registered on the mainchain with the sidechain registration command.
@@ -248,6 +268,9 @@ It is initialized on the respective chain as part of the <<sidechain-registratio
 
 [%collapsible]
 ====
+Key:: Each store key is set to the ID of the partner chain `chainID`.
+
+Value::
 Each entry in the chain account substore includes the following properties:
 
 * `name`: This property corresponds to the name of the sidechain as a string of characters.
@@ -280,6 +303,9 @@ It is initialized on the respective chain as part of the <<sidechain-registratio
 
 [%collapsible]
 ====
+Key:: Each store key is set to the ID of the partner chain `chainID`.
+
+Value::
 Each entry in the channel substore includes the following properties:
 
 * `inbox`: The data structure containing information about the cross-chain messages received from the partner chain, organized in a regular Merkle tree (specified for the Lisk protocol in [LIP 0031](https://github.com/LiskHQ/lips/blob/main/proposals/lip-0031.md#regular-merkle-trees)).
@@ -305,6 +331,9 @@ It is used to validate the cross-chain messages contained in a future CCU when t
 The default value of this property is the constant `sha256(b"")`.
 * `messageFeeTokenID`: This property is the token ID of the token used to pay for the cross-chain message fees.
 The default value is `messageFeeTokenID = Token.getTokenIDLSK()`, corresponding to the LSK token.
+* `minReturnFeePerByte`: This property is the minimum fee per byte to automatically send back a CCM from the partner chain in case of exeuction errors.
+In particular, the CCM fee must be larger or equal than the product of its size in bytes and `minReturnFeePerByte`.
+The value used in channels between mainchain and sidechains is `minReturnFeePerByte` = `1000` Beddows.
 ====
 
 === Chain validators substore
@@ -315,7 +344,10 @@ It is initialized on the respective chain as part of the <<sidechain-registratio
 
 [%collapsible]
 ====
-Each entry in the validator substore includes the following properties:
+Key:: Each store key is set to the ID of the partner chain `chainID`.
+
+Value::
+Each entry in the "chain validators" substore includes the following properties:
 
 * `activeValidators`: An array of objects corresponding to the set of validators eligible to sign the certificates from the partner chain.
 Each entry contains the following properties:
@@ -328,14 +360,63 @@ For a sidechain account on the mainchain, they are set by the sidechain registra
 
 === Terminated state substore
 
+A "terminated state" account is created as part of the `terminateChain` function, as part of the processing of a <<sidechain-terminated-ccm>>, as part of the processing of a channel terminated CCM, or as part of the processing of a "Recover State" command.
+
+[%collapsible]
+====
+Key::
+The store key is set to the ID of the terminated chain `chainID`.
+
+Value::
+Each entry in the "terminated state" substore includes the following properties:
+
+* `stateRoot`: The state root of the terminated chain, where `chainID` is the chain ID of the terminated chain.
+If the account is not initialized, it is set to `sha256(b"")` instead.
+* `mainchainStateRoot`: The state root of the mainchain at the moment in which the chain was terminated.
+If the account is initialized, it is set to `sha256(b"")` instead.
+* `initialized`: A boolean value, indicating whether the terminated state account has been initialized, i.e. if the `stateRoot` property has been set.
+====
+
 === Terminated outbox substore
 
-=== Registered names substore
-The "registered names" substore is only present on the mainchain.
+A "terminated outbox" account is created as part of the processing of a "Recover Message" command.
 
+[%collapsible]
+====
+Key::
+The store key is set to the ID of the terminated chain `chainID`.
+
+Value::
+Each entry in the "terminated outbox" substore includes the following properties:
+
+* `outboxRoot`: The outbox root of the terminated chain, where `chainID` is the chain ID of the terminated chain.
+* `outboxSize`: The outbox size of the terminated chain, where `chainID` is the chain ID of the terminated chain.
+* `partnerChainInboxSize`: The number of cross-chain messages processed in the terminated chain, set to the `partnerChainInboxSize` property contained in the "Recover Message" command.
+
+====
+
+=== Registered names substore
+In order to process sidechain registration commands more efficiently, it is convenient to store on the mainchain the names already registered in the ecosystem to quickly check the uniqueness of the sidechain name.
 This substore contains the names of all chains in the ecosystem.
 
+NOTE: The "registered names" substore is only present on the mainchain.
+
 A new entry in the substore is created as part of the <<sidechain-registration-on-the-lisk-mainchain>>.
+
+An entry for the Lisk Mainchain is present by default, where:
+
+* The store key is set to `"lisk_mainchain"`.
+* The store value is an object with chainID == getMainchainID(), serialized using the JSON schema registeredNamesSchema.
+
+[%collapsible]
+====
+Key:: The chain name (String).
+
+Value::
+Each entry in the "terminated outbox" substore includes the following properties:
+
+* `chainID`: The ID of the chain.
+====
 
 == Sidechain recovery
 

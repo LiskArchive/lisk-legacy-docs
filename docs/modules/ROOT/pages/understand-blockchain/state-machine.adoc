@@ -9,6 +9,9 @@
 :url_blog_merkle: https://lisk.com/blog/research/sparse-merkle-trees-and-new-state-model
 //Project URLs
 :url_intro_how_blockchain_works: intro/how-blockchain-works.adoc#state-machine
+:url_ccc: understand-blockchain/interoperability/communication.adoc
+:url_ccm: {url_ccc}#inducing-state-changes-across-chains-with-ccms
+
 Every blockchain is at its core a replicated {url_wiki_dfsm}[deterministic finite-state machine^].
 
 * A *state machine* is a concept in computer science, consisting of the following elements:
@@ -61,9 +64,13 @@ Then the Merkle root of this tree, the state root, is inserted into each block h
 Each module registered on the chain defines its own generic key-value map, where:
 
 * *key*: Module Name + Store prefix + Substore prefix + Store key
-** **Module Name**: The unique identifier of the module, identifying the key-value map. The module name is a unique string that is used to construct store prefix and various module-related operations. 
-** **Store prefix**: The module store prefix is calculated automatically from the first 4 bytes of the hash of the module name, where the first bit of the store prefix is set to 0. On the other hand, the Interoperability module store prefix is set to a constant, with the first bit set to 1. This is done to separate the Interoperability module from other modules in the state tree and make the state tree unbalanced, to shorten inclusion proofs for the Interoperability module store (required for cross-chain update commands).
-** **Substore prefix** The substore prefix identifies a substore within the module store, i.e. a group of key-value pairs with the same scope and typically values in the same format. Substore prefixes are byte values, having a length of 2 bytes.
+** **Module Name**: The unique identifier of the module, identifying the key-value map.
+The module name is a unique string that is used to construct store prefix and various module-related operations.
+** **Store prefix**: The module store prefix is calculated automatically from the first 4 bytes of the hash of the module name, where the first bit of the store prefix is set to 0.
+On the other hand, the Interoperability module store prefix is set to a constant, with the first bit set to 1.
+This is done to separate the Interoperability module from other modules in the state tree and make the state tree unbalanced, to shorten inclusion proofs for the Interoperability module store (required for cross-chain update commands).
+** **Substore prefix** The substore prefix identifies a substore within the module store, i.e. a group of key-value pairs with the same scope and typically values in the same format.
+Substore prefixes are byte values, having a length of 2 bytes.
 ** **Store key**: The store key identifies a certain element within a store bucket.
 * *Store value*: serialized object (with JSON schema)
 ** **JSON schema**: The schema used in `lisk-codec` to serialize the value
@@ -101,10 +108,22 @@ A list of all use cases for RMTs in the Lisk Protocol, and their corresponding R
 [cols="2,2a,5a"]
 |===
 |Use Case|RMT|Description
-|Proofs-of-Inclusion for Transactions in a Block|`transactionRoot`|Each block header stores the `transactionRoot`.
+|Proofs-of-Inclusion for Transactions in a Block
+|`transactionRoot`
+|Each block header stores the `transactionRoot`.
 The `transactionRoot` is calculated as the Merkle root of the IDs of the transactions included in the block payload{fn_lip32}.
 Using the `transactionRoot` and a proof-of-inclusion, it is be possible to check whether a certain transaction is part of the block without downloading the full block.
-|Proofs-of-Inclusion for Assets in a Block|`assetRoot`| The root of the asset Merkle tree is added to the block header to allow checking inclusion and non-inclusion of block assets.
+
+|Proofs-of-Inclusion for Assets in a Block
+|`assetRoot`
+| The root of the asset Merkle tree is added to the block header to allow checking inclusion and non-inclusion of block assets.
+
+|Inbox & Outbox
+|`inboxRoot`, `outboxRoot`
+|Since the root of the tree depends on the order of insertion, all xref:{url_ccm}[cross-chain messages] have to be inserted in the receiving chain in the same order in which they were included in the sending chain, guaranteeing that they are processed in the correct order.
+Using a Merkle tree also guarantees that the number of sibling hashes that are part of inclusion proofs grows only logarithmically with the number of elements in the tree.
+In particular, this means that the number of sibling hashes required to validate the cross-chain messages in a CCU against the partner chain `lastCertificate.stateRoot` grows logarithmically with the number of processed messages.
+
 |===
 
 [[kv-maps]]

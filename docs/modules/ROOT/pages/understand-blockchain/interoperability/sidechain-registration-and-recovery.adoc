@@ -10,6 +10,9 @@ Chris Braithwaite <christopher.braithwaite@lightcurve.io>, Mona Bärenfänger <m
 :url_lip_45_terminatechain: {url_lip_45}#terminatechain
 :url_lip_53: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0053.md#verification
 :url_typedoc_interop_module: {site-url}/lisk-sdk/v6/references/typedoc/classes/lisk_framework.SidechainInteroperabilityModule.html
+:url_typedoc_interop_init_recovery: {site-url}/lisk-sdk/v6/references/typedoc/classes/lisk_framework.InitializeStateRecoveryCommand.html
+:url_typedoc_interop_message_recovery: {site-url}/lisk-sdk/v6/references/typedoc/classes/lisk_framework.RecoverMessageCommand.html
+:url_typedoc_interop_state_recovery: {site-url}/lisk-sdk/v6/references/typedoc/classes/lisk_framework.RecoverStateCommand.html
 //Project URLs
 :url_understand_statemachine_stores: understand-blockchain/state-machine.adoc#data-stores
 :url_understand_interop: understand-blockchain/interoperability/index.adoc
@@ -138,6 +141,12 @@ Every sidechain that is not <<terminated-sidechains,terminated>>, is considered 
 
 == Terminated sidechains
 
+When a sidechain is terminated, no cross-chain messages can be exchanged with it anymore.
+
+Effectively, the sidechain is disconnected from the rest of the ecosystem, and assets (like tokens) cannot be moved to and from it anymore.
+In particular, this means that users can not send the assets they were holding on the sidechain back to the original native chain (the chain where the asset was created).
+The <<sidechain-recovery>> mechanism addresses this problem.
+
 An active sidechain is terminated, if it fulfills any of the <<termination-causes>> described below.
 When a chain is terminated, a `terminated` state account is created in the <<terminated-state-substore>>, storing the last certified state root of the terminated chain.
 
@@ -150,7 +159,7 @@ When this message is processed, the chain is also terminated on the sending chai
 *The termination of a sidechain is permanent* and cannot be undone.
 
 However, users can recover their tokens and CCMs from a terminated sidechain.
-For more details on this topic, read the <<sidechain-recovery-process>> covered later on this page.
+For more details on this topic, read <<sidechain-recovery>> covered later on this page.
 ====
 
 === Termination causes
@@ -172,6 +181,70 @@ That means, the mainchain account on the sidechain is not terminated, if the mai
 
 Whenever a sidechain has violated the liveness condition, any user can submit a `TerminateSidechainForLiveness` command on the mainchain, and this will result in the sidechain being terminated.
 This rule guarantees that users do not send funds to inactive sidechains and that users who have tokens in a sidechain which stops communicating with the ecosystem can recover their tokens.
+
+//TODO: Merge/ update content
+===== Liveness Termination Command
+
+This command is used to terminate a sidechain that violated the liveness condition.
+As such, it can only be submitted on the mainchain.
+The required parameters, verification, and execution are listed below:
+
+* `module = MODULE_NAME_INTEROPERABILITY`
+* `command = COMMAND_LIVENESS_TERMINATION`
+
+
+.Liveness Termination Command
+[%collapsible]
+====
+[source,js]
+----
+livenessTerminationParams = {
+    "type": "object",
+    "required": ["chainID"],
+    "properties": {
+        "chainID": {
+            "dataType": "bytes",
+            "length": CHAIN_ID_LENGTH,
+            "fieldNumber": 1
+        }
+}
+----
+
+====
+
+* The chain ID is the ID of the respective sidechain to be terminated.
+
+.Liveness Termination Verification
+[%collapsible]
+====
+[source,js]
+----
+def verify(trs: Transaction) -> None:
+
+    if chainAccount(trs.params.chainID) does not exist:
+        raise Exception("Chain account does not exist.")
+
+    # The commands fails if the sidechain is already terminated
+    if chainAccount(trs.params.chainID).status == CHAIN_STATUS_TERMINATED:
+        raise Exception("Sidechain is already terminated.")
+
+    # or if the sidechain did not violate the liveness condition
+    if isLive(trs.params.chainID):
+        raise Exception("Sidechain did not violate the liveness condition.")
+----
+
+====
+
+.Liveness Termination Execution
+[%collapsible]
+====
+[source,js]
+----
+def execute(trs: Transaction) -> None:
+    terminateChain(trs.params.chainID)
+----
+
+====
 
 ==== Sending malicious CCMs
 
@@ -362,6 +435,8 @@ For a sidechain account on the mainchain, they are set by the sidechain registra
 
 A "terminated state" account is created as part of the `terminateChain` function, as part of the processing of a <<sidechain-terminated-ccm>>, as part of the processing of a channel terminated CCM, or as part of the processing of a "Recover State" command.
 
+It is initialized with the information contained in the last sidechain certificate posted on the mainchain.
+
 [%collapsible]
 ====
 Key::
@@ -381,6 +456,8 @@ If the account is initialized, it is set to `sha256(b"")` instead.
 
 A "terminated outbox" account is created as part of the processing of a "Recover Message" command.
 
+A data structure holding the outbox root along with the mainchain inbox size from the terminated sidechain, indicating the number of messages that were processed on it.
+
 [%collapsible]
 ====
 Key::
@@ -392,7 +469,6 @@ Each entry in the "terminated outbox" substore includes the following properties
 * `outboxRoot`: The outbox root of the terminated chain, where `chainID` is the chain ID of the terminated chain.
 * `outboxSize`: The outbox size of the terminated chain, where `chainID` is the chain ID of the terminated chain.
 * `partnerChainInboxSize`: The number of cross-chain messages processed in the terminated chain, set to the `partnerChainInboxSize` property contained in the "Recover Message" command.
-
 ====
 
 === Registered names substore
@@ -420,12 +496,126 @@ Each entry in the "terminated outbox" substore includes the following properties
 
 == Sidechain recovery
 
-The following section covers the recovery mechanism deployed by Lisk to address this problem, which will noticeably improve the user experience of the Lisk ecosystem without affecting the security guarantees of the general interoperability solution.
-Using dedicated commands that are part of the Interoperability module, users can recover their assets directly on the native chain.
+Using dedicated commands that are part of the Interoperability module, users can recover their assets from a terminated sidechain directly on the native chain.
 Furthermore, pending messages that were stuck unprocessed in the outbox of the terminated chain can be recovered as well, and their effect reverted on the sending chain.
 
-// Explain steps to recover information from sidechain
+=== Recovery Process Workflow
 
+This final section covers how the recovery process mechanism functions, and how to initiate a recovery from both the mainchain and the sidechain.
+As the relevant commands required have already been described above, the process flow is described below.
+As can also be seen further below in this section, the process is slightly different on the mainchain and the sidechain.
+
+==== Recovery from the terminated chain outbox
+
+Regarding the terminated chain outbox, it is possible to recover any pending messages that may have been unprocessed in the outbox of the terminated chain, and subsequently, their effect can be reverted on the sending chain.
+A message recovery initialization command is responsible for setting the outbox root and the inbox size in the terminated outbox account.
+This is followed by issuing a message recovery command in order to recover any pending messages present in the outbox of the terminated sidechain.
+
+
+
+
+==== Mainchain
+
+Firstly regarding the mainchain, the process required is as follows, and is depicted in the illustration in figure 3 below:
+
+1. The sidechain is terminated by submitting a <<Liveness Termination Command>>, or violating the token-module protocol.
+
+a. A *terminated state account* containing the last certified state root of the sidechain is created in the state.
+
+b. A User can start recovering assets with a *state recovery command* as covered above.
+
+2. A *message recovery initialization command* is then sent.
+This command contains the inbox size of the mainchain stored on the terminated sidechain, which indicates how many cross-chain messages were processed.
+
+a. A *terminated outbox account* is created in the state.
+This contains the outbox root of the terminated sidechain channel, and the inbox size provided with the message recovery initialization command.
+
+b. A user can now recover pending messages with a <<Message Recovery Command>>.
+
+.Recovery process from the mainchain.
+image::understand-blockchain/interop/mainchain-recovery_v1.png[, align="center" ,500]
+
+==== Sidechain
+
+On a sidechain, the process flow can occur in 3 scenarios which are described below and are also depicted in the corresponding 3 diagrams.
+
+1. The sidechain is terminated for violating the protocol of the token module or of a custom module.
+
+a. A terminated *state account* containing the mainchain last certified state root is created in the sidechain state.
+
+b. A *state recovery initialization command* is sent.
+This command contains the last certified state root (on the mainchain), of the terminated sidechain and an inclusion proof against the mainchain state root stored in the terminated state account.
+
+c. A user is able to recover assets native to the sidechain with a *state recovery command*.
+
+2. The sidechain receives a *sidechain terminated message* from the mainchain, indicating that a cross-chain message could not be delivered because the receiving chain was terminated.
+This message contains the last certified state root (on the mainchain), of the terminated sidechain.
+
+a. A *terminated state account* containing the sidechain’s last certified state root is created in the state.
+However, it is important to note that in this case, the terminated sidechain state root is set immediately, and there is no need for a state recovery initialization command.
+
+b. A user can recover assets native to the sidechain with a *state recovery command*.
+
+3. The sidechain is terminated on the mainchain.
+
+a. A *state recovery initialization command* is sent.
+This command contains the last certified state root (on the mainchain), of the terminated sidechain and an inclusion proof against the last certified mainchain state root, proving the termination.
+
+b. A *terminated state account* containing the sidechain’s last certified state root is created in the state.
+
+c. A user can recover assets that are native to the sidechain with a *state recovery command*.
+
+As mentioned above the steps from 1 to 3 are depicted graphically below in figure 4.
+
+===== Message Recovery from the Sidechain Outbox
+
+This message recovery mechanism is able to recover any CCM that is pending in the sidechain outbox.
+Specifically, those CCMs that have not yet been included in the receiving sidechain.
+Hence, this includes all the CCMs whose indices are larger than the last message index that the receiving sidechain reported to have included in its inbox on the mainchain.
+Any user can submit a message recovery command to recover several CCMs simultaneously.
+When the command is processed, the recovery is dependent on whether the sending chain is the mainchain or a sidechain.
+
+However, it is important to note that users are not guaranteed to recover their CCMs in every situation.
+Certain state information of the terminated sidechain might have been modified before the termination occurred, and this would make the recovered CCM application fail.
+For example, in the case whereby escrowed LSK exists in the sidechain account on the mainchain, which could have been subtracted by prior malicious behavior in the terminated sidechain.
+
+.Recovery process from the sidechain (Step 1)
+image::understand-blockchain/interop/sidechain-recovery1-v2.png[, align="center" ,500]
+.Recovery process from the sidechain (Step 2)
+image::understand-blockchain/interop/sidechain-recovery2_v2.png[, align="center" ,500]
+.Recovery process from the sidechain (Step 3)
+image::understand-blockchain/interop/sidechain-recovery3-v2.png[, align="center" ,500]
+
+
+==== Example: Recovery Process
+
+In order to summarize the recovery process, a brief example of recovering assets/tokens from the state of a terminated sidechain is provided below:
+
+1. A sidechain is terminated on the mainchain due to inactivity.
+2. The last certified state root, i.e. the state root contained in the last certificate received from the sidechain, is stored in the terminated state account of the sidechain.
+3. The user can recover the assets/tokens by sending a state recovery command.
+This command contains an inclusion proof, proving the user balance on the sidechain against the state root stored in the terminated state account.
+4. The funds are credited to the user's account on the mainchain.
+5. Finally, the state root of the terminated sidechain is then updated accordingly.
+
+Finally, there are certain data-availability requirements necessary to prepare a recovery transaction as listed below:
+
+*Message recovery commands*:
+
+- Access to the cross-chain messages in the sidechain outbox.
+- The entire tree of the sidechain outbox must be able to provide the inclusion proof.
+
+*State recovery commands*:
+
+- Access to the specific asset to recover from the sidechain.
+- The entire state tree authenticated by the last certified state root must be able to provide the inclusion proof.
+
+
+Furthermore, this information has to be kept updated every time a recovery command is processed.
+Additionally, it would be possible to employ third-party services that could offer to recover assets/tokens/messages for a nominal fee on behalf of the users.
+It is envisaged that such services would deploy a mainchain and sidechain node to provide the data availability required to perform the recovery.
+
+////
 The commands introduced to the Lisk ecosystem to provide a recovery mechanism for sidechain users are part of the Interoperability module.
 There are 5 recovery commands which can be used and are described further in this section below.
 These consist of the <<State Recovery Command>>, the <<Message Recovery Command>>, the <<State Recovery Initialization Command>>, the <<Message Recovery Initialization Command>>, and the <<Liveness Termination Command>>.
@@ -440,19 +630,24 @@ The users can recover a pending cross-chain message (CCM) from the sidechain acc
 The users can recover the balance of any custom token they had on a terminated sidechain by submitting a transaction with a state recovery command.
 The users can recover any assets they had on a terminated sidechain by submitting a transaction with a state recovery command.
 The stored data of certain custom modules can be recovered from a terminated sidechain by submitting a transaction with a state recovery command.
+////
 
-=== State recovery from the Sidechain Root
+=== Recovery commands
 
-This mechanism has been enabled in order to ensure that it is possible to recover a specific entry from a substore (i.e. the collection of key-value pairs with a common store prefix), of a module store of a terminated sidechain.
-In this context, the term "recover" is referring to triggering a specific state transition defined as part of the relevant module protocol logic.
-Specifically, it is based on the sidechain state root, `stateRoot`, set in the last certificate before sidechain termination.
+==== Initialize State Recovery
 
-In the context of the mainchain, a valid state recovery command can recover the assets that were held in the terminated sidechain.
-In the context of a sidechain, it can recover an entry in a recoverable module store from a terminated sidechain.
-//A recoverable module is classed as any module that exposes a recover function, which includes the Token module (for any custom token), and the xref:{url_nft_module}[NFT module].
-This recovery mechanism requires the initialization commands.
+The {url_typedoc_interop_init_recovery}[Initialize State Recovery^] command sets the sidechain state root in the terminated state account, so that state recovery commands can be issued.
 
-==== State Recovery Initialization Command
+This command has two purposes:
+
+. It can be used to set the state root of a terminated state account on a sidechain, or
+. to terminate another sidechain directly.
+
+In the first case, the command contains an inclusion proof against the mainchain state root stored in the terminated state account, proving the value of the state root of the terminated sidechain.
+In the second case, the command contains an inclusion proof against the mainchain state root, proving that another sidechain is either terminated or the <<liveness-condition>> is violated.
+
+//TODO: Merge/ update content
+===== State Recovery Initialization Command
 
 This command is used to initialize a terminated state account, or to update the state root stored in it if it was not actually set yet.
 It can only be submitted on a sidechain.
@@ -580,7 +775,137 @@ def execute(trs: Transaction) -> None:
 ====
 Further information including, the `createTerminatedStateAccount` function can be found in {url_lip_45}[LIP 0045].
 
-==== State Recovery Command
+==== Message Recovery Initialization
+Once a <<terminated-state-substore,terminated state>> account has been created on the mainchain, users can send this command to initialize the corresponding terminated outbox account.
+The command sets the outbox root and the inbox size in the terminated outbox account, so that message recovery commands can be issued.
+
+This command contains the channel account of the mainchain stored in the state of the terminated sidechain and an inclusion proof for it against the state root stored in the corresponding terminated state account.
+The mainchain channel data is needed to get the number of messages that were processed in the terminated sidechain (corresponding to the inbox size of the channel).
+
+//TODO: Merge/ update content
+===== Message Recovery Initialization Command
+
+Once a terminated state account has been created on the mainchain, users can send this command to initialize the corresponding terminated outbox account.
+This command contains the channel account of the mainchain stored in the state of the terminated sidechain and an inclusion proof for it against the state root stored in the corresponding terminated state account.
+The mainchain channel data is needed to acquire the number of messages that were processed in the terminated sidechain (corresponding to the inbox size of the channel).
+
+This command sets the outbox root and the inbox size in the terminated outbox account, so that message recovery commands can be issued.
+
+Transactions executing this command have the following:
+
+* module = `MODULE_NAME_INTEROPERABILITY`
+* command = `COMMAND_MESSAGE_RECOVERY_INITIALIZATION`
+
+
+The command name is `COMMAND_MESSAGE_RECOVERY_INITIALIZATION` and the message recovery initialization command schema can be seen below:
+
+.Message Recovery Initialization Command
+[%collapsible]
+====
+[source,js]
+----
+messageRecoveryInitializationParams = {
+    "type": "object",
+    "required": [
+        "chainID",
+        "channel",
+        "bitmap",
+        "siblingHashes"
+    ],
+    "properties": {
+        "chainID": {
+            "dataType": "bytes",
+            "length": CHAIN_ID_LENGTH,
+            "fieldNumber": 1
+        },
+        "channel": {
+            "dataType": "bytes",
+            "fieldNumber": 2
+        },
+        "bitmap": {
+            "dataType": "bytes",
+            "fieldNumber": 3
+        },
+        "siblingHashes": {
+            "type": "array",
+            "items": {
+                "dataType": "bytes",
+                "length": HASH_LENGTH
+            },
+            "fieldNumber": 4
+        }
+    }
+}
+----
+
+====
+
+* `chainID` : The ID of the sidechain whose terminated outbox account is to be initialized.
+* `channel` : The channel of this chain stored on the terminated sidechain.
+* `bitmap` : The bitmap of the inclusion proof of the channel in the sidechain state tree.
+* `siblingHashes` : The sibling hashes of the inclusion proof of the channel in the sidechain state tree.
+
+.Message Recovery Initialization Command Verification
+[%collapsible]
+====
+[source,js]
+----
+def verify(trs: Transaction) -> None:
+    if trs.params.chainID == CHAIN_ID_MAINCHAIN or trs.params.chainID == ownChainAccount.chainID:
+        raise Exception("Chain ID is not valid.")
+
+    # The commands fails if the  chain is not registered
+    if chainAccount(trs.params.chainID) does not exist:
+        raise Exception("Chain is not registered.")
+
+    # The commands fails if the chain is not terminated
+    if terminatedStateAccount(trs.params.chainID) does not exist or terminatedStateAccount(trs.params.chainID).initialized == False:
+        raise Exception("Chain is not terminated.")
+
+    # The commands fails if there exist already a terminated outbox account
+    if terminatedOutboxAccount(trs.params.chainID) exists:
+        raise Exception("Terminated outbox account already exists.")
+
+    queryKey = STORE_PREFIX_INTEROPERABILITY + SUBSTORE_PREFIX_CHANNEL_DATA + sha256(CHAIN_ID_MAINCHAIN)
+
+    query = {
+        key: queryKey,
+        value: sha256(trs.params.channel),
+        bitmap: trs.params.bitmap
+    }
+
+    proofOfInclusion = { siblingHashes: trs.params.siblingHashes, queries : [query] }
+
+    if SMTVerify([queryKey], proofOfInclusion, terminatedStateAccount(trs.params.chainID).stateRoot) == False:
+        raise Exception("Message recovery initialization proof of inclusion is not valid.")
+----
+
+====
+
+.Message Recovery Initialization Command Execution
+[%collapsible]
+====
+[source,js]
+----
+def execute(trs: Transaction) -> None:
+    partnerChannel = decode(channelSchema, trs.params.channel)
+    createTerminatedOutboxAccount(
+        trs.params.chainID,
+        channel(trs.params.chainID).outbox.root,
+        channel(trs.params.chainID).outbox.size,
+        partnerChannel.inbox.size
+----
+
+====
+
+==== Recover State
+The {url_typedoc_interop_state_recovery}[Recover State^] command is used to recover assets (for example fungible and non-fungible tokens) from a terminated sidechain.
+
+The user proves the existence of an entry in the terminated sidechain state with an inclusion proof against the state root stored in the <<terminated-state-substore,sidechain terminated>> account.
+The recovery of the state is then handled by the relevant module (for example, the token module would refund the user) and the state root is updated.
+
+//TODO: Merge/ update content
+===== State Recovery Command
 
 This command is used to recover a certain state (for example, fungible and non-fungible tokens), from a sidechain that has been terminated.
 The user proves the existence of an entry in the terminated state substore with an inclusion proof against the state root stored in the sidechain terminated account.
@@ -744,7 +1069,14 @@ def recover(terminatedChainID: ChainID, substorePrefix: bytes, storeKey: bytes, 
 ...
 ----
 
-=== Message Recovery Command
+==== Recover Message
+The {url_typedoc_interop_message_recovery}[Recover Message^] command is used to recover pending messages from the outbox of a terminated sidechain.
+The user proves with an inclusion proof validated against the outbox root stored in the terminated outbox account that the message is in the terminated sidechain outbox.
+The message nonce is compared to the size of the inbox (also stored in the terminated outbox account) to check that the message had not been processed yet.
+The recovered message is then bounced back to the original sending chain or processed directly if the sending chain is the mainchain.
+
+//TODO: Merge/ update content
+===== Message Recovery Command
 
 This command is used to recover cross-chain messages from a terminated outbox.
 Hence, this mechanism allows recovering any CCM that are pending in the sidechain channel outbox.
@@ -1051,296 +1383,17 @@ def forwardRecovery(trs: Transaction, ccm: CCM) -> None:
 
 ====
 
-==== Message Recovery Initialization Command
 
-Once a terminated state account has been created on the mainchain, users can send this command to initialize the corresponding terminated outbox account.
-This command contains the channel account of the mainchain stored in the state of the terminated sidechain and an inclusion proof for it against the state root stored in the corresponding terminated state account.
-The mainchain channel data is needed to acquire the number of messages that were processed in the terminated sidechain (corresponding to the inbox size of the channel).
+////
+=== State recovery from the Sidechain Root
 
-This command sets the outbox root and the inbox size in the terminated outbox account, so that message recovery commands can be issued.
+This mechanism has been enabled in order to ensure that it is possible to recover a specific entry from a substore (i.e. the collection of key-value pairs with a common store prefix), of a module store of a terminated sidechain.
+In this context, the term "recover" is referring to triggering a specific state transition defined as part of the relevant module protocol logic.
+Specifically, it is based on the sidechain state root, `stateRoot`, set in the last certificate before sidechain termination.
 
-Transactions executing this command have the following:
+In the context of the mainchain, a valid state recovery command can recover the assets that were held in the terminated sidechain.
+In the context of a sidechain, it can recover an entry in a recoverable module store from a terminated sidechain.
+//A recoverable module is classed as any module that exposes a recover function, which includes the Token module (for any custom token), and the xref:{url_nft_module}[NFT module].
+This recovery mechanism requires the initialization commands.
+////
 
-* module = `MODULE_NAME_INTEROPERABILITY`
-* command = `COMMAND_MESSAGE_RECOVERY_INITIALIZATION`
-
-
-The command name is `COMMAND_MESSAGE_RECOVERY_INITIALIZATION` and the message recovery initialization command schema can be seen below:
-
-.Message Recovery Initialization Command
-[%collapsible]
-====
-[source,js]
-----
-messageRecoveryInitializationParams = {
-    "type": "object",
-    "required": [
-        "chainID",
-        "channel",
-        "bitmap",
-        "siblingHashes"
-    ],
-    "properties": {
-        "chainID": {
-            "dataType": "bytes",
-            "length": CHAIN_ID_LENGTH,
-            "fieldNumber": 1
-        },
-        "channel": {
-            "dataType": "bytes",
-            "fieldNumber": 2
-        },
-        "bitmap": {
-            "dataType": "bytes",
-            "fieldNumber": 3
-        },
-        "siblingHashes": {
-            "type": "array",
-            "items": {
-                "dataType": "bytes",
-                "length": HASH_LENGTH
-            },
-            "fieldNumber": 4
-        }
-    }
-}
-----
-
-====
-
-* `chainID` : The ID of the sidechain whose terminated outbox account is to be initialized.
-* `channel` : The channel of this chain stored on the terminated sidechain.
-* `bitmap` : The bitmap of the inclusion proof of the channel in the sidechain state tree.
-* `siblingHashes` : The sibling hashes of the inclusion proof of the channel in the sidechain state tree.
-
-.Message Recovery Initialization Command Verification
-[%collapsible]
-====
-[source,js]
-----
-def verify(trs: Transaction) -> None:
-    if trs.params.chainID == CHAIN_ID_MAINCHAIN or trs.params.chainID == ownChainAccount.chainID:
-        raise Exception("Chain ID is not valid.")
-
-    # The commands fails if the  chain is not registered
-    if chainAccount(trs.params.chainID) does not exist:
-        raise Exception("Chain is not registered.")
-
-    # The commands fails if the chain is not terminated
-    if terminatedStateAccount(trs.params.chainID) does not exist or terminatedStateAccount(trs.params.chainID).initialized == False:
-        raise Exception("Chain is not terminated.")
-
-    # The commands fails if there exist already a terminated outbox account
-    if terminatedOutboxAccount(trs.params.chainID) exists:
-        raise Exception("Terminated outbox account already exists.")
-
-    queryKey = STORE_PREFIX_INTEROPERABILITY + SUBSTORE_PREFIX_CHANNEL_DATA + sha256(CHAIN_ID_MAINCHAIN)
-
-    query = {
-        key: queryKey,
-        value: sha256(trs.params.channel),
-        bitmap: trs.params.bitmap
-    }
-
-    proofOfInclusion = { siblingHashes: trs.params.siblingHashes, queries : [query] }
-
-    if SMTVerify([queryKey], proofOfInclusion, terminatedStateAccount(trs.params.chainID).stateRoot) == False:
-        raise Exception("Message recovery initialization proof of inclusion is not valid.")
-----
-
-====
-
-.Message Recovery Initialization Command Execution
-[%collapsible]
-====
-[source,js]
-----
-def execute(trs: Transaction) -> None:
-    partnerChannel = decode(channelSchema, trs.params.channel)
-    createTerminatedOutboxAccount(
-        trs.params.chainID,
-        channel(trs.params.chainID).outbox.root,
-        channel(trs.params.chainID).outbox.size,
-        partnerChannel.inbox.size
-----
-
-====
-
-==== Liveness Termination Command
-
-This command is used to terminate a sidechain that violated the liveness condition.
-As such, it can only be submitted on the mainchain.
-The required parameters, verification, and execution are listed below:
-
-* `module = MODULE_NAME_INTEROPERABILITY`
-* `command = COMMAND_LIVENESS_TERMINATION`
-
-
-.Liveness Termination Command
-[%collapsible]
-====
-[source,js]
-----
-livenessTerminationParams = {
-    "type": "object",
-    "required": ["chainID"],
-    "properties": {
-        "chainID": {
-            "dataType": "bytes",
-            "length": CHAIN_ID_LENGTH,
-            "fieldNumber": 1
-        }
-}
-----
-
-====
-
-* The chain ID is the ID of the respective sidechain to be terminated.
-
-.Liveness Termination Verification
-[%collapsible]
-====
-[source,js]
-----
-def verify(trs: Transaction) -> None:
-
-    if chainAccount(trs.params.chainID) does not exist:
-        raise Exception("Chain account does not exist.")
-
-    # The commands fails if the sidechain is already terminated
-    if chainAccount(trs.params.chainID).status == CHAIN_STATUS_TERMINATED:
-        raise Exception("Sidechain is already terminated.")
-
-    # or if the sidechain did not violate the liveness condition
-    if isLive(trs.params.chainID):
-        raise Exception("Sidechain did not violate the liveness condition.")
-----
-
-====
-
-.Liveness Termination Execution
-[%collapsible]
-====
-[source,js]
-----
-def execute(trs: Transaction) -> None:
-    terminateChain(trs.params.chainID)
-----
-
-====
-
-=== Recovery Process Workflow
-
-This final section covers how the recovery process mechanism functions, and how to initiate a recovery from both the mainchain and the sidechain.
-As the relevant commands required have already been described above, the process flow is described below.
-As can also be seen further below in this section, the process is slightly different on the mainchain and the sidechain.
-
-=== Recovery from the terminated chain outbox
-
-Regarding the terminated chain outbox, it is possible to recover any pending messages that may have been unprocessed in the outbox of the terminated chain, and subsequently, their effect can be reverted on the sending chain.
-A message recovery initialization command is responsible for setting the outbox root and the inbox size in the terminated outbox account.
-This is followed by issuing a message recovery command in order to recover any pending messages present in the outbox of the terminated sidechain.
-
-
-
-
-=== Mainchain
-
-Firstly regarding the mainchain, the process required is as follows, and is depicted in the illustration in figure 3 below:
-
-1. The sidechain is terminated by submitting a <<Liveness Termination Command>>, or violating the token-module protocol.
-
-a. A *terminated state account* containing the last certified state root of the sidechain is created in the state.
-
-b. A User can start recovering assets with a *state recovery command* as covered above.
-
-2. A *message recovery initialization command* is then sent.
-This command contains the inbox size of the mainchain stored on the terminated sidechain, which indicates how many cross-chain messages were processed.
-
-a. A *terminated outbox account* is created in the state.
-This contains the outbox root of the terminated sidechain channel, and the inbox size provided with the message recovery initialization command.
-
-b. A user can now recover pending messages with a <<Message Recovery Command>>.
-
-.Recovery process from the mainchain.
-image::understand-blockchain/interop/mainchain-recovery_v1.png[, align="center" ,500]
-
-=== Sidechain
-
-On a sidechain, the process flow can occur in 3 scenarios which are described below and are also depicted in the corresponding 3 diagrams.
-
-1. The sidechain is terminated for violating the protocol of the token module or of a custom module.
-
-a. A terminated *state account* containing the mainchain last certified state root is created in the sidechain state.
-
-b. A *state recovery initialization command* is sent.
-This command contains the last certified state root (on the mainchain), of the terminated sidechain and an inclusion proof against the mainchain state root stored in the terminated state account.
-
-c. A user is able to recover assets native to the sidechain with a *state recovery command*.
-
-2. The sidechain receives a *sidechain terminated message* from the mainchain, indicating that a cross-chain message could not be delivered because the receiving chain was terminated.
-This message contains the last certified state root (on the mainchain), of the terminated sidechain.
-
-a. A *terminated state account* containing the sidechain’s last certified state root is created in the state.
-However, it is important to note that in this case, the terminated sidechain state root is set immediately, and there is no need for a state recovery initialization command.
-
-b. A user can recover assets native to the sidechain with a *state recovery command*.
-
-3. The sidechain is terminated on the mainchain.
-
-a. A *state recovery initialization command* is sent.
-This command contains the last certified state root (on the mainchain), of the terminated sidechain and an inclusion proof against the last certified mainchain state root, proving the termination.
-
-b. A *terminated state account* containing the sidechain’s last certified state root is created in the state.
-
-c. A user can recover assets that are native to the sidechain with a *state recovery command*.
-
-As mentioned above the steps from 1 to 3 are depicted graphically below in figure 4.
-
-==== Message Recovery from the Sidechain Outbox
-
-This message recovery mechanism is able to recover any CCM that is pending in the sidechain outbox.
-Specifically, those CCMs that have not yet been included in the receiving sidechain.
-Hence, this includes all the CCMs whose indices are larger than the last message index that the receiving sidechain reported to have included in its inbox on the mainchain.
-Any user can submit a message recovery command to recover several CCMs simultaneously.
-When the command is processed, the recovery is dependent on whether the sending chain is the mainchain or a sidechain.
-
-However, it is important to note that users are not guaranteed to recover their CCMs in every situation.
-Certain state information of the terminated sidechain might have been modified before the termination occurred, and this would make the recovered CCM application fail.
-For example, in the case whereby escrowed LSK exists in the sidechain account on the mainchain, which could have been subtracted by prior malicious behavior in the terminated sidechain.
-
-.Recovery process from the sidechain (Step 1)
-image::understand-blockchain/interop/sidechain-recovery1-v2.png[, align="center" ,500]
-.Recovery process from the sidechain (Step 2)
-image::understand-blockchain/interop/sidechain-recovery2_v2.png[, align="center" ,500]
-.Recovery process from the sidechain (Step 3)
-image::understand-blockchain/interop/sidechain-recovery3-v2.png[, align="center" ,500]
-
-
-=== Recovery Process Summary Overview
-
-In order to summarize the recovery process, a brief example of recovering assets/tokens from the state of a terminated sidechain is provided below:
-
-1. A sidechain is terminated on the mainchain due to inactivity.
-2. The last certified state root, i.e. the state root contained in the last certificate received from the sidechain, is stored in the terminated state account of the sidechain.
-3. The user can recover the assets/tokens by sending a state recovery command.
-This command contains an inclusion proof, proving the user balance on the sidechain against the state root stored in the terminated state account.
-4. The funds are credited to the user's account on the mainchain.
-5. Finally, the state root of the terminated sidechain is then updated accordingly.
-
-Finally, there are certain data-availability requirements necessary to prepare a recovery transaction as listed below:
-
-*Message recovery commands*:
-
-- Access to the cross-chain messages in the sidechain outbox.
-- The entire tree of the sidechain outbox must be able to provide the inclusion proof.
-
-*State recovery commands*:
-
-- Access to the specific asset to recover from the sidechain.
-- The entire state tree authenticated by the last certified state root must be able to provide the inclusion proof.
-
-
-Furthermore, this information has to be kept updated every time a recovery command is processed.
-Additionally, it would be possible to employ third-party services that could offer to recover assets/tokens/messages for a nominal fee on behalf of the users.
-It is envisaged that such services would deploy a mainchain and sidechain node to provide the data availability required to perform the recovery.

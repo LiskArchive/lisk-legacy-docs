@@ -416,144 +416,26 @@ These services will run a mainchain and sidechain node to provide the data avail
 
 ==== Initialize State Recovery
 
-The {url_typedoc_interop_init_recovery}[Initialize State Recovery^] command sets the sidechain state root in the terminated state account, so that state recovery commands can be issued.
+The {url_typedoc_interop_init_recovery}[Initialize State Recovery^] command sets the sidechain state root in the "terminated state" account, so that state recovery commands can be issued.
 
-This command has two purposes:
-
-. It can be used to set the state root of a terminated state account on a sidechain, or
-. to terminate another sidechain directly.
-
-In the first case, the command contains an inclusion proof against the mainchain state root stored in the terminated state account, proving the value of the state root of the terminated sidechain.
-In the second case, the command contains an inclusion proof against the mainchain state root, proving that another sidechain is either terminated or the <<liveness-condition>> is violated.
-
-//TODO: Merge/ update content
-===== State Recovery Initialization Command
-
-This command is used to initialize a terminated state account, or to update the state root stored in it if it was not actually set yet.
-It can only be submitted on a sidechain.
-
-It contains an inclusion proof against the mainchain state root stored in the terminated state account, proving the value of the state root of the terminated sidechain.
-Any user on the corresponding sidechain can send a transaction with this command and initiate the state recoveries with respect to the terminated sidechain.
 A sidechain account can be terminated on a sidechain using the `terminateChain` function exposed by the Interoperability module.
 In this case, the state root is generally not available and the terminated state account is created without setting the sidechain state root.
 Instead, the account stores the mainchain state root at the time of termination.
-A state recovery initialization command will in the future set the sidechain state root by giving an inclusion proof against this mainchain state root.
 
-The command sets the sidechain state root in the terminated state account so that state recovery commands can be issued.
-
-The transactions executing this command have the following:
-
-* `module = MODULE_NAME_INTEROPERABILITY`
-
-* `command = COMMAND_STATE_RECOVERY_INITIALIZATION`
-
-The state recovery initialization command schema can be seen below:
-
-.State Recovery Initialization Command
-[%collapsible]
-====
-[source,js]
-----
-stateRecoveryInitializationParams = {
-    "type": "object",
-    "required": [
-        "chainID",
-        "sidechainAccount",
-        "bitmap",
-        "siblingHashes"
-    ],
-    "properties": {
-        "chainID": {
-            "dataType": "bytes",
-            "length": CHAIN_ID_LENGTH,
-            "fieldNumber": 1
-        },
-        "sidechainAccount": {
-            "dataType": "bytes",
-            "fieldNumber": 2
-        },
-        "bitmap": {
-            "dataType": "bytes",
-            "fieldNumber": 3
-        },
-        "siblingHashes": {
-            "type": "array",
-            "items": {
-                "dataType": "bytes",
-                "length": HASH_LENGTH
-            },
-            "fieldNumber": 4
-        }
-    }
-}
-----
-====
-
-* `chainID`: The ID of the sidechain whose terminated state account is to be initialized or updated.
-* `sidechainAccount`: The sidechain chain account stored on the mainchain.
-* `bitmap`: The bitmap of the inclusion proof of the sidechain account in the mainchain state tree.
-* `siblingHashes`: The sibling hashes of the inclusion proof of the sidechain account in the mainchain state tree.
-// Assumming that `trs` is a transaction with module ID `MODULE_NAME_INTEROPERABILITY`, and the command ID `COMMAND_STATE_RECOVERY_INITIALIZATION` is to be verified, this can be seen as shown in the following validation schema below:
-
-.State Recovery Initialization Command Validation
-[%collapsible]
-====
-[source,js]
-----
-def verify(trs: Transaction) -> None:
-    if trs.params.chainID == CHAIN_ID_MAINCHAIN or trs.params.chainID == ownChainAccount.chainID:
-        raise Exception("Chain ID is not valid.")
-
-    # The commands fails if the sidechain is already terminated on this chain
-    if terminatedStateAccount(trs.params.chainID) exists and terminatedStateAccount(trs.params.chainID).initialized == True:
-        raise Exception("Sidechain is already terminated.")
-
-    sidechainAccount = decode(chainAccountSchema, trs.params.sidechainAccount)
-    # The commands fails if the sidechain is not terminated and did not violate the liveness requirement
-    if sidechainAccount.status != CHAIN_STATUS_TERMINATED
-        and chainAccount(CHAIN_ID_MAINCHAIN).lastCertificate.timestamp - sidechainAccount.lastCertificate.timestamp <= LIVENESS_LIMIT:
-        raise Exception("Sidechain is not terminated.")
-
-    queryKey = STORE_PREFIX_INTEROPERABILITY + SUBSTORE_PREFIX_CHAIN_DATA + sha256(trs.params.chainID)
-
-    query = {
-        "key": queryKey,
-        "value": sha256(trs.params.sidechainAccount),
-        "bitmap": trs.params.bitmap
-    }
-
-    proofOfInclusion = { "siblingHashes": trs.params.siblingHashes, "queries" : [query] }
-
-    if terminatedStateAccount(trs.params.chainID) exists:
-        if SMTVerify([queryKey], proofOfInclusion, terminatedStateAccount(trs.params.chainID).mainchainStateRoot) == False:
-            raise Exception("State recovery initialization proof of inclusion is not valid.")
-    else:
-        if SMTVerify([queryKey], proofOfInclusion, chainAccount(CHAIN_ID_MAINCHAIN).lastCertificate.stateRoot) == False:
-            raise Exception("State recovery initialization proof of inclusion is not valid.")
-
-----
-
-====
-
-// To continue and process a transaction `trs` with the module ID `MODULE_NAME_INTEROPERABILITY` and the command ID 'COMMAND_STATE_RECOVERY_INITIALIZATION`, this implies the following logic as displayed below in the state recovery initialization command execution:
-
-.State Recovery Initialization Command Execution
-[%collapsible]
-====
-[source,js]
-----
-def execute(trs: Transaction) -> None:
-    sidechainAccount = decode(chainAccountSchema, trs.params.sidechainAccount)
-    if terminatedStateAccount(trs.params.chainID) exists:
-        terminatedStateAccount(trs.params.chainID).stateRoot = sidechainAccount.lastCertificate.stateRoot
-        terminatedStateAccount(trs.params.chainID).mainchainStateRoot = EMPTY_BYTES
-        terminatedStateAccount(trs.params.chainID).initialized = True
-    else:
-        createTerminatedStateAccount(trs.params.chainID, sidechainAccount.lastCertificate.stateRoot)
-----
-
-====
+A state recovery initialization command can be posted afterwards to set the sidechain state root by giving an inclusion proof against this mainchain state root.
+It contains an inclusion proof against the mainchain state root stored in the terminated state account, proving the value of the state root of the terminated sidechain.
+Any user on the corresponding sidechain can send a transaction with this command and initiate the state recoveries with respect to the terminated sidechain.
 Further information including, the `createTerminatedStateAccount` function can be found in {url_lip_45}[LIP 0045].
+
+NOTE: This command can only be submitted on a sidechain.
+
+This command has two purposes: It can be used to...
+
+. ...set the state root of a "terminated state" account on a sidechain, or
+. ...to terminate another sidechain directly.
+
+// In the first case, the command contains an inclusion proof against the mainchain state root stored in the terminated state account, proving the value of the state root of the terminated sidechain.
+// In the second case, the command contains an inclusion proof against the mainchain state root, proving that another sidechain is either terminated or the <<liveness-condition>> is violated.
 
 ==== Initialize Message Recovery
 Once a <<terminated-state-substore,terminated state>> account has been created on the mainchain, users can send this command to initialize the corresponding terminated outbox account.

@@ -179,7 +179,7 @@ This is done by including a CCU on the mainchain.
 NOTE: *The liveness condition only needs to be fulfilled on the mainchain.*
 That means, the mainchain account on the sidechain is not terminated, if the mainchain doesn't send a CCU to the sidechain withon 30 days.
 
-Whenever a sidechain has violated the liveness condition, any user can submit a `TerminateSidechainForLiveness` command on the mainchain, and this will result in the sidechain being terminated.
+Whenever a sidechain has violated the liveness condition, any user can submit a <<terminate-sidechain-for-liveness-command>> on the mainchain, and this will result in the sidechain being terminated.
 This rule guarantees that users do not send funds to inactive sidechains and that users who have tokens in a sidechain which stops communicating with the ecosystem can recover their tokens.
 
 ==== Sending malicious CCMs
@@ -231,7 +231,7 @@ Pending CCMs can easily be recovered, please see <<ccm-recovery>> for more infor
 == Sidechain recovery
 
 The sidechain recovery process allows users to recover assets like tokens or NFTs from a terminated sidechain.
-Furthermore, pending messages that were stuck unprocessed in the outbox of the terminated chain can be recovered as well, and their effect is reverted on the sending chain.
+Additionally, pending messages that were stuck unprocessed in the outbox of the terminated chain can be recovered as well, and their effect is reverted on the sending chain.
 
 NOTE: The sidechain recovery process is executed completely on the mainchain.
 No connection or communication to the terminated sidechain is required to complete the recovery.
@@ -245,7 +245,7 @@ For the sidechain recovery process, it is not important who is sending the recov
 The recovery process happens independently of the sender, and tokens and assets will always be recovered for the correct accounts.
 That means, it is not possible to steal any tokens from a terminated chain by recovering them.
 
-This makes it possible to provide <<recovery-as-a-service>> to users, to simplify the recovery process further.
+Furthermore, this makes it possible to provide <<recovery-as-a-service>> to users, to simplify the recovery process further.
 ====
 
 === CCM Recovery
@@ -253,21 +253,16 @@ This makes it possible to provide <<recovery-as-a-service>> to users, to simplif
 It is possible to recover any <<pending-ccms>> that may have been unprocessed in the outbox of the terminated chain.
 Subsequently, their effect can be reverted on the sending chain.
 
-Any user can submit a message recovery command to recover several CCMs simultaneously.
+Any user can submit a <<recover-message>> command to recover several CCMs simultaneously.
 
 However, it is important to note that users are not guaranteed to recover their CCMs in every situation.
 Certain state information of the terminated sidechain might have been modified before the termination occurred, and this would make the recovered CCM application fail.
 For example, in the case whereby escrowed LSK exists in the sidechain account on the mainchain, which could have been subtracted by prior malicious behavior in the terminated sidechain.
 
-A <<initialize-message-recovery>> command is responsible for setting the outbox root and the inbox size in the terminated outbox account.
+An <<initialize-message-recovery>> command is responsible for setting the outbox root and the inbox size in the terminated outbox account.
 This is followed by issuing a <<recover-message>> command in order to recover any pending messages present in the outbox of the terminated sidechain.
 
-The following information is needed to recover pending CCMs:
-
-* Access to the cross-chain messages in the sidechain outbox.
-* The entire tree of the sidechain outbox to be able to provide the inclusion proof.
-
-TIP: All this information can be obtained from the on the mainchain.
+TIP: All required information to recover messages can be obtained directly from the mainchain.
 
 CCM recovery on the mainchain::
 LSK amount returned to CCM sender.
@@ -279,26 +274,19 @@ CCM sent back to sending chain, where it is then reverted.
 
 In case any tokens or other assets are stored on another sidechain and this sidechain gets terminated, the assets can to be recovered from the terminated sidechain.
 
-The following information is needed to recover assets from a terminated chain:
-
-* Access to the specific asset to recover from the sidechain
-* The entire state tree authenticated by the last certified state root to be able to provide the inclusion proof.
-
 State recovery on the mainchain::
-LSK amount returned to respective account address on the mainchain
+The LSK amount is returned to respective account address on the mainchain.
 
 //TODO: Add links to the recover event, Token & NFT modules
 State recovery on a sidechain::
 A recovery CCM sent back to sending chain, where it credits tokens / NFTs to the respective account.
-State changes can only be recovered, if the module targeted by the CCM is recoverable.
-Recoverable modules expose a `recover` event, like for example the Token module (for any custom token), and the NFT module.
 
-=== Recovery process from the Mainchain
+=== Recovery process from the mainchain
 
-On the Lisk mainchain:
+On the mainchain, users can recover...
 
-* The users can recover the balance of LSK they had on a terminated sidechain by submitting a transaction with a <<recover-state>> command.
-* The users can recover a pending cross-chain message (CCM) from the sidechain account outbox by submitting a transaction with a <<recover-message>> on the Lisk mainchain.
+* ... the balance of LSK they had on a terminated sidechain by submitting a transaction with a <<recover-state>> command.
+* ... <<pending-ccms>> by submitting a transaction with a <<recover-message>>.
 
 .Recovery process from the mainchain.
 image::understand-blockchain/interop/mainchain-recovery_v1.png[, align="center" ,500]
@@ -319,13 +307,18 @@ This contains the outbox root of the terminated sidechain channel, and the inbox
 
 b. A user can now recover pending messages with a <<recover-message>> command.
 
-=== Recovery processfrom a Sidechain
+=== Recovery process from a sidechain
 
-On sidechains:
+The users can recover the balance of any custom token they had on a terminated sidechain by submitting a transaction with a <<recover-state>> command.
 
-* The users can recover the balance of any custom token they had on a terminated sidechain by submitting a transaction with a state recovery command.
-* The users can recover any assets they had on a terminated sidechain by submitting a transaction with a state recovery command.
-* The stored data of certain custom modules can be recovered from a terminated sidechain by submitting a transaction with a state recovery command.
+.Recoverable modules
+[NOTE]
+====
+State changes can only be recovered on a sidechain, if the module targeted by the CCM supports the recovery.
+Modules expose a `recover` method if the recovery is supported, like for example the Token module, and the NFT module.
+
+For custom modules, it is therefore recommended to always implement a `recover` method into a module, if the module supports cross-chain transactions.
+====
 
 On a sidechain, the process flow can occur in 3 scenarios which are described below and are also depicted in the corresponding 3 diagrams.
 
@@ -455,11 +448,21 @@ The {url_typedoc_interop_state_recovery}[Recover State^] command is used to reco
 The user proves the existence of an entry in the terminated sidechain state with an inclusion proof against the state root stored in the <<terminated-state-substore,sidechain terminated>> account.
 The recovery of the state is then handled by the relevant module (for example, the token module would refund the user) and the state root is updated.
 
+The following information is needed to recover assets from a terminated chain:
+
+* Access to the specific asset to recover from the sidechain
+* The entire state tree authenticated by the last certified state root to be able to provide the inclusion proof.
+
 ==== Recover Message
 The {url_typedoc_interop_message_recovery}[Recover Message^] command is used to recover any <<pending-ccms>> from the outbox of a terminated sidechain.
 The user proves with an inclusion proof validated against the outbox root stored in the terminated outbox account that the message is in the terminated sidechain outbox.
 The message nonce is compared to the size of the inbox (also stored in the terminated outbox account) to check that the message had not been processed yet.
 The recovered message is then bounced back to the original sending chain or processed directly if the sending chain is the mainchain.
+
+The following information is needed to recover pending CCMs:
+
+* Access to the cross-chain messages in the sidechain outbox.
+* The entire tree of the sidechain outbox to be able to provide the inclusion proof.
 
 :!sectnums:
 

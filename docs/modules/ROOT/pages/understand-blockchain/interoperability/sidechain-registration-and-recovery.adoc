@@ -55,6 +55,9 @@ image::understand-blockchain/interop/sidechain-lifecycle.png[]
 
 == Sidechain registration
 
+.Sidechain registration flow chart
+image:understand-blockchain/interop/sidechain-registration.png[,300,role="right"]
+
 //TODO: Add link to Lisk Mainchain page once it is created
 The first step for sidechain to become interoperable with other sidechains and the Lisk Mainchain, is to register itself to the mainchain.
 
@@ -64,9 +67,6 @@ A sidechain is registered by performing the following steps:
 . <<mainchain-registration-on-a-sidechain>>
 
 NOTE: After a sidechain has been registered on the mainchain, it does not need to follow the <<liveness-condition>>, until the <<first-cross-chain-update>> has been included on the mainchain.
-
-.Sidechain registration flow chart
-image::understand-blockchain/interop/sidechain-registration.png[,300]
 
 === Sidechain registration on the Lisk Mainchain
 A sidechain can be registered by any user account on the mainchain that has adequate funds to pay the required transaction fee.
@@ -134,10 +134,10 @@ The sidechain has therefore at least 15 days to submit the next cross-chain upda
 
 === Live sidechains
 
-A sidechain is  `live`, if it is either in <<sidechain-registration,registered>> or <<active-sidechains,active>> status.
+A sidechain is  considered to be `live` if the following applies:
 
-In other words:
-Every sidechain that is not <<terminated-sidechains,terminated>>, is considered to be *live*.
+. on the mainchain: a chain is live if chain account exists, is not terminated and the last certificate was submitted less than 30 days ago;
+. on the sidechain: a chain is live if no "terminated state" account exists and no chain account with status `terminated` exists.
 
 == Terminated sidechains
 
@@ -197,6 +197,7 @@ However, communication with the sidechain that terminated it is interrupted.
 
 It is also possible for a sidechain to be terminated, if it violates the Lisk Interoperability protocol.
 
+Note that the Interoperability module is designed in such a way that no channel should be terminated while the sidechain is respecting the Lisk interoperability protocol.
 If a sidechain uses the Lisk Interoperability module, this should never happen.
 
 But in case another custom module is used for interoperability, and it sends for example CCUs that don't follow the expected format, this can also lead to the termination of the sidechain.
@@ -218,6 +219,14 @@ This value is used for the creation of the terminated state account (on the side
 This message allows to inform sidechains about other terminated sidechains efficiently.
 Indeed, this message will automatically trigger the creation of the terminated sidechain account as soon as the first message is unable to be delivered.
 This also prevents further messages to be sent to already terminated sidechains.
+
+=== Channel Terminated CCM
+
+A "channel terminated" CCM is sent to chains which have been terminated.
+
+The role of the "channel terminated" message is to inform chains that their channel has been terminated on the mainchain.
+The chain receiving this message can then also close the channel to the mainchain.
+This is helpful in preventing users from sending transactions to a chain whilst the cross-chain update transaction will be invalid.
 
 === Pending CCMs
 
@@ -248,28 +257,6 @@ That means, it is not possible to steal any tokens from a terminated chain by re
 Furthermore, this makes it possible to provide <<recovery-as-a-service>> to users, to simplify the recovery process further.
 ====
 
-=== CCM Recovery
-
-It is possible to recover any <<pending-ccms>> that may have been unprocessed in the outbox of the terminated chain.
-Subsequently, their effect can be reverted on the sending chain.
-
-Any user can submit a <<recover-message>> command to recover several CCMs simultaneously.
-
-However, it is important to note that users are not guaranteed to recover their CCMs in every situation.
-Certain state information of the terminated sidechain might have been modified before the termination occurred, and this would make the recovered CCM application fail.
-For example, in the case whereby escrowed LSK exists in the sidechain account on the mainchain, which could have been subtracted by prior malicious behavior in the terminated sidechain.
-
-An <<initialize-message-recovery>> command is responsible for setting the outbox root and the inbox size in the terminated outbox account.
-This is followed by issuing a <<recover-message>> command in order to recover any pending messages present in the outbox of the terminated sidechain.
-
-TIP: All required information to recover messages can be obtained directly from the mainchain.
-
-CCM recovery on the mainchain::
-LSK amount returned to CCM sender.
-
-CCM recovery on a sidechain::
-CCM sent back to sending chain, where it is then reverted.
-
 === State recovery
 
 In case any tokens or other assets are stored on another sidechain and this sidechain gets terminated, the assets can to be recovered from the terminated sidechain.
@@ -281,37 +268,61 @@ The LSK amount is returned to respective account address on the mainchain.
 State recovery on a sidechain::
 A recovery CCM sent back to sending chain, where it credits tokens / NFTs to the respective account.
 
+=== CCM Recovery
+
+It is possible to recover any <<pending-ccms>> that may have been unprocessed in the outbox of the terminated chain.
+Subsequently, their effect can be reverted on the sending chain.
+
+[NOTE]
+====
+CCM recovery can only be performed from the mainchain.
+====
+
+Any user can submit a <<recover-message>> command to recover several CCMs simultaneously.
+
+An <<initialize-message-recovery>> command is responsible for setting the outbox root and the inbox size in the terminated outbox account.
+This is followed by issuing a <<recover-message>> command in order to recover any pending messages present in the outbox of the terminated sidechain.
+
+CCM recovery on the mainchain::
+LSK amount returned to CCM sender.
+
+CCM recovery on a sidechain::
+CCM sent back to sending chain, where it is then reverted.
+
+However, it is important to note that users are not guaranteed to recover their CCMs in every situation.
+Certain state information of the terminated sidechain might have been modified before the termination occurred, and this would make the recovered CCM application fail.
+For example, in the case whereby escrowed LSK exists in the sidechain account on the mainchain, which could have been subtracted by prior malicious behavior in the terminated sidechain.
+
 === Recovery process from the mainchain
 
-On the mainchain, users can recover...
+On the mainchain, users can perform the following recoveries:
 
-* ... the balance of LSK they had on a terminated sidechain by submitting a transaction with a <<recover-state>> command.
-* ... <<pending-ccms>> by submitting a transaction with a <<recover-message>>.
+. <<state-recovery>>
+. <<ccm-recovery>>
 
 .Recovery process from the mainchain.
 image::understand-blockchain/interop/mainchain-recovery_v1.png[, align="center" ,500]
 
 The process required is as follows, and is depicted in the illustration above:
 
-1. The sidechain is terminated by submitting a <<terminate-sidechain-for-liveness-command>>, or violating the Token module protocol.
+1.State recovery::
+The sidechain is terminated by submitting a <<terminate-sidechain-for-liveness-command>>, or violating the Token module protocol.
+a. A "terminated state" account containing the last certified state root of the sidechain is created in the state.
+b. A User can start recovering assets with a <<recover-state>> command.
 
-a. A *terminated state account* containing the last certified state root of the sidechain is created in the state.
-
-b. A User can start recovering assets with a *state recovery command* as covered above.
-
-2. A <<initialize-message-recovery>> command is then sent.
+2.CCM recovery::
+A <<initialize-message-recovery>> command is then sent.
 This command contains the inbox size of the mainchain stored on the terminated sidechain, which indicates how many cross-chain messages were processed.
-
 a. A "terminated outbox" account is created in the <<terminated-outbox-substore>>.
 This contains the outbox root of the terminated sidechain channel, and the inbox size provided with the <<initialize-message-recovery>> command.
-
 b. A user can now recover pending messages with a <<recover-message>> command.
 
 === Recovery process from a sidechain
 
-The users can recover the balance of any custom token they had on a terminated sidechain by submitting a transaction with a <<recover-state>> command.
+On a sidechain, users can perform the following recoveries:
 
-.Recoverable modules
+. <<state-recovery>>
+
 [NOTE]
 ====
 State changes can only be recovered on a sidechain, if the module targeted by the CCM supports the recovery.
@@ -320,47 +331,50 @@ Modules expose a `recover` method if the recovery is supported, like for example
 For custom modules, it is therefore recommended to always implement a `recover` method into a module, if the module supports cross-chain transactions.
 ====
 
-On a sidechain, the process flow can occur in 3 scenarios which are described below and are also depicted in the corresponding 3 diagrams.
+On a sidechain, the process flow can occur in 3 scenarios which are described below.
 
 ==== Scenario 1: Violation of a module protocol
 
+If a sidechain is <<sending-malicious-ccms>> which are breaking the protocol of the corresponding module on the receiving chain, the chain will notice this during the validation of the CCM.
+The receiving chain will then terminate account of the sending chain.
+
+The recovery process for this scenario 1 works as follows:
+
 image::understand-blockchain/interop/sidechain-recovery1-v2.png[, align="center" ,500]
 
-1. The sidechain is terminated for violating the protocol of the token module or of a custom module.
-
-a. A terminated *state account* containing the mainchain last certified state root is created in the sidechain state.
-
-b. A *state recovery initialization command* is sent.
-This command contains the last certified state root (on the mainchain), of the terminated sidechain and an inclusion proof against the mainchain state root stored in the terminated state account.
-
-c. A user is able to recover assets native to the sidechain with a *state recovery command*.
+a. A "terminated state" account containing the mainchain last certified state root is created in the sidechain state.
+b. An <<initialize-state-recovery>> command is sent.
+This command contains the last certified state root (on the mainchain), of the terminated sidechain and an inclusion proof against the mainchain state root stored in the "terminated state" account.
+c. A user is able to recover assets native to the sidechain with a <<recover-state>> command.
 
 ==== Scenario 2: Receiving a "sidechain terminated" CCM
+A sidechain receives a <<sidechain-terminated-ccm>> from the mainchain, indicating that a cross-chain message could not be delivered because the receiving chain was terminated.
+This CCM contains the last certified state root (on the mainchain), of the terminated sidechain.
+The receiving chain will then terminate account of the corresponding sidechain.
+
+The recovery process for this scenario 2 works as follows:
 
 image::understand-blockchain/interop/sidechain-recovery2_v2.png[, align="center" ,500]
 
-2. The sidechain receives a *sidechain terminated message* from the mainchain, indicating that a cross-chain message could not be delivered because the receiving chain was terminated.
-This message contains the last certified state root (on the mainchain), of the terminated sidechain.
-
-a. A *terminated state account* containing the sidechain’s last certified state root is created in the state.
-However, it is important to note that in this case, the terminated sidechain state root is set immediately, and there is no need for a state recovery initialization command.
-
-b. A user can recover assets native to the sidechain with a *state recovery command*.
+a. A "terminated state" account containing the sidechain’s last certified state root is created in the state.
+However, it is important to note that in this case, the terminated sidechain state root is set immediately, and there is no need for a <<initialize-state-recovery>> command.
+b. A user can recover assets native to the sidechain with a <<recover-state>> command.
 
 ==== Scenario 3: Termination on the mainchain
+Sometimes it can happen that a sidechain is terminated on the mainchain, and still active on other sidechains.
+The mainchain does not inform other sidechains immediately about a termination.
+If a sidechain then tries to send a CCU to a sidechain that is already terminated on the mainchain, the CCU will be rejected by the mainchain, and it will respond with a <<sidechain-terminated-ccm>> like described in <<scenario-2-receiving-a-sidechain-terminated-ccm>>.
+
+In case it is already known that a sidechain is terminated by the users, they can avoid scenario 2, where a CCU is rejected, and directly initialize the <<state-recovery>>.
+
+The recovery process for this scenario 3 works as follows:
 
 image::understand-blockchain/interop/sidechain-recovery3-v2.png[, align="center" ,500]
 
-3. The sidechain is terminated on the mainchain.
-
-a. A *state recovery initialization command* is sent.
+a. A <<initialize-state-recovery>> command is sent.
 This command contains the last certified state root (on the mainchain), of the terminated sidechain and an inclusion proof against the last certified mainchain state root, proving the termination.
-
-b. A *terminated state account* containing the sidechain’s last certified state root is created in the state.
-
-c. A user can recover assets that are native to the sidechain with a *state recovery command*.
-
-As mentioned above the steps from 1 to 3 are depicted graphically below in figure 4.
+b. A "terminated state" account containing the sidechain’s last certified state root is created in the state.
+c. A user can recover assets that are native to the sidechain with a <<recover-state>> command.
 
 === Example: Recovery Process
 
@@ -631,7 +645,12 @@ For a sidechain account on the mainchain, they are set by the sidechain registra
 
 === Terminated state substore
 
-A "terminated state" account is created as part of the `terminateChain` function, as part of the processing of a <<sidechain-terminated-ccm>>, as part of the processing of a channel terminated CCM, or as part of the processing of a "Recover State" command.
+A *terminated state* account is created
+
+* as part of the `terminateChain` function,
+* as part of the processing of a <<sidechain-terminated-ccm>>,
+* as part of the processing of a <<channel-terminated-ccm>>,
+* or as part of the processing of a <<recover-state>> command.
 
 It is initialized with the information contained in the last sidechain certificate posted on the mainchain.
 

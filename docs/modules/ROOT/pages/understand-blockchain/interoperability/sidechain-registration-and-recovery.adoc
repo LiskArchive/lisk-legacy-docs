@@ -12,6 +12,7 @@ Chris Braithwaite <christopher.braithwaite@lightcurve.io>, Mona Bärenfänger <m
 :url_typedoc_interop_module: {site-url}/lisk-sdk/v6/references/typedoc/classes/lisk_framework.SidechainInteroperabilityModule.html
 :url_typedoc_interop_init_recovery: {site-url}/lisk-sdk/v6/references/typedoc/classes/lisk_framework.InitializeStateRecoveryCommand.html
 :url_typedoc_interop_register_sidechain: {site-url}/lisk-sdk/v6/references/typedoc/classes/lisk_framework.RegisterSidechainCommand.html
+:url_typedoc_interop_register_mainchain: {site-url}/lisk-sdk/v6/references/typedoc/classes/lisk_framework.RegisterMainchainCommand.html
 :url_typedoc_interop_message_recovery: {site-url}/lisk-sdk/v6/references/typedoc/classes/lisk_framework.RecoverMessageCommand.html
 :url_typedoc_interop_state_recovery: {site-url}/lisk-sdk/v6/references/typedoc/classes/lisk_framework.RecoverStateCommand.html
 :url_typedoc_interop_terminate4liveness: {site-url}/lisk-sdk/v6/references/typedoc/classes/lisk_framework.TerminateSidechainForLivenessCommand.html
@@ -85,7 +86,7 @@ When a sidechain is registered on the mainchain, this creates new entries in the
 
 ==== Register Sidechain command
 
-The sidechain registration command is used to register a sidechain on the Lisk mainchain.
+The {url_typedoc_interop_register_sidechain}[Register Sidechain command^] is used to register a sidechain on the Lisk mainchain.
 When this command is processed, a new account for the sidechain is created in the mainchain state under the interoperability store.
 The account is initialized with an empty inbox and outbox, while the sidechain name and the initial validators set are given in the command parameters.
 The chain ID, used as store key, is also given in the command parameters.
@@ -105,8 +106,8 @@ When the mainchain is registered on a sidechain, this creates new entries in the
 . It also initializes the <<own-chain-substore>> on the sidechain.
 
 ==== Register Mainchain command
-The mainchain registration command is used to register the Lisk mainchain on a sidechain.
-When this command is processed, a new account for the mainchain is created in the sidechain state under the interoperability store.
+The {url_typedoc_interop_register_mainchain}[Register Mainchain command^] is used to register the Lisk mainchain on a sidechain.
+When this command is processed, a new account for the mainchain is created in the sidechain state under the Interoperability store.
 The account is initialized with an empty inbox and outbox, while the initial validators set is given in the command parameters.
 The name and chain ID of the mainchain are global protocol constants in the whole ecosystem.
 
@@ -276,42 +277,49 @@ This makes it possible to provide <<recovery-as-a-service>> to users, to simplif
 
 On the mainchain, users can perform the following recoveries:
 
-State recovery::
-In case any tokens or other assets are stored on another sidechain and this sidechain gets terminated, the assets can to be recovered from the terminated sidechain.
-
-[#ccm-recovery]
-CCM recovery::
-It is possible to recover any <<pending-ccms>> that may have been unprocessed in the outbox of the terminated chain.
-Subsequently, their effect can be reverted on the sending chain.
-+
-However, it is important to note that users are not guaranteed to recover their CCMs in every situation.
-Certain state information of the terminated sidechain might have been modified before the termination occurred, and this would make the recovered CCM application fail.
-For example, in the case whereby escrowed LSK exists in the sidechain account on the mainchain, which could have been subtracted by prior malicious behavior in the terminated sidechain.
+. <<state-recovery, State recovery>>
+. <<ccm-recovery, CCM recovery>>
 
 The recovery process for on the mainchain works as follows:
 
 .Recovery process from the mainchain.
 image::understand-blockchain/interop/recovery_mainchain.png[align="center",width=550]
 
+[#state-recovery]
 1.State recovery::
-The sidechain is terminated by submitting a <<terminate-sidechain-for-liveness-command>>, or violating the Token module protocol.
-a. A "terminated state" account containing the last certified state root of the sidechain is created in the state.
-b. A User can start recovering assets with a <<recover-state>> command.
+In case any tokens or other assets are stored on another sidechain and this sidechain gets terminated, the assets can to be recovered from the terminated sidechain.
++
+1.The sidechain is terminated by submitting a <<terminate-sidechain-for-liveness-command>>, or violating the Token module protocol.
++
+1a. A "terminated state" account containing the last certified state root of the sidechain is created in the state.
++
+1b. A User can start recovering assets with a <<recover-state>> command.
++
 The funds are then credited to the user's account on the mainchain.
 Finally, the state root of the terminated sidechain is then updated accordingly.
 
+[#ccm-recovery]
 2.CCM recovery::
-A <<initialize-message-recovery>> command is then sent.
+It is possible to recover any <<pending-ccms>> that may have been unprocessed in the outbox of the terminated chain.
+Subsequently, their effect can be reverted on the sending chain.
++
+However, it is important to note that users are not guaranteed to recover their CCMs in every situation.
+Certain state information of the terminated sidechain might have been modified before the termination occurred, and this would make the recovered CCM application fail.
+For example, in the case whereby escrowed LSK exists in the sidechain account on the mainchain, which could have been subtracted by prior malicious behavior in the terminated sidechain.
++
+2.The <<initialize-message-recovery>> command is then sent.
 This command contains the inbox size of the mainchain stored on the terminated sidechain, which indicates how many cross-chain messages were processed.
-a. A "terminated outbox" account is created in the <<terminated-outbox-substore>>.
++
+2a. A "terminated outbox" account is created in the <<terminated-outbox-substore>>.
 This contains the outbox root of the terminated sidechain channel, and the inbox size provided with the <<initialize-message-recovery>> command.
-b. A user can now recover pending messages with a <<recover-message>> command.
++
+2b. A user can now recover pending messages with a <<recover-message>> command.
 
 === Recovery process from a sidechain
 
 On a sidechain, users can perform the following recoveries:
 
-State recovery::
+. *State recovery*:
 In case any tokens or other assets are stored on another sidechain and this sidechain gets terminated, the assets can to be recovered from the terminated sidechain.
 
 .Recoverable modules
@@ -539,7 +547,7 @@ Each entry in the chain account substore includes the following properties:
 * `name`: This property corresponds to the name of the sidechain as a string of characters.
 It has to be unique in the ecosystem and contain only characters from the set `[a-z0-9!@$&_.]`.
 For the mainchain account on a sidechain, this property is initialized to the string `"lisk_mainchain"`.
-For a sidechain account on the mainchain, this property is set by the sender of the xref:{url_typedoc_interop_register_sidechain}[Register Sidechain command].
+For a sidechain account on the mainchain, this property is set by the sender of the <<register-sidechain-command>>.
 * `lastCertificate`: This property holds some information from the certificate posted contained in the last CCU from the partner chain.
 It is an object containing the following properties:
 ** `height`: The height contained in the last certificate from the partner chain.

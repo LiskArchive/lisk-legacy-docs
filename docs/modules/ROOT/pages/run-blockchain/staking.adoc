@@ -65,12 +65,59 @@ To verify the concrete weight of your or any other validator, it is possible to 
 
 :sectnums:
 
+== Checking the current stakes of an account
+
+To retrieve the current stakes of an account, query the `pos_getValidator` endpoint.
+
+The endpoint expects a single parameter:
+
+* `address`: The address of the account
+
+[source,bash]
+----
+curl --location --request POST 'http://localhost:7887/rpc' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "jsonrpc": "2.0",
+    "id": "1",
+    "method": "pos_getValidator",
+    "params": {
+         "address": "lskrkhrkm25u5vqxayy3nu9ommt693vwrb546vefj"
+    }
+}'
+----
+
+The response will summarize all stakes that the account specified in the `address` parameter made.
+
+This includes
+
+. a list of the validators that the account staked for, including the validator address and the amount of tokens used for the stake.
+. a list of <<checking-for-pending-tokens-ready-to-be-unlocked,pending tokens>>, ready to be <<unlocking-tokens-after-un-stake, unlocked>>.
+
+.Example output
+[source,json]
+----
+{
+    "id": "1",
+    "jsonrpc": "2.0",
+    "result": {
+        "stakes": [
+            {
+                "validatorAddress": "lsk9grkenp3hw8y7hyf3nzbs2r2fuqmbno8duy9m6",
+                "amount": "1000000000",
+                "sharingCoefficients": []
+            }
+        ],
+        "pendingUnlocks": []
+    }
+}
+----
+
 == Staking
 
-Create a transaction to stake and un-stake tokens for one or multiple validators.
+Create a transaction to stake tokens for one or multiple validators.
 
 * Up to *20 stakes and/or un-stakes* can be included in a single Stake transaction.
-* A *positive* `amount` of tokens indicates a *stake*, whereas a *negative* `amount` of tokens indicates an *un-stake*.
 * Staking must be done in a *multiple of 10 LSK*.
 
 The following parameter is required:
@@ -85,6 +132,7 @@ There are various services and tools to stake tokens, for example: {url_lisk_wal
 
 In the following examples, the node CLI is used to create and send the respective Stake transaction.
 
+.Performing a token stake
 [tabs]
 =====
 Lisk Core::
@@ -93,7 +141,7 @@ Lisk Core::
 //TODO: Verify Lisk Core command
 [source,bash]
 ----
-lisk-core transaction:create pos stake 100000000 --pretty --json --params='{"stakes":[{"validatorAddress":"lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3","amount":15000000000},{"validatorAddress":"lske5sqed53fdcs4m9et28f2k7u9fk6hno9bauday","amount":-5000000000}]}'
+lisk-core transaction:create pos stake 100000000 --pretty --json --params='{"stakes":[{"validatorAddress":"lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3","amount":15000000000}]}'
 ----
 --
 Sidechain node::
@@ -101,7 +149,7 @@ Sidechain node::
 --
 [source,bash]
 ----
-./bin/run transaction:create pos stake 100000000 --pretty --json --params='{"stakes":[{"validatorAddress":"lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3","amount":15000000000},{"validatorAddress":"lske5sqed53fdcs4m9et28f2k7u9fk6hno9bauday","amount":-5000000000}]}'
+./bin/run transaction:create pos stake 100000000 --pretty --json --params='{"stakes":[{"validatorAddress":"lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3","amount":15000000000}]}'
 ----
 --
 =====
@@ -186,7 +234,45 @@ Transaction with id: '1809da284fe26dba90d34dc3aab837a32d3c291a4ca78a9bfa263f927c
 
 == Un-staking
 
-//TODO:Show how to un-stake and refer to the sending a transaction part
+The process of removing staked tokens for a validator account is called *un-staking*.
+
+The un-staking process works analog to the <<staking>> process:
+You send a Stake transaction to perform an un-stake.
+The only difference is, that you define a *negative* amount of tokens in the Stake transaction, instead of a positive amount.
+
+TIP: It is possible to perform stakes and un-stakes for validators in a single Stake transaction (maximum 20 (un-)stakes per transaction).
+
+.Performing a token un-stake
+[tabs]
+=====
+Lisk Core::
++
+--
+//TODO: Verify Lisk Core command
+[source,bash]
+----
+lisk-core transaction:create pos stake 100000000 --pretty --json --params='{"stakes":[{"validatorAddress":"lske5sqed53fdcs4m9et28f2k7u9fk6hno9bauday","amount":-5000000000}]}'
+----
+--
+Sidechain node::
++
+--
+[source,bash]
+----
+./bin/run transaction:create pos stake 100000000 --pretty --json --params='{"stakes":[{"validatorAddress":"lske5sqed53fdcs4m9et28f2k7u9fk6hno9bauday","amount":-5000000000}]}'
+----
+--
+=====
+
+Next, send the transaction like described in <<send-the-stake-transaction>>.
+
+[IMPORTANT]
+====
+Please be aware, that the un-staked tokens will be *locked*.
+That means, that the un-staked tokens won't be freely usable directly after they are un-staked.
+
+Please read the next section <<unlocking-tokens-after-un-stake>> for more information.
+====
 
 == Unlocking tokens after un-stake
 

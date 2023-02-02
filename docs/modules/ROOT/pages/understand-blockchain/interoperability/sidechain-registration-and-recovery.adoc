@@ -71,7 +71,7 @@ A sidechain is registered by performing the following steps:
 NOTE: After a sidechain has been registered on the mainchain, it does not need to follow the <<liveness-condition>>, until the <<first-cross-chain-update>> has been included on the mainchain.
 
 === Sidechain registration on the Lisk Mainchain
-A sidechain can be registered by any user account on the mainchain that has adequate funds to pay the required transaction fee.
+A sidechain can be registered by any user account on the mainchain by posting a <<register-sidechain-command>>.
 
 TIP: Please check out the guide xref:{url_build_regsidechain_mainchain}[How to register a sidechain on the mainchain] for a step-by-step explanation about the process.
 
@@ -83,8 +83,16 @@ When a sidechain is registered on the mainchain, this creates new entries in the
 . An outbox root in the <<outbox-root-substore>>
 . A new entry in the <<registered-names-substore>> for the sidechain.
 
+==== Register Sidechain command
+
+The sidechain registration command is used to register a sidechain on the Lisk mainchain.
+When this command is processed, a new account for the sidechain is created in the mainchain state under the interoperability store.
+The account is initialized with an empty inbox and outbox, while the sidechain name and the initial validators set are given in the command parameters.
+The chain ID, used as store key, is also given in the command parameters.
+
 === Mainchain registration on a sidechain
 Once the sidechain has been registered on the mainchain, a similar registration process should happen in the sidechain before the interoperable channel is opened between the two chains.
+To register the mainchaon on a sidechain, any user can post a <<register-mainchain-command>>.
 
 TIP: Please check out the guide xref:{url_build_regsidechain_sidechain}[How to register the mainchain on the sidechain] for a step-by-step explanation about the process.
 
@@ -95,6 +103,15 @@ When the mainchain is registered on a sidechain, this creates new entries in the
 . The list of active validators on the mainchain in the <<chain-validators-substore>>.
 . An outbox root in the <<outbox-root-substore>>
 . It also initializes the <<own-chain-substore>> on the sidechain.
+
+==== Register Mainchain command
+The mainchain registration command is used to register the Lisk mainchain on a sidechain.
+When this command is processed, a new account for the mainchain is created in the sidechain state under the interoperability store.
+The account is initialized with an empty inbox and outbox, while the initial validators set is given in the command parameters.
+The name and chain ID of the mainchain are global protocol constants in the whole ecosystem.
+
+This command also initializes another data structure in the interoperability store, containing some information about the sidechain itself.
+In particular, it sets the sidechain name and chain ID to the ones that have been previously registered on the mainchain via the <<register-sidechain-command>>.
 
 === Registration CCM
 Every time that a sidechain is registered on the mainchain and vice versa, a corresponding "registration" CCM is created and appended to the chain outbox.
@@ -280,6 +297,8 @@ image::understand-blockchain/interop/recovery_mainchain.png[align="center",width
 The sidechain is terminated by submitting a <<terminate-sidechain-for-liveness-command>>, or violating the Token module protocol.
 a. A "terminated state" account containing the last certified state root of the sidechain is created in the state.
 b. A User can start recovering assets with a <<recover-state>> command.
+The funds are then credited to the user's account on the mainchain.
+Finally, the state root of the terminated sidechain is then updated accordingly.
 
 2.CCM recovery::
 A <<initialize-message-recovery>> command is then sent.
@@ -349,20 +368,6 @@ This command contains the last certified state root (on the mainchain), of the t
 b. A "terminated state" account containing the sidechain’s last certified state root is created in the state.
 c. A user can recover assets that are native to the sidechain with a <<recover-state>> command.
 
-=== Example: Recovery Process
-
-In order to summarize the recovery process, a brief example of recovering assets/tokens from the state of a terminated sidechain is provided below:
-
-NOTE: Please keep in mind, that there are certain data-availability requirements necessary to prepare a recovery transaction.
-It is therefore recommended to use a recovery service if available, see <<recovery-as-a-service>> for more information on the topic.
-
-1. A sidechain is terminated on the mainchain due to inactivity.
-2. The last certified state root, i.e. the state root contained in the last certificate received from the sidechain, is stored in the terminated state account of the sidechain.
-3. The user can recover the assets/tokens by sending a state recovery command.
-This command contains an inclusion proof, proving the user balance on the sidechain against the state root stored in the terminated state account.
-4. The funds are credited to the user's account on the mainchain.
-5. Finally, the state root of the terminated sidechain is then updated accordingly.
-
 === Recovery-as-a-Service
 The following information is required to prepare a recovery transaction:
 
@@ -403,7 +408,7 @@ This command has two purposes: It can be used to...
 ==== Recover State
 The {url_typedoc_interop_state_recovery}[Recover State^] command is used to recover assets (for example fungible and non-fungible tokens) from a terminated sidechain.
 
-The user proves the existence of an entry in the terminated sidechain state with an inclusion proof against the state root stored in the <<terminated-state-substore,sidechain terminated>> account.
+This command contains an inclusion proof, proving the user balance on the sidechain against the state root stored in the <<terminated-state-substore,terminated state>> account.
 
 The recovery of the state is then handled by the relevant module (for example, the token module would refund the user) and the state root is updated.
 
@@ -618,7 +623,7 @@ Each entry contains the following properties:
 ** `blsKey`: The BLS public key used to sign certificates.
 ** `bftWeight`: An integer indicating the weight of the corresponding BLS public key for signing a certificate.
 * `certificateThreshold`: An integer setting the required cumulative weight needed for the certificate signature to be valid.
-For the mainchain account on a sidechain, the `activeValidators` and `certificateThreshold` properties are initialized by the mainchain registration command.
+For the mainchain account on a sidechain, the `activeValidators` and `certificateThreshold` properties are initialized by the <<register command.
 For a sidechain account on the mainchain, they are set by the sidechain registration command.
 ====
 
@@ -641,10 +646,8 @@ The store key is set to the ID of the terminated chain `chainID`.
 Value::
 Each entry in the "terminated state" substore includes the following properties:
 
-* `stateRoot`: The state root of the terminated chain, where `chainID` is the chain ID of the terminated chain.
-If the account is not initialized, it is set to `sha256(b"")` instead.
+* `stateRoot`: The state root of the terminated chain.
 * `mainchainStateRoot`: The state root of the mainchain at the moment in which the chain was terminated.
-If the account is initialized, it is set to `sha256(b"")` instead.
 * `initialized`: A boolean value, indicating whether the terminated state account has been initialized, i.e. if the `stateRoot` property has been set.
 ====
 
@@ -662,9 +665,9 @@ The store key is set to the ID of the terminated chain `chainID`.
 Value::
 Each entry in the "terminated outbox" substore includes the following properties:
 
-* `outboxRoot`: The outbox root of the terminated chain, where `chainID` is the chain ID of the terminated chain.
-* `outboxSize`: The outbox size of the terminated chain, where `chainID` is the chain ID of the terminated chain.
-* `partnerChainInboxSize`: The number of cross-chain messages processed in the terminated chain, set to the `partnerChainInboxSize` property contained in the "Recover Message" command.
+* `outboxRoot`: The outbox root of the terminated chain.
+* `outboxSize`: The outbox size of the terminated chain.
+* `partnerChainInboxSize`: The number of cross-chain messages processed in the terminated chain, set to the `partnerChainInboxSize` property contained in the <<recover-message>> command.
 ====
 
 === Registered names substore

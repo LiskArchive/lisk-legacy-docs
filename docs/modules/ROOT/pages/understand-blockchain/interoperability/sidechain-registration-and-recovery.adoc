@@ -6,6 +6,7 @@ Chris Braithwaite <christopher.braithwaite@lightcurve.io>, Mona Bärenfänger <m
 :imagesdir: ../../assets/images
 //URLs
 :url_lip_45: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0045.md
+:url_lip_51_recoverevent: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0051.md#recover-1
 :url_lip_45_terminatechain: {url_lip_45}#terminatechain
 :url_lip_53: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0053.md#verification
 :url_typedoc_interop_module: {site-url}/lisk-sdk/v6/references/typedoc/classes/lisk_framework.SidechainInteroperabilityModule.html
@@ -243,8 +244,7 @@ Pending CCMs can easily be recovered, please see <<ccm-recovery>> for more infor
 The sidechain recovery process allows users to recover assets like tokens or NFTs from a terminated sidechain.
 Additionally, pending messages that were stuck unprocessed in the outbox of the terminated chain can be recovered as well, and their effect is reverted on the sending chain.
 
-NOTE: The sidechain recovery process is executed completely on the mainchain.
-No connection or communication to the terminated sidechain is required to complete the recovery.
+NOTE: No connection or communication to the terminated sidechain is required to complete the recovery.
 
 .Recovering tokens and NFTs from terminated sidechains
 video::iBVfttn_n-U[youtube,align=center,width=100%,height=400]
@@ -258,48 +258,21 @@ That means, it is not possible to steal any tokens from a terminated chain by re
 Furthermore, this makes it possible to provide <<recovery-as-a-service>> to users, to simplify the recovery process further.
 ====
 
-=== State recovery
-
-In case any tokens or other assets are stored on another sidechain and this sidechain gets terminated, the assets can to be recovered from the terminated sidechain.
-
-State recovery on the mainchain::
-The LSK amount is returned to respective account address on the mainchain.
-
-//TODO: Add links to the recover event, Token & NFT modules
-State recovery on a sidechain::
-A recovery CCM sent back to sending chain, where it credits tokens / NFTs to the respective account.
-
-=== CCM Recovery
-
-It is possible to recover any <<pending-ccms>> that may have been unprocessed in the outbox of the terminated chain.
-Subsequently, their effect can be reverted on the sending chain.
-
-[NOTE]
-====
-CCM recovery can only be performed from the mainchain.
-====
-
-Any user can submit a <<recover-message>> command to recover several CCMs simultaneously.
-
-An <<initialize-message-recovery>> command is responsible for setting the outbox root and the inbox size in the terminated outbox account.
-This is followed by issuing a <<recover-message>> command in order to recover any pending messages present in the outbox of the terminated sidechain.
-
-CCM recovery on the mainchain::
-LSK amount returned to CCM sender.
-
-CCM recovery on a sidechain::
-CCM sent back to sending chain, where it is then reverted.
-
-However, it is important to note that users are not guaranteed to recover their CCMs in every situation.
-Certain state information of the terminated sidechain might have been modified before the termination occurred, and this would make the recovered CCM application fail.
-For example, in the case whereby escrowed LSK exists in the sidechain account on the mainchain, which could have been subtracted by prior malicious behavior in the terminated sidechain.
-
 === Recovery process from the mainchain
 
 On the mainchain, users can perform the following recoveries:
 
-. <<state-recovery>>
-. <<ccm-recovery>>
+State recovery::
+In case any tokens or other assets are stored on another sidechain and this sidechain gets terminated, the assets can to be recovered from the terminated sidechain.
+
+[#ccm-recovery]
+CCM recovery::
+It is possible to recover any <<pending-ccms>> that may have been unprocessed in the outbox of the terminated chain.
+Subsequently, their effect can be reverted on the sending chain.
++
+However, it is important to note that users are not guaranteed to recover their CCMs in every situation.
+Certain state information of the terminated sidechain might have been modified before the termination occurred, and this would make the recovered CCM application fail.
+For example, in the case whereby escrowed LSK exists in the sidechain account on the mainchain, which could have been subtracted by prior malicious behavior in the terminated sidechain.
 
 .Recovery process from the mainchain.
 image::understand-blockchain/interop/mainchain-recovery_v1.png[, align="center" ,500]
@@ -322,12 +295,14 @@ b. A user can now recover pending messages with a <<recover-message>> command.
 
 On a sidechain, users can perform the following recoveries:
 
-. <<state-recovery>>
+State recovery::
+In case any tokens or other assets are stored on another sidechain and this sidechain gets terminated, the assets can to be recovered from the terminated sidechain.
 
+.Recoverable modules
 [NOTE]
 ====
 State changes can only be recovered on a sidechain, if the module targeted by the CCM supports the recovery.
-Modules expose a `recover` method if the recovery is supported, like for example the Token module, and the NFT module.
+Recoverable modules expose a `recover` method if the recovery is supported, like for example the Token module, and the NFT module.
 
 For custom modules, it is therefore recommended to always implement a `recover` method into a module, if the module supports cross-chain transactions.
 ====
@@ -431,41 +406,55 @@ This command has two purposes: It can be used to...
 // In the first case, the command contains an inclusion proof against the mainchain state root stored in the terminated state account, proving the value of the state root of the terminated sidechain.
 // In the second case, the command contains an inclusion proof against the mainchain state root, proving that another sidechain is either terminated or the <<liveness-condition>> is violated.
 
-==== Initialize Message Recovery
-Once a <<terminated-state-substore,terminated state>> account has been created on the mainchain, users can send this command to initialize the corresponding terminated outbox account.
-The command sets the outbox root and the inbox size in the terminated outbox account, so that message recovery commands can be issued.
+==== Recover State
+The {url_typedoc_interop_state_recovery}[Recover State^] command is used to recover assets (for example fungible and non-fungible tokens) from a terminated sidechain.
 
+The user proves the existence of an entry in the terminated sidechain state with an inclusion proof against the state root stored in the <<terminated-state-substore,sidechain terminated>> account.
+
+The recovery of the state is then handled by the relevant module (for example, the token module would refund the user) and the state root is updated.
+
+The following information is required to recover assets from a terminated chain:
+
+* Access to the specific asset to recover from the sidechain
+* The entire state tree authenticated by the last certified state root to be able to provide the inclusion proof.
+
+==== Initialize Message Recovery
+Once a <<terminated-state-substore,terminated state>> account has been created on the mainchain, users can send this command to initialize the corresponding terminated outbox account in the <<terminated-outbox-substore>>.
 This command contains the channel account of the mainchain stored in the state of the terminated sidechain and an inclusion proof for it against the state root stored in the corresponding terminated state account.
-The mainchain channel data is needed to get the number of messages that were processed in the terminated sidechain (corresponding to the inbox size of the channel).
+
+//The mainchain channel data is required to get the number of messages that were processed in the terminated sidechain (corresponding to the inbox size of the channel).
+The following information is required to initialize message recovery on the mainchain:
 
 * `chainID`: The ID of the sidechain whose terminated outbox account is to be initialized.
 * `channel`: The channel of this chain stored on the terminated sidechain.
 * `bitmap`: The bitmap of the inclusion proof of the channel in the sidechain state tree.
 * `siblingHashes`: The sibling hashes of the inclusion proof of the channel in the sidechain state tree.
 
-==== Recover State
-The {url_typedoc_interop_state_recovery}[Recover State^] command is used to recover assets (for example fungible and non-fungible tokens) from a terminated sidechain.
-
-The user proves the existence of an entry in the terminated sidechain state with an inclusion proof against the state root stored in the <<terminated-state-substore,sidechain terminated>> account.
-The recovery of the state is then handled by the relevant module (for example, the token module would refund the user) and the state root is updated.
-
-The following information is needed to recover assets from a terminated chain:
-
-* Access to the specific asset to recover from the sidechain
-* The entire state tree authenticated by the last certified state root to be able to provide the inclusion proof.
-
 ==== Recover Message
 The {url_typedoc_interop_message_recovery}[Recover Message^] command is used to recover any <<pending-ccms>> from the outbox of a terminated sidechain.
+
 The user proves with an inclusion proof validated against the outbox root stored in the terminated outbox account that the message is in the terminated sidechain outbox.
 The message nonce is compared to the size of the inbox (also stored in the terminated outbox account) to check that the message had not been processed yet.
-The recovered message is then bounced back to the original sending chain or processed directly if the sending chain is the mainchain.
 
-The following information is needed to recover pending CCMs:
+The <<recover-ccm>> is then bounced back to the original sending chain or processed directly if the sending chain is the mainchain.
+When the recovery process is completed, a corresponding <<recover-event>> is emitted.
+
+The following information is required to recover pending CCMs:
 
 * Access to the cross-chain messages in the sidechain outbox.
 * The entire tree of the sidechain outbox to be able to provide the inclusion proof.
 
 :!sectnums:
+
+=== Recover CCM
+
+The Recover CCM is sent from the mainchain to the sending chain to facilitate the <<ccm-recovery>> on a sidechain.
+
+The module responsible for recovering the dedicated assets (e.g. the Token module) will then emit a <<recover-event>> to inform the network about the performed recovery.
+
+=== Recover event
+
+The {url_lip_51_recoverevent}[Recover event^] is emitted by when a <<ccm-recovery>> is performed.
 
 == Interoperability data substores
 
@@ -538,6 +527,9 @@ The chain substore holds the chain accounts of other partner chains.
 
 It is initialized on the respective chain as part of the <<sidechain-registration>> process.
 
+* On the mainchain, the store contains accounts of all registered sidechains.
+* On a sidechain, the store contains a mainchain account.
+
 [%collapsible]
 ====
 Key:: Each store key is set to the ID of the partner chain `chainID`.
@@ -572,6 +564,9 @@ The default value of this property is `0`, corresponding to the `registered` sta
 The channel substore holds information about the inbox and outbox with other partner chains.
 
 It is initialized on the respective chain as part of the <<sidechain-registration>> process.
+
+* On the mainchain, the store contains channels to all registered sidechains.
+* On a sidechain, the store contains a channel to the mainchain.
 
 [%collapsible]
 ====
@@ -614,6 +609,9 @@ The "chain validators" substore holds information about the validators of other 
 
 It is initialized on the respective chain as part of the <<sidechain-registration>> process.
 
+* On the mainchain, the store contains lists of validators for all registered sidechains.
+* On a sidechain, the store contains the list of the mainchain validators.
+
 [%collapsible]
 ====
 Key:: Each store key is set to the ID of the partner chain `chainID`.
@@ -632,12 +630,12 @@ For a sidechain account on the mainchain, they are set by the sidechain registra
 
 === Terminated state substore
 
-A *terminated state* account is created
+A *terminated state* account is created for a terminated chain on the mainchain or another sidechain ...
 
-* as part of the `terminateChain` function,
-* as part of the processing of a <<sidechain-terminated-ccm>>,
-* as part of the processing of a <<channel-terminated-ccm>>,
-* or as part of the processing of a <<recover-state>> command.
+* ... as part of the `terminateChain` function,
+* ... as part of the processing of a <<sidechain-terminated-ccm>>,
+* ... as part of the processing of a <<channel-terminated-ccm>>,
+* ... or as part of the processing of a <<recover-state>> command.
 
 It is initialized with the information contained in the last sidechain certificate posted on the mainchain.
 
@@ -658,7 +656,7 @@ If the account is initialized, it is set to `sha256(b"")` instead.
 
 === Terminated outbox substore
 
-A "terminated outbox" account is created as part of the processing of a "Recover Message" command.
+A "terminated outbox" account is created for a terminated chain on the mainchain as part of the processing of a <<recover-message>> command.
 
 A data structure holding the outbox root along with the mainchain inbox size from the terminated sidechain, indicating the number of messages that were processed on it.
 
@@ -676,24 +674,22 @@ Each entry in the "terminated outbox" substore includes the following properties
 ====
 
 === Registered names substore
-In order to process sidechain registration commands more efficiently, it is convenient to store on the mainchain the names already registered in the ecosystem to quickly check the uniqueness of the sidechain name.
+In order to process sidechain registration commands more efficiently, it is convenient to store the names already registered in the ecosystem on the mainchain.
+This way it is possible to quickly check the uniqueness of the sidechain name.
+
 This substore contains the names of all chains in the ecosystem.
 
 NOTE: The "registered names" substore is only present on the mainchain.
 
-A new entry in the substore is created as part of the <<sidechain-registration-on-the-lisk-mainchain>>.
-
-An entry for the Lisk Mainchain is present by default, where:
-
-* The store key is set to `"lisk_mainchain"`.
-* The store value is an object with chainID == getMainchainID(), serialized using the JSON schema registeredNamesSchema.
+An entry for the Lisk Mainchain is present by default.
+Any new entry for a sidechain is created as part of the <<sidechain-registration-on-the-lisk-mainchain>> in the "registered names" substore.
 
 [%collapsible]
 ====
 Key:: The chain name (String).
 
 Value::
-Each entry in the "terminated outbox" substore includes the following properties:
+Each entry in the "registered names" substore includes the following properties:
 
 * `chainID`: The ID of the chain.
 ====

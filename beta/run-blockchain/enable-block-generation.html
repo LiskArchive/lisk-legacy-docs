@@ -384,7 +384,7 @@
 <div class="exampleblock">
 <div class="content">
 <div class="paragraph">
-<p>On this page, you&#8217;ll learn how to enable and disable block generation on a node for a validator.</p>
+<p>On this page, you&#8217;ll learn how to enable and disable block generation for a validator on a blockchain that uses the Lisk PoS module, like the Lisk Mainnet.</p>
 </div>
 <div class="paragraph">
 <p>This includes how to:</p>
@@ -399,6 +399,9 @@
 </li>
 <li>
 <p><i class="fa fa-check-square-o"></i> Safely re-enable block generation on another node</p>
+</li>
+<li>
+<p><i class="fa fa-check-square-o"></i> Estimate the <a href="#validator-info-data">Validator info data</a>, in case it is lost</p>
 </li>
 </ul>
 </div>
@@ -417,6 +420,12 @@
 </li>
 <li><a href="#how-to-disable-block-generation-on-a-node">How to disable block generation on a node</a></li>
 <li><a href="#safely-enabling-block-generation-on-another-node">Safely enabling block generation on another node</a></li>
+<li><a href="#safely-enabling-forging-without-validator-info-data">Safely enabling forging without validator info data</a>
+<ul class="sectlevel2">
+<li><a href="#automatic-estimation-with-the-estimatesafestatus-endpoint-recommended">Automatic estimation with the <code>estimateSafeStatus</code> endpoint (recommended)</a></li>
+<li><a href="#manual-calculation-of-the-validator-info-data">Manual calculation of the validator info data</a></li>
+</ul>
+</li>
 </ul>
 </div>
 </div>
@@ -448,7 +457,7 @@ The blockchain application needs to be running to successfully enable block gene
 <p>Ensure the node is <strong>fully synchronized</strong> with the network, before enabling block generation on this node.</p>
 </li>
 <li>
-<p>If block generation is enabled for a validator for the <strong>first time</strong>, check out the dedicated guide <a href="become-a-validator.html" class="xref page">How to become a validator</a>.</p>
+<p>To enable block generation for a validator for the <strong>first time</strong>, check out the dedicated guide: <a href="become-a-validator.html" class="xref page">How to become a validator</a>.</p>
 </li>
 <li>
 <p>Ensure to adhere to the following points to avoid being punished by the network:</p>
@@ -483,10 +492,10 @@ The blockchain application needs to be running to successfully enable block gene
 <p><code>height</code>: Last generated block height.</p>
 </li>
 <li>
-<p><code>maxHeightGenerated</code>: Validators largest previously generated height.</p>
+<p><code>maxHeightGenerated</code>: Validator&#8217;s largest previously generated height.</p>
 </li>
 <li>
-<p><code>maxHeightPrevoted</code>: Validators largest prevoted height for a block.</p>
+<p><code>maxHeightPrevoted</code>: Validator&#8217;s largest prevoted height for a block.</p>
 </li>
 </ul>
 </div>
@@ -740,7 +749,7 @@ See <a href="become-a-validator.html#initial-validator-info-data" class="xref pa
 <h2 id="safely-enabling-block-generation-on-another-node"><a class="anchor" href="#safely-enabling-block-generation-on-another-node"></a>Safely enabling block generation on another node</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Sometimes it is desired or necessary to move to a new / different node, to generate blocks with a particular validator.</p>
+<p>Sometimes it is desired or necessary to move to a new/different node, to generate blocks with a particular validator.</p>
 </div>
 <div class="paragraph">
 <p>To safely enable block generation on another node, please ensure to follow the steps below:</p>
@@ -807,6 +816,136 @@ The height of your node should be equal to the current network height.</p>
 <p><a href="#how-to-enable-block-generation-on-a-node">Enable block generation</a>.</p>
 </li>
 </ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="safely-enabling-forging-without-validator-info-data"><a class="anchor" href="#safely-enabling-forging-without-validator-info-data"></a>Safely enabling forging without validator info data</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>It can happen that a validator loses their <a href="#validator-info-data">Validator info data</a>, for example if their server crashes, or if general access to the node is lost.</p>
+</div>
+<div class="paragraph">
+<p>In these cases, it is possible to estimate the validator info data.</p>
+</div>
+<div class="sect2">
+<h3 id="automatic-estimation-with-the-estimatesafestatus-endpoint-recommended"><a class="anchor" href="#automatic-estimation-with-the-estimatesafestatus-endpoint-recommended"></a>Automatic estimation with the <code>estimateSafeStatus</code> endpoint (recommended)</h3>
+<div class="paragraph">
+<p>It is recommended to use the endpoint <code>generator_estimateSafeStatus</code> to estimate the validator info data safely.</p>
+</div>
+<div class="paragraph">
+<p>The only input required is the <code>timeShutdown</code>, which is a Unix timestamp of the last time a validator was active and created a block in the network.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+<div class="title">Never underestimate the shutdown time</div>
+<div class="paragraph">
+<p>Underestimating the <code>timeShutdown</code> value will violate the Lisk BFT protocol if this info data is used to enable block generation.
+The validator will be punished by the network as a consequence.</p>
+</div>
+<div class="paragraph">
+<p>To avoid this, if you are unsure about the exact shutdown time, <strong>always overestimate</strong>, to be on the safe side.
+If you overestimate, you will never break the Lisk BFT protocol -  in worst case, you will lose a few block rewards.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">curl --location --request POST 'http://localhost:7887/rpc' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "jsonrpc": "2.0",
+    "id": "1",
+    "method": "generator_estimateSafeStatus",
+    "params": {
+         "timeShutdown": 1675259371
+    }
+}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This will respond with the estimated validator info data, which can now be used to enable block generation on a node:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{"id":"1","jsonrpc":"2.0","result":{"height":61837,"maxHeightGenerated":61837,"maxHeightPrevoted":61837}}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="manual-calculation-of-the-validator-info-data"><a class="anchor" href="#manual-calculation-of-the-validator-info-data"></a>Manual calculation of the validator info data</h3>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Required Delegate Input</dt>
+<dd>
+<div class="ulist">
+<ul>
+<li>
+<p><code>timeShutdown</code>: Unix timestamp of the last height when the validator node could have possibly been active and forging (over estimate with a larger number when uncertain about the exact time).</p>
+</li>
+</ul>
+</div>
+</dd>
+<dt class="hdlist1">Configurable Constants</dt>
+<dd>
+<div class="ulist">
+<ul>
+<li>
+<p><code>BLOCK_TIME = 10</code>: The block time of the considered blockchain in seconds, i.e., 10 for Lisk Mainnet.</p>
+</li>
+<li>
+<p><code>MAX_FORK_DEPTH = 8640</code>: An upper boundary on the largest chain of off-chain blocks for which the validator generated a block, i.e., for every block at height <code>h</code> generated by the validator, the parent block at height <code>h - MAX_FORK_DEPTH</code> must be contained in the canonical chain that is eventually finalized.
+It is recommended to use <code>MAX_FORK_DEPTH</code> = 8640 = 24*60 *6 (number of blocks generated in 24 h).</p>
+</li>
+</ul>
+</div>
+</dd>
+<dt class="hdlist1">Instructions</dt>
+<dd>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Start a new node with forging deactivated and synchronize with the Lisk blockchain until there is a block <code>finalizedBlock</code> that is
+finalized, and that the finalized block header timestamp is greater than the last active height: <code>finalizedBlock.header.timestamp &gt; timeShutdown</code></p>
+</li>
+<li>
+<p>Obtain a block <code>parentBlock</code> which is a parent block of <code>finalizedBlock</code> at height <code>finalizedBlock.header.height - MAX_FORK_DEPTH</code>.</p>
+<div class="literalblock">
+<div class="content">
+<pre>parentBlock.header.height = finalizedBlock.header.height - MAX_FORK_DEPTH</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Compute the number of missed blocks in the current chain between the <code>finalizedBlock</code> and the <code>parentBlock</code>, i.e., as shown below:</p>
+<div class="literalblock">
+<div class="content">
+<pre>missedBlocks = ceil((finalizedBlock.header.timestamp - parentBlock.header.timestamp)/BLOCK_TIME) - (finalizedBlock.header.height - parentBlock.header.height)</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Use the following forging configuration and activate forging:</p>
+<div class="literalblock">
+<div class="content">
+<pre>height = finalizedBlock.header.height
+maxHeightPreviouslyForged = finalizedBlock.header.height + missedBlocks
+heightPrevoted = finalizedBlock.header.height</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</dd>
+</dl>
+</div>
 </div>
 </div>
 </div>

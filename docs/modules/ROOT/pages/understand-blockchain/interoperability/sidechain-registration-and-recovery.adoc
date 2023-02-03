@@ -5,6 +5,7 @@ Chris Braithwaite <christopher.braithwaite@lightcurve.io>, Mona Bärenfänger <m
 :idseparator: -
 :imagesdir: ../../assets/images
 //URLs
+:url_lip_31_rmt: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0031.md#regular-merkle-trees
 :url_lip_45: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0045.md
 :url_lip_51_recoverevent: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0051.md#recover-1
 :url_lip_45_terminatechain: {url_lip_45}#terminatechain
@@ -30,6 +31,7 @@ Chris Braithwaite <christopher.braithwaite@lightcurve.io>, Mona Bärenfänger <m
 :url_build_regsidechain_sidechain: build-blockchain/register-sidechain.adoc#how-to-register-the-mainchain-on-the-sidehcain
 //Footnotes
 :fn_lip53: footnote:command[See {url_lip_53}[LIP 0053^] for more information about the verification of certificates.]
+:fn_lip31_rmt: footnote:rmt[See {url_lip_31_rmt}[LIP 0031^] for more information about regular merkle trees.]
 
 ====
 On this page, you learn about the sidechain registration and recovery process in the Lisk ecosystem.
@@ -377,19 +379,11 @@ b. A "terminated state" account containing the sidechain’s last certified stat
 c. A user can recover assets that are native to the sidechain with a <<recover-state>> command.
 
 === Recovery-as-a-Service
-The following information is required to prepare a recovery transaction:
-
-Message recovery commands::
-* Access to the cross-chain messages in the sidechain outbox.
-* The entire tree of the sidechain outbox to be able to provide the inclusion proof.
-
-State recovery commands::
-* Access to the specific asset to recover from the sidechain
-* The entire state tree authenticated by the last certified state root to be able to provide the inclusion proof.
-
+To perform a recovery of assets from a terminated sidechain, specific information is required to prepare a recovery transaction, see <<recovery-commands>>.
 Furthermore, this information has to be kept updated every time a recovery command is processed.
-Due to this fact, third-party services could offer to recover assets and messages on behalf of users.
-These services would run a mainchain and sidechain node to provide the data availability, possibly in exchange for a small fee.
+
+Third-party services could offer to recover assets and messages on behalf of users.
+Recovery services would run a mainchain and sidechain node to provide the data availability, possibly in exchange for a small fee.
 
 === Recovery commands
 
@@ -497,7 +491,6 @@ Value::
 Each entry in the "outbox root" substore includes the following property:
 
 * `root`: The root of the underlying Merkle tree of the partner chain outbox.
-This value is initialized to `sha256(b"")`.
 ====
 
 === Own chain substore
@@ -524,7 +517,7 @@ Key:: The store key is set to an empty string `""`.
 Value::
 The "own chain" substore consists of the following properties:
 
-* `name`: The name of the sidechain registered on the mainchain with the sidechain registration command.
+* `name`: The name of the sidechain registered on the mainchain with the <<register-sidechain-command>>.
 * `chainID`: The xref:{url_understand_interop_chainid}[chain ID] assigned to the sidechain on the mainchain after processing the sidechain registration command.
 * `nonce`: The chain nonce, an incremental integer indicating the total number of CCMs sent from the chain.
 ====
@@ -552,16 +545,12 @@ For a sidechain account on the mainchain, this property is set by the sender of 
 It is an object containing the following properties:
 ** `height`: The height contained in the last certificate from the partner chain.
 It is used to validate a certificate{fn_lip53} (certificates must contain block headers with increasing heights).
-The default value of this property is `0`.
 ** `timestamp`: The timestamp contained in the last certificate from the partner chain.
 On the mainchain, it is used to check that the sidechain chain fulfills the <<liveness-condition>>.
-The default value of this property is `0`.
 ** `stateRoot`: The state root contained in the last certificate from the partner chain.
-It is used to validate the inclusion proof of the cross-chain messages contained in a CCU and to verify the validity of the token recovery command.
-The default value of this property is `sha256(b"")`.
+It is used to validate the inclusion proof of the cross-chain messages contained in a CCU and to verify the validity of the module recovery command.
 ** `validatorsHash`: The validators hash contained in the last certificate from the partner chain.
-This value always corresponds to the hash calculated from the validators data substore entry for the partner chain.
-The default value of this property is the constant `sha256(b"")`.
+This value always corresponds to the hash calculated from the <<chain-validators-substore>> entry for the partner chain.
 * `status`: This property stores the current status of the partner chain account.
 As explained in <<life-cycle-of-a-sidechain>>, there are 3 possible statuses: `active`(0), `registered`(1), and `terminated`(2).
 The default value of this property is `0`, corresponding to the `registered` status.
@@ -582,29 +571,19 @@ Key:: Each store key is set to the ID of the partner chain `chainID`.
 Value::
 Each entry in the channel substore includes the following properties:
 
-* `inbox`: The data structure containing information about the cross-chain messages received from the partner chain, organized in a regular Merkle tree (specified for the Lisk protocol in [LIP 0031](https://github.com/LiskHQ/lips/blob/main/proposals/lip-0031.md#regular-merkle-trees)).
-The underlying Merkle tree of the inbox is initialized as an empty tree, as defined in [LIP 0031](https://github.com/LiskHQ/lips/blob/main/proposals/lip-0031.md).
+* `inbox`: The data structure containing information about the cross-chain messages received from the partner chain, organized in a regular Merkle tree{fn_lip31_rmt}.
 It contains the following properties:
 ** `root`:  The root of the Merkle tree.
-The default value of this property is `sha256(b"")`.
 ** `appendPath`: An array of hashes necessary to append new data to the tree efficiently.
-The default value of this property is an empty array.
 ** `size`: The current size of the tree, i.e. the number of cross-chain messages received from the partner chain and processed.
-The default value of this property is 0.
 * `outbox`: The data structure containing information about the cross-chain messages sent to the partner chain, organized in a regular Merkle tree.
-The underlying Merkle tree of the outbox is initialized as an empty tree, as defined in [LIP 0031](https://github.com/LiskHQ/lips/blob/main/proposals/lip-0031.md).
 It contains the following properties:
 ** `root`:  The root of the Merkle tree.
-The default value of this property is `sha256(b"")`.
 ** `appendPath`: An array of hashes necessary to append new data to the tree efficiently.
-The default value of this property is an empty array.
 ** `size`: The current size of the tree, i.e. the number of cross-chain messages sent to the partner chain.
-The default value of this property is 0.
 * `partnerChainOutboxRoot`: The value of this property is set to the outbox root computed from the last CCU from the partner chain.
 It is used to validate the cross-chain messages contained in a future CCU when the CCU does not certify a new outbox root.
-The default value of this property is the constant `sha256(b"")`.
 * `messageFeeTokenID`: This property is the token ID of the token used to pay for the cross-chain message fees.
-The default value is `messageFeeTokenID = Token.getTokenIDLSK()`, corresponding to the LSK token.
 * `minReturnFeePerByte`: This property is the minimum fee per byte to automatically send back a CCM from the partner chain in case of execution errors.
 In particular, the CCM fee must be larger or equal than the product of its size in bytes and `minReturnFeePerByte`.
 The value used in channels between mainchain and sidechains is `minReturnFeePerByte` = `1000` Beddows.
@@ -631,8 +610,8 @@ Each entry contains the following properties:
 ** `blsKey`: The BLS public key used to sign certificates.
 ** `bftWeight`: An integer indicating the weight of the corresponding BLS public key for signing a certificate.
 * `certificateThreshold`: An integer setting the required cumulative weight needed for the certificate signature to be valid.
-For the mainchain account on a sidechain, the `activeValidators` and `certificateThreshold` properties are initialized by the <<register command.
-For a sidechain account on the mainchain, they are set by the sidechain registration command.
+For the mainchain account on a sidechain, the `activeValidators` and `certificateThreshold` properties are initialized by the <<register-mainchain-command>>.
+For a sidechain account on the mainchain, they are set by the <<register-sidechain-command>>.
 ====
 
 === Terminated state substore

@@ -41,37 +41,61 @@ NOTE: Please read xref:{url_sidechain_reg_recovery}[] to get more information ab
 :sectnums:
 == How to register a sidechain on the mainchain
 
-A sidechain is registered on the mainchain by <<posting-a-register-sidechain-transaction>>.
-A Register Sidechain transaction can be sent by any user account in the Lisk Mainchain that has adequate funds to pay the required fee.
+A sidechain is registered on the mainchain by posting a xref:{url_sidechain_reg_command}[Register Sidechain transaction].
 
-=== Sidechain registration fee
-When the Register Sidechain command is processed, it creates a sidechain account in the mainchain state associated with a unique chain identifier and a name.
-Hence, every new sidechain occupies a certain namespace within the ecosystem.
-Additionally, every newly registered sidechain can increase the size of every cross-chain update command posted on the mainchain.
-
-For these two reasons, the minimum fee for this command has an added constant similar to the extra fee in a delegate registration command.
-
-NOTE: The extra registration fee for a sidechain registration is *10 LSK* tokens.
-
-=== Posting a Register Sidechain transaction
+A Register Sidechain transaction *can be sent by any user account* in the Lisk Mainchain that has adequate funds to pay the required <<sidechain-registration-fee,fee>>.
 
 NOTE: The Lisk Core node CLI is used in this example to post the transaction.
 Alternatively, users can use the {url_lisk_wallet}[Lisk Wallet^], where the transaction can be created conveniently as well.
 
-To create a xref:{url_sidechain_reg_command}[Sidechain Registration command], the following information is required:
+To create a *Register Sidechain* transaction, the following information is required:
 
-. `name`:  The name of the sidechain as a string.
-Has to be *unique* within the Lisk ecosystem.
-. `chainID` : The xref:{url_understand_interop_chainid}[chainID] of the sidechain.
+. <<chainid>>
+. <<name>>
+. <<sidechaincertificatethreshold>>
+. <<sidechainvalidators>>
+
+=== Sidechain registration fee
+When the "Register Sidechain" command is processed, it creates a sidechain account in the mainchain state which is associated with a unique chain identifier and a name.
+Hence, every new sidechain occupies a certain namespace within the ecosystem.
+Additionally, every newly registered sidechain can increase the size of every cross-chain update command posted on the mainchain.
+
+For these two reasons, the minimum fee for this command has an added constant similar to the extra fee in a Register Validator transaction.
+
+NOTE: The extra registration fee for a sidechain registration is *10 LSK* tokens.
+
+=== Prepare the required parameters
+
+==== chainID
+The xref:{url_understand_interop_chainid}[chainID] of the sidechain.
 Has to be *unique* within the Lisk ecosystem.
 If the given value is already taken by another sidechain, the sidechain registration command fails.
-In this case, the sidechain has to change the chain ID with a hardfork, and resubmit the Register Sidechain command with a new value.
+In this case, the sidechain has to change the chain ID with a hardfork, and resubmit the "Register Sidechain" command with a new value.
 The first byte should be set to the correct value depending on the network on which the chain is running.
-. `sidechainValidators`: Defines the set of sidechain validators expected to sign the first certificate from the mainchain.
-Each item contains the following properties:
-.. `blsKey`: The {url_bls_key}[public BLS key] of the validator.
-.. `bftWeight`: The {url_lip56}[BFT weight^] is the weight attributed to the pre-votes and pre-commits cast by a validator, and therefore determines to what extent the validator contributes to finalizing blocks.
-. `sidechainCertificateThreshold`: An integer setting the minimum signatures weight required for the first sidechain certificate to be valid.
+
+.registerSidechain.json
+[source,json]
+----
+{
+  "chainID": "00000001"
+}
+----
+
+==== Name
+The name of the sidechain as a string.
+Has to be *unique* within the Lisk ecosystem  and contain only characters from the set `[a-z0-9!@$&_.]`.
+
+.registerSidechain.json
+[source,json]
+----
+{
+  "chainID": "00000001",
+  "name": "sidechain1"
+}
+----
+
+==== sidechainCertificateThreshold
+An integer setting the minimum signatures weight required for the first sidechain certificate to be valid.
 
 .registerSidechain.json
 [source,json]
@@ -79,22 +103,73 @@ Each item contains the following properties:
 {
   "chainID": "00000001",
   "name": "sidechain1",
+  "sidechainCertificateThreshold": "2"
+}
+----
+
+==== sidechainValidators
+Defines the set of sidechain validators expected to sign the first certificate from the mainchain.
+Each item contains the following properties:
+
+. `blsKey`: The {url_bls_key}[public BLS key] of the validator.
+. `bftWeight`: The {url_lip56}[BFT weight^] is the weight attributed to the pre-votes and pre-commits cast by a validator, and therefore determines to what extent the validator contributes to finalizing blocks.
+
+To retrieve the BFT parameters of the sidechain validators, simply invoke the `consensus_getBFTParameters` endpoint on the *sidechain node*.
+
+Set the `height` to the *latest block height on the sidechain* in the request parameters:
+
+[tabs]
+=====
+Sidechain node CLI::
++
+--
+[source,bash]
+----
+./bin/run  endpoint:invoke consensus_getBFTParameters '{"height": 200}'
+----
+--
+cURL::
++
+--
+[source,bash]
+----
+curl --location --request POST 'http://localhost:7887/rpc' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "jsonrpc": "2.0",
+    "id": "1",
+    "method": "consensus_getBFTParameters",
+    "params": {
+         "height": 200
+    }
+}'
+----
+--
+=====
+
+This will return a complete list of all active sidechain validators at the specified block height.
+
+Now, paste the *complete list* that was returned by the `consensus_getBFTParameters` endpoint under the `"sidechainValidators"` key:
+
+.registerSidechain.json
+[source,json]
+----
+{
+  "chainID": "00000001",
+  "name": "sidechain1",
+  "sidechainCertificateThreshold": "2",
   "sidechainValidators": [
 	{
 	  "blsKey": "92f020ce5e37befb86493a82686b0eedddb264350b0873cf1eeaa1fefe39d938f05f272452c1ef5e6ceb4d9b23687e31",
 	  "bftWeight": "2"
 	}
-  ],
-  "sidechainCertificateThreshold": "2"
+  ]
 }
 ----
 
-[NOTE]
-====
-The node CLI of a sidechain client can be used to create the transaction as well.
+=== Post the transaction on the mainchain
 
-Just make sure to send the transaction to a node that is connected to the mainchain, and not a sidechain node.
-====
+Send the transaction to a node that is connected to the mainchain.
 
 [source,bash]
 ----
@@ -126,6 +201,19 @@ Parameters:
 
 * `chainID`: The chain ID of the registered sidechain.
 
+[tabs]
+=====
+Mainchain node CLI::
++
+--
+[source,bash]
+----
+lisk-core endpoint:invoke interoperability_getChainAccount '{"chainID": "00000001"}'
+----
+--
+cURL::
++
+--
 [source,bash]
 ----
 curl --location --request POST 'http://localhost:7887/rpc' \
@@ -140,6 +228,10 @@ curl --location --request POST 'http://localhost:7887/rpc' \
 }'
 
 ----
+--
+=====
+
+
 
 This will return the respective sidechain account stored in the xref:{url_sidechain_chain_store}[Chain substore] of the mainchain.
 
@@ -147,27 +239,50 @@ This will return the respective sidechain account stored in the xref:{url_sidech
 
 == How to register the mainchain on the sidechain
 
-The mainchain is registered on a sidechain by <<posting-a-register-mainchain-transaction>>.
-A Register Mainchain transaction can be sent by any user account in the sidechain that has adequate funds to pay the required fee.
+The mainchain is registered on a sidechain by posting a xref:{url_mainchain_reg}[Register Mainchain transaction].
+A "Register Mainchain" transaction can be sent by any user account in the sidechain that has adequate funds to pay the required fee.
 
-IMPORTANT: The mainchain registration process always has to occur *after* the sidechain registration on the mainchain, since the sidechain has no prior knowledge of its name and must be certain that the correct chain ID has been registered.
+[IMPORTANT]
+====
+* The mainchain registration process always has to occur *after* the sidechain registration on the mainchain, since the sidechain has no prior knowledge of its name and must be certain that the correct chain ID has been registered.
+* It is of key importance that the sidechain validators ensure that they are signing the registration command with the correct information, otherwise the sidechain interoperable functionality may be unusable.
+====
+
+To create a *Register Mainchain* transaction, the following information is required:
+
+. <<ownchainid>>
+. <<ownname>>
+. <<mainchainvalidators>>
+. <<mainchaincertificatethreshold>>
+. <<signature>>
+. <<aggregationbits>>
+
+=== Prepare the required parameters
+
+==== ownChainID
+The chain ID of the sidechain.
+
+==== ownName
+Sets the name of the sidechain in its own state according to the name given in the mainchain.
+
+==== mainchainValidators
+Defines the set of mainchain validators expected to sign the first certificate from the mainchain.
+Each item contains the following properties:
+
+. `blsKey`: The {url_bls_key}[public BLS key] of the validator.
+. `bftWeight`: The {url_lip56}[BFT weight^] is the weight attributed to the pre-votes and pre-commits cast by a validator.
+
+==== mainchainCertificateThreshold
+An integer setting the minimum signatures weight required for the first mainchain certificate to be valid.
+
+==== signature
+The `signature` property is an aggregate signature of the sidechain validators.
+It ensures that the sidechain validators agree on registering the mainchain in the sidechain.
+
+==== aggregationBits
+The `aggregationBits` property is a bit vector used to validate the aggregate signature.
 
 === Posting a Register Mainchain transaction
-
-To create a xref:{url_mainchain_reg}[Mainchain Registration command], the following information is required:
-
-. `ownChainID`: The chain ID of the sidechain.
-. `ownName`: Sets the name of the sidechain in its own state according to the name given in the mainchain.
-. `mainchainValidators`: Defines the set of mainchain validators expected to sign the first certificate from the mainchain.
-Each item contains the following properties:
-.. `blsKey`: The {url_bls_key}[public BLS key] of the validator.
-.. `bftWeight`: The {url_lip56}[BFT weight^] is the weight attributed to the pre-votes and pre-commits cast by a validator.
-. `mainchainCertificateThreshold`: An integer setting the minimum signatures weight required for the first mainchain certificate to be valid.
-. `signature`: The `signature` property is an aggregate signature of the sidechain validators.
-It ensures that the sidechain validators agree on registering the mainchain in the sidechain.
-. `aggregationBits`: The `aggregationBits` property is a bit vector used to validate the aggregate signature.
-
-IMPORTANT: It is of key importance that the sidechain validators ensure that they are signing the registration command with the correct information, otherwise the sidechain interoperable functionality may be unusable.
 
 .registerMainchain.json
 [source,json]

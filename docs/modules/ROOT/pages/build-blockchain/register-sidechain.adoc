@@ -10,6 +10,7 @@ Chris Braithwaite <christopher.braithwaite@lightcurve.io> Mona Bärenfänger <mo
 :url_lisk_wallet: https://lisk.com/wallet
 :url_bls_key: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0038.md#public-key-registration-and-proof-of-possession
 :url_lip56: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0056.md
+:url_lip56_bftweight: {url_lip56}#terminology
 :url_update_cross_chain_lip53: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0053.md#outboxrootwitness
 // Project URLs
 :url_understand_interop_chainid: understand-blockchain/interoperability/index.adoc#chain-identifiers
@@ -69,9 +70,8 @@ NOTE: The extra registration fee for a sidechain registration is *10 LSK* tokens
 ==== chainID
 The xref:{url_understand_interop_chainid}[chainID] of the sidechain.
 Has to be *unique* within the Lisk ecosystem.
-If the given value is already taken by another sidechain, the sidechain registration command fails.
-In this case, the sidechain has to change the chain ID with a hardfork, and resubmit the "Register Sidechain" command with a new value.
-The first byte should be set to the correct value depending on the network on which the chain is running.
+If the given value is already taken by another sidechain, the "Register Sidechain" transaction fails.
+In this case, the sidechain has to change the chain ID with a hardfork, and resubmit the "Register Sidechain" transaction with a new value for the chain ID.
 
 .registerSidechain.json
 [source,json]
@@ -94,27 +94,14 @@ Has to be *unique* within the Lisk ecosystem  and contain only characters from t
 }
 ----
 
-==== sidechainCertificateThreshold
-An integer setting the minimum signatures weight required for the first sidechain certificate to be valid.
-
-.registerSidechain.json
-[source,json]
-----
-{
-  "chainID": "00000001",
-  "name": "sidechain1",
-  "sidechainCertificateThreshold": "2"
-}
-----
-
 ==== sidechainValidators
-Defines the set of sidechain validators expected to sign the first certificate from the mainchain.
+Defines the set of sidechain validators expected to sign the first certificate from the sidechain.
 Each item contains the following properties:
 
 . `blsKey`: The {url_bls_key}[public BLS key] of the validator.
 . `bftWeight`: The {url_lip56}[BFT weight^] is the weight attributed to the pre-votes and pre-commits cast by a validator, and therefore determines to what extent the validator contributes to finalizing blocks.
 
-To retrieve the BFT parameters of the sidechain validators, simply invoke the `consensus_getBFTParameters` endpoint on the *sidechain node*.
+To retrieve the BFT parameters of all sidechain validators, simply invoke the `consensus_getBFTParameters` endpoint on the *sidechain node*.
 
 Set the `height` to the *latest block height on the sidechain* in the request parameters:
 
@@ -157,7 +144,6 @@ Now, paste the *complete list* that was returned by the `consensus_getBFTParamet
 {
   "chainID": "00000001",
   "name": "sidechain1",
-  "sidechainCertificateThreshold": "2",
   "sidechainValidators": [
 	{
 	  "blsKey": "92f020ce5e37befb86493a82686b0eedddb264350b0873cf1eeaa1fefe39d938f05f272452c1ef5e6ceb4d9b23687e31",
@@ -167,14 +153,82 @@ Now, paste the *complete list* that was returned by the `consensus_getBFTParamet
 }
 ----
 
+===== Aggregated BFT weight
+
+The {url_lip56_bftweight}[aggregated BFT weight^] is the sum of BFT weights of all active validators at a specific block height.
+
+It is used to calculate the minimum and maximum values of the
+
+* <<sidechaincertificatethreshold>> and
+* <<mainchaincertificatethreshold>>
+
+==== sidechainCertificateThreshold
+//TODO: Clarify what kind of weight we are talking about in this context (could be confused with validator weight)
+//TODO: Add link to corresponding LIP
+An integer defining the minimum BFT weight threshold required for the first sidechain certificate to be valid.
+
+Minimum threshold:
+
+ min = floor( 1/3 * Aggregated BFT weight ) + 1
+
+Maximum threshold:
+
+ max = Aggregated BFT weight
+
+
+Example::
+
+Assuming, the sidechain has 101 active, and two random validators each round.
++
+This results in the following min/max values for the certificate threshold:
+
+ min = floor( 1/3 * 103 ) +1
+     = floor (34 1/3) +1
+     = 34 + 1
+     = 35
+
+ max = 103
++
+This means, any value between 35-103 is valid.
+What exact threshold to choose depends on the sidechains requirements.
+
+A high threshold requires a large number of validators to sign each CCU before it is sent to the mainchain.
+This makes cross-chain communication more secure.
+
+A low threshold requires a small number of validators to sign each CCU.
+This results in faster communication, as less signature need to be gathered, before a CCU can be sent.
+
+In this example, we decide for a threshold value in the middle:
+
+//TODO: Update example with more validators/threshold
+.registerSidechain.json
+[source,json]
+----
+{
+  "chainID": "00000001",
+  "name": "sidechain1",
+  "sidechainValidators": [
+	{
+	  "blsKey": "92f020ce5e37befb86493a82686b0eedddb264350b0873cf1eeaa1fefe39d938f05f272452c1ef5e6ceb4d9b23687e31",
+	  "bftWeight": "1"
+	}
+  ],
+  "sidechainCertificateThreshold": "1"
+}
+----
+
+The transaction parameters are now prepared in `registerSidechain.json` and we can proceed to create and post the transaction in the next section.
+
 === Post the transaction on the mainchain
 
-Send the transaction to a node that is connected to the mainchain.
+Send the `registerSidechain` transaction to a node that is connected to the mainchain.
 
 [source,bash]
 ----
 lisk-core transaction:create interoperability registerSidechain 2000000000 --pretty -f ./registerSidechain.json
 ----
+
+The transaction will be returned in hex format:
 
 [source,json]
 ----
@@ -183,10 +237,14 @@ lisk-core transaction:create interoperability registerSidechain 2000000000 --pre
 }
 ----
 
+Copy the transaction and send it ot the node, for example by using the node CLI like so:
+
 [source,bash]
 ----
 ./bin/run transaction:send 0a10696e7465726f7065726162696c6974791211726567697374657253696465636861696e18002080a8d6b9072a20a3f96c50d0446220ef2f98240898515cbba8155730679ca35326d98dcfb680f0324a0a0404000001120a73696465636861696e311a340a3092f020ce5e37befb86493a82686b0eedddb264350b0873cf1eeaa1fefe39d938f05f272452c1ef5e6ceb4d9b23687e31100220023a408261e374405af4ec1143dfc0ae82a38e385d0edce870f698385749112064b374ac0de67354210aa27280db82121ec0bce195e5630c56a568a8b99dbbcb3a3d0b
 ----
+
+If the node accepted the transaction, it will respond with the transaction ID.
 
 ----
 Transaction with id: '1d944f3fb46714978ad7bedd1b788919c3b37e92d893088fd056f8217f20ed8a' received by node.
@@ -231,8 +289,6 @@ curl --location --request POST 'http://localhost:7887/rpc' \
 --
 =====
 
-
-
 This will return the respective sidechain account stored in the xref:{url_sidechain_chain_store}[Chain substore] of the mainchain.
 
 //TODO: Add example output
@@ -262,8 +318,12 @@ To create a *Register Mainchain* transaction, the following information is requi
 ==== ownChainID
 The chain ID of the sidechain.
 
+Should be identical to <<chainid>>.
+
 ==== ownName
 Sets the name of the sidechain in its own state according to the name given in the mainchain.
+
+Should be identical to <<name>>.
 
 ==== mainchainValidators
 Defines the set of mainchain validators expected to sign the first certificate from the mainchain.

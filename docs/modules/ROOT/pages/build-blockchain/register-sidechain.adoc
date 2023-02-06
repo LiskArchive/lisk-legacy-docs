@@ -337,17 +337,101 @@ Each item contains the following properties:
 . `blsKey`: The {url_bls_key}[public BLS key] of the validator.
 . `bftWeight`: The {url_lip56}[BFT weight^] is the weight attributed to the pre-votes and pre-commits cast by a validator.
 
+To retrieve the BFT parameters of all sidechain validators, simply invoke the `consensus_getBFTParameters` endpoint on the *sidechain node*.
+
+Set the `height` to the *latest block height on the mainchain* in the request parameters:
+
+[tabs]
+=====
+Sidechain node CLI::
++
+--
+[source,bash]
+----
+lisk-core endpoint:invoke consensus_getBFTParameters '{"height": 200}'
+----
+--
+cURL::
++
+--
+[source,bash]
+----
+curl --location --request POST 'http://localhost:7887/rpc' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "jsonrpc": "2.0",
+    "id": "1",
+    "method": "consensus_getBFTParameters",
+    "params": {
+         "height": 200
+    }
+}'
+----
+--
+=====
+
+This will return a complete list of all active sidechain validators at the specified block height.
+
+Now, paste the *complete list* that was returned by the `consensus_getBFTParameters` endpoint under the `"sidechainValidators"` key:
+
+.registerMainchain.json
+[source,json]
+----
+{
+  "ownChainID": "00000001",
+  "ownName": "sidechain1",
+  "mainchainValidators": [
+	{
+	  "blsKey": "92f020ce5e37befb86493a82686b0eedddb264350b0873cf1eeaa1fefe39d938f05f272452c1ef5e6ceb4d9b23687e31",
+	  "bftWeight": "1"
+	}
+  ]
+}
+----
+
 ==== mainchainCertificateThreshold
 An integer setting the minimum signatures weight required for the first mainchain certificate to be valid.
+
+.registerMainchain.json
+[source,json]
+----
+{
+  "ownChainID": "00000001",
+  "ownName": "sidechain1",
+  "mainchainValidators": [
+	{
+	  "blsKey": "92f020ce5e37befb86493a82686b0eedddb264350b0873cf1eeaa1fefe39d938f05f272452c1ef5e6ceb4d9b23687e31",
+	  "bftWeight": "1"
+	}
+  ],
+  "mainchainCertificateThreshold": "1"
+}
+----
 
 ==== signature
 The `signature` property is an aggregate signature of the sidechain validators.
 It ensures that the sidechain validators agree on registering the mainchain in the sidechain.
 
+.registerMainchain.json
+[source,json]
+----
+{
+  "ownChainID": "00000001",
+  "ownName": "sidechain1",
+  "mainchainValidators": [
+	{
+	  "blsKey": "92f020ce5e37befb86493a82686b0eedddb264350b0873cf1eeaa1fefe39d938f05f272452c1ef5e6ceb4d9b23687e31",
+	  "bftWeight": "2"
+	}
+  ],
+  "mainchainCertificateThreshold": "2",
+  "signature": ""
+}
+----
+
 ==== aggregationBits
 The `aggregationBits` property is a bit vector used to validate the aggregate signature.
 
-=== Posting a Register Mainchain transaction
 
 .registerMainchain.json
 [source,json]
@@ -367,10 +451,19 @@ The `aggregationBits` property is a bit vector used to validate the aggregate si
 }
 ----
 
+=== Posting a Register Mainchain transaction
+
+Send the `registerSidechain` transaction to a node that is connected to the mainchain.
+
+NOTE: The Lisk Core node CLI is used in this example to post the transaction.
+Alternatively, users can use the {url_lisk_wallet}[Lisk Wallet^], where the transaction can be created conveniently as well.
+
 [source,bash]
 ----
 ./bin/run transaction:create interoperability registerMainchain 2000000000 --pretty -f ./registerMainchain.json
 ----
+
+The transaction will be returned in hex format:
 
 [source,json]
 ----
@@ -379,17 +472,21 @@ The `aggregationBits` property is a bit vector used to validate the aggregate si
 }
 ----
 
+Copy the transaction and send it ot the node, for example by using the node CLI like so:
+
 [source,bash]
 ----
 ./bin/run transaction:send 0a10696e7465726f7065726162696c6974791211726567697374657253696465636861696e18002080a8d6b9072a20a3f96c50d0446220ef2f98240898515cbba8155730679ca35326d98dcfb680f0324a0a0404000001120a73696465636861696e311a340a3092f020ce5e37befb86493a82686b0eedddb264350b0873cf1eeaa1fefe39d938f05f272452c1ef5e6ceb4d9b23687e31100220023a408261e374405af4ec1143dfc0ae82a38e385d0edce870f698385749112064b374ac0de67354210aa27280db82121ec0bce195e5630c56a568a8b99dbbcb3a3d0b
 ----
+
+If the node accepted the transaction, it will respond with the transaction ID.
 
 ----
 Transaction with id: '1d944f3fb46714978ad7bedd1b788919c3b37e92d893088fd056f8217f20ed8a' received by node.
 ----
 
 === Get mainchain account
-Once the Register Mainchain command is processed, the mainchain account is initialized and its `status` is set to `registered`.
+Once the "Register Mainchain" command is processed, the mainchain account is initialized and its `status` is set to `registered`.
 
 To verify that the account was created successfully, request the `interoperability_getChainAccount` endpoint from a sidechain node.
 

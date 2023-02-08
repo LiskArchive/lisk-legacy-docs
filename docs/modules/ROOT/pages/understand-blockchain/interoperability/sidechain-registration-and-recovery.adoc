@@ -83,7 +83,7 @@ When a sidechain is registered on the mainchain, this creates new entries in the
 
 . A new sidechain account in the <<chain-substore>>.
 . A new channel to the sidechain in the <<channel-substore>>.
-. The list of active validators on the sidechain in the <<chain-validators-substore>>.
+. The list of keys of active validators on the sidechain in the <<chain-validators-substore>>.
 . An outbox root in the <<outbox-root-substore>>
 . A new entry in the <<registered-names-substore>> for the sidechain.
 
@@ -104,7 +104,7 @@ When the mainchain is registered on a sidechain, this creates new entries in the
 
 . A mainchain account in the <<chain-substore>>.
 . A new channel to the mainchain in the <<channel-substore>>.
-. The list of active validators on the mainchain in the <<chain-validators-substore>>.
+. The list of keys of active validators on the mainchain in the <<chain-validators-substore>>.
 . An outbox root in the <<outbox-root-substore>>
 . It also initializes the <<own-chain-substore>> on the sidechain.
 
@@ -212,9 +212,20 @@ A sidechain is terminated, if it posts a CCU containing one or multiple maliciou
 Certain xref:{url_understand_module}[modules] of a sidechain client have the ability to terminate a sidechain account.
 If a module receives a CCM that it considers to be malicious, it can call the xref:{url_lip_45_terminatechain}[`terminateChain`] method of the Interoperability module to terminate the sidechain.
 
-NOTE: Notice that a sidechain terminated for this reason is not terminated in the whole ecosystem.
-For example, it could very well still be active and able to exchange messages with other chains.
-However, communication with the sidechain that terminated it is interrupted.
+For example, the Token module on the mainchain can terminate a sidechain if it violates escrow, i.e. sends more LSK tokens to the mainchain that were sent to this sidechain.
+
+[NOTE]
+====
+Notice that a sidechain terminated for this reason is not always terminated in the whole ecosystem.
+
+Imagine that a sidechain A violates escrow on a chain B (by essentially trying to mint native tokens from B), then B will terminate communicating with A.
+
+If chain B is the mainchain, then this chain is always terminated in the whole ecosystem.
+That means neither the mainchain nor any other sidechains can communicate with chain B anymore.
+
+However, if a sidechain A terminates another sidechain B, this has no direct effect on the connection to the other chains
+- the mainchain and other sidechains could still be communicating to sidechain B in this case.
+====
 
 ==== Violating the Lisk Interoperability protocol
 
@@ -232,6 +243,7 @@ If the difference is greater than the maximum allowed timespan, the sidechain is
 This command can only be submitted on the mainchain.
 
 === Sidechain Terminated CCM
+A "sidechain terminated" message is created by the Interoperability module when a message should be routed to a terminated or inactive chain.
 
 The role of the sidechain terminated cross-chain message is to inform sidechains that another sidechain has been terminated on the mainchain and is unable to receive messages.
 The message contains the ID of the terminated chain as well as the last certified state root of the terminated sidechain (as certified on the mainchain).
@@ -499,7 +511,7 @@ Each entry in the "outbox root" substore includes the following property:
 
 The "own chain" substore stores the name and ID of the respective chain.
 
-On the Lisk *mainchain*, the own chain account is present by default, and set to an object with properties:
+On the mainchain in the Lisk *Mainnet*, the own chain account is present by default, and set to an object with properties:
 
 [source,js]
 ----
@@ -554,7 +566,7 @@ It is used to validate the inclusion proof of the cross-chain messages contained
 ** `validatorsHash`: The validators hash contained in the last certificate from the partner chain.
 This value always corresponds to the hash calculated from the <<chain-validators-substore>> entry for the partner chain.
 * `status`: This property stores the current status of the partner chain account.
-As explained in <<life-cycle-of-a-sidechain>>, there are 3 possible statuses: `active`(0), `registered`(1), and `terminated`(2).
+As explained in <<life-cycle-of-a-sidechain>>, there are 3 possible statuses: `registered`(0), `active`(1), and `terminated`(2).
 The default value of this property is `0`, corresponding to the `registered` status.
 ====
 

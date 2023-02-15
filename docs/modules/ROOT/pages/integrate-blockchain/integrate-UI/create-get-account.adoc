@@ -129,3 +129,74 @@ image::integrate-blockchain/integrate-ui/newAccount.jpg["new account page", 800]
 With a working account creation feature, let update the `getAccountDetails.js ` in the *hello_frontend/src/components/* directory to support the fetching account details feature.
 
 
+.hello_frontend/src/components/newAccount.js
+[source,javascript]
+----
+// [...]
+// UI libraries import
+import React, { useState } from "react";
+//import api.js 
+import * as api from '../api';
+
+// [...]
+
+function GetAccountDetails() {
+
+    // state variables and function to store account details
+    const [state, updateState] = useState({
+        address: '',
+        error: '',
+        account: {},
+        auth: {},
+    });
+
+    const handleChange = (event) => {
+        const { name, value } = event.target;
+        updateState({
+            ...state,
+            [name]: value,
+        });
+    };
+
+
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+        const client = await api.getClient();
+        let responseError = '';
+        let authenticationDetails;
+        let accountBalance;
+
+        // Retrieves the account details from the blockchain application, based on the address provided.
+
+        await client.invoke("token_getBalance", {
+            address: state.address,
+            tokenID: "0000000000000000"
+        }).then(async response => {
+            if (typeof response.error !== 'undefined') {
+                responseError = response.error.message
+            } else {
+                accountBalance = response;
+                const authDetails = await client.invoke("auth_getAuthAccount", {
+                    address: state.address,
+                    tokenID: "0000000000000000"
+                });
+                authenticationDetails = authDetails;
+            }
+            return [response, authenticationDetails];
+        })
+
+        updateState({
+            ...state,
+            error: responseError,
+            account: accountBalance,
+            auth: authenticationDetails
+        });
+    };
+
+    // [...]
+}
+
+// [...]
+----
+
+

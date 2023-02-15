@@ -1,0 +1,131 @@
+= Account creation and details retrieval
+Muhammad Talha <muhammad.talha@lightcurve.io>
+:toc: preamble
+:toclevels: 5
+:sectnums:
+:page-toclevels: 4
+:idprefix:
+:idseparator: -
+:imagesdir: ../../assets/images
+:sdk_docs: lisk-sdk::
+
+// External URLs
+:url_start_frontend: https://github.com/LiskHQ/lisk-sdk-examples/blob/1582-UI-boiler-plate/guides/07-ui-boilerplate/hello_frontend/README.md#start-hello_frontend
+
+
+// Project URLs
+:url_helloapp_overview: integrate-blockchain/index.adoc#integrating-a-user-interface
+:url_guides_setup: build-blockchain/create-sidechain-app.adoc
+:url_guides_module: build-blockchain/module/index.adoc
+:url_guides_plugin: build-blockchain/plugin/index.adoc
+:url_start_client: build-blockchain/module/command.adoc#start-client
+
+With UI template in place, on this page, you'll learn how to create a new account and how to fetch details of the new account.
+
+====
+On this page, you'll learn:
+
+* [x] Creating a new account.
+* [x] Fetch details of a an account.
+====
+
+== Creating new account
+The `newAccount.js` in the *hello_frontend/src/components/* directory is specifically created to implement the account creation process.
+
+The new accounts page will create a new account on a page load. For that we will use the `passphrase` and `cryptography` libraries of the lisk-client.
+
+.hello_frontend/src/components/newAccount.js
+[source,javascript]
+----
+// [...]
+// UI libraries import
+import React, { useState, useEffect } from "react";
+//lisk libraries import
+import { passphrase, cryptography } from '@liskhq/lisk-client/browser';
+
+// [...]
+
+function NewAccount() {
+
+    // state variables and function to store new account
+    const [accounts, createNewAccount] = useState('');
+
+    useEffect(() => {
+        createAccount()
+    }, [])
+
+    const createAccount = async () => {
+        // default key path
+        const accountKeyPath = "m/44'/134'/0'";
+        // randomly generated passphrase
+        const mnemonicPassphrase = passphrase.Mnemonic.generateMnemonic(256);
+        // private key of new account
+        const privateKey = await cryptography.ed.getPrivateKeyFromPhraseAndPath(
+            mnemonicPassphrase,
+            accountKeyPath,
+        );
+        // public key of new account
+        const publicKey = cryptography.ed.getPublicKeyFromPrivateKey(privateKey);
+        // Lisk32 address
+        const address = cryptography.address.getLisk32AddressFromPublicKey(publicKey);
+        const credentials = {
+            address,
+            passphrase: mnemonicPassphrase,
+            privateKey: privateKey.toString('hex'),
+            publicKey: publicKey.toString('hex'),
+        };
+        createNewAccount(credentials);
+        return credentials;
+    };
+
+    // [...]
+}
+
+// [...]
+----
+
+The `createAccount` function will generate a passphrase, a key pair (public and private), and a Lisk32 address of a new account by using the *passphrase* and *cryptography* libraries available in lisk-client package. 
+
+To display the credentials generate above, we will need to update the `render` function as well.
+
+.hello_frontend/src/components/newAccount.js
+[source,javascript]
+----
+// [...]
+
+function NewAccount() {
+    // [...]
+    return (
+        <div>
+            <FixedMenuLayout />
+            <Container>
+
+                <div>
+
+                    <div class="ui green segment">
+                        <i class="lightbulb outline icon"></i><strong>TIP:</strong> Reload the page to generate a new account.
+                    </div>
+
+                    <h2>New account created!</h2>
+                    <Divider></Divider>
+                    <div className='App'>
+                        <pre>{JSON.stringify(accounts, null, 2)}</pre>
+                    </div>
+                </div>
+
+            </Container>
+        </div>
+    );
+}
+// [...]
+----
+
+Start both xref:{url_start_client}[*hello_client*] and {url_start_frontend}[*hello_frontend*^] and click on the *Account->Create Account* option in the menu bar. On page load, you'll see credentials of the new account.
+
+.Create new account page
+image::integrate-blockchain/integrate-ui/newAccount.jpg["new account page", 800]
+
+== Getting account details
+With a working account creation feature, let update the `getAccountDetails.js ` in the *hello_frontend/src/components/* directory to support the fetching account details feature.
+
+

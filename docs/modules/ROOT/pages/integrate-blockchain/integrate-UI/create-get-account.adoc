@@ -1,4 +1,4 @@
-= Account creation and details retrieval
+= Handling accounts
 Muhammad Talha <muhammad.talha@lightcurve.io>
 :toc: preamble
 :toclevels: 5
@@ -11,6 +11,9 @@ Muhammad Talha <muhammad.talha@lightcurve.io>
 
 // External URLs
 :url_start_frontend: https://github.com/LiskHQ/lisk-sdk-examples/blob/1582-UI-boiler-plate/guides/07-ui-boilerplate/hello_frontend/README.md#start-hello_frontend
+:url_newAccount: https://github.com/LiskHQ/lisk-sdk-examples/blob/1582-user-interface/tutorials/hello/hello_frontend/src/components/newAccount.js
+
+:url_getAccountDetails: https://github.com/LiskHQ/lisk-sdk-examples/blob/1582-user-interface/tutorials/hello/hello_frontend/src/components/getAccountDetails.js
 
 
 // Project URLs
@@ -25,14 +28,17 @@ With UI template in place, on this page, you'll learn how to create a new accoun
 ====
 On this page, you'll learn:
 
-* [x] Creating a new account.
-* [x] Fetch details of a an account.
+* [x] How to create a new account.
+* [x] How to fetch details of an account.
 ====
+
+TIP: The relevant files discussed in this guide are {url_newAccount}[newAccount.js] and {url_getAccountDetails}[getAccountDetails.js]
 
 == Creating new account
 The `newAccount.js` in the *hello_frontend/src/components/* directory is specifically created to implement the account creation process.
 
-The new accounts page will create a new account on a page load. For that we will use the `passphrase` and `cryptography` libraries of the lisk-client.
+The new accounts page will create a new account on a page load. 
+For that we will use the `passphrase` and `cryptography` libraries of the lisk-client.
 
 .hello_frontend/src/components/newAccount.js
 [source,javascript]
@@ -120,13 +126,14 @@ function NewAccount() {
 // [...]
 ----
 
-Start both xref:{url_start_client}[*hello_client*] and {url_start_frontend}[*hello_frontend*^] and click on the *Account->Create Account* option in the menu bar. On page load, you'll see credentials of the new account.
+Start both xref:{url_start_client}[*hello_client*] and {url_start_frontend}[*hello_frontend*^] and click on the *Account->Create Account* option in the menu bar.
+On page load, you'll see credentials of the new account.
 
 .Create new account page
 image::integrate-blockchain/integrate-ui/newAccount.jpg["new account page", 800]
 
 == Getting account details
-With a working account creation feature, let update the `getAccountDetails.js ` in the *hello_frontend/src/components/* directory to support the fetching account details feature.
+With a working account creation feature, let update the `getAccountDetails.js` in the *hello_frontend/src/components/* directory to support the fetching account details feature.
 
 
 .hello_frontend/src/components/newAccount.js
@@ -138,10 +145,7 @@ import React, { useState } from "react";
 //import api.js 
 import * as api from '../api';
 
-// [...]
-
 function GetAccountDetails() {
-
     // state variables and function to store account details
     const [state, updateState] = useState({
         address: '',
@@ -149,7 +153,7 @@ function GetAccountDetails() {
         account: {},
         auth: {},
     });
-
+    // Will trigger this function when value is changed in the input
     const handleChange = (event) => {
         const { name, value } = event.target;
         updateState({
@@ -157,8 +161,7 @@ function GetAccountDetails() {
             [name]: value,
         });
     };
-
-
+    // Will get triggered on 'Submit'
     const handleSubmit = async (event) => {
         event.preventDefault();
         const client = await api.getClient();
@@ -167,10 +170,9 @@ function GetAccountDetails() {
         let accountBalance;
 
         // Retrieves the account details from the blockchain application, based on the address provided.
-
         await client.invoke("token_getBalance", {
             address: state.address,
-            tokenID: "0000000000000000"
+            tokenID: "0000000000000000" // It can be found in the genesis_assets.json file of the client.
         }).then(async response => {
             if (typeof response.error !== 'undefined') {
                 responseError = response.error.message
@@ -192,11 +194,96 @@ function GetAccountDetails() {
             auth: authenticationDetails
         });
     };
-
     // [...]
 }
+// [...]
+----
+The `handleSubmit` function will use the apiClient to invoke the `token_getBalance` and `auth_getAuthAccount` endpoints. 
 
+The response of these requests will be shown to the user with the `displayData` function described in the following snippet:
+
+.hello_frontend/src/components/newAccount.js
+[source,javascript]
+----
+// [...]
+
+function GetAccountDetails() {
+        // [...]
+        const displayData = () => {
+        if (state.error !== '') {
+            return (
+                <>
+                    <div class="ui red segment" style={{ overflow: 'auto' }}>
+                        <h3>Something went wrong! :(</h3>
+                        <pre><strong>Error:</strong> {JSON.stringify(state.error, null, 2)}</pre>
+                    </div>
+                </>
+            )
+        }
+        else if (typeof state.account !== 'undefined' && state.account.availableBalance >= 0) {
+            return (
+                <>
+                    <h3>Your account details are:</h3>
+                    <div className="ui green segment" style={{ overflow: 'auto' }}>
+                        <pre>Account: {JSON.stringify(state.account, null, 2)}</pre>
+                        <pre>Authentication details: {JSON.stringify(state.auth, null, 2)}</pre>
+                    </div>
+                </>
+            )
+        }
+        else {
+            return (<p></p>)
+        }
+    }
+    // [...]
+}
 // [...]
 ----
 
+Finally in the `return` function we will call the `displayData` function to display the appropriate response.
 
+.hello_frontend/src/components/newAccount.js
+[source,javascript]
+----
+// [...]
+
+function GetAccountDetails() {
+        // [...]
+    return (
+        <div>
+            <FixedMenuLayout />
+            <Container>
+                <h2>Account details</h2>
+                <p>Get account details by submitting a Lisk32 address.</p>
+                <Divider></Divider>
+                <div className="ui two column doubling stackable grid container">
+                    <div className="column">
+
+                        <Form onSubmit={handleSubmit}>
+                            <Form.Field>
+                                <label>Lisk32 address:</label>
+                                <input placeholder="Lisk32 address" id="address" name="address" onChange={handleChange} value={state.address} />
+                            </Form.Field>
+                            <Button type='submit' fluid size='large' style={{ backgroundColor: '#2BD67B', color: 'white' }}>Submit</Button>
+                        </Form>
+                    </div>
+
+                    <div className='column'>
+                        <>
+                            {displayData()}
+                        </>
+                    </div>
+                </div>
+            </Container >
+        </div >
+    );
+}
+// [...]
+----
+
+Create a new account using the *Create Account* page, copy the address and open the Account details page. 
+Paste the copied Lisk32 address and click on the submit button.
+The UI will show you the details of the account similar to the following snapshot:
+
+.Get account details
+image::integrate-blockchain/integrate-ui/getAccountDetails.jpg["new account page", 800]

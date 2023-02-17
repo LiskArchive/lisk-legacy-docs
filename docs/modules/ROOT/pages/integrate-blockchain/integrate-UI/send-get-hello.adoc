@@ -1,4 +1,4 @@
-= Using faucet and transferring tokens
+= Send and retrieve hello
 Muhammad Talha <muhammad.talha@lightcurve.io>
 :toc: preamble
 :toclevels: 5
@@ -10,53 +10,59 @@ Muhammad Talha <muhammad.talha@lightcurve.io>
 :sdk_docs: lisk-sdk::
 
 // External URLs
-:url_start_frontend: https://github.com/LiskHQ/lisk-sdk-examples/blob/1582-UI-boiler-plate/guides/07-ui-boilerplate/hello_frontend/README.md#start-hello_frontend
-:url_faucet: https://github.com/LiskHQ/lisk-sdk-examples/blob/1582-user-interface/tutorials/hello/hello_frontend/src/components/faucet.js
-
-:url_transfer: https://github.com/LiskHQ/lisk-sdk-examples/blob/1582-user-interface/tutorials/hello/hello_frontend/src/components/transfer.js
+// :url_start_frontend: https://github.com/LiskHQ/lisk-sdk-examples/blob/1582-UI-boiler-plate/guides/07-ui-boilerplate/hello_frontend/README.md#start-hello_frontend
+:url_sendHello: https://github.com/LiskHQ/lisk-sdk-examples/blob/1582-user-interface/tutorials/hello/hello_frontend/src/components/sendHello.js
+:url_getHello: https://github.com/LiskHQ/lisk-sdk-examples/blob/1582-user-interface/tutorials/hello/hello_frontend/src/components/getHello.js
 :url_checkBalance: integrate-blockchain/integrate-UI/create-get-account.adoc#check-balance
 
 
 // Project URLs
-:url_helloapp_overview: integrate-blockchain/index.adoc#integrating-a-user-interface
+:url_helloClient_overview: build-blockchain/index.adoc#the-hello-world-client
 :url_guides_setup: build-blockchain/create-sidechain-app.adoc
 :url_guides_module: build-blockchain/module/index.adoc
 :url_guides_plugin: build-blockchain/plugin/index.adoc
 :url_start_client: build-blockchain/module/command.adoc#start-client
+:url_module_config: build-blockchain/module/configuration.adoc#define-a-module-configuration-file
 
-With account creation and getting details of an account working, on this page, you'll learn how to seed a new account with a faucet and how to transfer LSKs to a given account.
+In the xref:{url_helloClient_overview}[Hello Client's] implementation, we created `HelloModule` to send hello messages on the sidechain. 
+Later, we created the `HelloInfoPlugin` to store those hello messages to a database.
+The plugin also allowed us to see all the hello messages sent on the sidechain.
 
 ====
-On this page, you'll learn:
+So, on this page, you'll learn:
 
-* [x] How to create a faucet.
-* [x] How to send LSKs to a given account.
+* [x] How to send a hello message through UI.
+* [x] How to display all the hello messages sent on the sidechain.
 ====
 
-TIP: The relevant files discussed in this guide are {url_faucet}[faucet.js] and {url_transfer}[transfer.js]
+TIP: The relevant files discussed in this guide are {url_sendHello}[sendHello.js] and {url_getHello}[getHello.js]
 
-== Creating a faucet
-The idea of a faucet is to allow account holder to seed their account with 10 LSKs using a dedicated faucet account. 
+== Sending hello
+The send hello page will take the hello message from the user and send it to the sidechain.
+The sidechain will verify the validity of the request as per the xref:{url_module_config}[module's configuration] and various other parameters.
+
+If the request is valid, the hello message will be sent on the sidechain. To do the aforementioned process, let's update the `sendHello.js` file in the *hello_frontend/src/components/* directory.
 
 First up, define the necessary variables and `handleChange` event.
 
-.hello_frontend/src/components/faucet.js
+.hello_frontend/src/components/sendHello.js
 [source,javascript]
 ----
 // [...]
 // UI libraries import
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 // lisk libraries import
+import React, { useState } from "react";
 import { cryptography, transactions } from '@liskhq/lisk-client/browser';
 import * as api from '../api';
-import { Buffer } from 'buffer';
 
-function Faucet() {
-
+function SendHello() {
     const [state, updateState] = useState({
-        address: '',
-        privateKey: '',
+        hello: '',
+        fee: '',
         error: '',
+        passphrase: '',
+        keyPath: '0',
         transaction: {},
         response: {}
     });
@@ -71,85 +77,83 @@ function Faucet() {
     // [...]
 
 }
-
-// [...]
+export default SendHello;
 ----
+
+Similar to previous guides, we want the form submission to be handled by the `handleSubmit` function.
+It will take in the information entered by the user on the UI like, passphrase, hello message, fee etc. and will create a transaction using apiClient.
+
 
 We want an action to be taken when a user enter's an address into the input and clicks on the Submit button.
 This will be handled in the `handleSubmit` function, where we are first creating a token transfer transaction, and then posting it to the node.
 
-.hello_frontend/src/components/faucet.js
+.hello_frontend/src/components/sendHello.js
 [source,javascript]
 ----
 // [...]
 
-function Faucet() {
+function SendHello() {
 
     // [...]
 
-    const handleSubmit = async (event) => {
+       const handleSubmit = async (event) => {
         event.preventDefault();
 
         // 1. Get apiClient via api.js
         const client = await api.getClient();
-        
-        // 2. This is the passphrase of the hello_client since, we are using the first account of the hello_client.
-        const passphrase = "pet simple hour myth sing tattoo demand whale pride craft already actress purse awake advance frequent enroll oxygen enhance resemble arrow accident wave tuna";
-        
+
+        // 2. This is the passphrase of the sender of hello message, based on the passphrase and the keyDerivation path, the identity of the sender will be computed.
+        const passphrase = state.passphrase;
         // 3. A private key will be used to sign a transaction. A private key is generated using the keyDerivationPath and the passphrase.
-        const privateKey = await cryptography.ed.getPrivateKeyFromPhraseAndPath(passphrase, "m/44'/134'/0'");
+        const privateKey = await cryptography.ed.getPrivateKeyFromPhraseAndPath(passphrase, "m/44'/134'/" + state.keyPath + "'");
         let responseError = '';
-        
-        // 4. Here we are creating a transaction by passing the module name, command, fee, and all the other required params.
+        // 4. Here we are creating a transaction by passing the module name, command, fee, and the hello message.
         const signedTx = await client.transaction.create({
-            module: 'token',
-            command: 'transfer',
-            fee: BigInt(transactions.convertLSKToBeddows('0.1')),
+            module: 'hello',
+            command: 'createHello',
+            fee: BigInt(transactions.convertLSKToBeddows(state.fee)),
             params: {
-                tokenID: Buffer.from('0000000000000000', 'hex'),
-                amount: BigInt(transactions.convertLSKToBeddows('10')),
-                recipientAddress: state.address,
-                data: 'Please accept this grant from Lisk faucet.'
-            }
+                "message": state.hello,
+            },
         }, privateKey).catch(err => {
             responseError = err.message;
-        });
+        })
         let txResponse = '';
 
-        // 5. Once a transaction is created, it will be sent to the node and after block execution, the account's balance will increment with 10 LSKs.
+        // 5. Once a transaction is created, it will be sent to the node and after block execution a hello message will be sent on the chain.
         if (typeof signedTx !== "undefined") {
             txResponse = await client.transaction.send(signedTx).catch(result => {
                 console.log(result)
                 responseError = result.message;
             });
         }
-
         // 6. On the basis of the response, the 'state' object will be updated.
         updateState({
             transaction: signedTx,
             response: txResponse,
             error: responseError,
-            address: '',
-            amount: '',
+            hello: '',
             fee: '',
             passphrase: '',
+            keyPath: '',
         });
     };
     // [...]
 }
+export default SendHello;
 ----
 
-Our code for creating and sending a transaction is complete, let's add the code to display the response received from the node.
+The UI is now able to send hello messages on the sidechain, however, we want the UI to display the successful or erroneous response to the user.
+For that, let's add the `displayData` function:
 
-.hello_frontend/src/components/faucet.js
+.hello_frontend/src/components/sendHello.js
 [source,javascript]
 ----
 // [...]
 
-function Faucet() {
+function SendHello() {
     // [...]
     const displayData = () => {
-
         if (state.error !== '') {
             return (
                 <>
@@ -160,7 +164,6 @@ function Faucet() {
                 </>
             )
         }
-
         else if (typeof state.transaction !== 'undefined' && state.transaction.fee > 0) {
             return (
                 <>
@@ -173,44 +176,63 @@ function Faucet() {
                 </>
             )
         }
-        else {
-            return (<p></p>)
-        }
     }
     // [...]
 }
 
-// [...]
+export default SendHello;
 ----
 
-Finally, the `return` function needs an update, so that form submission, data display, and on change event can be functional.
+Finally, let's update the `return` function, so that form submission, data display, and on change event can be functional.
 
 .hello_frontend/src/components/newAccount.js
 [source,javascript]
 ----
 // [...]
 
-function Faucet() {
+function SendHello() {
     // [...]
     return (
         <>
             <FixedMenuLayout />
             <Container>
-                <h2>Faucet</h2>
-                <p>The faucet transfers tokens from the genesis account to another.</p>
-                <Divider></Divider>
                 <div>
+                    <h2>Send Hello Message</h2>
+                    <p>Please fill the following form to send a "Hello" message.</p>
+                    <Divider></Divider>
                     <div className="ui two column doubling stackable grid container">
                         <div className="column">
-                            <Form onSubmit={handleSubmit}>
-                                <Form.Field>
-                                    <label>Recipient's Lisk32 Address:</label>
-                                    <input placeholder="Recipient's Lisk32 Address" id="address" name="address" onChange={handleChange} value={state.address} />
+                            <Form onSubmit={handleSubmit} className="ui form">
+                                <Form.Field className="field">
+                                    <label>Your message:</label>
+                                    <input placeholder="Hello Message" id="hello" name="hello" onChange={handleChange} value={state.hello} />
+                                </Form.Field >
+                                <Form.Field className="field">
+                                    <label>Fee:</label>
+                                    <input placeholder='Fee (1 = 10^8 tokens)' type="text" id="fee" name="fee" onChange={handleChange} value={state.fee} />
+                                </Form.Field>
+                                <Form.Field className="field">
+                                    <label>Sender's Passphrase:</label>
+                                    <input placeholder='Passphrase of the hello_client' id="passphrase" name="passphrase" onChange={handleChange} value={state.passphrase} type="password" />
+                                </Form.Field>
+                                <Form.Field className="field">
+                                    <div className="ui yellow segment">
+                                        <i className="lightbulb outline icon"></i>The <strong>Sender's keyPath</strong> value can be from <strong>0-102</strong>. A default value has been pre-filled, which can be changed accordingly.
+                                    </div>
+                                    <label>Sender's keyPath:</label>
+                                    <div className="ui labeled input">
+                                        <div className="ui label">
+                                            m/44'/134'/
+                                        </div>
+                                        <input placeholder='Enter any number from 0-102' id="keyPath" name="keyPath" onChange={handleChange} value={state.keyPath} type="text" />
+                                        <div className="ui label">
+                                            '
+                                        </div>
+                                    </div>
                                 </Form.Field>
                                 <Button type='submit' fluid size='large' style={{ backgroundColor: '#2BD67B', color: 'white' }}>Submit</Button>
                             </Form>
                         </div>
-
                         <div className='column'>
                             <>
                                 {displayData()}
@@ -219,24 +241,20 @@ function Faucet() {
                     </div>
                 </div>
             </Container>
-
         </>
     );
-
-    // [...]
 }
-// [...]
+
+export default SendHello;
 ----
 
-Open the *Faucet* page and enter an account address in it. 
-Click on the Submit button, if the address is correct and the faucet account has enough balance, your transaction will be successful and will be shown on screen.
+Open the *Send Hello* page and fill out the form in it. 
+Click on the Submit button, if the sender's account has sufficient balance and the hello message is acceptable as per the module's config, the transaction will be successful.
 
 .Faucet to seed 10 LSKs to any account
-image::integrate-blockchain/integrate-ui/faucet.jpg["faucet page", 800]
+image::integrate-blockchain/integrate-ui/sendHello.jpg["sendHello page", 800]
 
-To check if the account balance has increased, use the xref:{url_checkBalance}[account's detail page] to fetch account balance.
-
-== Transfer tokens
+== Getting hello
 
 Since faucet allows to seed an account, we want our Hello sApp to also allow transferring of LSKs from/to our desired accounts.
 
@@ -247,35 +265,28 @@ Similar to the faucet, we will start importing necessary libraries, and defining
 ----
 // [...]
 // UI libraries import
-import React, { useState } from "react";
-
-//import lisk packages, api and buffer. 
-import { cryptography, transactions } from '@liskhq/lisk-client/browser';
+import FixedMenuLayout from '../layout/header';
+import { Divider, Container } from 'semantic-ui-react';
+import React, { useState, useEffect } from "react";
+import MessageTimeline from './messageTimeline';
 import * as api from '../api';
-import { Buffer } from 'buffer';
 
-function Transfer() {
-    const [state, updateState] = useState({
-        address: '',
-        amount: '',
-        fee: '',
-        passphrase: '',
-        keyPath: '0',
-        error: '',
-        transaction: {},
-        response: {}
-    });
 
-    const handleChange = (event) => {
-        const { name, value } = event.target;
-        updateState({
-            ...state,
-            [name]: value,
+export default function GetHello() {
+    const [messages, getHelloMessages] = useState('');
+
+    useEffect(() => {
+        getMessages()
+    }, [])
+
+    async function getMessages() {
+        const client = await api.getClient();
+        return client.invoke("helloInfo_getMessageList", {
+        }).then(res => {
+            const responseMessages = res
+            getHelloMessages(responseMessages);
         });
-    };
-
-    // [...]
-}
+    }
 
 // [...]
 ----

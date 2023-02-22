@@ -12,6 +12,7 @@ Chris Braithwaite <christopher.braithwaite@lightcurve.io> Mona Bärenfänger <mo
 :url_lip56: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0056.md
 :url_lip56_bftweight: {url_lip56}#terminology
 :url_update_cross_chain_lip53: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0053.md#outboxrootwitness
+:url_exmaples_guides_createmessage: https://github.com/LiskHQ/lisk-sdk-examples/blob/292-chain-registration/guides/chain-registration/mainchain/messageCreation.ts
 // Project URLs
 :url_understand_interop_chainid: understand-blockchain/interoperability/index.adoc#chain-identifiers
 :url_ccm: understand-blockchain/interoperability/communication.adoc#sending-cross-chain-transactions-to-generate-ccms
@@ -108,7 +109,7 @@ Each item contains the following properties:
 . `blsKey`: The {url_bls_key}[public BLS key] of the validator.
 . `bftWeight`: The {url_lip56}[BFT weight^] is the weight attributed to the pre-votes and pre-commits cast by a validator, and therefore determines to what extent the validator contributes to finalizing blocks.
 
-To retrieve the BFT parameters of all sidechain validators, simply invoke the `consensus_getBFTParameters` endpoint on the *sidechain node*.
+To retrieve the BFT parameters of all sidechain validators, invoke the `consensus_getBFTParameters` endpoint on the *sidechain node*.
 
 Set the `height` to the *latest block height on the sidechain* in the request parameters:
 
@@ -458,19 +459,34 @@ A "Register Mainchain" transaction can be sent by any user account in the sidech
 [IMPORTANT]
 ====
 * The mainchain registration process always has to occur *after* the sidechain registration on the mainchain, since the sidechain has no prior knowledge of its name and must be certain that the correct chain ID has been registered.
+* Connections to both mainchain and sidechain node APIs are required to create a Register Mainchain transaction.
+====
+
+[CAUTION]
+====
 * It is of key importance that the sidechain validators ensure that they are signing the registration command with the correct information, otherwise the sidechain interoperable functionality may be unusable.
 ====
 
 To create a *Register Mainchain* transaction, the following information is required:
 
-. <<ownchainid>>
-. <<ownname>>
-. <<mainchainvalidators>>
-. <<mainchaincertificatethreshold>>
-. <<signature>>
-. <<aggregationbits>>
+. <<preparing-the-register-mainchain-parameters,Mainchain registration parameters>>
+.. <<ownchainid>>
+.. <<ownname>>
+.. <<mainchainvalidators>>
+.. <<mainchaincertificatethreshold>>
+. <<preparing-the-aggregated-signature,The aggregated signature of the sidechain validators>>
+.. <<signature>>
+.. <<aggregationbits>>
 
-=== Prepare the required parameters
+=== Preparing the Register Mainchain parameters
+
+The Register Mainchain parameters are created in an analog way as the Register Sidechain parameters hae been created previously.
+
+[TIP]
+====
+To conveniently prepare the required parameters, check out the following script in the lisk-sdk-examples repository:
+{url_exmaples_guides_createmessage}[messageCreation.ts^]
+====
 
 ==== ownChainID
 The chain ID of the sidechain.
@@ -487,9 +503,9 @@ Defines the set of mainchain validators expected to sign the first certificate f
 Each item contains the following properties:
 
 . `blsKey`: The {url_bls_key}[public BLS key] of the validator.
-. `bftWeight`: The {url_lip56}[BFT weight^] is the weight attributed to the pre-votes and pre-commits cast by a validator.
+. `bftWeight`: The {url_lip56}[BFT weight^] of the validator.
 
-To retrieve the BFT parameters of all sidechain validators, simply invoke the `consensus_getBFTParameters` endpoint on the *sidechain node*.
+To retrieve the BFT parameters of all mainchain validators, invoke the `consensus_getBFTParameters` endpoint on the *mainchain node*.
 
 Set the `height` to the *latest block height on the mainchain* in the request parameters:
 
@@ -562,9 +578,15 @@ An integer setting the minimum signatures weight required for the first mainchai
 	},
     // ...
   ],
-  "mainchainCertificateThreshold": "1"
+  "mainchainCertificateThreshold": "55"
 }
 ----
+
+=== Preparing the aggregated signature
+To create a valid signature, an amount of sidechain validators equal or greater to the <<sidechaincertificatethreshold>> need to individually sign the Mainchain registration with their account.
+All individual signatures are then aggregated into one signature which is appended to the Register Mainchain parameters.
+
+The individual signing of the mainchain registration by the sidechain validators is executed off-chain, similar to the process of creating multisignature transactions.
 
 ==== signature
 The `signature` property is an aggregate signature of the sidechain validators.
@@ -583,7 +605,7 @@ It ensures that the sidechain validators agree on registering the mainchain in t
 	},
     // ...
   ],
-  "mainchainCertificateThreshold": "2",
+  "mainchainCertificateThreshold": "55",
   "signature": ""
 }
 ----

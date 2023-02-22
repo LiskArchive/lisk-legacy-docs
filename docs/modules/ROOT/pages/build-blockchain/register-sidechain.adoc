@@ -18,6 +18,8 @@ Chris Braithwaite <christopher.braithwaite@lightcurve.io> Mona Bärenfänger <mo
 :url_ccu: understand-blockchain/interoperability/communication.adoc#creating-and-posting-ccus
 :url_sidechain_reg_recovery: understand-blockchain/interoperability/sidechain-registration-and-recovery.adoc
 :url_sidechain_chain_store: {url_sidechain_reg_recovery}#chain-substore
+:url_sidechain_channel_store: {url_sidechain_reg_recovery}#channel-substore
+:url_sidechain_chain_validators_store: {url_sidechain_reg_recovery}#chain-validators-substore
 :url_sidechain_reg_command: {url_sidechain_reg_recovery}#register-sidechain-command
 :url_mainchain_reg: {url_sidechain_reg_recovery}#register-mainchain-command
 // Footnotes
@@ -152,11 +154,14 @@ Now, paste the *complete list* that was returned by the `consensus_getBFTParamet
   "sidechainValidators": [
 	{
 	  "blsKey": "92f020ce5e37befb86493a82686b0eedddb264350b0873cf1eeaa1fefe39d938f05f272452c1ef5e6ceb4d9b23687e31",
-	  "bftWeight": "2"
-	}
+	  "bftWeight": "1"
+	},
+   // ...
   ]
 }
 ----
+
+NOTE: The length of the `sidechainValidators` is equal to the amount of active validators on the sidechain (101 by default).
 
 ===== Aggregated BFT weight
 
@@ -216,9 +221,10 @@ In this example, we decide for the following threshold:
 	{
 	  "blsKey": "92f020ce5e37befb86493a82686b0eedddb264350b0873cf1eeaa1fefe39d938f05f272452c1ef5e6ceb4d9b23687e31",
 	  "bftWeight": "1"
-	}
+	},
+    // ...
   ],
-  "sidechainCertificateThreshold": "1"
+  "sidechainCertificateThreshold": "66"
 }
 ----
 
@@ -301,11 +307,148 @@ curl --location --request POST 'http://localhost:7887/rpc' \
 
 This will return the respective sidechain account stored in the xref:{url_sidechain_chain_store}[Chain substore] of the mainchain.
 
-//TODO: Add example output
+.A newly created sidechain account on the mainchain
+[source,json]
+----
+{
+    "id": "1",
+    "jsonrpc": "2.0",
+    "result": {
+        "lastCertificate": {
+            "height": 0,
+            "timestamp": 0,
+            "stateRoot": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "validatorsHash": "58fa1be3fca7aef9952a7640397124229837079b14a144907a7e3373685daceb"
+        },
+        "name": "sidechain_8",
+        "status": 0
+    }
+}
+----
 
 === Check the sidechain channel
 
+To verify that the channel to the sidechain was created successfully, request the `interoperability_getChainAccount` endpoint from a mainchain node.
+
+Parameters:
+
+* `chainID`: The chain ID of the registered sidechain.
+
+[tabs]
+=====
+Mainchain node CLI::
++
+--
+[source,bash]
+----
+lisk-core endpoint:invoke interoperability_getChannel '{"chainID": "00000001"}'
+----
+--
+cURL::
++
+--
+[source,bash]
+----
+curl --location --request POST 'http://localhost:7887/rpc' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "jsonrpc": "2.0",
+    "id": "1",
+    "method": "interoperability_getChannel",
+    "params": {
+         "chainID": "00000001"
+    }
+}'
+
+----
+--
+=====
+
+This will return the respective sidechain account stored in the xref:{url_sidechain_channel_store}[Channel substore] of the mainchain.
+
+.A newly created sidechain channel on the mainchain
+[source,json]
+----
+{
+    "id": "1",
+    "jsonrpc": "2.0",
+    "result": {
+        "messageFeeTokenID": "0300000000000000",
+        "outbox": {
+            "appendPath": [
+                "16dfaad8458dd4ae56ba2787593c2c5a55b14ba734c0431f177212226cf8328b"
+            ],
+            "root": "16dfaad8458dd4ae56ba2787593c2c5a55b14ba734c0431f177212226cf8328b",
+            "size": 1
+        },
+        "inbox": {
+            "appendPath": [],
+            "root": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "size": 0
+        },
+        "partnerChainOutboxRoot": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+}
+----
+
 === Check the sidechain validators
+
+To verify that the sidechain validators list was created successfully, request the `interoperability_getChainValidators` endpoint from a mainchain node.
+
+Parameters:
+
+* `chainID`: The chain ID of the registered sidechain.
+
+[tabs]
+=====
+Mainchain node CLI::
++
+--
+[source,bash]
+----
+lisk-core endpoint:invoke interoperability_getChainValidators '{"chainID": "00000001"}'
+----
+--
+cURL::
++
+--
+[source,bash]
+----
+curl --location --request POST 'http://localhost:7887/rpc' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "jsonrpc": "2.0",
+    "id": "1",
+    "method": "interoperability_getChainValidators",
+    "params": {
+         "chainID": "00000001"
+    }
+}'
+
+----
+--
+=====
+
+This will return the respective sidechain account stored in the xref:{url_sidechain_chain_validators_store}[Chain Validators substore] of the mainchain.
+
+.A newly created chain validators list on the mainchain
+[source,json]
+----
+{
+    "id": "1",
+    "jsonrpc": "2.0",
+    "result": {
+        "activeValidators": [
+            {
+                "blsKey": "8012798d2ac6b93df3bfa931192d9b2d496c3c947958a7408232e08872895557c06c1b94f5cc2555e28addbaadf3e0bd",
+                "bftWeight": "1"
+            },
+            // ...
+        ],
+        "certificateThreshold": "66"
+    }
+}
+----
 
 == How to register the mainchain on the sidechain
 
@@ -352,9 +495,11 @@ Set the `height` to the *latest block height on the mainchain* in the request pa
 
 [tabs]
 =====
-Sidechain node CLI::
+Lisk Core CLI::
 +
 --
+If you maintain an own instance of a Lisk mainnet node, it is possible to invoke endpoints directly via the node CLI:
+
 [source,bash]
 ----
 lisk-core endpoint:invoke consensus_getBFTParameters '{"height": 200}'
@@ -363,6 +508,8 @@ lisk-core endpoint:invoke consensus_getBFTParameters '{"height": 200}'
 cURL::
 +
 --
+Replace `localhost:7887` with the IP and port to a node that is connected to the Lisk Mainnet.
+
 [source,bash]
 ----
 curl --location --request POST 'http://localhost:7887/rpc' \
@@ -379,9 +526,9 @@ curl --location --request POST 'http://localhost:7887/rpc' \
 --
 =====
 
-This will return a complete list of all active sidechain validators at the specified block height.
+This will return a complete list of all active mainchain validators at the specified block height.
 
-Now, paste the *complete list* that was returned by the `consensus_getBFTParameters` endpoint under the `"sidechainValidators"` key:
+Now, paste the *complete list* that was returned by the `consensus_getBFTParameters` endpoint under the `"mainchainValidators"` key:
 
 .registerMainchain.json
 [source,json]
@@ -393,7 +540,8 @@ Now, paste the *complete list* that was returned by the `consensus_getBFTParamet
 	{
 	  "blsKey": "92f020ce5e37befb86493a82686b0eedddb264350b0873cf1eeaa1fefe39d938f05f272452c1ef5e6ceb4d9b23687e31",
 	  "bftWeight": "1"
-	}
+	},
+    // ...
   ]
 }
 ----
@@ -411,7 +559,8 @@ An integer setting the minimum signatures weight required for the first mainchai
 	{
 	  "blsKey": "92f020ce5e37befb86493a82686b0eedddb264350b0873cf1eeaa1fefe39d938f05f272452c1ef5e6ceb4d9b23687e31",
 	  "bftWeight": "1"
-	}
+	},
+    // ...
   ],
   "mainchainCertificateThreshold": "1"
 }
@@ -431,7 +580,8 @@ It ensures that the sidechain validators agree on registering the mainchain in t
 	{
 	  "blsKey": "92f020ce5e37befb86493a82686b0eedddb264350b0873cf1eeaa1fefe39d938f05f272452c1ef5e6ceb4d9b23687e31",
 	  "bftWeight": "2"
-	}
+	},
+    // ...
   ],
   "mainchainCertificateThreshold": "2",
   "signature": ""

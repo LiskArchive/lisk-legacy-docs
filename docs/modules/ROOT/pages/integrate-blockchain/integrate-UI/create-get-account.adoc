@@ -116,7 +116,7 @@ function NewAccount() {
 // [...]
 ----
 
-Start both the xref:{url_start_client}[*hello_client*] and the {url_start_frontend}[*hello_frontend*^], and then click on the *Account->Create Account* option in the menu bar.
+Start the {url_start_frontend}[*hello_frontend*^], and then click on the *Account->Create Account* option in the menu bar.
 Once the page has loaded, the credentials of the new account will be visible.
 
 [#create-a-new-account-page]
@@ -143,6 +143,7 @@ function GetAccountDetails() {
         error: '',
         account: {},
         auth: {},
+        hello: {}
     });
     // Will trigger this function when the value is changed in the input.
     const handleChange = (event) => {
@@ -159,6 +160,7 @@ function GetAccountDetails() {
         let responseError = '';
         let authenticationDetails;
         let accountBalance;
+        let latestHello;
 
         // Retrieves the account details from the blockchain application, based on the provided address.
         await client.invoke("token_getBalance", {
@@ -175,14 +177,24 @@ function GetAccountDetails() {
                 });
                 authenticationDetails = authDetails;
             }
-            return [response, authenticationDetails];
+            const helloMessage = await client.invoke("hello_getHello", {
+                address: state.address,
+            })
+            if (typeof helloMessage.message === 'string') {
+                latestHello = helloMessage;
+            }
+            else if (helloMessage.error.message.includes("does not exist")) {
+                latestHello = "message not found";
+            }
+            return [response, authenticationDetails, latestHello];
         })
 
         updateState({
             ...state,
             error: responseError,
             account: accountBalance,
-            auth: authenticationDetails
+            auth: authenticationDetails,
+            hello: latestHello
         });
     };
     // [...]
@@ -190,6 +202,7 @@ function GetAccountDetails() {
 export default GetAccountDetails;
 ----
 The `handleSubmit` function will use the *apiClient* to invoke the `token_getBalance` and `auth_getAuthAccount` endpoints. 
+It will also invoke the `hello_getHello` endpoint to fetch the latest hello message sent from the given address.
 
 The response to these requests will be shown to the user with the `displayData` function described in the following snippet:
 
@@ -206,21 +219,34 @@ function GetAccountDetails() {
         if (state.error !== '') {
             return (
                 <>
-                    <div class="ui red segment" style={{ overflow: 'auto' }}>
+                    <div className="ui red segment" style={{ overflow: 'auto' }}>
                         <h3>Something went wrong! :(</h3>
                         <pre><strong>Error:</strong> {JSON.stringify(state.error, null, 2)}</pre>
                     </div>
                 </>
             )
         }
-        // Check the values of the response received and display data accordingly.
-        else if (typeof state.account !== 'undefined' && state.account.availableBalance >= 0) {
+        // If no hello message is found, only show account and auth details.
+        else if (state.hello === 'message not found') {
             return (
                 <>
                     <h3>Your account details are:</h3>
                     <div className="ui green segment" style={{ overflow: 'auto' }}>
                         <pre>Account: {JSON.stringify(state.account, null, 2)}</pre>
                         <pre>Authentication details: {JSON.stringify(state.auth, null, 2)}</pre>
+                    </div>
+                </>
+            )
+        }
+        // Check the values of the response received and display data accordingly.
+        else if (typeof state.account !== 'undefined' && state.account.availableBalance >= 0 && state.hello !== 'message not found') {
+            return (
+                <>
+                    <h3>Your account details are:</h3>
+                    <div className="ui green segment" style={{ overflow: 'auto' }}>
+                        <pre>Account: {JSON.stringify(state.account, null, 2)}</pre>
+                        <pre>Authentication details: {JSON.stringify(state.auth, null, 2)}</pre>
+                        <pre>Latest Hello message: {JSON.stringify(state.hello, null, 2)}</pre>
                     </div>
                 </>
             )
@@ -233,7 +259,6 @@ function GetAccountDetails() {
 }
 // [...]
 ----
-
 Finally, in the `return` function, we will call the `displayData` function to display the appropriate response.
 
 .hello_frontend/src/components/getAccountDetails.js
@@ -274,6 +299,7 @@ function GetAccountDetails() {
 }
 // [...]
 ----
+Start the xref:{url_start_client}[*hello_client*] and ensure that the {url_start_frontend}[*hello_frontend*^] is running as well.
 
 Create a new account using the <<create-a-new-account-page, Create Account>> page, copy the address, and open the *Account->Account details* page. 
 [#check-balance]

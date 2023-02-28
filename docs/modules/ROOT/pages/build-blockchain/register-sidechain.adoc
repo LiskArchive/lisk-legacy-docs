@@ -12,7 +12,9 @@ Chris Braithwaite <christopher.braithwaite@lightcurve.io> Mona Bärenfänger <mo
 :url_lip56: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0056.md
 :url_lip56_bftweight: {url_lip56}#terminology
 :url_update_cross_chain_lip53: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0053.md#outboxrootwitness
-:url_exmaples_guides_createmessage: https://github.com/LiskHQ/lisk-sdk-examples/blob/292-chain-registration/guides/chain-registration/mainchain/messageCreation.ts
+:url_exmaples_guides_createparams: https://github.com/LiskHQ/lisk-sdk-examples/blob/292-chain-registration/guides/chain-registration/mainchain/paramsCreation.ts
+:url_exmaples_guides_validatorsignatures: https://github.com/LiskHQ/lisk-sdk-examples/blob/292-chain-registration/guides/chain-registration/mainchain/validatorSignatures.ts
+:url_exmaples_guides_mcregistration: https://github.com/LiskHQ/lisk-sdk-examples/blob/292-chain-registration/guides/chain-registration/mainchain/mainchainRegistration.ts
 // Project URLs
 :url_understand_interop_chainid: understand-blockchain/interoperability/index.adoc#chain-identifiers
 :url_ccm: understand-blockchain/interoperability/communication.adoc#sending-cross-chain-transactions-to-generate-ccms
@@ -81,7 +83,7 @@ In this case, the sidechain has to change the chain ID with a hardfork, and resu
 // call RPC to check if chain id available for the registered and it should return false
 // `interoperability_isChainIDAvailable` with params "params": { "chainID": "04000001" } return false
 
-.registerSidechain.json
+.sidechain_reg_params.json
 [source,json]
 ----
 {
@@ -93,7 +95,7 @@ In this case, the sidechain has to change the chain ID with a hardfork, and resu
 The name of the sidechain as a string.
 Has to be *unique* within the Lisk ecosystem  and contain only characters from the set `[a-z0-9!@$&_.]`.
 
-.registerSidechain.json
+.sidechain_reg_params.json
 [source,json]
 ----
 {
@@ -165,18 +167,14 @@ Now, paste the *complete list* that was returned by the `consensus_getBFTParamet
 NOTE: The length of the `sidechainValidators` is equal to the amount of active validators on the sidechain (101 by default).
 
 ===== Aggregated BFT weight
-
-The {url_lip56_bftweight}[aggregated BFT weight^] is the sum of BFT weights of all active validators at a specific block height.
-
-It is used to calculate the minimum and maximum values of the
-
-* <<sidechaincertificatethreshold>> and
-* <<mainchaincertificatethreshold>>
-
-==== sidechainCertificateThreshold
 //TODO: Clarify what kind of weight we are talking about in this context (could be confused with validator weight)
 //TODO: Add link to corresponding LIP
-An integer defining the minimum BFT weight threshold required for the first sidechain certificate to be valid.
+The {url_lip56_bftweight}[aggregated BFT weight^] is the sum of BFT weights of all active validators at a specific block height.
+
+It is used to calculate the minimum and maximum values of :
+
+* the <<sidechaincertificatethreshold>> and
+* the <<mainchaincertificatethreshold>>
 
 Minimum threshold:
 
@@ -186,33 +184,44 @@ Maximum threshold:
 
  max = Aggregated BFT weight
 
+==== sidechainCertificateThreshold
 
-Example::
+An integer defining the minimum BFT weight threshold required for the first sidechain certificate to be valid.
 
-Assuming, the sidechain has 101 active, and two random validators each round.
-+
-This results in the following min/max values for the certificate threshold:
+Minimum and maximum values for the certificate threshold are calculated with the <<aggregated-bft-weight>>.
 
- min = floor( 1/3 * 103 ) +1
-     = floor( 34 1/3 ) +1
-     = 34 + 1
-     = 35
+.Calculating the aggregated BFT weight for sidechain validators
+[source,js]
+----
+const { apiClient } = require('@liskhq/lisk-client');
 
- max = 103
-+
-This means, any value between 35-103 is valid.
-What exact threshold to choose depends on the sidechains requirements.
+(async () => {
+	// Update the path to point to your sidechain app data folder
+	const sidechainClient = await apiClient.createIPCClient('~/.lisk/hello_client');
+	const sidechainNodeInfo = await sidechainClient.invoke('system_getNodeInfo');
+	// Get active validators from sidechain
+	const bftParams = await sidechainClient.invoke('consensus_getBFTParameters', { height: sidechainNodeInfo.height });
 
-A high threshold requires a large number of validators to sign each CCU before it is sent to the mainchain.
-This makes cross-chain communication more secure.
+	// Calculate the aggregated BFT weight
+	let aggregateBFTWeight = BigInt(0);
+	for (const validator of bftParams.validators) {
+		aggregateBFTWeight += BigInt(validator.bftWeight);
+	}
 
-A low threshold requires a small number of validators to sign each CCU.
-This results in faster communication, as less signature need to be gathered, before a CCU can be sent.
+	console.log("certificateThreshold:");
+	console.log("min:");
+	console.log(aggregateBFTWeight/BigInt(3) + BigInt(1));
+	console.log("max:");
+	console.log(aggregateBFTWeight);
+	process.exit(0);
+})();
+----
 
-In this example, we decide for the following threshold:
+For this example, the minimum value is 34, and the maximum 101.
 
-//TODO: Update example with more validators/threshold
-.registerSidechain.json
+Taking this into account, we decide for a `sidechainCertificateThreshold` of 65:
+
+.sidechain_reg_params.json
 [source,json]
 ----
 {
@@ -225,7 +234,7 @@ In this example, we decide for the following threshold:
 	},
     // ...
   ],
-  "sidechainCertificateThreshold": "66"
+  "sidechainCertificateThreshold": "65"
 }
 ----
 
@@ -485,9 +494,17 @@ The Register Mainchain parameters are created in an analog way as the Register S
 [TIP]
 ====
 To conveniently prepare the required parameters, check out the following script in the lisk-sdk-examples repository:
-{url_exmaples_guides_createmessage}[messageCreation.ts^]
+{url_exmaples_guides_createparams}[paramsCreation.ts^]
 
+Executing the script after installation of the dependencies should create a new file `params.json` with the following parameters:
 
+. <<ownchainid>>
+. <<ownname>>
+. <<mainchainvalidators>>
+. <<mainchaincertificatethreshold>>
+
+Opening the file `params.json` to verify all values were generated correctly.
+The next step is to collect and aggregate the corresponding signatures form the sidechain validators, see <<preparing-the-aggregated-signature>>.
 ====
 
 ==== ownChainID
@@ -507,9 +524,12 @@ Each item contains the following properties:
 . `blsKey`: The {url_bls_key}[public BLS key] of the validator.
 . `bftWeight`: The {url_lip56}[BFT weight^] of the validator.
 
+////
 To retrieve the BFT parameters of all mainchain validators, invoke the `consensus_getBFTParameters` endpoint on the *mainchain node*.
 
 Set the `height` to the *latest block height on the mainchain* in the request parameters:
+
+
 
 [tabs]
 =====
@@ -544,9 +564,11 @@ curl --location --request POST 'http://localhost:7887/rpc' \
 --
 =====
 
+
+
 This will return a complete list of all active mainchain validators at the specified block height.
 
-Now, paste the *complete list* that was returned by the `consensus_getBFTParameters` endpoint under the `"mainchainValidators"` key:
+Paste the *complete list* that was returned by the `consensus_getBFTParameters` endpoint under the `"mainchainValidators"` key:
 
 .registerMainchain.json
 [source,json]
@@ -563,9 +585,15 @@ Now, paste the *complete list* that was returned by the `consensus_getBFTParamet
   ]
 }
 ----
-
+////
 ==== mainchainCertificateThreshold
-An integer setting the minimum signatures weight required for the first mainchain certificate to be valid.
+An integer defining the minimum BFT weight threshold required for the first mainchain certificate to be valid.
+
+Minimum and maximum values for the certificate threshold are calculated with the <<aggregated-bft-weight>>.
+
+
+////
+In this example, we decide for a `mainchainCertificateThreshold` of 55:
 
 .registerMainchain.json
 [source,json]
@@ -583,77 +611,78 @@ An integer setting the minimum signatures weight required for the first mainchai
   "mainchainCertificateThreshold": "55"
 }
 ----
+////
+
 
 === Preparing the aggregated signature
 To create a valid signature, an amount of sidechain validators equal or greater to the <<sidechaincertificatethreshold>> need to individually sign the Mainchain registration with their account.
 All individual signatures are then aggregated into one signature which is appended to the Register Mainchain parameters.
 
-The individual signing of the mainchain registration by the sidechain validators is executed off-chain, similar to the process of creating multisignature transactions.
+The individual signing of the mainchain registration by the sidechain validators is executed *off-chain*, similar to the process of creating multi-signature transactions.
 
-==== signature
+==== Collecting the signatures of the sidechain validators
+
+The process of signing the registration parameters needs to be coordinated off-chain by the sidechain validators.
+
+To simplify the process, you may use the following script, which adds a validator signature to an existing list of signatures: {url_exmaples_guides_validatorsignatures}[validatorSignatures.ts]
+
+The script expects the following files to be present:
+
+. `params.json`, which was created in step <<preparing-the-register-mainchain-parameters>>.
+. `keys.json`: a file with the bls keys of the validator intending to sign
+. `sidechainValidatorSignatures.json`: List of already existing validator signatures.
+If no such file is found, it will be created newly.
+
+After installing the required dependencies, the script can be executed like so:
+
+[source,bash]
+----
+node validatorSignatures.ts
+----
+
+As a result, it will append a new signature to the signatures listed in the file `sidechainValidatorSignatures.json`.
+
+Once the aggregated BFT weight of the validators who signed is equal or above the <<sidechaincertificatethreshold>>, enough validators have signed the registration parameters.
+
+==== Aggregating the validator signatures
+
+Once enough validators added their signatures, the list of signatures is aggregated into one single signature, which is then appended to the registration params that we created in step <<preparing-the-register-mainchain-parameters>>.
+
+The following script is performing the required steps: {url_exmaples_guides_mcregistration}[mainchainRegistration.ts]
+
+The script expects the following files to be present:
+
+. `params.json`, which was created in step <<preparing-the-register-mainchain-parameters>>.
+. `sidechainValidatorSignatures.json`: List of validator signatures.
+
+After installing the required dependencies, the script can be executed like so:
+
+[source,bash]
+----
+node mainchainRegistration.ts
+----
+
+As a result, it will create a new file `mainchain_reg_params.json`, including all required parameters and the aggregated signatures of the sidechain validators, which is verifying the correctness of the parameters.
+
+signature::
 The `signature` property is an aggregate signature of the sidechain validators.
 It ensures that the sidechain validators agree on registering the mainchain in the sidechain.
 
-.registerMainchain.json
-[source,json]
-----
-{
-  "ownChainID": "00000001",
-  "ownName": "sidechain1",
-  "mainchainValidators": [
-	{
-	  "blsKey": "92f020ce5e37befb86493a82686b0eedddb264350b0873cf1eeaa1fefe39d938f05f272452c1ef5e6ceb4d9b23687e31",
-	  "bftWeight": "2"
-	},
-    // ...
-  ],
-  "mainchainCertificateThreshold": "55",
-  "signature": ""
-}
-----
-
-==== aggregationBits
+aggregationBits::
 The `aggregationBits` property is a bit vector used to validate the aggregate signature.
 
-
-.registerMainchain.json
-[source,json]
-----
-{
-  "ownChainID": "00000001",
-  "ownName": "sidechain1",
-  "mainchainValidators": [
-	{
-	  "blsKey": "92f020ce5e37befb86493a82686b0eedddb264350b0873cf1eeaa1fefe39d938f05f272452c1ef5e6ceb4d9b23687e31",
-	  "bftWeight": "2"
-	}
-  ],
-  "mainchainCertificateThreshold": "2",
-  "signature": "",
-  "aggregationBits": ""
-}
-----
+The file `mainchain_reg_params.json` can now be passed as parameter source, when creating the `registerMainchain` transaction in the next step.
 
 === Posting a Register Mainchain transaction
 
 Send the `registerSidechain` transaction to a node that is connected to the mainchain.
 
-NOTE: The Lisk Core node CLI is used in this example to post the transaction.
-Alternatively, users can use the {url_lisk_wallet}[Lisk Wallet^], where the transaction can be created conveniently as well.
-
 [source,bash]
 ----
-./bin/run transaction:create interoperability registerMainchain 2000000000 --pretty -f ./registerMainchain.json
+./bin/run transaction:create interoperability registerMainchain 2000000000 --pretty -f ./mainchain_reg_params.json
 ----
 
-The transaction will be returned in hex format:
-
-[source,json]
-----
-{
-  "transaction": "0a10696e7465726f7065726162696c6974791211726567697374657253696465636861696e18002080a8d6b9072a20a3f96c50d0446220ef2f98240898515cbba8155730679ca35326d98dcfb680f0324a0a0404000001120a73696465636861696e311a340a3092f020ce5e37befb86493a82686b0eedddb264350b0873cf1eeaa1fefe39d938f05f272452c1ef5e6ceb4d9b23687e31100220023a408261e374405af4ec1143dfc0ae82a38e385d0edce870f698385749112064b374ac0de67354210aa27280db82121ec0bce195e5630c56a568a8b99dbbcb3a3d0b"
-}
-----
+The transaction will be returned in hex format.
 
 Copy the transaction and send it ot the node, for example by using the node CLI like so:
 
@@ -678,6 +707,24 @@ Parameters:
 
 * `chainID`: The chain ID of the registered mainchain.
 
+
+[tabs]
+=====
+Node CLI::
++
+--
+If you maintain an own instance of a sidechain node, it is possible to invoke endpoints directly via the node CLI:
+
+[source,bash]
+----
+./bin/run endpoint:invoke interoperability_getChainAccount '{"chainID": "00000000"}'
+----
+--
+cURL::
++
+--
+Replace `localhost:7887` with the IP and port to a node that is connected to the sidechain.
+
 [source,bash]
 ----
 curl --location --request POST 'http://localhost:7887/rpc' \
@@ -690,13 +737,16 @@ curl --location --request POST 'http://localhost:7887/rpc' \
          "chainID": "00000000"
     }
 }'
-
 ----
+--
+=====
 
 This will return the mainchain account stored in the xref:{url_sidechain_chain_store}[Chain substore] of the sidechain.
 
 //TODO: Add example output
 
+////
 === Check the mainchain channel
 
-=== Check the mainchain validators
+=== Check the mainchain validators////
+

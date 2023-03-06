@@ -622,7 +622,19 @@ Each item contains the following properties:</p>
 <p>To retrieve the BFT parameters of all sidechain validators, invoke the <code>consensus_getBFTParameters</code> endpoint on the <strong>sidechain node</strong>.</p>
 </div>
 <div class="paragraph">
-<p>Set the <code>height</code> to the <strong>latest block height on the sidechain</strong> in the request parameters:</p>
+<p>Set the <code>height</code> to the <strong>latest block height on the sidechain</strong> in the request parameters.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+The <code>system_getNodeInfo</code> node endpoint can be requested, to retrieve the latest block height.
+</td>
+</tr>
+</table>
 </div>
 <div class="tabset is-loading">
 <div class="ulist tabs">
@@ -828,7 +840,7 @@ Alternatively, users can use the <a href="https://lisk.com/wallet" target="_blan
 </div>
 </div>
 <div class="paragraph">
-<p>Copy the transaction and send it ot the node, for example by using the node CLI like so:</p>
+<p>Copy the transaction and send it to the node, for example by using the node CLI:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -855,7 +867,7 @@ Alternatively, users can use the <a href="https://lisk.com/wallet" target="_blan
 <p>Once the Register Sidechain command is processed, the sidechain account <code>status</code> is set to <code>registered</code>.</p>
 </div>
 <div class="paragraph">
-<p>To verify that the account was created successfully, request the <code>interoperability_getChainAccount</code> endpoint from a mainchain node.</p>
+<p>To verify that the account was created successfully, request the <code>interoperability_getChainData</code> endpoint from a mainchain node.</p>
 </div>
 <div class="paragraph">
 <p>Parameters:</p>
@@ -882,7 +894,7 @@ Alternatively, users can use the <a href="https://lisk.com/wallet" target="_blan
 <div class="tab-pane" aria-labelledby="tabset2_mainchain-node-cli">
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">lisk-core endpoint:invoke interoperability_getChainAccount '{"chainID": "00000001"}'</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">lisk-core endpoint:invoke interoperability_getChainData '{"chainID": "00000001"}'</code></pre>
 </div>
 </div>
 </div>
@@ -894,7 +906,7 @@ Alternatively, users can use the <a href="https://lisk.com/wallet" target="_blan
 --data-raw '{
     "jsonrpc": "2.0",
     "id": "1",
-    "method": "interoperability_getChainAccount",
+    "method": "interoperability_getChainData",
     "params": {
          "chainID": "00000001"
     }
@@ -930,7 +942,7 @@ Alternatively, users can use the <a href="https://lisk.com/wallet" target="_blan
 <div class="sect2">
 <h3 id="check-the-sidechain-channel"><a class="anchor" href="#check-the-sidechain-channel"></a>2.2. Check the sidechain channel</h3>
 <div class="paragraph">
-<p>To verify that the channel to the sidechain was created successfully, request the <code>interoperability_getChainAccount</code> endpoint from a mainchain node.</p>
+<p>To verify that the channel to the sidechain was created successfully, request the <code>interoperability_getChannelData</code> endpoint from a mainchain node.</p>
 </div>
 <div class="paragraph">
 <p>Parameters:</p>
@@ -957,7 +969,7 @@ Alternatively, users can use the <a href="https://lisk.com/wallet" target="_blan
 <div class="tab-pane" aria-labelledby="tabset3_mainchain-node-cli">
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">lisk-core endpoint:invoke interoperability_getChannel '{"chainID": "00000001"}'</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">lisk-core endpoint:invoke interoperability_getChannelData '{"chainID": "00000001"}'</code></pre>
 </div>
 </div>
 </div>
@@ -969,7 +981,7 @@ Alternatively, users can use the <a href="https://lisk.com/wallet" target="_blan
 --data-raw '{
     "jsonrpc": "2.0",
     "id": "1",
-    "method": "interoperability_getChannel",
+    "method": "interoperability_getChannelData",
     "params": {
          "chainID": "00000001"
     }
@@ -1254,8 +1266,8 @@ Each item contains the following properties:</p>
 <div class="sect2">
 <h3 id="preparing-the-aggregated-signature"><a class="anchor" href="#preparing-the-aggregated-signature"></a>3.2. Preparing the aggregated signature</h3>
 <div class="paragraph">
-<p>To create a valid signature, an amount of sidechain validators equal or greater to the <a href="#sidechaincertificatethreshold">sidechainCertificateThreshold</a> need to individually sign the Mainchain registration with their account.
-All individual signatures are then aggregated into one signature which is appended to the Register Mainchain parameters.</p>
+<p>To create a valid signature, an sidechain validators with enough weight equal or greater to the <a href="#sidechaincertificatethreshold">sidechainCertificateThreshold</a> need to individually sign the mainchain registration message, including: ownChainID, <code>ownChainName</code>, <code>mainchainCertificateThreshold</code> and <code>mainchainValidators</code>.
+All individual signatures are then aggregated into one <code>signature</code> and the corresponding <code>aggregationBits</code> which are appended to the Register Mainchain parameters.</p>
 </div>
 <div class="paragraph">
 <p>The individual signing of the mainchain registration by the sidechain validators is executed <strong>off-chain</strong>, similar to the process of creating multi-signature transactions.</p>
@@ -1277,7 +1289,8 @@ All individual signatures are then aggregated into one signature which is append
 <p><code>params.json</code>, which was created in step <a href="#preparing-the-register-mainchain-parameters">Preparing the Register Mainchain parameters</a>.</p>
 </li>
 <li>
-<p><code>keys.json</code>: a file with the bls keys of the validator intending to sign</p>
+<p><code>keys.json</code>: a file with the bls keys of the validator intending to sign.
+This file can be generated for a specific validator with the <code>keys:create</code> CLI command, by providing the passphrase.</p>
 </li>
 <li>
 <p><code>sidechainValidatorSignatures.json</code>: List of already existing validator signatures.
@@ -1391,7 +1404,7 @@ It ensures that the sidechain validators agree on registering the mainchain in t
 <p>Once the "Register Mainchain" command is processed, the mainchain account is initialized and its <code>status</code> is set to <code>registered</code>.</p>
 </div>
 <div class="paragraph">
-<p>To verify that the account was created successfully, request the <code>interoperability_getChainAccount</code> endpoint from a sidechain node.</p>
+<p>To verify that the account was created successfully, request the <code>interoperability_getChainData</code> endpoint from a sidechain node.</p>
 </div>
 <div class="paragraph">
 <p>Parameters:</p>
@@ -1421,7 +1434,7 @@ It ensures that the sidechain validators agree on registering the mainchain in t
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">./bin/run endpoint:invoke interoperability_getChainAccount '{"chainID": "00000000"}'</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">./bin/run endpoint:invoke interoperability_getChainData '{"chainID": "00000000"}'</code></pre>
 </div>
 </div>
 </div>
@@ -1436,7 +1449,7 @@ It ensures that the sidechain validators agree on registering the mainchain in t
 --data-raw '{
     "jsonrpc": "2.0",
     "id": "1",
-    "method": "interoperability_getChainAccount",
+    "method": "interoperability_getChainData",
     "params": {
          "chainID": "00000000"
     }

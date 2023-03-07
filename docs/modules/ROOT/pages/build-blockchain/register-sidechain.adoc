@@ -12,9 +12,9 @@ Chris Braithwaite <christopher.braithwaite@lightcurve.io> Mona Bärenfänger <mo
 :url_lip56: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0056.md
 :url_lip56_bftweight: {url_lip56}#terminology
 :url_update_cross_chain_lip53: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0053.md#outboxrootwitness
-:url_exmaples_guides_createparams: https://github.com/LiskHQ/lisk-sdk-examples/blob/292-chain-registration/guides/chain-registration/mainchain/paramsCreation.ts
-:url_exmaples_guides_validatorsignatures: https://github.com/LiskHQ/lisk-sdk-examples/blob/292-chain-registration/guides/chain-registration/mainchain/validatorSignatures.ts
-:url_exmaples_guides_mcregistration: https://github.com/LiskHQ/lisk-sdk-examples/blob/292-chain-registration/guides/chain-registration/mainchain/mainchainRegistration.ts
+:url_exmaples_guides_createparams: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/guides/chain-registration/mainchain/paramsCreation.ts
+:url_exmaples_guides_validatorsignatures: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/guides/chain-registration/mainchain/validatorSignatures.ts
+:url_exmaples_guides_mcregistration: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/guides/chain-registration/mainchain/mainchainRegistration.ts
 // Project URLs
 :url_understand_interop_chainid: understand-blockchain/interoperability/index.adoc#chain-identifiers
 :url_ccm: understand-blockchain/interoperability/communication.adoc#sending-cross-chain-transactions-to-generate-ccms
@@ -492,10 +492,15 @@ To create a *Register Mainchain* transaction, the following information is requi
 
 The Register Mainchain parameters are created in an analog way as the Register Sidechain parameters have been created in the previous step.
 
-[TIP]
-====
 To conveniently prepare the required parameters, check out the following script in the lisk-sdk-examples repository:
 {url_exmaples_guides_createparams}[paramsCreation.ts^]
+
+The script is executed like this:
+
+[source,bash]
+----
+node paramsCreation.ts
+----
 
 Executing the script after installation of the dependencies should create a new file `params.json` with the following parameters:
 
@@ -506,7 +511,6 @@ Executing the script after installation of the dependencies should create a new 
 
 Open the file `params.json`, to verify all values were generated correctly.
 The next step is to collect and aggregate the corresponding signatures form the sidechain validators, see <<preparing-the-aggregated-signature>>.
-====
 
 ==== ownChainID
 The chain ID of the sidechain.
@@ -525,95 +529,12 @@ Each item contains the following properties:
 . `blsKey`: The {url_bls_key}[public BLS key] of the validator.
 . `bftWeight`: The {url_lip56}[BFT weight^] of the validator.
 
-////
-To retrieve the BFT parameters of all mainchain validators, invoke the `consensus_getBFTParameters` endpoint on the *mainchain node*.
+TIP: To retrieve the BFT parameters of all mainchain validators, invoke the `consensus_getBFTParameters` endpoint on the *mainchain node*.
 
-Set the `height` to the *latest block height on the mainchain* in the request parameters:
-
-
-
-[tabs]
-=====
-Lisk Core CLI::
-+
---
-If you maintain an own instance of a Lisk mainnet node, it is possible to invoke endpoints directly via the node CLI:
-
-[source,bash]
-----
-lisk-core endpoint:invoke consensus_getBFTParameters '{"height": 200}'
-----
---
-cURL::
-+
---
-Replace `localhost:7887` with the IP and port to a node that is connected to the Lisk Mainnet.
-
-[source,bash]
-----
-curl --location --request POST 'http://localhost:7887/rpc' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "jsonrpc": "2.0",
-    "id": "1",
-    "method": "consensus_getBFTParameters",
-    "params": {
-         "height": 200
-    }
-}'
-----
---
-=====
-
-
-
-This will return a complete list of all active mainchain validators at the specified block height.
-
-Paste the *complete list* that was returned by the `consensus_getBFTParameters` endpoint under the `"mainchainValidators"` key:
-
-.registerMainchain.json
-[source,json]
-----
-{
-  "ownChainID": "00000001",
-  "ownName": "sidechain1",
-  "mainchainValidators": [
-	{
-	  "blsKey": "92f020ce5e37befb86493a82686b0eedddb264350b0873cf1eeaa1fefe39d938f05f272452c1ef5e6ceb4d9b23687e31",
-	  "bftWeight": "1"
-	},
-    // ...
-  ]
-}
-----
-////
 ==== mainchainCertificateThreshold
 An integer defining the minimum BFT weight threshold required for the first mainchain certificate to be valid.
 
 Minimum and maximum values for the certificate threshold are calculated with the <<aggregated-bft-weight>>.
-
-
-////
-In this example, we decide for a `mainchainCertificateThreshold` of 55:
-
-.registerMainchain.json
-[source,json]
-----
-{
-  "ownChainID": "00000001",
-  "ownName": "sidechain1",
-  "mainchainValidators": [
-	{
-	  "blsKey": "92f020ce5e37befb86493a82686b0eedddb264350b0873cf1eeaa1fefe39d938f05f272452c1ef5e6ceb4d9b23687e31",
-	  "bftWeight": "1"
-	},
-    // ...
-  ],
-  "mainchainCertificateThreshold": "55"
-}
-----
-////
-
 
 === Preparing the aggregated signature
 To create a valid signature, enough sidechain validators need to individually sign the mainchain registration message, so that the total weight is equal or greater to the <<sidechaincertificatethreshold>>.
@@ -644,6 +565,36 @@ node validatorSignatures.ts
 ----
 
 As a result, it will append a new signature to the signatures listed in the file `sidechainValidatorSignatures.json`.
+
+The most important parts of the script are the following:
+
+[source,js]
+----
+// 1. Preparing params for the registration message
+params = {
+    ownChainID: Buffer.from(paramsJSON.ownChainID, 'hex'),
+    ownName: paramsJSON.ownName,
+    mainchainValidators: paramsJSON.mainchainValidators.map(v => ({
+        blsKey: Buffer.from(v.blsKey, 'hex'),
+        bftWeight: BigInt(v.bftWeight),
+    })),
+    mainchainCertificateThreshold: paramsJSON.mainchainCertificateThreshold.toString(),
+};
+
+// 2. Create message by encoding params
+const message = codec.codec.encode(registrationSignatureMessageSchema, params);
+
+
+// 3. Signing the registration message
+const signature = bls.signData(
+      MESSAGE_TAG_CHAIN_REG,
+      params.ownChainID,
+      message,
+      Buffer.from(blsKeys[0].plain.blsPrivateKey,"hex"),
+    );
+----
+
+The validator signatures need to be collected by the person intending to send the Register Mainchain transaction.
 
 Once the aggregated BFT weight of the validators who signed is equal or above the <<sidechaincertificatethreshold>>, enough validators have signed the registration parameters.
 

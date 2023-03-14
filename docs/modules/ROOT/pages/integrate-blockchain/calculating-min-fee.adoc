@@ -1,10 +1,12 @@
-= Calculating the fee for a transaction
+= How to calculate the minimum fee for a transaction
 :toc: preamble
 // URLs
 :url_typedoc_transactions: {site-url}/lisk-sdk/v6/references/typedoc/modules/_liskhq_lisk_transactions.html
+:url_sdkexamples_minfee: https://github.com/LiskHQ/lisk-sdk-examples/blob/300-min-fee/guides/calculate-minfee/index.js
 // Project URLs
 :url_hello_world: build-blockchain/create-sidechain-app.adoc
 :url_understand_tx_commandfee: understand-blockchain/blocks-txs.adoc#command-fee
+:url_understand_tx_fee: understand-blockchain/blocks-txs.adoc#transaction-fees
 
 ====
 On this page, you'll learn how to:
@@ -13,30 +15,31 @@ On this page, you'll learn how to:
 * [x] Calculate the minimum fee for a specific transaction
 ====
 
-== How fees are defined for transactions
+== Option 1: Send a transaction with zero fee
 
-Fees can be defined dynamically for every transaction.
-A higher fee will create an incentive for validators to include the transaction in a block as quickly as possible, because most validators prioritize transactions with higher fees in the transaction pool, because it means a personal higher rewards for them, if they include these transactions in a block.
-So by choosing a higher fee, it can be ensured that the transaction is executed as quickly as possible.
+If you try to send a transaction with a fee smaller than the minimum fee, the transaction will be rejected by the node with an error.
+The error already includes the minimum fee required for the particular transaction.
 
-This mechanism can also be used to overwrite existing transactions in the pool, by using the same nonce, but a higher fee than the transaction that should be overwritten.
+[source,bash]
+----
+ % ./bin/run transaction:send 0a05746f6b656e12087472616e73666572180220ef900a2a20ec10255d3e78b2977f04e59ea9afd3e9a2ce9a6b44619ef9f6c47c29695b1df332330a0803000000000000001080c2d72f1a1488c0ee8a4f8fa0e498770c70749584f179938ffa220c48656c6c6f20576f726c64213a40dabb3bb29f133eb49c778091d673c4ed33afe46248bca7765cb12f8768acd0633f87051553d759e339597695eeb629128986b61e6d41e961847e6017c3fde80c
+----
 
-For every transaction, there is a minimum fee that needs to be paid in order for the transaction to be successfully processed.
+ Error: Insufficient transaction fee. Minimum required fee is 176000.
 
-WARNING: If the transaction is posted without fee, or with a fee smaller than the required minimum fee, the transaction will *fail*.
 
-It is possible to calculate the minimum fee required by using the short formula listed below:
+== Option 2: Manually calculate the minimum fee for a transaction
 
- minFee = transactionBytes.length * minFeePerByte (+ commandFee)
+To compute the xref:{url_understand_tx_fee}[minimum fee] for a transaction, use the API client.
+Create a small script called `compute-minfee.js` like described in the following sections.
 
-This means, the minimum fee is directly connected to the size of the transaction object in bytes after it has been encoded, and also to the optional xref:{url_understand_tx_commandfee}[commandFee] of a transaction.
+NOTE: See the complete code example of the script in the Lisk SDK examples repository: {url_sdkexamples_minfee}[min-fee.js]
 
-== How to calculate the minimum fee for a transaction
-
-The most convenient way to compute the minimum fee for a transaction is by using the API client as explained in the following sections.
-
-Alternatively, the user can also use directly the {url_typedoc_transactions}[@liskhq/lisk-transactions^] package to compute the minimum fee, by using the function `computeMinFee`.
+[TIP]
+====
+To compute the minimum fee for a transaction without a connection to the API client, the user can also use directly the {url_typedoc_transactions}[@liskhq/lisk-transactions^] package.
 In this case, the user needs to provide the transaction object and the corresponding transaction schema to the function.
+====
 
 :sectnums:
 === Connect the API client to a node
@@ -55,8 +58,10 @@ To connect to a different node, simply update the API URL defined in `nodeAPIURL
 const { apiClient } = require('@liskhq/lisk-client');
 
 let clientCache;
-const nodeAPIURL = 'ws://localhost:7887/ws'
+// A URL pointing to a node with open API
+const nodeAPIURL = 'ws://localhost:7887/rpc-ws'
 
+// Connects to a node API
 const getClient = async () => {
 	if (!clientCache) {
 		clientCache = await apiClient.createWSClient(nodeAPIURL);
@@ -65,100 +70,96 @@ const getClient = async () => {
 };
 ----
 
-=== Compute minimumFee
+=== Define the transaction to calcuclate the fee for
 
-A new transaction is created with the API client in a convenient manner, assuming that the respective transaction type is known to the node.
-Generally, a node knows only the commands belonging to the modules registered to the sidechain application.
+Adjust the following properties to match the transaction you want to calculate the minimum fee for:
 
-To calculate the minimum fee of a transaction, first create the respective transaction and sign it.
+* `module`,
+* `command`
+* and `params`.
 
-A value for the transaction fee is already required to create and sign the transaction.
-Therefore, just use an arbitrary default value, like 0 LSK.
-This value will be replaced with the calculated minimum fee for the transaction in the next step.
+For the following values, it is OK to use dummy values:
+
+* `nonce`,
+* `fee`
+* and `senderPublicKey`
 
 .compute-minfee.js
 [source,js]
 ----
-const { apiClient } = require('@liskhq/lisk-client');
+// Transaction to calculate the minimum fee for
+const tx = {
+	module: 'token',
+	command: 'transfer',
+	senderPublicKey: '1234567890123456789012345678901234567890123456789012345678901234',
+	nonce: 0,
+	fee: 0,
+	params: {
+		amount:100000000,
+		tokenID: "0300000000000000",
+		recipientAddress: "lskycz7hvr8yfu74bcwxy2n4mopfmjancgdvxq8xz",
+		data: "Hello World!"
+	}
+};
+----
 
-// ...
+=== Compute minimumFee
 
-const calcMinFee = async (client) => {
-	const txWithSomeFee = await client.transaction.create({
-		module: "token",
-		command: "transfer",
-		fee: BigInt("0"),
-		params: {
-			data: "Happy Birthday!"
-		}
-	});
+Finally, call the `getClient` function to get the API clint, and use it to calculate the fee with `client.transaction.computeMinFee(tx)`.
 
-	return client.transaction.computeMinFee(txWithSomeFee);
-}
+.compute-minfee.js
+[source,js]
+----
+const { apiClient, transactions } = require('@liskhq/lisk-client');
 
+let clientCache;
+// A URL pointing to a node with open API
+const nodeAPIURL = 'ws://localhost:7887/rpc-ws'
+
+// Connects to a node API
+const getClient = async () => {
+	if (!clientCache) {
+		clientCache = await apiClient.createWSClient(nodeAPIURL);
+	}
+	return clientCache;
+};
+
+// Transaction to calculate the minimum fee for
+const tx = {
+	module: 'token',
+	command: 'transfer',
+	senderPublicKey: '1234567890123456789012345678901234567890123456789012345678901234',
+	nonce: 0,
+	fee: 0,
+	params: {
+		amount:100000000,
+		tokenID: "0300000000000000",
+		recipientAddress: "lskycz7hvr8yfu74bcwxy2n4mopfmjancgdvxq8xz",
+		data: "Hello World!"
+	}
+};
+
+// Calculate and return the minimum fee
 getClient().then(client => {
-	calcMinFee(client).then(minFee => {
-		console.log("Minimum fee for the current transaction: ", minFee);
-	})
-})
+	const minFee = client.transaction.computeMinFee(tx);
+	console.log("The minimum fee for the given transaction is: ", minFee, " Beddows, i.e. ", transactions.convertBeddowsToLSK(minFee.toString()), " LSK.");
+	process.exit(0);
+}).catch(error => {
+	console.log("Error: " + error);
+	process.exit(1);
+});
+
+
 ----
 
 === Execute
 
-If the script is now executed in the terminal, it will display the minimum fee for the created transaction.
+If the script is now executed in the terminal, it will display the minimum fee for the defined transaction.
 
 [source,bash]
 ----
 % node compute-minfee.js
-Minimum fee for the current transaction:  127000n
+The minimum fee for the given transaction is:  139000n  Beddows, i.e.  0.00139  LSK
 ----
 
 :!sectnums:
-== Verifying the fee with a dry-run
-
-To verify that the transaction will be accepted by the node, it is possible to dry-run the transaction, before actually sending it to a node.
-
-Invoke the `txpool_dryRunTransaction` endpoint to test the validity of a transaction before acutally sending it:
-
-[tabs]
-
-=====
-node CLI::
-+
---
-[source,bash]
-----
-lisk-core endpoint:invoke txpool_dryRunTransaction '{"transaction": "0a040000000212040000000018012080c2d72f2a200fe9a3f1a21b5530f27f87a414b549e79a940bf24fdf2b2f05e7f22aeeecc86a32360a08000000000000000010011a1496c2f3cd9d9a09814d5f5d4182dc84183ea5abfb22124c6174657374205472616e73616374696f6e3a40a77b75083135aa1570e78a64c3f1d40306e3b92498a5fd227a61c40739ba0d1b6f4c7d8e274cc8caa16662906698c215eab08833a8005442862786259613ed02"}'
-----
---
-cURL::
-+
---
-[source,bash]
-----
-curl --location --request POST 'http://localhost:7887/rpc' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "jsonrpc": "2.0",
-    "id": "1",
-    "method": "txpool_dryRunTransaction",
-    "params": {
-        "transaction": "0a040000000212040000000018012080c2d72f2a200fe9a3f1a21b5530f27f87a414b549e79a940bf24fdf2b2f05e7f22aeeecc86a32360a08000000000000000010011a1496c2f3cd9d9a09814d5f5d4182dc84183ea5abfb22124c6174657374205472616e73616374696f6e3a40a77b75083135aa1570e78a64c3f1d40306e3b92498a5fd227a61c40739ba0d1b6f4c7d8e274cc8caa16662906698c215eab08833a8005442862786259613ed02"
-    }
-}'
-----
---
-=====
-
-[TIP]
-====
-To verify that this is in fact the minimum fee, try to send a transaction with a slightly smaller transaction fee:
-
-.Reducing the fee by 1 Beddow
- fee: minFee-BigInt("1"),
-
-Then when dry-running the transaction again, you should see the following error in the terminal:
-
- (node:14890) UnhandledPromiseRejectionWarning: Error: Error: Insufficient transaction fee. Minimum required fee is: 127000
-
-====

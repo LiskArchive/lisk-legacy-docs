@@ -15,6 +15,7 @@ Chris Braithwaite <christopher.braithwaite@lightcurve.io> Mona Bärenfänger <mo
 :url_exmaples_guides_createparams: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/guides/chain-registration/mainchain/paramsCreation.ts
 :url_exmaples_guides_validatorsignatures: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/guides/chain-registration/mainchain/validatorSignatures.ts
 :url_exmaples_guides_mcregistration: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/guides/chain-registration/mainchain/mainchainRegistration.ts
+:url_github_exmaples_sidechaintegistration: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/guides/chain-registration/sidechain/sidechainRegistration.ts
 // Project URLs
 :url_understand_interop_chainid: understand-blockchain/interoperability/index.adoc#chain-identifiers
 :url_ccm: understand-blockchain/interoperability/communication.adoc#sending-cross-chain-transactions-to-generate-ccms
@@ -71,7 +72,20 @@ To create a *Register Sidechain* transaction, the following information is requi
 . <<sidechaincertificatethreshold>>
 . <<sidechainvalidators>>
 
-All these parameters can be prepared in a JSON file, which we call `registerSidechain.json` in this example.
+All these parameters can be prepared in a JSON file, which we call `sidechain_reg_params.json` in this example.
+
+[TIP]
+====
+To conveniently prepare the required parameters for the sidechain registration message, check out the following script in the lisk-sdk-examples repository: {url_github_exmaples_sidechaintegistration}[sidechainRegistration.ts^].
+
+It can be used like so: `node sidechainRegistration.ts NAME CHAINID THRESHOLD`
+
+.Example
+[source,bash]
+----
+node sidechainRegistration.ts sidechain1 00000008 65
+----
+====
 
 ==== chainID
 The xref:{url_understand_interop_chainid}[chainID] of the sidechain.
@@ -87,7 +101,7 @@ In this case, the sidechain has to be restarted completely, or it needs to perfo
 To check if a certain chain ID is still available in the network, call RPC endpoint `interoperability_isChainIDAvailable` with the chain ID as parameter.
 If the chain ID is still available, it should return `true`.
 
-.registerSidechain.json
+.sidechain_reg_params.json
 [source,json]
 ----
 {
@@ -98,7 +112,7 @@ If the chain ID is still available, it should return `true`.
 ==== Name
 The name of the sidechain is a string that has to be *unique* within the Lisk ecosystem and should only contain characters from the set `[a-z0-9!@$&_.]`.
 
-.registerSidechain.json
+.sidechain_reg_params.json
 [source,json]
 ----
 {
@@ -151,9 +165,17 @@ curl --location --request POST 'http://localhost:7887/rpc' \
 
 This will return a complete list of all active sidechain validators at the specified block height.
 
+[IMPORTANT]
+====
+The validator list needs to be *alphabetically sorted* after the `blsKey`, to be a valid parameter.
+
+An example how to sort the validator list can be found in the example script {url_github_exmaples_sidechaintegistration}[sidechainRegistration.ts^].
+====
+
+
 Now, paste the *complete list* that was returned by the `consensus_getBFTParameters` endpoint under the `"sidechainValidators"` key:
 
-.registerSidechain.json
+.sidechain_reg_params.json
 [%collapsible]
 ====
 [source,json]
@@ -678,7 +700,7 @@ NOTE: The length of the `sidechainValidators` is equal to the amount of active v
 //TODO: Clarify what kind of weight we are talking about in this context (could be confused with validator weight)
 The {url_lip56_bftweight}[aggregated BFT weight^] is the sum of BFT weights of all active validators at a specific block height.
 
-It is used to calculate the minimum and maximum values of :
+The aggregated BFT weight is used to calculate the minimum and maximum values of :
 
 * the <<sidechaincertificatethreshold>> and
 * the <<mainchaincertificatethreshold>>
@@ -695,9 +717,9 @@ Maximum threshold:
 
 An integer defining the minimum BFT weight threshold required for the first sidechain certificate to be valid.
 
-Minimum and maximum values for the certificate threshold are calculated with the <<aggregated-bft-weight>>.
+Minimum and maximum values for the certificate threshold are calculated using the <<aggregated-bft-weight>>.
 
-.Calculating the aggregated BFT weight for sidechain validators
+.How to calculate minimum and maximum certificate thresholds for sidechain validators
 [source,js]
 ----
 const { apiClient } = require('@liskhq/lisk-client');
@@ -724,11 +746,11 @@ const { apiClient } = require('@liskhq/lisk-client');
 })();
 ----
 
-For this example, the minimum value is 34, and the maximum 101.
+For this example, the calculated minimum value is 34, and the maximum 101.
 
 Taking this into account, we decide for a `sidechainCertificateThreshold` of 65:
 
-.registerSidechain.json
+.sidechain_reg_params.json
 [%collapsible]
 ====
 [source,json]
@@ -1248,7 +1270,7 @@ Taking this into account, we decide for a `sidechainCertificateThreshold` of 65:
 ----
 ====
 
-The transaction parameters are now prepared in `registerSidechain.json` and we can proceed to create and post the transaction in the next section.
+The transaction parameters are now prepared in `sidechain_reg_params.json` and we can proceed to create and post the transaction in the next section.
 
 === Post the transaction on the mainchain
 
@@ -1259,7 +1281,7 @@ Alternatively, users can use the {url_lisk_wallet}[Lisk Wallet^], where the tran
 
 [source,bash]
 ----
-lisk-core transaction:create interoperability registerSidechain 2000000000 --pretty -f ./registerSidechain.json
+lisk-core transaction:create interoperability registerSidechain 2000000000 --pretty -f ./sidechain_reg_params.json
 ----
 
 The transaction will be returned in hex format:

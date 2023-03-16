@@ -1,0 +1,2183 @@
+= How to register a sidechain
+Chris Braithwaite <christopher.braithwaite@lightcurve.io> Mona Bärenfänger <mona@lightcurve.io>
+:description: How to register a sidechain to the mainchain and vice versa.
+// Settings
+:toc: preamble
+:idprefix:
+:idseparator: -
+:docs_sdk: v6@lisk-sdk::
+// URLs
+:url_lisk_wallet: https://lisk.com/wallet
+:url_bls_key: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0038.md#public-key-registration-and-proof-of-possession
+:url_lip56: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0056.md
+:url_lip56_bftweight: {url_lip56}#terminology
+:url_update_cross_chain_lip53: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0053.md#outboxrootwitness
+:url_exmaples_guides_createparams: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/guides/chain-registration/mainchain/paramsCreation.ts
+:url_exmaples_guides_validatorsignatures: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/guides/chain-registration/mainchain/validatorSignatures.ts
+:url_exmaples_guides_mcregistration: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/guides/chain-registration/mainchain/mainchainRegistration.ts
+:url_github_exmaples_sidechaintegistration: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/guides/chain-registration/sidechain/sidechainRegistration.ts
+// Project URLs
+:url_understand_interop_chainid: understand-blockchain/interoperability/index.adoc#chain-identifiers
+:url_ccm: understand-blockchain/interoperability/communication.adoc#sending-cross-chain-transactions-to-generate-ccms
+:url_ccu: understand-blockchain/interoperability/communication.adoc#creating-and-posting-ccus
+:url_sidechain_reg_recovery: understand-blockchain/interoperability/sidechain-registration-and-recovery.adoc
+:url_sidechain_chain_store: {url_sidechain_reg_recovery}#chain-substore
+:url_sidechain_channel_store: {url_sidechain_reg_recovery}#channel-substore
+:url_sidechain_chain_validators_store: {url_sidechain_reg_recovery}#chain-validators-substore
+:url_sidechain_reg_command: {url_sidechain_reg_recovery}#register-sidechain-command
+:url_mainchain_reg: {url_sidechain_reg_recovery}#register-mainchain-command
+:url_api_rpc_getnodeinfo: api/lisk-node-rpc.adoc#system_getnodeinfo
+:url_sdk_cli_keyscreate: {docs_sdk}client-cli.adoc#keyscreate
+
+// Footnotes
+:fn_lip53: footnote:witness[Due to the increasing size of the {url_update_cross_chain_lip53}[outboxRootWitness^] property of the command.]
+
+====
+On this page, you'll learn how to:
+
+* [x] Register a sidechain on the mainchain
+* [x] Register the mainchain on a sidechain
+====
+
+== Registration overview
+
+To complete the sidechain registration process, perform the following steps:
+
+. <<how-to-register-a-sidechain-on-the-mainchain,Sidechain registration on the mainchain>>
+. <<how-to-register-the-mainchain-on-the-sidechain,Mainchain registration on the sidechain>>
+
+TIP: Please read xref:{url_sidechain_reg_recovery}[] to get more information about the lifecycle of a sidechain.
+
+:sectnums:
+== How to register a sidechain on the mainchain
+
+A sidechain is registered on the mainchain by posting a xref:{url_sidechain_reg_command}[Register Sidechain transaction].
+
+A Register Sidechain transaction *can be sent by any user account* in the Lisk Mainchain that has adequate funds to pay the required <<sidechain-registration-fee,fee>>.
+
+=== Sidechain registration fee
+When the "Register Sidechain" command is processed, it creates a sidechain account in the mainchain state which is associated with a unique chain identifier and a name.
+Hence, every new sidechain occupies a certain namespace within the ecosystem.
+Additionally, every newly registered sidechain can increase the size of every cross-chain update command posted on the mainchain, because of the longer Merkle proofs.
+
+For these two reasons, the minimum fee for this command has an added constant similar to the extra fee in a Register Validator transaction.
+
+NOTE: The extra registration fee for a sidechain registration is *10 LSK* tokens.
+
+=== Prepare the required parameters
+
+To create a *Register Sidechain* transaction, the following information is required:
+
+. <<chainid>>
+. <<name>>
+. <<sidechaincertificatethreshold>>
+. <<sidechainvalidators>>
+
+All these parameters can be prepared in a JSON file, which we call `sidechain_reg_params.json` in this example.
+
+[TIP]
+====
+To conveniently prepare the required parameters for the sidechain registration message, check out the following script in the lisk-sdk-examples repository: {url_github_exmaples_sidechaintegistration}[sidechainRegistration.ts^].
+
+It can be used like so: `node sidechainRegistration.ts NAME CHAINID THRESHOLD`
+
+.Example
+[source,bash]
+----
+node sidechainRegistration.ts sidechain1 00000008 65
+----
+====
+
+==== chainID
+The xref:{url_understand_interop_chainid}[chainID] of the sidechain.
+Has to be *unique* within the Lisk ecosystem.
+
+[CAUTION]
+====
+If the given value is already taken by another sidechain, the "Register Sidechain" transaction fails.
+
+In this case, the sidechain has to be restarted completely, or it needs to perform a hardfork to change the chain ID, and resubmit the "Register Sidechain" transaction with a new value for the chain ID.
+====
+
+To check if a certain chain ID is still available in the network, call RPC endpoint `interoperability_isChainIDAvailable` with the chain ID as parameter.
+If the chain ID is still available, it should return `true`.
+
+.sidechain_reg_params.json
+[source,json]
+----
+{
+  "chainID": "00000001"
+}
+----
+
+==== Name
+The name of the sidechain is a string that has to be *unique* within the Lisk ecosystem and should only contain characters from the set `[a-z0-9!@$&_.]`.
+
+.sidechain_reg_params.json
+[source,json]
+----
+{
+  "chainID": "00000001",
+  "name": "sidechain1"
+}
+----
+
+==== sidechainValidators
+Defines the set of sidechain validators expected to sign the first certificate from the sidechain.
+Each item contains the following properties:
+
+. `blsKey`: The {url_bls_key}[public BLS key] of the validator.
+. `bftWeight`: The {url_lip56}[BFT weight^] is the weight attributed to the pre-votes and pre-commits cast by a validator, and therefore determines to what extent the validator contributes to finalizing blocks.
+
+To retrieve the BFT parameters of all sidechain validators, invoke the `consensus_getBFTParameters` endpoint on the *sidechain node*.
+
+Set the `height` to the *latest block height on the sidechain* in the request parameters.
+
+TIP: The xref:{url_api_rpc_getnodeinfo}[system_getNodeInfo] node endpoint can be requested, to retrieve the latest block height.
+
+[tabs]
+=====
+Sidechain node CLI::
++
+--
+[source,bash]
+----
+./bin/run  endpoint:invoke consensus_getBFTParameters '{"height": 200}'
+----
+--
+cURL::
++
+--
+[source,bash]
+----
+curl --location --request POST 'http://localhost:7887/rpc' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "jsonrpc": "2.0",
+    "id": "1",
+    "method": "consensus_getBFTParameters",
+    "params": {
+         "height": 200
+    }
+}'
+----
+--
+=====
+
+This will return a complete list of all active sidechain validators at the specified block height.
+
+[IMPORTANT]
+====
+The validator list needs to be *alphabetically sorted* after the `blsKey`, to be a valid parameter.
+
+An example how to sort the validator list can be found in the example script {url_github_exmaples_sidechaintegistration}[sidechainRegistration.ts^].
+====
+
+
+Now, paste the *complete list* that was returned by the `consensus_getBFTParameters` endpoint under the `"sidechainValidators"` key:
+
+.sidechain_reg_params.json
+[%collapsible]
+====
+[source,json]
+----
+{
+  "chainID": "00000001",
+  "name": "sidechain1",
+  "sidechainValidators":[
+      {
+         "address":"lsk3wgbnkyhbbr4ebj4u9y2ffh8kxu7jpojceb6be",
+         "bftWeight":"1",
+         "blsKey":"8012798d2ac6b93df3bfa931192d9b2d496c3c947958a7408232e08872895557c06c1b94f5cc2555e28addbaadf3e0bd"
+      },
+      {
+         "address":"lskvf8ec9v7mg6b256ngvuqcenzugp2wuc3tn4wuy",
+         "bftWeight":"1",
+         "blsKey":"80e1925e87e8435be1459e6e03f4aea41280e352ff0d30a356d31e9669587bb30de8cfc095fba2c4dcea145edaac3d9f"
+      },
+      {
+         "address":"lskqhwf9bgexkk48n72jgvmk74oc8dhng9zueovhg",
+         "bftWeight":"1",
+         "blsKey":"81b45d2107aa0eb61951d7cd4e19a7eb67135d790e6de0b17e31b8089a0efa52ae5b9e0a51da75692344a7e15008fc77"
+      },
+      {
+         "address":"lsk42qd5ayu3o5pbumjhbj6jy77epdmsbz4z638re",
+         "bftWeight":"1",
+         "blsKey":"820f7ee17502c75c80b3830fa2912f174e7f0972414fba035973bba4cb873e9f21d594575f8db2255d58e69c136f90ce"
+      },
+      {
+         "address":"lskr44v8kt77meofhb322d64uang7wvvasp6ettav",
+         "bftWeight":"1",
+         "blsKey":"829ce5aaea989ae0fbe8afb2211f2630b7df1035a69462ca2b9c6d4aeef48d3232528ffb5ccb4ae01396a4654f1fbb41"
+      },
+      {
+         "address":"lsk2vgpvr3eks9229vocds7tswpfk4xau2kbw7kcu",
+         "bftWeight":"1",
+         "blsKey":"83058f8ade0796d972870804d8f18266f5fb528e3c2e5e0f43244c316a95854ee4668962e3564ae35b340234b0778f0d"
+      },
+      {
+         "address":"lsk3tr698owopu65q7tdm2rxf66vkfh755ghs4qyn",
+         "bftWeight":"1",
+         "blsKey":"83717971cbe501ea79594c5ceae80fe3c09d1990faffafa2ae273908f9c99d2b27f245a4e3b03e51e18e0b1a54b237e4"
+      },
+      {
+         "address":"lskb8kz9yhw8xj4q7sy79tk5gnn5mf7k588cz8t2b",
+         "bftWeight":"1",
+         "blsKey":"83a2728e7209144ce73eccf5bad1dd47ce48291c04c9970094bbdd7c6693a141daa39f98474a4c57c2515eb6ca5dc882"
+      },
+      {
+         "address":"lsk58dxob3fsu6us8kucoo9u79ge9pm6c9k5kmhxy",
+         "bftWeight":"1",
+         "blsKey":"859c2f41d5c95638469796b4bed1f788b3a4da2aa3730953d96cd06fc0bdd1942213644f5415059710394b5c21970b29"
+      },
+      {
+         "address":"lsktbvmejkeb59yfcud3rhunojav4wv2jxk4kja9c",
+         "bftWeight":"1",
+         "blsKey":"85ad6e9a5650864d4a332bace72a497e5df917362b4de8246095c985b571e13fa6f344e5d265f28cbf255f57edefb704"
+      },
+      {
+         "address":"lsktge9x6cfe5tkayqex8ffgughqvhvxn3pt3vf4s",
+         "bftWeight":"1",
+         "blsKey":"862b40bafbe512e98c62ed88bef47531f180b60584163e550a7a94574f7cc5df2d768bc1eded57aa5d011b5c7ca1a0e9"
+      },
+      {
+         "address":"lskg5a2ftctyk7vmv8cdafnf77r4gvnoumwdnogej",
+         "bftWeight":"1",
+         "blsKey":"8700c97a52f04808d97767dcc80246a0a57fa37543c8113a06bfebab16af683071ce215edfb1133d436794f46d59b7af"
+      },
+      {
+         "address":"lskrxyzmoxx5ocw75utpu6nebb6z45ejnwfsqmfs2",
+         "bftWeight":"1",
+         "blsKey":"873096d7b1d2cdf69d2a4b492b5d9d1ae0baf1c8cdde3b096a83a08e696bb9c4a18cafac212741064703dec95efd29e6"
+      },
+      {
+         "address":"lsk9ngpywzctygo94u6ohgk8em9w897rzecpqftf2",
+         "bftWeight":"1",
+         "blsKey":"877342d9da45cdb72cea1b3f83ff391a25bbb40f0f17005aceb39a6102ea8ced78021bd830f378edd8a815b6c3f16280"
+      },
+      {
+         "address":"lskhbupdp4zak2my7947sv44wddyzod8whd4c7bm6",
+         "bftWeight":"1",
+         "blsKey":"87b8aeac87599f5bff2e3300066c24a8403cebcd1e5fc266a647206183f54c23b9e7c3265479686fd7aeb641a8020777"
+      },
+      {
+         "address":"lskbtr93ssbtwoaqt5rxgn5x68j9nnz6vhb6e38sg",
+         "bftWeight":"1",
+         "blsKey":"881e474dbbaa65962491eeb3b747954658550c4fdb30246336db2bce83851d33b15f6cf44f25cd9deff484fc88c9ea80"
+      },
+      {
+         "address":"lsk3euob83nywyfapaxf8tvqt7pyxaf3q4ycc23w8",
+         "bftWeight":"1",
+         "blsKey":"887d62bd098d331d647c57f52427eb1c991ac76a60881eba96c312a904014d8c261f42854f6a841951307959f8c2e410"
+      },
+      {
+         "address":"lskbgsk3ycc2hb3kw9ngw5sve45myyy3mpakddk3j",
+         "bftWeight":"1",
+         "blsKey":"89df859598134753ad8adb525c36979ca5b17ec7bd37ef6ed7461fcb0680c336bffb159f6cdc06b6d78d73cf24c1f549"
+      },
+      {
+         "address":"lskt95skxy69uv4uykhcbro6fto5ad3zk6qm49jdt",
+         "bftWeight":"1",
+         "blsKey":"89e65c4fec65d41861135cc1304ac2c5bf6da9099aa9c161b24cf68fc8fbc5835d54c62de475c6545676f252ba9bfc16"
+      },
+      {
+         "address":"lskgu9va5rdyar45rogrbqcuzgwpa7fze8tw4bhbg",
+         "bftWeight":"1",
+         "blsKey":"89e722afc26c0aca7bbe0aeda3711f0e853f404fd1c916472a02455ef8449d05122829b45eff4e09d38fa24737da7639"
+      },
+      {
+         "address":"lskfjs6z4prcu5mevh3g53qz2oshm638qpqu283ua",
+         "bftWeight":"1",
+         "blsKey":"8c1e40bef7a44f1551bfb851d48433287e7a41bb542bb6986e1f48c4b4dc19416a81a65c4e0f6bf2c03b05fc4d10620f"
+      },
+      {
+         "address":"lskvz9prth7q4y3bbucnaj9ucbxunon97asq7mgyh",
+         "bftWeight":"1",
+         "blsKey":"8c9abeecbf578e6f6f50eb2c1148f80ec4058c51d7e442b899a6c7f9ec89db3bc20ed95488f2817c0e5ab64f8332cef6"
+      },
+      {
+         "address":"lskjadzmjuaq43hrxmfb3ecv8v3y8vxs5vswjqune",
+         "bftWeight":"1",
+         "blsKey":"8ccfd6da5329870298507954656596a1beb91f092bd71e3482d6aa0f0861c1a22cf98dd3425b22591bef16b55c972828"
+      },
+      {
+         "address":"lsk8t3cpeuzjwd65hxgpnmujgsxpkmywy849krc56",
+         "bftWeight":"1",
+         "blsKey":"8d23cdf74166e64a3163f3219ac4b7b233e34a455a789fad2faaf522523cfe75c4f817575ddbfd24710b3b2cdff08ebe"
+      },
+      {
+         "address":"lskmdnka4m3pypq8kqnfyteucwch9cc3tc53yd9y7",
+         "bftWeight":"1",
+         "blsKey":"8d2c2ee2b55d7d19d6e42eebc881fcb28cf3b442db0ecd23307d89c3ed2ee25864a0f97fecdeca17a30c01648343d376"
+      },
+      {
+         "address":"lsknd6ra9mtgjmndmzayfjbt4ubne5snerf5752yd",
+         "bftWeight":"1",
+         "blsKey":"8da4a9262ec1f0d01640b94bec00ac51594cfaff14ea3b9b2f79773dc1c3ca63eb7d86da2570b88efa1fe33425a287b3"
+      },
+      {
+         "address":"lskzpryw42kdwjrggyuq9fz8m5xydhczkub7bqstd",
+         "bftWeight":"1",
+         "blsKey":"8dffebf58c3ffeada90d1196d2587d4e8342a4caf7283351e12403d543cd7452b24f4a6d359b160c439dbbed11d7a8fe"
+      },
+      {
+         "address":"lsksjcpc5tqms3u4hq6wrdpx9scfv35g49rr86jqt",
+         "bftWeight":"1",
+         "blsKey":"8ef2e03d79edcbaeb08c528bb0c9935514c519837b33617489c53ba6cc779518593d74d7517d479c45fbb0f40f9d14af"
+      },
+      {
+         "address":"lsk3rnmgx7egsdtetxr9sth7oxhcohx6v5ym27rj4",
+         "bftWeight":"1",
+         "blsKey":"8f4e15c9a87132453e669b7dd6f10616a58b45f3eacae0e31dbe7bea232066db881ae00907234f230fca932d5986d3e0"
+      },
+      {
+         "address":"lsk9jr4x2d5jd3j5f3auxbxk8bmkkkhs96skzgjya",
+         "bftWeight":"1",
+         "blsKey":"8fd987c26195f8a16e8887c4da08e98a6ce2fcf566cc9aeb10a591b8cfc8b2dd63e352f7f89a34de508defc6fa74a389"
+      },
+      {
+         "address":"lskryvdrfo6r7y5xgs6enszhb8aj7e7mcomg2xsgq",
+         "bftWeight":"1",
+         "blsKey":"8fe15645e54ffb3a815bc93f882986b42655e0b20cf112f71ed94b331b714d50c1a44d9c28b9bcd140741adec159c8ce"
+      },
+      {
+         "address":"lsk6s8a4zgkeabatqqhc8zkmbyc3c8n8tacvzkdw4",
+         "bftWeight":"1",
+         "blsKey":"8ff19b8a449c0b2c716e3041f58484e2e1f5ab7ba279fce30ddac50fb4ac14d146fe4ed57ac9581004b8cd4134256a0c"
+      },
+      {
+         "address":"lskk44hvaqr9aep6q5r43hgez7tcohewfd22sswjg",
+         "bftWeight":"1",
+         "blsKey":"9070783523bcdd8d0ed5fdc7eb0d40d22d0dde03be06e1a6beb541efbb4b764dba27ad4c6fd7b0f3802abab7c4bf48fc"
+      },
+      {
+         "address":"lskkkwwyx3jozgqppqxgrqursofmmdop53cs39ofm",
+         "bftWeight":"1",
+         "blsKey":"90d95277900969ff5ebd7f92edebaa16e0af77a1622b36f76d8f93b790461529886fe7b132de3b31c82bf35f05274c0a"
+      },
+      {
+         "address":"lskdjhuab4o7djng78bmcpxhq9zgo86jkn9fc9r5r",
+         "bftWeight":"1",
+         "blsKey":"90e260d227910c87325dac2af90bd1dab75b35877c6394c3dd998c69968a8906484d8b79e31ddf589c5f0273702fa2cc"
+      },
+      {
+         "address":"lskgkcwu2affo3kgttusg6zvp9a8vamz3paorxqen",
+         "bftWeight":"1",
+         "blsKey":"9137374c6ed262c52912bd503a7e3bcbff70fa0c46d61c5bf790aae79fa500a77e9bd98abdc3ddb2a5a13b6c36eec6fa"
+      },
+      {
+         "address":"lskkqe5g7rxzwx2xt636ptse77yxwaa5x7gz3ghbt",
+         "bftWeight":"1",
+         "blsKey":"91412ac7e9faa84f4d23dc821212b8eadee0094a29985776be57681373314561a53a6e7112d6b7e66076242752db885f"
+      },
+      {
+         "address":"lsksxkqd8wrzben2jqb8g6uj49ewuy6fmcba9c923",
+         "bftWeight":"1",
+         "blsKey":"915d3e77d79e71701a381182858ba7c093dddd8520cc4100b36183bd5b7acfe7aa5fdf5fb8911d725ae3cf6649ceee19"
+      },
+      {
+         "address":"lskj9okwfm2mzp6zyd7552s2uoe28bv28h69uy2cr",
+         "bftWeight":"1",
+         "blsKey":"92671742234400905ce8883f6b943254bd7fb0eef570be7d159806fdd362ce4aa8d4008b7da47fff8211169afe59a116"
+      },
+      {
+         "address":"lsk4tjmv84tsdqyomfwvgqpxwctotf5mkxpjgkad9",
+         "bftWeight":"1",
+         "blsKey":"92a25b59d8a5ff6484d45516a07080f890883d761562d7c177d747e9148ba92092c96f373348e65e0c89cca0c837efa7"
+      },
+      {
+         "address":"lskutjou7q3hvd763whhez9cnsd5tza72uh2btwku",
+         "bftWeight":"1",
+         "blsKey":"93111acc2098a914e9377be0c044695c37a3e3d69d1ccd2400eab59b0e846f27fd3a084ff3cff5b4de01890c4083921e"
+      },
+      {
+         "address":"lsk78ojpneftsqjocn4nwzpuvcmkkukkpun4cqxaj",
+         "bftWeight":"1",
+         "blsKey":"93b377e225e453e945772185dfcd804ffea9f15bf24db21945336f55b9bf477605116aec69321fbcb1ccfc42b6c7b7f5"
+      },
+      {
+         "address":"lsku87x2zqjdmfr2xepn67229bbrsqyxxewbf7k6g",
+         "bftWeight":"1",
+         "blsKey":"93ca96d5240a440cd0c51bee1ad76d3d9bf5d80208b8dc7af8f2acfb6183b8e600232b683ce8da402f52139b84c99461"
+      },
+      {
+         "address":"lskp9vno6b5n5zzvqs6bh8jsgq7dqomp668vw3poa",
+         "bftWeight":"1",
+         "blsKey":"945f96d83664c47a0b7cd6f64933085e6bf43b382b6ce555c96d6f706c8800a9848605af7b59f7866346390122d8c6a4"
+      },
+      {
+         "address":"lskxsadyfjqku8dyykhca3r2gu2acucjv2k97hq5w",
+         "bftWeight":"1",
+         "blsKey":"95ce3d5fb56fb8540f57f626b65fea8ea9a2792371854ffa011a2e99d8ca70abec0ef3a5bef57ad593e20466c9a2b1fa"
+      },
+      {
+         "address":"lskeqvamusscqgbnanp3atnvkc98jhb4srqgf3h7y",
+         "bftWeight":"1",
+         "blsKey":"95ecca2fe2fecfa5380a4eb2bc1a548fe4a7b9bd6c2d739df7b4b8330943319d0800ccba5dc8f4e797d526ee463dd103"
+      },
+      {
+         "address":"lskju3wzc52ecpozfpvqffwx9hpz99khndhf4p6v4",
+         "bftWeight":"1",
+         "blsKey":"967579545754c9c54aec95b0a239bb30235ca508db1de87e180da53fa34e0dfb1c0e81c79d0151d137533c0aad9bcf56"
+      },
+      {
+         "address":"lsk6h5hn9xqxgkfenhnyysm3dp4efgdv3phyg96rk",
+         "bftWeight":"1",
+         "blsKey":"96fbcdcc73487b93642d848007f4c5803f3aa6073789611071ec22ae28fa4d68e7480574023b4e8ab1e2026ae6d1bd56"
+      },
+      {
+         "address":"lsknz8yvpt5a29hss23hp83yf4yk97kvw2awuqt62",
+         "bftWeight":"1",
+         "blsKey":"978707c5713808cb16d048fa7b27545b14a2cd99d16adbdd4b141c92ff8658c71a5c66051450554c2a5bbf0cfbd34c3f"
+      },
+      {
+         "address":"lsk5pnhakwucup5chekn228xpjbgtjt7wghgkucbr",
+         "bftWeight":"1",
+         "blsKey":"97ab2fbbd6302314ee1bb350156111d621268c4715c7e2fc17bca5fc8d4ac067f250d1ea383e6e12c4322d3d09d47867"
+      },
+      {
+         "address":"lsk49xhhcwnrjr5qsp6grwgpkf9mn8ktet3c5c4df",
+         "bftWeight":"1",
+         "blsKey":"997efce2f5b5b0efc97b3d0c689813fb56e3ed0627fe6b88cee495466ebd604500a13cf7ed8808a63fbd915cc8a9c366"
+      },
+      {
+         "address":"lsk76oovzu4f2dsm7ystnwjeg6zcwyy5ygpnvtxaf",
+         "bftWeight":"1",
+         "blsKey":"998cae9553f1b857679fea5483f62f7df90c6069067839444eca468427d5475ae8c30981fee9efce0d7ea051a9f8057b"
+      },
+      {
+         "address":"lskd8a6quhcq3f84wwbd4kzpcg7dbffopy4dfta63",
+         "bftWeight":"1",
+         "blsKey":"99b0fe1e7663e88ac6ce674e998575d6f2dd543c0e3df2eb232683e432d6debfe659cb81147db1881da073d5274da6bf"
+      },
+      {
+         "address":"lsktp6f4qfzkeysw6hwyma4m2aue3wj26uwuzn3pw",
+         "bftWeight":"1",
+         "blsKey":"a0465875b9eaba9270d4b288e3271f388174f8756b153537e32f8a1abd1e3df7e63029f59dff882859bac585e21a2bfc"
+      },
+      {
+         "address":"lskjv5879rxvuau64sjj74d9ckzonsanvzs4bv5xa",
+         "bftWeight":"1",
+         "blsKey":"a05971bcbd5c7664483b733f3abcb8113a54e172028e82ee150245358e7f6e28e3ef8671376560e51d19de152796d43b"
+      },
+      {
+         "address":"lskgqoq6z8j8teydm2r8z9pb9wuom7ufx4geznujc",
+         "bftWeight":"1",
+         "blsKey":"a0a433d16e1ef74e9c9a9c775c107090413f06b1b4d3a8f83143f61d74792bf677edf837e5d7f65fefbf4c36569fa298"
+      },
+      {
+         "address":"lskngpkdmyk9hf8kmjz3kxrdp8chykfdcp6cdrgu8",
+         "bftWeight":"1",
+         "blsKey":"a11ee270162c55cb7985d4247985a33c7102aa4e637018e03119887c6e73910e8cef8ceb23d76e5dc4f73679b3f1e421"
+      },
+      {
+         "address":"lskgkqu4mcc82sp9ksbqrcdyd8dunbpbnv8suu7ps",
+         "bftWeight":"1",
+         "blsKey":"a25cb4cb5c245e4b2286af666653aeaad9f1df9c6dc53fd64ed2973a84af0a4d7fc1acfc9f28402e7d3b9652f8679485"
+      },
+      {
+         "address":"lskwxoykgzrrpk5t2aomfbw65ejwwyj833rxrm5bb",
+         "bftWeight":"1",
+         "blsKey":"a3032a4a9dc05865b5472f04c40be6d22b44c0426657fbdb7140692adc5bd37cf6e016ebe248f503b39b6d21084e41b9"
+      },
+      {
+         "address":"lskmot3tbuk3g8k45v9c3ock3n5ob4d36rgv2t3fy",
+         "bftWeight":"1",
+         "blsKey":"a3ba48f22c963c5400ee6206097573a333d67acaaae93ec8f3666cafbb6249db69ff0cb1ba13e612fec135ff2f3cc023"
+      },
+      {
+         "address":"lskmzahw5j5c7fn4w4ezvrkcbsnpvemoe6urqyk9z",
+         "bftWeight":"1",
+         "blsKey":"a431b13fb40e7bae6fada4d32e64641704202a8e1f64ec95438d8b49e5cb6cbaece08daea219f43ed5de3162c0057480"
+      },
+      {
+         "address":"lskmmu53ej44afgc8xunsktx8ngczwzccgandjgh5",
+         "bftWeight":"1",
+         "blsKey":"a467fadad40ad44bc5b63abc2e0f43054032475cc8eac21fe93e0aaf6d0822fd390f7464608240f780c7905367aa4ef2"
+      },
+      {
+         "address":"lsk233q7r4xg4ydy4dwtgdfmnz9r2xvrahnsogbo3",
+         "bftWeight":"1",
+         "blsKey":"a4eee0606ae9f264e1ff8f503a729dd7bac0ad54d25bffbbe326b433278c96c4ed2f3f72d26b932f6b32af94b5c2749a"
+      },
+      {
+         "address":"lsk8qc9jpeedu8snh68zsdduj5qrjg4kq7ucebf7s",
+         "bftWeight":"1",
+         "blsKey":"a51c34b3b8a21df3aa05be07467c9b4d3d90dbcc7791c747c2f0f30d2ac871aaac3199716bf3e7248f25d3e9045d0552"
+      },
+      {
+         "address":"lsk9k8uaau3efxchvve7knp5y4vm63tarw3ft43fy",
+         "bftWeight":"1",
+         "blsKey":"a631f867d8196d249221ade60de85b2fdd2c420b253655c4db8129358ff9f1465b8bdefedc43b065328ac577102d8389"
+      },
+      {
+         "address":"lsk7a2g8y2fn43g93pcnpp7545puq4e4xcdwvx572",
+         "bftWeight":"1",
+         "blsKey":"a68c525a3f41a5bfaf2da2d2c50868bd1cfa2dfa8b202692bc6f526f91fc783b400754ca1b20b8b02b61c740a828c667"
+      },
+      {
+         "address":"lskhckm2fx4rhmt383ynhzee7bs37vktkhkm9s9u6",
+         "bftWeight":"1",
+         "blsKey":"a6a7b82b9498d5bc31211f4d553dee28c4663e581353b1318f1efce688b5e644133ef3d5c7f0f72ccd0428be920dd95c"
+      },
+      {
+         "address":"lskteyodhs5p2fgfc79dj8kk625ejowv5gzjw8jvc",
+         "bftWeight":"1",
+         "blsKey":"a6b88f31d6ddcb1e195d166253f5629c2cf03430d946a9807b7c1b413b60186cf6588aad67a453c6d37a5c97a10f2845"
+      },
+      {
+         "address":"lskfq3bwcb3pnwtbj4h3dvkpzx36k7ye2equoedb2",
+         "bftWeight":"1",
+         "blsKey":"a6d989d85a75b1cf9b84fa946cdb36de9416445c984f8e09b535c9c83a9f7b67235af5197dfa76183d95aa1ef3241051"
+      },
+      {
+         "address":"lska8gpkbocem2ogx26g353syqmgb6veavb9apkex",
+         "bftWeight":"1",
+         "blsKey":"a8770bd80506a25e6e3a1bb2cffaa978b76a0f4b197250e99b1562dc4a24ec84365836a564b6015e1f5017c2c2be40b3"
+      },
+      {
+         "address":"lskas2pqo4r3kczjnw3ehumk3jrfkpybp54yeqcra",
+         "bftWeight":"1",
+         "blsKey":"a969902eeefec56d45f5e4ee5b39a36ed6d9f2c29e895fe231ae30eb6e4ec240321099d55ca04ad956a47c957d195519"
+      },
+      {
+         "address":"lskc52epefqrektze7pqcqzq7b747ug39jvfneauu",
+         "bftWeight":"1",
+         "blsKey":"aaafcac8e9fa128140a063a6b8ebe3db77df53b04bcc80c4998c27434b98cc9f8b2fc48a7e499209d4f986035b56f7bb"
+      },
+      {
+         "address":"lsk2qfxy3ebs5ty8gv6w8hbtr4wduptjtvzbx2wea",
+         "bftWeight":"1",
+         "blsKey":"aabfd06ba90f276e2a8d7b184f3bbcd8d4e74e0fe9e6705939245473b61594e33c887434848d0e5397e62e9150aedfff"
+      },
+      {
+         "address":"lsk2zg34gzcw66cutuf8t8rtwevp5yraeybamhdq5",
+         "bftWeight":"1",
+         "blsKey":"aacc9c3bce591c6df8c6d51ebedb10230278a6572eec45f2f9e16724860ae191de0a1ee5bff4dbc0a0b20c1b7b21404a"
+      },
+      {
+         "address":"lskstu9bqb4r3eheynshm658dnaomrdhyn669q7r2",
+         "bftWeight":"1",
+         "blsKey":"aae56df01d3622c28ca9b5eda7daf89f20b582c9717c69ab36cc6349bdc9eb472d170e85b43abda4294903dcc92ea731"
+      },
+      {
+         "address":"lskby4mcgchsmqtpqm5zcycb2o92s86owowyrda7t",
+         "bftWeight":"1",
+         "blsKey":"ab58a1900ff71771aca333163ff0fa9f1112986347f6ec8e31c455978c6adb256af8313ce719d3da5e3c7c27d34267a2"
+      },
+      {
+         "address":"lsk7u7wpnrypt7696k73tcg6emu3qd6zwt7ya7ncg",
+         "bftWeight":"1",
+         "blsKey":"acac37c80386a65aec329e2554a7603e1a225d4e2d66c338222b5c047b95f4f730717db707625ed95ec5e89f43e39317"
+      },
+      {
+         "address":"lskacxpuy6uu6q4xdf62yqhhtxejqq3bmw6efvvav",
+         "bftWeight":"1",
+         "blsKey":"acb45a0005a60941da882ed2da269409eb34c644867d739ad6b5732b88a6a6a43c05e0b139bba4d92888785de1fa3f97"
+      },
+      {
+         "address":"lskh3dbt4d8n5fqt9qjgg8nvokr3atu8d2qgzxaz8",
+         "bftWeight":"1",
+         "blsKey":"ae04d789dafd10de9a5f3bde4a94dd9a7394a05ac02a47c988e231068c3305d826999055df5800549c303aa0fda04f4e"
+      },
+      {
+         "address":"lskhwd53owboxxjc9qftf938eppuk8ncanxzzyo8y",
+         "bftWeight":"1",
+         "blsKey":"ae0ca95ecdf0e239939faa742364f1366aa7783afde967b6c7220c76554630bd67a33895a7cc045201da9950cd44335c"
+      },
+      {
+         "address":"lsktrpkos3b4ps8rpvejrfm235wt7uk6qtta42vs5",
+         "bftWeight":"1",
+         "blsKey":"ae8aa2862a9efa27515885f810be2ae2ebe8a681289a348b28a6f6f65d067bcc5bdaf82b2f7a26c8c3e6025cec257a0e"
+      },
+      {
+         "address":"lskfgoqhmjkjntu8f7yq9c78vwczumj8zrffxytpp",
+         "bftWeight":"1",
+         "blsKey":"aed6d88809fe58319f9f8754526ae4e42afaa66d3266e2ca43f6a1da45373a09a761ca27764985adcdb464c2a9caa3bd"
+      },
+      {
+         "address":"lsk8dhr3hdoukcbra9c5m7j3xgnub9eb4vrxyaryv",
+         "bftWeight":"1",
+         "blsKey":"af5b2dcb3ea14e0820d3d8b2b0d21594be9b8acfaf2cb77148cf3fe8e9900334ae60d0311278673e50753e5a3ff62bfa"
+      },
+      {
+         "address":"lskb4bcwf8xnjs6cavcky9j38ovusunmr48ho78e7",
+         "bftWeight":"1",
+         "blsKey":"afc6af040b6234b5d928c0c4fcd8bfa6715e6f779e26acc19b79c7be7629b0bb00cd39fb3ffee64fab1e8174ac1d9594"
+      },
+      {
+         "address":"lsks6pe5hgogeucewu82mxd69m82obe79hbr32umg",
+         "bftWeight":"1",
+         "blsKey":"afe6f88cd931ab9380f2c6b635c0902cb26a62c9bef1fa2af385c13ed74460a5b43ef14302c602f3ce99c991ca1a3e37"
+      },
+      {
+         "address":"lsk6of35yvf2g3ed6vcwhqxdsnccvtgpze3r46uu8",
+         "bftWeight":"1",
+         "blsKey":"afed4083c5523f6c76d82a00598673fc8fc33a89ed6d94a473cea54c044a0f0a77ae58e90ad808df9e23286d37a818f8"
+      },
+      {
+         "address":"lskkdtupvf82f5ut7pdr3my74zw6y3696xmd4y64z",
+         "bftWeight":"1",
+         "blsKey":"b0638b4ecfd3413156c292b242a0c3378807f9346649498cb3fa4adc8926630df487c89033de5275ec400be830c569b1"
+      },
+      {
+         "address":"lsk89x5zxmn7478eot3zh3cgssd65kqrdcdwpjcfv",
+         "bftWeight":"1",
+         "blsKey":"b07d6418604357a7d1c9d388175eb702ee17411db1cc0939015a9b4ba104addeaee14ab3e616a10444c72a94be518b28"
+      },
+      {
+         "address":"lskapcwe6mnq5z32qxyzucxgmnemmnnyy8egzh5am",
+         "bftWeight":"1",
+         "blsKey":"b15c96b9021b9a44d0695889a86223e1bff2c7b7f394c41f4f44551778f7e9a74b6eff75a620e4236b310025c23b59b9"
+      },
+      {
+         "address":"lskddmrvksugawoavyre6cyju2ss77uodqoq44hxo",
+         "bftWeight":"1",
+         "blsKey":"b27e76e5c7714dca4b29e06ca8886ef48d2905b64bb433d6d91f8f9820d962edc623597f093ad95f251eda9daf44366e"
+      },
+      {
+         "address":"lskpp6tcxosk56w7xavjfosb8bfyzngm8wbhxx76k",
+         "bftWeight":"1",
+         "blsKey":"b2f7593bf4b73356c758542f305518056d618415e96ffdf1f5ae4aab2de013d484f062ca2ec7fd6880e7df2345acfc05"
+      },
+      {
+         "address":"lsk3agvakf2fjsdrk2pv6fkw4w624jto5xjx25y9e",
+         "bftWeight":"1",
+         "blsKey":"b3df1d6c635e97b7b2e9feb00870c6238b7bda7246d6849b1fd549616aba816f1a265c7eeed15a4c35655c2fee62e657"
+      },
+      {
+         "address":"lsk93ksr7ttv6tb6e7jak4cx85j738bdnmm3p3mw7",
+         "bftWeight":"1",
+         "blsKey":"b3fea6464eb53f32f02dc3b6c313ba617466decf7f8bdc76a7cd5b1fbed45c85324654e131b0a54ec18c30c90ca1fc46"
+      },
+      {
+         "address":"lsk4f8bmj6z46z5sd7vxs899jwfote7x2tytnvfot",
+         "bftWeight":"1",
+         "blsKey":"b49ec00ad81c92bc1137ba5ac09d41bdb3d7cba1679ccf793e5ca5991d8215bb32462c7af55c386ea8482181f72b165e"
+      },
+      {
+         "address":"lsk4zu2k3cjaa97ryn9nxqkccrnkftc4r8cb87gvs",
+         "bftWeight":"1",
+         "blsKey":"b5d203c4555d4c7b3329ae1bd725a0a909a60322c7bbdc7a8630169ef7b1e8e3599fbac6336b1841b54b6bde9fef6b5a"
+      },
+      {
+         "address":"lsk3y8eadqq4c2kaoh3bpzz4jq5uz732u2hkff4va",
+         "bftWeight":"1",
+         "blsKey":"b601f03ca5ebb416d82c070be4cd8232df28f37d92549d4d6381b082fb9b80a8777e44d324728f957a934a454e0cfb15"
+      },
+      {
+         "address":"lskncssehnvy4zkwmtota23ogm2ky5c8gzd8ny48j",
+         "bftWeight":"1",
+         "blsKey":"b66bc3797dceb6567c8aea87a3887f12fe85fe9af8df19a5e66a1eb730d8f8288bca6f1bf24970dd2ad047df5376e3e0"
+      },
+      {
+         "address":"lskm54ecnkydppshy2hqua3q3nu328zsgvhsv2nfq",
+         "bftWeight":"1",
+         "blsKey":"b7ff6780436377ae340c1081f04e5a4ce2c4459421278ca6198b982b044a8e2bb3143b8a1a7fdb2f4cc2c55020d1948c"
+      },
+      {
+         "address":"lskqaswbhpzxwdsh8ov84rqhgtw5a52cqj6kshhom",
+         "bftWeight":"1",
+         "blsKey":"b840b34a50c5dc3aa7c5d48e0fd803554eb6125e22c78f81e122ed6c418c069a98cf2c0f8c6e701ba8ef5c68eb4f6d99"
+      },
+      {
+         "address":"lsknwsjx4tk56j5cgsru22y9ex338cuo6kd68t8z6",
+         "bftWeight":"1",
+         "blsKey":"b8b0050f1662a6b12fe95f632368ad963001c51ce04aac76aae21a51c1199551bfe1d7abe8a21de7364a132233d52eca"
+      },
+      {
+         "address":"lsk4ehqmvb9c2rq8cfae6jtt7nwkn2cjq46d2uwy7",
+         "bftWeight":"1",
+         "blsKey":"b93b3f3ca115695b018229db563bfa024cdee752ef7e710b3818d4234dace5fd67e345fcb90f21198ebefe6c2d87d28d"
+      }
+   ]
+}
+----
+====
+
+NOTE: The length of the `sidechainValidators` is equal to the amount of active validators on the sidechain (101 by default).
+
+===== Aggregated BFT weight
+//TODO: Clarify what kind of weight we are talking about in this context (could be confused with validator weight)
+The {url_lip56_bftweight}[aggregated BFT weight^] is the sum of BFT weights of all active validators at a specific block height.
+
+The aggregated BFT weight is used to calculate the minimum and maximum values of :
+
+* the <<sidechaincertificatethreshold>> and
+* the <<mainchaincertificatethreshold>>
+
+Minimum threshold:
+
+ min = floor( 1/3 * Aggregated BFT weight ) + 1
+
+Maximum threshold:
+
+ max = Aggregated BFT weight
+
+==== sidechainCertificateThreshold
+
+An integer defining the minimum BFT weight threshold required for the first sidechain certificate to be valid.
+
+Minimum and maximum values for the certificate threshold are calculated using the <<aggregated-bft-weight>>.
+
+.How to calculate minimum and maximum certificate thresholds for sidechain validators
+[source,js]
+----
+const { apiClient } = require('@liskhq/lisk-client');
+
+(async () => {
+	// Update the path to point to your sidechain app data folder
+	const sidechainClient = await apiClient.createIPCClient('~/.lisk/hello_client');
+	const sidechainNodeInfo = await sidechainClient.invoke('system_getNodeInfo');
+	// Get active validators from sidechain
+	const bftParams = await sidechainClient.invoke('consensus_getBFTParameters', { height: sidechainNodeInfo.height });
+
+	// Calculate the aggregated BFT weight
+	let aggregateBFTWeight = BigInt(0);
+	for (const validator of bftParams.validators) {
+		aggregateBFTWeight += BigInt(validator.bftWeight);
+	}
+
+	console.log("certificateThreshold:");
+	console.log("min:");
+	console.log(aggregateBFTWeight/BigInt(3) + BigInt(1));
+	console.log("max:");
+	console.log(aggregateBFTWeight);
+	process.exit(0);
+})();
+----
+
+For this example, the calculated minimum value is 34, and the maximum 101.
+
+Taking this into account, we decide for a `sidechainCertificateThreshold` of 65:
+
+.sidechain_reg_params.json
+[%collapsible]
+====
+[source,json]
+----
+{
+  "chainID": "00000001",
+  "name": "sidechain1",
+  "sidechainValidators":[
+      {
+         "address":"lsk3wgbnkyhbbr4ebj4u9y2ffh8kxu7jpojceb6be",
+         "bftWeight":"1",
+         "blsKey":"8012798d2ac6b93df3bfa931192d9b2d496c3c947958a7408232e08872895557c06c1b94f5cc2555e28addbaadf3e0bd"
+      },
+      {
+         "address":"lskvf8ec9v7mg6b256ngvuqcenzugp2wuc3tn4wuy",
+         "bftWeight":"1",
+         "blsKey":"80e1925e87e8435be1459e6e03f4aea41280e352ff0d30a356d31e9669587bb30de8cfc095fba2c4dcea145edaac3d9f"
+      },
+      {
+         "address":"lskqhwf9bgexkk48n72jgvmk74oc8dhng9zueovhg",
+         "bftWeight":"1",
+         "blsKey":"81b45d2107aa0eb61951d7cd4e19a7eb67135d790e6de0b17e31b8089a0efa52ae5b9e0a51da75692344a7e15008fc77"
+      },
+      {
+         "address":"lsk42qd5ayu3o5pbumjhbj6jy77epdmsbz4z638re",
+         "bftWeight":"1",
+         "blsKey":"820f7ee17502c75c80b3830fa2912f174e7f0972414fba035973bba4cb873e9f21d594575f8db2255d58e69c136f90ce"
+      },
+      {
+         "address":"lskr44v8kt77meofhb322d64uang7wvvasp6ettav",
+         "bftWeight":"1",
+         "blsKey":"829ce5aaea989ae0fbe8afb2211f2630b7df1035a69462ca2b9c6d4aeef48d3232528ffb5ccb4ae01396a4654f1fbb41"
+      },
+      {
+         "address":"lsk2vgpvr3eks9229vocds7tswpfk4xau2kbw7kcu",
+         "bftWeight":"1",
+         "blsKey":"83058f8ade0796d972870804d8f18266f5fb528e3c2e5e0f43244c316a95854ee4668962e3564ae35b340234b0778f0d"
+      },
+      {
+         "address":"lsk3tr698owopu65q7tdm2rxf66vkfh755ghs4qyn",
+         "bftWeight":"1",
+         "blsKey":"83717971cbe501ea79594c5ceae80fe3c09d1990faffafa2ae273908f9c99d2b27f245a4e3b03e51e18e0b1a54b237e4"
+      },
+      {
+         "address":"lskb8kz9yhw8xj4q7sy79tk5gnn5mf7k588cz8t2b",
+         "bftWeight":"1",
+         "blsKey":"83a2728e7209144ce73eccf5bad1dd47ce48291c04c9970094bbdd7c6693a141daa39f98474a4c57c2515eb6ca5dc882"
+      },
+      {
+         "address":"lsk58dxob3fsu6us8kucoo9u79ge9pm6c9k5kmhxy",
+         "bftWeight":"1",
+         "blsKey":"859c2f41d5c95638469796b4bed1f788b3a4da2aa3730953d96cd06fc0bdd1942213644f5415059710394b5c21970b29"
+      },
+      {
+         "address":"lsktbvmejkeb59yfcud3rhunojav4wv2jxk4kja9c",
+         "bftWeight":"1",
+         "blsKey":"85ad6e9a5650864d4a332bace72a497e5df917362b4de8246095c985b571e13fa6f344e5d265f28cbf255f57edefb704"
+      },
+      {
+         "address":"lsktge9x6cfe5tkayqex8ffgughqvhvxn3pt3vf4s",
+         "bftWeight":"1",
+         "blsKey":"862b40bafbe512e98c62ed88bef47531f180b60584163e550a7a94574f7cc5df2d768bc1eded57aa5d011b5c7ca1a0e9"
+      },
+      {
+         "address":"lskg5a2ftctyk7vmv8cdafnf77r4gvnoumwdnogej",
+         "bftWeight":"1",
+         "blsKey":"8700c97a52f04808d97767dcc80246a0a57fa37543c8113a06bfebab16af683071ce215edfb1133d436794f46d59b7af"
+      },
+      {
+         "address":"lskrxyzmoxx5ocw75utpu6nebb6z45ejnwfsqmfs2",
+         "bftWeight":"1",
+         "blsKey":"873096d7b1d2cdf69d2a4b492b5d9d1ae0baf1c8cdde3b096a83a08e696bb9c4a18cafac212741064703dec95efd29e6"
+      },
+      {
+         "address":"lsk9ngpywzctygo94u6ohgk8em9w897rzecpqftf2",
+         "bftWeight":"1",
+         "blsKey":"877342d9da45cdb72cea1b3f83ff391a25bbb40f0f17005aceb39a6102ea8ced78021bd830f378edd8a815b6c3f16280"
+      },
+      {
+         "address":"lskhbupdp4zak2my7947sv44wddyzod8whd4c7bm6",
+         "bftWeight":"1",
+         "blsKey":"87b8aeac87599f5bff2e3300066c24a8403cebcd1e5fc266a647206183f54c23b9e7c3265479686fd7aeb641a8020777"
+      },
+      {
+         "address":"lskbtr93ssbtwoaqt5rxgn5x68j9nnz6vhb6e38sg",
+         "bftWeight":"1",
+         "blsKey":"881e474dbbaa65962491eeb3b747954658550c4fdb30246336db2bce83851d33b15f6cf44f25cd9deff484fc88c9ea80"
+      },
+      {
+         "address":"lsk3euob83nywyfapaxf8tvqt7pyxaf3q4ycc23w8",
+         "bftWeight":"1",
+         "blsKey":"887d62bd098d331d647c57f52427eb1c991ac76a60881eba96c312a904014d8c261f42854f6a841951307959f8c2e410"
+      },
+      {
+         "address":"lskbgsk3ycc2hb3kw9ngw5sve45myyy3mpakddk3j",
+         "bftWeight":"1",
+         "blsKey":"89df859598134753ad8adb525c36979ca5b17ec7bd37ef6ed7461fcb0680c336bffb159f6cdc06b6d78d73cf24c1f549"
+      },
+      {
+         "address":"lskt95skxy69uv4uykhcbro6fto5ad3zk6qm49jdt",
+         "bftWeight":"1",
+         "blsKey":"89e65c4fec65d41861135cc1304ac2c5bf6da9099aa9c161b24cf68fc8fbc5835d54c62de475c6545676f252ba9bfc16"
+      },
+      {
+         "address":"lskgu9va5rdyar45rogrbqcuzgwpa7fze8tw4bhbg",
+         "bftWeight":"1",
+         "blsKey":"89e722afc26c0aca7bbe0aeda3711f0e853f404fd1c916472a02455ef8449d05122829b45eff4e09d38fa24737da7639"
+      },
+      {
+         "address":"lskfjs6z4prcu5mevh3g53qz2oshm638qpqu283ua",
+         "bftWeight":"1",
+         "blsKey":"8c1e40bef7a44f1551bfb851d48433287e7a41bb542bb6986e1f48c4b4dc19416a81a65c4e0f6bf2c03b05fc4d10620f"
+      },
+      {
+         "address":"lskvz9prth7q4y3bbucnaj9ucbxunon97asq7mgyh",
+         "bftWeight":"1",
+         "blsKey":"8c9abeecbf578e6f6f50eb2c1148f80ec4058c51d7e442b899a6c7f9ec89db3bc20ed95488f2817c0e5ab64f8332cef6"
+      },
+      {
+         "address":"lskjadzmjuaq43hrxmfb3ecv8v3y8vxs5vswjqune",
+         "bftWeight":"1",
+         "blsKey":"8ccfd6da5329870298507954656596a1beb91f092bd71e3482d6aa0f0861c1a22cf98dd3425b22591bef16b55c972828"
+      },
+      {
+         "address":"lsk8t3cpeuzjwd65hxgpnmujgsxpkmywy849krc56",
+         "bftWeight":"1",
+         "blsKey":"8d23cdf74166e64a3163f3219ac4b7b233e34a455a789fad2faaf522523cfe75c4f817575ddbfd24710b3b2cdff08ebe"
+      },
+      {
+         "address":"lskmdnka4m3pypq8kqnfyteucwch9cc3tc53yd9y7",
+         "bftWeight":"1",
+         "blsKey":"8d2c2ee2b55d7d19d6e42eebc881fcb28cf3b442db0ecd23307d89c3ed2ee25864a0f97fecdeca17a30c01648343d376"
+      },
+      {
+         "address":"lsknd6ra9mtgjmndmzayfjbt4ubne5snerf5752yd",
+         "bftWeight":"1",
+         "blsKey":"8da4a9262ec1f0d01640b94bec00ac51594cfaff14ea3b9b2f79773dc1c3ca63eb7d86da2570b88efa1fe33425a287b3"
+      },
+      {
+         "address":"lskzpryw42kdwjrggyuq9fz8m5xydhczkub7bqstd",
+         "bftWeight":"1",
+         "blsKey":"8dffebf58c3ffeada90d1196d2587d4e8342a4caf7283351e12403d543cd7452b24f4a6d359b160c439dbbed11d7a8fe"
+      },
+      {
+         "address":"lsksjcpc5tqms3u4hq6wrdpx9scfv35g49rr86jqt",
+         "bftWeight":"1",
+         "blsKey":"8ef2e03d79edcbaeb08c528bb0c9935514c519837b33617489c53ba6cc779518593d74d7517d479c45fbb0f40f9d14af"
+      },
+      {
+         "address":"lsk3rnmgx7egsdtetxr9sth7oxhcohx6v5ym27rj4",
+         "bftWeight":"1",
+         "blsKey":"8f4e15c9a87132453e669b7dd6f10616a58b45f3eacae0e31dbe7bea232066db881ae00907234f230fca932d5986d3e0"
+      },
+      {
+         "address":"lsk9jr4x2d5jd3j5f3auxbxk8bmkkkhs96skzgjya",
+         "bftWeight":"1",
+         "blsKey":"8fd987c26195f8a16e8887c4da08e98a6ce2fcf566cc9aeb10a591b8cfc8b2dd63e352f7f89a34de508defc6fa74a389"
+      },
+      {
+         "address":"lskryvdrfo6r7y5xgs6enszhb8aj7e7mcomg2xsgq",
+         "bftWeight":"1",
+         "blsKey":"8fe15645e54ffb3a815bc93f882986b42655e0b20cf112f71ed94b331b714d50c1a44d9c28b9bcd140741adec159c8ce"
+      },
+      {
+         "address":"lsk6s8a4zgkeabatqqhc8zkmbyc3c8n8tacvzkdw4",
+         "bftWeight":"1",
+         "blsKey":"8ff19b8a449c0b2c716e3041f58484e2e1f5ab7ba279fce30ddac50fb4ac14d146fe4ed57ac9581004b8cd4134256a0c"
+      },
+      {
+         "address":"lskk44hvaqr9aep6q5r43hgez7tcohewfd22sswjg",
+         "bftWeight":"1",
+         "blsKey":"9070783523bcdd8d0ed5fdc7eb0d40d22d0dde03be06e1a6beb541efbb4b764dba27ad4c6fd7b0f3802abab7c4bf48fc"
+      },
+      {
+         "address":"lskkkwwyx3jozgqppqxgrqursofmmdop53cs39ofm",
+         "bftWeight":"1",
+         "blsKey":"90d95277900969ff5ebd7f92edebaa16e0af77a1622b36f76d8f93b790461529886fe7b132de3b31c82bf35f05274c0a"
+      },
+      {
+         "address":"lskdjhuab4o7djng78bmcpxhq9zgo86jkn9fc9r5r",
+         "bftWeight":"1",
+         "blsKey":"90e260d227910c87325dac2af90bd1dab75b35877c6394c3dd998c69968a8906484d8b79e31ddf589c5f0273702fa2cc"
+      },
+      {
+         "address":"lskgkcwu2affo3kgttusg6zvp9a8vamz3paorxqen",
+         "bftWeight":"1",
+         "blsKey":"9137374c6ed262c52912bd503a7e3bcbff70fa0c46d61c5bf790aae79fa500a77e9bd98abdc3ddb2a5a13b6c36eec6fa"
+      },
+      {
+         "address":"lskkqe5g7rxzwx2xt636ptse77yxwaa5x7gz3ghbt",
+         "bftWeight":"1",
+         "blsKey":"91412ac7e9faa84f4d23dc821212b8eadee0094a29985776be57681373314561a53a6e7112d6b7e66076242752db885f"
+      },
+      {
+         "address":"lsksxkqd8wrzben2jqb8g6uj49ewuy6fmcba9c923",
+         "bftWeight":"1",
+         "blsKey":"915d3e77d79e71701a381182858ba7c093dddd8520cc4100b36183bd5b7acfe7aa5fdf5fb8911d725ae3cf6649ceee19"
+      },
+      {
+         "address":"lskj9okwfm2mzp6zyd7552s2uoe28bv28h69uy2cr",
+         "bftWeight":"1",
+         "blsKey":"92671742234400905ce8883f6b943254bd7fb0eef570be7d159806fdd362ce4aa8d4008b7da47fff8211169afe59a116"
+      },
+      {
+         "address":"lsk4tjmv84tsdqyomfwvgqpxwctotf5mkxpjgkad9",
+         "bftWeight":"1",
+         "blsKey":"92a25b59d8a5ff6484d45516a07080f890883d761562d7c177d747e9148ba92092c96f373348e65e0c89cca0c837efa7"
+      },
+      {
+         "address":"lskutjou7q3hvd763whhez9cnsd5tza72uh2btwku",
+         "bftWeight":"1",
+         "blsKey":"93111acc2098a914e9377be0c044695c37a3e3d69d1ccd2400eab59b0e846f27fd3a084ff3cff5b4de01890c4083921e"
+      },
+      {
+         "address":"lsk78ojpneftsqjocn4nwzpuvcmkkukkpun4cqxaj",
+         "bftWeight":"1",
+         "blsKey":"93b377e225e453e945772185dfcd804ffea9f15bf24db21945336f55b9bf477605116aec69321fbcb1ccfc42b6c7b7f5"
+      },
+      {
+         "address":"lsku87x2zqjdmfr2xepn67229bbrsqyxxewbf7k6g",
+         "bftWeight":"1",
+         "blsKey":"93ca96d5240a440cd0c51bee1ad76d3d9bf5d80208b8dc7af8f2acfb6183b8e600232b683ce8da402f52139b84c99461"
+      },
+      {
+         "address":"lskp9vno6b5n5zzvqs6bh8jsgq7dqomp668vw3poa",
+         "bftWeight":"1",
+         "blsKey":"945f96d83664c47a0b7cd6f64933085e6bf43b382b6ce555c96d6f706c8800a9848605af7b59f7866346390122d8c6a4"
+      },
+      {
+         "address":"lskxsadyfjqku8dyykhca3r2gu2acucjv2k97hq5w",
+         "bftWeight":"1",
+         "blsKey":"95ce3d5fb56fb8540f57f626b65fea8ea9a2792371854ffa011a2e99d8ca70abec0ef3a5bef57ad593e20466c9a2b1fa"
+      },
+      {
+         "address":"lskeqvamusscqgbnanp3atnvkc98jhb4srqgf3h7y",
+         "bftWeight":"1",
+         "blsKey":"95ecca2fe2fecfa5380a4eb2bc1a548fe4a7b9bd6c2d739df7b4b8330943319d0800ccba5dc8f4e797d526ee463dd103"
+      },
+      {
+         "address":"lskju3wzc52ecpozfpvqffwx9hpz99khndhf4p6v4",
+         "bftWeight":"1",
+         "blsKey":"967579545754c9c54aec95b0a239bb30235ca508db1de87e180da53fa34e0dfb1c0e81c79d0151d137533c0aad9bcf56"
+      },
+      {
+         "address":"lsk6h5hn9xqxgkfenhnyysm3dp4efgdv3phyg96rk",
+         "bftWeight":"1",
+         "blsKey":"96fbcdcc73487b93642d848007f4c5803f3aa6073789611071ec22ae28fa4d68e7480574023b4e8ab1e2026ae6d1bd56"
+      },
+      {
+         "address":"lsknz8yvpt5a29hss23hp83yf4yk97kvw2awuqt62",
+         "bftWeight":"1",
+         "blsKey":"978707c5713808cb16d048fa7b27545b14a2cd99d16adbdd4b141c92ff8658c71a5c66051450554c2a5bbf0cfbd34c3f"
+      },
+      {
+         "address":"lsk5pnhakwucup5chekn228xpjbgtjt7wghgkucbr",
+         "bftWeight":"1",
+         "blsKey":"97ab2fbbd6302314ee1bb350156111d621268c4715c7e2fc17bca5fc8d4ac067f250d1ea383e6e12c4322d3d09d47867"
+      },
+      {
+         "address":"lsk49xhhcwnrjr5qsp6grwgpkf9mn8ktet3c5c4df",
+         "bftWeight":"1",
+         "blsKey":"997efce2f5b5b0efc97b3d0c689813fb56e3ed0627fe6b88cee495466ebd604500a13cf7ed8808a63fbd915cc8a9c366"
+      },
+      {
+         "address":"lsk76oovzu4f2dsm7ystnwjeg6zcwyy5ygpnvtxaf",
+         "bftWeight":"1",
+         "blsKey":"998cae9553f1b857679fea5483f62f7df90c6069067839444eca468427d5475ae8c30981fee9efce0d7ea051a9f8057b"
+      },
+      {
+         "address":"lskd8a6quhcq3f84wwbd4kzpcg7dbffopy4dfta63",
+         "bftWeight":"1",
+         "blsKey":"99b0fe1e7663e88ac6ce674e998575d6f2dd543c0e3df2eb232683e432d6debfe659cb81147db1881da073d5274da6bf"
+      },
+      {
+         "address":"lsktp6f4qfzkeysw6hwyma4m2aue3wj26uwuzn3pw",
+         "bftWeight":"1",
+         "blsKey":"a0465875b9eaba9270d4b288e3271f388174f8756b153537e32f8a1abd1e3df7e63029f59dff882859bac585e21a2bfc"
+      },
+      {
+         "address":"lskjv5879rxvuau64sjj74d9ckzonsanvzs4bv5xa",
+         "bftWeight":"1",
+         "blsKey":"a05971bcbd5c7664483b733f3abcb8113a54e172028e82ee150245358e7f6e28e3ef8671376560e51d19de152796d43b"
+      },
+      {
+         "address":"lskgqoq6z8j8teydm2r8z9pb9wuom7ufx4geznujc",
+         "bftWeight":"1",
+         "blsKey":"a0a433d16e1ef74e9c9a9c775c107090413f06b1b4d3a8f83143f61d74792bf677edf837e5d7f65fefbf4c36569fa298"
+      },
+      {
+         "address":"lskngpkdmyk9hf8kmjz3kxrdp8chykfdcp6cdrgu8",
+         "bftWeight":"1",
+         "blsKey":"a11ee270162c55cb7985d4247985a33c7102aa4e637018e03119887c6e73910e8cef8ceb23d76e5dc4f73679b3f1e421"
+      },
+      {
+         "address":"lskgkqu4mcc82sp9ksbqrcdyd8dunbpbnv8suu7ps",
+         "bftWeight":"1",
+         "blsKey":"a25cb4cb5c245e4b2286af666653aeaad9f1df9c6dc53fd64ed2973a84af0a4d7fc1acfc9f28402e7d3b9652f8679485"
+      },
+      {
+         "address":"lskwxoykgzrrpk5t2aomfbw65ejwwyj833rxrm5bb",
+         "bftWeight":"1",
+         "blsKey":"a3032a4a9dc05865b5472f04c40be6d22b44c0426657fbdb7140692adc5bd37cf6e016ebe248f503b39b6d21084e41b9"
+      },
+      {
+         "address":"lskmot3tbuk3g8k45v9c3ock3n5ob4d36rgv2t3fy",
+         "bftWeight":"1",
+         "blsKey":"a3ba48f22c963c5400ee6206097573a333d67acaaae93ec8f3666cafbb6249db69ff0cb1ba13e612fec135ff2f3cc023"
+      },
+      {
+         "address":"lskmzahw5j5c7fn4w4ezvrkcbsnpvemoe6urqyk9z",
+         "bftWeight":"1",
+         "blsKey":"a431b13fb40e7bae6fada4d32e64641704202a8e1f64ec95438d8b49e5cb6cbaece08daea219f43ed5de3162c0057480"
+      },
+      {
+         "address":"lskmmu53ej44afgc8xunsktx8ngczwzccgandjgh5",
+         "bftWeight":"1",
+         "blsKey":"a467fadad40ad44bc5b63abc2e0f43054032475cc8eac21fe93e0aaf6d0822fd390f7464608240f780c7905367aa4ef2"
+      },
+      {
+         "address":"lsk233q7r4xg4ydy4dwtgdfmnz9r2xvrahnsogbo3",
+         "bftWeight":"1",
+         "blsKey":"a4eee0606ae9f264e1ff8f503a729dd7bac0ad54d25bffbbe326b433278c96c4ed2f3f72d26b932f6b32af94b5c2749a"
+      },
+      {
+         "address":"lsk8qc9jpeedu8snh68zsdduj5qrjg4kq7ucebf7s",
+         "bftWeight":"1",
+         "blsKey":"a51c34b3b8a21df3aa05be07467c9b4d3d90dbcc7791c747c2f0f30d2ac871aaac3199716bf3e7248f25d3e9045d0552"
+      },
+      {
+         "address":"lsk9k8uaau3efxchvve7knp5y4vm63tarw3ft43fy",
+         "bftWeight":"1",
+         "blsKey":"a631f867d8196d249221ade60de85b2fdd2c420b253655c4db8129358ff9f1465b8bdefedc43b065328ac577102d8389"
+      },
+      {
+         "address":"lsk7a2g8y2fn43g93pcnpp7545puq4e4xcdwvx572",
+         "bftWeight":"1",
+         "blsKey":"a68c525a3f41a5bfaf2da2d2c50868bd1cfa2dfa8b202692bc6f526f91fc783b400754ca1b20b8b02b61c740a828c667"
+      },
+      {
+         "address":"lskhckm2fx4rhmt383ynhzee7bs37vktkhkm9s9u6",
+         "bftWeight":"1",
+         "blsKey":"a6a7b82b9498d5bc31211f4d553dee28c4663e581353b1318f1efce688b5e644133ef3d5c7f0f72ccd0428be920dd95c"
+      },
+      {
+         "address":"lskteyodhs5p2fgfc79dj8kk625ejowv5gzjw8jvc",
+         "bftWeight":"1",
+         "blsKey":"a6b88f31d6ddcb1e195d166253f5629c2cf03430d946a9807b7c1b413b60186cf6588aad67a453c6d37a5c97a10f2845"
+      },
+      {
+         "address":"lskfq3bwcb3pnwtbj4h3dvkpzx36k7ye2equoedb2",
+         "bftWeight":"1",
+         "blsKey":"a6d989d85a75b1cf9b84fa946cdb36de9416445c984f8e09b535c9c83a9f7b67235af5197dfa76183d95aa1ef3241051"
+      },
+      {
+         "address":"lska8gpkbocem2ogx26g353syqmgb6veavb9apkex",
+         "bftWeight":"1",
+         "blsKey":"a8770bd80506a25e6e3a1bb2cffaa978b76a0f4b197250e99b1562dc4a24ec84365836a564b6015e1f5017c2c2be40b3"
+      },
+      {
+         "address":"lskas2pqo4r3kczjnw3ehumk3jrfkpybp54yeqcra",
+         "bftWeight":"1",
+         "blsKey":"a969902eeefec56d45f5e4ee5b39a36ed6d9f2c29e895fe231ae30eb6e4ec240321099d55ca04ad956a47c957d195519"
+      },
+      {
+         "address":"lskc52epefqrektze7pqcqzq7b747ug39jvfneauu",
+         "bftWeight":"1",
+         "blsKey":"aaafcac8e9fa128140a063a6b8ebe3db77df53b04bcc80c4998c27434b98cc9f8b2fc48a7e499209d4f986035b56f7bb"
+      },
+      {
+         "address":"lsk2qfxy3ebs5ty8gv6w8hbtr4wduptjtvzbx2wea",
+         "bftWeight":"1",
+         "blsKey":"aabfd06ba90f276e2a8d7b184f3bbcd8d4e74e0fe9e6705939245473b61594e33c887434848d0e5397e62e9150aedfff"
+      },
+      {
+         "address":"lsk2zg34gzcw66cutuf8t8rtwevp5yraeybamhdq5",
+         "bftWeight":"1",
+         "blsKey":"aacc9c3bce591c6df8c6d51ebedb10230278a6572eec45f2f9e16724860ae191de0a1ee5bff4dbc0a0b20c1b7b21404a"
+      },
+      {
+         "address":"lskstu9bqb4r3eheynshm658dnaomrdhyn669q7r2",
+         "bftWeight":"1",
+         "blsKey":"aae56df01d3622c28ca9b5eda7daf89f20b582c9717c69ab36cc6349bdc9eb472d170e85b43abda4294903dcc92ea731"
+      },
+      {
+         "address":"lskby4mcgchsmqtpqm5zcycb2o92s86owowyrda7t",
+         "bftWeight":"1",
+         "blsKey":"ab58a1900ff71771aca333163ff0fa9f1112986347f6ec8e31c455978c6adb256af8313ce719d3da5e3c7c27d34267a2"
+      },
+      {
+         "address":"lsk7u7wpnrypt7696k73tcg6emu3qd6zwt7ya7ncg",
+         "bftWeight":"1",
+         "blsKey":"acac37c80386a65aec329e2554a7603e1a225d4e2d66c338222b5c047b95f4f730717db707625ed95ec5e89f43e39317"
+      },
+      {
+         "address":"lskacxpuy6uu6q4xdf62yqhhtxejqq3bmw6efvvav",
+         "bftWeight":"1",
+         "blsKey":"acb45a0005a60941da882ed2da269409eb34c644867d739ad6b5732b88a6a6a43c05e0b139bba4d92888785de1fa3f97"
+      },
+      {
+         "address":"lskh3dbt4d8n5fqt9qjgg8nvokr3atu8d2qgzxaz8",
+         "bftWeight":"1",
+         "blsKey":"ae04d789dafd10de9a5f3bde4a94dd9a7394a05ac02a47c988e231068c3305d826999055df5800549c303aa0fda04f4e"
+      },
+      {
+         "address":"lskhwd53owboxxjc9qftf938eppuk8ncanxzzyo8y",
+         "bftWeight":"1",
+         "blsKey":"ae0ca95ecdf0e239939faa742364f1366aa7783afde967b6c7220c76554630bd67a33895a7cc045201da9950cd44335c"
+      },
+      {
+         "address":"lsktrpkos3b4ps8rpvejrfm235wt7uk6qtta42vs5",
+         "bftWeight":"1",
+         "blsKey":"ae8aa2862a9efa27515885f810be2ae2ebe8a681289a348b28a6f6f65d067bcc5bdaf82b2f7a26c8c3e6025cec257a0e"
+      },
+      {
+         "address":"lskfgoqhmjkjntu8f7yq9c78vwczumj8zrffxytpp",
+         "bftWeight":"1",
+         "blsKey":"aed6d88809fe58319f9f8754526ae4e42afaa66d3266e2ca43f6a1da45373a09a761ca27764985adcdb464c2a9caa3bd"
+      },
+      {
+         "address":"lsk8dhr3hdoukcbra9c5m7j3xgnub9eb4vrxyaryv",
+         "bftWeight":"1",
+         "blsKey":"af5b2dcb3ea14e0820d3d8b2b0d21594be9b8acfaf2cb77148cf3fe8e9900334ae60d0311278673e50753e5a3ff62bfa"
+      },
+      {
+         "address":"lskb4bcwf8xnjs6cavcky9j38ovusunmr48ho78e7",
+         "bftWeight":"1",
+         "blsKey":"afc6af040b6234b5d928c0c4fcd8bfa6715e6f779e26acc19b79c7be7629b0bb00cd39fb3ffee64fab1e8174ac1d9594"
+      },
+      {
+         "address":"lsks6pe5hgogeucewu82mxd69m82obe79hbr32umg",
+         "bftWeight":"1",
+         "blsKey":"afe6f88cd931ab9380f2c6b635c0902cb26a62c9bef1fa2af385c13ed74460a5b43ef14302c602f3ce99c991ca1a3e37"
+      },
+      {
+         "address":"lsk6of35yvf2g3ed6vcwhqxdsnccvtgpze3r46uu8",
+         "bftWeight":"1",
+         "blsKey":"afed4083c5523f6c76d82a00598673fc8fc33a89ed6d94a473cea54c044a0f0a77ae58e90ad808df9e23286d37a818f8"
+      },
+      {
+         "address":"lskkdtupvf82f5ut7pdr3my74zw6y3696xmd4y64z",
+         "bftWeight":"1",
+         "blsKey":"b0638b4ecfd3413156c292b242a0c3378807f9346649498cb3fa4adc8926630df487c89033de5275ec400be830c569b1"
+      },
+      {
+         "address":"lsk89x5zxmn7478eot3zh3cgssd65kqrdcdwpjcfv",
+         "bftWeight":"1",
+         "blsKey":"b07d6418604357a7d1c9d388175eb702ee17411db1cc0939015a9b4ba104addeaee14ab3e616a10444c72a94be518b28"
+      },
+      {
+         "address":"lskapcwe6mnq5z32qxyzucxgmnemmnnyy8egzh5am",
+         "bftWeight":"1",
+         "blsKey":"b15c96b9021b9a44d0695889a86223e1bff2c7b7f394c41f4f44551778f7e9a74b6eff75a620e4236b310025c23b59b9"
+      },
+      {
+         "address":"lskddmrvksugawoavyre6cyju2ss77uodqoq44hxo",
+         "bftWeight":"1",
+         "blsKey":"b27e76e5c7714dca4b29e06ca8886ef48d2905b64bb433d6d91f8f9820d962edc623597f093ad95f251eda9daf44366e"
+      },
+      {
+         "address":"lskpp6tcxosk56w7xavjfosb8bfyzngm8wbhxx76k",
+         "bftWeight":"1",
+         "blsKey":"b2f7593bf4b73356c758542f305518056d618415e96ffdf1f5ae4aab2de013d484f062ca2ec7fd6880e7df2345acfc05"
+      },
+      {
+         "address":"lsk3agvakf2fjsdrk2pv6fkw4w624jto5xjx25y9e",
+         "bftWeight":"1",
+         "blsKey":"b3df1d6c635e97b7b2e9feb00870c6238b7bda7246d6849b1fd549616aba816f1a265c7eeed15a4c35655c2fee62e657"
+      },
+      {
+         "address":"lsk93ksr7ttv6tb6e7jak4cx85j738bdnmm3p3mw7",
+         "bftWeight":"1",
+         "blsKey":"b3fea6464eb53f32f02dc3b6c313ba617466decf7f8bdc76a7cd5b1fbed45c85324654e131b0a54ec18c30c90ca1fc46"
+      },
+      {
+         "address":"lsk4f8bmj6z46z5sd7vxs899jwfote7x2tytnvfot",
+         "bftWeight":"1",
+         "blsKey":"b49ec00ad81c92bc1137ba5ac09d41bdb3d7cba1679ccf793e5ca5991d8215bb32462c7af55c386ea8482181f72b165e"
+      },
+      {
+         "address":"lsk4zu2k3cjaa97ryn9nxqkccrnkftc4r8cb87gvs",
+         "bftWeight":"1",
+         "blsKey":"b5d203c4555d4c7b3329ae1bd725a0a909a60322c7bbdc7a8630169ef7b1e8e3599fbac6336b1841b54b6bde9fef6b5a"
+      },
+      {
+         "address":"lsk3y8eadqq4c2kaoh3bpzz4jq5uz732u2hkff4va",
+         "bftWeight":"1",
+         "blsKey":"b601f03ca5ebb416d82c070be4cd8232df28f37d92549d4d6381b082fb9b80a8777e44d324728f957a934a454e0cfb15"
+      },
+      {
+         "address":"lskncssehnvy4zkwmtota23ogm2ky5c8gzd8ny48j",
+         "bftWeight":"1",
+         "blsKey":"b66bc3797dceb6567c8aea87a3887f12fe85fe9af8df19a5e66a1eb730d8f8288bca6f1bf24970dd2ad047df5376e3e0"
+      },
+      {
+         "address":"lskm54ecnkydppshy2hqua3q3nu328zsgvhsv2nfq",
+         "bftWeight":"1",
+         "blsKey":"b7ff6780436377ae340c1081f04e5a4ce2c4459421278ca6198b982b044a8e2bb3143b8a1a7fdb2f4cc2c55020d1948c"
+      },
+      {
+         "address":"lskqaswbhpzxwdsh8ov84rqhgtw5a52cqj6kshhom",
+         "bftWeight":"1",
+         "blsKey":"b840b34a50c5dc3aa7c5d48e0fd803554eb6125e22c78f81e122ed6c418c069a98cf2c0f8c6e701ba8ef5c68eb4f6d99"
+      },
+      {
+         "address":"lsknwsjx4tk56j5cgsru22y9ex338cuo6kd68t8z6",
+         "bftWeight":"1",
+         "blsKey":"b8b0050f1662a6b12fe95f632368ad963001c51ce04aac76aae21a51c1199551bfe1d7abe8a21de7364a132233d52eca"
+      },
+      {
+         "address":"lsk4ehqmvb9c2rq8cfae6jtt7nwkn2cjq46d2uwy7",
+         "bftWeight":"1",
+         "blsKey":"b93b3f3ca115695b018229db563bfa024cdee752ef7e710b3818d4234dace5fd67e345fcb90f21198ebefe6c2d87d28d"
+      }
+   ],
+   "sidechainCertificateThreshold":"65"
+}
+----
+====
+
+The transaction parameters are now prepared in `sidechain_reg_params.json` and we can proceed to create and post the transaction in the next section.
+
+=== Post the transaction on the mainchain
+
+Send the `registerSidechain` transaction to a node that is connected to the mainchain.
+
+NOTE: The Lisk Core node CLI is used in this example to post the transaction.
+Alternatively, users can use the {url_lisk_wallet}[Lisk Wallet^], where the transaction can be created conveniently as well.
+
+[source,bash]
+----
+lisk-core transaction:create interoperability registerSidechain 2000000000 --pretty -f ./sidechain_reg_params.json
+----
+
+As a response, the CLI will ask for the `passphrase` of the mainchain node.
+Once the correct `passphrase` is passed, the transaction will be returned in hex format:
+
+[%collapsible]
+====
+[source,json]
+----
+{
+  "transaction": "0a10696e7465726f7065726162696c6974791211726567697374657253696465636861696e18012080a8d6b9072a203972849f2ab66376a68671c10a00e8b8b67d880434cc65b04c6ed886dfa91c2c32e32a0a0403000008120b73696465636861696e2d381a340a308dffebf58c3ffeada90d1196d2587d4e8342a4caf7283351e12403d543cd7452b24f4a6d359b160c439dbbed11d7a8fe10011a340a3095ce3d5fb56fb8540f57f626b65fea8ea9a2792371854ffa011a2e99d8ca70abec0ef3a5bef57ad593e20466c9a2b1fa10011a340a308c9abeecbf578e6f6f50eb2c1148f80ec4058c51d7e442b899a6c7f9ec89db3bc20ed95488f2817c0e5ab64f8332cef610011a340a3080e1925e87e8435be1459e6e03f4aea41280e352ff0d30a356d31e9669587bb30de8cfc095fba2c4dcea145edaac3d9f10011a340a30aaafcac8e9fa128140a063a6b8ebe3db77df53b04bcc80c4998c27434b98cc9f8b2fc48a7e499209d4f986035b56f7bb10011a340a30b2f7593bf4b73356c758542f305518056d618415e96ffdf1f5ae4aab2de013d484f062ca2ec7fd6880e7df2345acfc0510011a340a30945f96d83664c47a0b7cd6f64933085e6bf43b382b6ce555c96d6f706c8800a9848605af7b59f7866346390122d8c6a410011a340a30a431b13fb40e7bae6fada4d32e64641704202a8e1f64ec95438d8b49e5cb6cbaece08daea219f43ed5de3162c005748010011a340a30a467fadad40ad44bc5b63abc2e0f43054032475cc8eac21fe93e0aaf6d0822fd390f7464608240f780c7905367aa4ef210011a340a30b7ff6780436377ae340c1081f04e5a4ce2c4459421278ca6198b982b044a8e2bb3143b8a1a7fdb2f4cc2c55020d1948c10011a340a30a3ba48f22c963c5400ee6206097573a333d67acaaae93ec8f3666cafbb6249db69ff0cb1ba13e612fec135ff2f3cc02310011a340a308d2c2ee2b55d7d19d6e42eebc881fcb28cf3b442db0ecd23307d89c3ed2ee25864a0f97fecdeca17a30c01648343d37610011a340a30afc6af040b6234b5d928c0c4fcd8bfa6715e6f779e26acc19b79c7be7629b0bb00cd39fb3ffee64fab1e8174ac1d959410011a340a3083a2728e7209144ce73eccf5bad1dd47ce48291c04c9970094bbdd7c6693a141daa39f98474a4c57c2515eb6ca5dc88210011a340a30ab58a1900ff71771aca333163ff0fa9f1112986347f6ec8e31c455978c6adb256af8313ce719d3da5e3c7c27d34267a210011a340a30881e474dbbaa65962491eeb3b747954658550c4fdb30246336db2bce83851d33b15f6cf44f25cd9deff484fc88c9ea8010011a340a3089df859598134753ad8adb525c36979ca5b17ec7bd37ef6ed7461fcb0680c336bffb159f6cdc06b6d78d73cf24c1f54910011a340a30978707c5713808cb16d048fa7b27545b14a2cd99d16adbdd4b141c92ff8658c71a5c66051450554c2a5bbf0cfbd34c3f10011a340a30b66bc3797dceb6567c8aea87a3887f12fe85fe9af8df19a5e66a1eb730d8f8288bca6f1bf24970dd2ad047df5376e3e010011a340a30b8b0050f1662a6b12fe95f632368ad963001c51ce04aac76aae21a51c1199551bfe1d7abe8a21de7364a132233d52eca10011a340a308da4a9262ec1f0d01640b94bec00ac51594cfaff14ea3b9b2f79773dc1c3ca63eb7d86da2570b88efa1fe33425a287b310011a340a30a11ee270162c55cb7985d4247985a33c7102aa4e637018e03119887c6e73910e8cef8ceb23d76e5dc4f73679b3f1e42110011a340a30b601f03ca5ebb416d82c070be4cd8232df28f37d92549d4d6381b082fb9b80a8777e44d324728f957a934a454e0cfb1510011a340a308f4e15c9a87132453e669b7dd6f10616a58b45f3eacae0e31dbe7bea232066db881ae00907234f230fca932d5986d3e010011a340a3083717971cbe501ea79594c5ceae80fe3c09d1990faffafa2ae273908f9c99d2b27f245a4e3b03e51e18e0b1a54b237e410011a340a30887d62bd098d331d647c57f52427eb1c991ac76a60881eba96c312a904014d8c261f42854f6a841951307959f8c2e41010011a340a308012798d2ac6b93df3bfa931192d9b2d496c3c947958a7408232e08872895557c06c1b94f5cc2555e28addbaadf3e0bd10011a340a30b3df1d6c635e97b7b2e9feb00870c6238b7bda7246d6849b1fd549616aba816f1a265c7eeed15a4c35655c2fee62e65710011a340a30b5d203c4555d4c7b3329ae1bd725a0a909a60322c7bbdc7a8630169ef7b1e8e3599fbac6336b1841b54b6bde9fef6b5a10011a340a30997efce2f5b5b0efc97b3d0c689813fb56e3ed0627fe6b88cee495466ebd604500a13cf7ed8808a63fbd915cc8a9c36610011a340a3092a25b59d8a5ff6484d45516a07080f890883d761562d7c177d747e9148ba92092c96f373348e65e0c89cca0c837efa710011a340a30b93b3f3ca115695b018229db563bfa024cdee752ef7e710b3818d4234dace5fd67e345fcb90f21198ebefe6c2d87d28d10011a340a30820f7ee17502c75c80b3830fa2912f174e7f0972414fba035973bba4cb873e9f21d594575f8db2255d58e69c136f90ce10011a340a30b49ec00ad81c92bc1137ba5ac09d41bdb3d7cba1679ccf793e5ca5991d8215bb32462c7af55c386ea8482181f72b165e10011a340a30afed4083c5523f6c76d82a00598673fc8fc33a89ed6d94a473cea54c044a0f0a77ae58e90ad808df9e23286d37a818f810011a340a308ff19b8a449c0b2c716e3041f58484e2e1f5ab7ba279fce30ddac50fb4ac14d146fe4ed57ac9581004b8cd4134256a0c10011a340a3096fbcdcc73487b93642d848007f4c5803f3aa6073789611071ec22ae28fa4d68e7480574023b4e8ab1e2026ae6d1bd5610011a340a3097ab2fbbd6302314ee1bb350156111d621268c4715c7e2fc17bca5fc8d4ac067f250d1ea383e6e12c4322d3d09d4786710011a340a30859c2f41d5c95638469796b4bed1f788b3a4da2aa3730953d96cd06fc0bdd1942213644f5415059710394b5c21970b2910011a340a30877342d9da45cdb72cea1b3f83ff391a25bbb40f0f17005aceb39a6102ea8ced78021bd830f378edd8a815b6c3f1628010011a340a30b3fea6464eb53f32f02dc3b6c313ba617466decf7f8bdc76a7cd5b1fbed45c85324654e131b0a54ec18c30c90ca1fc4610011a340a30a631f867d8196d249221ade60de85b2fdd2c420b253655c4db8129358ff9f1465b8bdefedc43b065328ac577102d838910011a340a308fd987c26195f8a16e8887c4da08e98a6ce2fcf566cc9aeb10a591b8cfc8b2dd63e352f7f89a34de508defc6fa74a38910011a340a30998cae9553f1b857679fea5483f62f7df90c6069067839444eca468427d5475ae8c30981fee9efce0d7ea051a9f8057b10011a340a3093b377e225e453e945772185dfcd804ffea9f15bf24db21945336f55b9bf477605116aec69321fbcb1ccfc42b6c7b7f510011a340a30acac37c80386a65aec329e2554a7603e1a225d4e2d66c338222b5c047b95f4f730717db707625ed95ec5e89f43e3931710011a340a30a68c525a3f41a5bfaf2da2d2c50868bd1cfa2dfa8b202692bc6f526f91fc783b400754ca1b20b8b02b61c740a828c66710011a340a30b07d6418604357a7d1c9d388175eb702ee17411db1cc0939015a9b4ba104addeaee14ab3e616a10444c72a94be518b2810011a340a308d23cdf74166e64a3163f3219ac4b7b233e34a455a789fad2faaf522523cfe75c4f817575ddbfd24710b3b2cdff08ebe10011a340a30a51c34b3b8a21df3aa05be07467c9b4d3d90dbcc7791c747c2f0f30d2ac871aaac3199716bf3e7248f25d3e9045d055210011a340a30af5b2dcb3ea14e0820d3d8b2b0d21594be9b8acfaf2cb77148cf3fe8e9900334ae60d0311278673e50753e5a3ff62bfa10011a340a3093ca96d5240a440cd0c51bee1ad76d3d9bf5d80208b8dc7af8f2acfb6183b8e600232b683ce8da402f52139b84c9946110011a340a3093111acc2098a914e9377be0c044695c37a3e3d69d1ccd2400eab59b0e846f27fd3a084ff3cff5b4de01890c4083921e10011a340a30873096d7b1d2cdf69d2a4b492b5d9d1ae0baf1c8cdde3b096a83a08e696bb9c4a18cafac212741064703dec95efd29e610011a340a30829ce5aaea989ae0fbe8afb2211f2630b7df1035a69462ca2b9c6d4aeef48d3232528ffb5ccb4ae01396a4654f1fbb4110011a340a308fe15645e54ffb3a815bc93f882986b42655e0b20cf112f71ed94b331b714d50c1a44d9c28b9bcd140741adec159c8ce10011a340a30a0465875b9eaba9270d4b288e3271f388174f8756b153537e32f8a1abd1e3df7e63029f59dff882859bac585e21a2bfc10011a340a3085ad6e9a5650864d4a332bace72a497e5df917362b4de8246095c985b571e13fa6f344e5d265f28cbf255f57edefb70410011a340a3089e65c4fec65d41861135cc1304ac2c5bf6da9099aa9c161b24cf68fc8fbc5835d54c62de475c6545676f252ba9bfc1610011a340a30ae8aa2862a9efa27515885f810be2ae2ebe8a681289a348b28a6f6f65d067bcc5bdaf82b2f7a26c8c3e6025cec257a0e10011a340a30a6b88f31d6ddcb1e195d166253f5629c2cf03430d946a9807b7c1b413b60186cf6588aad67a453c6d37a5c97a10f284510011a340a30862b40bafbe512e98c62ed88bef47531f180b60584163e550a7a94574f7cc5df2d768bc1eded57aa5d011b5c7ca1a0e910011a340a309070783523bcdd8d0ed5fdc7eb0d40d22d0dde03be06e1a6beb541efbb4b764dba27ad4c6fd7b0f3802abab7c4bf48fc10011a340a3090d95277900969ff5ebd7f92edebaa16e0af77a1622b36f76d8f93b790461529886fe7b132de3b31c82bf35f05274c0a10011a340a3091412ac7e9faa84f4d23dc821212b8eadee0094a29985776be57681373314561a53a6e7112d6b7e66076242752db885f10011a340a30b0638b4ecfd3413156c292b242a0c3378807f9346649498cb3fa4adc8926630df487c89033de5275ec400be830c569b110011a340a30b840b34a50c5dc3aa7c5d48e0fd803554eb6125e22c78f81e122ed6c418c069a98cf2c0f8c6e701ba8ef5c68eb4f6d9910011a340a3081b45d2107aa0eb61951d7cd4e19a7eb67135d790e6de0b17e31b8089a0efa52ae5b9e0a51da75692344a7e15008fc7710011a340a3095ecca2fe2fecfa5380a4eb2bc1a548fe4a7b9bd6c2d739df7b4b8330943319d0800ccba5dc8f4e797d526ee463dd10310011a340a30a3032a4a9dc05865b5472f04c40be6d22b44c0426657fbdb7140692adc5bd37cf6e016ebe248f503b39b6d21084e41b910011a340a30aacc9c3bce591c6df8c6d51ebedb10230278a6572eec45f2f9e16724860ae191de0a1ee5bff4dbc0a0b20c1b7b21404a10011a340a3083058f8ade0796d972870804d8f18266f5fb528e3c2e5e0f43244c316a95854ee4668962e3564ae35b340234b0778f0d10011a340a30a4eee0606ae9f264e1ff8f503a729dd7bac0ad54d25bffbbe326b433278c96c4ed2f3f72d26b932f6b32af94b5c2749a10011a340a30aabfd06ba90f276e2a8d7b184f3bbcd8d4e74e0fe9e6705939245473b61594e33c887434848d0e5397e62e9150aedfff10011a340a30acb45a0005a60941da882ed2da269409eb34c644867d739ad6b5732b88a6a6a43c05e0b139bba4d92888785de1fa3f9710011a340a30b15c96b9021b9a44d0695889a86223e1bff2c7b7f394c41f4f44551778f7e9a74b6eff75a620e4236b310025c23b59b910011a340a30a8770bd80506a25e6e3a1bb2cffaa978b76a0f4b197250e99b1562dc4a24ec84365836a564b6015e1f5017c2c2be40b310011a340a30a969902eeefec56d45f5e4ee5b39a36ed6d9f2c29e895fe231ae30eb6e4ec240321099d55ca04ad956a47c957d19551910011a340a3099b0fe1e7663e88ac6ce674e998575d6f2dd543c0e3df2eb232683e432d6debfe659cb81147db1881da073d5274da6bf10011a340a30b27e76e5c7714dca4b29e06ca8886ef48d2905b64bb433d6d91f8f9820d962edc623597f093ad95f251eda9daf44366e10011a340a3090e260d227910c87325dac2af90bd1dab75b35877c6394c3dd998c69968a8906484d8b79e31ddf589c5f0273702fa2cc10011a340a30915d3e77d79e71701a381182858ba7c093dddd8520cc4100b36183bd5b7acfe7aa5fdf5fb8911d725ae3cf6649ceee1910011a340a30afe6f88cd931ab9380f2c6b635c0902cb26a62c9bef1fa2af385c13ed74460a5b43ef14302c602f3ce99c991ca1a3e3710011a340a30aae56df01d3622c28ca9b5eda7daf89f20b582c9717c69ab36cc6349bdc9eb472d170e85b43abda4294903dcc92ea73110011a340a308ef2e03d79edcbaeb08c528bb0c9935514c519837b33617489c53ba6cc779518593d74d7517d479c45fbb0f40f9d14af10011a340a30a05971bcbd5c7664483b733f3abcb8113a54e172028e82ee150245358e7f6e28e3ef8671376560e51d19de152796d43b10011a340a3092671742234400905ce8883f6b943254bd7fb0eef570be7d159806fdd362ce4aa8d4008b7da47fff8211169afe59a11610011a340a30967579545754c9c54aec95b0a239bb30235ca508db1de87e180da53fa34e0dfb1c0e81c79d0151d137533c0aad9bcf5610011a340a308ccfd6da5329870298507954656596a1beb91f092bd71e3482d6aa0f0861c1a22cf98dd3425b22591bef16b55c97282810011a340a30a6a7b82b9498d5bc31211f4d553dee28c4663e581353b1318f1efce688b5e644133ef3d5c7f0f72ccd0428be920dd95c10011a340a3087b8aeac87599f5bff2e3300066c24a8403cebcd1e5fc266a647206183f54c23b9e7c3265479686fd7aeb641a802077710011a340a30ae04d789dafd10de9a5f3bde4a94dd9a7394a05ac02a47c988e231068c3305d826999055df5800549c303aa0fda04f4e10011a340a30ae0ca95ecdf0e239939faa742364f1366aa7783afde967b6c7220c76554630bd67a33895a7cc045201da9950cd44335c10011a340a30a6d989d85a75b1cf9b84fa946cdb36de9416445c984f8e09b535c9c83a9f7b67235af5197dfa76183d95aa1ef324105110011a340a308c1e40bef7a44f1551bfb851d48433287e7a41bb542bb6986e1f48c4b4dc19416a81a65c4e0f6bf2c03b05fc4d10620f10011a340a30aed6d88809fe58319f9f8754526ae4e42afaa66d3266e2ca43f6a1da45373a09a761ca27764985adcdb464c2a9caa3bd10011a340a308700c97a52f04808d97767dcc80246a0a57fa37543c8113a06bfebab16af683071ce215edfb1133d436794f46d59b7af10011a340a3089e722afc26c0aca7bbe0aeda3711f0e853f404fd1c916472a02455ef8449d05122829b45eff4e09d38fa24737da763910011a340a309137374c6ed262c52912bd503a7e3bcbff70fa0c46d61c5bf790aae79fa500a77e9bd98abdc3ddb2a5a13b6c36eec6fa10011a340a30a25cb4cb5c245e4b2286af666653aeaad9f1df9c6dc53fd64ed2973a84af0a4d7fc1acfc9f28402e7d3b9652f867948510011a340a30a0a433d16e1ef74e9c9a9c775c107090413f06b1b4d3a8f83143f61d74792bf677edf837e5d7f65fefbf4c36569fa298100120423a40cd1d0db654582e88fa61ec366b2a32d48b37bab00d0527678f3c5d9d24605dccf756cc16ec8c9ac25ea78137e7b306081c77ae15d2106413cf9a707d618fa108"
+}
+----
+====
+
+Copy the transaction and send it to the node, for example by using the node CLI:
+
+[%collapsible]
+====
+[source,bash]
+----
+lisk-core transaction:send 0a10696e7465726f7065726162696c6974791211726567697374657253696465636861696e18012080a8d6b9072a203972849f2ab66376a68671c10a00e8b8b67d880434cc65b04c6ed886dfa91c2c32e32a0a0403000008120b73696465636861696e2d381a340a308dffebf58c3ffeada90d1196d2587d4e8342a4caf7283351e12403d543cd7452b24f4a6d359b160c439dbbed11d7a8fe10011a340a3095ce3d5fb56fb8540f57f626b65fea8ea9a2792371854ffa011a2e99d8ca70abec0ef3a5bef57ad593e20466c9a2b1fa10011a340a308c9abeecbf578e6f6f50eb2c1148f80ec4058c51d7e442b899a6c7f9ec89db3bc20ed95488f2817c0e5ab64f8332cef610011a340a3080e1925e87e8435be1459e6e03f4aea41280e352ff0d30a356d31e9669587bb30de8cfc095fba2c4dcea145edaac3d9f10011a340a30aaafcac8e9fa128140a063a6b8ebe3db77df53b04bcc80c4998c27434b98cc9f8b2fc48a7e499209d4f986035b56f7bb10011a340a30b2f7593bf4b73356c758542f305518056d618415e96ffdf1f5ae4aab2de013d484f062ca2ec7fd6880e7df2345acfc0510011a340a30945f96d83664c47a0b7cd6f64933085e6bf43b382b6ce555c96d6f706c8800a9848605af7b59f7866346390122d8c6a410011a340a30a431b13fb40e7bae6fada4d32e64641704202a8e1f64ec95438d8b49e5cb6cbaece08daea219f43ed5de3162c005748010011a340a30a467fadad40ad44bc5b63abc2e0f43054032475cc8eac21fe93e0aaf6d0822fd390f7464608240f780c7905367aa4ef210011a340a30b7ff6780436377ae340c1081f04e5a4ce2c4459421278ca6198b982b044a8e2bb3143b8a1a7fdb2f4cc2c55020d1948c10011a340a30a3ba48f22c963c5400ee6206097573a333d67acaaae93ec8f3666cafbb6249db69ff0cb1ba13e612fec135ff2f3cc02310011a340a308d2c2ee2b55d7d19d6e42eebc881fcb28cf3b442db0ecd23307d89c3ed2ee25864a0f97fecdeca17a30c01648343d37610011a340a30afc6af040b6234b5d928c0c4fcd8bfa6715e6f779e26acc19b79c7be7629b0bb00cd39fb3ffee64fab1e8174ac1d959410011a340a3083a2728e7209144ce73eccf5bad1dd47ce48291c04c9970094bbdd7c6693a141daa39f98474a4c57c2515eb6ca5dc88210011a340a30ab58a1900ff71771aca333163ff0fa9f1112986347f6ec8e31c455978c6adb256af8313ce719d3da5e3c7c27d34267a210011a340a30881e474dbbaa65962491eeb3b747954658550c4fdb30246336db2bce83851d33b15f6cf44f25cd9deff484fc88c9ea8010011a340a3089df859598134753ad8adb525c36979ca5b17ec7bd37ef6ed7461fcb0680c336bffb159f6cdc06b6d78d73cf24c1f54910011a340a30978707c5713808cb16d048fa7b27545b14a2cd99d16adbdd4b141c92ff8658c71a5c66051450554c2a5bbf0cfbd34c3f10011a340a30b66bc3797dceb6567c8aea87a3887f12fe85fe9af8df19a5e66a1eb730d8f8288bca6f1bf24970dd2ad047df5376e3e010011a340a30b8b0050f1662a6b12fe95f632368ad963001c51ce04aac76aae21a51c1199551bfe1d7abe8a21de7364a132233d52eca10011a340a308da4a9262ec1f0d01640b94bec00ac51594cfaff14ea3b9b2f79773dc1c3ca63eb7d86da2570b88efa1fe33425a287b310011a340a30a11ee270162c55cb7985d4247985a33c7102aa4e637018e03119887c6e73910e8cef8ceb23d76e5dc4f73679b3f1e42110011a340a30b601f03ca5ebb416d82c070be4cd8232df28f37d92549d4d6381b082fb9b80a8777e44d324728f957a934a454e0cfb1510011a340a308f4e15c9a87132453e669b7dd6f10616a58b45f3eacae0e31dbe7bea232066db881ae00907234f230fca932d5986d3e010011a340a3083717971cbe501ea79594c5ceae80fe3c09d1990faffafa2ae273908f9c99d2b27f245a4e3b03e51e18e0b1a54b237e410011a340a30887d62bd098d331d647c57f52427eb1c991ac76a60881eba96c312a904014d8c261f42854f6a841951307959f8c2e41010011a340a308012798d2ac6b93df3bfa931192d9b2d496c3c947958a7408232e08872895557c06c1b94f5cc2555e28addbaadf3e0bd10011a340a30b3df1d6c635e97b7b2e9feb00870c6238b7bda7246d6849b1fd549616aba816f1a265c7eeed15a4c35655c2fee62e65710011a340a30b5d203c4555d4c7b3329ae1bd725a0a909a60322c7bbdc7a8630169ef7b1e8e3599fbac6336b1841b54b6bde9fef6b5a10011a340a30997efce2f5b5b0efc97b3d0c689813fb56e3ed0627fe6b88cee495466ebd604500a13cf7ed8808a63fbd915cc8a9c36610011a340a3092a25b59d8a5ff6484d45516a07080f890883d761562d7c177d747e9148ba92092c96f373348e65e0c89cca0c837efa710011a340a30b93b3f3ca115695b018229db563bfa024cdee752ef7e710b3818d4234dace5fd67e345fcb90f21198ebefe6c2d87d28d10011a340a30820f7ee17502c75c80b3830fa2912f174e7f0972414fba035973bba4cb873e9f21d594575f8db2255d58e69c136f90ce10011a340a30b49ec00ad81c92bc1137ba5ac09d41bdb3d7cba1679ccf793e5ca5991d8215bb32462c7af55c386ea8482181f72b165e10011a340a30afed4083c5523f6c76d82a00598673fc8fc33a89ed6d94a473cea54c044a0f0a77ae58e90ad808df9e23286d37a818f810011a340a308ff19b8a449c0b2c716e3041f58484e2e1f5ab7ba279fce30ddac50fb4ac14d146fe4ed57ac9581004b8cd4134256a0c10011a340a3096fbcdcc73487b93642d848007f4c5803f3aa6073789611071ec22ae28fa4d68e7480574023b4e8ab1e2026ae6d1bd5610011a340a3097ab2fbbd6302314ee1bb350156111d621268c4715c7e2fc17bca5fc8d4ac067f250d1ea383e6e12c4322d3d09d4786710011a340a30859c2f41d5c95638469796b4bed1f788b3a4da2aa3730953d96cd06fc0bdd1942213644f5415059710394b5c21970b2910011a340a30877342d9da45cdb72cea1b3f83ff391a25bbb40f0f17005aceb39a6102ea8ced78021bd830f378edd8a815b6c3f1628010011a340a30b3fea6464eb53f32f02dc3b6c313ba617466decf7f8bdc76a7cd5b1fbed45c85324654e131b0a54ec18c30c90ca1fc4610011a340a30a631f867d8196d249221ade60de85b2fdd2c420b253655c4db8129358ff9f1465b8bdefedc43b065328ac577102d838910011a340a308fd987c26195f8a16e8887c4da08e98a6ce2fcf566cc9aeb10a591b8cfc8b2dd63e352f7f89a34de508defc6fa74a38910011a340a30998cae9553f1b857679fea5483f62f7df90c6069067839444eca468427d5475ae8c30981fee9efce0d7ea051a9f8057b10011a340a3093b377e225e453e945772185dfcd804ffea9f15bf24db21945336f55b9bf477605116aec69321fbcb1ccfc42b6c7b7f510011a340a30acac37c80386a65aec329e2554a7603e1a225d4e2d66c338222b5c047b95f4f730717db707625ed95ec5e89f43e3931710011a340a30a68c525a3f41a5bfaf2da2d2c50868bd1cfa2dfa8b202692bc6f526f91fc783b400754ca1b20b8b02b61c740a828c66710011a340a30b07d6418604357a7d1c9d388175eb702ee17411db1cc0939015a9b4ba104addeaee14ab3e616a10444c72a94be518b2810011a340a308d23cdf74166e64a3163f3219ac4b7b233e34a455a789fad2faaf522523cfe75c4f817575ddbfd24710b3b2cdff08ebe10011a340a30a51c34b3b8a21df3aa05be07467c9b4d3d90dbcc7791c747c2f0f30d2ac871aaac3199716bf3e7248f25d3e9045d055210011a340a30af5b2dcb3ea14e0820d3d8b2b0d21594be9b8acfaf2cb77148cf3fe8e9900334ae60d0311278673e50753e5a3ff62bfa10011a340a3093ca96d5240a440cd0c51bee1ad76d3d9bf5d80208b8dc7af8f2acfb6183b8e600232b683ce8da402f52139b84c9946110011a340a3093111acc2098a914e9377be0c044695c37a3e3d69d1ccd2400eab59b0e846f27fd3a084ff3cff5b4de01890c4083921e10011a340a30873096d7b1d2cdf69d2a4b492b5d9d1ae0baf1c8cdde3b096a83a08e696bb9c4a18cafac212741064703dec95efd29e610011a340a30829ce5aaea989ae0fbe8afb2211f2630b7df1035a69462ca2b9c6d4aeef48d3232528ffb5ccb4ae01396a4654f1fbb4110011a340a308fe15645e54ffb3a815bc93f882986b42655e0b20cf112f71ed94b331b714d50c1a44d9c28b9bcd140741adec159c8ce10011a340a30a0465875b9eaba9270d4b288e3271f388174f8756b153537e32f8a1abd1e3df7e63029f59dff882859bac585e21a2bfc10011a340a3085ad6e9a5650864d4a332bace72a497e5df917362b4de8246095c985b571e13fa6f344e5d265f28cbf255f57edefb70410011a340a3089e65c4fec65d41861135cc1304ac2c5bf6da9099aa9c161b24cf68fc8fbc5835d54c62de475c6545676f252ba9bfc1610011a340a30ae8aa2862a9efa27515885f810be2ae2ebe8a681289a348b28a6f6f65d067bcc5bdaf82b2f7a26c8c3e6025cec257a0e10011a340a30a6b88f31d6ddcb1e195d166253f5629c2cf03430d946a9807b7c1b413b60186cf6588aad67a453c6d37a5c97a10f284510011a340a30862b40bafbe512e98c62ed88bef47531f180b60584163e550a7a94574f7cc5df2d768bc1eded57aa5d011b5c7ca1a0e910011a340a309070783523bcdd8d0ed5fdc7eb0d40d22d0dde03be06e1a6beb541efbb4b764dba27ad4c6fd7b0f3802abab7c4bf48fc10011a340a3090d95277900969ff5ebd7f92edebaa16e0af77a1622b36f76d8f93b790461529886fe7b132de3b31c82bf35f05274c0a10011a340a3091412ac7e9faa84f4d23dc821212b8eadee0094a29985776be57681373314561a53a6e7112d6b7e66076242752db885f10011a340a30b0638b4ecfd3413156c292b242a0c3378807f9346649498cb3fa4adc8926630df487c89033de5275ec400be830c569b110011a340a30b840b34a50c5dc3aa7c5d48e0fd803554eb6125e22c78f81e122ed6c418c069a98cf2c0f8c6e701ba8ef5c68eb4f6d9910011a340a3081b45d2107aa0eb61951d7cd4e19a7eb67135d790e6de0b17e31b8089a0efa52ae5b9e0a51da75692344a7e15008fc7710011a340a3095ecca2fe2fecfa5380a4eb2bc1a548fe4a7b9bd6c2d739df7b4b8330943319d0800ccba5dc8f4e797d526ee463dd10310011a340a30a3032a4a9dc05865b5472f04c40be6d22b44c0426657fbdb7140692adc5bd37cf6e016ebe248f503b39b6d21084e41b910011a340a30aacc9c3bce591c6df8c6d51ebedb10230278a6572eec45f2f9e16724860ae191de0a1ee5bff4dbc0a0b20c1b7b21404a10011a340a3083058f8ade0796d972870804d8f18266f5fb528e3c2e5e0f43244c316a95854ee4668962e3564ae35b340234b0778f0d10011a340a30a4eee0606ae9f264e1ff8f503a729dd7bac0ad54d25bffbbe326b433278c96c4ed2f3f72d26b932f6b32af94b5c2749a10011a340a30aabfd06ba90f276e2a8d7b184f3bbcd8d4e74e0fe9e6705939245473b61594e33c887434848d0e5397e62e9150aedfff10011a340a30acb45a0005a60941da882ed2da269409eb34c644867d739ad6b5732b88a6a6a43c05e0b139bba4d92888785de1fa3f9710011a340a30b15c96b9021b9a44d0695889a86223e1bff2c7b7f394c41f4f44551778f7e9a74b6eff75a620e4236b310025c23b59b910011a340a30a8770bd80506a25e6e3a1bb2cffaa978b76a0f4b197250e99b1562dc4a24ec84365836a564b6015e1f5017c2c2be40b310011a340a30a969902eeefec56d45f5e4ee5b39a36ed6d9f2c29e895fe231ae30eb6e4ec240321099d55ca04ad956a47c957d19551910011a340a3099b0fe1e7663e88ac6ce674e998575d6f2dd543c0e3df2eb232683e432d6debfe659cb81147db1881da073d5274da6bf10011a340a30b27e76e5c7714dca4b29e06ca8886ef48d2905b64bb433d6d91f8f9820d962edc623597f093ad95f251eda9daf44366e10011a340a3090e260d227910c87325dac2af90bd1dab75b35877c6394c3dd998c69968a8906484d8b79e31ddf589c5f0273702fa2cc10011a340a30915d3e77d79e71701a381182858ba7c093dddd8520cc4100b36183bd5b7acfe7aa5fdf5fb8911d725ae3cf6649ceee1910011a340a30afe6f88cd931ab9380f2c6b635c0902cb26a62c9bef1fa2af385c13ed74460a5b43ef14302c602f3ce99c991ca1a3e3710011a340a30aae56df01d3622c28ca9b5eda7daf89f20b582c9717c69ab36cc6349bdc9eb472d170e85b43abda4294903dcc92ea73110011a340a308ef2e03d79edcbaeb08c528bb0c9935514c519837b33617489c53ba6cc779518593d74d7517d479c45fbb0f40f9d14af10011a340a30a05971bcbd5c7664483b733f3abcb8113a54e172028e82ee150245358e7f6e28e3ef8671376560e51d19de152796d43b10011a340a3092671742234400905ce8883f6b943254bd7fb0eef570be7d159806fdd362ce4aa8d4008b7da47fff8211169afe59a11610011a340a30967579545754c9c54aec95b0a239bb30235ca508db1de87e180da53fa34e0dfb1c0e81c79d0151d137533c0aad9bcf5610011a340a308ccfd6da5329870298507954656596a1beb91f092bd71e3482d6aa0f0861c1a22cf98dd3425b22591bef16b55c97282810011a340a30a6a7b82b9498d5bc31211f4d553dee28c4663e581353b1318f1efce688b5e644133ef3d5c7f0f72ccd0428be920dd95c10011a340a3087b8aeac87599f5bff2e3300066c24a8403cebcd1e5fc266a647206183f54c23b9e7c3265479686fd7aeb641a802077710011a340a30ae04d789dafd10de9a5f3bde4a94dd9a7394a05ac02a47c988e231068c3305d826999055df5800549c303aa0fda04f4e10011a340a30ae0ca95ecdf0e239939faa742364f1366aa7783afde967b6c7220c76554630bd67a33895a7cc045201da9950cd44335c10011a340a30a6d989d85a75b1cf9b84fa946cdb36de9416445c984f8e09b535c9c83a9f7b67235af5197dfa76183d95aa1ef324105110011a340a308c1e40bef7a44f1551bfb851d48433287e7a41bb542bb6986e1f48c4b4dc19416a81a65c4e0f6bf2c03b05fc4d10620f10011a340a30aed6d88809fe58319f9f8754526ae4e42afaa66d3266e2ca43f6a1da45373a09a761ca27764985adcdb464c2a9caa3bd10011a340a308700c97a52f04808d97767dcc80246a0a57fa37543c8113a06bfebab16af683071ce215edfb1133d436794f46d59b7af10011a340a3089e722afc26c0aca7bbe0aeda3711f0e853f404fd1c916472a02455ef8449d05122829b45eff4e09d38fa24737da763910011a340a309137374c6ed262c52912bd503a7e3bcbff70fa0c46d61c5bf790aae79fa500a77e9bd98abdc3ddb2a5a13b6c36eec6fa10011a340a30a25cb4cb5c245e4b2286af666653aeaad9f1df9c6dc53fd64ed2973a84af0a4d7fc1acfc9f28402e7d3b9652f867948510011a340a30a0a433d16e1ef74e9c9a9c775c107090413f06b1b4d3a8f83143f61d74792bf677edf837e5d7f65fefbf4c36569fa298100120423a40cd1d0db654582e88fa61ec366b2a32d48b37bab00d0527678f3c5d9d24605dccf756cc16ec8c9ac25ea78137e7b306081c77ae15d2106413cf9a707d618fa108
+----
+====
+
+If the node accepted the transaction, it will respond with the transaction ID.
+
+----
+Transaction with id: '1d944f3fb46714978ad7bedd1b788919c3b37e92d893088fd056f8217f20ed8a' received by node.
+----
+
+== How to verify the sidechain registration
+
+=== Check the sidechain account
+Once the Register Sidechain command is processed, the sidechain account `status` is set to `registered`.
+
+To verify that the account was created successfully, request the `interoperability_getChainData` endpoint from a mainchain node.
+
+Parameters:
+
+* `chainID`: The chain ID of the registered sidechain.
+
+[tabs]
+=====
+Mainchain node CLI::
++
+--
+[source,bash]
+----
+lisk-core endpoint:invoke interoperability_getChainData '{"chainID": "00000001"}'
+----
+--
+cURL::
++
+--
+[source,bash]
+----
+curl --location --request POST 'http://localhost:7887/rpc' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "jsonrpc": "2.0",
+    "id": "1",
+    "method": "interoperability_getChainData",
+    "params": {
+         "chainID": "00000001"
+    }
+}'
+
+----
+--
+=====
+
+This will return the respective sidechain account stored in the xref:{url_sidechain_chain_store}[Chain substore] of the mainchain.
+
+.A newly created sidechain account on the mainchain
+[source,json]
+----
+{
+    "id": "1",
+    "jsonrpc": "2.0",
+    "result": {
+        "lastCertificate": {
+            "height": 0,
+            "timestamp": 0,
+            "stateRoot": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "validatorsHash": "58fa1be3fca7aef9952a7640397124229837079b14a144907a7e3373685daceb"
+        },
+        "name": "sidechain1",
+        "status": 0
+    }
+}
+----
+
+=== Check the sidechain channel
+
+To verify that the channel to the sidechain was created successfully, request the `interoperability_getChannelData` endpoint from a mainchain node.
+
+Parameters:
+
+* `chainID`: The chain ID of the registered sidechain.
+
+[tabs]
+=====
+Mainchain node CLI::
++
+--
+[source,bash]
+----
+lisk-core endpoint:invoke interoperability_getChannelData '{"chainID": "00000001"}'
+----
+--
+cURL::
++
+--
+[source,bash]
+----
+curl --location --request POST 'http://localhost:7887/rpc' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "jsonrpc": "2.0",
+    "id": "1",
+    "method": "interoperability_getChannelData",
+    "params": {
+         "chainID": "00000001"
+    }
+}'
+
+----
+--
+=====
+
+This will return the respective sidechain account stored in the xref:{url_sidechain_channel_store}[Channel substore] of the mainchain.
+
+.A newly created sidechain channel on the mainchain
+[source,json]
+----
+{
+    "id": "1",
+    "jsonrpc": "2.0",
+    "result": {
+        "messageFeeTokenID": "0000000000000000",
+        "outbox": {
+            "appendPath": [
+                "16dfaad8458dd4ae56ba2787593c2c5a55b14ba734c0431f177212226cf8328b"
+            ],
+            "root": "16dfaad8458dd4ae56ba2787593c2c5a55b14ba734c0431f177212226cf8328b",
+            "size": 1
+        },
+        "inbox": {
+            "appendPath": [],
+            "root": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "size": 0
+        },
+        "partnerChainOutboxRoot": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+}
+----
+
+=== Check the sidechain validators
+
+To verify that the sidechain validators list was created successfully, request the `interoperability_getChainValidators` endpoint from a mainchain node.
+
+Parameters:
+
+* `chainID`: The chain ID of the registered sidechain.
+
+[tabs]
+=====
+Mainchain node CLI::
++
+--
+[source,bash]
+----
+lisk-core endpoint:invoke interoperability_getChainValidators '{"chainID": "00000001"}'
+----
+--
+cURL::
++
+--
+[source,bash]
+----
+curl --location --request POST 'http://localhost:7887/rpc' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "jsonrpc": "2.0",
+    "id": "1",
+    "method": "interoperability_getChainValidators",
+    "params": {
+         "chainID": "00000001"
+    }
+}'
+
+----
+--
+=====
+
+This will return the respective sidechain account stored in the xref:{url_sidechain_chain_validators_store}[Chain Validators substore] of the mainchain.
+
+.A newly created chain validators list on the mainchain
+[source,json]
+----
+{
+    "id": "1",
+    "jsonrpc": "2.0",
+    "result": {
+        "activeValidators": [
+            {
+                "blsKey": "8012798d2ac6b93df3bfa931192d9b2d496c3c947958a7408232e08872895557c06c1b94f5cc2555e28addbaadf3e0bd",
+                "bftWeight": "1"
+            },
+            // ...
+        ],
+        "certificateThreshold": "65"
+    }
+}
+----
+
+== How to register the mainchain on the sidechain
+
+The mainchain is registered on a sidechain by posting a xref:{url_mainchain_reg}[Register Mainchain transaction].
+A "Register Mainchain" transaction can be sent by any user account in the sidechain that has adequate funds to pay the required fee.
+
+[IMPORTANT]
+====
+* The mainchain registration process always has to occur *after* the sidechain registration on the mainchain, since the sidechain has no prior knowledge of its name and must be certain that the correct chain ID has been registered.
+* Connections to both mainchain and sidechain node APIs are required to create a Register Mainchain transaction.
+====
+
+[CAUTION]
+====
+* It is of key importance that the sidechain validators ensure that they are signing the registration command with the correct information, otherwise the sidechain interoperable functionality may be unusable.
+* If the mainchain and/or sidechain registration command was submitted with the wrong data, then the whole sidechain needs to be restarted completely with the correct values, or it needs to hardfork in order to connect to the mainchain.
+====
+
+To create a *Register Mainchain* transaction, the following information is required:
+
+. <<preparing-the-register-mainchain-parameters,Mainchain registration parameters>>
+.. <<ownchainid>>
+.. <<ownname>>
+.. <<mainchainvalidators>>
+.. <<mainchaincertificatethreshold>>
+. <<preparing-the-aggregated-signature,The aggregated signature of the sidechain validators>>
+
+=== Preparing the Register Mainchain parameters
+
+The Register Mainchain parameters are created in an analog way as the Register Sidechain parameters have been created in the previous step.
+
+To conveniently prepare the required parameters, check out the following script in the lisk-sdk-examples repository:
+{url_exmaples_guides_createparams}[paramsCreation.ts^]
+
+The script is executed like this:
+
+[source,bash]
+----
+node paramsCreation.ts
+----
+
+Executing the script after installation of the dependencies should create a new file `params.json` with the following parameters:
+
+. <<ownchainid>>
+. <<ownname>>
+. <<mainchainvalidators>>
+. <<mainchaincertificatethreshold>>
+
+Open the file `params.json`, to verify all values were generated correctly.
+The next step is to collect and aggregate the corresponding signatures from the sidechain validators, see <<preparing-the-aggregated-signature>>.
+
+==== ownChainID
+The chain ID of the sidechain.
+
+Should be identical to <<chainid>>.
+
+==== ownName
+Sets the name of the sidechain in its own state according to the name given in the mainchain.
+
+Should be identical to <<name>>.
+
+==== mainchainValidators
+Defines the set of mainchain validators expected to sign the first certificate from the mainchain.
+Each item contains the following properties:
+
+. `blsKey`: The {url_bls_key}[public BLS key] of the validator.
+. `bftWeight`: The {url_lip56}[BFT weight^] of the validator.
+
+TIP: To retrieve the BFT parameters of all mainchain validators, invoke the `consensus_getBFTParameters` endpoint on the *mainchain node*.
+
+==== mainchainCertificateThreshold
+`mainchainCertificateThreshold` is an integer that defines the minimum BFT weight threshold required for the first mainchain certificate to be valid.
+
+Minimum and maximum values for the certificate threshold are calculated with the <<aggregated-bft-weight>>.
+
+=== Preparing the aggregated signature
+To create a valid signature, enough sidechain validators need to individually sign the mainchain registration message, so that the total weight is equal or greater to the <<sidechaincertificatethreshold>>.
+By signing the mainchain registration message, they verify the correctness of the following values: `ownChainID`, `ownChainName`, `mainchainCertificateThreshold` and `mainchainValidators`.
+All individual signatures are then aggregated into one `signature` and the corresponding `aggregationBits` which are appended to the Register Mainchain parameters.
+
+The individual signing of the mainchain registration by the sidechain validators is executed *off-chain*, similar to the process of creating multi-signature transactions.
+
+==== Collecting the signatures of the sidechain validators
+
+The process of signing the registration parameters needs to be coordinated off-chain by the sidechain validators.
+
+To simplify the process, you may use the following script, which adds a validator signature to an existing list of signatures: {url_exmaples_guides_validatorsignatures}[validatorSignatures.ts]
+
+The script expects the following files to be present:
+
+. `params.json`, which was created in step <<preparing-the-register-mainchain-parameters>>.
+. `keys.json`: A file with the `blskey` values of the validators intending to sign the registration transaction.
+.. This file can be generated for a specific validator with the xref:{url_sdk_cli_keyscreate}[keys:create] CLI command, by providing the validators passphrase.
+. `sidechainValidatorSignatures.json`: List of already existing validator signatures.
+If no such file is found, it will be created newly.
+
+After installing the required dependencies, the script can be executed like so:
+
+[source,bash]
+----
+node validatorSignatures.ts
+----
+
+As a result, it will append a new signature to the signatures listed in the file `sidechainValidatorSignatures.json`.
+
+The most important parts of the script are the following:
+
+[source,js]
+----
+// 1. Preparing params for the registration message
+params = {
+    ownChainID: Buffer.from(paramsJSON.ownChainID, 'hex'),
+    ownName: paramsJSON.ownName,
+    mainchainValidators: paramsJSON.mainchainValidators.map(v => ({
+        blsKey: Buffer.from(v.blsKey, 'hex'),
+        bftWeight: BigInt(v.bftWeight),
+    })),
+    mainchainCertificateThreshold: paramsJSON.mainchainCertificateThreshold.toString(),
+};
+
+// 2. Create message by encoding params
+const message = codec.codec.encode(registrationSignatureMessageSchema, params);
+
+
+// 3. Signing the registration message
+const signature = bls.signData(
+      MESSAGE_TAG_CHAIN_REG,
+      params.ownChainID,
+      message,
+      Buffer.from(blsKeys[0].plain.blsPrivateKey,"hex"),
+    );
+----
+
+The validator signatures need to be collected by the person intending to send the Register Mainchain transaction.
+
+Once the aggregated BFT weight of the validators who signed is equal or above the <<sidechaincertificatethreshold>>, enough validators have signed the registration parameters.
+
+==== Aggregating the validator signatures
+
+Once enough validators added their signatures, the list of signatures is aggregated into one single signature, which is then appended to the registration params that we created in step <<preparing-the-register-mainchain-parameters>>.
+
+The following script is performing the required steps: {url_exmaples_guides_mcregistration}[mainchainRegistration.ts]
+
+The script expects the following files to be present:
+
+. `params.json`, which was created in step <<preparing-the-register-mainchain-parameters>>.
+. `sidechainValidatorSignatures.json`: List of validator signatures.
+
+After installing the required dependencies, the script can be executed like so:
+
+[source,bash]
+----
+node mainchainRegistration.ts
+----
+
+As a result, it will create a new file `mainchain_reg_params.json`, including all required parameters and the aggregated signatures of the sidechain validators, which is verifying the correctness of the parameters.
+
+signature::
+The `signature` property is an aggregate signature of the sidechain validators.
+It ensures that the sidechain validators agree on registering the mainchain in the sidechain.
+
+aggregationBits::
+The `aggregationBits` property is a bit vector used to validate the aggregate signature.
+
+The file `mainchain_reg_params.json` can now be passed as parameter source, when creating the `registerMainchain` transaction in the next step.
+
+=== Posting a Register Mainchain transaction
+
+Send the `registerSidechain` transaction to a node that is connected to the mainchain.
+
+[source,bash]
+----
+./bin/run transaction:create interoperability registerMainchain 2000000000 --pretty -f ./mainchain_reg_params.json
+----
+
+The transaction will be returned in hex format.
+
+Copy the transaction and send it ot the node, for example by using the node CLI like so:
+
+[source,bash]
+----
+./bin/run transaction:send 0a10696e7465726f7065726162696c6974791211726567697374657253696465636861696e18002080a8d6b9072a20a3f96c50d0446220ef2f98240898515cbba8155730679ca35326d98dcfb680f0324a0a0404000001120a73696465636861696e311a340a3092f020ce5e37befb86493a82686b0eedddb264350b0873cf1eeaa1fefe39d938f05f272452c1ef5e6ceb4d9b23687e31100220023a408261e374405af4ec1143dfc0ae82a38e385d0edce870f698385749112064b374ac0de67354210aa27280db82121ec0bce195e5630c56a568a8b99dbbcb3a3d0b
+----
+
+If the node accepted the transaction, it will respond with the transaction ID.
+
+----
+Transaction with id: '1d944f3fb46714978ad7bedd1b788919c3b37e92d893088fd056f8217f20ed8a' received by node.
+----
+
+== How to verify the mainchain registration
+=== Check the mainchain account
+Once the "Register Mainchain" command is processed, the mainchain account is initialized and its `status` is set to `registered`.
+
+To verify that the account was created successfully, request the `interoperability_getChainData` endpoint from a sidechain node.
+
+Parameters:
+
+* `chainID`: The chain ID of the registered mainchain.
+
+
+[tabs]
+=====
+Node CLI::
++
+--
+If you maintain an own instance of a sidechain node, it is possible to invoke endpoints directly via the node CLI:
+
+[source,bash]
+----
+./bin/run endpoint:invoke interoperability_getChainData '{"chainID": "00000000"}'
+----
+--
+cURL::
++
+--
+Replace `localhost:7887` with the IP and port to a node that is connected to the sidechain.
+
+[source,bash]
+----
+curl --location --request POST 'http://localhost:7887/rpc' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "jsonrpc": "2.0",
+    "id": "1",
+    "method": "interoperability_getChainData",
+    "params": {
+         "chainID": "00000000"
+    }
+}'
+----
+--
+=====
+
+This should return the mainchain account stored in the xref:{url_sidechain_chain_store}[Chain substore] of the sidechain.
+
+.A newly registered mainchain account on the sidechain
+[source,json]
+----
+{
+  "lastCertificate": {
+    "height": 0,
+    "timestamp": 0,
+    "stateRoot": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "validatorsHash": "36d3f20ea724a9708ead8b00e52c68d9188f1655e057bb523b19db35271d9073"
+  },
+  "name": "lisk_mainchain",
+  "status": 0
+}
+----
+
+
+=== Check the mainchain channel
+[tabs]
+=====
+Node CLI::
++
+--
+If you maintain an own instance of a sidechain node, it is possible to invoke endpoints directly via the node CLI:
+
+[source,bash]
+----
+./bin/run endpoint:invoke interoperability_getChannelData  '{"chainID": "00000000"}' --pretty
+----
+--
+cURL::
++
+--
+Replace `localhost:7887` with the IP and port to a node that is connected to the sidechain.
+
+[source,bash]
+----
+curl --location --request POST 'http://localhost:7887/rpc' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "jsonrpc": "2.0",
+    "id": "1",
+    "method": "interoperability_getChannelData",
+    "params": {
+         "chainID": "00000000"
+    }
+}'
+----
+--
+=====
+
+This should return the mainchain channel data stored in the xref:{url_sidechain_channel_store}[Channel substore] of the sidechain.
+
+.Example response
+[source,json]
+----
+{
+  "messageFeeTokenID": "0400000000000000",
+  "outbox": {
+    "appendPath": [
+      "4d48ae83b249d1b409d2d7f1ae18792e7aeb15f647bd8a607c6639723a76a487"
+    ],
+    "root": "4d48ae83b249d1b409d2d7f1ae18792e7aeb15f647bd8a607c6639723a76a487",
+    "size": 1
+  },
+  "inbox": {
+    "appendPath": [],
+    "root": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "size": 0
+  },
+  "partnerChainOutboxRoot": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "minReturnFeePerByte": "1000"
+}
+----
+
+=== Check the mainchain validators
+[tabs]
+=====
+Node CLI::
++
+--
+If you maintain an own instance of a sidechain node, it is possible to invoke endpoints directly via the node CLI:
+
+[source,bash]
+----
+./bin/run endpoint:invoke interoperability_getChainValidators '{"chainID": "00000000"}' --pretty
+----
+--
+cURL::
++
+--
+Replace `localhost:7887` with the IP and port to a node that is connected to the sidechain.
+
+[source,bash]
+----
+curl --location --request POST 'http://localhost:7887/rpc' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "jsonrpc": "2.0",
+    "id": "1",
+    "method": "interoperability_getChainValidators",
+    "params": {
+         "chainID": "00000000"
+    }
+}'
+----
+--
+=====
+
+This should return the mainchain validators data stored in the xref:{url_sidechain_chain_validators_store}[Chain Validators substore] of the sidechain.
+
+.Example response
+[%collapsible]
+====
+[source,json]
+----
+{
+  "activeValidators": [
+    {
+      "blsKey": "817cdb74e2136473f579ec7c5ff341e98a36a7ebfd1baadded8fbb315fcda6e77fd73f2132be39a018fcc3ae10b4a0e6",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "830b156d85886dc0ea00cf76643030b82b4b80660a99e6b38386cd3774b8f1252f243a5ae2b38df915b1f71d5f5dfda3",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "832d2cdd741b0df3f80311ed90deec394c13ed05da115d3c1fc135c96556911c6b00592451de0ab37296417559852080",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "8394e9cfa7c81ff453ea93e50aca110dc1bb823b2681d8b7900787abd207a6268b34ff7d95e0f60530e05e45607a924e",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "851d06def623bafccf24911d7baac97dbbdfdd3d9ebef92a912bbb335223e9f73e111ed181fb46bd5fd31044820246de",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "85657021983a5019c8bd7461bbe04b830291d1094e26534131770b14dd3a88768a6ee57a6324bb8fa726f7c24d3f4507",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "859a15723bc6fbef835069e843cc6f8a8221ffded4e9d2455b5520f63538775a5de66501e514a1c37d85df1c5092c418",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "86896756d01d6c5b03f23647d7bce1cdab601ae8adb20d86614d13aaaa0e40a6bb8e524a4637d47cfc4bb1cece538862",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "877a80b466c2090b917726b305c6f3861aea2c7e8ae9d9653fe5b871b2873d8a045643e202c007c927f9c90d65946d68",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "87e74f2352400144080e849248c668e16da593c1d661a11ee20d5c31f149ec546729f93950b673b66dea6a33c9260d78",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "8824e9c41ead5ee18e5fe71709f100351a9724320b7c444b0f14fa5e8f877470872edb58533442c933ee97fae8dba785",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "897597d4dc645d4aad51246ed1d9d6b0c8f81bd1809fa9106ce367a791f0b98151bfa4b49b1251d6b307240ba1dad106",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "89ffe19409b06f1e7854a9a5512b0d045a4ec696dc74b7d7d33117c9a8e1cfd68e185b09ae276d1a1bc3942395eb4dce",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "8ad40d292e82ffaf9f75517b03df7b5693adba8b0f1654791de0a92a3ab0bfb26bf7d90b4cfed334d5480c329ad81614",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "8adb937e0050d9fcf66321e2b55bc89f76592f359a07559e76c2e0cebc4c1611feb852d9f9172b71dc970a4766f9c935",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "8aeba1cc038ad2cf1ba6ae1479f293f1e3c074369c3afe623e6921ac4cd6c959647ca85fe197228c38dda1df18812d32",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "8b517672ecb3b38a766baedd0cedd7a0f2f2a568c067ac7b75087452c7f879c68951661e82cc2e2d1224f57b24fd0874",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "8c43fcdeed68cefc70e02af16b5d18938f12d6a994d0ceb1519a0bfdba07ebaa3b92cd64204f411f501defaa5bce0a98",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "8c6a9cc624212b23d5e4afc935db990b99b2f6a46390b9819ec4c34e4da73ceb49ce247eadacddb39a874b5404ca8982",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "8d4298f04a38dd65f2b8ba59276d8da350aaf08f2d5f8101f1d23001394f74389a8c7339b1ba4a9167ca663de4b36c28",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "8e6b900d97becb167b6182f815a4c50797538d221b5fef9d0eaeba0771560f8ec5b78e1bd9f466a823c02cead6b00006",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "8ed44b95d761d3534ea609c7a015f465f9829a0d68c5efb04d7a2043b6be5ebc175c52277b4bb064c727018164b3e41e",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "8edcba4c5f1c12f2d4834146cc3685d63d0ddceac3eae8aa55bfe72fc3adfae9aad0fffdc244a6d84125929add786206",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "8f1861579e9344ed88748206a2fce1a040f974c40733fafd2a98bef813250c602bc2d3e4dd97836c638f1e8522d9304f",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "8f3d6b429550ba9e9cab338cccb803b8553f1ab8c393089a772f8d40580683bbdef82b6972f8cafb1a6e3703f186f731",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "8f4c1f0421fc4e84a9aaff71b15ea5387f2c2023de5764018c6260ac756ea4bcc1fa1e1b2adca51c41f33788f977202e",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "8f558a92ea2ddb97aaf1950b2ad8cacf3bbb6df0ba6f3bb2af7e7dd2bb8c8f695af1d4cf89148f36bc7cc1b6c3c9b3e6",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "91de8f0b3e01dcf01973a8a7ba0c787fad98e9e485b71b78ea5f4d6d684f3f8f74f25120818729bdcf19dec78beac82b",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "921fab12f32b83338acd846c4f2e22e78d5657a9ad6e26a1b953235b837c97c1994b410fb98ed9d60043046bc49cf04b",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "945159215901b8094983b7c457d47350031a6894ca2168bd9902de0248e11f7a7b3849820e7bbf8d12c9111df5dd0c59",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "946f53073e217c65c31f135950827706bffc53a1714ef6476751f88e499cb2405fdbc68bffb715b94774a37c6c49b695",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "94db4e95e0bdf2a2f2dad6fe1758d598cf39e5f5013d30812d89983560fd630e730d7f8443f8f8f7dedb2817d7199dd3",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "94eab1c0dd071eb08efffdfc9fa4a1a084f18b155c265cea14b897f9ef8da838f061d072aec8b1fddf64d982db5383f2",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "94f3abffbb40e97d2b024c614377a49bc02ccb96f5c39d5f5240cabed3abf71a79dfd1415819c945bd7bfbd6ce974e29",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "962ad95f9eb8de66f40ae8650e4a1b9715db8b93082f94a999c5513b59b34ae765bbdf52525348eb2c3bfae9b74be5d0",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "9649a2666c4397e558ac70522551fa2282bc12cb9f0efaaaeb723916050115eb6a06944047e27b2765c48a8fdc54723b",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "964bb701671ac2ff8c74479ac55edd73425552873f62b0f0c7e806d31b97b04b3c3fce13746b9758c577fabc35569484",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "974e9ad5b6dc8589d13f6ea588e13e2f911d274bdca25a0eaf95e78070ada24ebf055e7e96f4bc5d54d1e1ecbb88891b",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "97ec41664e973d6c47a6eb42a71cdab2b32cab143ebbff4987ca1f21b70d2a4a31865fa63e498172ddfcdc66c375df3c",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "981ed9e0ecefede2baabe2190da98bcda364e9cd2cdc84294104f76baa96357b208b8a46b35815ff70a2782321c7a997",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "988b6193525235d5c772e65b777d699b5a6a2c78b9588aba6ba791cc90f8ad64d811b60db840d6335af8c1b56e64a6a8",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "98c1650f3954150884b93926f0b9bb2895a86b7f53548b55c54a8baaf6298011dda1d4c59b0de58ff0b7049c84d4bb91",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "a07a39359e00f2dc70586643b0192b72bf5cac12664c9b3e86196b9ff8ab42d2de0c99feaabe150a2f158bc5655af28a",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "a13d891ddf147982e0c9a5f131e06e9839fbfbc1c2e45a0e36047420cf096c7befdb2368999f9127ae1c1351cd006360",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "a227caf7eaccffa90c894e8338f1bf792936d3e70392970f87246c88ba8e37ac48242c6b9d94f0f34f45cca988d723a4",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "a377f60b451ee1824e4bcef98ee59ed2d9e9e79fda80e9f9cb4d5142ec6e34c3cb2ba0b58fa9cda79ccfecf9be1944e1",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "a3d818681e97be169c51414f692f743ffeb5fbf60478710a8dd4ab883044d2bf8b318bbf931316a30755061338cbf857",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "a4ae34b8c356805c5a71cc7b9344eb190004733dc6ec97f2cb19249595ac2ccfd11a25ddbf455be0b17573e306c71301",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "a4f8a7ab03605906f89a6b3e2a6091c53feae76f3a9e48593732fc027babbbfd6cf6fa5c98251f8453cb6b57fda99ced",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "a5966288b2fcc72df1a9ec5434dd3a4120bfad14b96939591ddc3312f5d4645ac9715fc9f261ea969a96122c94e71c8e",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "a5c327e70f2d173b3bbb1dc69e57e03bd4b32f91a8874309656cf9a364e0ab6f1b2fe76e3690981c53e32223530f9009",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "a67a75058d23b7b9ef52c7de10f1faddb7ffdd53dd9daa0d77455bd6d202b6e5056c37b5fd09a336baaaa3e31fd73875",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "a6f7e55f71ae7fdcaa2bcbda040c091e76862d4cadcea2d483c0af7af337e2bfd53d120ffa1c0b445f04ac3a74a1f369",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "a7252bc36c9fdaf4310c65727558545882683a08d4c46e3f278de2ecc3bd76e66e9aa2917f8707d11893a0911b39f3c0",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "a74d911e73ccf66c0d60b622fe507608aeb5af06b5a4258a4d1e83168688217eaf05ef350342c186c593cdc834fb1593",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "abbc6a25a487fb9de634713c7c5ab755dacb33a39c84d711c7b2934ddc529c8f953044fe85e97cbebf9ab517ce0c36d6",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "acc6b671c8e4843ac5c7db7625a5f4c4d6823dd93bf06e2eb16c7263543a58cee5243715efb41b982a02f0bdcca5e412",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "af3f9f14bf7db60f3283f21f20516d1d82caece0ef1d4ee88ab6f8f0be46af594105114ae2eff847ace826b1a163cadf",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "b0508dc694713f5fcd4a60d134d8254d18d70559981864f594f74150aaf49724e32ee6bad8933107609d807d9ea7942b",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "b092e4bb3eb9c291d94cfac62f44f889b0727981e81115d69573a97766845e1b17f553bdd9208462605cfda44c058411",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "b0dd52e91344ee8d961b01fda84f6bfd2c71bde2317e0bb01a6821b9dec36e10cfa01153fa5f427f598c04ab50681518",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "b178489edeb8b41d987b5a898d9dc084e23f6793f6318d5aa2073e021830d74f1b49fb663cebcb2d549e354f0c6fe320",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "b2be3c23c2ee5a80ee46ee6685cc759baec4d6e5fcb553ed09160ca0c2dc4e6e0ebc361ab48faec07acb08f1f9f43e8a",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "b31f1cdafe5ae69ea79cb01e38b377d489f7ea6374ad92a6eeb1c599dc791f91711901c53dd19f584873f2eb95a4a0c0",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "b346b18b84af84321cd00979443560b8d50615940fa6430f3f187db5971324761aaa50fb08b86480b1b175f696125ad6",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "b462fb1caa2f877f2e5a23742a2e4aa52b285fcf8413191232b4c78f3a1f545d8531b103867cdff0e7a65ceb05ddbdae",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "b47b918f6488ec7e77233e01fcf469ac4c3322add127fe5bf4598a8c8e8d2dfe27fa94b1bd46201883a0e578c32454d4",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "b48052c2a26c2853e048b0d3781b4401e57e4628e2557ac4845d7d980ef03f997c4c71687370c63c044aa51244af1875",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "b48b57d9ae6b0658430050bc0336005eba5a4f318589d8cb2641a6e813c6ee4e6a3158a503b18e06702591337c4adfc7",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "b57ded217776a9bbd06939f6465300e922284e12e3bf584565fcc0526297a4234fc1f47829f9242491bb42c20b46f9e3",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "b59d42bc9c72ec01ca4cb668953d25b150f936b39556fea44b59ab58a7696dda1ee48fa71947f8b6937b642d844cf7a2",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "b5d6cc8adeff2f0f40d15dd9c8854810951915a2c5b02b562385e4f67ee979c17c4f1888d8c878a4346f42b963a5cfc6",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "b6056ba058859f1f0e8985550ae76214301802a3149727e233edf7a63d9dac9317f116adc8fde387adc207a81cd57d9a",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "b6fed2994e0796ddcad19dec93bcaabf2bdb458a57847e23cff3e5bd70183cd89946bc4f6289494da369cc3e64e7726d",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "b79172fc4333d255ee3a1884b78ffde5901638e60ed674ccaadd57921448c4dcbc2cd5d9faf1cf71c5a48d27b89c482b",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "b7ca4bc931e95a39d9b04d4f03ffd50c2bf1de9261901e5b3e9783b953b3171f877733d8db2189317ed2bf865199fcf6",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "b809509d27fc57d0bcb96eec7aa0ae0a5fc44f31bf22c288ccd7745969148e6a559ee374c183154b6f3fa0a5269e1206",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "b87c1c8c3f07f5bcf067eea76ca9328da862bbfffd9af24ec63271307b3e2490aec28d8c8ffb00ed6873357a3859f22c",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "b8f904f1e724e1dfc6075fa763eb60987a2e51e9863a45cf7691deaeb698e66769919d19d3be85daed169bd3266ffc20",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "b9a15fb236e20f5857e062579e8deb7384153e4b0655014964a5501f25fc43d7268f97c45343b71bf7ac3423c45b401b",
+      "bftWeight": "1"
+    },
+    {
+      "blsKey": "b9b285aa8e0f5811f19250ab6893d7a9a502d1b0430302487a226eb905e2e42413c15945f2cda5cc472298856b9f9fa8",
+      "bftWeight": "1"
+    }
+  ],
+  "certificateThreshold": "65"
+}
+----
+====

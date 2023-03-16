@@ -9,20 +9,51 @@
 ====
 On this page, you'll learn how to:
 
+* [x] Dry-run a transaction to retrieve the minimum fee
 * [x] Calculate the minimum fee for a given transaction
 ====
 
-== Option 1: Send a transaction with zero fee
+== Option 1: Dry-running a transaction with zero fee
 
-If you try to send a transaction with a fee smaller than the minimum fee, the transaction will be rejected by the node with an error.
-The error already includes the minimum fee required for the particular transaction.
+=== Prepare the transaction
 
 [source,bash]
 ----
- % ./bin/run transaction:send 0a05746f6b656e12087472616e73666572180220ef900a2a20ec10255d3e78b2977f04e59ea9afd3e9a2ce9a6b44619ef9f6c47c29695b1df332330a0803000000000000001080c2d72f1a1488c0ee8a4f8fa0e498770c70749584f179938ffa220c48656c6c6f20576f726c64213a40dabb3bb29f133eb49c778091d673c4ed33afe46248bca7765cb12f8768acd0633f87051553d759e339597695eeb629128986b61e6d41e961847e6017c3fde80c
+lisk-core transaction:create token transfer 0
+? Please enter passphrase:  [hidden]
+? Please enter: tokenID:  0000000000000000
+? Please enter: amount:  800000000
+? Please enter: recipientAddress:  lskt8ovj2shbxrtno8xqqt7cnmzzygdkbt6brnvmj
+? Please enter: data:  Happy birthday!
 ----
 
- Error: Insufficient transaction fee. Minimum required fee is 176000.
+This will return the transaction in hex string format:
+
+[source,json]
+----
+{"transaction":"0a05746f6b656e12087472616e7366657218012080c2d72f2a203972849f2ab66376a68671c10a00e8b8b67d880434cc65b04c6ed886dfa91c2c32370a080400000000000000108090bcfd021a149bd82e637d306533b1e1ad66e19ca0047faa1a6a220f4861707079206269727468646179213a40ab69eabe03d73a69a867104a6e5eb820563921cf61ef6b7c036098ae46ac5a1c6311bae6006b55618f1c2b8288454a7d51eb2f10e1d4282a452ea35125bfd109"}
+----
+
+=== Dry-run the transaction
+
+Using the prepared transaction, perform a dry-run like so:
+
+[source,bash]
+----
+./bin/run endpoint:invoke txpool_dryRunTransaction '{"transaction": "0a05746f6b656e12087472616e73666572180220ef900a2a20ec10255d3e78b2977f04e59ea9afd3e9a2ce9a6b44619ef9f6c47c29695b1df332330a0803000000000000001080c2d72f1a1488c0ee8a4f8fa0e498770c70749584f179938ffa220c48656c6c6f20576f726c64213a40dabb3bb29f133eb49c778091d673c4ed33afe46248bca7765cb12f8768acd0633f87051553d759e339597695eeb629128986b61e6d41e961847e6017c3fde80c"}'
+----
+
+If a dry-run is performed on a transaction with a fee smaller than the minimum fee, the dry-run will fail with an error.
+The error already includes the minimum fee required for the particular transaction.
+
+[source,json]
+----
+{
+  "result":-1,
+  "events":[],
+  "errorMessage":"Insufficient transaction fee. Minimum required fee is 176000."
+}
+----
 
 == Option 2: Manually calculate the minimum fee for a transaction
 
@@ -37,7 +68,6 @@ To compute the minimum fee for a transaction without a connection to the API cli
 In this case, the user needs to provide the transaction object and the corresponding transaction schema to the function.
 ====
 
-:sectnums:
 === Connect the API client to a node
 
 First, create a function `getClient()`, which will return an instance of the API client.
@@ -66,7 +96,7 @@ const getClient = async () => {
 };
 ----
 
-=== Define the transaction to calcuclate the fee for
+=== Prepare the transaction
 
 Adjust the following properties to match the transaction you want to calculate the minimum fee for:
 
@@ -129,7 +159,7 @@ const tx = {
 	fee: 0,
 	params: {
 		amount:100000000,
-		tokenID: "0300000000000000",
+		tokenID: "0000000000000000",
 		recipientAddress: "lskycz7hvr8yfu74bcwxy2n4mopfmjancgdvxq8xz",
 		data: "Hello World!"
 	}
@@ -157,5 +187,3 @@ If the script is now executed in the terminal, it will display the minimum fee f
 % node compute-minfee.js
 The minimum fee for the given transaction is:  139000n  Beddows, i.e.  0.00139  LSK
 ----
-
-:!sectnums:

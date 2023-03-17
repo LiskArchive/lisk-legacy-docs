@@ -125,7 +125,7 @@
     <li><a href="blocks-txs.html">Blocks and Transactions</a></li>
   </ul>
 </nav>
-  <div class="edit-this-page"><a href="https://github.com/LiskHQ/lisk-docs/edit/development/docs/modules/ROOT/pages/understand-blockchain/blocks-txs.adoc"><img class="pencil">Edit this Page</a></div>
+  <div class="edit-this-page"><a href="https://github.com/LiskHQ/lisk-docs/edit/1578-min-fee/docs/modules/ROOT/pages/understand-blockchain/blocks-txs.adoc"><img class="pencil">Edit this Page</a></div>
   </div>
 <div class="body">
 <div class="nav-container" data-component="ROOT" data-version="beta">
@@ -296,6 +296,9 @@
   <li class="nav-item" data-depth="2">
     <a class="nav-link" href="../integrate-blockchain/subscribing-to-events.html">Retrieving on-chain events</a>
   </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../integrate-blockchain/calculating-min-fee.html">How to calculate the minimum fee for a transaction</a>
+  </li>
   <li class="nav-item parent" data-depth="2">
     <button class="nav-item-toggle"></button>
         <span>
@@ -428,6 +431,9 @@
 </li>
 <li><a href="#transactions">Transactions</a>
 <ul class="sectlevel2">
+<li><a href="#transaction-fees">Transaction fees</a></li>
+<li><a href="#minimum-fee-per-byte">Minimum fee per byte</a></li>
+<li><a href="#command-fee">Command fee</a></li>
 <li><a href="#transaction-json-schema">Transaction JSON schema</a></li>
 <li><a href="#valid-vs-invalid-transactions">Valid vs invalid transactions</a></li>
 <li><a href="#successful-vs-failed-transactions">Successful vs failed transactions</a></li>
@@ -844,6 +850,105 @@ transaction size = 153</pre>
 </td>
 </tr>
 </table>
+</div>
+<div class="sect2">
+<h3 id="transaction-fees"><a class="anchor" href="#transaction-fees"></a>Transaction fees</h3>
+<div class="paragraph">
+<p>In order to send and process a transaction, it is required to pay a small fee.</p>
+</div>
+<div class="paragraph">
+<p>Fees can be defined dynamically for every transaction.
+A higher fee will create an incentive for validators to include the transaction in a block as quickly as possible, because most validators prioritize transactions with higher fees in the transaction pool, because it means a personal higher reward for them, if they include these transactions in a block.
+So by choosing a higher fee, it can be ensured that the transaction is executed as quickly as possible, in case the network is crowded.</p>
+</div>
+<div class="paragraph">
+<p>This mechanism can also be used to overwrite existing transactions in the pool, by using the same nonce, but a higher fee than the transaction that should be overwritten.</p>
+</div>
+<div class="paragraph">
+<p>For every transaction, there is a minimum fee that needs to be paid in order for the transaction to be successfully processed.
+The minimum fee required is calculated in the following way:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>minFee = transactionBytes.length * minFeePerByte</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>As shown in the formula, the minimum fee is directly connected to the size of the transaction object in bytes after it has been encoded.</p>
+</div>
+<div class="paragraph">
+<p>Some transaction types may also require an additional fee, called the <a href="#command-fee">Command fee</a>.
+The minimum fee for a valid transaction is in this case:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>minFee = transactionBytes.length * minFeePerByte + commandFee</pre>
+</div>
+</div>
+<div class="admonitionblock caution">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-caution" title="Caution"></i>
+</td>
+<td class="content">
+<div class="ulist">
+<ul>
+<li>
+<p>If a transaction requires a command fee, and the command fee is partially paid or not paid at all, then, the transaction will be <a href="#valid-vs-invalid-transactions">invalid</a>.</p>
+</li>
+<li>
+<p>If the transaction is posted with a fee smaller than the required minimum fee, the transaction will <a href="#successful-vs-failed-transactions">fail</a>.</p>
+</li>
+</ul>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="minimum-fee-per-byte"><a class="anchor" href="#minimum-fee-per-byte"></a>Minimum fee per byte</h3>
+<div class="paragraph">
+<p>The minimum fee per byte is defined in the configuration options of the Fee module.</p>
+</div>
+<div class="paragraph">
+<p>The default value for <code>minFeePerByte</code> is 1000 Beddows, or 0.00001 LSK.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+It is possible to configure a sidechain to have no transaction fee, by setting the <code>minFeePerByte</code> to 0 in the config.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="command-fee"><a class="anchor" href="#command-fee"></a>Command fee</h3>
+<div class="paragraph">
+<p>Command fees, or command execution fees, are fees that need to be paid only, if the command execution requires an additional fee - for example, if the execution of the command requires a lot of computational resources.</p>
+</div>
+<div class="paragraph">
+<p>The following commands require an extra command fee:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://liskhq.github.io/lisk-docs/lisk-sdk/v6/references/typedoc/classes/lisk_framework.ValidatorRegistrationCommand.html" target="_blank" rel="noopener">Validator Registration</a> command: 10 LSK</p>
+</li>
+<li>
+<p><a href="https://liskhq.github.io/lisk-docs/lisk-sdk/v6/references/typedoc/classes/lisk_framework.RegisterSidechainCommand.html" target="_blank" rel="noopener">Sidechain registration</a> command: 10 LSK</p>
+</li>
+<li>
+<p><a href="https://liskhq.github.io/lisk-docs/lisk-sdk/v6/references/typedoc/classes/lisk_framework.TransferCommand.html" target="_blank" rel="noopener">Transfer</a> command to a new account: 0.05 LSK</p>
+</li>
+</ul>
+</div>
 </div>
 <div class="sect2">
 <h3 id="transaction-json-schema"><a class="anchor" href="#transaction-json-schema"></a>Transaction JSON schema</h3>

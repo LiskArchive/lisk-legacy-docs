@@ -70,33 +70,67 @@ In this case, the user needs to provide the transaction object and the correspon
 
 === Connect the API client to a node
 
-First, create a function `getClient()`, which will return an instance of the API client.
+The Lisk API client is a JS package that allows to connect to a node API through WS and IPC protocols.
 
-The API client connects to a local node, having the RPC API enabled via WebSockets at port `7887`.
+It can be used inside of JS or TS script to connect to a blockchain node API in order to calculate the minimum fee for a transaction conveniently.
 
-TIP: Alternatively, the corresponding HTTP or IPC APIs can be used, if the node has enabled those.
+[tabs]
+=====
+WS API client example::
++
+--
+Create a file `api-client.js` which will export the function `getClient()`.
 
-To connect to a different node, simply update the API URL defined in `nodeAPIURL`.
+Adjust `RPC_ENDPOINT` to point to the node you want to post the transaction to.
 
-.compute-minfee.js
+.api-client.js
+[source,js]
+----
+ const { apiClient } = require('@liskhq/lisk-client');
+
+const RPC_ENDPOINT = 'ws://localhost:8080/ws';
+let clientCache;
+
+const getClient = async () => {
+  if (!clientCache) {
+    clientCache = await apiClient.createWSClient(RPC_ENDPOINT);
+  }
+  return clientCache;
+};
+
+module.exports = { getClient };
+----
+--
+IPC API client example::
++
+--
+Create a file `api-client.js` which will export the function `getClient()`.
+
+Adjust `DATA_PATH` to point to the blockchain client data path.
+
+.api-client.js
 [source,js]
 ----
 const { apiClient } = require('@liskhq/lisk-client');
 
+const DATA_PATH = '~/.lisk/hello_client';
 let clientCache;
-// A URL pointing to a node with open API
-const nodeAPIURL = 'ws://localhost:7887/rpc-ws'
 
-// Connects to a node API
 const getClient = async () => {
-	if (!clientCache) {
-		clientCache = await apiClient.createWSClient(nodeAPIURL);
-	}
-	return clientCache;
+    if (!clientCache) {
+        clientCache = await apiClient.createIPCClient(DATA_PATH);
+    }
+    return clientCache;
 };
+
+module.exports = { getClient };
 ----
+--
+=====
 
 === Prepare the transaction
+Create a new script `compute-minfee.js` to calculate the minimum required transaction fee.
+Import the `getClient()` function and execute it to use the API client to calculate hte minimum fee, as shown in below snippet.
 
 Adjust the following properties to match the transaction you want to calculate the minimum fee for:
 
@@ -113,6 +147,8 @@ For the following values, it is OK to use dummy values:
 .compute-minfee.js
 [source,js]
 ----
+const { getClient } = require('./api-client');
+
 // Transaction to calculate the minimum fee for
 const tx = {
 	module: 'token',
@@ -136,19 +172,7 @@ Finally, call the `getClient` function to get the API clint, and use it to calcu
 .compute-minfee.js
 [source,js]
 ----
-const { apiClient, transactions } = require('@liskhq/lisk-client');
-
-let clientCache;
-// A URL pointing to a node with open API
-const nodeAPIURL = 'ws://localhost:7887/rpc-ws'
-
-// Connects to a node API
-const getClient = async () => {
-	if (!clientCache) {
-		clientCache = await apiClient.createWSClient(nodeAPIURL);
-	}
-	return clientCache;
-};
+const { getClient } = require('./api-client');
 
 // Transaction to calculate the minimum fee for
 const tx = {
@@ -174,8 +198,6 @@ getClient().then(client => {
 	console.log("Error: " + error);
 	process.exit(1);
 });
-
-
 ----
 
 === Execute

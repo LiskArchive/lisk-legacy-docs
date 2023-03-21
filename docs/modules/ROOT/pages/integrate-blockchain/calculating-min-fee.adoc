@@ -2,9 +2,10 @@
 :toc: preamble
 // URLs
 :url_typedoc_transactions: {site-url}/lisk-sdk/v6/references/typedoc/modules/_liskhq_lisk_transactions.html
-:url_sdkexamples_minfee: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/guides/calculate-minfee/index.js
+:url_sdkexamples_minfee: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/guides/calculate-minfee/
 // Project URLs
 :url_understand_tx_fee: understand-blockchain/blocks-txs.adoc#transaction-fees
+:url_integrate_createtx: integrate-blockchain/create-send-transactions.adoc
 
 ====
 On this page, you'll learn how to:
@@ -16,7 +17,7 @@ On this page, you'll learn how to:
 Another option to compute the xref:{url_understand_tx_fee}[minimum fee] for a transaction, use the API client.
 Create a small script called `compute-minfee.js` as described in the following sections.
 
-NOTE: See the complete code example of the script in the Lisk SDK examples repository: {url_sdkexamples_minfee}[min-fee.js]
+NOTE: See the complete code example of the script in the Lisk SDK examples repository: {url_sdkexamples_minfee}[^]
 
 [TIP]
 ====
@@ -44,24 +45,26 @@ WS API client example::
 --
 Create a file `api-client.js` which will export the function `getClient()`.
 
-Adjust `RPC_ENDPOINT` to point to the node you want to post the transaction to.
+Adjust `nodeAPIURL` to point to the node you want to post the transaction to.
 
 .api-client.js
 [source,js]
 ----
 const { apiClient } = require('@liskhq/lisk-client');
-
-const RPC_ENDPOINT = 'ws://localhost:7887/rpc-ws';
 let clientCache;
+const nodeAPIURL = 'ws://localhost:7887/rpc-ws'
 
+/**
+ * Connects to a node API via WS
+ *
+ * @returns The API client
+ */
 const getClient = async () => {
-  if (!clientCache) {
-    clientCache = await apiClient.createWSClient(RPC_ENDPOINT);
-  }
-  return clientCache;
+	if (!clientCache) {
+		clientCache = await apiClient.createWSClient(nodeAPIURL);
+	}
+	return clientCache;
 };
-
-module.exports = { getClient };
 ----
 --
 IPC API client example::
@@ -91,107 +94,124 @@ module.exports = { getClient };
 --
 =====
 
-== Prepare the transaction
-Create a new script `compute-minfee.js` to calculate the minimum required transaction fee.
-Import the `getClient()` function and execute it to use the API client to calculate the minimum fee, as shown in the snippet below.
+== Create the transaction
+Next, create the transaction as JSON, for which the minimum required fee shall be calculated.
 
-Next, prepare the transaction object, for which the minimum required fee shall be calculated.
+Use `0` or anothe random value for the fee.
 
-Adjust the following properties to match the transaction you want to calculate the minimum fee for:
+Use the `--json` flag to retrieve the transaction in the JSON format, as desired.
 
-* `module`,
-* `command`
-* and `params`.
+TIP: For more information about the different ways to create transactions, check out the corresponding guide xref:{url_integrate_createtx}[].
 
-For the following values, it is OK to use dummy values:
-
-* `nonce`,
-* `fee`
-* and `senderPublicKey`
-
-.compute-minfee.js
-[source,js]
+[source,bash]
 ----
-const { getClient } = require('./api-client');
+./bin/run transaction:create token transfer 0 --json
+----
 
-// Transaction to calculate the minimum fee for
-const tx = {
-	module: 'token',
-	command: 'transfer',
-	senderPublicKey: '1234567890123456789012345678901234567890123456789012345678901234',
-	nonce: 0,
-	fee: 0,
-	params: {
-		amount:100000000,
-		tokenID: "0300000000000000",
-		recipientAddress: "lskycz7hvr8yfu74bcwxy2n4mopfmjancgdvxq8xz",
-		data: "Hello World!"
-	}
-};
+[source,json]
+----
+{"transaction":{"module":"token","command":"transfer","fee":"0","nonce":"3","senderPublicKey":"ec10255d3e78b2977f04e59ea9afd3e9a2ce9a6b44619ef9f6c47c29695b1df3","signatures":["500d192a25a2c7b340b5ae03471c329b174d7fb3b05d47aefd71f0c4b76e220fe2edc79efcc16b9f89ac61708bcb9755f78262f1b00439f52972422a94f69a07"],"params":{"tokenID":"0000000000000000","amount":"1000000000","recipientAddress":"lskoytn4jcgs2pjpy2vfsttt7g8eb9wwbaf6hxc27","data":"Happy Birthday!"},"id":"0f81c6442ad49313046d73a8eb96178ff0c16ee2d353c4005f982310cdbbe39e"}}
 ----
 
 == Compute minimumFee
+Create a new script `getMinFee.js` to calculate the minimum required transaction fee.
+Import the `getClient()` function and use the API client to calculate the minimum fee, as shown in the snippet below.
 
-Finally, call the `getClient` function to get the API client, and use it to calculate the fee with `client.transaction.computeMinFee(tx)`.
-
-.compute-minfee.js
+.getMinFee.js
 [source,js]
 ----
 const { getClient } = require('./api-client');
-
-// Transaction to calculate the minimum fee for
-const tx = {
-	module: 'token',
-	command: 'transfer',
-	senderPublicKey: '1234567890123456789012345678901234567890123456789012345678901234',
-	nonce: 0,
-	fee: 0,
-	params: {
-		amount:100000000,
-		tokenID: "0000000000000000",
-		recipientAddress: "lskycz7hvr8yfu74bcwxy2n4mopfmjancgdvxq8xz",
-		data: "Hello World!"
-	}
+/**
+ * Returns the minimum fee for a transaction.
+ *
+ * @param txJSON The transaction to calculate the minimum fee for in JSON format
+ * @returns The minimum fee for the given transaction
+ */
+const getMinFee = async (txJSON) => {
+	const client = await getClient();
+	const minFee = client.transaction.computeMinFee(txJSON);
+	return minFee;
 };
-
-// Calculate and return the minimum fee
-getClient().then(client => {
-	const minFee = client.transaction.computeMinFee(tx);
-	console.log("The minimum fee for the given transaction is: ", minFee, " Beddows, i.e. ", transactions.convertBeddowsToLSK(minFee.toString()), " LSK.");
-	process.exit(0);
-}).catch(error => {
-	console.log("Error: " + error);
-	process.exit(1);
-});
 ----
 
 == Dry-run the transaction
 
-Using the prepared transaction, perform a dry-run like so:
+Create a new script `dryRun.js` to verify the transaction with the calculated minimum fee.
+Import the `getClient()` function and use the API client to perform a dry-run on the transaction, as shown in the snippet below.
 
-[source,bash]
+[source,js]
 ----
-./bin/run endpoint:invoke txpool_dryRunTransaction '{"transaction": "0a05746f6b656e12087472616e73666572180220ef900a2a20ec10255d3e78b2977f04e59ea9afd3e9a2ce9a6b44619ef9f6c47c29695b1df332330a0803000000000000001080c2d72f1a1488c0ee8a4f8fa0e498770c70749584f179938ffa220c48656c6c6f20576f726c64213a40dabb3bb29f133eb49c778091d673c4ed33afe46248bca7765cb12f8768acd0633f87051553d759e339597695eeb629128986b61e6d41e961847e6017c3fde80c"}'
-----
+const { getClient } = require('./api-client');
 
-If a dry-run is performed on a transaction with a fee smaller than the minimum fee, the dry-run will fail with an error.
-The error already includes the minimum fee required for the particular transaction.
+/**
+ * Performs a dry-run for a given transaction.
+ *
+ * @param txJSON The transaction to dry-run in JSON format
+ * @returns The result of the dry-run
+ */
+const dryRun = async (txJSON) => {
+	const client = await getClient();
 
-[source,json]
-----
-{
-  "result":-1,
-  "events":[],
-  "errorMessage":"Insufficient transaction fee. Minimum required fee is 176000."
-}
+	const tx = client.transaction.fromJSON(txJSON);
+	const encodedTx = client.transaction.encode(tx);
+
+	const result = await client.invoke('txpool_dryRunTransaction',{"transaction":encodedTx.toString("hex") })
+
+	return result;
+};
 ----
 
 == Execute
 
+Create a new script `index.js`.
+
+Import all the above created script into `index.js` and use the functions to calculate the fee for any given transaction, and to verify the fee with a dry-run in one go:
+
+.index.js
+[source,js]
+----
+const { transactions } = require('@liskhq/lisk-client');
+const { getMinFee } = require('./getMinFee');
+const { dryRun } = require('./dry-run');
+
+(async () => {
+	const txJSON = {"module":"token","command":"transfer","fee":"0","nonce":"3","senderPublicKey":"ec10255d3e78b2977f04e59ea9afd3e9a2ce9a6b44619ef9f6c47c29695b1df3","signatures":["500d192a25a2c7b340b5ae03471c329b174d7fb3b05d47aefd71f0c4b76e220fe2edc79efcc16b9f89ac61708bcb9755f78262f1b00439f52972422a94f69a07"],"params":{"tokenID":"0300000800000000","amount":"1000000000","recipientAddress":"lskoytn4jcgs2pjpy2vfsttt7g8eb9wwbaf6hxc27","data":"Happy Birthday!"},"id":"0f81c6442ad49313046d73a8eb96178ff0c16ee2d353c4005f982310cdbbe39e"};
+
+	const minFee = await getMinFee(txJSON);
+
+	console.log("The minimum fee for the given transaction is: ", minFee, " Beddows, i.e. ", transactions.convertBeddowsToLSK(minFee.toString()), " LSK.");
+
+	const txWithFee = {
+		...txJSON,
+		fee: minFee.toString()
+	}
+
+	const result = await dryRun(txWithFee);
+
+	console.log("Dry run result", result);
+	process.exit(0);
+})();
+----
+
 If the script is now executed in the terminal, it will display the minimum fee for the defined transaction.
+
+Additionally, a dry-run is performed on the transaction using the calculated minimum fee.
+If the fee is too small, the dry-run will fail with an error.
+
+To execute the script run the following command:
 
 [source,bash]
 ----
-% node compute-minfee.js
-The minimum fee for the given transaction is:  139000n  Beddows, i.e.  0.00139  LSK
+% node index.js
+----
+
+The result will be displayed in the terminal like shown below:
+
+----
+The minimum fee for the given transaction is:  180000n  Beddows, i.e.  0.0018  LSK.
+Dry run result {
+  result: -1,
+  events: [],
+  "errorMessage": "Insufficient transaction fee. Minimum required fee is 176000."
+}
 ----

@@ -6,7 +6,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 :idprefix:
 :idseparator: -
 :experimental:
-:docs_sdk: lisk-sdk::
+:docs_sdk: v6@lisk-sdk::
 // URLs
 // Project URLS
 // :url_references_client: {docs_sdk}references/lisk-elements/client.adoc
@@ -14,14 +14,18 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_guides_config: {docs_sdk}config.adoc#rpc
 
 // TODO: Update the page by uncommenting the hyperlinks once the updated pages are available.
+====
+On this page, you'll learn:
 
-The API of a blockchain node typically returns all requested transactions and blocks encoded.
-To be readable, they need to be decoded into JS or JSON compatible objects.
+* [x] How blocks are encoded and decoded
+* [x] How transactions are encoded and decoded
+* [x] How the different formats of blocks and transactions look like
+====
 
-Blocks and transactions can be decoded conveniently with the apiClient library of the Lisk SDK.
-// xref:{url_references_apiclient}[apiClient]
 
 == Connecting a node with the API client
+Blocks and transactions can be decoded conveniently with the `@liskhq/api-client` library of the Lisk SDK.
+// xref:{url_references_apiclient}[apiClient]
 
 Before the API client can be used, it needs to connect to a blockchain node.
 This can be achieved either via a WebSocket (local or remote), or an IPC (only on the local server) connection.
@@ -32,6 +36,16 @@ The RPC options in the config should be enabled and configured accordingly, see 
 TIP: The `apiClient` is also included in the NPM package @liskhq/lisk-client.
 // xref:{url_references_client}[`@liskhq/lisk-client`].
 
+Install the `lisk-client` package like this:
+
+[source,bash]
+----
+npm i @liskhq/lisk-client
+----
+
+Then, create a new file `api-client.js` with a function `getClient()` that returns an instance of the API client when executed.
+
+.api-client.js
 [source,js]
 ----
 const { apiClient } = require('@liskhq/lisk-client');
@@ -45,7 +59,11 @@ const getClient = async () => {
 	}
 	return clientCache;
 };
+
+module.exports = { getClient };
 ----
+
+Export the function `getClient()`, so it can be used to get data from the blockchain in the following sections.
 
 == Decoding & encoding blocks and their included transactions
 
@@ -54,16 +72,8 @@ The following script shows how to decode & encode a block by a given ID.
 .`getBlockById.js`:
 [source,js]
 ----
-const { apiClient } = require('@liskhq/lisk-client');
-let clientCache;
-const nodeAPIURL = 'ws://localhost:7887/rpc-ws';
-
-const getClient = async () => {
-	if (!clientCache) {
-		clientCache = await apiClient.createWSClient(nodeAPIURL);
-	}
-	return clientCache;
-};
+const { getClient } = require('./api-client');
+const assert = require("assert");
 
 if (process.argv.length < 3) {
 	console.error("Please provide the block ID to be decoded.")
@@ -72,16 +82,26 @@ if (process.argv.length < 3) {
 const blockId = process.argv[2];
 
 getClient().then((client) => {
+	// Returns the block
 	client.invoke("chain_getBlockByID", {
 		id: blockId
-	}).then(res => {
-		const blockObject = client.block.fromJSON(res);
-		const encodedBlockObject = client.block.encode(blockObject);
-		const encodedBlockAsHexString = encodedBlockObject.toString('hex');
-		console.log("Block(JSON): ", res)
+	}).then(block => {
+		// Decoded block as Object
+		const blockObject = client.block.fromJSON(block);
+		// Decoded block as JSON
+		const jsonBlock = client.block.toJSON(blockObject);
+		// Encoded block as Buffer
+		const encodedBlock = client.block.encode(blockObject);
+		// Decoded block as Object
+		const decodedBlock = client.block.decode(encodedBlock);
+		// Encoded block as Hex String
+		const blockHexString = encodedBlock.toString('hex');
+		console.log("Block: ", block);
 		console.log("Block(Object): ", blockObject);
-		console.log("Block(Buffer): ", encodedBlockObject);
-		console.log("Block(Hex String): ", encodedBlockAsHexString)
+		console.log("Block(JSON): ", jsonBlock)
+		console.log("Block(Buffer): ", encodedBlock);
+		console.log("Block(Hex String): ", blockHexString);
+		console.log("blockObject = decodedBlock? - ", assert.deepStrictEqual(blockObject,decodedBlock));
 		process.exit(0);
 	}).catch(err => {
 		console.log("Error: ", err);
@@ -90,12 +110,14 @@ getClient().then((client) => {
 });
 ----
 
-Assuming you wish to decode a block with the ID `6533da00cec82c6d22b1c12f6cb4b6178fbfd9530e35d1018fcf4585085ec9c6`, then execute the script with the block ID as the parameter:
+Assuming you wish to encode or decode a block with the ID `6533da00cec82c6d22b1c12f6cb4b6178fbfd9530e35d1018fcf4585085ec9c6`, then execute the script with the block ID as the parameter:
 
 [source,bash]
 ----
 node getBlockById.js 6533da00cec82c6d22b1c12f6cb4b6178fbfd9530e35d1018fcf4585085ec9c6
 ----
+
+=== Block formats
 
 Executing the script will return the block in the different formats, as shown below:
 
@@ -142,12 +164,12 @@ Executing the script will return the block in the different formats, as shown be
 ----
 ====
 
-.Block(JSON)
+.Decoded Block(JSON)
 [%collapsible]
 ====
 [source,json]
 ----
-Block(JSON):  {
+{
   header: {
     version: 2,
     timestamp: 1679317980,
@@ -183,12 +205,12 @@ Block(JSON):  {
 ----
 ====
 
-.Block(Object)
+.Decoded Block(Object)
 [%collapsible]
 ====
 [source,js]
 ----
-Block(Object):  {
+{
   header: {
     version: 2,
     timestamp: 1679317980,
@@ -228,7 +250,7 @@ Block(Object):  {
 ----
 ====
 
-.Block(Buffer)
+.Encoded Block(Buffer)
 [%collapsible]
 ====
 [source,js]
@@ -237,7 +259,7 @@ Block(Object):  {
 ----
 ====
 
-.Block(Hex String)
+.Encoded Block(Hex String)
 [%collapsible]
 ====
 [source,js]
@@ -256,17 +278,8 @@ Create a new file `getTxById.js`:
 .Example: Decoding/Encoding a transaction
 [source,js]
 ----
-const { apiClient } = require('@liskhq/lisk-client');
+const { getClient } = require('./api-client');
 const assert = require("assert");
-let clientCache;
-const nodeAPIURL = 'ws://localhost:7887/rpc-ws';
-
-const getClient = async () => {
-	if (!clientCache) {
-		clientCache = await apiClient.createWSClient(nodeAPIURL);
-	}
-	return clientCache;
-};
 
 if (process.argv.length < 3) {
 	console.error("Please provide the transaction ID to be decoded.")
@@ -275,33 +288,33 @@ if (process.argv.length < 3) {
 const txId = process.argv[2];
 
 getClient().then((client) => {
-	// Returns the transaction in JSON format
+	// Returns the transaction
 	client.invoke("chain_getTransactionByID", {
 		id: txId
 	}).then(tx => {
-		// Transaction as Object
+		// Decoded transaction as Object
 		const txObject = client.transaction.fromJSON(tx);
-		// Transaction as JSON
+		// Decoded transaction as JSON
 		const jsonTx = client.transaction.toJSON(txObject);
-		// Encode transaction Object to Buffer
+		// Encoded transaction as Buffer
 		const encodedTx = client.transaction.encode(txObject);
-		// Transaction as Hex String
+		// Encoded transaction as Hex String
 		const txHexString = encodedTx.toString('hex');
 		// Decode transaction from Hex String to Object
 		const decodedTx = client.transaction.decode(txHexString);
 		console.log("Transaction: ", tx)
-		console.log("Transaction(Object): ", txObject);
-		console.log("Transaction(JSON): ", jsonTx)
-		console.log("Transaction(Buffer): ", encodedTx);
-		console.log("Transaction(Hex String): ", txHexString);
-		console.log("txObject = decodedTx? - ", assert.deepStrictEqual(txObject, decodedTx));
+		console.log("Decoded transaction(Object): ", txObject);
+		console.log("Decoded transaction(JSON): ", jsonTx)
+		console.log("Encoded transaction(Buffer): ", encodedTx);
+		console.log("Encoded transaction(Hex String): ", txHexString);
+		const checkEqual = !assert.deepStrictEqual(txObject, decodedTx);
+		console.log("txObject = decodedTx? - ", checkEqual);
 		process.exit(0);
 	}).catch(err => {
 		console.log("Error: ", err);
 		process.exit(1);
 	});
 });
-
 ----
 
 Assuming you wish to display a transaction with the ID `130227fa63ac60edbbacb6dae709cf9304ab0181ef7ea28105764f6240d012f2` in the different existing formats, then execute the script with the transaction ID as the parameter:
@@ -310,6 +323,8 @@ Assuming you wish to display a transaction with the ID `130227fa63ac60edbbacb6da
 ----
 node getTxById.js 6ffb10cf563b809618a079f07791f2699be6989935e2582d5e5f4cc7afd2b4f9
 ----
+
+=== Transaction formats
 
 .Transaction
 [%collapsible]
@@ -331,7 +346,7 @@ node getTxById.js 6ffb10cf563b809618a079f07791f2699be6989935e2582d5e5f4cc7afd2b4
 ----
 ====
 
-.Transaction(Decoded)
+.Decoded Transaction(Object)
 [%collapsible]
 ====
 [source,js]
@@ -356,7 +371,7 @@ node getTxById.js 6ffb10cf563b809618a079f07791f2699be6989935e2582d5e5f4cc7afd2b4
 ----
 ====
 
-.Transaction(JSON)
+.Decoded Transaction(JSON)
 [%collapsible]
 ====
 [source,js]
@@ -381,13 +396,13 @@ node getTxById.js 6ffb10cf563b809618a079f07791f2699be6989935e2582d5e5f4cc7afd2b4
 ----
 ====
 
-.Transaction(Buffer)
+.Encoded Transaction(Buffer)
 [%collapsible]
 ====
  <Buffer 0a 05 74 6f 6b 65 6e 12 08 74 72 61 6e 73 66 65 72 18 02 20 80 df 0a 2a 20 ec 10 25 5d 3e 78 b2 97 7f 04 e5 9e a9 af d3 e9 a2 ce 9a 6b 44 61 9e f9 f6 ... 126 more bytes>
 ====
 
-.Transaction(Hex String)
+.Encoded Transaction(Hex String)
 [%collapsible]
 ====
  '0a05746f6b656e12087472616e7366657218022080df0a2a20ec10255d3e78b2977f04e59ea9afd3e9a2ce9a6b44619ef9f6c47c29695b1df332330a0803000008000000001080c2d72f1a1488c0ee8a4f8fa0e498770c70749584f179938ffa220c48656c6c6f20576f726c64213a40866c4a96e8d9dd27100520759e1974cea8db52bf0df4b7660b5a87c6e4cd4488c6c71ac6f6ebbd57188a355a331d10f318f814eae63fb966e4f8cea25530480f'

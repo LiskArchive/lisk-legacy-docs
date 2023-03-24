@@ -241,13 +241,11 @@ In this example, we use the following example account credentials:
 
 Create a new file `create-offline.js` to create the unsigned transaction object.
 
-Require the schemas and the necessary Lisk Elements packages to sign a transaction.
-
-Now, create the unsigned transaction object manually by following the transaction schema.
+Define the unsigned transaction object manually by following the <<provide-the-transaction-schema-and-params-schema,transaction schema>>.
 
 It is recommended to verify the correct format of the transaction with the `validator.validate()` function of the `@liskhq/lisk-validator` package afterwards.
 
-Then, manually create the parameters for the Transfer Tokens command, and add them to the unsigned transaction.
+Then, manually define the parameters for the Transfer Tokens command, and add them to the unsigned transaction.
 
 .create-offline.js
 [source,js]
@@ -294,9 +292,11 @@ const createTxOffline = () => {
 module.exports = { createTxOffline }
 ----
 
-The transaction object is now prepared and returned, ready to be signed by the sender in the next step.
+The transaction object is now returned, ready to be signed by the sender in the next step.
 
 === Signing the transaction
+
+Create a new file `sign-offline.js` to create a script which will sign a given unsigned transaction object.
 
 To sign the transaction, use `signTransaction()` function of the @liskhq/lisk-transactions` package.
 It required the following parameters:
@@ -306,6 +306,7 @@ It required the following parameters:
 . The privateKey of the account signing the transaction
 . The params schema for the command addressed in the transaction
 
+.sign-offline.js
 [source,js]
 ----
 const { transactions } = require('@liskhq/lisk-client');
@@ -335,13 +336,16 @@ A transaction dry-run can only be performed *online*, by connecting to a node.
 
 Without dry-running the transaction, its' validity cannot be verified, and the transaction might fail.
 
-To connect to a node, create a function that provides an instance of the Lisk API client.
+To connect to a node, create a function `getClient()` which provides an instance of the Lisk API client.
+
+Create a new file `api-client.js` and paste the following code:
 
 .api-client.js
 [source,js]
 ----
 const { apiClient } = require('@liskhq/lisk-client');
 
+// Adjust the RPC_ENDPOINT to point to your RPC node, if required.
 const RPC_ENDPOINT = 'ws://localhost:7887/rpc-ws';
 let clientCache;
 
@@ -355,7 +359,9 @@ const getClient = async () => {
 module.exports = { getClient };
 ----
 
-Require the function `getClient()` to retrieve the API client, and use it to perform a dry-run of the transaction which was created offline.
+Create a new file `dry-run.js` to create a function that performs a dry-run for a given transaction.
+
+Require the function `getClient()` to retrieve the API client, and use it to perform a dry-run of the transaction.
 
 .dry-run.js
 [source,js]
@@ -377,6 +383,7 @@ module.exports = { dryRun };
 
 Finally, create a new file `index.js` to execute the scripts we defined above one after another.
 
+.index.js
 [source,js]
 ----
 const { createTxOffline } = require('./create-offline');
@@ -384,12 +391,15 @@ const { signTx } = require('./sign-offline');
 const { dryRun } = require('./dry-run');
 
 (async () => {
+    // 1. Create an unsigned transaction
 	const tx = createTxOffline();
 	console.log("Unsigned Transaction: ", tx);
 
+    // 2. Sign the transaction
 	const signedTx = signTx(tx);
 	console.log("Signed Transaction: ", signedTx);
 
+    // 3. Perform a dry-run for the signed transaction
 	const dryRunResult = await dryRun(signedTx)
 	console.log("Dry-Run Result: ", dryRunResult);
 
@@ -400,7 +410,7 @@ const { dryRun } = require('./dry-run');
 An unsigned Transaction looks like this:
 
 .Unsigned Transaction
-[source,json]
+[source,js]
 ----
 Unsigned Transaction:  {
   module: 'token',

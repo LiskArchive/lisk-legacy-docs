@@ -10,7 +10,7 @@ Muhammad Talha <muhammad.talha@lightcurve.io>
 // // Project URLS
 :url_guides_reg_sidechain: build-blockchain/register-sidechain.adoc
 :url_guides_reg_mainchain: build-blockchain/register-sidechain.adoc#how-to-register-the-mainchain-on-the-sidechain
-:url_relayer_node: run-blockchain/index.adoc#relayer-node
+:url_relayer_node: run-blockchain/index.adoc#relayer-nodes
 :url_mainnet_node: run-blockchain/index.adoc#how-to-set-up-a-lisk-mainnet-node
 
 :fn_mainnet: footnote:witness[For more information about maintaining a Lisk Mainnet node, see the xref:{url_mainnet_node}[How to set up a Lisk Mainnet node] section.]
@@ -32,7 +32,7 @@ To use this guide, it is assumed that the following criteria have been met:
 
 .For a sidechain to set up a relayer node:
 * The sidechain must be registered to the mainchain as described in the xref:{url_guides_reg_sidechain}[] guide.
-* The sidechain account on the mainchain has either the `registered` or `active` status.
+* The sidechain account on the mainchain must have either the `registered` or `active` status.
 
 .For a mainchain to set up a relayer node:
 * The mainchain should be registered on the sidechain to which it intends to communicate as described in the xref:{url_guides_reg_mainchain}[How to register the mainchain on the sidechain] guide{fn_mainnet}.
@@ -141,7 +141,8 @@ Sample configuration::
             "encryptedPrivateKey": "kdf=argon2id&cipher=aes-256-gcm&version=1&ciphertext=da36ef64cbf2687d62b014dafdfa8ef8c823b2b1562ae78819599080e4500529b75e80093fba066879f0767e0de83abe285efb259dd9be5109b8a4ef66cfc52ec613314586c1aa1da3a6737c0f8b7f0de7fb4d1b85860cd23915bbcee774e1d85b357e342816a917e517f7c702e1a1deb28dd69a4b69ae2ac67a5c4c4236101c&mac=e253decce05dd50758400d5c7408532a162fedf583ff9cafcb7ad3e12f6b8011&salt=40ab2dcdd387e4372ed1dbb948a9ef84&iv=4559dcaee67eb2c1a0957ecf&tag=81c2c332d915454bed4be26018c598c5&iterations=1&parallelism=4&memorySize=2024",
             "password": "lisk",
             "ccuFee": "100000000",
-            "receivingChainIPCPath": "~/.lisk/lisk-core"
+            "receivingChainIPCPath": "~/.lisk/lisk-core",
+            "receivingChainID": "04000000"
         }
     }
 }
@@ -180,18 +181,17 @@ Entering Lisk REPL: type `Ctrl+C` or `.exit` to exit
 --
 =====
 
-. Call the `encrypt` function to create an encrypted private key and pass the `generatorPrivateKey` of your account to it.
-The `generatorPrivateKey` is a validator's private key and can be found in the *dev-validator.json* file of the client.
+. The `encryptedPrivateKey` can be created by calling the `encryptMessageWithPassword` function.
+It accepts two arguments: a *private key* of the account which is supposed to be used as a relayer address and a *password*.
 +
-The user should also enter a password which will be used to decrypt the encrypted key.
-The `encryptedPrivateKey` will be used for signing and sending CCU transactions.
+The account should have sufficient balance so that the encrypted private key can be used for signing and sending the transaction.
 +
 [tabs]
 =====
 Sidechain::
 +
 --
-.Creating an encrypted key via sidechain client
+.Creating an encrypted key via a sidechain client
 [source,bash]
 ----
 sidechain_client> lisk.cryptography.encrypt.stringifyEncryptedMessage(await lisk.cryptography.encrypt.encryptMessageWithPassword('0d7501d3d5c9accaefb3c0b6a569473b59391ae406f6324f98fa6dd70e119368a6454f898d3b82c41b158206c72ecfe917a1071c8084b496a0c5867afc10830b', 'lisk'))
@@ -207,7 +207,7 @@ sidechain_client> lisk.cryptography.encrypt.stringifyEncryptedMessage(await lisk
 Mainchain::
 +
 --
-.Creating an encrypted key via mainchain client
+.Creating an encrypted key via the mainchain client
 [source,bash]
 ----
 lisk-core> lisk.cryptography.encrypt.stringifyEncryptedMessage(await lisk.cryptography.encrypt.encryptMessageWithPassword('0d7501d3d5c9accaefb3c0b6a569473b59391ae406f6324f98fa6dd70e119368a6454f898d3b82c41b158206c72ecfe917a1071c8084b496a0c5867afc10830b', 'lisk'))
@@ -216,17 +216,16 @@ lisk-core> lisk.cryptography.encrypt.stringifyEncryptedMessage(await lisk.crypto
 .Encrypted key
 [source,bash]
 ----
-'kdf=argon2id&cipher=aes-256-gcm&version=1&ciphertext=57db80457db93a1abeceee5c6f951ca04579c447a06f45cf5e8b5398e207a26da53a6b191a02c479ede455950eacb48f32d6609f2cd4b5a1a51e895b210b587ef046e6c3151ef2212efd0808b45328742d09a279e7d667f1670ff02a2fd5c91f4afd0a08efb8e6e90b0b11e93b15da8daaeea543a0ff54f3dd51c66cac3b04c6&mac=7822258b12e0c787f5bd622c562914438a9d74ca1e11e11b840f3001a678b04f&salt=d4d051a123326ad2b82c022603e790b6&iv=0bb9e76cd5163d6c5af9d89d&tag=fbcdb355b5135d48df948841de5fcdf5&iterations=1&parallelism=4&memorySize=2024'
+'kdf=argon2id&cipher=aes-256-gcm&version=1&ciphertext=f4dd49061a128d06184308a235311dc487737b7c4a688409224ed39b7d8e76a6cdd814500dd7221297ed122d277af8ba46d42ebd340d228fe6c77132543b303c97ab89e151ecd9f2739284c60c66ab68c0f3531ffc6cbdedad2acc431e8d8e48dffd7c7eda3dfe5f404e00ef7ae825d34da7787bf792b6ecb84ea1bfe10e9ca6&mac=363141e645d5564a150a2634060bd273276b0c987a65cf64513a7871565c3f2a&salt=93213d2d1c11e91d64771c173f8bf3c1&iv=0132fa14a4ed289deb07ee11&tag=7b64ed4a0453302d54bba29d4f7a68ea&iterations=1&parallelism=4&memorySize=2024'
 ----
 --
 =====
-
-
-. The `encryptMessageWithPassword` function will return an encrypted key, which should be added to the config of the blockchain.
++
+The `encryptMessageWithPassword` function will return an encrypted key, which should be added to the config of the blockchain.
 
 === Prepare config for chain connector plugin
-There's a slight difference in the `chainConnector` config of a sidechain and a mainchain. 
-The mainchain expects the `chainID` of the receiving chain along with the mandatory fields.
+Each node whether a mainchain or a sidechain expects mandatory configurations as shown in the following snippets.
+
 [tabs]
 =====
 Sidechain::
@@ -240,6 +239,7 @@ On a sidechain, the mandatory options to configure are:
     "password": "lisk", // The password used to create the encryptedPrivateKey
     "ccuFee": "100000000",
     "receivingChainIPCPath": "~/.lisk/lisk-core"
+    "receivingChainID": "04000000"
 }
 ----
 --
@@ -316,7 +316,7 @@ On a mainchain, the plugin can be enabled using the `--enable-chain-connector-pl
 
 [source,bash]
 ----
-lisk-core --enable-chain-connector-plugin --overwrite-config
+lisk-core start --network alphanet --enable-chain-connector-plugin --overwrite-config   
 ----
 --
 =====
@@ -350,3 +350,10 @@ Since we just set up a relayer node and haven't sent a CCU/CCM, the aforemention
 
 The messages suggest that the blockchain doesn't have any finalized block height for which we can create a certificate and there are no pending CCUs/CCMs to send across the chain.
 
+
+
+// Call the `encrypt` function to create an encrypted private key and pass the `generatorPrivateKey` of your account to it.
+// The `generatorPrivateKey` is a validator's private key and can be found in the *dev-validator.json* file of the client.
+// +
+// The user should also enter a password which will be used to decrypt the encrypted key.
+// The `encryptedPrivateKey` will be used for signing and sending CCU transactions.

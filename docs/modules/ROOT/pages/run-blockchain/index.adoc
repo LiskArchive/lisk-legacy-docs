@@ -41,11 +41,19 @@ Muhammad Talha <muhammad.talha@lightcurve.io>
 // :url_account: run-blockchain/account-management.adoc
 // TODO: Check - The account-management page does not seem to be updated yet in the run-blockchain nav bar. In addition, it appears that the account-management page needs to be updated. Uncomment this hyperlink once the Account page is updated.
 
+:url_communication: understand-blockchain/sdk/rpc.adoc#enabling-ipc-websocket-and-http-apis
+:url_relayer_guide: run-blockchain/setup-relayer.adoc
 //  URLs
 :url_github_lisk_service: https://github.com/LiskHQ/lisk-service
 :url_wiki_ipc: https://en.wikipedia.org/wiki/Inter-process_communication
 :url_websocket: https://en.wikipedia.org/wiki/WebSocket
 :url_wiki_http_protocol: https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol
+:url_lip45: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0045.md
+:url_lip53: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0053.md
+
+
+:fn_lips: footnote:witness[For more information about interoperability and the cross-chain update mechanism, check out {url_lip45}[LIP 0045^] and {url_lip53}[LIP 0053^].]
+
 
 // :url_p2p: https://lisk.com/documentation/lisk-docs/lisk-sdk/v6/references/typedoc/modules/_liskhq_lisk_p2p.html
 // TODO: The older P2P link above was pointing to SDKv5, and it is now updated and commented out at the moment, as it is linked to a later version of Typedocs for Lisk elements/P2P. So once the beta version is rolled out we can uncomment this link above.
@@ -60,12 +68,18 @@ Nodes are usually connected to other nodes running the same client via P2P.
 Together, they form the network that is maintaining the blockchain.
 
 Depending on the node configuration, a node can have different roles in the network.
-The two most important roles are <<RPC enabled nodes>> and <<Validator nodes>>, as illustrated in the diagram below:
+In the Lisk ecosystem, a node can be any one of the following four types.
 
-.Various node types of a blockchain network
+. <<RPC nodes>>
+. <<Validator nodes>>
+. <<Relayer nodes>>
+. <<Lisk Service nodes>>
+
+
+.Various node types deployed in blockchain networks
 image::run-blockchain/node-service-network.png[Node network, 800]
 
-=== RPC enabled nodes
+=== RPC nodes
 
 // === Protecting non-validator nodes
 
@@ -73,10 +87,9 @@ image::run-blockchain/node-service-network.png[Node network, 800]
 
 // For more information, see the guide xref:{url_run_protection}[].
 
-
 If the RPC API of a node is enabled, it allows external services to send queries to the node and/or to subscribe to specific events that are happening in the network.
-For example, these external services could be other scripts in JS, a Python daemon, or a tool in Rust.
-Depending on the node configuration, an RPC-enabled node can accept different communication protocols such as {url_wiki_http_protocol}[Hypertext Transfer Protocol (HTTP)^], {url_websocket}[WebSocket (WS)^], and  {url_wiki_ipc}[Inter-Process Communication (IPC)^].
+For example, these *external services* could be other scripts in JS, a Python daemon, a tool in Rust, etc.
+Depending on the node configuration, an xref:{url_communication}[RPC node] can accept different communication protocols such as {url_wiki_http_protocol}[Hypertext Transfer Protocol (HTTP)^], {url_websocket}[WebSocket (WS)^], and {url_wiki_ipc}[Inter-Process Communication (IPC)^].
 
 For more information, see the following:
 
@@ -98,7 +111,7 @@ During a block generation round, every validator node has the opportunity to gen
 Validator nodes fulfill a very important role in the network, and therefore they require certain additional configurations regarding enabling block generation and higher security measures, as compared to regular nodes.
 Furthermore, they are equal to any non-validator node in the network and follow the same installation process.
 
-NOTE: For more information on how to become a validator and enable block generation, check out the following section about <<block-generation>>.
+NOTE: For more information on how to become a validator and enable block generation, check out the following section about <<how-to-setup-a-validator-node, How to set up a Validator node>>.
 
 ////
 === Block Generation in the Testnet
@@ -128,9 +141,26 @@ Therefore, a certain self-investment is required for every validator who wishes 
 
 // For more information, see the guide xref:{url_run_protection_forge}[].
 
+
+=== Relayer nodes
+Nodes from different chains can interact with one another in the Lisk ecosystem, and this interaction is carried out via relayer nodes.
+Any chain such as a mainchain or a sidechain can have relayer node(s).
+Relayer nodes are nodes of a blockchain that are configured to relay Cross-Chain Updates (CCUs) and Cross-Chain Messages (CCMs) to another blockchain{fn_lips}.
+A sidechain always has to communicate with other blockchains via the mainchain.
+
+Consider a sidechain *S1* with 20 nodes, whereby one of these nodes has been configured to act as a relayer node.
+The job of this relayer node is to collect CCUs & CCMs from the other nodes of *S1* and subsequently pass them on to the receiving mainchain.
+If a sidechain *S1* wants to communicate with another sidechain *S2*, it will be required to have a relayer set up on *S1*, *S2*, and on the mainchain.
+The CCUs will then take the route of *S1 -> Mainchain -> S2* and vice versa.
+
+To become a relayer node, Lisk provides an easy-to-use plugin called the Chain Connector.
+The chain connector plugin allows a node to act as a relayer of CCUs and CCMs.
+A relayer node can be configured for both mainchain and sidechains.
+Once configured, a relayer node can directly connect with the RPC nodes of the receiving chains.
+
 === Lisk Service nodes
 
-{url_github_lisk_service}[Lisk Service^] is a data aggregation service that connects to a particular <<rpc-enabled-nodes,RPC enabled node>> and aggregates the blockchain data, to provide enriched API endpoints for other applications and services that rely on data from the blockchain.
+{url_github_lisk_service}[Lisk Service^] is a data aggregation service that connects to a particular <<rpc-nodes,RPC node>> and aggregates the blockchain data, to provide enriched API endpoints for other applications and services that rely on data from the blockchain.
 
 //TODO: Check this, update it so that it will be ready to add in when the NWs are available
 // === How to configure a blockchain node for Lisk Service
@@ -161,7 +191,6 @@ Therefore, a certain self-investment is required for every validator who wishes 
 // * xref:{url_run_logging}[Managing logs]
 // * xref:{url_run_reset}[Resetting and snapshotting the blockchain]
 
-
 == Node management
 
 Related guides::
@@ -180,7 +209,13 @@ To set up Lisk Core, choose a distribution and follow the respective setup guide
 // * *Docker:* xref:{url_core_setup_docker}[]
 * *Source code:* xref:{url_core_setup_source}[]
 
-== Block generation
+=== How to set up a Relayer node
+
+Related guides::
+
+* xref:{url_relayer_guide}[]
+
+=== How to set up a Validator node
 
 Related guides::
 
@@ -189,7 +224,7 @@ Related guides::
 * xref:{url_staking}[]
 
 If you are intending to generate blocks for the first time, it is highly recommended to first check out the dedicated guide: xref:{url_validator}[How to become a validator].
-Furthermore, to acquire a secure validator spot for a block generation round, it is necessary for a validator to be one of the top 103 validators with the most xref:{url_validator_weight}[validator weight] in the network.
+Furthermore, to acquire a secure validator spot for a block generation round, a validator must be one of the top 103 validators with the most xref:{url_validator_weight}[validator weight] in the network.
 To view the currently required thresholds for entering the top 103, check the validator weights of the currently active 103 validators, for example, in one of the public Lisk network explorers:
 
 * *Lisk Observer:* {url_observer}[^]

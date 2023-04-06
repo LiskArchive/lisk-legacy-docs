@@ -823,39 +823,44 @@ export class TokenModule extends BaseInteroperableModule {
 
 A module method can be called from another module.
 
-For example, the method `getAvailableBalance` of the **Token** module is called from the **Interoperability** module at the sidechain registration and command verification step.
+For example, the method `getAvailableBalance` of the **Token** module is called from the **Fee** module in the transaction verification hook.
 This method is called to verify if the sender of a transaction has enough balance to pay the transaction fee.
 
 Methods from other modules are made available to the module by importing them, and adding them as private properties in the `addDependencies()` method, as shown in the code snippet below.
 
-.interoperability/mainchain/commands/sidechain_registration.ts
+.fee/module.ts
 [source,typescript]
 ----
-import { TokenMethod } from '../../../token';
-// ...
+export class FeeModule extends BaseInteroperableModule {
+    // ...
 
-export class SidechainRegistrationCommand extends BaseInteroperabilityCommand {
-	public schema = sidechainRegParams;
-	private _tokenMethod!: TokenMethod;
-
-	public addDependencies(tokenMethod: TokenMethod) {
+    public addDependencies(tokenMethod: TokenMethod, interopMethod: InteroperabilityMethod) {
 		this._tokenMethod = tokenMethod;
+		this.crossChainMethod.addDependencies(interopMethod, tokenMethod);
 	}
-    public async verify(
-		context: CommandVerifyContext<SidechainRegistrationParams>,
-	): Promise<VerificationResult> {
-        // ...
-        // Sender must have enough balance to pay for extra command fee.
-		const availableBalance = await this._tokenMethod.getAvailableBalance(
-			context.getMethodContext(),
-			senderAddress,
-			TOKEN_ID_LSK,
-		);
-		if (availableBalance < REGISTRATION_FEE) {
-            // ...
+    // ...
+
+    public async verifyTransaction(context: TransactionVerifyContext): Promise<VerificationResult> {
+		const { getMethodContext, transaction, header } = context;
+
+		const minFee = this._getMinFee(header.height, transaction.getBytes().length);
+		if (transaction.fee < minFee) {
+			throw new Error(`Insufficient transaction fee. Minimum required fee is ${minFee}.`);
 		}
-        // ...
+
+		const balance = await this._tokenMethod.getAvailableBalance(
+			getMethodContext(),
+			transaction.senderAddress,
+			this._tokenID,
+		);
+		if (transaction.fee > balance) {
+			throw new Error(`Insufficient balance.`);
+		}
+
+		return { status: VerifyStatus.OK };
 	}
+
+    // ...
 }
 ----
 

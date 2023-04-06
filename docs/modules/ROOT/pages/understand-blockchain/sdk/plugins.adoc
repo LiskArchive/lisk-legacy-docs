@@ -143,16 +143,132 @@ Every plugin must extend from the `BasePlugin` class.
 The `BasePlugin` class provides a basic skeleton for what is required of a plugin.
 For more information, check out the {url_github_base_plugin}[*base_plugin.ts*^] file on GitHub.
 
-Every plugin has three essential parts, such as:
+Every plugin has three essential parts:
 
-* Data
-* Interface
-* Execution Logic
+. <<execution-logic>>
+. <<interface>>
+. <<other-properties>>
 
 .Anatomy of an "ExamplePlugin" class based on the "BasePlugin" class
 image::intro/plugin-diagram.png[plugin-diagram, 1000 ,align="center"]
 
-=== Data
+=== Execution Logic
+The execution logic consists of functions that execute the business logic for a plugin.
+By default, a bootstrapped plugin has the `load()` and `unload` functions.
+More can be added if needed and all the functions have access to the methods and properties defined in the `BasePlugin` class.
+The aforementioned can be accessed using `this.variable` or `this.function()` from within the plugin class.
+
+==== load()
+
+The `load()` method will be invoked by the controller to load the plugin.
+It contains the plugin logic that is executed when the plugin is loaded in the blockchain client.
+
+It can be used to retrieve, mutate, store and/or publish data in a specific manner, depending on the purpose of the plugin.
+
+.Example: load() function of the "faucet" plugin
+[source,typescript]
+----
+public async load(): Promise<void> {
+    const app = express();
+    app.get('/api/config', (_req, res) => {
+        const config = {
+            applicationUrl: this.config.applicationUrl,
+            amount: this.config.amount,
+            tokenPrefix: this.config.tokenPrefix,
+            captchaSitekey: this.config.captchaSitekey,
+            logoURL: this.config.logoURL,
+            faucetAddress: this._state.publicKey
+                ? cryptography.address.getLisk32AddressFromPublicKey(this._state.publicKey)
+                : undefined,
+        };
+        res.json(config);
+    });
+    app.use(express.static(join(__dirname, '../../build')));
+    this._server = app.listen(this.config.port, this.config.host);
+}
+----
+
+==== unload()
+
+The `unload()` method will be invoked by the controller to unload the plugin correctly.
+It is executed on node shutdown.
+
+.Example: unload() function of the "faucet" plugin
+[source,typescript]
+----
+public async unload(): Promise<void> {
+    return new Promise((resolve, reject) => {
+        this._server.close(err => {
+            if (err) {
+                reject(err);
+                return;
+            }
+            resolve();
+        });
+    });
+}
+----
+
+=== Interface
+
+Plugins can...
+
+. ...expose <<endpoints>>, which allows other plugins and external tools to interact with the plugin.
+. ...invoke endpoints of other modules and plugins as well.
+. ...subscribe to <<events>> emitted by the blockchain.
+
+TIP: View the "Interfaces" section of the xref:{url_advanced_communication_interfaces}[Communication] page to see an overview of the different interfaces and their accessibility in modules, plugins, and external services.
+
+==== Endpoints
+
+Endpoints are functions that can be xref:{url_advanced_communication_invoke_endpoints}[invoked] via Remote-Procedure-Calls (RPC) by other plugins and external services, to request data from a plugin.
+
+The endpoints of a plugin should be defined in the `Endpoint` class.
+The `Endpoint` class usually resides in the *endpoint.ts* file inside each plugin's directory and it inherits from the `BasePluginEndpoint` class.
+For more information, check out the {url_github_base_endpoint}[*base_plugin_endpoint.ts*^] file on GitHub.
+A {url_github_faucet_endpoints}[sample endpoint class] and one of its endpoints are available in the following code snippet below:
+
+.Example: plugins/faucet/endpoint.ts
+[source,typescript]
+----
+
+export class Endpoint extends BasePluginEndpoint {
+
+    // ...
+
+    public async authorize(context: PluginEndpointContext): Promise<{ result: string }> {
+		validator.validate(authorizeParamsSchema, context.params);
+		const { enable, password } = context.params;
+		try {
+			const parsedEncryptedPassphrase = cryptography.encrypt.parseEncryptedMessage(
+				this._config.encryptedPassphrase,
+			);
+			const passphrase = await cryptography.encrypt.decryptMessageWithPassword(
+				parsedEncryptedPassphrase,
+				password as string,
+				'utf-8',
+			);
+			const { publicKey } = cryptography.legacy.getPrivateAndPublicKeyFromPassphrase(passphrase);
+			this._state.publicKey = enable ? publicKey : undefined;
+			this._state.passphrase = enable ? passphrase : undefined;
+			const changedState = enable ? 'enabled' : 'disabled';
+			return {
+				result: `Successfully ${changedState} the faucet.`,
+			};
+		} catch (error) {
+			throw new Error('Password given is not valid.');
+		}
+	}
+
+    // ...
+}
+----
+
+==== Events
+A plugin can subscribe to RPC events emitted by the blockchain.
+To subscribe to an event see, xref:{url_subscribe_events}[How to subscribe to events].
+
+=== Other properties
 
 ==== nodeModulePath()
 Whenever a plugin is bootstrapped with the Lisk Commander, a `nodeModulePath()` function is created automatically.
@@ -213,9 +329,9 @@ export class FaucetPlugin extends BasePlugin<FaucetPluginConfig> { //Config Type
 Each custom configuration's schema and type of values must be defined for each plugin and should be passed to the plugin class.
 
 ==== Plugin schemas
-A Schema of a plugin contains the structural information of the data accepted by a plugin. 
-A schema can be for a custom configuration or for a specific kind of data that must be passed to a plugin to accommodate the business logic. 
-Schemas are passed to the plugin class and are later verified by the Lisk framework. 
+A Schema of a plugin contains the structural information of the data accepted by a plugin.
+A schema can be for a custom configuration or for a specific kind of data that must be passed to a plugin to accommodate the business logic.
+Schemas are passed to the plugin class and are later verified by the Lisk framework.
 Usually, schemas are present inside the *schemas.ts* file located inside a plugin's folder.
 The contents of the schemas.ts file are described below:
 
@@ -323,121 +439,5 @@ export interface FaucetPluginConfig {
 export interface State {
 	publicKey?: Buffer;
 	passphrase?: string;
-}
-----
-
-=== Interface
-
-Plugins can...
-
-. ...expose <<endpoints>>, which allows other plugins and external tools to interact with the plugin.
-. ...invoke endpoints of other modules and plugins as well.
-. ...subscribe to <<events>> emitted by the blockchain.
-
-TIP: View the "Interfaces" section of the xref:{url_advanced_communication_interfaces}[Communication] page to see an overview of the different interfaces and their accessibility in modules, plugins, and external services.
-
-==== Endpoints
-
-Endpoints are functions that can be xref:{url_advanced_communication_invoke_endpoints}[invoked] via Remote-Procedure-Calls (RPC) by other plugins and external services, to request data from a plugin.
-
-The endpoints of a plugin should be defined in the `Endpoint` class. 
-The `Endpoint` class usually resides in the *endpoint.ts* file inside each plugin's directory and it inherits from the `BasePluginEndpoint` class. 
-For more information, check out the {url_github_base_endpoint}[*base_plugin_endpoint.ts*^] file on GitHub. 
-A {url_github_faucet_endpoints}[sample endpoint class] and one of its endpoints are available in the following code snippet below:
-
-.Example: plugins/faucet/endpoint.ts
-[source,typescript]
-----
-
-export class Endpoint extends BasePluginEndpoint {
-    
-    // ...
-
-    public async authorize(context: PluginEndpointContext): Promise<{ result: string }> {
-		validator.validate(authorizeParamsSchema, context.params);
-		const { enable, password } = context.params;
-		try {
-			const parsedEncryptedPassphrase = cryptography.encrypt.parseEncryptedMessage(
-				this._config.encryptedPassphrase,
-			);
-			const passphrase = await cryptography.encrypt.decryptMessageWithPassword(
-				parsedEncryptedPassphrase,
-				password as string,
-				'utf-8',
-			);
-			const { publicKey } = cryptography.legacy.getPrivateAndPublicKeyFromPassphrase(passphrase);
-			this._state.publicKey = enable ? publicKey : undefined;
-			this._state.passphrase = enable ? passphrase : undefined;
-			const changedState = enable ? 'enabled' : 'disabled';
-			return {
-				result: `Successfully ${changedState} the faucet.`,
-			};
-		} catch (error) {
-			throw new Error('Password given is not valid.');
-		}
-	}
-
-    // ...
-}
-----
-
-==== Events
-A plugin can subscribe to RPC events emitted by the blockchain. 
-To subscribe to an event see, xref:{url_subscribe_events}[How to subscribe to events].
-
-=== Execution Logic
-The execution logic consists of functions that execute the business logic for a plugin.
-By default, a bootstrapped plugin has the `load()` and `unload` functions.
-More can be added if needed and all the functions have access to the methods and properties defined in the `BasePlugin` class.
-The aforementioned can be accessed using `this.variable` or `this.function()` from within the plugin class.
-
-==== load()
-
-The `load()` method will be invoked by the controller to load the plugin.
-It contains the plugin logic that is executed when the plugin is loaded in the blockchain client.
-
-It can be used to retrieve, mutate, store and/or publish data in a specific manner, depending on the purpose of the plugin.
-
-.Example: load() function of the "faucet" plugin
-[source,typescript]
-----
-public async load(): Promise<void> {
-    const app = express();
-    app.get('/api/config', (_req, res) => {
-        const config = {
-            applicationUrl: this.config.applicationUrl,
-            amount: this.config.amount,
-            tokenPrefix: this.config.tokenPrefix,
-            captchaSitekey: this.config.captchaSitekey,
-            logoURL: this.config.logoURL,
-            faucetAddress: this._state.publicKey
-                ? cryptography.address.getLisk32AddressFromPublicKey(this._state.publicKey)
-                : undefined,
-        };
-        res.json(config);
-    });
-    app.use(express.static(join(__dirname, '../../build')));
-    this._server = app.listen(this.config.port, this.config.host);
-}
-----
-
-==== unload()
-
-The `unload()` method will be invoked by the controller to unload the plugin correctly.
-It is executed on node shutdown.
-
-.Example: unload() function of the "faucet" plugin
-[source,typescript]
-----
-public async unload(): Promise<void> {
-    return new Promise((resolve, reject) => {
-        this._server.close(err => {
-            if (err) {
-                reject(err);
-                return;
-            }
-            resolve();
-        });
-    });
 }
 ----

@@ -1,7 +1,7 @@
 = Network
 Mona Bärenfänger <mona@lightcurve.io>
 //Settings
-:toc:
+:toc: preamble
 :idprefix:
 :idseparator: -
 // URLs
@@ -10,30 +10,42 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_wikipedia_websocket: https://en.wikipedia.org/wiki/WebSocket
 :url_socketcluster: https://socketcluster.io/#!/
 //Project URLs
+:url_tx_pool: understand-blockchain/index.adoc#transaction-pool
 :url_blocks: understand-blockchain/blocks-txs.adoc
 :url_transactions_id: {url_blocks}#transactions
 
-== Lisk P2P architecture
+Connections in the {url_github_lip_4}[*Lisk P2P protocol*^] are established as _WebSockets_ (see {url_wikipedia_websocket}[Wikipedia page]) using the {url_socketcluster}[_SocketCluster_] framework.
 
-Lisk nodes connect to each other in a random manner, thereby forming an *unstructured P2P network* where information is exchanged using a gossip-based protocol.
-In this way nodes can synchronize their local copies of the blockchain, by broadcasting blocks and new transactions to be stored in the transaction pool.
+The Lisk P2P network protocol has the following characteristics:
 
-Connections in the {url_github_lip_4}[*Lisk P2P protocol*] are established as _websockets_ (see {url_wikipedia_websocket}[Wikipedia page]) using the {url_socketcluster}[_SocketCluster_] framework.
+== Unstructured P2P network
 
-//image::protocol/p2p.svg[LiskP2P2,262,320]
+image:understand-blockchain/unstructured.jpeg[,400,role=right]
+
+Every node in the network only connects to a subset of other nodes in the network.
+
+Lisk nodes connect to each other in a random manner, thereby forming an *unstructured P2P network*.
+
+Unstructured P2P networks scale quite well, which makes the P2P layer ready to handle a large number of peers.
+At the same time, they are more robust than structured networks, and provide a higher security against network attacks.
+//while maintaining a robust gossip-based protocol.
+
+== Eager and Lazy Push mechanism
+
+.P2P connections of a node
+image:understand-blockchain/p2p-network.jpeg["Node Connections",400,role=right]
+
+Lisk uses a hybrid of eager and lazy push mechanism:
+A node uses eager push for a small number of the connected peers and lazy push for the majority of the connected peers.
+This means that a complete block is sent to a small number of connected peers and the block hash to all other connected peers.
 
 Each node retains a list of known peers and their IP addresses and initializes up to 20 outgoing connections to randomly selected peers, while accepting up to 100 incoming connections.
 
-.P2P connections of a node
-image::understand-blockchain/p2p-network.jpeg["Node Connections"]
+NOTE: Both, incoming and outgoing connections are bidirectional, meaning, information can be exchanged in both ways.
+Incoming and outgoing only refers to the node who started the connection first: "Outgoing" means, the node started the connection, "Incoming" means, a peer node started the connection.
 
 When an outgoing connection is dropped, the node starts a new connection with another peer.
 Furthermore, to keep the network dynamic, approximately every 5 minutes one outgoing connection is dropped and replaced with a new one.
-
-The _Lisk RPC and Events_ layer lies on top of SocketCluster.
-This layer manages interactions between nodes using Remote Procedural Calls (see {url_wikipedia_rpc}[Wikipedia page]).
-
-Finally, the _Lisk application_ layer provides a high level interface to interact with the blockchain.
 
 == Block propagation
 //TODO: add link once consensus explanations are created
@@ -45,17 +57,19 @@ If it is valid and it has not been forwarded before, the full block is sent to 1
 
 Furthermore, nodes announce that a new block has been received by sending part of the block header to the rest of the connected peers, which can request the full block in case it has not been received yet.
 
+image::understand-blockchain/block-propagation.png[]
+
 == Transaction propagation
 
 Transactions are propagated through the network in a similar manner to blocks.
 
 Every 5 seconds, a bundle of 100 xref:{url_transactions_id}[transactions] are selected from the transaction pool and sent to all connected peers.
 
-The peers then check if they already have the corresponding transactions and can request any that are missing from the node and include them in their <<transaction-pool>>.
+The peers then check if they already have the corresponding transactions and can request any that are missing from the node and include them in their transaction pool.
 
 == Transaction pool
 
-The transaction pool collects transactions that are waiting to be included in a block.
+The xref:{url_tx_pool}[transaction pool] collects transactions that are waiting to be included in a block.
 
 While generating a new block, the validator selects a set of transactions from the pool and includes them in the xref:{url_blocks}[block].
 

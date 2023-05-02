@@ -439,44 +439,75 @@
 </aside>
 <article class="doc">
 <h1 class="page">Network</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Connections in the <a href="https://github.com/LiskHQ/lips/blob/master/proposals/lip-0004.md" target="_blank" rel="noopener"><strong>Lisk P2P protocol</strong></a> are established as <em>WebSockets</em> (see <a href="https://en.wikipedia.org/wiki/WebSocket">Wikipedia page</a>) using the <a href="https://socketcluster.io/#!/"><em>SocketCluster</em></a> framework.</p>
+</div>
+<div class="paragraph">
+<p>The Lisk P2P network protocol has the following characteristics:</p>
+</div>
+</div>
 <div id="toc" class="toc">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#lisk-p2p-architecture">Lisk P2P architecture</a></li>
+<li><a href="#unstructured-p2p-network">Unstructured P2P network</a></li>
+<li><a href="#eager-and-lazy-push-mechanism">Eager and Lazy Push mechanism</a></li>
 <li><a href="#block-propagation">Block propagation</a></li>
 <li><a href="#transaction-propagation">Transaction propagation</a></li>
 <li><a href="#transaction-pool">Transaction pool</a></li>
 </ul>
 </div>
+</div>
 <div class="sect1">
-<h2 id="lisk-p2p-architecture"><a class="anchor" href="#lisk-p2p-architecture"></a>Lisk P2P architecture</h2>
+<h2 id="unstructured-p2p-network"><a class="anchor" href="#unstructured-p2p-network"></a>Unstructured P2P network</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Lisk nodes connect to each other in a random manner, thereby forming an <strong>unstructured P2P network</strong> where information is exchanged using a gossip-based protocol.
-In this way nodes can synchronize their local copies of the blockchain, by broadcasting blocks and new transactions to be stored in the transaction pool.</p>
+<p><span class="image right"><img src="../_images/understand-blockchain/unstructured.jpeg" alt="unstructured" width="400"></span></p>
 </div>
 <div class="paragraph">
-<p>Connections in the <a href="https://github.com/LiskHQ/lips/blob/master/proposals/lip-0004.md"><strong>Lisk P2P protocol</strong></a> are established as <em>websockets</em> (see <a href="https://en.wikipedia.org/wiki/WebSocket">Wikipedia page</a>) using the <a href="https://socketcluster.io/#!/"><em>SocketCluster</em></a> framework.</p>
+<p>Every node in the network only connects to a subset of other nodes in the network.</p>
+</div>
+<div class="paragraph">
+<p>Lisk nodes connect to each other in a random manner, thereby forming an <strong>unstructured P2P network</strong>.</p>
+</div>
+<div class="paragraph">
+<p>Unstructured P2P networks scale quite well, which makes the P2P layer ready to handle a large number of peers.
+At the same time, they are more robust than structured networks, and provide a higher security against network attacks.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="eager-and-lazy-push-mechanism"><a class="anchor" href="#eager-and-lazy-push-mechanism"></a>Eager and Lazy Push mechanism</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<div class="title">P2P connections of a node</div>
+<p><span class="image right"><img src="../_images/understand-blockchain/p2p-network.jpeg" alt="Node Connections" width="400"></span></p>
+</div>
+<div class="paragraph">
+<p>Lisk uses a hybrid of eager and lazy push mechanism:
+A node uses eager push for a small number of the connected peers and lazy push for the majority of the connected peers.
+This means that a complete block is sent to a small number of connected peers and the block hash to all other connected peers.</p>
 </div>
 <div class="paragraph">
 <p>Each node retains a list of known peers and their IP addresses and initializes up to 20 outgoing connections to randomly selected peers, while accepting up to 100 incoming connections.</p>
 </div>
-<div class="imageblock">
-<div class="content">
-<img src="../_images/understand-blockchain/p2p-network.jpeg" alt="Node Connections">
-</div>
-<div class="title">Figure 1. P2P connections of a node</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Both, incoming and outgoing connections are bidirectional, meaning, information can be exchanged in both ways.
+Incoming and outgoing only refers to the node who started the connection first: "Outgoing" means, the node started the connection, "Incoming" means, a peer node started the connection.
+</td>
+</tr>
+</table>
 </div>
 <div class="paragraph">
 <p>When an outgoing connection is dropped, the node starts a new connection with another peer.
 Furthermore, to keep the network dynamic, approximately every 5 minutes one outgoing connection is dropped and replaced with a new one.</p>
-</div>
-<div class="paragraph">
-<p>The <em>Lisk RPC and Events</em> layer lies on top of SocketCluster.
-This layer manages interactions between nodes using Remote Procedural Calls (see <a href="https://en.wikipedia.org/wiki/Remote_procedure_call">Wikipedia page</a>).</p>
-</div>
-<div class="paragraph">
-<p>Finally, the <em>Lisk application</em> layer provides a high level interface to interact with the blockchain.</p>
 </div>
 </div>
 </div>
@@ -493,6 +524,11 @@ If it is valid and it has not been forwarded before, the full block is sent to 1
 <div class="paragraph">
 <p>Furthermore, nodes announce that a new block has been received by sending part of the block header to the rest of the connected peers, which can request the full block in case it has not been received yet.</p>
 </div>
+<div class="imageblock">
+<div class="content">
+<img src="../_images/understand-blockchain/block-propagation.png" alt="block propagation">
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -505,7 +541,7 @@ If it is valid and it has not been forwarded before, the full block is sent to 1
 <p>Every 5 seconds, a bundle of 100 <a href="blocks-txs.html#transactions" class="xref page">transactions</a> are selected from the transaction pool and sent to all connected peers.</p>
 </div>
 <div class="paragraph">
-<p>The peers then check if they already have the corresponding transactions and can request any that are missing from the node and include them in their <a href="#transaction-pool">Transaction pool</a>.</p>
+<p>The peers then check if they already have the corresponding transactions and can request any that are missing from the node and include them in their transaction pool.</p>
 </div>
 </div>
 </div>
@@ -513,7 +549,7 @@ If it is valid and it has not been forwarded before, the full block is sent to 1
 <h2 id="transaction-pool"><a class="anchor" href="#transaction-pool"></a>Transaction pool</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The transaction pool collects transactions that are waiting to be included in a block.</p>
+<p>The <a href="index.html#transaction-pool" class="xref page">transaction pool</a> collects transactions that are waiting to be included in a block.</p>
 </div>
 <div class="paragraph">
 <p>While generating a new block, the validator selects a set of transactions from the pool and includes them in the <a href="blocks-txs.html" class="xref page">block</a>.</p>

@@ -41,11 +41,22 @@ This means that a complete block is sent to a small number of connected peers an
 
 Each node retains a list of known peers and their IP addresses and initializes up to 20 outgoing connections to randomly selected peers, while accepting up to 100 incoming connections.
 
-NOTE: Both, incoming and outgoing connections are bidirectional, meaning, information can be exchanged in both ways.
-Incoming and outgoing only refers to the node who started the connection first: "Outgoing" means, the node started the connection, "Incoming" means, a peer node started the connection.
-
 When an outgoing connection is dropped, the node starts a new connection with another peer.
 Furthermore, to keep the network dynamic, approximately every 5 minutes one outgoing connection is dropped and replaced with a new one.
+
+NOTE: Both, incoming and outgoing connections are *bidirectional*, meaning, information can be exchanged in both ways.
+Incoming and outgoing only refers to the node who initiated the connection first: "Outgoing" means, the node initiated the connection, "Incoming" means, a peer node initiated the connection.
+
+== Peer discovery
+
+. Every node first connects to the seed node, defined in the nodes config.
+. Every peer makes 20 outgoing connections to randomly chosen peers from its list of known peers.
+. If an outgoing connection is closed by the other peer, a different peer is randomly selected as a replacement.
+. Every peer accepts up to 100 incoming connections from other peers, which are distinct from the outgoing peers.
+. Periodic shuffling: Shuffles the peer list of nodes randomly in a certain period.
+Every time an outgoing connection is terminated, a new outgoing connection is established.
+This makes the network more dynamic and prevents against network attacks.
+
 
 == Block propagation
 //TODO: add link once consensus explanations are created
@@ -53,21 +64,26 @@ Furthermore, to keep the network dynamic, approximately every 5 minutes one outg
 Nodes propagate newly received blocks in order to keep the network synchronized and to achieve *consensus*.
 
 When a new block is received, it is first validated.
-If it is valid and it has not been forwarded before, the full block is sent to 16 randomly chosen peers.
+If it is valid and has not been received it is forwarded.
+The block is forwarded to 16 randomly chosen connected peers of which at least 8 blocks are forwarded via outgoing connections.
+
+image::understand-blockchain/block-propagation.png[]
 
 Furthermore, nodes announce that a new block has been received by sending part of the block header to the rest of the connected peers, which can request the full block in case it has not been received yet.
 
-image::understand-blockchain/block-propagation.png[]
+The peers are notified about the block after the block and its related state changes were executed successfully on the node.
+
+image:understand-blockchain/block-processing.png[]
 
 == Transaction propagation
 
 Transactions are propagated through the network in a similar manner to blocks.
 
-Every 5 seconds, a bundle of 100 xref:{url_transactions_id}[transactions] are selected from the transaction pool and sent to all connected peers.
+Every 5 seconds, up to 25 xref:{url_transactions_id}[transactions] are selected from the transaction pool and sent to all connected peers.
 
 The peers then check if they already have the corresponding transactions and can request any that are missing from the node and include them in their transaction pool.
 
-== Transaction pool
+=== Transaction pool
 
 The xref:{url_tx_pool}[transaction pool] collects transactions that are waiting to be included in a block.
 

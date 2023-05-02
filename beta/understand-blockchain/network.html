@@ -444,17 +444,17 @@
 <div class="paragraph">
 <p>Connections in the <a href="https://github.com/LiskHQ/lips/blob/master/proposals/lip-0004.md" target="_blank" rel="noopener"><strong>Lisk P2P protocol</strong></a> are established as <em>WebSockets</em> (see <a href="https://en.wikipedia.org/wiki/WebSocket">Wikipedia page</a>) using the <a href="https://socketcluster.io/#!/"><em>SocketCluster</em></a> framework.</p>
 </div>
-<div class="paragraph">
-<p>The Lisk P2P network protocol has the following characteristics:</p>
-</div>
 </div>
 <div id="toc" class="toc">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
 <li><a href="#unstructured-p2p-network">Unstructured P2P network</a></li>
-<li><a href="#eager-and-lazy-push-mechanism">Eager and Lazy Push mechanism</a></li>
 <li><a href="#peer-discovery">Peer discovery</a></li>
-<li><a href="#block-propagation">Block propagation</a></li>
+<li><a href="#block-propagation">Block propagation</a>
+<ul class="sectlevel2">
+<li><a href="#eager-and-lazy-push-mechanism">Eager and Lazy Push mechanism</a></li>
+</ul>
+</li>
 <li><a href="#transaction-propagation">Transaction propagation</a>
 <ul class="sectlevel2">
 <li><a href="#transaction-pool">Transaction pool</a></li>
@@ -482,46 +482,28 @@ At the same time, they are more robust than structured networks, and provide a h
 </div>
 </div>
 <div class="sect1">
-<h2 id="eager-and-lazy-push-mechanism"><a class="anchor" href="#eager-and-lazy-push-mechanism"></a>Eager and Lazy Push mechanism</h2>
+<h2 id="peer-discovery"><a class="anchor" href="#peer-discovery"></a>Peer discovery</h2>
 <div class="sectionbody">
-<div class="paragraph">
-<div class="title">P2P connections of a node</div>
-<p><span class="image right"><img src="../_images/understand-blockchain/p2p-network.jpeg" alt="Node Connections" width="400"></span></p>
-</div>
-<div class="paragraph">
-<p>Lisk uses a hybrid of eager and lazy push mechanism:
-A node uses eager push for a small number of the connected peers and lazy push for the majority of the connected peers.
-This means that a complete block is sent to a small number of connected peers and the block hash to all other connected peers.</p>
-</div>
-<div class="paragraph">
-<p>Each node retains a list of known peers and their IP addresses and initializes up to 20 outgoing connections to randomly selected peers, while accepting up to 100 incoming connections.</p>
-</div>
-<div class="paragraph">
-<p>When an outgoing connection is dropped, the node starts a new connection with another peer.
-Furthermore, to keep the network dynamic, approximately every 5 minutes one outgoing connection is dropped and replaced with a new one.</p>
-</div>
-<div class="admonitionblock note">
+<div class="admonitionblock tip">
 <table>
 <tr>
 <td class="icon">
-<i class="fa icon-note" title="Note"></i>
+<i class="fa icon-tip" title="Tip"></i>
 </td>
 <td class="content">
-Both, incoming and outgoing connections are <strong>bidirectional</strong>, meaning, information can be exchanged in both ways.
-Incoming and outgoing only refers to the node who initiated the connection first: "Outgoing" means, the node initiated the connection, "Incoming" means, a peer node initiated the connection.
+By default, a node connects randomly to peer nodes that it discovers in the network.
+But it is also possible to whitelist or blacklist specific peers in the node config.
 </td>
 </tr>
 </table>
 </div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="peer-discovery"><a class="anchor" href="#peer-discovery"></a>Peer discovery</h2>
-<div class="sectionbody">
 <div class="olist arabic">
 <ol class="arabic">
 <li>
 <p>Every node first connects to the seed node, defined in the nodes config.</p>
+</li>
+<li>
+<p>To discover new peers, a node looks at the peer list of its connected peer nodes.</p>
 </li>
 <li>
 <p>Every peer makes 20 outgoing connections to randomly chosen peers from its list of known peers.</p>
@@ -533,7 +515,7 @@ Incoming and outgoing only refers to the node who initiated the connection first
 <p>Every peer accepts up to 100 incoming connections from other peers, which are distinct from the outgoing peers.</p>
 </li>
 <li>
-<p>Periodic shuffling: Shuffles the peer list of nodes randomly in a certain period.
+<p>Periodic shuffling: Shuffles the peer list of nodes randomly every 5 minutes.
 Every time an outgoing connection is terminated, a new outgoing connection is established.
 This makes the network more dynamic and prevents against network attacks.</p>
 </li>
@@ -551,15 +533,62 @@ This makes the network more dynamic and prevents against network attacks.</p>
 <p><span class="image right"><img src="../_images/understand-blockchain/block-processing.png" alt="block processing" width="300"></span></p>
 </div>
 <div class="paragraph">
-<p>When a new block is received, it is first validated.
-If it is valid and has not been received it is forwarded.
-The block is forwarded to 16 randomly chosen connected peers of which at least 8 blocks are forwarded via outgoing connections.</p>
+<p>When a new block is received, it is first validated.</p>
 </div>
-<div class="paragraph">
-<p>Furthermore, nodes announce that a new block has been received by sending part of the block header to the rest of the connected peers, which can request the full block in case it has not been received yet.</p>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">After block validation</dt>
+<dd>
+<p>If it is valid and has not been received, the complete block is forwarded (<a href="#eager-and-lazy-push-mechanism">eager-push</a>).
+The block is forwarded to 16 randomly chosen connected peers of which at least 8 blocks are forwarded via outgoing connections.</p>
+</dd>
+<dt class="hdlist1">After block execution</dt>
+<dd>
+<p>Furthermore, nodes announce that a new block has been received by sending the block hash to the rest of the connected peers, which can request the full block in case it has not been received yet (<a href="#eager-and-lazy-push-mechanism">lazy-push</a>).</p>
+</dd>
+</dl>
 </div>
 <div class="paragraph">
 <p>The peers are notified about the block after the block and its related state changes were executed successfully on the node.</p>
+</div>
+<div class="sect2">
+<h3 id="eager-and-lazy-push-mechanism"><a class="anchor" href="#eager-and-lazy-push-mechanism"></a>Eager and Lazy Push mechanism</h3>
+<div class="paragraph">
+<p><span class="image right"><img src="../_images/understand-blockchain/p2p-network.jpeg" alt="Node Connections" width="400"></span></p>
+</div>
+<div class="paragraph">
+<p>Lisk uses a hybrid of eager and lazy push mechanism for blocks:
+A node uses eager push for a small number of the connected peers and lazy push for the majority of the connected peers.
+This means that a complete block is sent to a small number of connected peers and the block hash to all other connected peers.</p>
+</div>
+<div class="paragraph">
+<p>Each node retains a list of known peers and their IP addresses and initializes up to 20 outgoing connections to randomly selected peers, while accepting up to 100 incoming connections.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Both, incoming and outgoing connections are <strong>bidirectional</strong>, meaning, information can be exchanged in both ways.
+Incoming and outgoing only refers to the node who initiated the connection first:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>"Outgoing" means, the node initiated the connection,</p>
+</li>
+<li>
+<p>"Incoming" means, a peer node initiated the connection.</p>
+</li>
+</ul>
+</div>
+</td>
+</tr>
+</table>
+</div>
 </div>
 </div>
 </div>

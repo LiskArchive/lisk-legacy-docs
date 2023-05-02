@@ -453,9 +453,13 @@
 <ul class="sectlevel1">
 <li><a href="#unstructured-p2p-network">Unstructured P2P network</a></li>
 <li><a href="#eager-and-lazy-push-mechanism">Eager and Lazy Push mechanism</a></li>
+<li><a href="#peer-discovery">Peer discovery</a></li>
 <li><a href="#block-propagation">Block propagation</a></li>
-<li><a href="#transaction-propagation">Transaction propagation</a></li>
+<li><a href="#transaction-propagation">Transaction propagation</a>
+<ul class="sectlevel2">
 <li><a href="#transaction-pool">Transaction pool</a></li>
+</ul>
+</li>
 </ul>
 </div>
 </div>
@@ -492,6 +496,10 @@ This means that a complete block is sent to a small number of connected peers an
 <div class="paragraph">
 <p>Each node retains a list of known peers and their IP addresses and initializes up to 20 outgoing connections to randomly selected peers, while accepting up to 100 incoming connections.</p>
 </div>
+<div class="paragraph">
+<p>When an outgoing connection is dropped, the node starts a new connection with another peer.
+Furthermore, to keep the network dynamic, approximately every 5 minutes one outgoing connection is dropped and replaced with a new one.</p>
+</div>
 <div class="admonitionblock note">
 <table>
 <tr>
@@ -499,15 +507,37 @@ This means that a complete block is sent to a small number of connected peers an
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-Both, incoming and outgoing connections are bidirectional, meaning, information can be exchanged in both ways.
-Incoming and outgoing only refers to the node who started the connection first: "Outgoing" means, the node started the connection, "Incoming" means, a peer node started the connection.
+Both, incoming and outgoing connections are <strong>bidirectional</strong>, meaning, information can be exchanged in both ways.
+Incoming and outgoing only refers to the node who initiated the connection first: "Outgoing" means, the node initiated the connection, "Incoming" means, a peer node initiated the connection.
 </td>
 </tr>
 </table>
 </div>
-<div class="paragraph">
-<p>When an outgoing connection is dropped, the node starts a new connection with another peer.
-Furthermore, to keep the network dynamic, approximately every 5 minutes one outgoing connection is dropped and replaced with a new one.</p>
+</div>
+</div>
+<div class="sect1">
+<h2 id="peer-discovery"><a class="anchor" href="#peer-discovery"></a>Peer discovery</h2>
+<div class="sectionbody">
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Every node first connects to the seed node, defined in the nodes config.</p>
+</li>
+<li>
+<p>Every peer makes 20 outgoing connections to randomly chosen peers from its list of known peers.</p>
+</li>
+<li>
+<p>If an outgoing connection is closed by the other peer, a different peer is randomly selected as a replacement.</p>
+</li>
+<li>
+<p>Every peer accepts up to 100 incoming connections from other peers, which are distinct from the outgoing peers.</p>
+</li>
+<li>
+<p>Periodic shuffling: Shuffles the peer list of nodes randomly in a certain period.
+Every time an outgoing connection is terminated, a new outgoing connection is established.
+This makes the network more dynamic and prevents against network attacks.</p>
+</li>
+</ol>
 </div>
 </div>
 </div>
@@ -519,15 +549,22 @@ Furthermore, to keep the network dynamic, approximately every 5 minutes one outg
 </div>
 <div class="paragraph">
 <p>When a new block is received, it is first validated.
-If it is valid and it has not been forwarded before, the full block is sent to 16 randomly chosen peers.</p>
-</div>
-<div class="paragraph">
-<p>Furthermore, nodes announce that a new block has been received by sending part of the block header to the rest of the connected peers, which can request the full block in case it has not been received yet.</p>
+If it is valid and has not been received it is forwarded.
+The block is forwarded to 16 randomly chosen connected peers of which at least 8 blocks are forwarded via outgoing connections.</p>
 </div>
 <div class="imageblock">
 <div class="content">
 <img src="../_images/understand-blockchain/block-propagation.png" alt="block propagation">
 </div>
+</div>
+<div class="paragraph">
+<p>Furthermore, nodes announce that a new block has been received by sending part of the block header to the rest of the connected peers, which can request the full block in case it has not been received yet.</p>
+</div>
+<div class="paragraph">
+<p>The peers are notified about the block after the block and its related state changes were executed successfully on the node.</p>
+</div>
+<div class="paragraph">
+<p><span class="image"><img src="../_images/understand-blockchain/block-processing.png" alt="block processing"></span></p>
 </div>
 </div>
 </div>
@@ -538,16 +575,13 @@ If it is valid and it has not been forwarded before, the full block is sent to 1
 <p>Transactions are propagated through the network in a similar manner to blocks.</p>
 </div>
 <div class="paragraph">
-<p>Every 5 seconds, a bundle of 100 <a href="blocks-txs.html#transactions" class="xref page">transactions</a> are selected from the transaction pool and sent to all connected peers.</p>
+<p>Every 5 seconds, up to 25 <a href="blocks-txs.html#transactions" class="xref page">transactions</a> are selected from the transaction pool and sent to all connected peers.</p>
 </div>
 <div class="paragraph">
 <p>The peers then check if they already have the corresponding transactions and can request any that are missing from the node and include them in their transaction pool.</p>
 </div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="transaction-pool"><a class="anchor" href="#transaction-pool"></a>Transaction pool</h2>
-<div class="sectionbody">
+<div class="sect2">
+<h3 id="transaction-pool"><a class="anchor" href="#transaction-pool"></a>Transaction pool</h3>
 <div class="paragraph">
 <p>The <a href="index.html#transaction-pool" class="xref page">transaction pool</a> collects transactions that are waiting to be included in a block.</p>
 </div>
@@ -556,6 +590,7 @@ If it is valid and it has not been forwarded before, the full block is sent to 1
 </div>
 <div class="paragraph">
 <p>Conversely, when a new block is received, transactions included in the block are removed from the transaction pool.</p>
+</div>
 </div>
 </div>
 </div>

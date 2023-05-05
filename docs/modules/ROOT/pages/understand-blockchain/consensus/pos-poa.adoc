@@ -1,10 +1,15 @@
 = Proof of Stake (PoS) & Proof of Authority (PoA) in Lisk
 :toc: preamble
 // URLs
-:url_lip23_weight: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0023.md#new-delegate-weight
-:url_github_lip_22: https://github.com/LiskHQ/lips/blob/master/proposals/lip-0022.md
+:url_github_lip_22: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0022.md
+:url_github_lip_23: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0023.md
+:url_lip23_weight: {url_github_lip_23}#new-delegate-weight
+:url_github_lip_24: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0024.md
+:url_github_lip_42: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0042.md
+:url_github_lip_71: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0071.md
 :url_arxiv: https://arxiv.org/abs/1903.11434
 :url_github_poa: https://github.com/ethereum/guide/blob/master/poa.md
+:url_blog_poa: https://lisk.com/blog/posts/proof-authority-consensus-sidechains
 //Project URLs
 :url_blocks_genesis: understand-blockchain/index.adoc#genesis-block
 :url_run_validator: run-blockchain/become-a-validator.adoc
@@ -100,7 +105,7 @@ NOTE: This definition implies that *at least 10% of the validator weight always 
 === How the validator list is generated
 
 image::understand-blockchain/validator-list.jpeg[validator list]
-Specifically, the validator list for a round is generated as follows:
+Specifically, the validator list for a block generation round is generated as follows:
 
 . Compute two values `randomSeed1` and `randomSeed2` from the values provided by the validators in the `seedReveal` property of the block headers of the previous 3 rounds.
 . Add the 101 active validators to the list.
@@ -111,12 +116,6 @@ The computation of 101 active validators as well as the standby validator select
 
 The random selection of two standby validators and the commit-reveal scheme that the `seedReveal` values provided by the validators in the block header must follow are described in detail in {url_github_lip_22}[LIP 0022^].
 
-//TODO: Check context/relevance for below statement
-////
-During the bootstrap period defined in the xref:{url_blocks_genesis}[genesis block] the number of blocks per round and length of the validator list is still 103.
-However, the Lisk PoS validator selection is not used.
-Instead, the validator list is directly computed from the initial validators specified in the genesis block, repeating validators if needed, to obtain a list of length 103.
-////
 === Staking and validator weight
 
 By registering as validator, it is possible to *receive stakes* from other account for this validator.
@@ -146,11 +145,54 @@ The ban is permanent, but the validator account holder can move their funds to a
 
 == PoA
 
-In Proof-of-Authority (PoA) blockchains only a pre-defined set of validators, called the authorities, can propose blocks and they are selected based on off-chain information such as their reputation or identity.
-It trades the decentralization of the network (arbitrarily selected authorities) for efficiency and performance.
+PoA is an alternative consensus mechanism to PoS in the Lisk SDK.
+In {url_blog_poa}[Proof-of-Authority (PoA)^] blockchains, only a pre-defined set of validators, called the *authorities*, can propose blocks.
+Authorities are selected based on off-chain information such as their reputation or identity.
+
+PoA trades the decentralization of the network (arbitrarily selected authorities) for efficiency and performance.
 This mechanism was first proposed by {url_github_poa}[Gavin Wood in 2015^].
 
+The security of PoA relies on the staked reputation of the block generators instead of the staked tokens of the block generators and their voters.
 A PoA blockchain is especially attractive for small projects or blockchain apps where the project owners are expected to run the network nodes.
+Additionally, PoA is suitable for blockchains where the expected staked capital in the case of PoS would not provide enough security, but staking the reputations of the active authorities would do so.
 Due to the simplicity of its validator selection algorithm, it is also suitable for applications where a high transaction per second throughput is important.
 
-=== Validator selection
+=== How to update the list of active authorities
+
+Only active authorities can update the list of active authorities.
+
+The following values can be updated:
+
+. Remove/Add authorities (the length of the list of authorities can change as a result)
+. Change BFT weight of authorities
+. Update threshold for finality
+
+NOTE: The maximum amount of authorities for a chain is 199.
+
+The PoA module, which must be used by PoA blockchains built with the Lisk SDK version 6, implements the following commands which facilitate the authority updates:
+
+* *Authority Registration Command*: This command is similar to the validator registration command in Lisk PoS.
+An account willing to become an active authority must first send an authority registration transaction.
+The registration fee for an authority registration can be defined in the PoA module configuration.
+* *Update Authority Command*: This command updates the set of active authorities as mentioned above.
+An update authority transaction must contain the following parameters:
++
+. `newValidators`: The updated list of authorities and their associated BFT weights.
+. `threshold`: The finality threshold.
+. `validatorsUpdateNonce`: Increments +1 for each executed Update Authority transaction.
+. an _aggregate multi-signature_ whereby enough active authorities have contributed to, such that the sum of the corresponding BFT weights meets the finality threshold.
+
+Let us consider the example where the current set of active authorities consists of 10 authorities where each has the BFT weight of 1 and the finality threshold is 7.
+If one authority is supposed to be removed from the set of active authorities, then this update must be approved by at least 7 active authorities.
+
+NOTE: The number of active authorities is also determining the length of a block generation round.
+For example, if there are 10 active authorities, then a round consists of 10 blocks.
+
+=== Rewards and banning mechanisms
+
+Typically, PoA systems do not define any reward system.
+However, sidechain developers may choose to have a reward system in the chain native token to incentivize the authorities.
+In this case, the Reward module specified in {url_github_lip_42}[LIP 0042^] can be used to define block rewards for PoA blockchains.
+Note that the Dynamic block rewards module as defined in {url_github_lip_71}[LIP 0071^] depends on the PoS information to properly function and thus can not be implemented on PoA blockchains.
+
+Moreover, the banning mechanism (as defined in {url_github_lip_23}[LIP 0023^]) and the punishment of BFT violations (as defined in {url_github_lip_24}[LIP 0024^] for the Lisk-BFT protocol) are not necessary for a functional PoA blockchain.

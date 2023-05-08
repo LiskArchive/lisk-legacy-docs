@@ -4,20 +4,29 @@ Mona Bärenfänger <mona@lightcurve.io>
 // Settings
 :toc:
 // Project URLs
-:url_sdk_guide_txoffline: integrate-blockchain/create-tx-offline.adoc
-:url_sdk_guide_txs: integrate-blockchain/create-sign-transactions.adoc
+:url_core_cli: v4@lisk-core::core-cli.adoc
 :url_sdk_cli: v6@lisk-sdk::client-cli.adoc
+:url_sdk_keyscreate: {url_sdk_cli}#keyscreate
 
 The most convenient way to manage your account is to employ a user interface, such as Lisk Desktop.
 However, it is possible to manage your account directly from the command-line with the CLI of a Lisk node.
 
 The most important interactions are described below.
 
-//TODO: Add link back once the page is updated
-//TIP: For more information about the available Lisk Core commands, check the CLI references for xref:{url_core_cli}[Lisk Core] and xref:{url_sdk_cli}[Lisk SDK].
-TIP: For more information about the available Lisk Core commands, check the CLI references for Lisk Core and xref:{url_sdk_cli}[Lisk SDK].
+TIP: For more information about the available Lisk Core commands, check the CLI references for xref:{url_core_cli}[Lisk Core] and xref:{url_sdk_cli}[Lisk SDK].
 
-== Creating a new account
+== How account related data is stored on the blockchain
+
+== Creating new account credentials
+
+=== Creating the passphrase
+
+A 12 word mnemonic passphrase is required as an input to generate all corresponding account credentials for an account.
+
+You may choose the passphrase for yourself, or generate a new random passphrase.
+If you wish to generate the the passphrase, the Lisk SDK provides simple commands for this, as described below.
+
+To generate the passphrase quickly from the command-line, start the console:
 
 [tabs]
 =====
@@ -26,7 +35,7 @@ Lisk Core::
 --
 [source,bash]
 ----
-lisk-core account:create
+lisk-core console
 ----
 --
 Lisk app::
@@ -34,206 +43,219 @@ Lisk app::
 --
 [source,bash]
 ----
-./bin/run account:create
+./bin/run console
 ----
 --
 =====
 
-.Example output
-[source,json]
+Generate a new mnemonic passphrase using the Lisk passphrase library:
+
 ----
-[
-  {
-   "passphrase": "meadow lesson tomato satisfy shield number zone symptom sad equip faculty piece",
-   "privateKey": "9f6014a246cb91abeaec400e77a79c6ec29898c85bf934c2d176c13df58e1ef34c5b08a8eec74c79a6c6ec66ce229c03afdcb50ccd6e5c43e916875fb03b4948",
-   "publicKey": "4c5b08a8eec74c79a6c6ec66ce229c03afdcb50ccd6e5c43e916875fb03b4948",
-   "binaryAddress": "3fb0d5fb064d3ad6f09263eaae04e666ae4a0e52",
-   "address": "lsknf295f2b4kh99jpro8q6jxnbodwpkcrrw4nwwa"
-  }
-]
+ > lisk.passphrase.Mnemonic.generateMnemonic()
 ----
 
-.`account:create` reference
-[%collapsible]
-====
+This will return a randomly generated 12 word mnemonic passphrase.
+
+----
+'anger system news one finger rifle kiss expect arena swift spirit decline'
+----
+
+=== Creating the other credentials
+
+Next, use the xref:{url_sdk_keyscreate}[keys:create] command to generate all relevant account credentials:
+
+[tabs]
+=====
+Lisk Core::
++
+--
 [source,bash]
 ----
-Return randomly-generated mnemonic passphrase with its corresponding public/private key pair and Lisk address
+lisk-core keys:create
+----
+--
+Lisk app::
++
+--
+[source,bash]
+----
+./bin/run keys:create
+----
+--
+=====
 
-USAGE
-  $ lisk-core account:create
+When asked for the passphrase, enter the passphrase created in step <<creating-the-passphrase>>.
 
-OPTIONS
-  -c, --count=count  [default: 1] Number of accounts to create
+----
+? Please enter passphrase:  [hidden]
+? Please re-enter passphrase:  [hidden]
+----
 
-EXAMPLES
-  account:create
-  account:create --count=3
+Next, you will be also asked for a password.
+This password will be used to encrypt your account credentials symmetrically.
+
+The encrypted credentials are used for example in the config, when the node needs account information to generate new blocks for a validator.
+
+TIP: If you don't wish to encrypt your credentials, it is possible to skip this step by adding the `--no-encryption` flag to the `keys:create` command.
+
+The password will be required everytime the credentials need to be decrypted, for example when enabling block generation on a node.
+Therefore, the password should be saved and kept at a secure place, similar to the passphrase of the account.
+
+----
+? Please enter password:  [hidden]
+? Please re-enter password:  [hidden]
+----
+
+This will then return the credentials for the account:
+
+.Example output
+[%collapsible]
+====
+[source,json]
+----
+{
+  "keys": [
+    {
+      "address": "lsk7dqp2w7447pqhuzmhxsxr65qeoq7nbfox28wxc",
+      "keyPath": "m/44'/134'/0'",
+      "publicKey": "0ca6a5d44cc366de186a2589e3e51849272fa0ae9c52646766ddb7820dfe770c",
+      "privateKey": "bd7e42529df375cb9133ddf299641d38975fa4d0930eff6e7c072d4d3ff190830ca6a5d44cc366de186a2589e3e51849272fa0ae9c52646766ddb7820dfe770c",
+      "plain": {
+        "generatorKeyPath": "m/25519'/134'/0'/0'",
+        "generatorKey": "e59f2f603b84b9c491e267240a3425a09adaad348b984cc6e21c14fd02f28e7e",
+        "generatorPrivateKey": "398a04e2a001dc4580bb1fab2c6e71dbbbd81c9f22170e1073cd4084d81588f4e59f2f603b84b9c491e267240a3425a09adaad348b984cc6e21c14fd02f28e7e",
+        "blsKeyPath": "m/12381/134/0/0",
+        "blsKey": "95c7a571ecf569f91f6995f9a8d8a2e70904cb079350372b66d8a2b6986788f6d4589c79fffefd952debc96a17317e18",
+        "blsProofOfPossession": "a02f2672621b3adcd25079c6646e751517c514c70d11ec4ec4846310f5f7cddedd598ade849496bcfe15d3baa554d06b148a2e9f2d349e2010df2a17d7a3d57f13ab9bf290042c552d47d925c0877596ca8865b96ba2972eea5ce7831b014cca",
+        "blsPrivateKey": "4ce94d4439152ec5e0ae88a5c77c12cf0b5d9304111359c5f42b490503429c26"
+      },
+      "encrypted": {
+        "ciphertext": "5cc26d74c2b6ed7d56a1268eb04cd3878190695bd2546bca82885cc5d7171d71e397cab265544436d9feadd143e17deeeb5f32a00e6d6cf8d0e64afc5475067875a6836a5c7f78d3e0b4937c464817f40359c869bd0b01762a18169296774d1c76821a752e53dc96390c27a15ba8b1b3eef7016335dabcef424ed0dd3bf972f89451d2ea8db113b310e9ecda7ea3a044c68e4dc57f8c992e84729c62f952c7c24688f375b39311ef069d8a2ccde6c272ce65645839da3dfb",
+        "mac": "ebdb87bb0be482ea6ec867bb3355d3c9aece28520d56d7b1c17463dc06e1eb97",
+        "kdf": "argon2id",
+        "kdfparams": {
+          "parallelism": 4,
+          "iterations": 1,
+          "memorySize": 2024,
+          "salt": "63092ee970b05d28017a606c39ff799b"
+        },
+        "cipher": "aes-256-gcm",
+        "cipherparams": {
+          "iv": "1a188eb0d5eab9eca50b7b3c",
+          "tag": "2578354b532bec4485eeb7123c27f855"
+        },
+        "version": "1"
+      }
+    }
+  ]
+}
 ----
 ====
 
-== Creating transactions
+=== Managing multiple accounts with a single passphrase
+
+Key derivation allows multiple key pairs to be derived from the same secret passphrase as a tree of keys.
+
+This means, a user can manage multiple different accounts, while they only need to remember a single passphrase.
+
+To generate multiple accounts from the same passphrase, use the `--count` flag of the `keys:create` command, and set it to the number of accounts that you wish to create.
+
+The key path for the new accounts will always start with the default key-derivation path and increment by +1 onwards.
+If you wish to start from a different key path, you can specify an `--offset`.
+
+[tabs]
+=====
+Lisk Core::
++
+--
+[source,bash]
+----
+lisk-core keys:create --passphrase your-passphrase --no-encrypt --count 2 --offset 1
+----
+--
+Lisk app::
++
+--
+[source,bash]
+----
+./bin/run keys:create --passphrase your-passphrase --no-encrypt --count 2 --offset 1
+----
+--
+=====
+
+They can use the same passphrase for every account, the only thing that will change is the key-derivation path.
+The *key derivation path* allows to derive a specific key from within a tree of keys.
 
 [NOTE]
 ====
-It is necessary for the Lisk Core node to be running, in order to sign transactions.
-For more information about the different ways to create and send transactions, please check the guide xref:{url_sdk_guide_txs}[].
+If a user uses the default key-derivation path `m/44'/134'/0`, it is not necessary to mention it as a parameter when the account credentials are requested.
+If you are using a custom key-derivation path, make sure to always specify the key derivation path when providing the passphrase.
+For example, for the `transaction:create` command, you can specify the key derivation path like so:
 
-If you wish to create transactions without having the node running, use the `--offline` flag.
-These transactions need to be signed later with `transaction:sign`.
+ % ./bin/run transaction:create hello createHello 10000000 --key-derivation-path="m/44'/134'/1'" --params='{"message":"Hello world!"}'
 
-For more information on this topic, check out this guide, xref:{url_sdk_guide_txoffline}[Creating transactions and signing them offline].
 ====
 
-Start the node, if it is not running already:
+== Overview of the account credentials
 
-[tabs]
-=====
-Lisk Core::
-+
---
-[source,bash]
-----
-lisk-core start
-----
---
-Lisk app::
-+
---
-[source,bash]
-----
-./bin/run start
-----
---
-=====
+.Account credentials
+[cols="1,1,2",options="header",stripes="hover"]
+|===
+|Type
+|Name
+|Description
 
-Transactions can be created by using the `transaction:create` command:
+|General credentials
+|`address`
+|description
 
-.`transaction:create` reference
-[%collapsible]
-====
-[source,bash]
-----
-Create a transaction that can be broadcasted to the network. Note: fee and amount should be in Beddows!!
+|General credentials
+|`keyPath`
+|description
 
-USAGE
-  $ lisk-core transaction:create MODULEID ASSETID FEE
+|General credentials
+|`publicKey`
+|description
 
-ARGUMENTS
-  MODULEID  Registered transaction module id.
-  ASSETID   Registered transaction asset id.
-  FEE       Transaction fee in Beddows.
+|General credentials
+|`privateKey`
+|description
 
-OPTIONS
-  -a, --asset=asset                          Creates transaction with specific asset information.
-  -d, --data-path=data-path                  Directory path to specify where node data is stored. Environment variable "LISK_DATA_PATH" can also be used.
-  -j, --json                                 Print the transaction in JSON format
-  -n, --network=network                      [default: mainnet] Default network config to use. Environment variable "LISK_NETWORK" can also be used.
+|Credentials required for block generation
+|`generatorKeyPath`
+|description
 
-  -p, --passphrase=passphrase                Specifies a source for your secret passphrase. Command will prompt you for input if this option is not set.
-                                             	Examples:
-                                             	- --passphrase='my secret passphrase' (should only be used where security is not important).
+|Credentials required for block generation
+|`generatorKey`
+|description
 
-  -s, --sender-public-key=sender-public-key  Creates the transaction with provided sender publickey, when passphrase is not provided.
+|Credentials required for block generation
+|`generatorPrivateKey`
+|description
 
-  --network-identifier=network-identifier    Network identifier defined for the network or main | test for the Lisk Network.
+|Credentials required for block generation
+|`blsKeyPath`
+|description
 
-  --no-signature                             Creates the transaction without a signature. Your passphrase will therefore not be required.
+|Credentials required for block generation
+|`blsKey`
+|description
 
-  --nonce=nonce                              Nonce of the transaction.
+|Credentials required for block generation
+|`blsProofOfPossession`
+|description
 
-  --offline                                  Specify whether to connect to a local node or not.
+|Credentials required for block generation
+|`blsPrivateKey`
+|description
 
-  --pretty                                   Prints JSON in pretty format rather than condensed.
+|===
 
-EXAMPLES
-  transaction:create 2 0 100000000 --asset='{"amount":100000000,"recipientAddress":"ab0041a7d3f7b2c290b5b834d46bdc7b7eb85815","data":"send token"}'
-  transaction:create 2 0 100000000 --asset='{"amount":100000000,"recipientAddress":"ab0041a7d3f7b2c290b5b834d46bdc7b7eb85815","data":"send token"}' --json
-  transaction:create 2 0 100000000 --offline --network mainnet --network-identifier 873da85a2cee70da631d90b0f17fada8c3ac9b83b2613f4ca5fddd374d1034b3 --nonce 1
-  --asset='{"amount":100000000,"recipientAddress":"ab0041a7d3f7b2c290b5b834d46bdc7b7eb85815","data":"send token"}'
-----
-====
+=== Formats for account addresses
 
-=== Transfering tokens to another account
+Format examples and explanations for what it is used
 
-[tabs]
-=====
-Lisk Core::
-+
---
-[source,bash]
-----
-$ lisk-core transaction:create 2 0 100000000 --asset='{"amount":100000000,"recipientAddress":"86555265f0110b4ed5a8cb95dbc732e77732c474","data":"send token"}'
-? Please enter passphrase:  [hidden]
-? Please re-enter passphrase:  [hidden]
-----
---
-Lisk app::
-+
---
-[source,bash]
-----
-$ ./bin/run transaction:create 2 0 100000000 --asset='{"amount":100000000,"recipientAddress":"86555265f0110b4ed5a8cb95dbc732e77732c474","data":"send token"}'
-? Please enter passphrase:  [hidden]
-? Please re-enter passphrase:  [hidden]
-----
---
-=====
+== Initializing a new account
 
-.Example output
-[source,json]
-----
-{"transaction":"0802100018002080c2d72f2a200fe9a3f1a21b5530f27f87a414b549e79a940bf24fdf2b2f05e7f22aeeecc86a32270880c2d72f121486555265f0110b4ed5a8cb95dbc732e77732c4741a0a73656e6420746f6b656e3a40c442cd1311808974d5f41a69dd25b2e3a516e463445a4c5eb292f0c7b7de0b33627a729da7969875d0f659fbe56f3e2ca947bc02873f8ac5a1753ac90fb15605"}
-----
+How to initialize a new account in the network
 
-=== Sending transactions to a Lisk node
-
-[tabs]
-=====
-Lisk Core::
-+
---
-[source,bash]
-----
-$ lisk-core transaction:send 0802100018002080c2d72f2a200fe9a3f1a21b5530f27f87a414b549e79a940bf24fdf2b2f05e7f22aeeecc86a32270880c2d72f121486555265f0110b4ed5a8cb95dbc732e77732c4741a0a73656e6420746f6b656e3a40c442cd1311808974d5f41a69dd25b2e3a516e463445a4c5eb292f0c7b7de0b33627a729da7969875d0f659fbe56f3e2ca947bc02873f8ac5a1753ac90fb15605
-----
---
-Lisk app::
-+
---
-[source,bash]
-----
-$ ./bin/run transaction:send 0802100018002080c2d72f2a200fe9a3f1a21b5530f27f87a414b549e79a940bf24fdf2b2f05e7f22aeeecc86a32270880c2d72f121486555265f0110b4ed5a8cb95dbc732e77732c4741a0a73656e6420746f6b656e3a40c442cd1311808974d5f41a69dd25b2e3a516e463445a4c5eb292f0c7b7de0b33627a729da7969875d0f659fbe56f3e2ca947bc02873f8ac5a1753ac90fb15605
-----
---
-=====
-
-.Example output
-[source,bash]
-----
-Transaction with id: '793446f5a5dbd9fbb9b73a7855706193504f08e50eb9d955133682282321a0b0' received by node
-----
-
-.`transaction:send` reference
-[%collapsible]
-====
-[source,bash]
-----
-Send transaction to the local node.
-
-USAGE
-  $ lisk-core transaction:send TRANSACTION
-
-ARGUMENTS
-  TRANSACTION  A transaction to be sent to the node encoded as hex string
-
-OPTIONS
-  -d, --data-path=data-path  Directory path to specify where node data is stored. Environment variable "LISK_DATA_PATH" can also be used.
-  --pretty                   Prints JSON in pretty format rather than condensed.
-
-EXAMPLE
-  transaction:send
-  080810011880cab5ee012220fd061b9146691f3c56504be051175d5b76d1b1d0179c5c4370e18534c58821222a2408641214ab0041a7d3f7b2c290b5b834d46bdc7b7eb858151a0a73656e6420746f6b656e324028edd3601cdc35a4
-  1bb23415a0d9f3c3e9cf188d9971adf18742cea39d58aa84809aa87bcfe6feaac46211c80472ad9297fd87727709f5d7e7b4134caf106b02
-----
-====

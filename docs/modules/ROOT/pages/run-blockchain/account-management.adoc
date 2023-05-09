@@ -2,12 +2,18 @@
 Mona Bärenfänger <mona@lightcurve.io>
 :description: How to create and manage accounts including creating and sending transactions, transferring tokens & voting.
 // Settings
-:toc:
+:idprefix:
+:idseparator: -
+:toc: preamble
 //URLs
+:url_wiki_Ed25519: https://en.wikipedia.org/wiki/EdDSA#Ed25519
+:url_rfc8032: https://datatracker.ietf.org/doc/html/rfc8032#section-5.1.5
 :url_lisk_wallet: https://lisk.com/wallet
 :url_github_bip_39: https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#generating-the-mnemonic
 :url_github_bip_173: https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki
 :url_github_lip_18: https://github.com/LiskHQ/lips/blob/master/proposals/lip-0018.md
+:url_github_lip_66_getprivatekeyfromphraseandpath: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0066.md#getprivatekeyfromphraseandpath
+
 // Project URLs
 :url_core_cli: v4@lisk-core::core-cli.adoc
 :url_sdk_cli: v6@lisk-sdk::client-cli.adoc
@@ -25,19 +31,127 @@ Specifically, you'll learn about:
 * [x] How safely manage account credentials
 ====
 
-TIP: If you prefer a graphical user interface to manage your account, it is possible to use supported wallets like xref:{url_lisk_wallet}[Lisk Wallet^].
+TIP: If you prefer a graphical user interface to manage your account, it is possible to use supported wallets like {url_lisk_wallet}[Lisk Wallet^].
+
+== Overview of the account credentials
+
+.General account credentials
+[cols="1,1,3",options="header",stripes="hover"]
+|===
+|Name
+|Example
+|Description
+
+|`address`
+|lsk7dqp2w7447pqhuzmh
+xsxr65qeoq7nbfox28wxc
+a|The address is the main identifier of the account.
+For example, it is used to identify the recipient when transferring the balance between users.
+
+Depending on the context, the address is represented in <<formats-for-account-addresses,different formats>>.
+For the front end, a <<lisk32-representation,user-friendly address format>> is provided, whereby each address starts with the prefix “lsk" and a checksum is appended to prevent accidental typing mistakes.
+
+|`keyPath`
+|"m/44'/134'/0'"
+|<<managing-multiple-accounts-with-a-single-passphrase,Key derivation>> allows multiple key pairs to be derived from the same secret recovery phrase.
+
+|`publicKey`
+|0ca6a5d44cc366de186a2589
+e3e51849272fa0ae9c526467
+66ddb7820dfe770c
+|Ed25519 public key
+
+|`privateKey`
+|bd7e42529df375cb9133ddf2
+99641d38975fa4d0930eff6e
+7c072d4d3ff190830ca6a5d4
+4cc366de186a2589e3e51849
+272fa0ae9c52646766ddb782
+0dfe770c
+|description
+
+
+|===
+
+.Credentials required for block generation
+[cols="1,1,4",options="header",stripes="hover"]
+|===
+|`generatorKeyPath`
+|"m/25519'/134'/0'/0'"
+|description
+
+|`generatorKey`
+|e59f2f603b84b9c491e2672
+40a3425a09adaad348b984cc
+6e21c14fd02f28e7e
+|To be able to create block signatures, the secret key of the validator account needs to be accessible for a validator node.
+The most common approach is to store the encrypted secret recovery phrase that yields the secret key (or the encrypted secret key) on the node, where the encryption key is derived from a password-based key derivation function.
+This results in a small security risk: If an attacker is able to get the encrypted secret recovery phrase (or encrypted secret key) and the password for the encryption key derivation, the attacker has full control over the validator account.
+This may be a bigger concern for validators running a Lisk node on a remote data center.
+To mitigate this risk, an extra key pair, the generator keys, is added to a validator account that is used for creating block signatures.
+A validator node only requires access to the secret generator key, but not to the secret that is used for signing transactions.
+
+|`generatorPrivateKey`
+|398a04e2a001dc4580bb1fa
+b2c6e71dbbbd81c9f22170e
+1073cd4084d81588f4e59f2
+f603b84b9c491e267240a34
+25a09adaad348b984cc6e21
+c14fd02f28e7e
+|description
+
+|`blsKeyPath`
+|"m/12381/134/0/0"
+|description
+
+|`blsKey`
+|95c7a571ecf569f91f6995
+f9a8d8a2e70904cb079350
+372b66d8a2b6986788f6d4
+589c79fffefd952debc96a
+17317e18
+|Required for validator registration:
+Validators will be required to register their BLS public key on-chain, while performing a validator registration.
+
+|`blsProofOfPossession`
+|a02f2672621b3adcd25079
+c6646e751517c514c70d11
+ec4ec4846310f5f7cddedd
+598ade849496bcfe15d3ba
+a554d06b148a2e9f2d349e2
+010df2a17d7a3d57f13ab9b
+f290042c552d47d925c0877
+596ca8865b96ba2972eea5c
+e7831b014cca
+|description
+
+|`blsPrivateKey`
+|4ce94d4439152ec5e0ae
+88a5c77c12cf0b5d9304
+111359c5f42b49050342
+9c26
+|description
+
+|===
 
 == Key pair and address creation
 
-To create a new address, first a 12-word passphrase is generated following the specifications of {url_github_bip_39}[BIP39^].
-The passphrase is then hashed using the SHA-256 into a 256-bit string.
-The resulting hash is used as the seed to generate the *private key* and the *public key* using Ed25519 signature scheme.
-Finally, the address is generated by taking the first 20 bytes of the SHA-256 hash of the public key.
+A private key is derived, as defined in {url_rfc8032}[RFC 8032^], from a {url_github_bip_39}[BIP 39^] mnemonic passphrase and a <<key-derivation-path>>.
 
-image::protocol/addressCreation.svg[addressCreation]
+.Generating multiple private keys from 1 passphrase with key derivation
+image::run-blockchain/key_derivation.png[addressCreation]
 
-IMPORTANT: Creation of new account credentials always happens off-chain.
-To put the new account on-chain, it is necessary to <<initializing-a-new-account,initialize>> the new account by sending some initial tokens to the address and paying the account initialization fee.
+Any of the child keys could be used to create an {url_wiki_Ed25519}[Ed25519^] private key, but by default, only the child key at the end of the path is used to create the Ed25519 private key.
+
+The corresponding public key can then be obtained following the key generation section of {url_rfc8032}[RFC 8032^].
+
+=== Key Derivation path
+
+The derivation path is an array of non-negative integers smaller than 2^32.
+To make it easier to read a derivation path, they are often written in a form that omits a large constant.
+For example, the path 44'/134'/0' (notice the apostrophe after each number) represents the array [44+2^31, 134+2^31, 2^31].
+
+The whole derivation path is then written m/44'/134'/0', indicating that we start by deriving a master key before deriving successive child keys.
 
 === Creating a new passphrase
 
@@ -83,6 +197,9 @@ This will return a randomly generated 12 word mnemonic passphrase.
 === Creating the other credentials
 
 Next, use the xref:{url_sdk_keyscreate}[keys:create] command to generate all relevant account credentials:
+
+IMPORTANT: Creation of new account credentials always happens off-chain.
+To put the new account on-chain, it is necessary to <<initializing-a-new-account,initialize>> the new account by sending some initial tokens to the address and paying the account initialization fee.
 
 [tabs]
 =====
@@ -172,7 +289,7 @@ This will then return the credentials for the account:
 ----
 ====
 
-=== Managing multiple accounts with a single passphrase
+== Managing multiple accounts with a single passphrase
 
 Key derivation allows multiple key pairs to be derived from the same secret passphrase as a tree of keys.
 
@@ -216,120 +333,15 @@ For example, for the `transaction:create` command, you can specify the key deriv
 
 ====
 
-== Overview of the account credentials
+== Initializing a new account
 
-.Account credentials
-[cols="1,1,1,2",options="header",stripes="hover"]
-|===
-|Type
-|Name
-|Example
-|Description
+How to initialize a new account in the network
 
-|General credentials
-|`address`
-|lsk7dqp2w7447pqhuzmhxsxr65qeoq7nbfox28wxc
-a|The address is the main identifier of the account.
-For example, it is used to identify the recipient when transferring the balance between users.
-The address is calculated as the first 20 bytes of the SHA-256 (Secure Hash Algorithm 256), of the public key.
-
-Depending on the context, the address is represented in <<formats-for-account-addresses,different formats>>.
-For the front end, a <<lisk32-representation,user-friendly address format>> is provided, whereby each address starts with the prefix “lsk" and a checksum is appended to prevent accidental typing mistakes.
-
-|General credentials
-|`keyPath`
-|"m/44'/134'/0'"
-|<<managing-multiple-accounts-with-a-single-passphrase,Key derivation>> allows multiple key pairs to be derived from the same secret recovery phrase.
-
-
-|General credentials
-|`publicKey`
-|0ca6a5d44cc366de186a2589
-e3e51849272fa0ae9c526467
-66ddb7820dfe770c
-|description
-
-|General credentials
-|`privateKey`
-|bd7e42529df375cb9133ddf2
-99641d38975fa4d0930eff6e
-7c072d4d3ff190830ca6a5d4
-4cc366de186a2589e3e51849
-272fa0ae9c52646766ddb782
-0dfe770c
-|description
-
-|Credentials required for block generation
-|`generatorKeyPath`
-|"m/25519'/134'/0'/0'"
-|description
-
-|Credentials required for block generation
-|`generatorKey`
-|e59f2f603b84b9c491e2672
-40a3425a09adaad348b984cc
-6e21c14fd02f28e7e
-|To be able to create block signatures, the secret key of the validator account needs to be accessible for a validator node.
-The most common approach is to store the encrypted secret recovery phrase that yields the secret key (or the encrypted secret key) on the node, where the encryption key is derived from a password-based key derivation function.
-This results in a small security risk: If an attacker is able to get the encrypted secret recovery phrase (or encrypted secret key) and the password for the encryption key derivation, the attacker has full control over the validator account.
-This may be a bigger concern for validators running a Lisk node on a remote data center.
-To mitigate this risk, an extra key pair, the generator keys, is added to a validator account that is used for creating block signatures.
-A validator node only requires access to the secret generator key, but not to the secret that is used for signing transactions.
-
-
-|Credentials required for block generation
-|`generatorPrivateKey`
-|398a04e2a001dc4580bb1fa
-b2c6e71dbbbd81c9f22170e
-1073cd4084d81588f4e59f2
-f603b84b9c491e267240a34
-25a09adaad348b984cc6e21
-c14fd02f28e7e
-|description
-
-|Credentials required for block generation
-|`blsKeyPath`
-|"m/12381/134/0/0"
-|description
-
-|Credentials required for block generation
-|`blsKey`
-|95c7a571ecf569f91f6995
-f9a8d8a2e70904cb079350
-372b66d8a2b6986788f6d4
-589c79fffefd952debc96a
-17317e18
-|Required for validator registration:
-Validators will be required to register their BLS public key on-chain, while performing a validator registration.
-
-|Credentials required for block generation
-|`blsProofOfPossession`
-|a02f2672621b3adcd25079
-c6646e751517c514c70d11
-ec4ec4846310f5f7cddedd
-598ade849496bcfe15d3ba
-a554d06b148a2e9f2d349e2
-010df2a17d7a3d57f13ab9b
-f290042c552d47d925c0877
-596ca8865b96ba2972eea5c
-e7831b014cca
-|description
-
-|Credentials required for block generation
-|`blsPrivateKey`
-|4ce94d4439152ec5e0ae
-88a5c77c12cf0b5d9304
-111359c5f42b49050342
-9c26
-|description
-
-|===
-
-=== Formats for account addresses
+== Formats of the account address
 
 Format examples and explanations for what it is used
 
-==== Lisk32 representation
+=== Lisk32 representation
 The *Lisk32 representation* displays addresses as a checksum with the "lsk" prefix.
 The procedure to obtain the Lisk32 representation of an address is as follows:
 
@@ -343,10 +355,7 @@ This ensures that the Lisk32 representation used in the Lisk wallet start with "
 
 As an example, the address `0xc247a42e09e6aafd818821f75b2f5b0de47c8235` has the Lisk32 representation `lsk24cd35u4jdq8szo3pnsqe5dsxwrnazyqqqg5eu`.
 
-
-== Initializing a new account
-
-How to initialize a new account in the network
+=== Hexadecimal representation
 
 == Key Management
 There are two recommended ways to manage the account keys, depending on the use case:

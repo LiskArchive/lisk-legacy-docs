@@ -1,0 +1,210 @@
+= Retrieving on-chain events
+Muhammad Talha <muhammad.talha@lightcurve.io>
+:toc: preamble
+:toclevels: 5
+:page-toclevels: 4
+:idprefix:
+:idseparator: -
+:imagesdir: ../../assets/images
+:docs_general: ROOT::
+:docs_sdk: v6@lisk-sdk::
+//External URLs
+:url_npm_lisk_sdk: https://www.npmjs.com/package/lisk-sdk
+:url_lip_65: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0065.md
+:JSON_RPC_Specs: https://www.jsonrpc.org/specification
+// Project URLs
+:url_advanced_rpc: api/lisk-node-rpc.adoc
+// :url_references_elements_apiclient: {sdk_docs}references/lisk-elements/api-client.adoc
+// :url_references_elements_client: {sdk_docs}references/lisk-elements/client.adoc
+:url_sdk_config_system: {docs_sdk}config.adoc#system
+:url_understand_events: {url_advanced_rpc}#events
+:url_chain_get_event: {url_advanced_rpc}#chain_getevents
+:url_understand_rpc_events: understand-blockchain/sdk/rpc.adoc#rpc-events
+:url_understand_blockchain_events: understand-blockchain/sdk/modules-commands.adoc#blockchain-events
+:url_sync_store: build-blockchain/plugin/plugin-class.adoc#sync-and-store-new-event
+:url_create_blockchain_event: build-blockchain/module/blockchain-event.adoc
+
+// TODO: Update the page by uncommenting the hyperlinks once the updated pages are available.
+
+====
+On this page, you'll learn about how events can be subscribed to or retrieved from a Lisk blockchain.
+
+Specifically, you'll learn:
+
+* [x] The difference between RPC events and blockchain events
+* [x] How subscribe to RPC events
+* [x] How retrieve blockchain events
+====
+
+== The difference between RPC events and blockchain events
+
+The Lisk blockchain generates various events that emit on-chain data.
+The emitted events can either be xref:{url_understand_rpc_events}[RPC Events] or xref:{url_understand_blockchain_events}[Blockchain Events].
+The aforementioned events are different in terms of when and how they are *generated* and also how these events can be *accessed*.
+
+Lisk makes *RPC events* accessible to everyone by offering xref:{url_understand_events}[a range of RPC-based events]. 
+These events can be subscribed to by anyone in the network.
+The subscribers can then get real-time information about the subscribed event, for example, the generation of a new block on the network, the addition of a new transaction in the transaction pool, etc.
+RPC events offered by Lisk can be subscribed to directly by any plugin, external service, or application.
+
+The other type of event emitted by Lisk is *blockchain events*. 
+Such events cannot be directly subscribed to with the RPC protocol. 
+Blockchain events are usually emitted at a modular level, during block execution and they reside in the event log.
+The event log keeps the blockchain events emitted from the latest set of blocks.
+Blockchain events can have information about a successful or failed transaction, among other information. 
+For more information on events and events root, see {url_lip_65}[LIP 65].
+
+[NOTE]
+====
+The number of events stored by the event log depends on the configuration of the node. 
+By default, a node is *configured to store the blockchain events from the latest 300 blocks* in the event log. 
+Due to this, events from only those 300 blocks can be retrieved, by default. 
+This can be changed by updating the `*keepEventsForHeights*` property in the xref:{url_sdk_config_system}[node configuration].
+
+To store the blockchain events on a node forever, set `*keepEventsForHeights*` to `0` in the node configuration.
+====
+
+[[the-api-client]]
+== Subscribing to an RPC event
+
+The API client simplifies the RPC event subscription process not only for a blockchain client but also for external plugins and services. 
+With the API client, RPC-based interfaces i.e. IPC and WS can be used to subscribe to *RPC events*.
+
+An API client can be imported into any JS client application as shown in the following snippets.
+
+// TIP: To conveniently communicate with a blockchain node, use the `apiClient` included in the xref:{url_references_elements_client}[@liskhq/lisk-client] and the {url_npm_lisk_sdk}[lisk-sdk^] packages.
+TIP: To conveniently communicate with a blockchain node, use the `apiClient` included in the `@liskhq/lisk-client` and the `lisk-sdk` packages.
+
+[tabs]
+
+=====
+WS API client example::
++
+--
+[source,js]
+----
+const { apiClient } = require('@liskhq/lisk-client');
+let clientCache;
+const nodeAPIURL = 'ws://localhost:7887/rpc-ws';
+
+const getClient = async () => {
+    if (!clientCache) {
+        clientCache = await apiClient.createWSClient(nodeAPIURL);
+    }
+    return clientCache;
+};
+
+getClient().then((client) => {
+    client.subscribe('network_newBlock', ( data ) => {
+    console.log('new block: ',data);
+    });
+});
+----
+--
+IPC API client example::
++
+--
+[source,js]
+----
+const { apiClient } = require('@liskhq/lisk-client');
+let clientCache;
+
+const getClient = async () => {
+    if (!clientCache) {
+        clientCache = await apiClient.createIPCClient('~/.lisk/my-app');
+    }
+    return clientCache;
+};
+
+getClient().then((client) => {
+    client.subscribe('network_newBlock', ( data ) => {
+    console.log('new block: ',data);
+    });
+});
+----
+--
+=====
+
+== Retrieving a blockchain event
+
+With each block execution, various events are generated and stored in the event log.
+For example, modules such as `Reward` emit the `rewardMinted` event after each block execution.
+
+NOTE: Different from the RPC events, blockchain events cannot be directly subscribed to.
+Instead, *blockchain events are requested for a particular block.*
+The block is defined by the block height which is provided as a parameter in the request.
+
+To fetch such an event, we can use the xref:{url_chain_get_event}[chain_getEvents] endpoint, as shown below:
+
+.fetchBlockchainEvent.js
+[source,js]
+----
+const { apiClient } = require('@liskhq/lisk-client');
+const { codec } = require('@liskhq/lisk-codec');
+let clientCache;
+const nodeAPIURL = 'ws://127.0.0.1:7887/rpc-ws'
+
+const getClient = async () => {
+    if (!clientCache) {
+        clientCache = await apiClient.createWSClient(nodeAPIURL);
+    }
+    return clientCache;
+};
+
+const rewardMintedDataSchema = {
+    $id: '/reward/events/rewardMintedData',
+    type: 'object',
+    required: ['amount', 'reduction'],
+    properties: {
+        amount: {
+            dataType: 'uint64',
+            fieldNumber: 1,
+        },
+        reduction: {
+            dataType: 'uint32',
+            fieldNumber: 2,
+        },
+    },
+};
+
+getClient().then((client) => {
+    // Returns the encoded event based on the 'height' passed
+    client.invoke("chain_getEvents", {
+        height: 60
+    }).then(res => {
+        console.log("Event: ", res);
+        // Decode the aforementioned event's data by passing relevant schema and the encoded 'data'
+        const parsedData = codec.decode(rewardMintedDataSchema, Buffer.from(res[0]['data'], 'hex'));
+        console.log(parsedData);
+    });
+});
+----
+Once an event is retrieved from the event log, its `data` property can be decoded by using the `codec.decode()` function. This function takes in the encoded data and the relevant schema as arguments. 
+
+The `codec.decode()` function is available inside the *@liskhq/lisk-codec* package.
+
+[TIP]
+====
+A detailed example of xref:{url_create_blockchain_event}[emitting a blockchain event], xref:{url_sync_store}[fetching it, and decoding it] is available in the Hello World blockchain example.
+====
+
+.Response
+[%collapsible]
+====
+.Make sure your blockchain client is running before executing the script
+[source,bash]
+----
+$ node fetchBlockchainEvent.js
+Event:  [
+  {
+    data: '08001000',
+    index: 0,
+    module: 'reward',
+    name: 'rewardMinted',
+    topics: [ '03', 'aa84845c4bc4e75802921fc315a01576c75ade73' ],
+    height: 60
+  }
+]
+Decoded data: { amount: 0n, reduction: 0 }
+----
+====

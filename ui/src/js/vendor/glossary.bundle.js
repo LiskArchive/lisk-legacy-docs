@@ -1,3 +1,4 @@
+/* eslint-disable */
 ;(function () {
   'use strict'
 
@@ -14,6 +15,19 @@
         "accuracy": {
           "value": "exactly",
           "limiters": [",", "."]
+        },
+        "exclude": [
+          "h1",
+          "h2",
+          "h3",
+          "h4",
+        ],
+        "filter": function(node, term, totalCounter, counter){
+          if(counter >= 1){
+            return false;
+          } else {
+            return true;
+          }
         }
       });
     }

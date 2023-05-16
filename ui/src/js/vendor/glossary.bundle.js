@@ -21,6 +21,7 @@
           "h2",
           "h3",
           "h4",
+          ".toc *"
         ],
         "filter": function(node, term, totalCounter, counter){
           if(counter >= 1){

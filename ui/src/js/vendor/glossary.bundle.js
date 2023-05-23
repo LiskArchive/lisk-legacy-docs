@@ -14,7 +14,7 @@
         "className": "highlighttt",
         "accuracy": {
           "value": "exactly",
-          "limiters": [",", ".", "s"]
+          "limiters": [",", "."]
         },
         "exclude": [
           "h1",

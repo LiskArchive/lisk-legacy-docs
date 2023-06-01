@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Resetting and snapshotting the blockchain :: Lisk documentation</title>
     <link rel="canonical" href="https://lisk.com/documentation/run-blockchain/blockchain-reset.html">
+    <link rel="prev" href="setup-relayer.html">
+    <link rel="next" href="../integrate-blockchain/index.html">
     <meta name="generator" content="Antora 3.1.1">
 
   <link id="theme" rel="stylesheet" title="Default" href="../../_/css/site.css">
@@ -122,6 +124,7 @@
 <nav class="breadcrumbs" aria-label="breadcrumbs">
   <ul>
     <li><a href="../index.html">Lisk Documentation</a></li>
+    <li><a href="index.html">Run Blockchain</a></li>
     <li><a href="blockchain-reset.html">Resetting and snapshotting the blockchain</a></li>
   </ul>
 </nav>
@@ -308,6 +311,9 @@
   <li class="nav-item" data-depth="2">
     <a class="nav-link" href="setup-relayer.html">Setting up a relayer node</a>
   </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="blockchain-reset.html">Resetting and snapshotting the blockchain</a>
+  </li>
 </ul>
   </li>
   <li class="nav-item parent" data-depth="1">
@@ -362,6 +368,24 @@
 <ul class="nav-list">
   <li class="nav-item" data-depth="2">
     <a class="nav-link" href="../api/lisk-node-rpc.html">RPC API for Lisk nodes</a>
+  </li>
+  <li class="nav-item parent" data-depth="2">
+    <button class="nav-item-toggle"></button>
+    <span class="nav-text">Module RPC APIs</span>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../api/module-rpc-api/auth-endpoints.html">Auth module: Endpoint reference</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../api/module-rpc-api/fee-endpoints.html">Fee module: Endpoint reference</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../api/module-rpc-api/mainchain-interoperability-endpoints.html">Mainchain Interoperability module: Endpoint reference</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api/lisk-service-http.html">HTTP API (Lisk Service)</a>
   </li>
   <li class="nav-item" data-depth="2">
     <a class="nav-link" href="../api/lisk-service-pubsub.html">Publish/Subscribe API (Lisk Service)</a>
@@ -451,31 +475,60 @@
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
 <li><a href="#database-locations">Database locations</a></li>
-<li><a href="#resetting-the-blockchain">Resetting the blockchain</a></li>
 <li><a href="#creating-snapshots-of-the-blockchain">Creating snapshots of the blockchain</a></li>
+<li><a href="#resetting-the-blockchain">Resetting the blockchain</a></li>
 <li><a href="#importing-a-snapshot">Importing a snapshot</a></li>
 </ul>
+</div>
+<div id="preamble">
+<div class="sectionbody">
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+It is recommended to perform a backup/snapshot before resetting the blockchain.
+The backup can then be used to restore the blockchain.
+</td>
+</tr>
+</table>
+</div>
+</div>
 </div>
 <div class="sect1">
 <h2 id="database-locations"><a class="anchor" href="#database-locations"></a>Database locations</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The data of a blockchain application is stored in the following key-value stores:</p>
+<p>The data of a blockchain application is stored in the following key-value stores listed below:</p>
 </div>
 <div class="dlist">
 <dl>
 <dt class="hdlist1">blockchain.db</dt>
 <dd>
-<p>Stores blocks, transactions and states.</p>
+<p>This database stores blocks, transactions, and states.</p>
 </dd>
 <dt class="hdlist1">node.db</dt>
 <dd>
-<p>Stores peer data, or data unique to each node.</p>
+<p>This database stores peer data, or data unique to each node.</p>
 </dd>
-<dt class="hdlist1">forger.db</dt>
+<dt class="hdlist1">generator.db</dt>
 <dd>
-<p>Stores forging data which is unique to each delegate.
-Important for enabling forging.</p>
+<p>This database stores generator-specific data unique to each validator, such as the public key, generated blocks, balance, accumulated rewards, etc., and is important for enabling block generation.</p>
+</dd>
+<dt class="hdlist1">legacy.db</dt>
+<dd>
+<p>This database is used to store legacy blocks and transactions, which are used to verify/provide legacy blocks to the network.</p>
+</dd>
+<dt class="hdlist1">module.db</dt>
+<dd>
+<p>This database is used by the modules to store off-chain data.
+Currently, only the random module is used to store <code>seedReveals</code>.</p>
+</dd>
+<dt class="hdlist1">state.db</dt>
+<dd>
+<p>This database stores on-chain data, specifically, the state of each module with the state Merkle tree.</p>
 </dd>
 </dl>
 </div>
@@ -483,48 +536,7 @@ Important for enabling forging.</p>
 <p>All databases are located under <code>~/.lisk/BAPP-NAME/data/</code></p>
 </div>
 <div class="paragraph">
-<p>If plugins are registered in the application, they will have a separate key-value store for each plugin for the plugin-specific off-chain data under <code>~/.lisk/BAPP-NAME/plugins/data/</code>.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="resetting-the-blockchain"><a class="anchor" href="#resetting-the-blockchain"></a>Resetting the blockchain</h2>
-<div class="sectionbody">
-<div class="admonitionblock caution">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-caution" title="Caution"></i>
-</td>
-<td class="content">
-<div class="title">This will remove all existing on-chain data of the blockchain application!</div>
-Please note that the blockchain height will be reset back to 1 again the next time the application is started, and all existing accounts will be deleted. In addition, the genesis accounts will be reset to the state defined in the respective genesis block.
-</td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-<p>To reset the blockchain data of an application, it is therefore  only necessary to reset the <code>blockchain.db</code>.</p>
-</div>
-<div class="paragraph">
-<p>This can be achieved by using the <code>blockchain:reset</code> command of the application CLI.</p>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-Before using the command, ensure the application is stopped and is not running anymore.
-</td>
-</tr>
-</table>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">bin/run blockchain:reset</code></pre>
-</div>
+<p>If plugins are registered in the application, they will have a separate key-value store for the plugin-specific off-chain data under <code>~/.lisk/BAPP-NAME/plugins/data/</code>.</p>
 </div>
 </div>
 </div>
@@ -548,30 +560,56 @@ Before using the command, ensure the application is stopped and is not running a
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">$ bin/run blockchain:export</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">$ ./bin/run blockchain:export</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>A command reference can be viewed by adding the <code>--help</code> parameter:</p>
+<p>In order to view the <code>blockchain:export</code> command reference, check out the <a href="../../lisk-sdk/v6/client-cli.html#blockchainexport" class="xref page">Client CLI</a> page.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="resetting-the-blockchain"><a class="anchor" href="#resetting-the-blockchain"></a>Resetting the blockchain</h2>
+<div class="sectionbody">
+<div class="admonitionblock caution">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-caution" title="Caution"></i>
+</td>
+<td class="content">
+<div class="title">This will remove all existing on-chain data of the blockchain application!</div>
+Please note that the blockchain height will be reset back to 1 again the next time the application is started, and all existing accounts will be deleted.
+In addition, the genesis accounts will be reset to the state defined in the respective genesis block.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>To reset the blockchain data of an application, it is therefore  only necessary to reset the <code>blockchain.db</code>.</p>
+</div>
+<div class="paragraph">
+<p>This can be achieved by using the <code>blockchain:reset</code> command of the client CLI.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Before using the command, please ensure the application is stopped and is not running anymore.
+</td>
+</tr>
+</table>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">% bin/run blockchain:export --help
-Export to &lt;FILE&gt;.
-
-USAGE
-  $ hello_app blockchain:export
-
-OPTIONS
-  -d, --data-path=data-path  Directory path to specify where the node data is stored. Environment variable
-                             "LISK_DATA_PATH" can also be used.
-
-  -o, --output=output        The output directory. Default will set to current working directory.
-
-EXAMPLES
-  blockchain:export
-  blockchain:export --data-path ./data --output ./my/path/</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">$ ./bin/run blockchain:reset</code></pre>
 </div>
+</div>
+<div class="paragraph">
+<p>For more information about the <code>blockchain:reset</code> command, see the <a href="../../lisk-sdk/v6/client-cli.html#blockchainreset" class="xref page">Client CLI</a> page.</p>
 </div>
 </div>
 </div>
@@ -595,37 +633,21 @@ Before using the command, ensure the application is stopped and is not running a
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">bin/run blockchain:import blockchain.db.tar.gz</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">$ ./bin/run blockchain:import blockchain.db.tar.gz</code></pre>
 </div>
 </div>
 <div class="paragraph">
 <p>A command reference can be viewed by adding the <code>--help</code> parameter:</p>
 </div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">% bin/run blockchain:import --help
-Import from &lt;FILE&gt;.
-
-USAGE
-  $ hello_app blockchain:import FILEPATH
-
-ARGUMENTS
-  FILEPATH  Path to the gzipped blockchain data.
-
-OPTIONS
-  -d, --data-path=data-path  Directory path to specify where the node data is stored. Environment variable
-                             "LISK_DATA_PATH" can also be used.
-
-  -f, --force                Delete and overwrite existing blockchain data
-
-EXAMPLES
-  blockchain:import ./path/to/blockchain.db.tar.gz
-  blockchain:import ./path/to/blockchain.db.tar.gz --data-path ./lisk/
-  blockchain:import ./path/to/blockchain.db.tar.gz --data-path ./lisk/ --force</code></pre>
+<div class="paragraph">
+<p>In order to view the <code>blockchain:import</code> command reference, check out the <a href="../../lisk-sdk/v6/client-cli.html#blockchainimport" class="xref page">Client CLI</a> page.</p>
 </div>
 </div>
 </div>
-</div>
+<nav class="pagination">
+  <span class="prev"><a href="setup-relayer.html">Setting up a relayer node</a></span>
+  <span class="next"><a href="../integrate-blockchain/index.html">Integrate Blockchain</a></span>
+</nav>
 </article>
   </div>
 </main>

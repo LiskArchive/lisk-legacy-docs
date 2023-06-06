@@ -13,6 +13,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_lisk_wallet: https://lisk.com/wallet
 :url_liskscan: https://liskscan.com/
 :url_liskobserver: https://lisk.observer/
+:url_jsonrpc: https://www.jsonrpc.org/specification
 // Project URLs
 :url_run_staking: run-blockchain/staking.adoc
 :url_understand_consensus: understand-blockchain/consensus/pos-poa.adoc
@@ -44,6 +45,7 @@ To be able to become a validator for a blockchain, it is assumed that the follow
 . A sufficient account balance to send the "Register Validator" transaction (minimum 10 LSK for the Lisk Mainnet).
 You can verify your balance for example by requesting the `token_getBalance` endpoint.
 . A sufficient account balance to perform the <<how-to-stake-to-increase-the-validator-weight,self-stake>>.
+
 
 == How to register as a validator
 
@@ -276,6 +278,30 @@ The new validator's name should be displayed in the response, along with the cor
 }
 ----
 
+== Allow methods in the node config
+
+To be able to run certain validator-related commands of the node, it is required to enable security-sensitive methods in the node config.
+
+.config.json
+[source,json]
+----
+{
+  "rpc": {
+    "modes": ["ipc"],
+    "allowedMethods": ["generator", "system", "random"]
+  },
+}
+----
+
+Restart the node with the `--overwrite-config` flag, to load the updated configuration.
+
+[TIP]
+====
+`allowedMethods` refers to the `method` defined in the {url_jsonrpc}[JSON-RPC specification^].
+
+Add the `namespace`, to allow all endpoints of `namespace`, or `namespace_endpointName` to allow a specific endpoint.
+====
+
 == Import the validator keys
 
 After creating the validator keys as suggested in the  <<creating-the-validator-keys>> section, the next step is to import them into the node.
@@ -364,7 +390,6 @@ To not miss any rewards, it is of high interest for a validator to set the hash 
 Lisk Core::
 +
 --
-//TODO: Verify Lisk Core command
 [source,bash]
 ----
 lisk-core endpoint:invoke random_setHashOnion '{"address":"lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3"}'
@@ -382,6 +407,21 @@ Sidechain node::
 
 To verify that the hash onion was set correctly, <<get-the-hash-onion>> back from the node.
 
+[CAUTION]
+====
+If you see the following error after running the command:
+
+[source,bash]
+----
+$ lisk-core endpoint:invoke random_setHashOnion '{"address":"lskxsddtvbc7ze98bqbawaq3ydj2f8387429633t9"}'
+ ›   Error: Response not received in 3000ms
+----
+
+This suggests that the API timed out.
+However, the hash onion is still created in most cases.
+You can wait for a while and then <<get-the-hash-onion>>, to verify that it actually is set.
+====
+
 === Get the hash onion
 
 Currently, there is nothing else to do with the hash onion, after it is created.
@@ -394,7 +434,6 @@ To get the hash onion seed of a validator, request the `random_getHashOnionSeeds
 Lisk Core::
 +
 --
-//TODO: Verify Lisk Core command
 [source,bash]
 ----
 lisk-core endpoint:invoke random_getHashOnionSeeds --pretty

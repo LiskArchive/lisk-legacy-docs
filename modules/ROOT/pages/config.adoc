@@ -17,10 +17,10 @@ Mona Bärenfänger <mona@lightcurve.io> Muhammad Talha <muhammad.talha@lightcurv
 :keys_fixture: https://github.com/LiskHQ/lisk-sdk/blob/development/framework/src/testing/fixtures/keys_fixture.json
 // Project URLs
 :url_configure_app_guide: beta@ROOT::build-blockchain/configuration.adoc
+:url_run_keys_create: beta@ROOT::run-blockchain/become-a-validator.adoc#creating-the-validator-keys
+:url_run_key_path: beta@ROOT::run-blockchain/account-management.adoc#key-derivation-path
 
 A complete reference of the client configurations is described on this page.
-
-== Configuration 
 
 By default, each blockchain client has a set of configurations that enable it to run properly.
 
@@ -29,13 +29,8 @@ The configuration schema can be found at {url_github_sdk_configschema}[client co
 
 The configuration of a blockchain client has the following options, as listed below:
 
-* <<network>>
-* <<genesis>>
-* <<transactionPool>>
-* <<system>>
-* <<rpc>>
-* <<generator>>
 
+== Default Configuration
 By default, the complete configuration for a Lisk blockchain client looks like this:
 
 .Default config options
@@ -88,19 +83,103 @@ export const defaultConfig = {
 		"keys": {},
 	},
 
-	// (Optional) modules hold a group of module-specific configs which is passed to a particular module.
+	// Modules hold a group of module-specific configs which is passed to a particular module.
 	"modules": {},
 
-	// (Optional) plugins hold a group of plugin-specific configs which is passed to a particular plugin.
+	// Plugins hold a group of plugin-specific configs which is passed to a particular plugin.
 	"plugins": {},
 };
 
 export const DEFAULT_KEY_DERIVATION_PATH = "m/25519'/134'/0'/0'";
 ----
-NOTE: The `*DEFAULT_KEY_DERIVATION_PATH*` points to the path for deriving the private key of the n-th generator key pair. 
-For more information, see {url_key_derivation_lip66}[Introduce tree based key derivation and account recovery^].
 
+NOTE: The `*DEFAULT_KEY_DERIVATION_PATH*` points to the path for deriving the private key of the n-th generator key pair. 
+For more information, see xref:{url_run_key_path}[key derivation path] or {url_key_derivation_lip66}[LIP 0066: Introduce tree based key derivation and account recovery^].
+
+== Client config reference
 The following sections describe various configuration categories and their available options.
+
+=== genesis
+The `genesis` configuration holds the settings for the blockchain protocol.
+
+WARNING: The `genesis` configurations should only be changed by the blockchain developer, and not by the node operator!
+If a node operator changes any of the genesis configurations, it might cause the node to fork.
+
+[tabs]
+=====
+Properties::
++
+--
+[cols="2,1,1,2,4",options="header",stripes="hover"]
+|===
+|Property's Name
+|Datatype
+|Optionality
+|Description
+|Sample
+
+| block
+| object
+| optional
+| This is the first block of a chain.
+a|[source,js]
+----
+"block": {
+	"fromFile": "./config/genesis_block.blob'",
+	"blob": "<<Hex of encoded genesis block>>",
+},
+----
+
+| chainID
+| string
+| mandatory
+| Represents a 4-byte hex string that identifies each chain in the Lisk ecosystem. The length of the hex string should be 8 characters.
+| 00000000
+
+| maxTransactionsSize
+| number
+| mandatory
+| The maximum transaction size (kilobytes) allowed in a block.
+| 15 * 1024
+
+| blockTime
+| number
+| mandatory
+| The frequency of blocks to be created.
+| 10
+
+| bftBatchSize
+| number
+| mandatory
+| The length of a round for block generation.
+| 103
+
+|===
+
+--
+Sample::
++
+--
+[source,js]
+----
+const customConfig =
+{
+	// Other types of configurations.
+	"genesis": {
+		"block": {
+			"fromFile": "./config/genesis_block.blob",
+			"blob": "<<Hex of encoded genesis block>>",
+		},
+		"chainID": "00000000",
+		"maxTransactionsSize": 15 * 1024, // Kilo Bytes
+		"blockTime": 10,
+		"bftBatchSize": 103,
+	},
+	// Other types of configurations.
+}
+----
+--
+=====
 
 === network 
 The `network` category contains the following configuration options:
@@ -120,13 +199,13 @@ Properties::
 
 | version
 | string
-| mandatory
+| optional
 | The version of network protocol.
 | 1.0
  
 | port
 | number
-| mandatory
+| optional
 | The port defines an open port for P2P incoming connections.
 | 7667
  
@@ -232,7 +311,7 @@ const customConfig =
 				"ip": "192.110.01.12",
 				"port": 5000
 			},
-		]            
+		],
 		"whitelistedPeers": [
 			{
 				"ip": "192.110.01.12",
@@ -253,8 +332,8 @@ const customConfig =
 WARNING: The connectivity of the node might be negatively impacted if the `*fixedPeers*` configuration is used.
 Beware of declaring only trustworthy peers in `*whitelistedPeers*` as these could attack a node with a denial-of-service attack because the banning mechanism is deactivated.
 
-=== genesis
-The `genesis` configuration holds the settings for the blockchain protocol.
+=== rpc
+Apps on Lisk can communicate with a node via the `rpc` communication protocol.
 
 [tabs]
 =====
@@ -269,141 +348,58 @@ Properties::
 |Description
 |Sample
 
-| block
-| object
-| optional
-| This is the first block of a chain.
-a|[source,js]
-----
-"block": {
-	"fromFile": "./config/genesis_block.blob'",
-	"blob": "<<Hex of encoded genesis block>>",
-},
-----
- 
-| chainID
+| modes
+| array
+| mandatory
+| Modes of communication between lisk node and external services.
+| IPC, WS, HTTP
+
+| port
+| number
+| mandatory
+| Port to be used for a 'WS' connection.
+| 7887
+
+| host
 | string
 | mandatory
-| Represents a 4-byte hex string that identifies each chain in the Lisk ecosystem. The length of the hex string should be 8 characters.
-| 00000000
- 
-| maxTransactionsSize
-| number
-| mandatory
-| The maximum transaction size (kilobytes) allowed in a block.
-| 15 * 1024
- 
-| blockTime
-| number
-| mandatory
-| The frequency of blocks to be created.
-| 10
- 
-| bftBatchSize
-| number
-| mandatory
-| The length of a round for block generation.
-| 103
+| Address of the server to connect.
+| 127.0.0.1
+
+| allowedMethods
+| array
+| optional
+| Allowed methods for the node to use.
+Add the `namespace`, to allow all endpoints of namespace, or `namespace_endpointName` to allow a specific endpoint.
+[*] allows all methods, [] none.
+| ["generator", "system", "random"]
+
+| accessControlAllowOrigin
+| string
+| optional
+|
+|
 
 |===
-
 --
 Sample::
 +
 --
 [source,js]
 ----
-const customConfig = 
+const customConfig =
 {
 	// Other types of configurations.
-	"genesis": {
-		"block": {
-			"fromFile": "./config/genesis_block.blob",
-			"blob": "<<Hex of encoded genesis block>>",
-		},
-		"chainID": "00000000",
-		"maxTransactionsSize": 15 * 1024, // Kilo Bytes
-		"blockTime": 10,
-		"bftBatchSize": 103,
+	"rpc": {
+		"modes": ["IPC"],
+		"port": 7887,
+		"host": "127.0.0.1",
 	},
 	// Other types of configurations.
 }
 ----
 --
 =====
-
-
-=== transactionPool
-This type of configuration holds the settings for the transaction pool.
-
-[tabs]
-=====
-Properties::
-+
---
-[cols="2,1,1,2,4",options="header",stripes="hover"]
-|===
-|Property's Name
-|Datatype
-|Optionality
-|Description
-|Sample
-
-| maxTransactions
-| number
-| optional
-| The maximum number of transactions in the pool.
-| 4096
- 
-| maxTransactionsPerAccount
-| number
-| optional
-| The maximum number of transactions in the pool per sender account.
-| 64
- 
-| transactionExpiryTime
-| number
-| optional
-| Defines the timeout (milliseconds) of the transaction in the pool.
-| 3 * 60 * 60 * 1000
- 
-| minEntranceFeePriority
-| string
-| optional
-| The minimum fee required for a transaction to be added to the transaction pool.
-| 0
- 
-| minReplacementFeeDifference
-| string
-| optional
-| The difference of minimum fee required to replace a transaction with the same nonce
-| 10
-
-|===
-
---
-Sample::
-+
---
-[source,js]
-----
-const customConfig = 
-{
-	// Other types of configurations.
-	"transactionPool": {
-		"maxTransactions": 4096,
-		"maxTransactionsPerAccount": 64,
-		"transactionExpiryTime": 3 * 60 * 60 * 1000,
-		"minEntranceFeePriority": "0",
-		"minReplacementFeeDifference": "10",
-	},
-	// Other types of configurations.
-}
-----
---
-=====
-
-
 
 === system
 The `system` configuration holds settings for the node.
@@ -446,6 +442,12 @@ Usually, the events are based on the latest, given number of blocks.
 | Level of the log to be maintained.
 | info
 
+| enableMetrics
+| string
+| optional
+|
+|
+
 |===
 --
 Sample::
@@ -457,7 +459,7 @@ const customConfig =
 {
 	// Other types of configurations.
 	"system": {
-		"version": "1.0"
+		"version": "1.0",
 		"dataPath": "~/.lisk/beta-sdk-app",
 		"keepEventsForHeights": 300,
 		"logLevel": "info",
@@ -468,66 +470,23 @@ const customConfig =
 --
 =====
 
+=== modules
+The `modules` holds module-specific configuration options of the blockchain client.
 
-=== rpc
-Apps on Lisk can communicate with a node via the `rpc` communication protocol.
+WARNING: The `module` configurations should only be changed by the blockchain developer, and not by the node operator!
+If a node operator changes any of the module-specific configurations, it might cause the node to a fork.
 
-[tabs]
-=====
-Properties::
-+
---
-[cols="2,1,1,2,4",options="header",stripes="hover"]
-|===
-|Property's Name
-|Datatype
-|Optionality
-|Description
-|Sample
+Please check the available documentation for the respective module to learn about the available configuration options.
 
-| modes
-| enum
-| mandatory
-| Modes of communication between lisk node and external services.
-| IPC, WS, HTTP
- 
-| port
-| number
-| mandatory
-| Port to be used for a 'WS' connection.
-| 7887
+=== plugins
+The `plugins` holds plugin-specific configuration options of the blockchain client.
 
-| host
-| string
-| mandatory
-| Address of the server to connect.
-| 127.0.0.1
+Please check the available documentation for the respective plugin to learn about the available configuration options.
 
-|===
---
-Sample::
-+
---
-[source,js]
-----
-const customConfig = 
-{
-	// Other types of configurations.
-	"rpc": {
-		"modes": ["IPC"],
-		"port": 7887,
-		"host": "127.0.0.1",
-	},
-	// Other types of configurations.
-}
-----
---
-=====
+=== Optional configurations
 
-
-
-=== generator
-The `generator` configuration is used to read keys from a file, which are then stored in the database.
+==== generator
+The `generator` configuration is used to read xref:{url_run_reys_create}[validator keys] from a file, which are then stored in the database.
 
 [tabs]
 =====
@@ -545,13 +504,11 @@ Properties::
 | keys
 | object
 | optional
-| Contains a path to the "keys" file for the generator.
-a| 
-[source,js]
+| Contains a path to the "keys" file of a generator/validator.
+a|
+[source,json]
 ----
-"generator": {
-	"keys": {},
-},
+{"fromFile": "keys.json"}
 ----
 
 |===
@@ -563,12 +520,12 @@ Sample::
 --
 [source,js]
 ----
-const customConfig = 
+const customConfig =
 {
 	// Other types of configurations.
 	"generator": {
 		"keys": {
-			"fromFile": "<<path/filename>>",
+			"fromFile": "keys.json",
 		},
 	},
 	// Other types of configurations.
@@ -577,10 +534,10 @@ const customConfig =
 --
 =====
 
-==== keys schema
+===== keys schema
 The file passed to the `generator` configuration contains the schema for the keys to be used by the generator.
 
-TIP: For more information, see {url_plain_object_schema}[plainKeysObjectSchema^], {url_encrypted_object_schema}[encryptedObjectSchema^] and a sample {keys_fixture}[ keys_fixture.json^]. 
+TIP: For more information, see {url_plain_object_schema}[plainKeysObjectSchema^], {url_encrypted_object_schema}[encryptedObjectSchema^] and a sample {keys_fixture}[ keys_fixture.json^].
 
 [tabs]
 =====
@@ -605,7 +562,7 @@ Properties::
 | object
 | mandatory
 | Contains the object for plain keys.
-a| 
+a|
 [source,js]
 ----
 "plain": {
@@ -620,7 +577,7 @@ a|
 | object
 | mandatory
 | Contains the object for encrypted keys.
-a| 
+a|
 [source,js]
 ----
 "encrypted": {
@@ -681,3 +638,156 @@ Sample keys file::
 ----
 --
 =====
+
+==== legacy
+The `legacy` category contains the following configuration options:
+
+[tabs]
+=====
+Properties::
++
+--
+[cols="2,1,1,2,4",options="header",stripes="hover"]
+|===
+|Property's Name
+|Datatype
+|Optionality
+|Description
+|Sample
+
+| sync
+| boolean
+| optional
+|
+| true
+
+| brackets
+| array
+| mandatory
+|
+| [{"startHeight": 123,"snapshotHeight": 123,"snapshotBlockID": "0f4ea1c3cfb61b99d387b26aaadf57936a528e5c713c6e55aa06f4d621b7e6f0"}]
+
+|===
+
+--
+Sample::
++
+--
+[source,js]
+----
+const customConfig =
+{
+	// Other types of configurations.
+	"network": {
+		"version": "1.0",
+		"seedPeers": [
+			{
+				"ip": "127.0.0.1",
+				"port": 5000
+			}
+		],
+		"port": 7667,
+		"host": "127.0.0.1",
+		"blacklistedIPs": [
+			"172.112,31.0",
+			"172.112,31.2"
+		],
+		"fixedPeers": [
+			{
+				"ip": "192.110.01.12",
+				"port": 5000
+			},
+		]
+		"whitelistedPeers": [
+			{
+				"ip": "192.110.01.12",
+				"port": 5000
+			},
+		],
+		"maxOutboundConnections": 20,
+		"maxInboundConnections": 100,
+		"wsMaxPayload": 3048576,
+		"advertiseAddress": true,
+		},
+	// Other types of configurations.
+}
+----
+--
+=====
+
+==== transactionPool
+This type of configuration holds the settings for the transaction pool.
+
+[tabs]
+=====
+Properties::
++
+--
+[cols="2,1,1,2,4",options="header",stripes="hover"]
+|===
+|Property's Name
+|Datatype
+|Optionality
+|Description
+|Sample
+
+| maxTransactions
+| number
+| optional
+| The maximum number of transactions in the pool.
+| 4096
+
+| maxTransactionsPerAccount
+| number
+| optional
+| The maximum number of transactions in the pool per sender account.
+| 64
+
+| transactionExpiryTime
+| number
+| optional
+| Defines the timeout (milliseconds) of the transaction in the pool.
+| 3 * 60 * 60 * 1000
+
+| minEntranceFeePriority
+| string
+| optional
+| The minimum fee required for a transaction to be added to the transaction pool.
+| 0
+
+| minReplacementFeeDifference
+| string
+| optional
+| The difference of minimum fee required to replace a transaction with the same nonce
+| 10
+
+|===
+
+--
+Sample::
++
+--
+[source,js]
+----
+const customConfig =
+{
+	// Other types of configurations.
+	"transactionPool": {
+		"maxTransactions": 4096,
+		"maxTransactionsPerAccount": 64,
+		"transactionExpiryTime": 3 * 60 * 60 * 1000,
+		"minEntranceFeePriority": "0",
+		"minReplacementFeeDifference": "10",
+	},
+	// Other types of configurations.
+}
+----
+--
+=====
+
+
+
+
+
+
+

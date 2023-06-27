@@ -5,54 +5,129 @@ Muhammad Talha <muhammad.talha@lightcurve.io>
 :page-toclevels: 4
 :idprefix:
 :idseparator: -
-:imagesdir: ../../assets/images
-//External URLs
-:url_npm_lisk_sdk: https://www.npmjs.com/package/lisk-sdk
-:JSON_RPC_Specs: https://www.jsonrpc.org/specification
 
-// Project URLs
-:docs_sdk: v6@lisk-sdk::
-:url_advanced_rpc: api/lisk-node-rpc.adoc
-:url_endpoints_modules: build-blockchain/module/endpoints-methods.adoc#endpoints
-:url_endpoints_plugins: build-blockchain/plugin/plugin-endpoints.adoc#creating-an-endpoint
-:url_sync_store: build-blockchain/plugin/plugin-class.adoc#sync-and-store-new-event
-:url_cli: {docs_sdk}client-cli.adoc#endpoint
-:url_intro_modules: understand-blockchain/sdk/modules-commands.adoc
-:url_intro_plugins: understand-blockchain/sdk/plugins.adoc
-// :url_references_elements_apiclient: {sdk_docs}references/lisk-elements/api-client.adoc
-// :url_references_elements_client: {sdk_docs}references/lisk-elements/client.adoc
-:url_advanced_rpc_endpoints: {url_advanced_rpc}#endpoints
+:docs_core: v4@lisk-core::
+:docs_service: 0.7@lisk-service::
+:url_npm_core_setup: {docs_core}setup/npm.adoc
+:url_blockchain_client: build-blockchain/create-blockchain-client.adoc
+:url_service_docker_setup: {docs_service}setup/docker.adoc
+:url_service_source_setup: {docs_service}setup/source.adoc
+:url_connect_node: {docs_service}/setup/docker.adoc#connecting-lisk-service-to-a-blockchain-node
 
-// TODO: Update the page by uncommenting the hyperlinks once the updated pages are available.
+Lisk Service is a web application middleware that allows interaction with various blockchain networks based on the Lisk protocol.
+In this guide, you'll learn to connect a blockchain node with Lisk Service.
 
-// === Setting up Lisk Core
+[NOTE]
+====
+*Pre-requisite*
 
-// Lisk Service is installed in addition to a Lisk blockchain application such as Lisk Core, in order to provide enriched network data for third-party services.
+It is necessary to set up a blockchain node first, before setting up Lisk Service.
 
-// The first step is therefore to install Lisk Core.
+* To connect with Lisk Service, make sure that you have set up a blockchain node e.g. Lisk Core node. See any of our setup guides, such as the xref:{url_npm_core_setup}[].
+* Alternatively, you can setup up a sidechain node to connect to Lisk Service.
+If you are starting from scratch, take a look at our xref:{url_blockchain_client}[How to create a new blockchain client] guide.
 
-// It is recommended to use NPM to conveniently install Lisk Core through the command line:
+* Lisk Service must be set up via either the recommended xref:{url_service_docker_setup}[] or the xref:{url_service_source_setup}[] guide.
+====
 
-// [source,bash]
-// ----
-// npm install --global --production lisk-core
-// ----
+== Configuring a node
 
-// Check out the xref:{url_core_setup_npm}[Lisk Core NPM setup] guide for more information on how to install Lisk Core on your machine.
+Lisk Service is installed in addition to a Lisk blockchain application such as Lisk Core or a sidechain client, to provide enriched network data for third-party services.
 
-// === Configuring Lisk Core
+Use the client CLI to start the node with the desired configurations.
 
-// Use the Lisk Core CLI to start Lisk Core with the desired configurations.
+* `--api-ws` enables the WebSocket API of the node, if not already enabled within the config.json file.
+* `--api-ws-host=0.0.0.0` allows remote servers to connect to the blockchain node via WS API.
+If this option is not set, it defaults to `127.0.0.1`.
+* `--api-ws-port=7887` is the port for the WebSocket API.
+* `--api-http` allows remote servers to connect with the blockchain node via HTTP.
 
-// * The `--network` flag determines the blockchain network Lisk Core connects to.
-// * `--api-ws` enables the WebSocket API of the node, if not already enabled within the config.json file.
-// * `--api-ws-host=0.0.0.0` allows remote servers to connect to the Lisk Core WS API.
-// If this option is not set, it defaults to `127.0.0.1`.
-// * `--api-ws-port=7887` the port for the WebSocket API.
+[tabs]
+=====
+Sidechain node::
++
+--
+[source,bash]
+----
+./bin/run start --api-ws --api-ws-host=0.0.0.0 --api-ws-port=7887 --api-http
+----
+--
+Lisk Core node::
++
+--
+The `--network` flag determines the blockchain network Lisk Core connects to.
 
-// [source,bash]
-// ----
-// lisk-core start --network mainnet --api-ws --api-ws-host=0.0.0.0 --api-ws-port=7887
-// ----
+[source,bash]
+----
+lisk-core start --network mainnet --api-ws --api-ws-host=0.0.0.0 --api-ws-port=7887 --api-http
+----
+To connect to a different network, replace `mainnet` with either `testnet` or `devnet`.
+--
+=====
 
-// To connect to a different network, replace `mainnet` with either `testnet` or `devnet`.
+Once the node starts, follow the steps mentioned in the xref:{url_connect_node}[Connecting Lisk Service to a blockchain node] section to connect Lisk service with a node.
+
+== Running Lisk Service
+Run the docker container for `lisk-service`, `redis`, and `mysql` or `mariadb`.
+
+[tabs]
+=====
+lisk-service::
++
+--
+.Run "lisk-service" container: ./lisk-service/
+[source,bash]
+----
+make up
+----
+--
+redis::
++
+--
+.Run "redis" container: ./lisk-service/jenkins/redis
+[source,bash]
+----
+make up
+----
+--
+mariadb::
++
+--
+.Run "mariadb" container: ./lisk-service/jenkins/mariadb
+[source,bash]
+----
+make up
+----
+--
+=====
+
+== Checking established connection 
+
+After both the blockchain client and the lisk-service are running, you'll see a similar message to the following on your node CLI.
+
+[source,bash]
+----
+2023-06-27T11:03:39.085Z INFO XYZ.local engine 35439 New web socket client connected
+----
+
+Another hint that your node is now connected to lisk-service is that a series of API calls will be made from the `indexer` service of lisk-service to index all the blocks from your node. This will also enable lisk-service to serve end-user requests.
+
+[source,bash]
+----
+2023-06-27T11:07:16.746Z INFO XYZ.local engine 35439 [status=success method=chain_getBlockByHeight id=1230506] Handled RPC request
+2023-06-27T11:07:16.746Z INFO XYZ.local engine 35439 [status=success method=chain_getBlockByHeight id=1230507] Handled RPC request
+2023-06-27T11:07:16.746Z INFO XYZ.local engine 35439 [status=success method=chain_getBlockByHeight id=1230508] Handled RPC request
+2023-06-27T11:07:16.746Z INFO XYZ.local engine 35439 [status=success method=chain_getBlockByHeight id=1230509] Handled RPC request
+2023-06-27T11:07:16.746Z INFO XYZ.local engine 35439 [status=success method=chain_getBlockByHeight id=1230510] Handled RPC request
+2023-06-27T11:07:16.746Z INFO XYZ.local engine 35439 [status=success method=chain_getBlockByHeight id=1230511] Handled RPC request
+2023-06-27T11:07:16.746Z INFO XYZ.local engine 35439 [status=success method=chain_getBlockByHeight id=1230512] Handled RPC request
+2023-06-27T11:07:16.747Z INFO XYZ.local engine 35439 [status=success method=chain_getBlockByHeight id=1230513] Handled RPC request
+2023-06-27T11:07:16.747Z INFO XYZ.local engine 35439 [status=success method=chain_getBlockByHeight id=1230514] Handled RPC request
+----
+
+Invoke an endpoint of the blockchain node via lisk-service API like this:
+
+[source,bash]
+----
+curl --location 'http://localhost:9901/api/v3/invoke' --header 'Content-Type: application/json' --data '{"endpoint": "chain_getLastBlock","params": {}}' | json_pp
+----

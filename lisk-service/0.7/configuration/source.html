@@ -124,7 +124,7 @@
     <li><a href="source.html">Configuration with PM2</a></li>
   </ul>
 </nav>
-  <div class="edit-this-page"><a href="https://github.com/LiskHQ/lisk-service/edit/1647-Update-Docker-setup-guide/docs/antora/modules/ROOT/pages/configuration/source.adoc"><img class="pencil">Edit this Page</a></div>
+  <div class="edit-this-page"><a href="https://github.com/LiskHQ/lisk-service/edit/development/docs/antora/modules/ROOT/pages/configuration/source.adoc"><img class="pencil">Edit this Page</a></div>
   </div>
 <div class="body">
 <div class="nav-container" data-component="lisk-service" data-version="0.7">
@@ -140,9 +140,6 @@
     <button class="nav-item-toggle"></button>
     <span class="nav-text">Setup</span>
 <ul class="nav-list">
-  <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../setup/docker.html">Installation with Docker</a>
-  </li>
   <li class="nav-item" data-depth="2">
     <a class="nav-link" href="../setup/source.html">Installation from source code</a>
   </li>
@@ -229,8 +226,133 @@
 <div id="toc" class="toc">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
+<li><a href="#default-configuration">Default configuration</a></li>
 <li><a href="#custom-configuration">Custom configuration</a></li>
 </ul>
+</div>
+<div class="sect1">
+<h2 id="default-configuration"><a class="anchor" href="#default-configuration"></a>Default configuration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <a href="https://pm2.keymetrics.io/docs/usage/application-declaration/" target="_blank" rel="noopener">PM2 ecosystem file</a> provides the possibility to configure behavior, options, environment variables, and the log files of Lisk Service with PM2.
+The default configuration file is <code>ecosystem.core3.config.js</code>, and is located in the root folder of <code>lisk-service</code>:
+It contains a configuration to connect to a local Lisk Core node.</p>
+</div>
+<div class="paragraph">
+<p>This config will be used by default when starting Lisk Service with the following:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">pm2 start ecosystem.core3.config.js</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Contents of <code>ecosystem.core3.config.js</code></div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-javascript hljs" data-lang="javascript">module.exports = {
+	apps: [
+		{
+			name: 'lisk-service-gateway',
+			script: 'app.js',
+			cwd: './services/gateway',
+			pid_file: './pids/service_gateway.pid',
+			out_file: './logs/service_gateway.log',
+			error_file: './logs/service_gateway.err',
+			log_date_format: 'YYYY-MM-DD HH:mm:ss SSS',
+			watch: false,
+			kill_timeout: 10000,
+			max_memory_restart: '512M',
+			autorestart: true,
+			env: {
+				PORT: '9901',
+				// --- Remember to set the properties below
+				SERVICE_BROKER: 'redis://localhost:6379/0',
+				WS_RATE_LIMIT_ENABLE: false,
+				WS_RATE_LIMIT_CONNECTIONS: 5,
+				WS_RATE_LIMIT_DURATION: 1, // in seconds
+				HTTP_RATE_LIMIT_ENABLE: false,
+				HTTP_RATE_LIMIT_CONNECTIONS: 200,
+				HTTP_RATE_LIMIT_WINDOW: 10, // in seconds
+				// ENABLE_HTTP_API: 'http-status,http-version2',
+				// ENABLE_WS_API: 'blockchain,rpc-v2',
+				// HTTP_CACHE_CONTROL_DIRECTIVES: 'public, max-age=10',
+				// ENABLE_HTTP_CACHE_CONTROL: 'true'
+			},
+		},
+		{
+			name: 'lisk-service-core',
+			script: 'app.js',
+			cwd: './services/core',
+			pid_file: './pids/service_core.pid',
+			out_file: './logs/service_core.log',
+			error_file: './logs/service_core.err',
+			log_date_format: 'YYYY-MM-DD HH:mm:ss SSS',
+			watch: false,
+			kill_timeout: 10000,
+			max_memory_restart: '1G',
+			autorestart: true,
+			env: {
+				// --- Remember to set the properties below
+				SERVICE_BROKER: 'redis://localhost:6379/0',
+				LISK_CORE_WS: 'ws://localhost:8080',
+				SERVICE_CORE_REDIS: 'redis://localhost:6379/1',
+				SERVICE_CORE_REDIS_VOLATILE: 'redis://localhost:6379/8',
+				SERVICE_CORE_MYSQL: 'mysql://root:password@localhost:3306/lisk',
+				LISK_STATIC: 'https://static-data.lisk.com',
+				GEOIP_JSON: '',
+				INDEX_N_BLOCKS: '0',
+				ENABLE_TRANSACTION_STATS: 'true',
+				ENABLE_JOB_MISSING_BLOCKS: 'true',
+				INDEX_MISSING_BLOCKS_RANGE: '0',
+				TRANSACTION_STATS_HISTORY_LENGTH_DAYS: '366',
+				TRANSACTION_STATS_UPDATE_INTERVAL: '3600',
+				ENABLE_FEE_ESTIMATOR_QUICK: 'true',
+				ENABLE_FEE_ESTIMATOR_FULL: 'false',
+			},
+		},
+		{
+			name: 'lisk-service-market',
+			script: 'app.js',
+			cwd: './services/market',
+			pid_file: './pids/service_market.pid',
+			out_file: './logs/service_market.log',
+			error_file: './logs/service_market.err',
+			log_date_format: 'YYYY-MM-DD HH:mm:ss SSS',
+			watch: false,
+			kill_timeout: 10000,
+			max_memory_restart: '512M',
+			autorestart: true,
+			env: {
+				// --- Remember to set the properties below
+				SERVICE_BROKER: 'redis://localhost:6379/0',
+				SERVICE_MARKET_REDIS: 'redis://localhost:6379/2',
+				// SERVICE_MARKET_FIAT_CURRENCIES: 'EUR,USD,CHF,GBP,RUB',
+				// SERVICE_MARKET_TARGET_PAIRS: 'LSK_BTC,LSK_EUR,LSK_USD,LSK_CHF,BTC_EUR,BTC_USD,BTC_CHF',
+				// EXCHANGERATESAPI_IO_API_KEY: ''
+			},
+		},
+		{
+			name: 'lisk-service-newsfeed',
+			script: 'app.js',
+			cwd: './services/newsfeed',
+			pid_file: './pids/service_newsfeed.pid',
+			out_file: './logs/service_newsfeed.log',
+			error_file: './logs/service_newsfeed.err',
+			log_date_format: 'YYYY-MM-DD HH:mm:ss SSS',
+			watch: false,
+			kill_timeout: 10000,
+			max_memory_restart: '512M',
+			autorestart: true,
+			env: {
+				SERVICE_BROKER: 'redis://localhost:6379/0',
+				SERVICE_NEWSFEED_MYSQL: 'mysql://lisk:password@localhost:3306/lisk?charset=utf8mb4',
+			},
+		},
+	],
+};</code></pre>
+</div>
+</div>
+</div>
 </div>
 <div class="sect1">
 <h2 id="custom-configuration"><a class="anchor" href="#custom-configuration"></a>Custom configuration</h2>
@@ -240,8 +362,16 @@
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cp ecosystem.config.js ecosystem.custom.config.js</code></pre>
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">cp ecosystem.core3.config.js ecosystem.custom.config.js <i class="conum" data-value="1"></i><b>(1)</b></code></pre>
 </div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Copies the file <code>ecosystem.core3.config.js</code> and renames it to <code>ecosystem.custom.config.js</code>.</td>
+</tr>
+</table>
 </div>
 <div class="paragraph">
 <p>Now it is possible to open the new file <code>ecosystem.custom.config.js</code> and adjust it as desired.</p>
@@ -256,7 +386,7 @@
 <i class="fa icon-tip" title="Tip"></i>
 </td>
 <td class="content">
-All available configuration options are described in the <a href="index.html" class="xref page">Configuration reference</a>.
+All available configuration options are described in the <a href="#reference/configuration.adoc" class="xref unresolved">Configuration reference</a>.
 </td>
 </tr>
 </table>
@@ -283,6 +413,9 @@ All available configuration options are described in the <a href="index.html" cl
   }
 }</code></pre>
 </div>
+</div>
+<div class="paragraph">
+<p>Additional commands for managing Lisk Service with PM2 are described on the <a href="../management/source.html" class="xref page">PM2 commands</a> page.</p>
 </div>
 </div>
 </div>

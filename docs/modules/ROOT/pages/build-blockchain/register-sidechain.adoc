@@ -11,6 +11,10 @@ Chris Braithwaite <christopher.braithwaite@lightcurve.io>, Mona Bärenfänger <m
 :url_bls_key: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0038.md#public-key-registration-and-proof-of-possession
 :url_lip56: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0056.md
 :url_lip56_bftweight: {url_lip56}#terminology
+:url_github_appregistry: https://github.com/LiskHQ/app-registry
+:url_github_appregistry_readme: {url_github_appregistry}#lisk-application-registry
+:url_github_appregistry_schema_app: {url_github_appregistry}/blob/main/schema/app.json
+:url_github_appregistry_schema_tokens: {url_github_appregistry}/blob/main/schema/nativetokens.json
 :url_update_cross_chain_lip53: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0053.md#outboxrootwitness
 :url_exmaples_guides_createparams: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/guides/chain-registration/mainchain/paramsCreation.ts
 :url_exmaples_guides_validatorsignatures: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/guides/chain-registration/mainchain/validatorSignatures.ts
@@ -21,6 +25,11 @@ Chris Braithwaite <christopher.braithwaite@lightcurve.io>, Mona Bärenfänger <m
 :url_ccm: understand-blockchain/interoperability/communication.adoc#sending-cross-chain-transactions-to-generate-ccms
 :url_ccu: understand-blockchain/interoperability/communication.adoc#creating-and-posting-ccus
 :url_sidechain_reg_recovery: understand-blockchain/interoperability/sidechain-registration-and-recovery.adoc
+:url_sidechain_reg_recovery_1stccu: {url_sidechain_reg_recovery}#first-cross-chain-update
+:url_sidechain_reg_recovery_liveness: {url_sidechain_reg_recovery}#liveness-condition
+:url_sidechain_reg_recovery_active: {url_sidechain_reg_recovery}#active-sidechains
+:url_run_index_relayer: run-blockchain/index.adoc#relayer-nodes
+:url_run_relayer: run-blockchain/setup-relayer.adoc
 :url_sidechain_chain_store: {url_sidechain_reg_recovery}#chain-substore
 :url_sidechain_channel_store: {url_sidechain_reg_recovery}#channel-substore
 :url_sidechain_chain_validators_store: {url_sidechain_reg_recovery}#chain-validators-substore
@@ -2181,3 +2190,185 @@ This should return the mainchain validators data stored in the xref:{url_sidecha
 }
 ----
 ====
+
+== Relayer nodes and app-registry
+
+xref:{url_run_index_relayer}[Relayer nodes] are required to send cross-chain messages from sidechain to mainchain and vice-versa.
+
+To facilitate cross-chain communication, at least one relayer node is required on the mainchain and the sidechain.
+
+=== Setup relayer nodes on mainchain and sidechain
+
+Please check the guide xref:{url_run_relayer}[] for a step-by-step explanation how to turn a node into a relayer.
+
+=== Register off-chain data in the app-registry
+
+As a last step, it is necessary to register the sidechain related off-chain metadata to the {url_github_appregistry}[app registry^].
+
+The data can be provided as a pull request to the repository, which is adding a new folder under for the respective network with the following structure:
+
+----
+.
+├── app-registry/betanet/<APP>/
+│   └── app.json
+│   ├── nativetokens.json
+│   └── images/
+│   │   ├── application
+│   │   │   ├── app.png
+│   │   │   └── app.svg
+│   │   └── tokens
+│   │   │   ├── token.png
+│   │   │   └── token.svg
+tsconfig.json
+----
+
+where `<APP>` is the name of the sidechain app.
+
+IMPORTANT: Please refer to the {url_github_appregistry_readme}[README.md^] for all important details about the app registration process, like the required image formats and sizes.
+
+`app.json`::
+Off-chain metadata of a sidechain, to be used by client applications such as Lisk Desktop, Mobile and other explorers.
+
+.Example: app.json
+[%collapsible]
+====
+[source,json]
+----
+{
+    "title": "Lisk - Betanet",
+    "description": "Metadata configuration for the Lisk blockchain (mainchain) in betanet",
+    "chainName": "Lisk",
+    "chainID": "02000000",
+    "networkType": "betanet",
+    "genesisURL": "https://downloads.lisk.com/lisk/betanet/genesis_block.json.tar.gz",
+    "projectPage": "https://lisk.com",
+    "logo": {
+        "png": "https://raw.githubusercontent.com/LiskHQ/app-registry/main/betanet/Lisk/images/application/lisk.png",
+        "svg": "https://raw.githubusercontent.com/LiskHQ/app-registry/main/betanet/Lisk/images/application/lisk.svg"
+    },
+    "backgroundColor": "#f7f9fb",
+    "serviceURLs": [
+        {
+            "http": "https://betanet-service.lisk.com",
+            "ws": "wss://betanet-service.lisk.com"
+        }
+    ],
+    "explorers": [
+        {
+            "url": "https://betanet.liskscan.com",
+            "txnPage": "https://betanet.liskscan.com/transactions"
+        }
+    ],
+    "appNodes": [
+        {
+            "url": "https://betanet.lisk.com",
+            "maintainer": "Lightcurve GmbH"
+        },
+        {
+            "url": "wss://betanet.lisk.com",
+            "maintainer": "Lightcurve GmbH"
+        }
+    ]
+}
+----
+====
+
+{url_github_appregistry_schema_app}[Schema for app.json^]
+
+`nativetokens.json`::
+Off-chain metadata about the native tokens of a sidechain.
+
+.Example: nativetokens.json
+[%collapsible]
+====
+[source,json]
+----
+{
+    "title": "Lisk - Betanet - Native tokens",
+    "tokens": [
+        {
+            "tokenID": "0200000000000000",
+            "tokenName": "Lisk",
+            "description": "Default token for the entire Lisk ecosystem",
+            "denomUnits": [
+                {
+                    "denom": "beddows",
+                    "decimals": 0,
+                    "aliases": [
+                        "Beddows"
+                    ]
+                },
+                {
+                    "denom": "lsk",
+                    "decimals": 8,
+                    "aliases": [
+                        "Lisk"
+                    ]
+                }
+            ],
+            "baseDenom": "beddows",
+            "displayDenom": "lsk",
+            "symbol": "LSK",
+            "logo": {
+                "png": "https://raw.githubusercontent.com/LiskHQ/app-registry/main/betanet/Lisk/images/tokens/lisk.png",
+                "svg": "https://raw.githubusercontent.com/LiskHQ/app-registry/main/betanet/Lisk/images/tokens/lisk.svg"
+            }
+        }
+    ]
+}
+----
+====
+
+{url_github_appregistry_schema_tokens}[Schema for nativetokens.json^]
+
+`images/application/`::
+Icons to be used for the sidechain application.
+
+`images/tokens/`::
+Icons to be used for the native tokens of the sidechain.
+
+=== Move LSK to sidechain
+
+NOTE: This step is not necessary, if the default token for the CCM fees (LSK) is changed to a native sidechain token.
+
+To be able to pay the CCM transaction fees, it is necessary to move a sufficient amount of LSK tokens from mainchain to sidechain via a cross-chain transfer transaction.
+
+Create the following transaction with your mainchain node:
+
+.Example: Creating a cross-chain transfer transaction
+[source,bash]
+----
+$ lisk-core transaction:create token transferCrossChain 10000000
+? Please enter passphrase:  [hidden]
+? Please enter: tokenID:  0100000000000000
+? Please enter: amount:  1000000000
+? Please enter: receivingChainID:  01000001
+? Please enter: recipientAddress:  lsk24cd35u4jdq8szo3pnsqe5dsxwrnazyqqqg5eu
+? Please enter: data:  cross-chain transfer
+? Please enter: messageFee:  1
+? Please enter: messageFeeTokenID:  0100000000000000
+----
+
+* `tokenID`: The token ID of the LSK token.
+* `receivingChainID`: Enter the chain ID of the respective sidechain where you intend to transfer your LSK tokens.
+* `recipientAddress`: Enter the recipient address for the account on the sidechain.
+* `messageFee`: Enter the fee for the CCM.
+* `messageFeeTokenID`: Enter the token ID of the token that should be used to pay the fee.
+Enter here the tokenID of the LSK token.
+
+NOTE: Sending CCMs from mainchain to sidechain does not <<activate-the-sidechain>>, yet.
+Only a CCM from sidechain to mainchain will enable the xref:{url_sidechain_reg_recovery_liveness}[liveness condition].
+
+== Activate the sidechain
+
+After registering the sidechain and setting up the required relayer nodes, the sidechain is ready to be xref:{url_sidechain_reg_recovery_active}[activated].
+
+To activate the sidechain, send a xref:{url_sidechain_reg_recovery_1stccu}[first CCU] from sidechain to mainchain.
+
+[CAUTION]
+====
+* The first cross-chain update (CCU) to be submitted on the mainchain must contain a certificate *less than 15 days old*.
+* Once the sidechain is *active*, it needs to fulfil the xref:{url_sidechain_reg_recovery_liveness}[liveness condition], otherwise it will be *terminated*.
+====
+
+Once the first CCU was sent successfully from sidechain to mainchain, the sidechain is now activated and interoperable with the mainchain and other sidechains within the Lisk ecosystem.

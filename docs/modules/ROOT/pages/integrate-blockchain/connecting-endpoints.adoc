@@ -27,7 +27,7 @@ Muhammad Talha <muhammad.talha@lightcurve.io> Christopher Braithwaite <christoph
 :url_rpc_api: api/lisk-service-rpc.adoc#introduction-to-lisk-service-endpoints
 :url_api_http:  ROOT::api/lisk-service-http.adoc
 :url_api_mainnet: https://service.lisk.com/api/v3
-:url_api_testnet: https://testnet-service.lisk.com/api/v2
+:url_api_testnet: https://testnet-service.lisk.com/api/v3
 :url_api_http_testnet:  ROOT::api/lisk-service-http-testnet.adoc
 
 :url_rpc_api_mainnet: wss://service.lisk.com/rpc-v2
@@ -209,22 +209,55 @@ The API base URL is the base URL for the Lisk Service WS-RPC endpoints, that are
 * *WS-RPC:* `wss://service.lisk.com/rpc-v3`
 
 For WS, the RPC endpoint name is passed in the method property after establishing a WebSocket connection using {url_socket_io}[socket.io].
-More detailed information and examples can be found on the xref:{url_rpc_api}[RPC API of Lisk service page].
+An example using the WS JSON-RPC API can be seen below.
 
 [tabs]
 =====
-WS RPC API::
+WS JSON-RPC API::
 +
 --
 [source,js]
 ----
+const io = require('socket.io-client');
 
-});
+const REQUEST_TIMEOUT = 10 * 1000;
+
+const apiEndpoint = 'wss://service.lisk.com/rpc-v3';
+const rpcEndpoint = 'get.network.status';
+const rpcParams = {};
+
+const socket = io(
+	apiEndpoint,
+	{
+		forceNew: true,
+		transports: ['websocket'],
+	},
+);
+
+socket.emit(
+	'request',
+	{
+		method: rpcEndpoint,
+		params: rpcParams,
+	},
+	answer => {
+		console.log(JSON.stringify(answer, null, 2));
+		process.exit(0);
+	},
+);
+
+setTimeout(
+	() => {
+		console.log('Request time out - could not get a response.');
+		process.exit(1);
+	},
+	REQUEST_TIMEOUT,
+);
 ----
-
 
 --
 =====
+More detailed information and examples can be found on the xref:{url_rpc_api}[RPC API of Lisk service page].
 
 === Invoking the HTTP API
 
@@ -240,36 +273,63 @@ Lisk Testnet::
 * Public API base URL: `{url_api_testnet}`
 * API specification: xref:{url_api_http_testnet}[Lisk Service HTTP API reference (Testnet)]
 
-
+In addition to the WS and IPC method, Lisk endpoints also support HTTP requests and response mechanisms, such as HTTP Axios and cURL.
 [tabs]
 =====
-Axios::
+HTTP Axios::
 +
 --
 [source,js]
 ----
+const axios = require('axios');
+
+const getEndpoint = 'https://service.lisk.com/api/v2/network/status';
+
+axios.get(getEndpoint)
+	.then((axiosResponse) => {
+		const { data: apiResponse } = axiosResponse;
+		console.log(JSON.stringify(apiResponse, null, 2));
+	});
 
 
 
+const postEndpoint = 'https://service.lisk.com/api/v3/validator/validate-bls-key';
+const postEndpointParams = {
+  blsKey: 'b301803f8b5ac4a1133581fc676dfedc60d891dd5fa99028805e5ea5b08d3491af75d0707adab3b70c6a6a580217bf81',
+  proofOfPossession: '88bb31b27eae23038e14f9d9d1b628a39f5881b5278c3c6f0249f81ba0deb1f68aa5f8847854d6554051aa810fdf1cdb02df4af7a5647b1aa4afb60ec6d446ee17af24a8a50876ffdaf9bf475038ec5f8ebeda1c1c6a3220293e23b13a9a5d26',
+};
+
+axios.post(
+	postEndpoint,
+	postEndpointParams,
+)
+	.then((axiosResponse) => {
+		const { data: apiResponse } = axiosResponse;
+		console.log(JSON.stringify(apiResponse, null, 2));
+	});
 ----
 --
 HTTP cURL::
+To check the network status the following command can be used.
 +
 --
-// Apart from the WS and IPC method, Lisk endpoints also support HTTP requests and response mechanisms.
 // With a {JSON_RPC_Specs}[JSON RPC 2.0] based format, any endpoint can be invoked using a cURL request.
-For example, as shown below:
-
 [source,json]
 ----
-
+curl --location --request GET 'https://service.lisk.com/api/v3/network/status'
 ----
 --
-=====
+An example of how execute a POST request to validate the BLS key is shown below.
++
+--
+[source,json]
+----
+curl --location --request POST 'https://service.lisk.com/api/v3/validator/validate-bls-key' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+  "blsKey": "b301803f8b5ac4a1133581fc676dfedc60d891dd5fa99028805e5ea5b08d3491af75d0707adab3b70c6a6a580217bf81",
+  "proofOfPossession": "88bb31b27eae23038e14f9d9d1b628a39f5881b5278c3c6f0249f81ba0deb1f68aa5f8847854d6554051aa810fdf1cdb02df4af7a5647b1aa4afb60ec6d446ee17af24a8a50876ffdaf9bf475038ec5f8ebeda1c1c6a3220293e23b13a9a5d26"
+}'
+----
 
 
-Notes:
-
-
-
-Subscribe API..?

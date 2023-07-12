@@ -536,7 +536,7 @@
 <ul class="sectlevel2">
 <li><a href="#invoking-via-websocket">Invoking via WebSocket</a></li>
 <li><a href="#invoking-the-http-api">Invoking the HTTP API</a></li>
-<li><a href="#subscribe-events">Subscribe Events</a></li>
+<li><a href="#subscribe-to-events">Subscribe to Events</a></li>
 </ul>
 </li>
 </ul>
@@ -555,6 +555,18 @@
 </div>
 <div class="paragraph">
 <p>RPC-based interfaces i.e., IPC, WS, or HTTP allow applications to <strong>invoke</strong> RPC endpoints.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+To interact with the node APIs through IPC, WS, or HTTP, it is necessary to enable the corresponding APIs. This can be done by configuring them in the <a href="aggregate-blockchain-data/index.html#enable-api-on-the-blockchain-node" class="xref page">node settings</a>, using command line flags, or setting up the environment when launching the blockchain application.
+</td>
+</tr>
+</table>
 </div>
 <div class="paragraph">
 <p>An API client can be imported into any JS client application as shown in the following snippets.</p>
@@ -693,7 +705,7 @@ Specifically, the line of code shown in the following example:</p>
 <h3 id="invoking-via-the-node-cli"><a class="anchor" href="#invoking-via-the-node-cli"></a>Invoking via the node CLI</h3>
 <div class="paragraph">
 <p>Any endpoint within the Lisk ecosystem can be invoked via node CLI as well.
-For more information, check out the <a href="../../lisk-sdk/v6/client-cli.html#endpoint" class="xref page">v6@lisk-sdk::client-cli.adoc#endpoint</a>.</p>
+For more information, check out the <a href="../../lisk-sdk/v6/client-cli.html#endpoint" class="xref page">Client CLI</a> page.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -709,7 +721,21 @@ Just replace <code>./bin/run</code> with <code>lisk-core</code> in that case.
 </table>
 </div>
 <div class="paragraph">
-<p>To invoke an endpoint via node CLI, simply use the <code>endpoint:invoke</code> command as shown below:</p>
+<p>To invoke an endpoint via node CLI, simply use the <code>endpoint:invoke</code> command as shown in the following code snippet.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+In order to make the endpoints accessible, the configuration setting <code>rpc.allowedMethods</code> must either specify <code>["*"]</code> to allow all methods.
+Alternatively, it can specify the module name, for example, such as <code>["consensus","token","pos"]</code>, or the exact method names such as ["chain_getLastBlock", "system_getNodeInfo"] to expose them in the API.
+For further details please see the <a href="https://github.com/LiskHQ/lisk-core/tree/v4.0.0-beta.3#configuring-lisk-node">Configuring Lisk Node</a> section in the Readme file.
+</td>
+</tr>
+</table>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -797,7 +823,7 @@ const socket = io(
 );
 
 socket.emit(
-	'request',
+	'request', // channel on which Lisk Service handles the WS-RPC calls
 	{
 		method: rpcEndpoint,
 		params: rpcParams,
@@ -810,7 +836,7 @@ socket.emit(
 
 setTimeout(
 	() =&gt; {
-		console.log('Request time out - could not get a response.');
+		console.log('Request timeout - could not get a response.');
 		process.exit(1);
 	},
 	REQUEST_TIMEOUT,
@@ -871,37 +897,19 @@ setTimeout(
 <li>
 <p><a id="tabset3_http-axios"></a>HTTP Axios</p>
 </li>
-<li>
-<p><a id="tabset3_http-curl"></a>HTTP cURL</p>
-</li>
 </ul>
 </div>
 <div class="content">
 <div class="tab-pane" aria-labelledby="tabset3_http-axios">
+<div class="openblock">
+<div class="content">
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const axios = require('axios');
 
-const getEndpoint = 'https://service.lisk.com/api/v2/network/status';
+const getEndpoint = 'https://service.lisk.com/api/v3/network/status';
 
 axios.get(getEndpoint)
-	.then((axiosResponse) =&gt; {
-		const { data: apiResponse } = axiosResponse;
-		console.log(JSON.stringify(apiResponse, null, 2));
-	});
-
-
-
-const postEndpoint = 'https://service.lisk.com/api/v3/validator/validate-bls-key';
-const postEndpointParams = {
-  blsKey: 'b301803f8b5ac4a1133581fc676dfedc60d891dd5fa99028805e5ea5b08d3491af75d0707adab3b70c6a6a580217bf81',
-  proofOfPossession: '88bb31b27eae23038e14f9d9d1b628a39f5881b5278c3c6f0249f81ba0deb1f68aa5f8847854d6554051aa810fdf1cdb02df4af7a5647b1aa4afb60ec6d446ee17af24a8a50876ffdaf9bf475038ec5f8ebeda1c1c6a3220293e23b13a9a5d26',
-};
-
-axios.post(
-	postEndpoint,
-	postEndpointParams,
-)
 	.then((axiosResponse) =&gt; {
 		const { data: apiResponse } = axiosResponse;
 		console.log(JSON.stringify(apiResponse, null, 2));
@@ -909,42 +917,19 @@ axios.post(
 </div>
 </div>
 </div>
-<div class="tab-pane" aria-labelledby="tabset3_http-curl">
-<div class="openblock">
-<div class="content">
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">curl --location --request GET 'https://service.lisk.com/api/v3/network/status'</code></pre>
-</div>
-</div>
-</div>
 </div>
 <div class="paragraph">
-<p>An example of how execute a POST request to validate the BLS key is shown below.</p>
-</div>
-<div class="openblock">
-<div class="content">
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">curl --location --request POST 'https://service.lisk.com/api/v3/validator/validate-bls-key' \
---header 'Content-Type: application/json' \
---data-raw '{
-  "blsKey": "b301803f8b5ac4a1133581fc676dfedc60d891dd5fa99028805e5ea5b08d3491af75d0707adab3b70c6a6a580217bf81",
-  "proofOfPossession": "88bb31b27eae23038e14f9d9d1b628a39f5881b5278c3c6f0249f81ba0deb1f68aa5f8847854d6554051aa810fdf1cdb02df4af7a5647b1aa4afb60ec6d446ee17af24a8a50876ffdaf9bf475038ec5f8ebeda1c1c6a3220293e23b13a9a5d26"
-}'</code></pre>
-</div>
-</div>
-</div>
+<p>An example of how to execute a POST request to validate a BLS key and Proof of Possession pair is shown below.</p>
 </div>
 </div>
 </div>
 </div>
 </div>
 <div class="sect2">
-<h3 id="subscribe-events"><a class="anchor" href="#subscribe-events"></a>Subscribe Events</h3>
+<h3 id="subscribe-to-events"><a class="anchor" href="#subscribe-to-events"></a>Subscribe to Events</h3>
 <div class="paragraph">
 <p>The Subscribe events feature allows connecting to specific endpoints to receive real-time updates or notifications, as shown in the examples below.
-Further information can be found in the <a href="#/subscribing-to-events.adoc" class="xref unresolved">Subscribing to events</a> page.</p>
+Further information can be found in the <a href="subscribing-to-events.html" class="xref page">Subscribing to events</a> page.</p>
 </div>
 <div class="tabset is-loading">
 <div class="ulist tabs">
@@ -952,15 +937,16 @@ Further information can be found in the <a href="#/subscribing-to-events.adoc" c
 <li>
 <p><a id="tabset4_subscribe---specific-event"></a>Subscribe - Specific Event</p>
 </li>
+<li>
+<p><a id="tabset4_subscribe---all-events"></a>Subscribe - All Events</p>
+</li>
 </ul>
 </div>
 <div class="content">
 <div class="tab-pane" aria-labelledby="tabset4_subscribe---specific-event">
-<div class="openblock">
-<div class="content">
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">onst io = require('socket.io-client');
+<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">const io = require('socket.io-client');
 
 const subscriptionEndpoint = 'wss://service.lisk.com/blockchain';
 const eventName = 'new.block';
@@ -975,25 +961,18 @@ const socket = io(
 
 socket.on(
 	eventName,
-	(data) =&gt; {
+	(eventPayload) =&gt; {
 		console.log(`Event: ${eventName}`);
-		console.log('Payload:', JSON.stringify(data, null, 2), '\n');
+		console.log('Payload:', JSON.stringify(eventPayload, null, 2), '\n');
 	}
 );</code></pre>
 </div>
 </div>
-<div class="dlist">
-<dl>
-<dt class="hdlist1">Subscribe - Any Event</dt>
-</dl>
 </div>
-</div>
-</div>
-<div class="openblock">
-<div class="content">
+<div class="tab-pane" aria-labelledby="tabset4_subscribe---all-events">
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">cconst io = require('socket.io-client');
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">const io = require('socket.io-client');
 
 const subscriptionEndpoint = 'wss://service.lisk.com/blockchain';
 
@@ -1015,13 +994,11 @@ socket.onevent = function (packet) {
 
 socket.on(
 	'*',
-	(eventName, data) =&gt; {
+	(eventName, eventPayload) =&gt; {
 		console.log(`Event: ${eventName}`);
-		console.log('Payload:', JSON.stringify(data, null, 2), '\n');
+		console.log('Payload:', JSON.stringify(eventPayload, null, 2), '\n');
 	}
 );</code></pre>
-</div>
-</div>
 </div>
 </div>
 </div>

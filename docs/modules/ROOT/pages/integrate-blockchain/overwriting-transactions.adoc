@@ -9,6 +9,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 On this page, you'll learn:
 
 * [x] How to overwrite a transaction in the transaction pool
+* [x] How to increase the priority of a transaction in the transaction pool
 ====
 
 == Intro
@@ -24,7 +25,17 @@ This can be achieved by resending the updated transaction with a higher fee whil
 .This only works for transactions in the transaction pool
 IMPORTANT: Overwriting a transaction is only possible for transactions, which haven't been included in a block, yet.
 
+When the updated transaction is accepted by the node, it will be added to the transaction pool.
+If the transaction pool already contains the original transaction with the same nonce with the same sender account, validators can choose which transaction to include into the next block.
+Generally, a validator will always choose to include the transactions with the highest transaction fees, to maximize their rewards for generating new blocks.
+That is why, if two transactions from the same sender with the same nonce exist in the pool, the transaction with the higher fee will be picked preferably to be included into a block.
+
+As soon as the updated transaction is included in a block, it will invalidate the remaining original transaction, because of the outdated nonce.
+As a result, the transaction will be removed from the transaction pool.
+
 == Example: Original transaction
+
+Let's assume we have sent the following transaction to the node, but it is currently pending in the transaction pool, because of too many other transactions waiting in the pool with higher fees:
 
 [source,json]
 ----
@@ -47,14 +58,26 @@ IMPORTANT: Overwriting a transaction is only possible for transactions, which ha
 }
 ----
 
+To speed up the inclusion of our transaction into the blockchain, we intend to recreate the exact same transaction with a higher fee.
 
-== Create a new transaction with the same nonce and a higher fee
+== Recreating the transaction
+
+Create a new transaction with the same nonce and a higher fee.
+
+A slightly higher fee than specified in the original transaction suffices so that validators will prefer to include the new transaction instead of the old with a lower fee.
+
+NOTE: In case the network is currently very busy, it can be useful to adjust the fee even higher, so it is included faster into a block than the other transactions in the transaction pool.
+
+TIP: Make sure to use the `--nonce` flag to specify the same nonce as in the transaction you wish to overwrite.
 
 [source,bash]
 ----
 lisk-core transaction:create token transfer 25000000 --nonce 4 --json ---pretty
 ----
 
+.The updated transaction in JSON format
+[%collapsible]
+====
 [source,json]
 ----
 {
@@ -77,3 +100,13 @@ lisk-core transaction:create token transfer 25000000 --nonce 4 --json ---pretty
   }
 }
 ----
+====
+
+Finally, send the new transaction to the node to overwrite the original transaction:
+
+[source,bash]
+----
+lisk-core transaction:send 0a05746f6b656e12087472616e73666572180420c0f0f50b2a2061d320f822fcc163489499200ae6c99a66296513b1ca1066e49a37a026434ac032330a08020000000000000010011a149bd82e637d306533b1e1ad66e19ca0047faa1a6a220f4861707079206269727468646179213a40fca7710c74b9d13ef954be1128a1069bc8b50dbb9f410ddfe62d7d580920e685cb6efbf1b801e86b11839eb5e286ef70d3b6ab725e6d521a6377b6bf5f079203
+----
+
+

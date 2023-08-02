@@ -93,10 +93,10 @@ To store the blockchain events on a node permanently, set `*keepEventsForHeights
 ====
 
 [[the-api-client]]
-=== Subscribing to a WS event
+=== Subscribing to a JSON-RPC event
 
-The API client simplifies the WS event subscription process not only for a blockchain client but also for the external plugins and services.
-With the Lisk API client, it is possible to subscribe to the *WS events* both over IPC and WS.
+The API client simplifies the JSON-RPC event subscription process not only for a blockchain client but also for the external plugins and services.
+With the Lisk API client, it is possible to subscribe to the *JSON-RPC events* both over IPC and WS.
 
 An API client can be imported into any JS client application as shown in the following snippets.
 
@@ -241,40 +241,11 @@ Decoded data: { amount: 0n, reduction: 0 }
 The Lisk Service Subscribe API allows subscribing to events to receive real-time updates or notifications, as shown in the examples below.
 A detailed list of all available emitted events are available in the xref:{url_lisk_service_pubsub}[Publish/Subscribe API (Lisk Service)] page.
 
-[tabs]
 =====
-Subscribe - Specific event::
-+
 --
 [source,js]
 ----
-const io = require('socket.io-client');
 
-const subscriptionEndpoint = 'wss://service.lisk.com/blockchain';
-const eventName = 'new.block';
-
-const socket = io(
- 	subscriptionEndpoint,
- 	{
- 		forceNew: true,
- 		transports: ['websocket'],
- 	},
- );
-
-socket.on(
- 	eventName,
- 	(eventPayload) => {
- 		console.log(`Event: ${eventName}`);
- 		console.log('Payload:', JSON.stringify(eventPayload, null, 2), '\n');
- 	}
- );
-----
---
-Subscribe - All events::
-+
---
-[source,js]
-----
 const io = require('socket.io-client');
 
 const subscriptionEndpoint = 'wss://service.lisk.com/blockchain';
@@ -287,22 +258,39 @@ const socket = io(
  	},
  );
 
- const onevent = socket.onevent;
- socket.onevent = function (packet) {
-     const args = packet.data || [];
-     onevent.call (this, packet);
-     packet.data = ['*'].concat(args);
-     onevent.call(this, packet);
- };
+const { onevent } = socket;
+socket.onevent = function (packet) {
+    const args = packet.data || [];
+    onevent.call(this, packet);
+    packet.data = ['*'].concat(args);
+    onevent.call(this, packet);
+};
 
- socket.on(
- 	'*',
- 	(eventName, eventPayload) => {
- 		console.log(`Event: ${eventName}`);
- 		console.log('Payload:', JSON.stringify(eventPayload, null, 2), '\n');
- 	}
- );
-----
+const subscribe = subscribeEvent => {
+	socket.on(
+		subscribeEvent,
+		(...args) => {
+			let eventName;
+			let eventPayload;
+
+			if (subscribeEvent === '*') {
+				[eventName, eventPayload] = args;
+			} else {
+				eventName = subscribeEvent;
+				[eventPayload] = args;
+			}
+
+			console.log(`Event: ${eventName}`);
+			console.log('Payload:', JSON.stringify(eventPayload, null, 2), '\n');
+		},
+	);
+};
+
+/* Subscribe to all the events */
+subscribe('*');
+
+/* Subscribe to specific events */
+// subscribe('new.block');
 --
 =====
 

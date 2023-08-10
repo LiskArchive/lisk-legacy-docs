@@ -23,11 +23,12 @@ Mona Bärenfänger <mona@lightcurve.io> Muhammad Talha <muhammad.talha@lightcurv
 :url_guides_config_hello: {url_guides_config}#example-configuration-for-the-hello-world-client
 :url_cli_globally: build-blockchain/create-blockchain-client.adoc#using-the-client-cli-globally
 :url_pm2_conf: run-blockchain/process-management.adoc#using-a-json-config-file
+:url_core_index: v4@lisk-core::index.adoc
 
-:fn_lip24: footnote:witness[The {url_consensus_bft_punishment}[Punishment of Lisk-BFT protocol violations^] LIP provides the details regarding the implications of {url_rep_mis_transaction}[Report Misbehavior^] transaction.]
+:fn_lip24: footnote:witness[The LIP: {url_consensus_bft_punishment}[Punish BFT violations^] provides the details regarding the implications of {url_rep_mis_transaction}[Report Misbehavior^] transaction.]
 
-The {url_plugin_report_misbehavior}[Report Misbehavior plugin^] provides automatic detection of the validator's misbehavior and sends a `reportMisbehavior` transaction to the running node.
-This transaction contains the information necessary to prove that the validator who signed the {url_blocks_header}[block headers^] has violated the {url_consensus_bft}[Lisk-BFT protocol^] and is deemed to be punished{fn_lip24} once proven guilty.
+The {url_plugin_report_misbehavior}[Report Misbehavior plugin^] provides automatic detection of a validator's misbehavior and sends the `reportMisbehavior` transaction to the running node.
+This transaction contains the information necessary to prove that the validator who signed the {url_blocks_header}[block headers^] has violated the {url_consensus_bft}[Lisk-BFT consensus protocol^] and is deemed to be punished{fn_lip24} once proven guilty.
 
 ====
 On this page, you'll learn:
@@ -36,12 +37,12 @@ On this page, you'll learn:
 * [x] Authorizing an account to report misbehavior on the network.
 ====
 
-For this guide, the Report Misbehavior plugin is registered to the xref:{url_guides_setup}[Hello World application], though the steps mentioned below can be applied to any Lisk-based blockchain client.
+Using this guide, the Report Misbehavior plugin can be registered to a xref:{url_core_index}[Lisk Core] or a xref:{url_guides_setup}[Hello World application] node, though the steps mentioned below can be applied to any Lisk-based blockchain client.
 
 == Plugin registration
+With the latest version of Lisk Core v4 and Lisk SDK v6, the default plugins come pre-installed after an client is installed or initiated, respectively.
 
-With Lisk v6, the default plugins come pre-installed after an application is initiated.
-You can check the `package.json` file of the blockchain client to ensure the installation.
+For a sidechain, you can check the `package.json` file of the blockchain client to ensure the installation.
 
 .hello_client/package.json
 [source,json]
@@ -60,7 +61,6 @@ Otherwise, you can install the Report Misbehavior plugin like this:
 npm install --save @liskhq/lisk-framework-report-misbehavior-plugin
 ----
 
-
 There are various ways to enable the Report Misbehavior plugin.
 You can opt for any of the below-mentioned to register the plugin to the blockchain client.
 
@@ -71,7 +71,8 @@ For more information, see the configurations described in the xref:{url_guides_c
 ====
 
 === Registering via source
-Now open the `plugins.ts` file, import the Report Misbehavior plugin, and register it with the application as shown below:
+For a *sidechain*, It is possible to register the plugin through the `plugins.ts` file.
+Open the `plugins.ts` file, import the Report Misbehavior plugin, and register it with the application as shown below:
 
 .src/app/plugins.ts
 [source,typescript]
@@ -96,31 +97,72 @@ npm run build
 ----
 
 === Enabling via environment variable
-Add the environment variable `LISK_ENABLE_REPORT_MISBEHAVIOR_PLUGIN` to the PM2 configuration for the `hello_client`:
+Add the environment variable `LISK_ENABLE_REPORT_MISBEHAVIOR_PLUGIN` to the PM2 configuration for the blockchain client:
 
-NOTE: You can use the alias `*hello_client*` only if you have configured a global alias.
-For more information see, xref:{url_cli_globally}[Using the Client CLI Globally].
-Otherwise, you can set up the `*pm2.conf.json*` file as suggested in the section: xref:{url_pm2_conf}[Using a JSON config file] for PM2.
-
+[tabs]
+=====
+Mainchain node::
++
+--
+.pm2.conf.json
+[source,json]
+----
+{
+  "name": "lisk-core",
+  "script": "lisk-core start --overwrite-config",
+  "env": {
+    "LISK_NETWORK": "testnet",
+    "LISK_CONFIG_FILE": "/home/lisk/lisk-core/custom-config.json",
+    "LISK_ENABLE_REPORT_MISBEHAVIOR_PLUGIN": true
+  }
+}
+----
+--
+Sidechain node::
++
+--
 .pm2.conf.json
 [source,json]
 ----
 {
   "name": "hello_client",
-  "script": "hello_client start --overwrite-config",
+  "script": "/bin/run start --config=config/custom_config.json",
   "env": {
-    "LISK_NETWORK": "testnet",
-    "LISK_CONFIG_FILE": "~/.lisk/hello_client/config/custom-config.json",
     "LISK_ENABLE_REPORT_MISBEHAVIOR_PLUGIN": true
   }
 }
 ----
+--
+=====
+
 
 == Starting the node
 Depending on how you chose to register the plugin, start the blockchain client, accordingly.
 
 [tabs]
 =====
+Registered via built-in flag::
++
+--
+It is possible to enable the Report Misbehavior plugin without updating the configuration, the `plugins.ts` file, or using PM2.
+This can be done simply by adding the `--enable-report-misbehavior-plugin` flag to the `start` command.
+
+.*Mainchain*
+* Start the blockchain client with designated flags on a `mainchain` node.
++
+[source,bash]
+----
+lisk-core start --network testnet --enable-report-misbehavior-plugin
+----
+
+.*Sidechain*
+* *Or*, start the blockchain client with designated flags on a `sidechain` node.
++
+[source,bash]
+----
+./bin/run start --config=config/custom_config.json --enable-report-misbehavior-plugin
+----
+--
 Registered via Source::
 +
 --
@@ -142,18 +184,6 @@ After configuring the *pm2.conf.json* file, you can start the client like this:
 pm2 start pm2.conf.json
 ----
 --
-Registered via built-in flag::
-+
---
-It is possible to enable the Report Misbehavior plugin without updating the `plugins.ts` file or using PM2.
-This can be done simply by adding the `--enable-report-misbehavior-plugin` flag to the `start` command.
-
-.Start the blockchain client with designated flags
-[source,bash]
-----
-./bin/run start --config=config/custom_config.json --enable-report-misbehavior-plugin
-----
---
 =====
 
 
@@ -166,22 +196,40 @@ To automatically sign the transaction, the *encrypted private key* of the accoun
 
 NOTE: Please note that the respective account should have a high enough account balance to be able to send a misbehavior report transaction.
 
-Encrypt the private key of the sender account before adding it to the configuration:
+*Encrypt* the private key of the sender account before adding it to the configuration:
 
-.Pass a privateKey to the message:encrypt command
+. Pass an account's `privateKey` to the `message:encrypt` command:
++
+[tabs]
+=====
+Mainchain node::
++
+--
+[source,bash]
+----
+lisk-core message:encrypt "d0b159fe5a7cc3d5f4b39a97621b514bc55b0a0f1aca8adeed2dd1899d93f103a3f96c50d0446220ef2f98240898515cbba8155730679ca35326d98dcfb680f0" -stringify
+----
+--
+Sidechain Node::
++
+--
 [source,bash]
 ----
 ./bin/run message:encrypt "d0b159fe5a7cc3d5f4b39a97621b514bc55b0a0f1aca8adeed2dd1899d93f103a3f96c50d0446220ef2f98240898515cbba8155730679ca35326d98dcfb680f0" -stringify
 ----
+--
+=====
 
-.Enter a password that will be used later for authorization
+. Enter a `password` that will be used later for authorization.
++
 [source,bash]
 ----
 ? Please enter password:  [hidden]
 ? Please re-enter password:  [hidden]
 ----
 
-.Result: encrypted private key
+. The node will output the corresponding `encryptedPrivateKey`.
++
 [source,bash]
 ----
 kdf=argon2id&cipher=aes-128-gcm&version=1&ciphertext=635c7a18537a0234469f4a256b5766a28a8717450912c176ec0130ce747a4fd94d9c5c0a4bbf42c96c28fad951dae1fc319a5752112f3deecceac7c5a1fcf51be5de6be279836cc55868c9947f36e708024f5f15f6272a595aaee75600c6004f1ba5e5d14868efcb32dd14a868224268a25da6bcf1c8f21b35177279295d67b3&mac=7c5a99f7ef438c534738a9a1b214cb009441b560eaf207cd3c8ca2e30f03e438&salt=1047c5944ada6fec&iv=1c0c1a463a1b027853028ccc0c344dee&tag=0acc6a9a2b61526ba4375e4905913ca6&iterations=1&parallelism=4&memorySize=2097023
@@ -192,6 +240,24 @@ kdf=argon2id&cipher=aes-128-gcm&version=1&ciphertext=635c7a18537a0234469f4a256b5
 
 Add the encrypted private key retrieved above under `plugins.reportMisbehavior.encryptedPrivateKey` in the node configuration:
 
+[tabs]
+=====
+Mainchain node::
++
+--
+.lisk-core/config/testnet/config.json
+[source,json]
+----
+"plugins": {
+    "reportMisbehavior": {
+        "encryptedPrivateKey": "kdf=argon2id&cipher=aes-128-gcm&version=1&ciphertext=635c7a18537a0234469f4a256b5766a28a8717450912c176ec0130ce747a4fd94d9c5c0a4bbf42c96c28fad951dae1fc319a5752112f3deecceac7c5a1fcf51be5de6be279836cc55868c9947f36e708024f5f15f6272a595aaee75600c6004f1ba5e5d14868efcb32dd14a868224268a25da6bcf1c8f21b35177279295d67b3&mac=7c5a99f7ef438c534738a9a1b214cb009441b560eaf207cd3c8ca2e30f03e438&salt=1047c5944ada6fec&iv=1c0c1a463a1b027853028ccc0c344dee&tag=0acc6a9a2b61526ba4375e4905913ca6&iterations=1&parallelism=4&memorySize=2097023"
+    },
+}
+----
+--
+Sidechain Node::
++
+--
 .hello_client/config/custom-config.json
 [source,json]
 ----
@@ -201,19 +267,37 @@ Add the encrypted private key retrieved above under `plugins.reportMisbehavior.e
     },
 }
 ----
+--
+=====
 
 TIP: See more available configurations in the {url_plugin_report_misbehavior_config}[Config options^] of the plugin reference.
 
 === Authorization
 
-The Report Misbehavior plugin provides a dedicated endpoint to authorize an account to act as a reporter of misbehavior such as malicious block activity, etc.
+The Report Misbehavior plugin provides a dedicated endpoint to authorize an account to act as a reporter of misbehavior on the network.
 
 To authorize an account, you can invoke the `reportMisbehavior_authorize` endpoint. Make sure to use the password created at <<choose-the-sender-account, choosing sender account>> stage.
 
+[tabs]
+=====
+Mainchain node::
++
+--
+[source,bash]
+----
+lisk-core endpoint:invoke reportMisbehavior_authorize '{"password": "CorrectPassword", "enable":true}' --pretty
+----
+
+--
+Sidechain Node::
++
+--
 [source,bash]
 ----
 ./bin/run endpoint:invoke reportMisbehavior_authorize '{"password": "CorrectPassword", "enable":true}' --pretty
 ----
+--
+=====
 
 .Response
 [source,bash]

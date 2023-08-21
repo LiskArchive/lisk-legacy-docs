@@ -9,6 +9,7 @@
 // Project URLs
 :url_run_accounts: run-blockchain/account-management.adoc
 :url_integrate_accounts: integrate-blockchain/integrate-ui/create-get-account.adoc
+:url_integrate_encoding_txs: integrate-blockchain/encode-decode.adoc#decoding-encoding-transactions
 
 ====
 On this page, you'll learn:
@@ -194,35 +195,6 @@ They will be replaced automatically with the correct signatures, once the member
 Node CLI::
 +
 --
-.Preparation
-[TIP]
-====
-The "Register Multisignature" command, expects the provided keys in the params to be in lexicographical order.
-
-Use the endpoint `auth_sortMultisignatureGroup` to achieve the correct order for the parameters conveniently.
-
-----
-lisk-core endpoint:invoke auth_sortMultisignatureGroup '{ "mandatory": [], "optional": [{ "publicKey": "dfbe4e3999138d62047c23f61f222a91b24d9d056db055be24f9ab6d95d7aa78", "signature": "e17d67b24c1f0ab207a194bd1a1781b1c8c3110bcb427cd26f84f3034afc567583e021df575881c396e286198f4a36749055e717eaa56cd3f1fd2f3d7835b70d"},{ "publicKey": "61d320f822fcc163489499200ae6c99a66296513b1ca1066e49a37a026434ac0", "signature": "85ac61c373218cdf5e0e58a22c9b9ae71cfaf1450062d0302166b60a1cdc3b638eb747ba87c43af20d66b8e9d7513fb1d4cd3800a82debd30f0dc41937cef70e" }]}' --pretty
-----
-
-This will return the following JSON:
-
-[,json]
-----
-{
-  "mandatoryKeys": [],
-  "optionalKeys": [
-    "61d320f822fcc163489499200ae6c99a66296513b1ca1066e49a37a026434ac0",
-    "dfbe4e3999138d62047c23f61f222a91b24d9d056db055be24f9ab6d95d7aa78"
-  ],
-  "signatures": [
-    "85ac61c373218cdf5e0e58a22c9b9ae71cfaf1450062d0302166b60a1cdc3b638eb747ba87c43af20d66b8e9d7513fb1d4cd3800a82debd30f0dc41937cef70e",
-    "e17d67b24c1f0ab207a194bd1a1781b1c8c3110bcb427cd26f84f3034afc567583e021df575881c396e286198f4a36749055e717eaa56cd3f1fd2f3d7835b70d"
-  ]
-}
-----
-====
-
 Create the transaction via the CLI and provide all required parameters:
 
 ----
@@ -428,7 +400,7 @@ Node CLI::
 +
 --
 
-Now log into Lisk Desktop with your account that is defined as part of the new multi-sig group.
+Log in to Lisk Desktop with your account that is defined as part of the new multi-sig group.
 
 Copy the transaction from above in JSON string format and proceed to sign the transaction object in Lisk Desktop, as explained in <<collecting-signatures>>.
 --
@@ -476,7 +448,58 @@ If the transaction was sent successfully, it will show a confirmation message.
 Node CLI::
 +
 --
-todo
+If you used Lisk Desktop to collect the required signatures, it is possible to directly send it from Lisk Desktop, after the last required signature was added to the transaction.
+
+In case you want to send the transaction via CLI, download or copy the JSON from Lisk Desktop and send it like this:
+
+Use xref:{}[Lisk Core] to encode the transaction JSON;
+
+----
+lisk console
+----
+
+[,js]
+----
+lisk-core > const tx = {
+...   module: 'token',
+...   command: 'transfer',
+...   params: {
+...     tokenID: '0300000800000000',
+...     amount: '100000000',
+...     recipientAddress: 'lskycz7hvr8yfu74bcwxy2n4mopfmjancgdvxq8xz',
+...     data: 'Hello World!'
+...   },
+...   nonce: '2',
+...   fee: '176000',
+...   senderPublicKey: 'ec10255d3e78b2977f04e59ea9afd3e9a2ce9a6b44619ef9f6c47c29695b1df3',
+...   signatures: [
+...     '866c4a96e8d9dd27100520759e1974cea8db52bf0df4b7660b5a87c6e4cd4488c6c71ac6f6ebbd57188a355a331d10f318f814eae63fb966e4f8cea25530480f'
+...   ],
+...   id: '6ffb10cf563b809618a079f07791f2699be6989935e2582d5e5f4cc7afd2b4f9'
+... }
+----
+
+----
+lisk-core > let hexTx
+----
+
+----
+isk-core > api.then((client) => {
+... const decodedTx = client.transaction.fromJSON(tx);
+... const encodedTx = client.transaction.encode(decodedTx);
+... hexTx = encodedTx;
+... });
+----
+
+----
+lisk-core > hexTx.toString('hex')
+'0a05746f6b656e12087472616e7366657218022080df0a2a20ec10255d3e78b2977f04e59ea9afd3e9a2ce9a6b44619ef9f6c47c29695b1df332330a0803000008000000001080c2d72f1a1488c0ee8a4f8fa0e498770c70749584f179938ffa220c48656c6c6f20576f726c64213a40866c4a96e8d9dd27100520759e1974cea8db52bf0df4b7660b5a87c6e4cd4488c6c71ac6f6ebbd57188a355a331d10f318f814eae63fb966e4f8cea25530480f'
+----
+
+----
+lisk-core transaction:send 0a05746f6b656e12087472616e7366657218022080df0a2a20ec10255d3e78b2977f04e59ea9afd3e9a2ce9a6b44619ef9f6c47c29695b1df332330a0803000008000000001080c2d72f1a1488c0ee8a4f8fa0e498770c70749584f179938ffa220c48656c6c6f20576f726c64213a40866c4a96e8d9dd27100520759e1974cea8db52bf0df4b7660b5a87c6e4cd4488c6c71ac6f6ebbd57188a355a331d10f318f814eae63fb966e4f8cea25530480f
+----
+
 --
 Lisk Elements::
 +
@@ -485,7 +508,7 @@ todo
 --
 =====
 
-Once the transaction is included in a block, the account is converted into a multi-signature account, and it is possible to <<how-to-create-and-sign-a-multi-signature-transaction,create and sign multi-signature transactions>>.
+Once the transaction is included in a block, the account is converted into a multi-signature account, and it is possible to <<how-to-create-a-multi-signature-transaction,create and sign multi-signature transactions>>.
 
 == How to create a multi-signature transaction
 
@@ -519,7 +542,29 @@ image:integrate-blockchain/multisig/15-signed.png[]
 Node CLI::
 +
 --
-todo
+Create a normal transaction via the CLI, and add the `--json` flag, so that it will return the transaction in JSON format.
+
+----
+lisk-core transaction:create token transfer 100000000 --json
+----
+
+Define the transaction params and sign the transaction with your passphrase:
+
+----
+? Please enter passphrase:  [hidden]
+? Please enter: tokenID:  0400000000000000
+? Please enter: amount:  800000000
+? Please enter: recipientAddress:  lskt8ovj2shbxrtno8xqqt7cnmzzygdkbt6brnvmj
+? Please enter: data:  Happy birthday!
+----
+
+Now copy the transaction in JSON format and share it with the next member of the multi-signature group, so they can sign it as well.
+
+.Result
+[,json]
+----
+{"transaction":{"module":"token","command":"transfer","fee":"100000000","nonce":"4","senderPublicKey":"3972849f2ab66376a68671c10a00e8b8b67d880434cc65b04c6ed886dfa91c2c","signatures":["c06cd0ef375911528d491971296532dbd58725f0fccc0f23e6c0656c43e75ecd12635616117e64d005f1c9f2a55de7cf2d8f5cb961927d839d141a18faa80e08"],"params":{"tokenID":"0400000000000000","amount":"800000000","recipientAddress":"lskt8ovj2shbxrtno8xqqt7cnmzzygdkbt6brnvmj","data":"Happy birthday!"},"id":"f3f537bbd52464d2f97c02f5ef0f9a805d19ad4f8ef1c7efa1da17cef0e5036a"}}
+----
 --
 Lisk Elements::
 +
@@ -556,7 +601,9 @@ image:integrate-blockchain/multisig/19-confirmation.png[]
 Node CLI::
 +
 --
-todo
+Log into Lisk Desktop with your account that is defined as part of the new multi-sig group.
+
+Copy the transaction from the last step in JSON string format and proceed to sign the transaction object in Lisk Desktop, as explained in <<how-to-sign-a-multi-signature-transaction>>.
 --
 Lisk Elements::
 +

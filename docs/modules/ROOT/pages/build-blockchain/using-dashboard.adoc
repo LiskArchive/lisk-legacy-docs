@@ -12,12 +12,18 @@ Mona Bärenfänger <mona@lightcurve.io> Muhammad Talha <muhammad.talha@lightcurv
 :docs_sdk: lisk-sdk::
 // Project URLS
 
+:url_network_page: understand-blockchain/network.adoc
+:url_mainchain_page: understand-blockchain/mainchain.adoc
+:url_coreIndex_page: v4@lisk-core::index.adoc
+
+
 :url_guides_config: build-blockchain/configuration.adoc
 :url_guides_config_hello: {url_guides_config}#example-configuration-for-the-hello-world-client
 :url_guides_module: build-blockchain/module/index.adoc
 :url_guides_module_endpoints: build-blockchain/module/endpoints-methods.adoc#endpoints
 :url_guides_module_getHello: build-blockchain/module/endpoints-methods.adoc#get-a-hello-message-by-address
 :url_guides_module_getHelloCounter: build-blockchain/module/endpoints-methods.adoc#get-hello-counter
+:url_guides_plugin_getMessageList: build-blockchain/plugin/plugin-endpoints.adoc#querying-saved-events
 :url_guides_plugin: build-blockchain/plugin/index.adoc
 :url_guides_setup: build-blockchain/create-blockchain-client.adoc
 
@@ -90,12 +96,46 @@ After updating the *custom_config.json* file, build the blockchain client again:
 npm run build
 ----
 
-.Start the blockchain client with custom_config.json
+== Starting the node
+
+[TIP]
+====
+It is also possible to enable the Dashboard plugin without updating the `plugins.ts` file as suggested in the aforementioned steps.
+Once the plugin is installed, you can add the `--enable-dashboard-plugin` flag to the `start` command to run the node.
+
+[tabs]
+=====
+Sidechain::
++
+--
+* Start the blockchain client with designated flags on a `sidechain` node.
++
+[source,bash]
+----
+./bin/run start --config=config/custom_config.json --enable-dashboard-plugin
+----
+--
+Mainchain::
++
+--
+* *Or*, start the blockchain client with designated flags on a `mainchain` node.
+For more information, see xref:{url_network_page}[Networks], xref:{url_mainchain_page}[Mainchain] and the xref:{url_coreIndex_page}[Lisk Core] docs.
++
+[source,bash]
+----
+lisk-core start --network testnet --enable-dashboard-plugin
+----
+--
+=====
+====
+
+If you registered the Dashboard via `plugins.ts`, then perform the following:
+
+.Start the blockchain client with 'custom_config.json' without any flag
 [source,bash]
 ----
 ./bin/run start --config=config/custom_config.json 
 ----
-
 
 Wait until the application start has been completed.
 Now it is possible to access the Dashboard on the browser under `localhost: 4005`
@@ -106,8 +146,6 @@ You can also see the blockchain client logs to confirm the registration of the D
 ----
 2023-07-28T08:42:18.189Z INFO XYZ.local application 92756 dashboard Loading in-memory plugin
 ----
-
-
 
 == Dashboard walkabout
 
@@ -128,7 +166,7 @@ The command type is selected from the dropdown box.
 
 As we registered the `DashboardPlugin` with the `hello_client`, it is possible to send a hello message via the Dashboard.
 
-.Select the "hello_createHello" command.
+.Select the 'hello_createHello' command.
 image::guides/dashboard/send_tx_dropdown.png["Transaction dropdown",750,align="center"]
 
 Once the desired command type is selected, provide the `passphrase` of the sender account and the hello `message`.
@@ -153,7 +191,7 @@ image::guides/dashboard/send_tx_hello.png["Send transaction",750,align="center"]
 
 If the transaction was successfully accepted, you will see the following confirmation:
 
-.Send "createHello" transaction to node
+.Send 'createHello' transaction to node
 image::guides/dashboard/send_tx_success.png["Transaction Sent successfully",1000,align="center"]
 
 Once the transaction is confirmed and added to the chain, it can be seen in the *Recent Transaction* section.
@@ -163,13 +201,18 @@ image::guides/dashboard/recent_transactions.png["Recent transactions",750,align=
 
 === Call endpoints
 
-It is possible to invoke endpoints via the Dashboard.
+It is possible to invoke endpoints of registered Modules and Plugins via the Dashboard.
 Endpoints can be invoked from the *Call endpoint* section. 
 
 In the previous guides, the following endpoints were created:
 
+.*For Module:*
 . The endpoint `hello_getHello` is for xref:{url_guides_module_getHello}[Getting the latest Hello for an address].
-. The endpoint `hello_getHelloCounter` is for xref:{url_guides_module_getHelloCounter}[Getting the Hello message counter].
+
+.*For Plugin:*
+. The endpoint `helloInfo_getMessageList` is for xref:{url_guides_plugin_getMessageList}[Getting a list of all Hello messages sent on-chain].
+
+To invoke an endpoint through the Dashboard, refer to the following section:
 
 ==== Invoking `hello_getHello`
 
@@ -186,20 +229,23 @@ image::guides/dashboard/call_action.png["Invoke hello_getHello",750,align="cente
 In response, the Dashboard will display the latest hello message sent from the specified account.
 
 .Latest hello message from the given account
-image::guides/dashboard/call_action_success.png["Get latest hello message for the given account",750,align="center"]
+image::guides/dashboard/call_action_success.png["Get latest hello message for the given account",1000,align="center"]
 
-==== Invoking `hello_getHelloCounter`
 
-Similarly, you can also invoke the `hello_getHelloCounter` endpoint to retrieve the total number of hellos sent on the chain.
+==== Invoking `helloInfo_getMessageList`
 
-.Request the total number of hello messages sent so far
-image::guides/dashboard/call_helloCounter.png["Invoke hello_getHello",750,align="center"]
+Select `helloInfo_getMessageList` from the dropdown menu.
 
-In response, the Dashboard will display the `counter` value.
+.Select the 'helloInfo_getMessageList' endpoint
+image::guides/dashboard/call_pluginaction.png["Invoke plugin action",750]
 
-.Number of hello messages sent
-image::guides/dashboard/call_helloCounterResponse.png["Get latest hello message for the given account",750,align="center"]
+You can directly click on the kbd:[Submit] button to view the results.
+The endpoint doesn't require any input for the request to proceed.
 
+.List of all the hello messages sent on-chain
+image::guides/dashboard/call_pluginaction_success.png["Plugin action success",1000]
+
+As expected, the Dashboard responds with a list of hello messages that were posted to the Lisk application.
 
 === Subscribing to events
 
@@ -207,10 +253,10 @@ At the bottom of the Dashboard is the *Recent events* window, which allows the p
 
 Select the `hello_newHello` event.
 
-.Subscribe to the newHello event
+.Subscribe to the 'newHello' event
 image::guides/dashboard/subscribe_event.jpg["Subscribe to newHello event", 1000,align="center"]
 
-Once a new hello transaction is posted, the newHello event is also published subsequently and will show up in the *Recent events* window.
+Once a new hello transaction is posted, the `newHello` event is also published, and will subsequently appear in the *Recent events* window.
 
 image::guides/dashboard/receive_newHello_event.png[]
 
@@ -228,20 +274,4 @@ For more information, see {url_typedoc_crypto}[getLisk32AddressFromAddress^].
 
 The Dashboard plugin provides various other features as well, most of which are very self-explanatory.
 For example, you can create new accounts, see unconfirmed transactions, and see recently generated blocks.
-You can also see general node and network information, etc through the Dashboard plugin.
-
-
-// NOTE: The plugin endpoints are not accessible through the dashboard plugin. Commenting out the following section until further notice.
-
-// ==== Invoking `latestHello:getLatestHello`
-
-// Select `latestHello:getLatestHello` from the dropdown menu.
-
-// You can directly click on the kbd:[Submit] button to view the results.
-// Again, it is not necessary to provide any input, because the action doesn't require any.
-
-// image::guides/dashboard/call_pluginaction.png["Invoke plugin action",400]
-
-// As expected, the plugin responds with the latest hello message that was posted to the blockchain application.
-
-// image::guides/dashboard/call_pluginaction_success.png["Plugin action success",400]
+It is also possible to view the general node and network information, etc., through the Dashboard plugin.

@@ -267,7 +267,6 @@ The module metadata follows the format of the <<interface-metadata,module metada
 .Example: Module metadata
 [%collapsible]
 ====
-//TODO: Replace the snippet below with a code example from Hello app
 [source,typescript]
 ----
 const { BaseModule } = require('lisk-sdk');
@@ -275,59 +274,47 @@ const { BaseModule } = require('lisk-sdk');
 class HelloModule extends BaseModule {
     // ...
 
-    public metadata(): ModuleMetadata {
-        return {
-            endpoints: [
-                {
-                    name: this.endpoint.getAllDelegates.name,
-                    response: getAllDelegatesResponseSchema,
-                },
-                {
-                    name: this.endpoint.getDelegate.name,
-                    request: getDelegateRequestSchema,
-                    response: getDelegateResponseSchema,
-                },
-                {
-                    name: this.endpoint.getVoter.name,
-                    request: getVoterRequestSchema,
-                    response: getVoterResponseSchema,
-                },
-                {
-                    name: this.endpoint.getConstants.name,
-                    response: configSchema,
-                },
-            ],
-            commands: this.commands.map(command => ({
-                id: command.id,
-                name: command.name,
-                params: command.schema,
-            })),
-            events: [],
-            assets: [
-                {
-                    version: 0,
-                    data: genesisStoreSchema,
-                },
-            ],
-        };
-    }
+	public metadata(): ModuleMetadata {
+		return {
+			endpoints: [
+				{
+					name: this.endpoint.getHello.name,
+					request: getHelloRequestSchema,
+					response: getHelloResponseSchema,
+				},
+				{
+					name: this.endpoint.getHelloCounter.name,
+					response: getHelloCounterResponseSchema,
+				},
+			],
+			commands: this.commands.map(command => ({
+				name: command.name,
+				params: command.schema,
+			})),
+			events: this.events.values().map(v => ({
+				name: v.name,
+				data: v.schema,
+			})),
+			assets: [],
+			stores: [],
+		};
+	}
 
     // ...
 }
 ----
 
-//TODO: Replace the snippet below with a code example from Hello app
-.Example: Response schema of the getAllDelegates endpoint of the DPoS module
+.Example: Response schema of the 'getHelloCounter' endpoint of the Hello module
 [source,typescript]
 ----
-export const getDelegateRequestSchema = {
-	$id: 'modules/dpos/endpoint/getDelegateRequest',
+export const getHelloCounterResponseSchema = {
+	$id: 'modules/hello/endpoint/getHelloCounter',
 	type: 'object',
-	required: ['address'],
+	required: ['counter'],
 	properties: {
-		address: {
-			type: 'string',
-			format: 'hex',
+		counter: {
+			type: 'number',
+			format: 'uint32'
 		},
 	},
 };
@@ -347,7 +334,7 @@ Both stores are included in the xref:{url_understand_statemachine}[] of the bloc
 
 A module can define one or multiple **on-chain stores**, to store data in the blockchain, i.e. to include it in the blockchain state.
 
-For example, data like _account balances_, _delegate names_, and _multisignature keys_ are values that are stored in the on-chain module store.
+For example, data like _account balances_, _validator's names_, and _multisignature keys_ are values that are stored in the on-chain module store.
 
 Every module store is extended from the `BaseStore` class:
 
@@ -678,7 +665,7 @@ export abstract class BaseEndpoint {
 
 The module endpoints are usually defined in a file called `endpoint.ts` inside of the root folder of the respective module.
 
-.Example: `endpoint.ts` of the DPoS module
+.Example: `endpoint.ts` of the Hello module
 [%collapsible]
 ====
 [source,typescript]
@@ -742,10 +729,11 @@ Once the module endpoints are defined in `endpoints.ts`, they can be added to th
 .How to add endpoints to a module
 [source,typescript]
 ----
-import { DPoSEndpoint } from './endpoint';
+import { HelloEndpoint } from './endpoint';
 
-export class DPoSModule extends BaseModule {
-	public endpoint = new DPoSEndpoint(this.stores, this.offchainStores);
+export class HelloModule extends BaseModule {
+	// ...
+	public endpoint = new HelloEndpoint(this.stores, this.offchainStores);
     // ...
 }
 ----
@@ -1378,7 +1366,7 @@ export interface CommandExecuteContext<T = undefined> {
 
 The module hooks are called in a specific order during block creation and execution.
 
-Read more about the block lifecycles in the following sections:
+Read more about the block lifecycle in the following sections:
 
 . xref:{url_understand_genesis_block_execution}[Lisk key concepts > Genesis block execution]
 . xref:{url_understand_block_generation}[Lisk key concepts > Block generation]

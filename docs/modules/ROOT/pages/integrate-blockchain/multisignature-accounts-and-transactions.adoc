@@ -8,12 +8,14 @@
 // URLs
 :url_typedoc_crypto: {site-url}/lisk-sdk/v6/references/typedoc/modules/_liskhq_lisk_cryptography.html
 :url_lisk_learn_create_account: https://lisk.com/learn/undefined/create-an-account
+:url_github_guides_multisig: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/guides/tx-creation-and-signing/multisig.js
 // Project URLs
 :url_sdk_commander: v6@lisk-sdk::references/lisk-commander/index.adoc
 :url_core: v4@lisk-core::index.adoc
 :url_run_accounts: run-blockchain/account-management.adoc
 :url_integrate_accounts: integrate-blockchain/integrate-ui/create-get-account.adoc
-:url_integrate_encoding_txs: integrate-blockchain/encode-decode.adoc#decoding-encoding-transactions
+:url_integrate_posttxs_apiclient: integrate-blockchain/posting-transactions.adoc#ws-ipc-api-example-with-api-client
+:url_integrate_createtxs_apiclient: integrate-blockchain/create-sign-transactions.adoc#via-api-client
 
 ====
 On this page, you'll learn:
@@ -32,6 +34,7 @@ How many and which members exactly need to sign a transaction is defined during 
 NOTE: A multi-signature account can have 2-64 members.
 
 == Use cases for multi-signature accounts
+The uses for multi-signature accounts are numerous and the below examples are only a small selection of the potential possibilities.
 
 === Escrow Transactions
 In case two users get into a dispute, a multi-signature account could be created to solve it.
@@ -42,15 +45,29 @@ In such a scenario, to resolve the dispute between users, a mutually trusted thi
 Considering the wallet is configured to be a 2-of-3 multi-sig wallet, the third key in the above case is given to the arbiter.
 Based on the arbiter’s judgment the funds can be given either to Alice or to Bob.
 
+=== Joint Account
+A 1-out-of-2 account with no mandatory key can be shared by partners.
+Each has a key allowing them to spend the tokens in the account.
+In this way, it is clear who has signed which transaction.
+
+
+=== Community Accounts
+An account with 1 mandatory signature and 1 optional out-of-N could be used by a social club.
+The account would require the signature of the accountant and one other member.
+This way the accountant approves every transaction, which in turn allows them to keep an eye on all the club's expenditure.
+Additionally, each transaction is also signed by one member of the club, prohibiting the accountant from stealing any of the funds.
+
 === Validator pools
 Another use case is of "validator pools".
+Securing enough self-votes to be an active validator might be easier to achieve for a group than for a single individual.
 Users could combine their tokens in a multi-signature account in order to reach the required self-stake to be an active validator in the network.
 
-A multi-signature account can be registered as a validator, or an existing validator user account can be converted to a multi-signature validator account.
+For example, three people could each participate in a multisignature account with three mandatory keys and register this account as a validator.
+Now the block generating node can safely be operated by any of the participants without risk of losing any funds.
 
-This way, no single person controls the account.
-Instead, the account is controlled by the members of the multi-signature group.
-Therefore, a single individual can't issue any transactions for the validator, like staking, changing the commission, or transferring tokens as they would require the authorization of other members of the group.
+This way, no single individual controls the account.
+Instead, the account is controlled together by the members of the multi-signature group.
+Therefore, a single person can't issue any transactions for the validator, like staking, changing the commission, or transferring tokens as they would require the authorization of other members of the group.
 
 === Two-Factor Authentication
 If Alice creates a multi-sig wallet that requires two keys, Alice creates a two-factor authentication mechanism to access the funds.
@@ -116,7 +133,7 @@ For a step-by-step guide regarding how to create a new account with the node CLI
 Lisk Elements::
 +
 --
-For a step-by-step guide on creating a new account with the Lisk Elements, please refer to the xref:{url_integrate_accounts}[] guide.
+For a step-by-step guide on creating a new account with Lisk Elements, please refer to the xref:{url_integrate_accounts}[] guide.
 --
 =====
 
@@ -252,22 +269,19 @@ After providing all necessary parameters, the transaction is returned:
 Lisk Elements::
 +
 --
-Prepare a JSON object that contains all required <<parameters,properties>> for sending a multi-signature registration.
+Prepare a JSON object that contains all required <<parameters>> for sending a multi-signature registration.
 
-Put as `address` a hex string of the account address that you wish to convert to a multi-signature account.
-
-TIP: To convert a Lisk address into its hexadecimal representation, use the method `address.getAddressFromLisk32Address` of the {url_typedoc_crypto}[lisk-cryptography^] package.
 [,js]
 ----
-const hexAddress = cryptography.address.getAddressFromLisk32Address("lsk55e8u4heymzmxgcrg4dc5xpgd5ckkyv53oxftb","lsk").toString("hex")
-//"5aecf827b6894050fc72fa7435849fd2c74a444b"
-
-const multisigRegMsg = {
-	"address": hexAddress,
-	"nonce": 0,
+let paramsStr = {
 	"numberOfSignatures": 2,
-	"mandatoryKeys": ["61d320f822fcc163489499200ae6c99a66296513b1ca1066e49a37a026434ac0","dfbe4e3999138d62047c23f61f222a91b24d9d056db055be24f9ab6d95d7aa78"],
-	"optionalKeys": [],
+	"mandatoryKeys": [],
+	"optionalKeys": [
+		"61d320f822fcc163489499200ae6c99a66296513b1ca1066e49a37a026434ac0",
+		"dfbe4e3999138d62047c23f61f222a91b24d9d056db055be24f9ab6d95d7aa78",
+		"e57a23f897b13bdeef27439bb9f4e29ac0828018d27d6b39ade342879928b46a"
+	],
+	"signatures": []
 };
 ----
 --
@@ -424,26 +438,8 @@ Extend the script from <<how-to-create-a-multi-signature-account>> and append so
 To add a signature to a transaction, use the `ed.signDataWithPrivateKey()` method of the {url_typedoc_crypto}[lisk-cryptography^] package.
 
 Don't forget to specify the other required parameters for `ed.signDataWithPrivateKey()`, especially `chainID` should be the correct chain ID for the account, and the `tag` for multi-signature registrations should always be `LSK_RMSG_`.
-[,js]
-----
-const hexAddress = cryptography.address.getAddressFromLisk32Address("lsk55e8u4heymzmxgcrg4dc5xpgd5ckkyv53oxftb","lsk").toString("hex")
-//"5aecf827b6894050fc72fa7435849fd2c74a444b"
 
-const multisigRegMsg = {
-	"address": hexAddress,
-	"nonce": 0,
-	"numberOfSignatures": 2,
-	"mandatoryKeys": ["61d320f822fcc163489499200ae6c99a66296513b1ca1066e49a37a026434ac0","dfbe4e3999138d62047c23f61f222a91b24d9d056db055be24f9ab6d95d7aa78"],
-	"optionalKeys": [],
-};
-
-const tag = 'LSK_RMSG_';
-const chainID = Buffer.from('02000000');
-const data1 = Buffer.from(JSON.stringify(multisigRegMsg));
-const privateKey1 = Buffer.from('6f118182dc728cb2da09148d865a904711805dc31973b39a90b79238d019c834dfbe4e3999138d62047c23f61f222a91b24d9d056db055be24f9ab6d95d7aa78',"hex");
-
-const = cryptography.ed.signDataWithPrivateKey(tag,chainID,data1,privateKey1).toString("hex");
-----
+An example script can be found in the lisk-sdk-examples repository: {url_github_guides_multisig}[multisig.js^]
 --
 =====
 
@@ -519,13 +515,23 @@ lisk-core transaction:send 0a05746f6b656e12087472616e7366657218022080df0a2a20ec1
 Lisk Elements::
 +
 --
-todo
+For a step-by-step guide on sending a transaction with Lisk Elements, please refer to the xref:{url_integrate_posttxs_apiclient}[How to post a transaction] guide.
 --
 =====
 
 Once the transaction is included in a block, the account is converted into a multi-signature account, and it is possible to <<how-to-create-a-multi-signature-transaction,create and sign multi-signature transactions>>.
 
 == How to create a multi-signature transaction
+
+This section describes how to create a transaction for a multi-signature account.
+
+The transaction creation is basically analog to normal transactions.
+
+One difference is, that for multi-sig transactions, it will not be possible to send the created transaction right away.
+First, all required signatures need to be collect, like explained in <<how-to-sign-a-multi-signature-transaction>>.
+That is why you want the transaction to be returned in JSON format in most cases, so all data to be signed is human-readable and can be reviewed verified by the respective group members.
+
+For Lisk Desktop, it is important to note that the transaction object can only be created from the multi-signature account itself (not its other members).
 
 [tabs]
 =====
@@ -602,11 +608,17 @@ Now copy the transaction in JSON format and share it with the next member of the
 Lisk Elements::
 +
 --
-todo
+Create a transaction like normally for example with the API client, like explained here: xref:{url_integrate_createtxs_apiclient}[How to create a transaction via API client].
 --
 =====
 
 == How to sign a multi-signature transaction
+Like the name suggests, multi-signature transaction require signatures from multiple accounts to be valid.
+
+Therefore, it is necessary that the group collects all necessary signatures offline, for example by sharing the respective transaction object as JSON with all members.
+They can then consecutively add their signatures if they approve the transaction.
+
+Once the required signatures are reached for a transaction, it is possible to send it to the network, like a normal transaction.
 
 [tabs]
 =====
@@ -641,7 +653,12 @@ Copy the transaction from the last step in JSON string format and proceed to sig
 Lisk Elements::
 +
 --
-todo
+To collect all required signatures for a transaction from a multi-signature account, you can use a similar script the {url_github_guides_multisig}[multisig.js^], which was used in step <<collecting-signatures>> above.
+
+The main thing that needs to updated in the script, is the transaction object to be signed.
+Here, you should put the transaction that was created in the previous step <<how-to-create-a-multi-signature-transaction>>.
+
+Once all required signatures for the respective multi-sig transaction are collected, it can be sent like a normal transaction, like described here: xref:{url_integrate_posttxs_apiclient}[].
 --
 =====
 

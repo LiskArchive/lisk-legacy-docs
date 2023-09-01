@@ -185,6 +185,9 @@
   <li class="nav-item" data-depth="2">
     <a class="nav-link" href="../network.html">Network</a>
   </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../mainchain.html">Mainchain</a>
+  </li>
   <li class="nav-item parent" data-depth="2">
     <button class="nav-item-toggle"></button>
         <span>
@@ -281,6 +284,9 @@
 </ul>
   </li>
   <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../build-blockchain/using-dashboard.html">Using the Dashboard with a blockchain client</a>
+  </li>
+  <li class="nav-item" data-depth="2">
     <a class="nav-link" href="../../build-blockchain/create-genesis-block.html">How to create a new genesis block</a>
   </li>
   <li class="nav-item" data-depth="2">
@@ -288,6 +294,10 @@
   </li>
 </ul>
   </li>
+</ul>
+  </li>
+  <li class="nav-item parent" data-depth="0">
+<ul class="nav-list">
   <li class="nav-item parent" data-depth="1">
     <button class="nav-item-toggle"></button>
         <span>
@@ -314,6 +324,9 @@
   </li>
   <li class="nav-item" data-depth="2">
     <a class="nav-link" href="../../run-blockchain/blockchain-reset.html">Resetting and snapshotting the blockchain</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../run-blockchain/enabling-misbehavior-report.html">How to enable the "Report Misbehavior" plugin</a>
   </li>
 </ul>
   </li>
@@ -404,9 +417,6 @@
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../api/module-rpc-api/validators-endpoints.html">Validators module: Endpoint reference</a>
-  </li>
-  <li class="nav-item" data-depth="3">
-    <a class="nav-link" href="../../api/module-rpc-api/dynamic-reward-endpoints.html">Dynamic Reward module: Endpoint reference</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../api/module-rpc-api/random-endpoints.html">Random module: Endpoint reference</a>
@@ -1024,58 +1034,47 @@ export interface Schema {
 class HelloModule extends BaseModule {
     // ...
 
-    public metadata(): ModuleMetadata {
-        return {
-            endpoints: [
-                {
-                    name: this.endpoint.getAllDelegates.name,
-                    response: getAllDelegatesResponseSchema,
-                },
-                {
-                    name: this.endpoint.getDelegate.name,
-                    request: getDelegateRequestSchema,
-                    response: getDelegateResponseSchema,
-                },
-                {
-                    name: this.endpoint.getVoter.name,
-                    request: getVoterRequestSchema,
-                    response: getVoterResponseSchema,
-                },
-                {
-                    name: this.endpoint.getConstants.name,
-                    response: configSchema,
-                },
-            ],
-            commands: this.commands.map(command =&gt; ({
-                id: command.id,
-                name: command.name,
-                params: command.schema,
-            })),
-            events: [],
-            assets: [
-                {
-                    version: 0,
-                    data: genesisStoreSchema,
-                },
-            ],
-        };
-    }
+	public metadata(): ModuleMetadata {
+		return {
+			endpoints: [
+				{
+					name: this.endpoint.getHello.name,
+					request: getHelloRequestSchema,
+					response: getHelloResponseSchema,
+				},
+				{
+					name: this.endpoint.getHelloCounter.name,
+					response: getHelloCounterResponseSchema,
+				},
+			],
+			commands: this.commands.map(command =&gt; ({
+				name: command.name,
+				params: command.schema,
+			})),
+			events: this.events.values().map(v =&gt; ({
+				name: v.name,
+				data: v.schema,
+			})),
+			assets: [],
+			stores: [],
+		};
+	}
 
     // ...
 }</code></pre>
 </div>
 </div>
 <div class="listingblock">
-<div class="title">Example: Response schema of the getAllDelegates endpoint of the DPoS module</div>
+<div class="title">Example: Response schema of the 'getHelloCounter' endpoint of the Hello module</div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export const getDelegateRequestSchema = {
-	$id: 'modules/dpos/endpoint/getDelegateRequest',
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export const getHelloCounterResponseSchema = {
+	$id: 'modules/hello/endpoint/getHelloCounter',
 	type: 'object',
-	required: ['address'],
+	required: ['counter'],
 	properties: {
-		address: {
-			type: 'string',
-			format: 'hex',
+		counter: {
+			type: 'number',
+			format: 'uint32'
 		},
 	},
 };</code></pre>
@@ -1111,7 +1110,7 @@ class HelloModule extends BaseModule {
 <p>A module can define one or multiple <strong>on-chain stores</strong>, to store data in the blockchain, i.e. to include it in the blockchain state.</p>
 </div>
 <div class="paragraph">
-<p>For example, data like <em>account balances</em>, <em>delegate names</em>, and <em>multisignature keys</em> are values that are stored in the on-chain module store.</p>
+<p>For example, data such as <em>account balances</em>, <em>validator&#8217;s names</em>, and <em>multisignature keys</em> are values that are stored in the on-chain module store.</p>
 </div>
 <div class="paragraph">
 <p>Every module store is extended from the <code>BaseStore</code> class:</p>
@@ -1499,7 +1498,7 @@ It is never possible to set data / mutate the state via module endpoints.
 <p>The module endpoints are usually defined in a file called <code>endpoint.ts</code> inside of the root folder of the respective module.</p>
 </div>
 <details>
-<summary class="title">Example: <code>endpoint.ts</code> of the DPoS module</summary>
+<summary class="title">Example: <code>endpoint.ts</code> of the Hello module</summary>
 <div class="content">
 <div class="listingblock">
 <div class="content">
@@ -1567,10 +1566,11 @@ Meaning, <code>ctx</code> provides the following methods for the endpoint:</p>
 <div class="listingblock">
 <div class="title">How to add endpoints to a module</div>
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import { DPoSEndpoint } from './endpoint';
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import { HelloEndpoint } from './endpoint';
 
-export class DPoSModule extends BaseModule {
-	public endpoint = new DPoSEndpoint(this.stores, this.offchainStores);
+export class HelloModule extends BaseModule {
+	// ...
+	public endpoint = new HelloEndpoint(this.stores, this.offchainStores);
     // ...
 }</code></pre>
 </div>
@@ -2429,7 +2429,7 @@ See <a href="#blockchain-events">Blockchain Events</a> for more information.</p>
 <p>The module hooks are called in a specific order during block creation and execution.</p>
 </div>
 <div class="paragraph">
-<p>Read more about the block lifecycles in the following sections:</p>
+<p>More information can be found regarding the block lifecycle in the following sections:</p>
 </div>
 <div class="olist arabic">
 <ol class="arabic">
@@ -2862,7 +2862,7 @@ Each module must initialize its state using an associated block asset.</p>
 <div id="footnotes">
 <hr>
 <div class="footnote" id="_footnotedef_1">
-<a href="#_footnoteref_1">1</a>. See the <a href="https://json-schema.org/specification.html" class="bare">https://json-schema.org/specification.html</a> for more information about the JSON schema.
+<a href="#_footnoteref_1">1</a>. See the <a href="https://json-schema.org/specification.html" class="bare" target="_blank" rel="noopener">https://json-schema.org/specification.html</a> for more information about the JSON schema.
 </div>
 <div class="footnote" id="_footnotedef_2">
 <a href="#_footnoteref_2">2</a>. See LIP 0046 <a href="https://github.com/LiskHQ/lips/blob/main/proposals/lip-0046.md" target="_blank" rel="noopener">Define state and state transitions of Random module</a> for more information about the Random module.

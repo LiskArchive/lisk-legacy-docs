@@ -1,4 +1,5 @@
 = Creating transactions and signing them offline
+Mona Bärenfänger <mona@lightcurve.io> Muhammad Talha <muhammad.talha@lightcurve.io>
 :toc: preamble
 :idprefix:
 :idseparator: -
@@ -111,7 +112,7 @@ The following Lisk Elements packages are required to create and sign a transacti
 
 * `@liskhq/lisk-client`, including the following libraries:
 ** {url_typedoc_transactions}[@liskhq/lisk-transactions^]
-** {url_typedoc_validator}[@liskhq/lisk-validator^](optional)
+** {url_typedoc_validator}[@liskhq/lisk-validator^] (optional)
 
 === Provide the transaction schema and params schema
 
@@ -130,13 +131,13 @@ Create a new file `schemas.js` and add all required schemas in this file, as sho
 
 In this example, we will send a Transfer Token transaction, therefore two different schemas are required:
 
-. The {url_typedoc_tx_schema}[transaction schema^] (always required).
+. The {url_typedoc_tx_schema}[Transaction Schema^] (always required).
 . The {url_typedoc_transfer_schema}[Transfer Token params schema^].
 
 .schemas.js
 [source,js]
 ----
-const transactionSchema = {
+export const transactionSchema = {
   $id: '/lisk/transaction',
   type: 'object',
   required: ['module', 'command', 'nonce', 'fee', 'senderPublicKey', 'params'],
@@ -181,7 +182,7 @@ const transactionSchema = {
   },
 };
 
-const transferParamsSchema = {
+export const transferParamsSchema = {
   $id: '/lisk/transferParams',
   title: 'Transfer transaction params',
   type: 'object',
@@ -233,7 +234,7 @@ In this example, we use the following example account credentials:
   "keyPath": "m/44'/134'/0'",
   "publicKey": "ec10255d3e78b2977f04e59ea9afd3e9a2ce9a6b44619ef9f6c47c29695b1df3",
   "privateKey": "ac3e34eb369d52a3cddf0bc4312d9b0aa3625b04721039bb114f4c607fb5256eec10255d3e78b2977f04e59ea9afd3e9a2ce9a6b44619ef9f6c47c29695b1df3",
-  "binaryAddress": "85c12d39041bc09e1f89dfeffe4b87cfcfe79fb2"
+  "binaryAddress": "fa892e1aa42a8af96c45dfd5afc428b3dba950e6"
 }
 ----
 
@@ -245,13 +246,13 @@ Define the unsigned transaction object manually by following the <<provide-the-t
 
 It is recommended to verify the correct format of the transaction with the `validator.validate()` function of the `@liskhq/lisk-validator` package afterwards.
 
-Then, manually define the parameters for the Transfer Tokens command, and add them to the unsigned transaction.
+Then, manually define the parameters for the *Token Transfer* command, and add them to the unsigned transaction.
 
 .create-offline.js
 [source,js]
 ----
 const { validator } = require('@liskhq/lisk-client');
-const { transactionSchema } = require('../schemas');
+const { transactionSchema } = require('./schemas');
 // Example account credentials
 const account = require('./account.json');
 
@@ -262,19 +263,19 @@ const createTxOffline = () => {
 		command: "transfer",
 		fee: BigInt(10000000),
 		nonce: BigInt(23),
-		senderPublicKey: Buffer.from(account.publicKey,'hex'),
+		senderPublicKey: Buffer.from(account.publicKey, 'hex'),
 		params: Buffer.alloc(0),
 		signatures: [],
 	};
 
 	// Validate the transaction
-    validator.validator.validate(transactionSchema, unsignedTransaction);
-    
+	validator.validator.validate(transactionSchema, unsignedTransaction);
+
 	// Create the asset for the Token Transfer transaction
 	const transferParams = {
-		tokenID: Buffer.from('0000000000000000','hex'),
-		amount: BigInt(2000000000),
-		recipientAddress: Buffer.from(account.binaryAddress,'hex'),
+		tokenID: Buffer.from('0000000100000000', 'hex'),
+		amount: BigInt(1000),
+		recipientAddress: Buffer.from(account.binaryAddress, 'hex'),
 		data: 'Happy birthday!'
 	};
 
@@ -306,22 +307,21 @@ It requires the following parameters:
 [source,js]
 ----
 const { transactions } = require('@liskhq/lisk-client');
-const { transferParamsSchema } = require('../schemas');
+const { transferParamsSchema } = require('./schemas');
 const account = require('./account.json');
 
-const chainID = '00000000';
+const chainID = '00000001';
 
 const signTx = (unsignedTransaction) => {
 	const signedTransaction = transactions.signTransaction(
 		unsignedTransaction,
 		Buffer.from(chainID, 'hex'),
-		Buffer.from(account.privateKey,'hex'),
+		Buffer.from(account.privateKey, 'hex'),
 		transferParamsSchema
 	);
 
 	return signedTransaction;
 }
-
 
 module.exports = { signTx }
 ----
@@ -341,8 +341,7 @@ Create a new file `api-client.js` and paste the following code:
 ----
 const { apiClient } = require('@liskhq/lisk-client');
 
-// Adjust the RPC_ENDPOINT to point to your RPC node, if required.
-const RPC_ENDPOINT = 'ws://localhost:7887/rpc-ws';
+const RPC_ENDPOINT = 'ws://127.0.0.1:7887/rpc-ws';
 let clientCache;
 
 const getClient = async () => {
@@ -362,7 +361,7 @@ Require the function `getClient()` to retrieve the API client, and use it to per
 .dry-run.js
 [source,js]
 ----
-const { getClient } = require('../api-client');
+const { getClient } = require('./api-client');
 
 const dryRun = async (signedTransaction) => {
 	const client = await getClient();
@@ -387,15 +386,15 @@ const { signTx } = require('./sign-offline');
 const { dryRun } = require('./dry-run');
 
 (async () => {
-    // 1. Create an unsigned transaction
+	// 1. Create an unsigned transaction
 	const tx = createTxOffline();
 	console.log("Unsigned Transaction: ", tx);
 
-    // 2. Sign the transaction
+	// 2. Sign the transaction
 	const signedTx = signTx(tx);
 	console.log("Signed Transaction: ", signedTx);
 
-    // 3. Perform a dry-run for the signed transaction
+	// 3. Perform a dry-run for the signed transaction
 	const dryRunResult = await dryRun(signedTx)
 	console.log("Dry-Run Result: ", dryRunResult);
 
@@ -408,16 +407,16 @@ An unsigned Transaction looks like this:
 .Unsigned Transaction
 [source,bash]
 ----
-{
+Unsigned Transaction:  {
   module: 'token',
   command: 'transfer',
   fee: 10000000n,
   nonce: 23n,
   senderPublicKey: <Buffer ec 10 25 5d 3e 78 b2 97 7f 04 e5 9e a9 af d3 e9 a2 ce 9a 6b 44 61 9e f9 f6 c4 7c 29 69 5b 1d f3>,
   params: {
-    tokenID: <Buffer 00 00 00 00 00 00 00 00>,
-    amount: 2000000000n,
-    recipientAddress: <Buffer 85 c1 2d 39 04 1b c0 9e 1f 89 df ef fe 4b 87 cf cf e7 9f b2>,
+    tokenID: <Buffer 00 00 00 01 00 00 00 00>,
+    amount: 1000n,
+    recipientAddress: <Buffer fa 89 2e 1a a4 2a 8a f9 6c 45 df d5 af c4 28 b3 db a9 50 e6>,
     data: 'Happy birthday!'
   },
   signatures: []
@@ -429,80 +428,88 @@ Values for the properties `signatures` and `id` are added to a transaction when 
 .Signed Transaction
 [source,bash]
 ----
-{
+Signed Transaction:  {
   module: 'token',
   command: 'transfer',
   fee: 10000000n,
   nonce: 23n,
   senderPublicKey: <Buffer ec 10 25 5d 3e 78 b2 97 7f 04 e5 9e a9 af d3 e9 a2 ce 9a 6b 44 61 9e f9 f6 c4 7c 29 69 5b 1d f3>,
   params: {
-    tokenID: <Buffer 00 00 00 00 00 00 00 00>,
-    amount: 2000000000n,
-    recipientAddress: <Buffer 85 c1 2d 39 04 1b c0 9e 1f 89 df ef fe 4b 87 cf cf e7 9f b2>,
+    tokenID: <Buffer 00 00 00 01 00 00 00 00>,
+    amount: 1000n,
+    recipientAddress: <Buffer fa 89 2e 1a a4 2a 8a f9 6c 45 df d5 af c4 28 b3 db a9 50 e6>,
     data: 'Happy birthday!'
   },
   signatures: [
-    <Buffer cd 28 ce 82 43 67 7b 16 a5 b9 f1 9b 6d 71 58 c0 bb b2 c9 9f 11 dc 25 34 96 d2 6a 14 d4 1c a6 03 d0 ab 49 67 4a 1c ee df aa a7 36 8e d0 1b a3 fa e2 81 ... 14 more bytes>
+    <Buffer 64 08 a2 9d 7f 39 55 ed 5e 47 9f a6 90 b1 c2 61 8f 07 ab cc 70 bd 10 05 44 2f 89 b5 74 9f b7 b5 16 1d 73 db 79 9e ab e7 07 7e f5 40 bd e3 91 de 99 33 ... 14 more bytes>
   ],
-  id: <Buffer be 19 fd 1d e0 29 d0 78 e8 03 bb fb b0 8e bc 70 d1 34 e8 c1 d1 37 1f 0a 65 b5 7b 3d 76 9a 45 37>
+  id: <Buffer ea 7e a3 a8 dd bf 9f 88 0a da eb 17 5a 47 d5 b8 bf 70 39 80 09 63 66 a7 be 7f 9d eb 01 43 73 b3>
 }
 ----
 
-If the dry-run result is `0`, the transaction is valid.
+If the dry-run result is `1`, the transaction is valid.
 
 .Dry-Run Result
 [source,bash]
 ----
-{
-  result: 0,
+Dry-Run Result:  {
+  result: 1,
   events: [
     {
-      data: '0a14fa892e1aa42a8af96c45dfd5afc428b3dba950e612036665651a0803000008000000002080ade2042800',
+      data: '0a14fa892e1aa42a8af96c45dfd5afc428b3dba950e612036665651a0800000001000000002080ade2042800',
       index: 0,
       module: 'token',
       name: 'lock',
       topics: [Array],
-      height: 12636
+      height: 2940
     },
     {
-      data: '0a14fa892e1aa42a8af96c45dfd5afc428b3dba950e612036665651a0803000008000000002080ade2042800',
+      data: '0a14fa892e1aa42a8af96c45dfd5afc428b3dba950e61214fa892e1aa42a8af96c45dfd5afc428b3dba950e61a08000000010000000020e8072800',
       index: 1,
+      module: 'token',
+      name: 'transfer',
+      topics: [Array],
+      height: 2940
+    },
+    {
+      data: '0a14fa892e1aa42a8af96c45dfd5afc428b3dba950e612036665651a0800000001000000002080ade2042800',
+      index: 2,
       module: 'token',
       name: 'unlock',
       topics: [Array],
-      height: 12636
+      height: 2940
     },
     {
-      data: '0a14fa892e1aa42a8af96c45dfd5afc428b3dba950e61208030000080000000018c89cbc022000',
-      index: 2,
-      module: 'token',
-      name: 'burn',
-      topics: [Array],
-      height: 12636
-    },
-    {
-      data: '0a14fa892e1aa42a8af96c45dfd5afc428b3dba950e61214821a6aa707422e6d444b42afb2a303d014d620221a08030000080000000020b890a6022800',
+      data: '0a14fa892e1aa42a8af96c45dfd5afc428b3dba950e6121403cb3daae6009976ebac3b8935444bc3677b68821a08000000010000000020b0bed7042800',
       index: 3,
       module: 'token',
       name: 'transfer',
       topics: [Array],
-      height: 12636
+      height: 2940
     },
     {
-      data: '0a14fa892e1aa42a8af96c45dfd5afc428b3dba950e61214821a6aa707422e6d444b42afb2a303d014d6202218c89cbc0220b890a602',
+      data: '0a14fa892e1aa42a8af96c45dfd5afc428b3dba950e61208000000010000000018d0ee0a2000',
       index: 4,
+      module: 'token',
+      name: 'burn',
+      topics: [Array],
+      height: 2940
+    },
+    {
+      data: '0a14fa892e1aa42a8af96c45dfd5afc428b3dba950e6121403cb3daae6009976ebac3b8935444bc3677b688218d0ee0a20b0bed704',
+      index: 5,
       module: 'fee',
       name: 'generatorFeeProcessed',
       topics: [Array],
-      height: 12636
+      height: 2940
     },
     {
-      data: '0800',
-      index: 5,
+      data: '0801',
+      index: 6,
       module: 'token',
       name: 'commandExecutionResult',
       topics: [Array],
-      height: 12636
+      height: 2940
     }
   ]
 }

@@ -11,6 +11,8 @@ Chris Braithwaite <christopher.braithwaite@lightcurve.io>, Mona Bärenfänger <m
 :url_bls_key: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0038.md#public-key-registration-and-proof-of-possession
 :url_lip56: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0056.md
 :url_lip56_bftweight: {url_lip56}#terminology
+:url_github_sdk_interop: https://github.com/LiskHQ/lisk-sdk/blob/development/examples/interop
+:url_github_sdk_scregistration: {url_github_sdk_interop}/pos-mainchain-fast/config/scripts/sidechain_registration.ts
 :url_github_appregistry: https://github.com/LiskHQ/app-registry
 :url_github_appregistry_readme: {url_github_appregistry}#lisk-application-registry
 :url_github_appregistry_schema_app: {url_github_appregistry}/blob/main/schema/app.json
@@ -62,7 +64,12 @@ TIP: Please read xref:{url_sidechain_reg_recovery}[] to get more information abo
 
 A sidechain is registered on the mainchain by posting a xref:{url_sidechain_reg_command}[Sidechain Registration transaction].
 
-A Sidechain Registration transaction *can be sent by any user account* on the Lisk Mainchain that has adequate funds to pay the required <<sidechain-registration-fee,fee>>.
+A Sidechain Registration transaction *can be sent by any user account on the Lisk Mainchain* that has adequate funds to pay the required <<sidechain-registration-fee,fee>>.
+
+The transaction requires specific parameters.
+It is recommended to prepare the transaction and all required parameters in a dedicated script.
+
+NOTE: The process of registering a sidechain on the mainchain is explained by following the existing example {url_github_sdk_scregistration}[sidechain_registration.ts^], which can be found in the {url_github_sdk_interop}[interoperability example^] in the Lisk SDK repository.
 
 === Sidechain registration fee
 When the "Sidechain Registration" command is processed, it creates a sidechain account in the mainchain state which is associated with a unique chain identifier and a name.
@@ -72,6 +79,111 @@ Additionally, every newly registered sidechain can increase the size of every cr
 For these two reasons, the minimum fee for this command has an added constant similar to the extra fee in a Register Validator transaction.
 
 NOTE: The extra registration fee for a sidechain registration is *10 LSK* tokens.
+
+=== Connect to a mainchain and a sidechain node
+
+[source,typescript]
+----
+import { apiClient } from 'lisk-sdk';
+
+// Replace this with alias of the sidechain node client
+const appAlias = "lisk-app"
+
+// Mainchain API client
+const mainchainClient = await apiClient.createIPCClient(`~/.lisk/lisk-core`);
+
+// Sidechain API client
+const sidechainClient = await apiClient.createIPCClient(
+    `~/.lisk/${appAlias}`,
+);
+
+----
+
+Next, get the basic node information from mainchain and sidechain node.
+
+It is requested to receive the following values:
+
+* `CHAIN_ID` (Mainchain): The chain ID of the mainchain is required to sign the transaction.
+* `CHAIN_ID` (Sidechain): The chain ID of the sidechain as parameter of the transaction.
+* `height` (Sidechain): The current height of the sidechain is used to get the data about the currently active sidechain validators.
+
+[source,typescript]
+----
+const mainchainNodeInfo = await mainchainClient.invoke('system_getNodeInfo');
+const sidechainNodeInfo = await sidechainClient.invoke('system_getNodeInfo');
+----
+
+=== Get info about the active sidechain validators
+
+[source,typescript]
+----
+// Get info about the active sidechain validators and the certificate threshold
+const { validators: sidechainActiveValidators, certificateThreshold } =
+    await sidechainClient.invoke('consensus_getBFTParameters', {
+        height: sidechainNodeInfo.height,
+});
+
+// Sort the validators lexicographically after their BLS keys
+(sidechainActiveValidators as { blsKey: string; bftWeight: string }[]).sort((a, b) =>
+    Buffer.from(a.blsKey, 'hex').compare(Buffer.from(b.blsKey, 'hex')),
+);
+----
+
+=== Prepare transaction with parameters
+
+[source,typescript]
+----
+// Prepare the parameters
+const params = {
+    sidechainCertificateThreshold: certificateThreshold,
+    sidechainValidators: sidehcainActiveValidators,
+    chainID: sidechainNodeInfo.chainID,
+    name: `sidechain_example_${nodeAlias}`,
+};
+
+// Get credentials for signing the transaction
+const relayerkeyInfo = keys[2];
+
+// Get correct nonce
+const { nonce } = await mainchainClient.invoke<{ nonce: string }>('auth_getAuthAccount', {
+    address: address.getLisk32AddressFromPublicKey(Buffer.from(relayerkeyInfo.publicKey, 'hex')),
+});
+
+// Create new transaction
+const tx = new Transaction({
+    module: 'interoperability',
+    command: 'registerSidechain',
+    fee: BigInt(2000000000),
+    params: codec.encodeJSON(sidechainRegParams, params),
+    nonce: BigInt(nonce),
+    senderPublicKey: Buffer.from(relayerkeyInfo.publicKey, 'hex'),
+    signatures: [],
+});
+
+// Sign transaction
+tx.sign(
+    Buffer.from(mainchainNodeInfo.chainID as string, 'hex'),
+    Buffer.from(relayerkeyInfo.privateKey, 'hex'),
+);
+----
+
+=== Send the transaction
+
+[source,typescript]
+----
+// Post transaction to the mainchain node
+const result = await mainchainClient.invoke<{
+    transactionId: string;
+}>('txpool_postTransaction', {
+    transaction: tx.getBytes().toString('hex'),
+});
+
+// Log the result in the console
+console.log(
+    `Sent sidechain registration transaction on mainchain node ${nodeAlias}. Result from transaction pool is: `,
+    result,
+);
+----
 
 === Prepare the required parameters
 
@@ -1281,6 +1393,8 @@ Taking this into account, we decide for a `sidechainCertificateThreshold` in the
 ====
 
 The transaction parameters are now prepared in `sidechain_reg_params.json` and we can proceed to create and post the transaction in the next section.
+
+
 
 === Post the transaction on the mainchain
 

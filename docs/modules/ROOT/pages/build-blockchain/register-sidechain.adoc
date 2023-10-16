@@ -13,6 +13,7 @@ Chris Braithwaite <christopher.braithwaite@lightcurve.io>, Mona Bärenfänger <m
 :url_lip56_bftweight: {url_lip56}#terminology
 :url_github_sdk_interop: https://github.com/LiskHQ/lisk-sdk/blob/development/examples/interop
 :url_github_sdk_scregistration: {url_github_sdk_interop}/pos-mainchain-fast/config/scripts/sidechain_registration.ts
+:url_github_sdk_mcregistration: {url_github_sdk_interop}/common/mainchain_registration.ts
 :url_github_appregistry: https://github.com/LiskHQ/app-registry
 :url_github_appregistry_readme: {url_github_appregistry}#lisk-application-registry
 :url_github_appregistry_schema_app: {url_github_appregistry}/blob/main/schema/app.json
@@ -494,14 +495,11 @@ This will return the respective sidechain account stored in the xref:{url_sidech
 The mainchain is registered on a sidechain by posting a xref:{url_mainchain_reg}[Register Mainchain transaction].
 A "Register Mainchain" transaction can be sent by any user account in the sidechain that has adequate funds to pay the required fee.
 
-[IMPORTANT]
-====
-* The mainchain registration process always has to occur *after* the sidechain registration on the mainchain, since the sidechain has no prior knowledge of its name and must be certain that the correct chain ID has been registered.
-* Connections to both mainchain and sidechain node APIs are required to create a Register Mainchain transaction.
-====
+NOTE: The process of registering the mainchain on a sidechain is explained by following the existing example {url_github_sdk_mcregistration}[mainchain_registration.ts^], which can be found in the Lisk SDK repository.
 
 [CAUTION]
 ====
+* The mainchain registration process always has to occur *after* the sidechain registration on the mainchain, since the sidechain has no prior knowledge of its name and must be certain that the correct chain ID has been registered.
 * It is of key importance that the sidechain validators ensure that they are signing the registration command with the correct information, otherwise the sidechain interoperable functionality may be unusable.
 * If the mainchain and/or sidechain registration command was submitted with the wrong data, then the whole sidechain needs to be restarted completely with the correct values, or it needs to hardfork in order to connect to the mainchain.
 ====
@@ -519,24 +517,74 @@ To create a *Register Mainchain* transaction, the following information is requi
 
 The Register Mainchain parameters are created in an analog way as the Sidechain Registration parameters have been created in the previous step.
 
-To conveniently prepare the required parameters, check out the following script in the lisk-sdk-examples repository:
-{url_exmaples_guides_createparams}[paramsCreation.ts^]
-
-The script is executed like this:
-
-[source,bash]
+[source,typescript]
 ----
-node paramsCreation.ts
+import { codec, cryptography, apiClient, Transaction } from 'lisk-sdk';
+import {
+	registrationSignatureMessageSchema,
+	mainchainRegParams as mainchainRegParamsSchema,
+	MESSAGE_TAG_CHAIN_REG,
+	MODULE_NAME_INTEROPERABILITY,
+} from 'lisk-framework';
+import { COMMAND_NAME_MAINCHAIN_REG } from 'lisk-framework/dist-node/modules/interoperability/constants';
+
+/**
+* Registers the mainchain to a specific sidechain node.
+*
+* @example
+* ```js
+* (async () => {
+*	await registerMainchain(sidechainDevValidators);
+*})();
+* ```
+* @param sidechainDevValidators the `key` property of the `dev-validators.json` file.
+* Includes all keys of the sidechain validators to create the aggregated signature.
+*/
+export const registerMainchain = async (
+	sidechainDevValidators: any[],
+) => {
+    const { bls, address } = cryptography;
+
+    // Replace this with alias of the sidechain node client
+    const appAlias = "lisk-app"
+
+    const mainchainClient = await apiClient.createIPCClient(`~/.lisk/lisk-core`);
+    const sidechainClient = await apiClient.createIPCClient(`~/.lisk/${appAlias}`);
+
+    const mainchainNodeInfo = await mainchainClient.invoke('system_getNodeInfo');
+    const sidechainNodeInfo = await sidechainClient.invoke('system_getNodeInfo');
+
+    // Get active validators from mainchain
+    const {
+        validators: mainchainActiveValidators,
+        certificateThreshold: mainchainCertificateThreshold,
+    } = await mainchainClient.invoke('consensus_getBFTParameters', {
+        height: mainchainNodeInfo.height,
+    });
+
+    const paramsJSON = {
+        ownChainID: sidechainNodeInfo.chainID,
+        ownName: `sidechain_example_${num}`,
+        mainchainValidators: (mainchainActiveValidators as { blsKey: string; bftWeight: string }[])
+            .map(v => ({ blsKey: v.blsKey, bftWeight: v.bftWeight }))
+            .sort((a, b) => Buffer.from(a.blsKey, 'hex').compare(Buffer.from(b.blsKey, 'hex'))),
+        mainchainCertificateThreshold,
+    };
+
+    const params = {
+        ownChainID: Buffer.from(paramsJSON.ownChainID as string, 'hex'),
+        ownName: paramsJSON.ownName,
+        mainchainValidators: paramsJSON.mainchainValidators.map(v => ({
+            blsKey: Buffer.from(v.blsKey, 'hex'),
+            bftWeight: BigInt(v.bftWeight),
+        })),
+        mainchainCertificateThreshold: paramsJSON.mainchainCertificateThreshold,
+    };
+
+    const message = codec.encode(registrationSignatureMessageSchema, params);
+};
 ----
 
-Executing the script after installation of the dependencies should create a new file `params.json` with the following parameters:
-
-. <<ownchainid>>
-. <<ownname>>
-. <<mainchainvalidators>>
-. <<mainchaincertificatethreshold>>
-
-Open the file `params.json`, to verify all values were generated correctly.
 The next step is to collect and aggregate the corresponding signatures from the sidechain validators, see <<preparing-the-aggregated-signature>>.
 
 ==== ownChainID
@@ -556,7 +604,7 @@ Each item contains the following properties:
 . `blsKey`: The {url_bls_key}[public BLS key] of the validator.
 . `bftWeight`: The {url_lip56}[BFT weight^] of the validator.
 
-TIP: To retrieve the BFT parameters of all mainchain validators, invoke the `consensus_getBFTParameters` endpoint on the *mainchain node*.
+TIP: To retrieve the BFT parameters of all mainchain validators, invoke the xref:{url_api_rpc_bftparams}[consensus_getBFTParameters] endpoint on the *mainchain node*.
 
 ==== mainchainCertificateThreshold
 `mainchainCertificateThreshold` is an integer that defines the minimum BFT weight threshold required for the first mainchain certificate to be valid.
@@ -566,7 +614,7 @@ Minimum and maximum values for the certificate threshold are calculated with the
 === Preparing the aggregated signature
 To create a valid signature, enough sidechain validators need to individually sign the mainchain registration message, so that the total weight is equal or greater to the <<sidechaincertificatethreshold>>.
 By signing the mainchain registration message, they verify the correctness of the following values: `ownChainID`, `ownChainName`, `mainchainCertificateThreshold` and `mainchainValidators`.
-All individual signatures are then aggregated into one `signature` and the corresponding `aggregationBits` which are appended to the Register Mainchain parameters.
+All individual signatures are then aggregated into one `signature` and the corresponding `aggregationBits`, which are appended to the Register Mainchain parameters.
 
 The individual signing of the mainchain registration by the sidechain validators is executed *off-chain*, similar to the process of creating multi-signature transactions.
 
@@ -574,51 +622,46 @@ The individual signing of the mainchain registration by the sidechain validators
 
 The process of signing the registration parameters needs to be coordinated off-chain by the sidechain validators.
 
-To simplify the process, you may use the following script, which adds a validator signature to an existing list of signatures: {url_exmaples_guides_validatorsignatures}[validatorSignatures.ts]
-
-The script expects the following files to be present:
-
-. `params.json`, which was created in step <<preparing-the-register-mainchain-parameters>>.
-. `keys.json`: A file with the `blskey` values of the validators intending to sign the registration transaction.
-.. This file can be generated for a specific validator with the xref:{url_sdk_cli_keyscreate}[keys:create] CLI command, by providing the validators passphrase.
-. `sidechainValidatorSignatures.json`: List of already existing validator signatures.
-If no such file is found, it will be created newly.
-
-After installing the required dependencies, the script can be executed like so:
-
-[source,bash]
-----
-node validatorSignatures.ts
-----
-
-As a result, it will append a new signature to the signatures listed in the file `sidechainValidatorSignatures.json`.
-
 The most important parts of the script are the following:
 
 [source,js]
 ----
-// 1. Preparing params for the registration message
-params = {
-    ownChainID: Buffer.from(paramsJSON.ownChainID, 'hex'),
-    ownName: paramsJSON.ownName,
-    mainchainValidators: paramsJSON.mainchainValidators.map(v => ({
-        blsKey: Buffer.from(v.blsKey, 'hex'),
-        bftWeight: BigInt(v.bftWeight),
-    })),
-    mainchainCertificateThreshold: paramsJSON.mainchainCertificateThreshold.toString(),
-};
+// Get active validators from sidechainChain
+	const { validators: sidechainActiveValidators } = await sidechainClient.invoke(
+		'consensus_getBFTParameters',
+		{ height: sidechainNodeInfo.height },
+	);
 
-// 2. Create message by encoding params
-const message = codec.codec.encode(registrationSignatureMessageSchema, params);
+	const activeValidatorsWithPrivateKey: { blsPublicKey: Buffer; blsPrivateKey: Buffer }[] = [];
+	for (const v of sidechainActiveValidators as { blsKey: string; bftWeight: string }[]) {
+		const validatorInfo = sidechainValidatorsKeys.find(
+			configValidator => configValidator.plain.blsKey === v.blsKey,
+		);
+		if (validatorInfo) {
+			activeValidatorsWithPrivateKey.push({
+				blsPublicKey: Buffer.from(v.blsKey, 'hex'),
+				blsPrivateKey: Buffer.from(validatorInfo.plain.blsPrivateKey, 'hex'),
+			});
+		}
+	}
+	console.log('Total activeValidatorsWithPrivateKey:', activeValidatorsWithPrivateKey.length);
+	// Sort active validators from sidechainChain
+	activeValidatorsWithPrivateKey.sort((a, b) => a.blsPublicKey.compare(b.blsPublicKey));
 
+	const sidechainValidatorsSignatures: { publicKey: Buffer; signature: Buffer }[] = [];
+	// Sign with each active validator
+	for (const validator of activeValidatorsWithPrivateKey) {
+		const signature = bls.signData(
+			MESSAGE_TAG_CHAIN_REG,
+			params.ownChainID,
+			message,
+			validator.blsPrivateKey,
+		);
+		sidechainValidatorsSignatures.push({ publicKey: validator.blsPublicKey, signature });
+	}
 
-// 3. Signing the registration message
-const signature = bls.signData(
-      MESSAGE_TAG_CHAIN_REG,
-      params.ownChainID,
-      message,
-      Buffer.from(blsKeys[0].plain.blsPrivateKey,"hex"),
-    );
+	const publicKeysList = activeValidatorsWithPrivateKey.map(v => v.blsPublicKey);
+	console.log('Total active sidechain validators:', sidechainValidatorsSignatures.length);
 ----
 
 The validator signatures need to be collected by the person intending to send the Register Mainchain transaction.
@@ -629,22 +672,6 @@ Once the aggregated BFT weight of the validators who signed is equal or above th
 
 Once enough validators added their signatures, the list of signatures is aggregated into one single signature, which is then appended to the registration params that we created in step <<preparing-the-register-mainchain-parameters>>.
 
-The following script is performing the required steps: {url_exmaples_guides_mcregistration}[mainchainRegistration.ts]
-
-The script expects the following files to be present:
-
-. `params.json`, which was created in step <<preparing-the-register-mainchain-parameters>>.
-. `sidechainValidatorSignatures.json`: List of validator signatures.
-
-After installing the required dependencies, the script can be executed like so:
-
-[source,bash]
-----
-node mainchainRegistration.ts
-----
-
-As a result, it will create a new file `mainchain_reg_params.json`, including all required parameters and the aggregated signatures of the sidechain validators, which is verifying the correctness of the parameters.
-
 signature::
 The `signature` property is an aggregate signature of the sidechain validators.
 It ensures that the sidechain validators agree on registering the mainchain in the sidechain.
@@ -652,24 +679,63 @@ It ensures that the sidechain validators agree on registering the mainchain in t
 aggregationBits::
 The `aggregationBits` property is a bit vector used to validate the aggregate signature.
 
-The file `mainchain_reg_params.json` can now be passed as parameter source, when creating the `registerMainchain` transaction in the next step.
+[source,typescript]
+----
+// Create an aggregated signature
+	const { aggregationBits, signature } = bls.createAggSig(
+		publicKeysList,
+		sidechainValidatorsSignatures,
+	);
 
+	const relayerKeyInfo = sidechainDevValidators[0];
+	const { nonce } = await sidechainClient.invoke<{ nonce: string }>('auth_getAuthAccount', {
+		address: address.getLisk32AddressFromPublicKey(Buffer.from(relayerKeyInfo.publicKey, 'hex')),
+	});
+	const mainchainRegParams = {
+		...paramsJSON,
+		signature: signature.toString('hex'),
+		aggregationBits: aggregationBits.toString('hex'),
+	};
+
+    const tx = new Transaction({
+		module: MODULE_NAME_INTEROPERABILITY,
+		command: COMMAND_NAME_MAINCHAIN_REG,
+		fee: BigInt(2000000000),
+		params: codec.encodeJSON(mainchainRegParamsSchema, mainchainRegParams),
+		nonce: BigInt(nonce),
+		senderPublicKey: Buffer.from(relayerKeyInfo.publicKey, 'hex'),
+		signatures: [],
+	});
+
+	tx.sign(
+		Buffer.from(sidechainNodeInfo.chainID as string, 'hex'),
+		Buffer.from(relayerKeyInfo.privateKey, 'hex'),
+	);
+----
 === Posting a Register Mainchain transaction
 
 Send the `registerSidechain` transaction to a node that is connected to the mainchain.
 
-[source,bash]
-----
-./bin/run transaction:create interoperability registerMainchain 2000000000 --pretty -f ./mainchain_reg_params.json
+[source,typescript]
 ----
 
-The transaction will be returned in hex format.
+    const result = await sidechainClient.invoke<{
+		transactionId: string;
+	}>('txpool_postTransaction', {
+		transaction: tx.getBytes().toString('hex'),
+	});
 
-Copy the transaction and send it to the node, for example by using the node CLI like so:
+	console.log('Sent mainchain registration transaction. Result from transaction pool is: ', result);
 
-[source,bash]
-----
-./bin/run transaction:send 0a10696e7465726f7065726162696c6974791211726567697374657253696465636861696e18002080a8d6b9072a20a3f96c50d0446220ef2f98240898515cbba8155730679ca35326d98dcfb680f0324a0a0404000001120a73696465636861696e311a340a3092f020ce5e37befb86493a82686b0eedddb264350b0873cf1eeaa1fefe39d938f05f272452c1ef5e6ceb4d9b23687e31100220023a408261e374405af4ec1143dfc0ae82a38e385d0edce870f698385749112064b374ac0de67354210aa27280db82121ec0bce195e5630c56a568a8b99dbbcb3a3d0b
+	const authorizeMainchainResult = await mainchainClient.invoke<{
+		transactionId: string;
+	}>('chainConnector_authorize', {
+		enable: true,
+		password: 'lisk',
+	});
+	console.log('Authorize Mainchain completed, result:', authorizeMainchainResult);
+
+	process.exit(0);
 ----
 
 If the node accepted the transaction, it will respond with the transaction ID.

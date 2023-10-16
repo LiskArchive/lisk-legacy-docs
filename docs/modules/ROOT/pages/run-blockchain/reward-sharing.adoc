@@ -1,4 +1,4 @@
-= How share block Rewards
+= How share block rewards
 Muhammad Talha <muhammad.talha@lightcurve.io>
 :toc: preamble
 :toclevels: 5
@@ -26,7 +26,27 @@ The reward sharing mechanism is part of the PoS module. To learn more about how 
 
 The values of all constants related to commissions are between *0* and *10000*, corresponding to percentages with two decimal places, which can be obtained by dividing the value by *100*. For example, a commission value of *1000*, corresponds to a *10%* commission.
 
-Initially, after validator's registration the commission of a validator is initialized with 100%. Afterwards, it can be decreased by submitting a commission change transaction.
+Initially, after validator's registration the commission of a validator is initialized with 100%. Afterwards, it can be decreased by submitting a commission change transaction. 
+
+A validator's commission value can be checked by invoking the `pos_getValidator` endpoint.
+
+[source,json]
+----
+{
+    "name": "web3lord",
+    "totalStake": "2011000000000",
+    "selfStake": "1011000000000",
+    "lastGeneratedHeight": 4260,
+    "isBanned": false,
+    "reportMisbehaviorHeights": [],
+    "consecutiveMissedBlocks": 783,
+    "commission": 10000, // At this value, the validator is keeping 100% rewards earned by block generation and they aren't sharing them with anyone.
+    "lastCommissionIncreaseHeight": 271,
+    "sharingCoefficients": [],
+    "address": "lskm87us5hykopm2f2nxa92z5ftbr9r52kg5b45e6",
+    "punishmentPeriods": []
+}
+----
 
 == Prerequisites and Background
 
@@ -34,11 +54,163 @@ Initially, after validator's registration the commission of a validator is initi
 
 Once you successfully stake for a validator, you can see your stakes by invoking the xref:{url_getStaker}[pos_getStaker] endpoint:
 Each time a validator becomes part of the block generation round, there are chances that they will be selected to generate an upcoming block. 
-To check the if the validator is in the list of active validators, see the response of consensus_getBFTParameters.
+
+To check the if the validator is in the list of active validators, see the response of `consensus_getBFTParameters`.
 If the validator is in the returned list then, soon your validator will be generating a block in a round and as a result will earn rewards.
 
-Block rewards are distributed after the `offset` height is reached. By default, the value of offset is `2160`.
+Block rewards are distributed after the `offset` block height is reached. By default, the value of offset is `2160`.
 After reaching the offset height, rewards for each validator are credited to their account.
 The estimated rewards of a validator can be checked via the `dynamicReward_getExpectedValidatorRewards` endpoint.
 
-Once the validator generated a block, Lisk Protocol automatically, increments the `lockedBalance` and `availableBalance` of the validators account.
+== Sharing rewards
+
+An active validator should create a `changeCommission` transaction to update the commission value.
+
+. The validator will execute the following command to initiate the commission change process:
++
+[tabs]
+=====
+Mainchain node::
++
+--
+[source,bash]
+----
+lisk-core transaction:create pos changeCommission 1000000 --json --pretty  
+----
+--
+Sidechain Node::
++
+--
+[source,bash]
+----
+./bin/run transaction:create pos changeCommission 1000000 --json --pretty 
+----
+--
+=====
++
+. The validator will enter their `passphrase` and the `newCommission` value. 
+In this example, we want to validator to keep *85%* of the rewards and share *15%* with their staker, hence the value `8500`.
++
+---- 
+? Please enter passphrase:  [hidden]
+? Please enter: newCommission:  8500
+---- 
++
+. The above command will return the transaction in the HEX string and JSON format.
++
+[source,json]
+---- 
+{
+  "transaction": "0a03706f7312106368616e6765436f6d6d697373696f6e180a20c0843d2a2065984ff3e6fe0d161a0a118c4e5d181a23c18f1d4bf59c78d178b7fcf0cadead320308c03e3a40f4e53ed1aaf56f878ab7cc13514164bbbe403dd52ac558ab88afdf8bc4829fd959aaf913ccf52e755185c681e13f84b4aaa723709faad7bc5de818fa96e48804"
+}
+{
+  "transaction": {
+    "module": "pos",
+    "command": "changeCommission",
+    "fee": "1000000",
+    "nonce": "10",
+    "senderPublicKey": "65984ff3e6fe0d161a0a118c4e5d181a23c18f1d4bf59c78d178b7fcf0cadead",
+    "signatures": [
+      "f4e53ed1aaf56f878ab7cc13514164bbbe403dd52ac558ab88afdf8bc4829fd959aaf913ccf52e755185c681e13f84b4aaa723709faad7bc5de818fa96e48804"
+    ],
+    "params": {
+      "newCommission": 8500
+    },
+    "id": "7ad7d91488abdb859cf06570b17986a2ac14018584326d302afd0770fba96c86"
+  }
+}
+----
++
+[#postTx]
+. Post the transaction to the node for its execution.
++
+[tabs]
+=====
+Mainchain node::
++
+--
+[source,bash]
+----
+lisk-core transaction:send 0a03706f7312106368616e6765436f6d6d697373696f6e180a20c0843d2a2065984ff3e6fe0d161a0a118c4e5d181a23c18f1d4bf59c78d178b7fcf0cadead320308c03e3a40f4e53ed1aaf56f878ab7cc13514164bbbe403dd52ac558ab88afdf8bc4829fd959aaf913ccf52e755185c681e13f84b4aaa723709faad7bc5de818fa96e48804
+----
+--
+Sidechain Node::
++
+--
+[source,bash]
+----
+./bin/run transaction:send 0a03706f7312106368616e6765436f6d6d697373696f6e180a20c0843d2a2065984ff3e6fe0d161a0a118c4e5d181a23c18f1d4bf59c78d178b7fcf0cadead320308c03e3a40f4e53ed1aaf56f878ab7cc13514164bbbe403dd52ac558ab88afdf8bc4829fd959aaf913ccf52e755185c681e13f84b4aaa723709faad7bc5de818fa96e48804
+----
+--
+=====
++
+. Upon successful execution of the transaction, the validator's commission value will be updated.
+To check the updated values, invoke the `pos_getValidator` endpoint.
++
+[source,json]
+----
+{
+    "name": "web3lord",
+    "totalStake": "2011000000000",
+    "selfStake": "1011000000000",
+    "lastGeneratedHeight": 4260,
+    "isBanned": false,
+    "reportMisbehaviorHeights": [],
+    "consecutiveMissedBlocks": 0,
+    "commission": 8500,
+    "lastCommissionIncreaseHeight": 271,
+    "sharingCoefficients": [
+        {
+            "tokenID": "1234567800000000",
+            "coefficient": "0b67f3fb9ef253f78c1b2c"
+        }
+    ],
+    "address": "lskm87us5hykopm2f2nxa92z5ftbr9r52kg5b45e6",
+    "punishmentPeriods": []
+}
+----
+
+== Claiming rewards
+
+After each block generated by the validator, both the validator and the staker(s) will earn a set percentage of rewards.
+For validators, the Lisk Protocol automatically, increments the `lockedBalance` and `availableBalance` of the validators account.
+However, a staker needs to claim their rewards via the following steps.
+
+. Check available rewards by invoking the `pos_getClaimableRewards` endpoint by passing the staker's `address` and the `tokenID`.
++
+[source,json]
+----
+{
+    "rewards": [
+        {
+            "tokenID": "1234567800000000",
+            "reward": "10000"
+        }
+    ]
+}
+----
++
+. Any `reward` higher than `0` can be claimed by the staker by executing the `claimRewards` command.
++
+[tabs]
+=====
+Mainchain node::
++
+--
+[source,bash]
+----
+lisk-core transaction:create pos claimRewards 1000000
+----
+--
+Sidechain Node::
++
+--
+[source,bash]
+----
+./bin/run transaction:create pos claimRewards 1000000
+----
+--
+=====
++
+. <<postTx,Post the transaction>> to the node for execution and once the block is executed, check your `token_accountBalance` endpoint.
+The staker's account balance increments as per the reward earned.

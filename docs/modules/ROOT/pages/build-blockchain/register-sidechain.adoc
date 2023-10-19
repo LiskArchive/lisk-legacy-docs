@@ -14,6 +14,7 @@ Chris Braithwaite <christopher.braithwaite@lightcurve.io>, Mona Bärenfänger <m
 :url_github_sdk_interop: https://github.com/LiskHQ/lisk-sdk/blob/development/examples/interop
 :url_github_sdk_scregistration: {url_github_sdk_interop}/pos-mainchain-fast/config/scripts/sidechain_registration.ts
 :url_github_sdk_mcregistration: {url_github_sdk_interop}/common/mainchain_registration.ts
+:url_github_sdk_cctransfer: {url_github_sdk_interop}/pos-mainchain-fast/config/scripts/transfer_lsk_sidechain_one.ts
 :url_github_appregistry: https://github.com/LiskHQ/app-registry
 :url_github_appregistry_readme: {url_github_appregistry}#lisk-application-registry
 :url_github_appregistry_schema_app: {url_github_appregistry}/blob/main/schema/app.json
@@ -42,6 +43,7 @@ Chris Braithwaite <christopher.braithwaite@lightcurve.io>, Mona Bärenfänger <m
 :url_api_rpc_bftparams: api/lisk-node-rpc.adoc#consensus_getbftparameters
 :url_api_mainchain_endpoints_chainid: api/module-rpc-api/mainchain-interoperability-endpoints.adoc#interoperability_ischainidavailable
 :url_api_mainchain_endpoints_name: api/module-rpc-api/mainchain-interoperability-endpoints.adoc#interoperability_ischainnameavailable
+:url_api_token_balances: api/module-rpc-api/token-endpoints.adoc#token_getbalances
 :url_sdk_cli_keyscreate: {docs_sdk}client-cli.adoc#keyscreate
 
 // Footnotes
@@ -515,7 +517,7 @@ To create a *Register Mainchain* transaction, the following information is requi
 
 === Preparing the Register Mainchain parameters
 
-The Register Mainchain parameters are created in an analog way as the Sidechain Registration parameters have been created in the previous step.
+The parameters for the Register Mainchain transaction are created in an analog way as the Sidechain Registration parameters have been created in the previous step.
 
 [source,typescript]
 ----
@@ -533,6 +535,9 @@ import { COMMAND_NAME_MAINCHAIN_REG } from 'lisk-framework/dist-node/modules/int
 *
 * @example
 * ```js
+* // Update path to point to the dev-validators.json file of the sidechain which shall be registered on the mainchain
+import { keys as sidechainDevValidators } from '../default/dev-validators.json';
+
 * (async () => {
 *	await registerMainchain(sidechainDevValidators);
 *})();
@@ -632,9 +637,10 @@ The most important parts of the script are the following:
 		{ height: sidechainNodeInfo.height },
 	);
 
+// Add corresponding private keys to the validator list
 	const activeValidatorsWithPrivateKey: { blsPublicKey: Buffer; blsPrivateKey: Buffer }[] = [];
 	for (const v of sidechainActiveValidators as { blsKey: string; bftWeight: string }[]) {
-		const validatorInfo = sidechainValidatorsKeys.find(
+		const validatorInfo = sidechainDevValidators.find(
 			configValidator => configValidator.plain.blsKey === v.blsKey,
 		);
 		if (validatorInfo) {
@@ -670,7 +676,7 @@ Once the aggregated BFT weight of the validators who signed is equal or above th
 
 ==== Aggregating the validator signatures
 
-Once enough validators added their signatures, the list of signatures is aggregated into one single signature, which is then appended to the registration params that we created in step <<preparing-the-register-mainchain-parameters>>.
+When enough validators added their signatures, the list of signatures is aggregated into one single signature, which is then appended to the registration params that we created in step <<preparing-the-register-mainchain-parameters>>.
 
 signature::
 The `signature` property is an aggregate signature of the sidechain validators.
@@ -1379,7 +1385,24 @@ NOTE: This step is not necessary, if the default token for the CCM fees (LSK) is
 
 To be able to pay the CCM transaction fees, it is necessary to move a sufficient amount of LSK tokens from mainchain to sidechain via a cross-chain transfer transaction.
 
+NOTE: Sending CCMs from mainchain to sidechain does not <<activate-the-sidechain>>, yet.
+Only a CCM from sidechain to mainchain will enable the xref:{url_sidechain_reg_recovery_liveness}[liveness condition].
+
 Create the following transaction with your mainchain node:
+
+[TIP]
+====
+Alternatively, the following script can be used to perform the cross-chain transfer: {url_github_sdk_cctransfer}[transfer_lsk_sidechain_one.ts^]
+
+To make it work for your sidechain, please adjust the script as explained in the code comments of the script.
+
+The script is executed like so:
+
+[source,bash]
+----
+ts-node pos-mainchain-fast/config/scripts/transfer_lsk_sidechain_one.ts
+----
+====
 
 .Example: Creating a cross-chain transfer transaction
 [source,bash]
@@ -1402,8 +1425,7 @@ $ lisk-core transaction:create token transferCrossChain 10000000
 * `messageFeeTokenID`: Enter the token ID of the token that should be used to pay the fee.
 Enter here the tokenID of the LSK token.
 
-NOTE: Sending CCMs from mainchain to sidechain does not <<activate-the-sidechain>>, yet.
-Only a CCM from sidechain to mainchain will enable the xref:{url_sidechain_reg_recovery_liveness}[liveness condition].
+To verify that the cross-chain transfer was executed successfully, request the xref:{url_api_token_balances}[token_getBalance] endpoint with the recipient address as a parameter.
 
 == Activate the sidechain
 

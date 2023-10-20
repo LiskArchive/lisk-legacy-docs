@@ -88,21 +88,33 @@ NOTE: The extra registration fee for a sidechain registration is *10 LSK* tokens
 
 === Connect to a mainchain and a sidechain node
 
+.sidechain_registration.ts
 [source,typescript]
 ----
-import { apiClient } from 'lisk-sdk';
+import { apiClient, codec, sidechainRegParams, cryptography, Transaction } from 'lisk-sdk';
+// Replace this with the path to a file storing the public and private key of a mainchain account who will send the sidechain registration transaction.
+// (Can be any account with enough tokens).
+import { keys } from '../default/dev-validators.json';
 
-// Replace this with alias of the sidechain node client
-const appAlias = "lisk-app"
+(async () => {
+	const { address } = cryptography;
 
-// Mainchain API client
-const mainchainClient = await apiClient.createIPCClient(`~/.lisk/lisk-core`);
+	// Replace this with alias of the sidechain node(s)
+	const SIDECHAIN_ARRAY = ['pos-sidechain-example-one', 'pos-sidechain-example-two'];
+	// Replace this with the alias of the mainchain node(s), e.g. lisk-core
+	// Note: Number of mainchain nodes should be equal to sidechain nodes, for this script to work properly.
+	const MAINCHAIN_ARRAY = ['mainchain-node-one', 'mainchain-node-two'];
+	let i = 0;
+	for (const nodeAlias of SIDECHAIN_ARRAY) {
+        // Connect to the sidechain node
+		const sidechainClient = await apiClient.createIPCClient(`~/.lisk/${nodeAlias}`);
+		// Connect to the mainchain node
+		const mainchainClient = await apiClient.createIPCClient(`~/.lisk/${MAINCHAIN_ARRAY[i]}`);
 
-// Sidechain API client
-const sidechainClient = await apiClient.createIPCClient(
-    `~/.lisk/${appAlias}`,
-);
-
+        // ...
+    }
+    process.exit(0);
+})();
 ----
 
 Next, get the basic node information from mainchain and sidechain node.
@@ -113,8 +125,10 @@ The node information is requested to receive the following values:
 * `CHAIN_ID` (Sidechain): The chain ID of the sidechain as parameter of the transaction.
 * `height` (Sidechain): The latest height of the sidechain is used to get the data about the currently active sidechain validators.
 
+.sidechain_registration.ts
 [source,typescript]
 ----
+// Get node info data from sidechain and mainchain
 const mainchainNodeInfo = await mainchainClient.invoke('system_getNodeInfo');
 const sidechainNodeInfo = await sidechainClient.invoke('system_getNodeInfo');
 ----
@@ -130,6 +144,7 @@ Set the `height` to the *latest block height on the sidechain* in the request pa
 The validator list needs to be *lexicographically sorted* after the `blsKey`, to be a valid parameter.
 ====
 
+.sidechain_registration.ts
 [source,typescript]
 ----
 // Get info about the active sidechain validators and the certificate threshold
@@ -157,39 +172,38 @@ All these parameters can be prepared as a JSON object.
 
 Create the Register Sidechain transaction using the prepared parameters, and sign it with a mainchain account, that has enough funds to send pay the required transaction fees.
 
+.sidechain_registration.ts
 [source,typescript]
 ----
-// Prepare the parameters
+// Define parameters for the sidechain registration
 const params = {
     sidechainCertificateThreshold: certificateThreshold,
-    sidechainValidators: sidehcainActiveValidators,
+    sidechainValidators: sidechainActiveValidators,
     chainID: sidechainNodeInfo.chainID,
-    name: `sidechain_example_${nodeAlias}`,
+    name: nodeAlias.replace(/-/g, '_'),
 };
 
-// Get credentials for signing the transaction
-const relayerkeyInfo = keys[2];
-
-// Get correct nonce
+// Get public key and nonce of the sender account
+const relayerKeyInfo = keys[2];
 const { nonce } = await mainchainClient.invoke<{ nonce: string }>('auth_getAuthAccount', {
-    address: address.getLisk32AddressFromPublicKey(Buffer.from(relayerkeyInfo.publicKey, 'hex')),
+    address: address.getLisk32AddressFromPublicKey(Buffer.from(relayerKeyInfo.publicKey, 'hex')),
 });
 
-// Create new transaction
+// Create registerSidechain transaction
 const tx = new Transaction({
     module: 'interoperability',
     command: 'registerSidechain',
     fee: BigInt(2000000000),
     params: codec.encodeJSON(sidechainRegParams, params),
     nonce: BigInt(nonce),
-    senderPublicKey: Buffer.from(relayerkeyInfo.publicKey, 'hex'),
+    senderPublicKey: Buffer.from(relayerKeyInfo.publicKey, 'hex'),
     signatures: [],
 });
 
-// Sign transaction
+// Sign the transaction
 tx.sign(
     Buffer.from(mainchainNodeInfo.chainID as string, 'hex'),
-    Buffer.from(relayerkeyInfo.privateKey, 'hex'),
+    Buffer.from(relayerKeyInfo.privateKey, 'hex'),
 );
 ----
 
@@ -284,27 +298,23 @@ Maximum threshold:
 
 Send the `registerSidechain` transaction to a node that is connected to the mainchain.
 
+.sidechain_registration.ts
 [source,typescript]
 ----
-// Post transaction to the mainchain node
+// Post the transaction to a mainchain node
 const result = await mainchainClient.invoke<{
     transactionId: string;
 }>('txpool_postTransaction', {
     transaction: tx.getBytes().toString('hex'),
 });
 
-// Log the result in the console
 console.log(
-    `Sent sidechain registration transaction on mainchain node ${nodeAlias}. Result from transaction pool is: `,
+    `Sent sidechain registration transaction on mainchain node ${MAINCHAIN_ARRAY[1]}. Result from transaction pool is: `,
     result,
 );
 ----
 
 If the node accepted the transaction, it will respond with the transaction ID.
-
-----
-Transaction with id: '1d944f3fb46714978ad7bedd1b788919c3b37e92d893088fd056f8217f20ed8a' received by node.
-----
 
 == How to verify the sidechain registration
 
@@ -519,75 +529,83 @@ To create a *Register Mainchain* transaction, the following information is requi
 
 The parameters for the Register Mainchain transaction are created in an analog way as the Sidechain Registration parameters have been created in the previous step.
 
+.common/mainchain_registration.ts
 [source,typescript]
 ----
-import { codec, cryptography, apiClient, Transaction } from 'lisk-sdk';
 import {
+	codec,
+	cryptography,
+	apiClient,
+	Transaction,
 	registrationSignatureMessageSchema,
 	mainchainRegParams as mainchainRegParamsSchema,
 	MESSAGE_TAG_CHAIN_REG,
 	MODULE_NAME_INTEROPERABILITY,
-} from 'lisk-framework';
-import { COMMAND_NAME_MAINCHAIN_REG } from 'lisk-framework/dist-node/modules/interoperability/constants';
+} from 'lisk-sdk';
 
 /**
-* Registers the mainchain to a specific sidechain node.
-*
-* @example
-* ```js
-* // Update path to point to the dev-validators.json file of the sidechain which shall be registered on the mainchain
+ * Registers the mainchain to a specific sidechain node.
+ *
+ * @example
+ * ```js
+ * // Update path to point to the dev-validators.json file of the sidechain which shall be registered on the mainchain
 import { keys as sidechainDevValidators } from '../default/dev-validators.json';
 
-* (async () => {
-*	await registerMainchain(sidechainDevValidators);
-*})();
-* ```
-* @param sidechainDevValidators the `key` property of the `dev-validators.json` file.
-* Includes all keys of the sidechain validators to create the aggregated signature.
-*/
-export const registerMainchain = async (
-	sidechainDevValidators: any[],
-) => {
-    const { bls, address } = cryptography;
+ * (async () => {
+ *	await registerMainchain("lisk-core","my-lisk-app",sidechainDevValidators);
+ *})();
+ * ```
+ *
+ * @param mc mainchain alias of the mainchain to be registered.
+ * @param sc sidechain alias of the sidechain, where the mainchain shall be registered.
+ * @param sidechainDevValidators the `key` property of the `dev-validators.json` file.
+ * Includes all keys of the sidechain validators to create the aggregated signature.
+ */
 
-    // Replace this with alias of the sidechain node client
-    const appAlias = "lisk-app"
+export const registerMainchain = async (mc: string, sc: string, sidechainDevValidators: any[]) => {
+	const { bls, address } = cryptography;
 
-    const mainchainClient = await apiClient.createIPCClient(`~/.lisk/lisk-core`);
-    const sidechainClient = await apiClient.createIPCClient(`~/.lisk/${appAlias}`);
+	// Connect to the mainchain node
+	const mainchainClient = await apiClient.createIPCClient(`~/.lisk/${mc}`);
+	// Connect to the sidechain node
+	const sidechainClient = await apiClient.createIPCClient(`~/.lisk/${sc}`);
 
-    const mainchainNodeInfo = await mainchainClient.invoke('system_getNodeInfo');
-    const sidechainNodeInfo = await sidechainClient.invoke('system_getNodeInfo');
+	// Get node info data from sidechain and mainchain
+	const mainchainNodeInfo = await mainchainClient.invoke('system_getNodeInfo');
+	const sidechainNodeInfo = await sidechainClient.invoke('system_getNodeInfo');
 
-    // Get active validators from mainchain
-    const {
-        validators: mainchainActiveValidators,
-        certificateThreshold: mainchainCertificateThreshold,
-    } = await mainchainClient.invoke('consensus_getBFTParameters', {
-        height: mainchainNodeInfo.height,
-    });
+	// Get active validators from mainchain
+	const {
+		validators: mainchainActiveValidators,
+		certificateThreshold: mainchainCertificateThreshold,
+	} = await mainchainClient.invoke('consensus_getBFTParameters', {
+		height: mainchainNodeInfo.height,
+	});
 
-    const paramsJSON = {
-        ownChainID: sidechainNodeInfo.chainID,
-        ownName: `sidechain_example_${num}`,
-        mainchainValidators: (mainchainActiveValidators as { blsKey: string; bftWeight: string }[])
-            .map(v => ({ blsKey: v.blsKey, bftWeight: v.bftWeight }))
-            .sort((a, b) => Buffer.from(a.blsKey, 'hex').compare(Buffer.from(b.blsKey, 'hex'))),
-        mainchainCertificateThreshold,
-    };
+	// Sort validator list lexicographically after their BLS key
+	const paramsJSON = {
+		ownChainID: sidechainNodeInfo.chainID,
+		ownName: sc.replace(/-/g, '_'),
+		mainchainValidators: (mainchainActiveValidators as { blsKey: string; bftWeight: string }[])
+			.map(v => ({ blsKey: v.blsKey, bftWeight: v.bftWeight }))
+			.sort((a, b) => Buffer.from(a.blsKey, 'hex').compare(Buffer.from(b.blsKey, 'hex'))),
+		mainchainCertificateThreshold,
+	};
 
-    const params = {
-        ownChainID: Buffer.from(paramsJSON.ownChainID as string, 'hex'),
-        ownName: paramsJSON.ownName,
-        mainchainValidators: paramsJSON.mainchainValidators.map(v => ({
-            blsKey: Buffer.from(v.blsKey, 'hex'),
-            bftWeight: BigInt(v.bftWeight),
-        })),
-        mainchainCertificateThreshold: paramsJSON.mainchainCertificateThreshold,
-    };
+	// Define parameters for the mainchain registration
+	const params = {
+		ownChainID: Buffer.from(paramsJSON.ownChainID as string, 'hex'),
+		ownName: paramsJSON.ownName,
+		mainchainValidators: paramsJSON.mainchainValidators.map(v => ({
+			blsKey: Buffer.from(v.blsKey, 'hex'),
+			bftWeight: BigInt(v.bftWeight),
+		})),
+		mainchainCertificateThreshold: paramsJSON.mainchainCertificateThreshold,
+	};
 
-    const message = codec.encode(registrationSignatureMessageSchema, params);
-};
+	// Encode parameters
+	const message = codec.encode(registrationSignatureMessageSchema, params);
+}
 ----
 
 The next step is to collect and aggregate the corresponding signatures from the sidechain validators, see <<preparing-the-aggregated-signature>>.
@@ -629,45 +647,48 @@ The process of signing the registration parameters needs to be coordinated off-c
 
 The most important parts of the script are the following:
 
+.common/mainchain_registration.ts
 [source,js]
 ----
-// Get active validators from sidechainChain
-	const { validators: sidechainActiveValidators } = await sidechainClient.invoke(
-		'consensus_getBFTParameters',
-		{ height: sidechainNodeInfo.height },
-	);
+// Get active validators from sidechain
+const { validators: sidechainActiveValidators } = await sidechainClient.invoke(
+    'consensus_getBFTParameters',
+    { height: sidechainNodeInfo.height },
+);
 
-// Add corresponding private keys to the validator list
-	const activeValidatorsWithPrivateKey: { blsPublicKey: Buffer; blsPrivateKey: Buffer }[] = [];
-	for (const v of sidechainActiveValidators as { blsKey: string; bftWeight: string }[]) {
-		const validatorInfo = sidechainDevValidators.find(
-			configValidator => configValidator.plain.blsKey === v.blsKey,
-		);
-		if (validatorInfo) {
-			activeValidatorsWithPrivateKey.push({
-				blsPublicKey: Buffer.from(v.blsKey, 'hex'),
-				blsPrivateKey: Buffer.from(validatorInfo.plain.blsPrivateKey, 'hex'),
-			});
-		}
-	}
-	console.log('Total activeValidatorsWithPrivateKey:', activeValidatorsWithPrivateKey.length);
-	// Sort active validators from sidechainChain
-	activeValidatorsWithPrivateKey.sort((a, b) => a.blsPublicKey.compare(b.blsPublicKey));
+// Add validator private keys to the sidechain validator list
+const activeValidatorsWithPrivateKey: { blsPublicKey: Buffer; blsPrivateKey: Buffer }[] = [];
+for (const v of sidechainActiveValidators as { blsKey: string; bftWeight: string }[]) {
+    const validatorInfo = sidechainDevValidators.find(
+        configValidator => configValidator.plain.blsKey === v.blsKey,
+    );
+    if (validatorInfo) {
+        activeValidatorsWithPrivateKey.push({
+            blsPublicKey: Buffer.from(v.blsKey, 'hex'),
+            blsPrivateKey: Buffer.from(validatorInfo.plain.blsPrivateKey, 'hex'),
+        });
+    }
+}
+console.log('Total activeValidatorsWithPrivateKey:', activeValidatorsWithPrivateKey.length);
 
-	const sidechainValidatorsSignatures: { publicKey: Buffer; signature: Buffer }[] = [];
-	// Sign with each active validator
-	for (const validator of activeValidatorsWithPrivateKey) {
-		const signature = bls.signData(
-			MESSAGE_TAG_CHAIN_REG,
-			params.ownChainID,
-			message,
-			validator.blsPrivateKey,
-		);
-		sidechainValidatorsSignatures.push({ publicKey: validator.blsPublicKey, signature });
-	}
+// Sort active validators from sidechain lexicographically after their BLS public key
+activeValidatorsWithPrivateKey.sort((a, b) => a.blsPublicKey.compare(b.blsPublicKey));
 
-	const publicKeysList = activeValidatorsWithPrivateKey.map(v => v.blsPublicKey);
-	console.log('Total active sidechain validators:', sidechainValidatorsSignatures.length);
+const sidechainValidatorsSignatures: { publicKey: Buffer; signature: Buffer }[] = [];
+
+// Sign parameters with each active sidechain validator
+for (const validator of activeValidatorsWithPrivateKey) {
+    const signature = bls.signData(
+        MESSAGE_TAG_CHAIN_REG,
+        params.ownChainID,
+        message,
+        validator.blsPrivateKey,
+    );
+    sidechainValidatorsSignatures.push({ publicKey: validator.blsPublicKey, signature });
+}
+
+const publicKeysList = activeValidatorsWithPrivateKey.map(v => v.blsPublicKey);
+console.log('Total active sidechain validators:', sidechainValidatorsSignatures.length);
 ----
 
 The validator signatures need to be collected by the person intending to send the Register Mainchain transaction.
@@ -685,70 +706,63 @@ It ensures that the sidechain validators agree on registering the mainchain in t
 aggregationBits::
 The `aggregationBits` property is a bit vector used to validate the aggregate signature.
 
+.common/mainchain_registration.ts
 [source,typescript]
 ----
 // Create an aggregated signature
-	const { aggregationBits, signature } = bls.createAggSig(
-		publicKeysList,
-		sidechainValidatorsSignatures,
-	);
+const { aggregationBits, signature } = bls.createAggSig(
+    publicKeysList,
+    sidechainValidatorsSignatures,
+);
 
-	const relayerKeyInfo = sidechainDevValidators[0];
-	const { nonce } = await sidechainClient.invoke<{ nonce: string }>('auth_getAuthAccount', {
-		address: address.getLisk32AddressFromPublicKey(Buffer.from(relayerKeyInfo.publicKey, 'hex')),
-	});
-	const mainchainRegParams = {
-		...paramsJSON,
-		signature: signature.toString('hex'),
-		aggregationBits: aggregationBits.toString('hex'),
-	};
+// Get public key and nonce of the sender account
+const relayerKeyInfo = sidechainDevValidators[0];
+const { nonce } = await sidechainClient.invoke<{ nonce: string }>('auth_getAuthAccount', {
+    address: address.getLisk32AddressFromPublicKey(Buffer.from(relayerKeyInfo.publicKey, 'hex')),
+});
 
-    const tx = new Transaction({
-		module: MODULE_NAME_INTEROPERABILITY,
-		command: COMMAND_NAME_MAINCHAIN_REG,
-		fee: BigInt(2000000000),
-		params: codec.encodeJSON(mainchainRegParamsSchema, mainchainRegParams),
-		nonce: BigInt(nonce),
-		senderPublicKey: Buffer.from(relayerKeyInfo.publicKey, 'hex'),
-		signatures: [],
-	});
+// Add aggregated signature to the parameters of the mainchain registration
+const mainchainRegParams = {
+    ...paramsJSON,
+    signature: signature.toString('hex'),
+    aggregationBits: aggregationBits.toString('hex'),
+};
 
-	tx.sign(
-		Buffer.from(sidechainNodeInfo.chainID as string, 'hex'),
-		Buffer.from(relayerKeyInfo.privateKey, 'hex'),
-	);
+// Create registerMainchain transaction
+const tx = new Transaction({
+    module: MODULE_NAME_INTEROPERABILITY,
+    command: 'registerMainchain',
+    fee: BigInt(2000000000),
+    params: codec.encodeJSON(mainchainRegParamsSchema, mainchainRegParams),
+    nonce: BigInt(nonce),
+    senderPublicKey: Buffer.from(relayerKeyInfo.publicKey, 'hex'),
+    signatures: [],
+});
+
+// Sign the transaction
+tx.sign(
+    Buffer.from(sidechainNodeInfo.chainID as string, 'hex'),
+    Buffer.from(relayerKeyInfo.privateKey, 'hex'),
+);
 ----
 === Posting a Register Mainchain transaction
 
 Send the `registerSidechain` transaction to a node that is connected to the mainchain.
 
+.common/mainchain_registration.ts
 [source,typescript]
 ----
+// Post the transaction to a sidechain node
+const result = await sidechainClient.invoke<{
+    transactionId: string;
+}>('txpool_postTransaction', {
+    transaction: tx.getBytes().toString('hex'),
+});
 
-    const result = await sidechainClient.invoke<{
-		transactionId: string;
-	}>('txpool_postTransaction', {
-		transaction: tx.getBytes().toString('hex'),
-	});
-
-	console.log('Sent mainchain registration transaction. Result from transaction pool is: ', result);
-
-	const authorizeMainchainResult = await mainchainClient.invoke<{
-		transactionId: string;
-	}>('chainConnector_authorize', {
-		enable: true,
-		password: 'lisk',
-	});
-	console.log('Authorize Mainchain completed, result:', authorizeMainchainResult);
-
-	process.exit(0);
+console.log('Sent mainchain registration transaction. Result from transaction pool is: ', result);
 ----
 
 If the node accepted the transaction, it will respond with the transaction ID.
-
-----
-Transaction with id: '1d944f3fb46714978ad7bedd1b788919c3b37e92d893088fd056f8217f20ed8a' received by node.
-----
 
 == How to verify the mainchain registration
 === Check the mainchain account

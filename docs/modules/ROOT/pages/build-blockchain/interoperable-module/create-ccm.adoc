@@ -1,0 +1,275 @@
+= How to create a CCM
+
+How to create a CCM inside a command.
+
+.react/module.ts
+[source,typescript]
+----
+/* eslint-disable class-methods-use-this */
+/* eslint-disable @typescript-eslint/member-ordering */
+
+import { BaseInteroperableModule, ModuleMetadata, ModuleInitArgs } from 'lisk-sdk';
+import { ReactCrossChainCommand } from './commands/react_command';
+import { ReactEndpoint } from './endpoint';
+import { ReactMethod } from './method';
+import { ReactInteroperableMethod } from './cc_method';
+import { InteroperabilityMethod } from './types';
+
+export class ReactModule extends BaseInteroperableModule {
+	public endpoint = new ReactEndpoint(this.stores, this.offchainStores);
+	public method = new ReactMethod(this.stores, this.events);
+	public commands = [new ReactCrossChainCommand(this.stores, this.events)];
+	private _interoperabilityMethod!: InteroperabilityMethod;
+
+	public crossChainMethod = new ReactInteroperableMethod(this.stores, this.events);
+
+	public metadata(): ModuleMetadata {
+		return {
+			...this.baseMetadata(),
+			endpoints: [],
+			commands: this.commands.map(command => ({
+				name: command.name,
+				params: command.schema,
+			})),
+			assets: [],
+		};
+	}
+
+	public addDependencies(interoperabilityMethod: InteroperabilityMethod) {
+		this._interoperabilityMethod = interoperabilityMethod;
+	}
+
+	// Lifecycle hooks
+	// eslint-disable-next-line @typescript-eslint/require-await
+	public async init(_args: ModuleInitArgs) {
+		this.commands[0].init({
+			interoperabilityMethod: this._interoperabilityMethod,
+		});
+	}
+}
+----
+
+.react/commands/react_command.ts
+[source,typescript]
+----
+interface Params {
+	reactionType: number;
+	helloMessageID: string;
+	data: string;
+	receivingChainID: Buffer;
+	messageFee: bigint;
+}
+----
+
+.react/constants.ts
+[source,typescript]
+----
+export const CROSS_CHAIN_COMMAND_NAME_REACT = 'reactCrossChain';
+----
+
+.react/schemas.ts
+[source,typescript]
+----
+/**
+ * Parameters of the cross-chain token transfer command
+ */
+export const crossChainReactParamsSchema = {
+	/** The unique identifier of the schema. */
+	$id: '/lisk/react/ccReactParams',
+	type: 'object',
+	/** The required parameters for the command. */
+	required: [
+		'reactionType',
+		'helloMessageID',
+		'receivingChainID',
+		'data',
+		'messageFee',
+	],
+	/** A list describing the available parameters for the command. */
+	properties: {
+		reactionType: {
+			dataType: 'uint32',
+			fieldNumber: 1,
+		},
+		/**
+		 * ID of the message.
+		 */
+		helloMessageID: {
+			dataType: 'string',
+			fieldNumber: 2,
+		},
+		/** Optional field for data / messages. */
+		data: {
+			dataType: 'string',
+			fieldNumber: 3,
+			minLength: 0,
+			maxLength: 64,
+		},
+		/**
+		 * The chain ID of the receiving chain.
+		 *
+		 * `maxLength` and `minLength` are equal to 4.
+		 */
+		receivingChainID: {
+			dataType: 'bytes',
+			fieldNumber: 4,
+			minLength: 4,
+			maxLength: 4,
+		},
+		messageFee: {
+			dataType: 'uint64',
+			fieldNumber: 5,
+		},
+	},
+};
+
+export const crossChainReactMessageSchema = {
+	/** The unique identifier of the schema. */
+	$id: '/lisk/ccReactMessage',
+	type: 'object',
+	/** The required parameters for the command. */
+	required: ['reactionType', 'helloMessageID', 'data'],
+	/** A list describing the available parameters for the command. */
+	properties: {
+		reactionType: {
+			dataType: 'uint32',
+			fieldNumber: 1,
+		},
+		/**
+		 * ID of the message.
+		 */
+		helloMessageID: {
+			dataType: 'string',
+			fieldNumber: 2,
+		},
+		/** Optional field for data / messages. */
+		data: {
+			dataType: 'string',
+			fieldNumber: 3,
+			minLength: 0,
+			maxLength: 64,
+		},
+	},
+};
+
+export interface CCReactMessageParams {
+	reactionType: number;
+	helloMessageID: string;
+	data: string;
+}
+----
+
+.react/types.ts
+[source,typescript]
+----
+import {
+	MethodContext,
+	ImmutableMethodContext,
+	CCMsg,
+	ChannelData,
+	OwnChainAccount,
+} from 'lisk-sdk';
+
+export type TokenID = Buffer;
+
+export interface InteroperabilityMethod {
+	getOwnChainAccount(methodContext: ImmutableMethodContext): Promise<OwnChainAccount>;
+	send(
+		methodContext: MethodContext,
+		feeAddress: Buffer,
+		module: string,
+		crossChainCommand: string,
+		receivingChainID: Buffer,
+		fee: bigint,
+		parameters: Buffer,
+		timestamp?: number,
+	): Promise<void>;
+	error(methodContext: MethodContext, ccm: CCMsg, code: number): Promise<void>;
+	terminateChain(methodContext: MethodContext, chainID: Buffer): Promise<void>;
+	getChannel(methodContext: MethodContext, chainID: Buffer): Promise<ChannelData>;
+	getMessageFeeTokenID(methodContext: ImmutableMethodContext, chainID: Buffer): Promise<Buffer>;
+	getMessageFeeTokenIDFromCCM(methodContext: ImmutableMethodContext, ccm: CCMsg): Promise<Buffer>;
+}
+
+----
+
+.react/commands/react_command.ts
+[source,typescript]
+----
+export class ReactCrossChainCommand extends BaseCommand {
+	private _interoperabilityMethod!: InteroperabilityMethod;
+	public schema = crossChainReactParamsSchema;
+
+	public get name(): string {
+		return CROSS_CHAIN_COMMAND_NAME_REACT;
+	}
+
+	public init(args: {
+		interoperabilityMethod: InteroperabilityMethod;
+	}) {
+		this._interoperabilityMethod = args.interoperabilityMethod;
+	}
+
+	public addDependencies(interoperabilityMethod: InteroperabilityMethod) {
+		this._interoperabilityMethod = interoperabilityMethod;
+	}
+}
+----
+
+.react/commands/react_command.ts
+[source,typescript]
+----
+public async verify(context: CommandVerifyContext<Params>): Promise<VerificationResult> {
+		const { params, logger } = context;
+
+		logger.info('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++');
+		logger.info(params);
+		logger.info('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++');
+
+		try {
+			if (params.receivingChainID.equals(context.chainID)) {
+				throw new Error('Receiving chain cannot be the sending chain.');
+			}
+		} catch (err) {
+			return {
+				status: VerifyStatus.FAIL,
+				error: err as Error,
+			};
+		}
+		return {
+			status: VerifyStatus.OK,
+		};
+	}
+----
+
+.react/commands/react_command.ts
+[source,typescript]
+----
+public async execute(context: CommandExecuteContext<Params>): Promise<void> {
+		const {
+			params,
+			transaction: { senderAddress },
+		} = context;
+
+		const reactCCM: CCReactMessageParams = {
+			reactionType: params.reactionType,
+			data: params.data,
+			helloMessageID: params.helloMessageID,
+		};
+
+		await this._interoperabilityMethod.send(
+			context.getMethodContext(),
+			senderAddress,
+			'hello',
+			CROSS_CHAIN_COMMAND_NAME_REACT,
+			params.receivingChainID,
+			params.messageFee,
+			codec.encode(crossChainReactMessageSchema, reactCCM),
+			context.header.timestamp,
+		);
+	}
+----
+
+[source,typescript]
+----
+----

@@ -1,1 +1,338 @@
 = How to execute a CCM
+
+Add the schema and the corresponding interface to the `schemas.ts` file inside the `hello` module.
+
+.hello/schemas.ts
+[source,typescript]
+----
+/**
+ * Parameters of the cross-chain token transfer command
+ */
+export const crossChainReactParamsSchema = {
+	/** The unique identifier of the schema. */
+	$id: '/lisk/hello/ccReactParams',
+	type: 'object',
+	/** The required parameters for the command. */
+	required: ['reactionType', 'helloMessageID', 'data'],
+	/** A list describing the available parameters for the command. */
+	properties: {
+		reactionType: {
+			dataType: 'uint32',
+			fieldNumber: 1,
+		},
+		/**
+		 * ID of the message.
+		 */
+		helloMessageID: {
+			dataType: 'string',
+			fieldNumber: 2,
+		},
+		/** Optional field for data / messages. */
+		data: {
+			dataType: 'string',
+			fieldNumber: 3,
+			minLength: 0,
+			maxLength: 64,
+		},
+	},
+};
+
+export interface CCReactMessageParams {
+	reactionType: number;
+	helloMessageID: string;
+	data: string;
+}
+----
+
+Create a new file `constants.ts` inside the `hello` module, to store required constants.
+
+.hello/constants.ts
+[source,typescript]
+----
+export const CROSS_CHAIN_COMMAND_NAME_REACT = 'reactCrossChain';
+export const MAX_RESERVED_ERROR_STATUS = 63;
+----
+
+Create a new store to store the reactions.
+
+.hello/stores/reaction.ts
+[source,typescript]
+----
+import { BaseStore } from 'lisk-sdk';
+
+export interface ReactionStoreData {
+	reactions: {
+		like: Buffer[];
+	};
+}
+
+export const reactionStoreSchema = {
+	$id: '/hello/reaction',
+	type: 'object',
+	required: ['reactions'],
+	properties: {
+		reactions: {
+			type: 'object',
+			fieldNumber: 1,
+			properties: {
+				like: {
+					type: 'array',
+					fieldNumber: 1,
+					items: {
+						dataType: 'bytes',
+					},
+				},
+			},
+		},
+	},
+};
+
+export class ReactionStore extends BaseStore<ReactionStoreData> {
+	public schema = reactionStoreSchema;
+}
+----
+
+Initialize a new command `react` with Lisk Commander
+
+[source,bash]
+----
+lisk generate:command hello react
+----
+
+And move it to a new folder `cc_commands` inside the `hello` module.
+
+Now, change `BaseCommand` to `BaseCCCommand` and `ReactCommand` to `ReactCCCommand` to define the command as a cross-chain command.
+Cross-chain commands are able to accept and execute CCMs.
+
+.hello/cc_commands/react_command.ts
+[source,typescript]
+----
+import { BaseCCCommand, CrossChainMessageContext, codec, cryptography, db } from 'lisk-sdk';
+import { crossChainReactParamsSchema, CCReactMessageParams } from '../schemas';
+import { MAX_RESERVED_ERROR_STATUS, CROSS_CHAIN_COMMAND_NAME_REACT } from '../constants';
+import { ReactionStore, ReactionStoreData } from '../stores/reaction';
+import { MessageStore } from '../stores/message';
+
+export class ReactCCCommand extends BaseCCCommand {
+	public schema = crossChainReactParamsSchema;
+
+	public get name(): string {
+		return CROSS_CHAIN_COMMAND_NAME_REACT;
+	}
+}
+----
+
+.hello/cc_commands/react_command.ts
+[source,typescript]
+----
+public async verify(ctx: CrossChainMessageContext): Promise<void> {
+    const { ccm } = ctx;
+
+    if (ccm.status > MAX_RESERVED_ERROR_STATUS) {
+        throw new Error('Invalid CCM status code.');
+    }
+
+    const params = codec.decode<CCReactMessageParams>(crossChainReactParamsSchema, ccm.params);
+    const messageCreatorAddress = cryptography.address.getAddressFromLisk32Address(
+        params.helloMessageID,
+    );
+    if (!(await this.stores.get(MessageStore).has(ctx, messageCreatorAddress))) {
+        throw new Error('Message ID does not exists.');
+    }
+}
+----
+
+.hello/cc_commands/react_command.ts
+[source,typescript]
+----
+public async execute(ctx: CrossChainMessageContext): Promise<void> {
+    const { ccm, logger } = ctx;
+    logger.info('Executing React CCM');
+    // const methodContext = ctx.getMethodContext();
+    // const { sendingChainID, status, receivingChainID } = ccm;
+    const params = codec.decode<CCReactMessageParams>(crossChainReactParamsSchema, ccm.params);
+    logger.info(params, 'parameters');
+    const { helloMessageID, reactionType } = params;
+    const reactionSubstore = this.stores.get(ReactionStore);
+    const messageCreatorAddress = cryptography.address.getAddressFromLisk32Address(helloMessageID);
+    let msgReactions: ReactionStoreData;
+
+    try {
+        msgReactions = await reactionSubstore.get(ctx, messageCreatorAddress);
+    } catch (error) {
+        if (!(error instanceof db.NotFoundError)) {
+            logger.info({ helloMessageID, crossChainCommand: this.name }, (error as Error).message);
+            logger.error({ error }, 'Error when getting the reaction substore');
+            throw error;
+        }
+        logger.info(
+            { helloMessageID, crossChainCommand: this.name },
+            `No entry exists for given helloMessageID ${helloMessageID}. Creating a default entry.`,
+        );
+        msgReactions = { reactions: { like: [] } };
+    }
+    if (reactionType === 0) {
+        const hasLiked = msgReactions.reactions.like.indexOf(ctx.transaction.senderAddress);
+        if (hasLiked  > -1) {
+            msgReactions.reactions.like = msgReactions.reactions.like.splice(hasLiked, 1);
+        } else {
+            msgReactions.reactions.like.push(ctx.transaction.senderAddress);
+        }
+    } else {
+        logger.error({ reactionType }, 'invalid reaction type');
+    }
+    await reactionSubstore.set(ctx, messageCreatorAddress, msgReactions);
+}
+----
+
+Import the `BaseInteroperableModule` class and remove the `BaseModule` class, as it will be replaced by the `BaseInteroperableModule`.
+
+.hello/module.ts
+[source,typescript]
+----
+/* eslint-disable class-methods-use-this */
+
+import {
+	validator,
+	BaseInteroperableModule,
+	BlockAfterExecuteContext,
+	BlockExecuteContext,
+	BlockVerifyContext,
+	GenesisBlockExecuteContext,
+	InsertAssetContext,
+	ModuleInitArgs,
+	ModuleMetadata,
+	TransactionExecuteContext,
+	TransactionVerifyContext,
+	utils,
+	VerificationResult,
+} from 'lisk-sdk';
+import { CreateHelloCommand } from './commands/create_hello_command';
+import { ReactCCCommand } from './cc_commands/react_command';
+import { HelloEndpoint } from './endpoint';
+import { NewHelloEvent } from './events/new_hello';
+import { HelloMethod } from './method';
+import {
+	configSchema,
+	getHelloCounterResponseSchema,
+	getHelloRequestSchema,
+	getHelloResponseSchema,
+} from './schemas';
+import { CounterStore } from './stores/counter';
+import { MessageStore } from './stores/message';
+import { ReactionStore, reactionStoreSchema } from './stores/reaction';
+import { ModuleConfigJSON } from './types';
+import { HelloInteroperableMethod } from './cc_method';
+
+export const defaultConfig = {
+	maxMessageLength: 256,
+	minMessageLength: 3,
+	blacklist: ['illegalWord1'],
+};
+
+export class HelloModule extends BaseInteroperableModule {
+	public constructor() {
+		super();
+		// registration of stores and events
+		this.stores.register(CounterStore, new CounterStore(this.name, 0));
+		this.stores.register(MessageStore, new MessageStore(this.name, 1));
+		this.stores.register(ReactionStore, new ReactionStore(this.name, 2));
+		this.events.register(NewHelloEvent, new NewHelloEvent(this.name));
+	}
+
+	public metadata(): ModuleMetadata {
+		return {
+			endpoints: [
+				{
+					name: this.endpoint.getHello.name,
+					request: getHelloRequestSchema,
+					response: getHelloResponseSchema,
+				},
+				{
+					name: this.endpoint.getReactions.name,
+					request: getHelloRequestSchema,
+					response: reactionStoreSchema,
+				},
+				{
+					name: this.endpoint.getHelloCounter.name,
+					response: getHelloCounterResponseSchema,
+				},
+			],
+			commands: this.commands.map(command => ({
+				name: command.name,
+				params: command.schema,
+			})),
+			events: this.events.values().map(v => ({
+				name: v.name,
+				data: v.schema,
+			})),
+			assets: [],
+			stores: [],
+		};
+	}
+
+	// Lifecycle hooks
+	// eslint-disable-next-line @typescript-eslint/require-await
+	public async init(args: ModuleInitArgs): Promise<void> {
+		// Get the module config defined in the config.json file
+		const { moduleConfig } = args;
+		// Overwrite the default module config with values from config.json, if set
+		const config = utils.objects.mergeDeep({}, defaultConfig, moduleConfig) as ModuleConfigJSON;
+		// Validate the provided config with the config schema
+		validator.validator.validate<ModuleConfigJSON>(configSchema, config);
+		// Call the command init() method with config values as parameters
+		this.commands[0].init(config).catch(err => {
+			// eslint-disable-next-line no-console
+			console.log('Error: ', err);
+		});
+	}
+
+	public async insertAssets(_context: InsertAssetContext) {
+		// initialize block generation, add asset
+	}
+
+	public async verifyAssets(_context: BlockVerifyContext): Promise<void> {
+		// verify block
+	}
+
+	// Lifecycle hooks
+	// eslint-disable-next-line @typescript-eslint/require-await
+	public async verifyTransaction(context: TransactionVerifyContext): Promise<VerificationResult> {
+		// verify transaction will be called multiple times in the transaction pool
+		const result = {
+			status: 1,
+		};
+		return result;
+	}
+
+	// eslint-disable-next-line @typescript-eslint/no-empty-function
+	public async beforeCommandExecute(_context: TransactionExecuteContext): Promise<void> {}
+
+	// eslint-disable-next-line @typescript-eslint/no-empty-function
+	public async afterCommandExecute(_context: TransactionExecuteContext): Promise<void> {}
+
+	// eslint-disable-next-line @typescript-eslint/no-empty-function
+	public async initGenesisState(_context: GenesisBlockExecuteContext): Promise<void> {}
+
+	// eslint-disable-next-line @typescript-eslint/no-empty-function
+	public async finalizeGenesisState(_context: GenesisBlockExecuteContext): Promise<void> {}
+
+	// eslint-disable-next-line @typescript-eslint/no-empty-function
+	public async beforeTransactionsExecute(_context: BlockExecuteContext): Promise<void> {}
+
+	// eslint-disable-next-line @typescript-eslint/no-empty-function
+	public async afterTransactionsExecute(_context: BlockAfterExecuteContext): Promise<void> {}
+
+	public endpoint = new HelloEndpoint(this.stores, this.offchainStores);
+	public method = new HelloMethod(this.stores, this.events);
+	public commands = [new CreateHelloCommand(this.stores, this.events)];
+	public reactCCCommand = new ReactCCCommand(this.stores, this.events);
+	public crossChainMethod = new HelloInteroperableMethod(this.stores, this.events);
+	public crossChainCommand = [this.reactCCCommand];
+}
+----
+
+
+[source,typescript]
+----
+----

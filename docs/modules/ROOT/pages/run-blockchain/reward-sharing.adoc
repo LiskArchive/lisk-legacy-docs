@@ -9,7 +9,7 @@ Muhammad Talha <muhammad.talha@lightcurve.io>
 
 :url_staking_guide: run-blockchain/staking.adoc
 :url_getStaker: api/module-rpc-api/pos-endpoints.adoc#pos_getstaker
-:url_consensus_getbftparameters: api/lisk-node-rpc.adoc#consensus_getbftparameters
+:url_chain_getGeneratorList: api/lisk-node-rpc.adoc#chain_getgeneratorlist
 :url_getexpectedvalidatorrewards: api/module-rpc-api/dynamic-reward-endpoints.adoc#dynamicreward_getexpectedvalidatorrewards
 :url_getvalidator: api/module-rpc-api/pos-endpoints.adoc#pos_getvalidator
 :url_getclaimablerewards: api/module-rpc-api/pos-endpoints.adoc#pos_getclaimablerewards
@@ -17,7 +17,8 @@ Muhammad Talha <muhammad.talha@lightcurve.io>
 :url_posting_transaction: integrate-blockchain/posting-transactions.adoc#posting-transaction-with-the-node-cli
 
 :url_lip_70: https://github.com/LiskHQ/lips/blob/350d08a90bdbedb3485363a40dd34f3ccadf0b7d/proposals/lip-0070.md
-
+:url_constraints-on-commission-increase: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0070.md#constraints-on-commission-increase
+:url_reward_distribution: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0070.md#distribution-of-rewards
 
 On this page, we'll talk about how a validator can enable reward sharing with their stakers and how the shared rewards can be later claimed by the stakers.
 
@@ -29,14 +30,20 @@ The set of validators that generate blocks, called generators, is chosen based o
 Rewards are distributed between validators and their stakers as follows: a certain part of the rewards is awarded directly to the validator as a commission.
 The precise percentage of the commission is chosen by each validator; then, the remaining rewards are shared among the stakers of the validator, proportionally to their staked amounts.
 
-NOTE: Because validators need to self-stake for their accounts to become eligible to generate blocks, validators will receive additional rewards here, like their other stakers, too. For example, consider an active validator has 0% commission, and at the same time no other accounts are staking for the validator. In this case, the validator would still receive 100% of the block rewards.
+NOTE: Validators need to self-stake for their accounts to become eligible to generate blocks.
+As a result, validators receive additional rewards as per their self-stake, just like their other stakers do.
+For example, consider an active validator has 0% commission, and at the same time, no other accounts are staking for the validator.
+In this case, the validator would still receive 100% of the block rewards.
 
 The reward-sharing mechanism is part of the PoS module. To learn more about how reward sharing works in Lisk Protocol, see {url_lip_70}[LIP 70^].
 
 The commission values can range between *0* and *10000* (both inclusive), corresponding to percentages with two decimal places, which can be obtained by dividing the value by *100*. For example, a commission value of *1000*, corresponds to a *10%* commission.
 
 Initially, after the validator's registration the commission of a validator is initialized with 100%.
-Afterward, it can be decreased by submitting a commission change transaction. 
+Afterward, it can be decreased by submitting a commission change transaction.
+
+NOTE: A validator's commission can be decreased by any value, however, the commission can only be increased by 5% in a single change commission transaction.
+The validator has to then wait for the next commission increase period. For more information, see {url_constraints-on-commission-increase}[Constraints on Commission Increase^].
 
 == Prerequisites and Background
 
@@ -46,11 +53,11 @@ To learn more about staking, see xref:{url_staking_guide}[].
 Once you successfully stake for a validator, you can see your stakes by invoking the xref:{url_getStaker}[pos_getStaker] endpoint.
 Each time a validator becomes part of the block generation round, there are chances that the validator will be selected to generate an upcoming block. 
 
-To check if the validator is in the list of active validators, look for the validator in the response of xref:{url_consensus_getbftparameters}[consensus_getBFTParameters].
+To check if the validator is in the list of active validators, look for the validator in the response of xref:{url_chain_getGeneratorList}[chain_getGeneratorList].
 If the validator is in the returned list then, soon your validator will be generating a block and as a result will earn rewards.
 
 Block rewards are distributed after the `offset` block height is reached. By default, the value of offset is `2160`.
-After reaching the offset height, rewards for each validator are credited to their account on generating new blocks.
+After reaching the offset height, rewards for each validator are credited to their account for generating new blocks.
 The estimated rewards for a validator can be checked via the xref:{url_getexpectedvalidatorrewards}[dynamicReward_getExpectedValidatorRewards] endpoint.
 
 :sectnums:
@@ -96,7 +103,7 @@ Mainchain node::
 --
 [source,bash]
 ----
-lisk-core transaction:create pos changeCommission 134000 --json --pretty  
+lisk-core transaction:create pos changeCommission 134000 --json --pretty --send
 ----
 --
 Sidechain Node::
@@ -104,7 +111,7 @@ Sidechain Node::
 --
 [source,bash]
 ----
-./bin/run transaction:create pos changeCommission 134000 --json --pretty 
+./bin/run transaction:create pos changeCommission 134000 --json --pretty --send
 ----
 --
 =====
@@ -118,8 +125,9 @@ In this example, the validator is set to keep *85%* of the rewards and share *15
 ---- 
 +
 . The `changeCommission` command will return the transaction in the HEX string and JSON format.
+It will also post the transaction to the node since we used the `--send` flag earlier.
 +
-[source,json]
+[source,bash]
 ---- 
 {
   "transaction": "0a03706f7312106368616e6765436f6d6d697373696f6e180a20c0843d2a2065984ff3e6fe0d161a0a118c4e5d181a23c18f1d4bf59c78d178b7fcf0cadead320308c03e3a40f4e53ed1aaf56f878ab7cc13514164bbbe403dd52ac558ab88afdf8bc4829fd959aaf913ccf52e755185c681e13f84b4aaa723709faad7bc5de818fa96e48804"
@@ -128,7 +136,7 @@ In this example, the validator is set to keep *85%* of the rewards and share *15
   "transaction": {
     "module": "pos",
     "command": "changeCommission",
-    "fee": "1000000",
+    "fee": "134000",
     "nonce": "10",
     "senderPublicKey": "65984ff3e6fe0d161a0a118c4e5d181a23c18f1d4bf59c78d178b7fcf0cadead",
     "signatures": [
@@ -140,29 +148,8 @@ In this example, the validator is set to keep *85%* of the rewards and share *15
     "id": "7ad7d91488abdb859cf06570b17986a2ac14018584326d302afd0770fba96c86"
   }
 }
+Transaction with id: '7ad7d91488abdb859cf06570b17986a2ac14018584326d302afd0770fba96c86' received by node.
 ----
-+
-. Post the transaction to the node for its execution.
-+
-[tabs]
-=====
-Mainchain node::
-+
---
-[source,bash]
-----
-lisk-core transaction:send 0a03706f7312106368616e6765436f6d6d697373696f6e180a20c0843d2a2065984ff3e6fe0d161a0a118c4e5d181a23c18f1d4bf59c78d178b7fcf0cadead320308c03e3a40f4e53ed1aaf56f878ab7cc13514164bbbe403dd52ac558ab88afdf8bc4829fd959aaf913ccf52e755185c681e13f84b4aaa723709faad7bc5de818fa96e48804
-----
---
-Sidechain Node::
-+
---
-[source,bash]
-----
-./bin/run transaction:send 0a03706f7312106368616e6765436f6d6d697373696f6e180a20c0843d2a2065984ff3e6fe0d161a0a118c4e5d181a23c18f1d4bf59c78d178b7fcf0cadead320308c03e3a40f4e53ed1aaf56f878ab7cc13514164bbbe403dd52ac558ab88afdf8bc4829fd959aaf913ccf52e755185c681e13f84b4aaa723709faad7bc5de818fa96e48804
-----
---
-=====
 +
 . Upon successful execution of the transaction, the validator's commission value will be updated.
 To check the updated values, invoke the xref:{url_getvalidator}[pos_getValidator] endpoint.
@@ -193,7 +180,9 @@ To check the updated values, invoke the xref:{url_getvalidator}[pos_getValidator
 == Claiming rewards
 After each block generated by the validator, both the validator and the staker(s) will earn a set percentage of rewards.
 For validators, the Lisk Protocol automatically increments the `lockedBalance` and `availableBalance` of the validator's account.
-However, a staker needs to manually claim their rewards, and that can be done via both Lisk Desktop and CLI.
+For more information, see {url_reward_distribution}[Distribution of Rewards^].
+
+A staker needs to manually claim their rewards, and that can be done via both Lisk Desktop and CLI.
 
 === Claiming via Desktop
 To claim rewards via Lisk Desktop, a staker must log in to their account on Lisk Desktop and perform the following steps to collect earned rewards:
@@ -228,7 +217,7 @@ image:run-blockchain/reward-sharing/claim-rewards-4.png["Claim reward successful
 . Upon successful request submission, Lisk Desktop will display a *Transaction submitted* successfully message.
 +
 image:run-blockchain/reward-sharing/claim-rewards-5.png["Updated balance",300]
-. Once the transaction is executed, the staker's account balance will increase as per the earned reward and the corresponding amount is reduced from the validator's locked balance.
+. Once the transaction is executed, the staker's account balance will increase as per the earned reward, and the corresponding amount will be reduced from the validator's locked balance.
 
 === Claiming via CLI
 To claim rewards via CLI, a staker must perform the following steps to collect earned rewards:
@@ -276,8 +265,9 @@ Sidechain Node::
 ---- 
 +
 . The `claimRewards` command will return the transaction in the HEX string and JSON format.
+It will also post the transaction to the node since we used the `--send` flag earlier.
 +
-[source,json]
+[source,bash]
 ---- 
 {
   "transaction": "0a03706f73120c636c61696d52657761726473180720c0843d2a20145eb22910d905ba51a9ee2d0066ae97bebbff86084ce57f3df446b0cdd7942632003a40d5148b0c70efea8edeb6cd99ed0df23d72c1ec4845f796e8de510f30e56bd0ec7c20f744a4c4211040382396715a667a2d1e8ed3655020d844d1ba333db1ed01"
@@ -286,7 +276,7 @@ Sidechain Node::
   "transaction": {
     "module": "pos",
     "command": "claimRewards",
-    "fee": "1000000",
+    "fee": "127000",
     "nonce": "7",
     "senderPublicKey": "145eb22910d905ba51a9ee2d0066ae97bebbff86084ce57f3df446b0cdd79426",
     "signatures": [
@@ -296,6 +286,7 @@ Sidechain Node::
     "id": "3da8f7278713d33fabe66a4da50cdbdcee674abc35ea0c12be4c65e0c162adf6"
   }
 }
+Transaction with id: '3da8f7278713d33fabe66a4da50cdbdcee674abc35ea0c12be4c65e0c162adf6' received by node.
 ----
 +
 . Once the transaction is executed, check your xref:{url_getbalance}[token_getBalance] endpoint.

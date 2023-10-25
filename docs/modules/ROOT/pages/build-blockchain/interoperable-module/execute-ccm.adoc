@@ -56,7 +56,7 @@ export class HelloModule extends BaseInteroperableModule {
 
 Now that the interoperable module is initialized, let's create the cross-chain command which will be used to accept and execute the CCM on the sidechain.
 
-== The `reactCrossChain` command
+== Add required schemas and constants
 
 Add the schema and the corresponding interface to the `schemas.ts` file inside the `hello` module.
 
@@ -64,7 +64,23 @@ Add the schema and the corresponding interface to the `schemas.ts` file inside t
 [source,typescript]
 ----
 /**
- * Parameters of the cross-chain token transfer command
+ * Parameters of the reactCrossChain CCM
+ */
+export interface CCReactMessageParams {
+    /**
+	 * A number indicating the type of the reaction.
+	 */
+	reactionType: number;
+    /**
+     * ID of the message.
+     */
+	helloMessageID: string;
+    /** Optional field for data / messages. */
+	data: string;
+}
+
+/**
+ * Schema for the parameters of the reactCrossChain CCM
  */
 export const CCReactMessageParamsSchema = {
 	/** The unique identifier of the schema. */
@@ -78,14 +94,10 @@ export const CCReactMessageParamsSchema = {
 			dataType: 'uint32',
 			fieldNumber: 1,
 		},
-		/**
-		 * ID of the message.
-		 */
 		helloMessageID: {
 			dataType: 'string',
 			fieldNumber: 2,
 		},
-		/** Optional field for data / messages. */
 		data: {
 			dataType: 'string',
 			fieldNumber: 3,
@@ -94,12 +106,6 @@ export const CCReactMessageParamsSchema = {
 		},
 	},
 };
-
-export interface CCReactMessageParams {
-	reactionType: number;
-	helloMessageID: string;
-	data: string;
-}
 ----
 
 Create a new file `constants.ts` inside the `hello` module, to store required constants.
@@ -110,6 +116,8 @@ Create a new file `constants.ts` inside the `hello` module, to store required co
 export const CROSS_CHAIN_COMMAND_NAME_REACT = 'reactCrossChain';
 export const MAX_RESERVED_ERROR_STATUS = 63;
 ----
+
+== Create a store for reactions
 
 Create a new store to store the reactions.
 
@@ -150,6 +158,8 @@ export class ReactionStore extends BaseStore<ReactionStoreData> {
 }
 ----
 
+== Initialize the cc_command
+
 Initialize a new command `react` with Lisk Commander
 
 [source,bash]
@@ -161,11 +171,11 @@ And move it to a new folder `cc_commands` inside the `hello` module.
 
 Now, open the file `hello/cc_commands/react_command.ts` and import the constants, schemas and types defined above.
 
-Next, define the following properties of the command:
+Next, update the following properties of the command:
 
-* change `BaseCommand` to `BaseCCCommand` and
-* `ReactCommand` to `ReactCCCommand` to define the command as a cross-chain command.
-Cross-chain commands are able to accept and execute CCMs.
+* Replace `BaseCommand` with `BaseCCCommand`
+* Replace `ReactCommand` with `ReactCCCommand`
+* Replace `CommandVerifyContext` and `CommandExecuteContext,` with `CrossChainMessageContext`
 //TODO: Is it required that the command names for commands creating and executing a specific CCM must match?
 * Set the name of the command to `reactCrossChain`.
 * Set the command schema to equal `CCReactMessageParamsSchema`.
@@ -188,9 +198,13 @@ export class ReactCCCommand extends BaseCCCommand {
 }
 ----
 
-Now, go back to the `react_command.ts` file, and implement the command verification.
+== CCM verification
 
-To keep the example simple, we only check if the `receivingChainID` parameter doesn't equal the value of the sending chain.
+Now, implement the command verification.
+
+To keep the example simple, we only check if the CCM `status` code is valid, and if a Hello message exists for the `helloMessageID` defined in the CCM params.
+
+The CCM to be verified is included in the CCM context `ctx` of the `execute()` hook.
 
 Extend the `verify()` hook to include more checks for the other parameters as well, as desired.
 
@@ -214,48 +228,69 @@ public async verify(ctx: CrossChainMessageContext): Promise<void> {
 }
 ----
 
+Once it is verified that the parameters are valid, we can execute the CCM.
+
+== CCM execution
+
+For this, adjust the `execute()` hook as shown in the snippet below.
+
+The CCM is included in the CCM context `ctx` of the `execute()` hook and can be used to access the CCM parameters.
+
+The <<create-a-store-for-reactions, Reaction Store>> is used to save the reactions for Hello messages.
+
 .hello/cc_commands/react_command.ts
 [source,typescript]
 ----
 public async execute(ctx: CrossChainMessageContext): Promise<void> {
-    const { ccm, logger } = ctx;
-    logger.info('Executing React CCM');
-    // const methodContext = ctx.getMethodContext();
-    // const { sendingChainID, status, receivingChainID } = ccm;
-    const params = codec.decode<CCReactMessageParams>(crossChainReactParamsSchema, ccm.params);
-    logger.info(params, 'parameters');
-    const { helloMessageID, reactionType } = params;
-    const reactionSubstore = this.stores.get(ReactionStore);
-    const messageCreatorAddress = cryptography.address.getAddressFromLisk32Address(helloMessageID);
-    let msgReactions: ReactionStoreData;
+		const { ccm, logger } = ctx;
+		logger.info('Executing React CCM');
+		// const { sendingChainID, status, receivingChainID } = ccm;
+		// Decode the provided CCM parameters
+		const params = codec.decode<CCReactMessageParams>(CCReactMessageParamsSchema, ccm.params);
+		logger.info(params, 'parameters');
+		// Get helloMessageID and reactionType from the parameters
+		const { helloMessageID, reactionType } = params;
+		const reactionSubstore = this.stores.get(ReactionStore);
+		const messageCreatorAddress = cryptography.address.getAddressFromLisk32Address(helloMessageID);
+		let msgReactions: ReactionStoreData;
 
-    try {
-        msgReactions = await reactionSubstore.get(ctx, messageCreatorAddress);
-    } catch (error) {
-        if (!(error instanceof db.NotFoundError)) {
-            logger.info({ helloMessageID, crossChainCommand: this.name }, (error as Error).message);
-            logger.error({ error }, 'Error when getting the reaction substore');
-            throw error;
-        }
-        logger.info(
-            { helloMessageID, crossChainCommand: this.name },
-            `No entry exists for given helloMessageID ${helloMessageID}. Creating a default entry.`,
-        );
-        msgReactions = { reactions: { like: [] } };
-    }
-    if (reactionType === 0) {
-        const hasLiked = msgReactions.reactions.like.indexOf(ctx.transaction.senderAddress);
-        if (hasLiked  > -1) {
-            msgReactions.reactions.like = msgReactions.reactions.like.splice(hasLiked, 1);
-        } else {
-            msgReactions.reactions.like.push(ctx.transaction.senderAddress);
-        }
-    } else {
-        logger.error({ reactionType }, 'invalid reaction type');
-    }
-    await reactionSubstore.set(ctx, messageCreatorAddress, msgReactions);
-}
+		// Get existing reactions for a Hello message, or initialize an empty reaction object, if none exists,yet.
+		try {
+			msgReactions = await reactionSubstore.get(ctx, messageCreatorAddress);
+		} catch (error) {
+			if (!(error instanceof db.NotFoundError)) {
+				logger.info({ helloMessageID, crossChainCommand: this.name }, (error as Error).message);
+				logger.error({ error }, 'Error when getting the reaction substore');
+				throw error;
+			}
+			logger.info(
+				{ helloMessageID, crossChainCommand: this.name },
+				`No entry exists for given helloMessageID ${helloMessageID}. Creating a default entry.`,
+			);
+			msgReactions = { reactions: { like: [] } };
+		}
+
+		// Check if the reactions is a like
+		if (reactionType === 0) {
+			const hasLiked = msgReactions.reactions.like.indexOf(ctx.transaction.senderAddress);
+			// If the sender has already liked the message
+			if (hasLiked > -1) {
+				// Remove the sender address from the likes for the message
+				msgReactions.reactions.like = msgReactions.reactions.like.splice(hasLiked, 1);
+			// If the sender has not liked the message yet
+			} else {
+				// Add the sender address to the likes of the message
+				msgReactions.reactions.like.push(ctx.transaction.senderAddress);
+			}
+		} else {
+			logger.error({ reactionType }, 'invalid reaction type');
+		}
+		// Update the reaction store with the reactions for the specified Hello message
+		await reactionSubstore.set(ctx, messageCreatorAddress, msgReactions);
+	}
 ----
+
+== Final updates of the module and app.ts
 
 Go back to the file `hello/module.ts` and update it as described in the code comments.
 

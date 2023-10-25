@@ -10,6 +10,8 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_github_sdk_interop_sc2: {url_github_sdk_interop}/pos-sidechain-example-two/src/app
 // Project URLs
 :url_build_module: build-blockchain/module/index.adoc
+:url_build_interop_module: build-blockchain/interoperable-module/index.adoc
+:url_build_execccm: build-blockchain/interoperable-module/execute-ccm.adoc
 :url_build_init: build-blockchain/create-blockchain-client.adoc#initializing-a-new-blockchain-client
 :url_understand_interop_ccm: understand-blockchain/interoperability/communication.adoc#inducing-state-changes-across-chains-with-ccms
 
@@ -44,7 +46,7 @@ import { BaseCCMethod } from 'lisk-sdk';
 export class ReactInteroperableMethod extends BaseCCMethod {}
 ----
 
-Now import the `ReactInteroperableMethod` into the module and use it to create a new property `crossChainMethod` inside the module.
+Now import the `ReactInteroperableMethod` into the module and use it to create a new member `crossChainMethod` inside the module.
 
 In the end, the module should look similar to the example below:
 
@@ -61,8 +63,7 @@ import { ReactInteroperableMethod } from './cc_method';
 export class ReactModule extends BaseInteroperableModule {
 	public endpoint = new ReactEndpoint(this.stores, this.offchainStores);
 	public method = new ReactMethod(this.stores, this.events);
-	public commands = [new ReactCrossChainCommand(this.stores, this.events)];
-
+	public commands = [];
 	public crossChainMethod = new ReactInteroperableMethod(this.stores, this.events);
 
 	public metadata(): ModuleMetadata {
@@ -262,22 +263,45 @@ export interface InteroperabilityMethod {
 
 ----
 
-Now go the file `react/commands/react_command.ts` and 
+Now go the file `react/commands/react_command.ts` and import the constants, schemas and types defined above.
+
+Next, define the following properties of the command:
+
+* `name`: Define a method to get the name of the command and set it to the `CROSS_CHAIN_COMMAND_NAME_REACT` constant.
+The same name will be used for the cross-chain command which will accept the CCM.
+* `schema`: Set the command schema to equal `CCReactCommandParamsSchema`.
+* `init()`: To initialize the module, we need access to the methods of the interoperability module.
+Update the methods to expect the `interoperabilityMethod` as argument, and assign is to the private property `_interoperabilityMethod` of the `reactCrossChain` command.
 
 .react/commands/react_command.ts
 [source,typescript]
 ----
+import {
+	BaseCommand,
+	CommandVerifyContext,
+	CommandExecuteContext,
+	VerificationResult,
+	VerifyStatus,
+	codec,
+} from 'lisk-sdk';
+import { CROSS_CHAIN_COMMAND_NAME_REACT } from '../constants';
+import {
+	CCReactCommandParamsSchema,
+	CCReactMessageParams,
+	CCReactMessageParamsSchema,
+	CCReactCommandParams,
+} from '../schemas';
+import { InteroperabilityMethod } from '../types';
+
 export class ReactCrossChainCommand extends BaseCommand {
 	private _interoperabilityMethod!: InteroperabilityMethod;
-	public schema = crossChainReactParamsSchema;
+	public schema = CCReactCommandParamsSchema;
 
 	public get name(): string {
 		return CROSS_CHAIN_COMMAND_NAME_REACT;
 	}
 
-	public init(args: {
-		interoperabilityMethod: InteroperabilityMethod;
-	}) {
+	public init(args: { interoperabilityMethod: InteroperabilityMethod }) {
 		this._interoperabilityMethod = args.interoperabilityMethod;
 	}
 
@@ -286,6 +310,82 @@ export class ReactCrossChainCommand extends BaseCommand {
 	}
 }
 ----
+
+Go back to the file `react/module.ts` and update it ass described in the code comments.
+
+.react/module.ts
+[source,typescript]
+----
+import { BaseInteroperableModule, ModuleMetadata, ModuleInitArgs } from 'lisk-sdk';
+import { ReactCrossChainCommand } from './commands/react_command';
+import { ReactEndpoint } from './endpoint';
+import { ReactMethod } from './method';
+import { ReactInteroperableMethod } from './cc_method';
+// Add this import
+import { InteroperabilityMethod } from './types';
+
+export class ReactModule extends BaseInteroperableModule {
+	public endpoint = new ReactEndpoint(this.stores, this.offchainStores);
+	public method = new ReactMethod(this.stores, this.events);
+	public commands = [new ReactCrossChainCommand(this.stores, this.events)];
+	public crossChainMethod = new ReactInteroperableMethod(this.stores, this.events);
+    // Create a private member to store the methods of the interoperability module
+	private _interoperabilityMethod!: InteroperabilityMethod;
+
+
+	// ...
+
+    // Assign the methods of the interoperability module to _interoperabilityMethod
+	public addDependencies(interoperabilityMethod: InteroperabilityMethod) {
+		this._interoperabilityMethod = interoperabilityMethod;
+	}
+
+	// Lifecycle hooks
+	// eslint-disable-next-line @typescript-eslint/require-await
+	public async init(_args: ModuleInitArgs) {
+        // Pass the methods of the interoperability module to the reactCrossChain command
+		this.commands[0].init({
+			interoperabilityMethod: this._interoperabilityMethod,
+		});
+	}
+}
+----
+
+Open the `app.ts` file, and register the module to the application.
+
+Because the `ReactModule` is an *interoperable module*, it is required to call `app.registerInteroperableModule()` additionally.
+
+Last but not least, call the `addDependencies()` method of the `ReactModule` with the methods of the interoperability module as parameter.
+
+IMPORTANT: Please remove the redundant registration of the `ReactModule` in the `modules.ts` file. It was added automatically during the command initialization.
+
+.app.ts
+[source,typescript]
+----
+import { Application, PartialApplicationConfig } from 'lisk-sdk';
+import { registerModules } from './modules';
+import { registerPlugins } from './plugins';
+import { ReactModule } from './modules/react/module';
+
+export const getApplication = (config: PartialApplicationConfig): Application => {
+	const { app, method } = Application.defaultApplication(config);
+	const reactModule = new ReactModule();
+	app.registerModule(reactModule);
+	app.registerInteroperableModule(reactModule);
+	reactModule.addDependencies(method.interoperability);
+
+	registerModules(app);
+	registerPlugins(app);
+
+	return app;
+};
+----
+
+Now, go back to the `react_command.ts` file, and implement the command verification.
+
+To keep the example simple, we only check if the `receivingChainID` parameters doesn't equal the parameter of the sending chain.
+
+You can extend the `verify()` hook to include more checks for the other parameters as well, as desired.
 
 .react/commands/react_command.ts
 [source,typescript]
@@ -312,6 +412,12 @@ public async verify(context: CommandVerifyContext<Params>): Promise<Verification
 		};
 	}
 ----
+
+Once it is verified that the parameters are valid, we can create and send the corresponding CCM.
+
+For this, adjust the `execute()` hook as shown in the snipet below.
+
+Use the `.send()` methods of the interoperability module to send the prepared CCM.
 
 .react/commands/react_command.ts
 [source,typescript]
@@ -341,6 +447,8 @@ public async execute(context: CommandExecuteContext<Params>): Promise<void> {
 	}
 ----
 
-[source,typescript]
-----
-----
+The CCM will now be sent to the mainchain by a xref:{}[relayer node], where it will be forwarded to the designated receiving sidechain.
+
+For the other sidechain to be able to accept this CCM, we need to add a corresponding cross-chain command to the Hello module of the receiving chain.
+
+To learn how to implement cross-chain comands on the receiving chain, check out the next guide: xref:{url_build_execccm}[]

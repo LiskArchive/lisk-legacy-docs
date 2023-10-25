@@ -1,12 +1,15 @@
 = How to execute a CCM
+Mona Bärenfänger <mona@lightcurve.io>
+:toc:
+:idprefix:
+:idseparator: -
+:sectnums:
 
-== How to make the Hello module interoperable
+== How to convert the Hello module into an interoperable module
 
 To convert an existing module to an interoperable module, perform the following adjustment:
 
 Import the `BaseInteroperableModule` class and remove the `BaseModule` class, as it will be replaced by the `BaseInteroperableModule`.
-
-Replace the class `BaseModule` with `BaseInteroperableModule`.
 
 Additionally, create a new file called `cc_method.ts`, and add a skeleton for potential cross-chain methods the module is offering.
 
@@ -19,7 +22,7 @@ export class HelloInteroperableMethod extends BaseCCMethod {}
 
 Now import the `HelloInteroperableMethod` and use it to create a new member `crossChainMethod` inside the module.
 
-In the end, the module should look similar to the example below:
+In the end, the updated module should look similar to the example below:
 
 [%collapsible]
 =====
@@ -27,147 +30,31 @@ In the end, the module should look similar to the example below:
 [source,typescript]
 ----
 /* eslint-disable class-methods-use-this */
-
+// Replace BaseModule with BaseInteroperableModule
 import {
 	validator,
 	BaseInteroperableModule,
-	BlockAfterExecuteContext,
-	BlockExecuteContext,
-	BlockVerifyContext,
-	GenesisBlockExecuteContext,
-	InsertAssetContext,
-	ModuleInitArgs,
-	ModuleMetadata,
-	TransactionExecuteContext,
-	TransactionVerifyContext,
-	utils,
-	VerificationResult,
+    // ...
 } from 'lisk-sdk';
-import { CreateHelloCommand } from './commands/create_hello_command';
-import { ReactCCCommand } from './cc_commands/react_command';
-import { HelloEndpoint } from './endpoint';
-import { NewHelloEvent } from './events/new_hello';
-import { HelloMethod } from './method';
-import {
-	configSchema,
-	getHelloCounterResponseSchema,
-	getHelloRequestSchema,
-	getHelloResponseSchema,
-} from './schemas';
-import { CounterStore } from './stores/counter';
-import { MessageStore } from './stores/message';
-import { ReactionStore, reactionStoreSchema } from './stores/reaction';
-import { ModuleConfigJSON } from './types';
+// Import the newly created cc_method
 import { HelloInteroperableMethod } from './cc_method';
 
-export const defaultConfig = {
-	maxMessageLength: 256,
-	minMessageLength: 3,
-	blacklist: ['illegalWord1'],
-};
+// ...
+
 
 export class HelloModule extends BaseInteroperableModule {
-	public constructor() {
-		super();
-		// registration of stores and events
-		this.stores.register(CounterStore, new CounterStore(this.name, 0));
-		this.stores.register(MessageStore, new MessageStore(this.name, 1));
-		this.stores.register(ReactionStore, new ReactionStore(this.name, 2));
-		this.events.register(NewHelloEvent, new NewHelloEvent(this.name));
-	}
-
-	public metadata(): ModuleMetadata {
-		return {
-			endpoints: [
-				{
-					name: this.endpoint.getHello.name,
-					request: getHelloRequestSchema,
-					response: getHelloResponseSchema,
-				},
-				{
-					name: this.endpoint.getReactions.name,
-					request: getHelloRequestSchema,
-					response: reactionStoreSchema,
-				},
-				{
-					name: this.endpoint.getHelloCounter.name,
-					response: getHelloCounterResponseSchema,
-				},
-			],
-			commands: this.commands.map(command => ({
-				name: command.name,
-				params: command.schema,
-			})),
-			events: this.events.values().map(v => ({
-				name: v.name,
-				data: v.schema,
-			})),
-			assets: [],
-			stores: [],
-		};
-	}
-
-	// Lifecycle hooks
-	// eslint-disable-next-line @typescript-eslint/require-await
-	public async init(args: ModuleInitArgs): Promise<void> {
-		// Get the module config defined in the config.json file
-		const { moduleConfig } = args;
-		// Overwrite the default module config with values from config.json, if set
-		const config = utils.objects.mergeDeep({}, defaultConfig, moduleConfig) as ModuleConfigJSON;
-		// Validate the provided config with the config schema
-		validator.validator.validate<ModuleConfigJSON>(configSchema, config);
-		// Call the command init() method with config values as parameters
-		this.commands[0].init(config).catch(err => {
-			// eslint-disable-next-line no-console
-			console.log('Error: ', err);
-		});
-	}
-
-	public async insertAssets(_context: InsertAssetContext) {
-		// initialize block generation, add asset
-	}
-
-	public async verifyAssets(_context: BlockVerifyContext): Promise<void> {
-		// verify block
-	}
-
-	// Lifecycle hooks
-	// eslint-disable-next-line @typescript-eslint/require-await
-	public async verifyTransaction(context: TransactionVerifyContext): Promise<VerificationResult> {
-		// verify transaction will be called multiple times in the transaction pool
-		const result = {
-			status: 1,
-		};
-		return result;
-	}
-
-	// eslint-disable-next-line @typescript-eslint/no-empty-function
-	public async beforeCommandExecute(_context: TransactionExecuteContext): Promise<void> {}
-
-	// eslint-disable-next-line @typescript-eslint/no-empty-function
-	public async afterCommandExecute(_context: TransactionExecuteContext): Promise<void> {}
-
-	// eslint-disable-next-line @typescript-eslint/no-empty-function
-	public async initGenesisState(_context: GenesisBlockExecuteContext): Promise<void> {}
-
-	// eslint-disable-next-line @typescript-eslint/no-empty-function
-	public async finalizeGenesisState(_context: GenesisBlockExecuteContext): Promise<void> {}
-
-	// eslint-disable-next-line @typescript-eslint/no-empty-function
-	public async beforeTransactionsExecute(_context: BlockExecuteContext): Promise<void> {}
-
-	// eslint-disable-next-line @typescript-eslint/no-empty-function
-	public async afterTransactionsExecute(_context: BlockAfterExecuteContext): Promise<void> {}
-
-	public endpoint = new HelloEndpoint(this.stores, this.offchainStores);
+    public endpoint = new HelloEndpoint(this.stores, this.offchainStores);
 	public method = new HelloMethod(this.stores, this.events);
 	public commands = [new CreateHelloCommand(this.stores, this.events)];
-	public reactCCCommand = new ReactCCCommand(this.stores, this.events);
+    // Assign HelloInteroperableMethod to crossChainMethod
 	public crossChainMethod = new HelloInteroperableMethod(this.stores, this.events);
-	public crossChainCommand = [this.reactCCCommand];
+
+	// ...
 }
 ----
 =====
+
+Now that the interoperable module is initialized, let's create the cross-chain command which will be used to accept and execute the CCM on the sidechain.
 
 == The `reactCrossChain` command
 
@@ -272,26 +159,40 @@ lisk generate:command hello react
 
 And move it to a new folder `cc_commands` inside the `hello` module.
 
-Now, change `BaseCommand` to `BaseCCCommand` and `ReactCommand` to `ReactCCCommand` to define the command as a cross-chain command.
+Now, open the file `hello/cc_commands/react_command.ts` and import the constants, schemas and types defined above.
+
+Next, define the following properties of the command:
+
+* change `BaseCommand` to `BaseCCCommand` and
+* `ReactCommand` to `ReactCCCommand` to define the command as a cross-chain command.
 Cross-chain commands are able to accept and execute CCMs.
+//TODO: Is it required that the command names for commands creating and executing a specific CCM must match?
+* Set the name of the command to `reactCrossChain`.
+* Set the command schema to equal `CCReactMessageParamsSchema`.
 
 .hello/cc_commands/react_command.ts
 [source,typescript]
 ----
 import { BaseCCCommand, CrossChainMessageContext, codec, cryptography, db } from 'lisk-sdk';
-import { crossChainReactParamsSchema, CCReactMessageParams } from '../schemas';
+import { CCReactMessageParamsSchema, CCReactMessageParams } from '../schemas';
 import { MAX_RESERVED_ERROR_STATUS, CROSS_CHAIN_COMMAND_NAME_REACT } from '../constants';
 import { ReactionStore, ReactionStoreData } from '../stores/reaction';
 import { MessageStore } from '../stores/message';
 
 export class ReactCCCommand extends BaseCCCommand {
-	public schema = crossChainReactParamsSchema;
+	public schema = CCReactMessageParamsSchema;
 
 	public get name(): string {
 		return CROSS_CHAIN_COMMAND_NAME_REACT;
 	}
 }
 ----
+
+Now, go back to the `react_command.ts` file, and implement the command verification.
+
+To keep the example simple, we only check if the `receivingChainID` parameter doesn't equal the value of the sending chain.
+
+Extend the `verify()` hook to include more checks for the other parameters as well, as desired.
 
 .hello/cc_commands/react_command.ts
 [source,typescript]
@@ -356,3 +257,71 @@ public async execute(ctx: CrossChainMessageContext): Promise<void> {
 }
 ----
 
+Go back to the file `hello/module.ts` and update it as described in the code comments.
+
+.hello/module.ts
+[source,typescript]
+----
+import { BaseInteroperableModule, ModuleMetadata, ModuleInitArgs } from 'lisk-sdk';
+import { ReactCrossChainCommand } from './commands/react_command';
+import { ReactEndpoint } from './endpoint';
+import { ReactMethod } from './method';
+import { ReactInteroperableMethod } from './cc_method';
+// Import the type for the InteroperabilityMethod
+import { InteroperabilityMethod } from './types';
+
+export class ReactModule extends BaseInteroperableModule {
+	public endpoint = new ReactEndpoint(this.stores, this.offchainStores);
+	public method = new ReactMethod(this.stores, this.events);
+	public commands = [new ReactCrossChainCommand(this.stores, this.events)];
+	public crossChainMethod = new ReactInteroperableMethod(this.stores, this.events);
+    // Create a private member to store the methods of the interoperability module
+	private _interoperabilityMethod!: InteroperabilityMethod;
+
+	// ...
+
+    // Assign the methods of the interoperability module to _interoperabilityMethod
+	public addDependencies(interoperabilityMethod: InteroperabilityMethod) {
+		this._interoperabilityMethod = interoperabilityMethod;
+	}
+
+	// Lifecycle hooks
+	// eslint-disable-next-line @typescript-eslint/require-await
+	public async init(_args: ModuleInitArgs) {
+        // Pass the methods of the interoperability module to the reactCrossChain command
+		this.commands[0].init({
+			interoperabilityMethod: this._interoperabilityMethod,
+		});
+	}
+}
+----
+
+Open the `app.ts` file, and register the module to the application.
+
+Because the `ReactModule` is an *interoperable module*, it is required to call `app.registerInteroperableModule()` additionally.
+
+Last but not least, call the `addDependencies()` method of the `ReactModule` with the methods of the interoperability module as parameter.
+
+IMPORTANT: Please remove the redundant registration of the `ReactModule` in the `modules.ts` file. It was added automatically during the command initialization.
+
+.app.ts
+[source,typescript]
+----
+import { Application, PartialApplicationConfig } from 'lisk-sdk';
+import { registerModules } from './modules';
+import { registerPlugins } from './plugins';
+import { ReactModule } from './modules/react/module';
+
+export const getApplication = (config: PartialApplicationConfig): Application => {
+	const { app, method } = Application.defaultApplication(config);
+	const reactModule = new ReactModule();
+	app.registerModule(reactModule);
+	app.registerInteroperableModule(reactModule);
+	reactModule.addDependencies(method.interoperability);
+
+	registerModules(app);
+	registerPlugins(app);
+
+	return app;
+};
+----

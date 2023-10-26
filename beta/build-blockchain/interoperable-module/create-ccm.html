@@ -554,8 +554,12 @@
 <div id="toc" class="toc">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#the-react-module">1. The React module</a></li>
-<li><a href="#the-reactcrosschain-command">2. The <code>reactCrossChain</code> command</a></li>
+<li><a href="#create-the-react-module">1. Create the React module</a></li>
+<li><a href="#add-required-schemas-and-constants">2. Add required schemas and constants</a></li>
+<li><a href="#initialize-the-cross-chain-command">3. Initialize the cross-chain command</a></li>
+<li><a href="#command-verification">4. Command verification</a></li>
+<li><a href="#command-execution">5. Command execution</a></li>
+<li><a href="#final-updates-of-the-module-and-app-ts">6. Final updates of the module and app.ts</a></li>
 </ul>
 </div>
 <div id="preamble">
@@ -566,10 +570,10 @@
 </div>
 </div>
 <div class="sect1">
-<h2 id="the-react-module"><a class="anchor" href="#the-react-module"></a>1. The React module</h2>
+<h2 id="create-the-react-module"><a class="anchor" href="#create-the-react-module"></a>1. Create the React module</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>In order to send cross-chain messages from sidechain to sidechain, it is required to create the corresponding CCM in a module.
+<p>In order to send cross-chain messages from sidechain to sidechain, it is required to create the corresponding CCM in a module command.
 To achieve this, create a new module(or adjust an existing module) which will be registered on the sidechain intending to communicate with an interoperable module of another chain.</p>
 </div>
 <div class="paragraph">
@@ -588,7 +592,7 @@ Check out the complete working <a href="https://github.com/LiskHQ/lisk-sdk/tree/
 </table>
 </div>
 <div class="paragraph">
-<p>Assuming, the sidechain is already <a href="../create-blockchain-client.html#initializing-a-new-blockchain-client" class="xref page">initialized</a>, move into the root folder of the sidechain client, and generate the skeleton for the new module as usual:</p>
+<p>Assuming the sidechain is already <a href="../create-blockchain-client.html#initializing-a-new-blockchain-client" class="xref page">initialized</a>, move into the root folder of the sidechain client, and generate the skeleton for the new module as usual:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -654,7 +658,7 @@ export class ReactModule extends BaseInteroperableModule {
 </div>
 </div>
 <div class="sect1">
-<h2 id="the-reactcrosschain-command"><a class="anchor" href="#the-reactcrosschain-command"></a>2. The <code>reactCrossChain</code> command</h2>
+<h2 id="add-required-schemas-and-constants"><a class="anchor" href="#add-required-schemas-and-constants"></a>2. Add required schemas and constants</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Create a new file <code>react/constants.ts</code> and export a constant <code>CROSS_CHAIN_COMMAND_NAME_REACT</code> representing the name of the new command.</p>
@@ -849,6 +853,11 @@ export interface InteroperabilityMethod {
 }</code></pre>
 </div>
 </div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="initialize-the-cross-chain-command"><a class="anchor" href="#initialize-the-cross-chain-command"></a>3. Initialize the cross-chain command</h2>
+<div class="sectionbody">
 <div class="paragraph">
 <p>Now create a new command called <code>reactCrossChain</code>:</p>
 </div>
@@ -912,6 +921,93 @@ export class ReactCrossChainCommand extends BaseCommand {
 }</code></pre>
 </div>
 </div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="command-verification"><a class="anchor" href="#command-verification"></a>4. Command verification</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In the <code>react_command.ts</code> file, and implement the command verification.</p>
+</div>
+<div class="paragraph">
+<p>To keep the example simple, we only check if the <code>receivingChainID</code> parameter doesn&#8217;t equal the value of the sending chain.</p>
+</div>
+<div class="paragraph">
+<p>Extend the <code>verify()</code> hook to include more checks for the other parameters as well, as desired.</p>
+</div>
+<div class="listingblock">
+<div class="title">react/commands/react_command.ts</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async verify(context: CommandVerifyContext&lt;Params&gt;): Promise&lt;VerificationResult&gt; {
+		const { params, logger } = context;
+
+		logger.info('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++');
+		logger.info(params);
+		logger.info('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++');
+
+		try {
+			if (params.receivingChainID.equals(context.chainID)) {
+				throw new Error('Receiving chain cannot be the sending chain.');
+			}
+		} catch (err) {
+			return {
+				status: VerifyStatus.FAIL,
+				error: err as Error,
+			};
+		}
+		return {
+			status: VerifyStatus.OK,
+		};
+	}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Once it is verified that the parameters are valid, we can create and send the corresponding CCM.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="command-execution"><a class="anchor" href="#command-execution"></a>5. Command execution</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>For this, adjust the <code>execute()</code> hook as shown in the snippet below.</p>
+</div>
+<div class="paragraph">
+<p>Use the <code>.send()</code> method of the Interoperability module to send the prepared CCM.</p>
+</div>
+<div class="listingblock">
+<div class="title">react/commands/react_command.ts</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async execute(context: CommandExecuteContext&lt;Params&gt;): Promise&lt;void&gt; {
+		const {
+			params,
+			transaction: { senderAddress },
+		} = context;
+
+		const reactCCM: CCReactMessageParams = {
+			reactionType: params.reactionType,
+			data: params.data,
+			helloMessageID: params.helloMessageID,
+		};
+
+		await this._interoperabilityMethod.send(
+			context.getMethodContext(),
+			senderAddress,
+			'hello',
+			CROSS_CHAIN_COMMAND_NAME_REACT,
+			params.receivingChainID,
+			params.messageFee,
+			codec.encode(crossChainReactMessageSchema, reactCCM),
+			context.header.timestamp,
+		);
+	}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="final-updates-of-the-module-and-app-ts"><a class="anchor" href="#final-updates-of-the-module-and-app-ts"></a>6. Final updates of the module and app.ts</h2>
+<div class="sectionbody">
 <div class="paragraph">
 <p>Go back to the file <code>react/module.ts</code> and update it as described in the code comments.</p>
 </div>
@@ -996,79 +1092,7 @@ export const getApplication = (config: PartialApplicationConfig): Application =&
 </div>
 </div>
 <div class="paragraph">
-<p>Now, go back to the <code>react_command.ts</code> file, and implement the command verification.</p>
-</div>
-<div class="paragraph">
-<p>To keep the example simple, we only check if the <code>receivingChainID</code> parameter doesn&#8217;t equal the value of the sending chain.</p>
-</div>
-<div class="paragraph">
-<p>Extend the <code>verify()</code> hook to include more checks for the other parameters as well, as desired.</p>
-</div>
-<div class="listingblock">
-<div class="title">react/commands/react_command.ts</div>
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async verify(context: CommandVerifyContext&lt;Params&gt;): Promise&lt;VerificationResult&gt; {
-		const { params, logger } = context;
-
-		logger.info('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++');
-		logger.info(params);
-		logger.info('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++');
-
-		try {
-			if (params.receivingChainID.equals(context.chainID)) {
-				throw new Error('Receiving chain cannot be the sending chain.');
-			}
-		} catch (err) {
-			return {
-				status: VerifyStatus.FAIL,
-				error: err as Error,
-			};
-		}
-		return {
-			status: VerifyStatus.OK,
-		};
-	}</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Once it is verified that the parameters are valid, we can create and send the corresponding CCM.</p>
-</div>
-<div class="paragraph">
-<p>For this, adjust the <code>execute()</code> hook as shown in the snippet below.</p>
-</div>
-<div class="paragraph">
-<p>Use the <code>.send()</code> method of the Interoperability module to send the prepared CCM.</p>
-</div>
-<div class="listingblock">
-<div class="title">react/commands/react_command.ts</div>
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async execute(context: CommandExecuteContext&lt;Params&gt;): Promise&lt;void&gt; {
-		const {
-			params,
-			transaction: { senderAddress },
-		} = context;
-
-		const reactCCM: CCReactMessageParams = {
-			reactionType: params.reactionType,
-			data: params.data,
-			helloMessageID: params.helloMessageID,
-		};
-
-		await this._interoperabilityMethod.send(
-			context.getMethodContext(),
-			senderAddress,
-			'hello',
-			CROSS_CHAIN_COMMAND_NAME_REACT,
-			params.receivingChainID,
-			params.messageFee,
-			codec.encode(crossChainReactMessageSchema, reactCCM),
-			context.header.timestamp,
-		);
-	}</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>The CCM will now be sent to the mainchain by a <a href="../../run-blockchain/setup-relayer.html" class="xref page">relayer node</a>, where it will be forwarded to the designated receiving sidechain.</p>
+<p>When a user now posts a <code>reactCrossChain</code> transaction on a sidechain that registered the React module, a corresponding CCM is sent to the mainchain by a <a href="../../run-blockchain/setup-relayer.html" class="xref page">relayer node</a>, where it will be forwarded to the designated receiving sidechain.</p>
 </div>
 <div class="paragraph">
 <p>For the other sidechain to be able to accept this CCM, we need to add a corresponding cross-chain command to the Hello module of the receiving chain.</p>

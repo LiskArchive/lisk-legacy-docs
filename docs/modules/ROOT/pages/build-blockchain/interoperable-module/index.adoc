@@ -63,7 +63,7 @@ To simplify the process, the `lisk-sdk` provides useful example scripts that can
 --
 [role="right"]
 .The blockchain network of the interop example
-image:build-blockchain/interop-example.png[,300,role="right"]
+image::build-blockchain/interop-example.png[,300,role="right"]
 
 To try out the cross-chain communication of interoperable modules locally, go the {url_github_sdk_interop}[interop/example] in the `lisk-sdk` repository.
 
@@ -73,9 +73,177 @@ Additionally, you find examples how to execute cross-chaon token transfers betwe
 
 Follow the instructions until {url_github_sdk_interop_cctransfer}[here^], where you successfully sent tokens from the mainchain to both sidechains.
 
-Now, to test the newly implemented interoperable modules, perform the following steps:
+Verify the sidechain account is funded with mainchain tokens::
+The account sending the `reactCrossChain` command, whichwill create a new CCM needs to provide the fees for the execution of the CCM in tokens that are native on the mainchain.
+This is why it should be verified, that the account that intends to send the transaction own enough mainchain tokens.
+If you followed the instructions in the `README.md` until {url_github_sdk_interop_cctransfer}[here^], the account `lskx5uqu2zzybdwrqswd8c6b5v5aj77yytn4k6mv6` of `pos-sidechain-exmaple-two` should have the required funding.
++
+Verify the account intending to send the CCM has enough balance to pay the transaction & CCM fees:
++
+[source,bash]
+----
+pos-sidechain-example-two % ./bin/run endpoint:invoke token_getBalances '{"address":"lskx5uqu2zzybdwrqswd8c6b5v5aj77yytn4k6mv6"}' --pretty
+----
++
+As the response shows, the account has more than enough sidechain and mainnet tokens to pay the required fees.
++
+[source,json]
+----
+{
+  "balances": [
+    {
+      "tokenID": "0400000000000000",
+      "availableBalance": "910000000000",
+      "lockedBalances": []
+    },
+    {
+      "tokenID": "0400000200000000",
+      "availableBalance": "100000000000000",
+      "lockedBalances": []
+    }
+  ]
+}
+----
+
+Now, to test the newly implemented interoperable modules, all is prepared to proceed an test the React cross chain command.
 
 --
 === Create Hello message on sidechain 1
+
+[source,bash]
+----
+pos-sidechain-example-one % ./bin/run transaction:create hello createHello 10000000 --json --pretty --key-derivation-path="m/44'/134'/12'" --send
+----
+
+----
+? Please enter passphrase:  [hidden]
+? Please enter: message:  Hello sidechain 2! :-)
+----
+
+[source,json]
+----
+{
+  "transaction": {
+    "module": "hello",
+    "command": "createHello",
+    "fee": "10000000",
+    "nonce": "0",
+    "senderPublicKey": "3e8ba5794c323cc83c4085576930aa5a49486f989498f15980dc2c50e125226f",
+    "signatures": [
+      "5060ccd88c2083a3a3905c65055804adf2ec9a9f30e7ebd88f29e42ff0dadd4c18ba9dbc462f2305c041bec68e498f8922941758cd0403766c89c7199af84408"
+    ],
+    "params": {
+      "message": "Hello sidechain 2! :-)"
+    },
+    "id": "cbd493f4e554c4ffde09a8a0d641164439d5ef9e7605c84d52d2d25248a897a7"
+  }
+}
+----
+
+ Transaction with id: 'cbd493f4e554c4ffde09a8a0d641164439d5ef9e7605c84d52d2d25248a897a7' received by node.
+
+[source,bash]
+----
+pos-sidechain-example-one % ./bin/run endpoint:invoke hello_getHello '{"address":"lskmjwp8z88avvxn4voktmx8cu9wk4opjkna5owt5"}'
+----
+
+[source,json]
+----
+{"message":"Hello sidechain 2! :-)"}
+----
 === Create Reaction on sidechain 2
+
+[source,bash]
+----
+pos-sidechain-example-two % ./bin/run transaction:create react reactCrossChain 1000000 --json --pretty --key-derivation-path="m/44'/134'/12'" --params='{"reactionType":0,"helloMessageID":"lskmjwp8z88avvxn4voktmx8cu9wk4opjkna5owt5","receivingChainID":"04000001","data":"","messageFee":"2100000","messageFeeTokenID":"0400000000000000"}' -p "crack tide merry unit rival joke drum private object top obey twelve exit scale sure pipe apple view forward surge aspect farm meat farm" --send
+{
+  "transaction": "0a057265616374120f726561637443726f7373436861696e180020c0843d2a20c94952af78216ff92d615f4eb566726693d05df2d0b82f7fce26fc1f0e6e8724323a080012296c736b6d6a7770387a3838617676786e34766f6b746d7838637539776b346f706a6b6e61356f7774351a0022040400000128a09680013a404f68f83f8e32aadba4b2bb465ac0b09ca6a1c0ca247750e21d22cbd0fc53a5684fc3d4185d47e69e6e85a818ef04a61430dcadc096813cb205f735d04e3c4901"
+}
+{
+  "transaction": {
+    "module": "react",
+    "command": "reactCrossChain",
+    "fee": "1000000",
+    "nonce": "0",
+    "senderPublicKey": "c94952af78216ff92d615f4eb566726693d05df2d0b82f7fce26fc1f0e6e8724",
+    "signatures": [
+      "4f68f83f8e32aadba4b2bb465ac0b09ca6a1c0ca247750e21d22cbd0fc53a5684fc3d4185d47e69e6e85a818ef04a61430dcadc096813cb205f735d04e3c4901"
+    ],
+    "params": {
+      "reactionType": 0,
+      "helloMessageID": "lskmjwp8z88avvxn4voktmx8cu9wk4opjkna5owt5",
+      "receivingChainID": "04000001",
+      "data": "",
+      "messageFee": "2100000"
+    },
+    "id": "5043174c97f508b711d9be0ec57ed60009ea83b57b2a665cef8c99420b9fcbb2"
+  }
+}
+Transaction with id: '5043174c97f508b711d9be0ec57ed60009ea83b57b2a665cef8c99420b9fcbb2' received by node.
+----
 === Observe execution of the CCM
+
+Sidechain 2::
+* http://localhost:4007[^]
+* `pm2 log 3`
+
+Go to the events of the Dashboard and look for the following event:
+
+ interoperability_ccmSendSuccess (height: 772 index: 8 topics: 045043174c97f508b711d9be0ec57ed60009ea83b57b2a665cef8c99420b9fcbb2, 04000002, 04000001, 5fc4e869feb87e83801adee1c5ca44a9c71fa10b6668021abed48d73864bd69f)
+
+[source,json]
+----
+{
+  "ccm": {
+    "module": "hello",
+    "crossChainCommand": "reactCrossChain",
+    "nonce": "1",
+    "fee": "2100000",
+    "sendingChainID": "04000002",
+    "receivingChainID": "04000001",
+    "params": "080012296c736b6d6a7770387a3838617676786e34766f6b746d7838637539776b346f706a6b6e61356f7774351a00",
+    "status": 0
+  }
+}
+----
+
+Sidechain 1::
+* http://localhost:4006[^]
+* `pm2 log 2`
+
+Go to the events of the Dashboard and look for the following event:
+
+ interoperability_ccmProcessed (height: 335 index: 3 topics: ab36b23bce5e2a0cebe9131c5b3bddfd8132e9367f1cf9a95875ae74b8ca3909, f092606d704d8a205bf2d702119c4761e3cb8cc22197fd28411f28fae9aa4d98, 04000002, 04000001)
+
+[source,json]
+----
+{
+  "ccm": {
+    "module": "hello",
+    "crossChainCommand": "reactCrossChain",
+    "nonce": "1",
+    "fee": "100000000",
+    "sendingChainID": "04000002",
+    "receivingChainID": "04000001",
+    "params": "080112296c736b367134747a79657633386666776d66756263746163717a6f667962377a326f667266666d33791a0772656163746564",
+    "status": 0
+  },
+  "result": 0,
+  "code": 0
+}
+----
+
+=== Debugging
+
+[source,bash]
+----
+pos-sidechain-example-two % ./bin/run endpoint:invoke chainConnector_getLastSentCCM --pretty --data-path=/Users/mona/.lisk/mainchain-node-one
+----
+
+[source,bash]
+----
+pos-sidechain-example-two % ./bin/run endpoint:invoke 'chainConnector_authorize' '{"password": "lisk", "enable": true }' --data-path=/Users/mona/.lisk/pos-sidechain-example-two
+pos-sidechain-example-two % ./bin/run endpoint:invoke 'chainConnector_authorize' '{"password": "lisk", "enable": true }' --data-path=/Users/mona/.lisk/pos-sidechain-example-one
+pos-sidechain-example-two % ./bin/run endpoint:invoke 'chainConnector_authorize' '{"password": "lisk", "enable": true }' --data-path=/Users/mona/.lisk/mainchain-node-one
+pos-sidechain-example-two % ./bin/run endpoint:invoke 'chainConnector_authorize' '{"password": "lisk", "enable": true }' --data-path=/Users/mona/.lisk/mainchain-node-two
+----

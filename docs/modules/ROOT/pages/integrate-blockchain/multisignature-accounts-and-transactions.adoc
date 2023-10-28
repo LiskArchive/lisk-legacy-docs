@@ -16,6 +16,12 @@
 :url_integrate_accounts: integrate-blockchain/integrate-ui/create-get-account.adoc
 :url_integrate_posttxs_apiclient: integrate-blockchain/posting-transactions.adoc#ws-ipc-api-example-with-api-client
 :url_integrate_createtxs_apiclient: integrate-blockchain/create-sign-transactions.adoc#via-api-client
+:url_getAuthAccount: api/module-rpc-api/auth-endpoints.adoc#auth_getauthaccount
+
+:url_accounts: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/guides/register-multi-sig-accounts/accounts.json
+:url_account_registration_script: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/guides/register-multi-sig-accounts/register-multiSig-account.js
+:url_multiSig_reg_directory: https://github.com/LiskHQ/lisk-sdk-examples/tree/development/guides/register-multi-sig-accounts
+
 
 ====
 On this page, you'll learn:
@@ -126,10 +132,50 @@ Lisk Desktop::
 For a step-by-step guide about how to create a new account with Lisk Desktop, please refer to: {url_lisk_learn_create_account}[Create an Account^].
 
 --
-Lisk Elements::
+Lisk SDK::
 +
 --
-For a step-by-step guide on creating a new account with Lisk Elements, please refer to the xref:{url_integrate_accounts}[] guide.
+For a step-by-step guide on creating a new account with Lisk SDK, please refer to the xref:{url_integrate_accounts}[] guide.
+As mentioned in the <<parameters, parameters>> section, we need three accounts.
+Each account will be used to sign the registerMultiSignature transaction individually.
+We will be using the first account among the three as the sender of the registerMultisignature transaction.
+
+Create three accounts, one for each optionalKey and then add them into an {url_accounts}[accounts.json^] file, like this:
+
+.accounts.json
+[,json]
+----
+{
+   "accounts": [
+      {
+         "address": "lsk6oqambp2mgqvqxxxm5aohs6s6329sgwftax2rf",
+         "keyPath": "m/44'/134'/0'",
+         "publicKey": "e98e8a6325730be6bf2644af83d5a0b004bb31c15858fedbd0ac2c1f89e2eece",
+         "privateKey": "5f6b8fab4419d78e7e5620c03dd4c54dbf82e14f7b18e68b983c1c1884252dd8e98e8a6325730be6bf2644af83d5a0b004bb31c15858fedbd0ac2c1f89e2eece"
+      },
+      {
+         "address": "lskgmmkgyc67n5jrpf2trgtxtc4yjg7bpu992chba",
+         "keyPath": "m/44'/134'/1'",
+         "publicKey": "c61cd862a8b7f73857b248a4358a7b35c29ca273d76ba3819e8c54b62801f16e",
+         "privateKey": "df4f52c787f9cb993384c42c2c146bd1d4d433790d1e175baa03c484543bf760c61cd862a8b7f73857b248a4358a7b35c29ca273d76ba3819e8c54b62801f16e"
+      },
+      {
+         "address": "lskrw8gmg6fgdkkgj48q364quzkoqzya479x7rc3d",
+         "keyPath": "m/44'/134'/2'",
+         "publicKey": "fad413df3fe5e7961b81ee8dc168d13d7e1f5cccdd062ed77da77142c7d571f0",
+         "privateKey": "dfe7b84b3a919bd7d170509072aaf92ab9a817384a0c315b72960f62764c13c4fad413df3fe5e7961b81ee8dc168d13d7e1f5cccdd062ed77da77142c7d571f0"
+      }
+   ]
+}
+----
+[WARNING]
+====
+The script mentioned in this guide is for *educational purposes only*.
+
+* The goal is to familiarize you with how a multi-signature account can be registered using code.
+* When using the script in real life, the script should be altered to ensure privacy protection of private keys.
+* A good way to do that would be to take all the private key info as an input by each user, use each `privateKey` to sign data and only store the signed information, so that it can be later used whilst sending the transaction.
+====
 --
 =====
 
@@ -218,24 +264,77 @@ NOTE: The `000..0` signatures are placeholders for the pending signatures from t
 They will be replaced automatically with the correct signatures, once the members sign the transaction.
 
 --
-Lisk Elements::
+Lisk SDK::
 +
 --
-Prepare a script with a JSON object that contains all required <<parameters,parameters>> for sending a multi-signature registration.
+Let's prepare a script which takes the accounts data and uses it to create and later sign a `registerMultisignature` transaction.
 
-[,js]
+NOTE: The {url_account_registration_script}[register-multiSig-account.js^] script can be found in the {url_multiSig_reg_directory}[register-multi-sig-accounts^] folder.
+
+. Create a `register-multiSig-account.js` file.
+Import all the relevant classes and schemas.
++
+[source,js]
 ----
-let paramsStr = {
-	"numberOfSignatures": 2,
-	"mandatoryKeys": [],
-	"optionalKeys": [
-		"61d320f822fcc163489499200ae6c99a66296513b1ca1066e49a37a026434ac0",
-		"dfbe4e3999138d62047c23f61f222a91b24d9d056db055be24f9ab6d95d7aa78",
-		"e57a23f897b13bdeef27439bb9f4e29ac0828018d27d6b39ade342879928b46a"
-	],
-	"signatures": []
-};
+const { apiClient, cryptography, codec, Transaction, multisigRegMsgSchema } = require('lisk-sdk');
+const { ed, address } = cryptography;
+const { accounts } = require('./accounts.json');
+const { registerMultisignatureParamsSchema, } = require('lisk-framework/dist-node/modules/auth/schemas');
 ----
++
+. Create an `apiClient` to communicate with the node and also define the `chainID` of the node.
++
+[source,js]
+----
+const RPC_ENDPOINT = 'ws://127.0.0.1:7887/rpc-ws';
+(async () => {
+    const appClient = await apiClient.createWSClient(RPC_ENDPOINT);
+    const chainID = Buffer.from('00000001', 'hex');
+----
++
+. Add details such as sender of the transaction, all the optional keys and mandatory keys in sorted form.
++
+[source,js]
+----
+    // The account which will be used to send the multiSignature account registration transaction.
+    const senderKeyInfo = accounts[0];
+
+    // For this example, we are using three Optional accounts.
+    const optionalAccount1 = accounts[0];
+    const optionalAccount2 = accounts[1];
+    const optionalAccount3 = accounts[2];
+    const sortedMandatoryKeys = [];  // Empty mandatory accounts array since we are not using any mandatory account for a multisig account registration in this guide.
+    const sortedOptionalKeys = [Buffer.from(optionalAccount1.publicKey, 'hex'), Buffer.from(optionalAccount2.publicKey, 'hex'), Buffer.from(optionalAccount3.publicKey, 'hex')].sort((a, b) => a.compare(b));
+----
++
+. Retrieve `nonce` of the sender account from the xref:{url_getAuthAccount}[auth_getAuthAccount^], and create an `unSignedData` object.
++
+[source,js]
+----
+    const { nonce } = await appClient.invoke('auth_getAuthAccount', {
+        address: address.getLisk32AddressFromPublicKey(Buffer.from(senderKeyInfo.publicKey, 'hex')),
+    });
+
+    const unSignedData = {
+        address: address.getAddressFromLisk32Address(senderKeyInfo.address),
+        nonce: BigInt(nonce),
+        numberOfSignatures: 2,
+        mandatoryKeys: sortedMandatoryKeys,
+        optionalKeys: sortedOptionalKeys,
+    };
+    console.log('Unsigned data -------->', unSignedData);
+----
++
+. Encode the `unSignedData` as per the `multisigRegMsgSchema` and also define an empty `signatures` array.
++
+[source,js]
+----    
+    // Each multisig account registration data must be encoded with the multisigRegMsgSchema
+    const msgBytes = codec.encode(multisigRegMsgSchema, unSignedData);
+
+    var signatures = [];
+----
+In the next step, we will collect signatures from each optional account.
 --
 =====
 
@@ -247,7 +346,7 @@ Node CLI::
 Create the transaction via the CLI and provide all required parameters:
 
 ----
-lisk-core transacrion:create auth registerMultisignature 100000000 --json --pretty
+lisk-core transaction:create auth registerMultisignature 100000000 --json --pretty
 ----
 
 Provide the required parameters, when prompted for them:
@@ -429,9 +528,52 @@ Now either send the JSON back to the person who shared the JSON with you, or for
 ----
 ====
 --
-Lisk Elements::
+Lisk SDK::
 +
 --
+. To add signatures, use each optional account's details to add signature or each account.
+To add a signature to a transaction, use the `ed.signDataWithPrivateKey()` method of the {url_typedoc_crypto}[lisk-cryptography^] package.
+[source,js]
+----
+    for (const account of [optionalAccount1, optionalAccount2, optionalAccount3].sort((a, b) => Buffer.from(a.publicKey, 'hex').compare(Buffer.from(b.publicKey, 'hex')))) {
+        signatures.push(ed.signDataWithPrivateKey(
+            'LSK_RMSG_',
+            chainID,
+            msgBytes,
+            Buffer.from(account.privateKey, 'hex'),
+        ));
+    }
+----
+
+[source,js]
+----
+    const transactionParams = {
+        numberOfSignatures: 2,
+        mandatoryKeys: sortedMandatoryKeys, // Empty array
+        optionalKeys: sortedOptionalKeys,   // Contains public keys of all three optional accounts
+        signatures,                         // Contains signatures from all three optional accounts
+    };
+    console.log('Transaction params in script-------->', transactionParams);
+----
+
+[source,js]
+----
+    const transactionObject = new Transaction({
+        module: 'auth',
+        command: 'registerMultisignature',
+        fee: BigInt(200000000),
+        params: codec.encode(registerMultisignatureParamsSchema, transactionParams),
+        nonce: BigInt(nonce),
+        senderPublicKey: Buffer.from(senderKeyInfo.publicKey, 'hex'),
+        signatures: [],
+    });
+
+    transactionObject.sign(
+        chainID,
+        Buffer.from(senderKeyInfo.privateKey, 'hex'),
+    );
+----
+
 Extend the script from <<converting-a-user-account-into-a-multi-signature-account>> and append some code that asks for the private key of a user, and uses it to sign the prepared transaction JSON.
 
 To add a signature to a transaction, use the `ed.signDataWithPrivateKey()` method of the {url_typedoc_crypto}[lisk-cryptography^] package.
@@ -472,10 +614,10 @@ image:integrate-blockchain/multisig/12-send.png[,200]
 
 If the transaction was sent successfully, it will show a confirmation message.
 --
-Lisk Elements::
+Lisk SDK::
 +
 --
-For a step-by-step guide on sending a transaction with Lisk Elements, please refer to the xref:{url_integrate_posttxs_apiclient}[How to post a transaction] guide.
+For a step-by-step guide on sending a transaction with Lisk SDK, please refer to the xref:{url_integrate_posttxs_apiclient}[How to post a transaction] guide.
 --
 =====
 
@@ -565,7 +707,7 @@ In Lisk Desktop, it is only possible to create a multi-signature transaction by 
 Only when you log in to the original multi-sig account, it is possible to create the transaction object as described below.
 
 If you are a member of a multi-sig account, but you don't personally have the passphrase for the multi-sig account, it is still possible to create transaction objects for the account, that you can sign and share with other group members.
-For this, please refer to the examples in the "Node CLI" and "Lisk Elements" tabs.
+For this, please refer to the examples in the "Node CLI" and "Lisk SDK" tabs.
 
 Prepare a transaction, for example, a token transfer::
 From Lisk Desktop, click on the kbd:[Send] button as you would normally to create a token transfer.
@@ -583,7 +725,7 @@ In this example, three external accounts manage the multi-sig account, so it wil
 If the multi-sig-account itself is a member of the group, one signature will be appended under signatures, and additionally, there will be two placeholders for the remaining signatures of other members.
 image:integrate-blockchain/multisig/15-signed.png[]
 --
-Lisk Elements::
+Lisk SDK::
 +
 --
 Create a transaction like normally for example with the API client, as explained here: xref:{url_integrate_createtxs_apiclient}[How to create a transaction via API client].
@@ -670,7 +812,7 @@ When the transaction is accepted, the following confirmation message will be dis
 +
 image:integrate-blockchain/multisig/19-confirmation.png[]
 --
-Lisk Elements::
+Lisk SDK::
 +
 --
 To collect all required signatures for a transaction from a multi-signature account, you can use a similar script as the {url_github_guides_multisig}[multisig.js^], which was used in step <<collecting-signatures>> above.

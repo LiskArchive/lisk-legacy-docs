@@ -307,7 +307,7 @@ const RPC_ENDPOINT = 'ws://127.0.0.1:7887/rpc-ws';
     const sortedOptionalKeys = [Buffer.from(optionalAccount1.publicKey, 'hex'), Buffer.from(optionalAccount2.publicKey, 'hex'), Buffer.from(optionalAccount3.publicKey, 'hex')].sort((a, b) => a.compare(b));
 ----
 +
-. Retrieve `nonce` of the sender account from the xref:{url_getAuthAccount}[auth_getAuthAccount^], and create an `unSignedData` object.
+. Retrieve `nonce` of the sender account from the xref:{url_getAuthAccount}[auth_getAuthAccount], and create an `unSignedData` object.
 +
 [source,js]
 ----
@@ -531,8 +531,10 @@ Now either send the JSON back to the person who shared the JSON with you, or for
 Lisk SDK::
 +
 --
-. To add signatures, use each optional account's details to add signature or each account.
+. Use each optional account's details to add signature for each account.
 To add a signature to a transaction, use the `ed.signDataWithPrivateKey()` method of the {url_typedoc_crypto}[lisk-cryptography^] package.
+This package is also part of the `lisk-sdk` package.
++
 [source,js]
 ----
     for (const account of [optionalAccount1, optionalAccount2, optionalAccount3].sort((a, b) => Buffer.from(a.publicKey, 'hex').compare(Buffer.from(b.publicKey, 'hex')))) {
@@ -544,7 +546,10 @@ To add a signature to a transaction, use the `ed.signDataWithPrivateKey()` metho
         ));
     }
 ----
-
++
+. Next, define a `transactionParams` object.
+This object will be added to the transaction in the next step.
++
 [source,js]
 ----
     const transactionParams = {
@@ -555,7 +560,9 @@ To add a signature to a transaction, use the `ed.signDataWithPrivateKey()` metho
     };
     console.log('Transaction params in script-------->', transactionParams);
 ----
-
++
+. Using the `Transaction` class, initialize a new object which takes all the details mentioned earlier as part of the registration transaction.
++
 [source,js]
 ----
     const transactionObject = new Transaction({
@@ -567,25 +574,31 @@ To add a signature to a transaction, use the `ed.signDataWithPrivateKey()` metho
         senderPublicKey: Buffer.from(senderKeyInfo.publicKey, 'hex'),
         signatures: [],
     });
-
+----
++
+. Sign the transaction using the sender's private key.
+After signing the transaction, the transaction is ready to be sent to the node for execution.
++
+[source,js]
+----
     transactionObject.sign(
         chainID,
         Buffer.from(senderKeyInfo.privateKey, 'hex'),
     );
 ----
 
-Extend the script from <<converting-a-user-account-into-a-multi-signature-account>> and append some code that asks for the private key of a user, and uses it to sign the prepared transaction JSON.
+// Extend the script from <<converting-a-user-account-into-a-multi-signature-account>> and append some code that asks for the private key of a user, and uses it to sign the prepared transaction JSON.
 
-To add a signature to a transaction, use the `ed.signDataWithPrivateKey()` method of the {url_typedoc_crypto}[lisk-cryptography^] package.
+// To add a signature to a transaction, use the `ed.signDataWithPrivateKey()` method of the {url_typedoc_crypto}[lisk-cryptography^] package.
 
-Don't forget to specify the other required parameters for `ed.signDataWithPrivateKey()`, especially `chainID` should be the correct chain ID for the account, and the `tag` for multi-signature registrations should always be `LSK_RMSG_`.
+// Don't forget to specify the other required parameters for `ed.signDataWithPrivateKey()`, especially `chainID` should be the correct chain ID for the account, and the `tag` for multi-signature registrations should always be `LSK_RMSG_`.
 
-An example script can be found in the lisk-sdk-examples repository: {url_github_guides_multisig}[multisig.js^]
+// An example script can be found in the lisk-sdk-examples repository: {url_github_guides_multisig}[multisig.js^]
 
-When using this script for several members, the `paramsStr` variable should be updated to the params that were returned from running `node multisig.js PRIVATEKEY`.
-This way all required signatures will be added to the parameters one after another.
+// When using this script for several members, the `paramsStr` variable should be updated to the params that were returned from running `node multisig.js PRIVATEKEY`.
+// This way all required signatures will be added to the parameters one after another.
 
-When all required signatures are added, the parameters can be used to xref:{url_integrate_createtxs_apiclient}[create] a multi-signature registration transaction from the account that should be converted to a multi-signature account.
+// When all required signatures are added, the parameters can be used to xref:{url_integrate_createtxs_apiclient}[create] a multi-signature registration transaction from the account that should be converted to a multi-signature account.
 How to send the transaction is described in the next step.
 --
 =====
@@ -617,9 +630,43 @@ If the transaction was sent successfully, it will show a confirmation message.
 Lisk SDK::
 +
 --
-For a step-by-step guide on sending a transaction with Lisk SDK, please refer to the xref:{url_integrate_posttxs_apiclient}[How to post a transaction] guide.
+. Use the `txpool_postTransaction` endpoint to send the transaction to the node.
+The following code will also display the output of sending a transaction as well.
++
+[source,js]
+----
+    const result = await appClient.invoke('txpool_postTransaction', {
+        transaction: transactionObject.getBytes().toString('hex'),
+    });
+
+    console.log(`Result from transaction pool is: `,
+        result,
+    );
+
+    process.exit(0);
+})();
+----
++
+. Once the transaction becomes part of the blockchain, check the account status by invoking the xref:{url_getAuthAccount}[auth_getAuthAccount] endpoint.
++
+[source,js]
+----
+{
+   "nonce": "1",
+   "numberOfSignatures": 2,
+   "mandatoryKeys": [],
+   "optionalKeys": [
+      "c61cd862a8b7f73857b248a4358a7b35c29ca273d76ba3819e8c54b62801f16e",
+      "e98e8a6325730be6bf2644af83d5a0b004bb31c15858fedbd0ac2c1f89e2eece",
+      "fad413df3fe5e7961b81ee8dc168d13d7e1f5cccdd062ed77da77142c7d571f0"
+   ]
+}
+----
+
+// For a step-by-step guide on sending a transaction with Lisk SDK, please refer to the xref:{url_integrate_posttxs_apiclient}[How to post a transaction] guide.
 --
 =====
+The account is converted into a multi-signature account, and it is possible to <<how-to-create-a-multi-signature-transaction,create and sign multi-signature transactions>>.
 
 ////
 --
@@ -684,7 +731,7 @@ lisk-core transaction:send 0a05746f6b656e12087472616e7366657218022080df0a2a20ec1
 ----
 ////
 
-Once the transaction is included in a block, the account is converted into a multi-signature account, and it is possible to <<how-to-create-a-multi-signature-transaction,create and sign multi-signature transactions>>.
+
 
 == How to create a multi-signature transaction
 

@@ -17,7 +17,6 @@ Muhammad Talha <muhammad.talha@lightcurve.io>
 :url_typedoc_validator: {site-url}/lisk-sdk/v6/references/typedoc/modules/_liskhq_lisk_validator.html
 :url_typedoc_tx_schema: {site-url}/lisk-sdk/v6/references/typedoc/variables/_liskhq_lisk_chain.transactionSchema.html
 :url_typedoc_crypto_address: {site-url}/lisk-sdk/v6/references/typedoc/modules/_liskhq_lisk_cryptography.address.html
-
 :url_schemas: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/guides/tx-creation-and-signing/schemas.js
 :url_account: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/guides/tx-creation-and-signing/offline/account.json
 :url_create-offline: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/guides/tx-creation-and-signing/offline/create-offline.js
@@ -37,10 +36,9 @@ Muhammad Talha <muhammad.talha@lightcurve.io>
 :url_service: lisk-service::index.adoc
 :url_create_keys: {docs_sdk}client-cli.adoc#keyscreate
 
-
-
-
-
+// New
+:url_posting_transaction_node: integrate-blockchain/posting-transactions.adoc#posting-transaction-with-the-node-cli
+:url_posting_transaction_curl: integrate-blockchain/posting-transactions.adoc#http-api-example-with-curl
 :url_multiSig_guide: integrate-blockchain/multisignature-accounts-and-transactions.adoc
 
 This guide describes different methods of creating and signing a *multi-signature* transaction *offline*.
@@ -86,18 +84,22 @@ In case of accounts created through the same passphrase, always specify the `--k
 To also see the decoded transaction object on creation, add the `--json` parameter:
 ====
 
-[source,bash]
-----
-./bin/run transaction:create token transfer 100000000 --offline --chain-id 12345678 --nonce 2 --json --pretty --key-derivation-path 'm/44'/134'/0'
-----
+Create a transaction via the CLI, and add the `--no-signature` and the `--sender-public-key` flag.
+A multi-signature transaction requires individual signatures from the owners of the multi-signature account, hence whilst creating such a transaction, the aforementioned flags should be used.
+Since it is an offline transaction, add the `--offline` flag along with the `chainID` of the node and a `nonce` value.
 
 [source,bash]
 ----
-? Please enter: tokenID:  1234567800000000
-? Please enter: amount:  123456789
-? Please enter: recipientAddress:  lskarga53m9pbsw9vef6haqfq8rax8cj6zm3omjqj
-? Please enter: data:  Hello
-? Please enter passphrase:  [hidden]
+./bin/run transaction:create token transfer 1000000 --offline --chain-id 00000001 --nonce 3 --json --pretty -no-signature --sender-public-key e98e8a6325730be6bf2644af83d5a0b004bb31c15858fedbd0ac2c1f89e2eece --json --pretty
+----
+Define the transaction params:
+
+[source,bash]
+----
+? Please enter: tokenID:  0000000100000000
+? Please enter: amount:  20000000
+? Please enter: recipientAddress:  lskgmmkgyc67n5jrpf2trgtxtc4yjg7bpu992chba
+? Please enter: data:
 ----
 
 After all relevant information about the transaction is given, the transaction is created and returned in hex format:
@@ -106,7 +108,7 @@ After all relevant information about the transaction is given, the transaction i
 [source,json]
 ----
 {
-  "transaction": "0a05746f6b656e12087472616e7366657218022080c2d72f2a204104844db1ae405abd84617cd2b66bf80d69a7ece7fda2718553c74fc0b8ab58322c0a08123456780000000010959aef3a1a14ccbf95a0ad21b7768ade57735f55f2c85e3e2805220548656c6c6f3a4097d839e75030c1d169ea0eba1852439d6eda91fe4e8068e00f5671633925e8fc11bc21c36885a1705e5f20176ad3fea95d2b647223af1452cec11e58a0a80c03"
+  "transaction": "0a05746f6b656e12087472616e73666572180220c0843d2a20e98e8a6325730be6bf2644af83d5a0b004bb31c15858fedbd0ac2c1f89e2eece32290a0800000001000000001080a0b787e9051a14f94b4fc46a71d7c913d89cbf30cc698f3ee3120d2200"
 }
 ----
 
@@ -117,19 +119,16 @@ After all relevant information about the transaction is given, the transaction i
   "transaction": {
     "module": "token",
     "command": "transfer",
-    "fee": "100000000",
-    "nonce": "2",
-    "senderPublicKey": "4104844db1ae405abd84617cd2b66bf80d69a7ece7fda2718553c74fc0b8ab58",
-    "signatures": [
-      "97d839e75030c1d169ea0eba1852439d6eda91fe4e8068e00f5671633925e8fc11bc21c36885a1705e5f20176ad3fea95d2b647223af1452cec11e58a0a80c03"
-    ],
+    "fee": "1000000",
+    "nonce": "3",
+    "senderPublicKey": "e98e8a6325730be6bf2644af83d5a0b004bb31c15858fedbd0ac2c1f89e2eece",
+    "signatures": [],
     "params": {
-      "tokenID": "1234567800000000",
-      "amount": "123456789",
-      "recipientAddress": "lskarga53m9pbsw9vef6haqfq8rax8cj6zm3omjqj",
-      "data": "Hello"
-    },
-    "id": "5d32b5baae667e8aaf160a0415363decbe4b9579a956cd6a5e87a2ed97dce8b4"
+      "recipientAddress": "lskgmmkgyc67n5jrpf2trgtxtc4yjg7bpu992chba",
+      "amount": "20000000",
+      "tokenID": "0000000100000000",
+      "data": ""
+    }
   }
 }
 ----
@@ -149,42 +148,91 @@ Lastly, mention the `--offline` flag. You can also add the `--json` and `--prett
 .Sign transaction using keys
 [source,bash]
 ----
-./bin/run transaction:sign 0a05746f6b656e12087472616e7366657218022080c2d72f2a204104844db1ae405abd84617cd2b66bf80d69a7ece7fda2718553c74fc0b8ab58322c0a08123456780000000010959aef3a1a14ccbf95a0ad21b7768ade57735f55f2c85e3e2805220548656c6c6f3a4097d839e75030c1d169ea0eba1852439d6eda91fe4e8068e00f5671633925e8fc11bc21c36885a1705e5f20176ad3fea95d2b647223af1452cec11e58a0a80c03 --mandatory-keys "['7e9c8397f4bd15debd8b04d63805bc6522d93a13be943b0ee9282c9029801ac8', '875ea16e356059dd9995aec3ee28a90fa59fce046e481bf742a2f9a5b5bde430']" --optional-keys "[]" --key-derivation-path 'm/44'/134'/1' --json --chain-id 12345678 --offline --pretty
+./bin/run transaction:sign 0a05746f6b656e12087472616e73666572180220c0843d2a20e98e8a6325730be6bf2644af83d5a0b004bb31c15858fedbd0ac2c1f89e2eece32290a0800000001000000001080a0b787e9051a14f94b4fc46a71d7c913d89cbf30cc698f3ee3120d2200 --mandatory-keys e98e8a6325730be6bf2644af83d5a0b004bb31c15858fedbd0ac2c1f89e2eece c61cd862a8b7f73857b248a4358a7b35c29ca273d76ba3819e8c54b62801f16e --key-derivation-path "m/44'/134'/0'" --chain-id 00000001 --json --offline --pretty
 ----
 
-.Signed transaction contain two signatures, as required by the multi-signature account.
-[source,bash]
+The signatory will enter their passphrase:
+----
+? Please enter passphrase:  [hidden]
+----
+
+The node will respond with an updated transaction hash string and also the same transaction in JSON format as well.
+Notice the `signatures` array in the JSON formatted transaction, it contains placeholders for two signatures.
+The aforementioned `sign` transaction add a single signature as per the lexicographical order of the public keys.
+
+.Transaction with single signature
+[,json]
 ----
 {
-  "transaction": "0a05746f6b656e12087472616e7366657218022080c2d72f2a204104844db1ae405abd84617cd2b66bf80d69a7ece7fda2718553c74fc0b8ab58322c0a08123456780000000010959aef3a1a14ccbf95a0ad21b7768ade57735f55f2c85e3e2805220548656c6c6f3a4097d839e75030c1d169ea0eba1852439d6eda91fe4e8068e00f5671633925e8fc11bc21c36885a1705e5f20176ad3fea95d2b647223af1452cec11e58a0a80c033a00"
+  "transaction": "0a05746f6b656e12087472616e73666572180120c0843d2a20e98e8a6325730be6bf2644af83d5a0b004bb31c15858fedbd0ac2c1f89e2eece32270a0800000001000000001080dac4091a14f94b4fc46a71d7c913d89cbf30cc698f3ee3120d22003a003a405470fa9d437fe8e8e2936ed527d269e91f256ca0b5d2a62f863276c2329d02ad69309f3f6b29648a627577ebc8234cd61fb6e4fae757c98dcd2928ea7eec5f053a00"
 }
 {
   "transaction": {
     "module": "token",
     "command": "transfer",
-    "nonce": "2",
-    "fee": "100000000",
-    "senderPublicKey": "4104844db1ae405abd84617cd2b66bf80d69a7ece7fda2718553c74fc0b8ab58",
+    "nonce": "1",
+    "fee": "1000000",
+    "senderPublicKey": "e98e8a6325730be6bf2644af83d5a0b004bb31c15858fedbd0ac2c1f89e2eece",
     "params": {
-      "tokenID": "1234567800000000",
-      "amount": "123456789",
-      "recipientAddress": "lskarga53m9pbsw9vef6haqfq8rax8cj6zm3omjqj",
-      "data": "Hello"
+      "tokenID": "0000000100000000",
+      "amount": "20000000",
+      "recipientAddress": "lskgmmkgyc67n5jrpf2trgtxtc4yjg7bpu992chba",
+      "data": ""
     },
     "signatures": [
-      "97d839e75030c1d169ea0eba1852439d6eda91fe4e8068e00f5671633925e8fc11bc21c36885a1705e5f20176ad3fea95d2b647223af1452cec11e58a0a80c03",
-      ""
+      "",
+      "5470fa9d437fe8e8e2936ed527d269e91f256ca0b5d2a62f863276c2329d02ad69309f3f6b29648a627577ebc8234cd61fb6e4fae757c98dcd2928ea7eec5f05"
     ],
-    "id": "f685b12ae40754367721d7a47449201104385afe985afe0935e96ad3e9df506f"
+    "id": "2d90fe6566f551a63f11861f7a70d3e0b6ee473f4d4c04364783fb3193bdbd2a"
   }
 }
 ----
+Take the transaction hash above and send it to the second signatory. 
+The second signatory should repeat the same process with two changes, update the transaction hash with the recently signed transaction, and update the key derivation path to match the second signatory's account, like this:
+
+[source,bash]
+----
+./bin/run transaction:sign 0a05746f6b656e12087472616e73666572180120c0843d2a20e98e8a6325730be6bf2644af83d5a0b004bb31c15858fedbd0ac2c1f89e2eece32270a0800000001000000001080dac4091a14f94b4fc46a71d7c913d89cbf30cc698f3ee3120d22003a003a405470fa9d437fe8e8e2936ed527d269e91f256ca0b5d2a62f863276c2329d02ad69309f3f6b29648a627577ebc8234cd61fb6e4fae757c98dcd2928ea7eec5f053a00 --mandatory-keys e98e8a6325730be6bf2644af83d5a0b004bb31c15858fedbd0ac2c1f89e2eece c61cd862a8b7f73857b248a4358a7b35c29ca273d76ba3819e8c54b62801f16e --key-derivation-path "m/44'/134'/1'" --chain-id 00000001 --json --offline --pretty
+----
+
+Enter the account's passphrase:
+----
+? Please enter passphrase:  [hidden]
+----
+.Required numbers of signatures achieved
+[,json]
+----
+{
+  "transaction": "0a05746f6b656e12087472616e73666572180120c0843d2a20e98e8a6325730be6bf2644af83d5a0b004bb31c15858fedbd0ac2c1f89e2eece32270a0800000001000000001080dac4091a14f94b4fc46a71d7c913d89cbf30cc698f3ee3120d22003a40422c376f6d1542e14c1f6fb993af1d6b1dd56506ce5da16835bf1194922d1aeaaa9424ae4fe39f2683a9f4eba297337b083e76d96293b1191ca4ee956f6f23033a405470fa9d437fe8e8e2936ed527d269e91f256ca0b5d2a62f863276c2329d02ad69309f3f6b29648a627577ebc8234cd61fb6e4fae757c98dcd2928ea7eec5f053a00"
+}
+{
+  "transaction": {
+    "module": "token",
+    "command": "transfer",
+    "nonce": "1",
+    "fee": "1000000",
+    "senderPublicKey": "e98e8a6325730be6bf2644af83d5a0b004bb31c15858fedbd0ac2c1f89e2eece",
+    "params": {
+      "tokenID": "0000000100000000",
+      "amount": "20000000",
+      "recipientAddress": "lskgmmkgyc67n5jrpf2trgtxtc4yjg7bpu992chba",
+      "data": ""
+    },
+    "signatures": [
+      "422c376f6d1542e14c1f6fb993af1d6b1dd56506ce5da16835bf1194922d1aeaaa9424ae4fe39f2683a9f4eba297337b083e76d96293b1191ca4ee956f6f2303",
+      "5470fa9d437fe8e8e2936ed527d269e91f256ca0b5d2a62f863276c2329d02ad69309f3f6b29648a627577ebc8234cd61fb6e4fae757c98dcd2928ea7eec5f05"
+    ],
+    "id": "9ce9fc9c1bd8ba72f611ad7e8282586e18f495a760add24097187f4e405b532e"
+  }
+}
+----
+The transaction has the required number of signatures and is ready to be dry-run or sent to the node, which can only happen when the node is online.
+Once online, you can post the transaction to the node by either using the xref:{url_posting_transaction_node}[transaction:send] command or xref:{url_posting_transaction_curl}[txpool_postTransaction] endpoint.
+Once the transaction is executed, check the account balance of the sender (the multi-signature account) and the receiver.
+The balance of both accounts should have changed.
 
 
-
-
-
-== Option 2: Creating transactions offline with Lisk Elements
+== Option 2: Creating transactions offline with Lisk SDK
 
 [NOTE]
 ====

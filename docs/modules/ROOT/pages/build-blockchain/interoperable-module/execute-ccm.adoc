@@ -34,8 +34,8 @@ In the end, the updated module should look similar to the example below:
 /* eslint-disable class-methods-use-this */
 // Replace BaseModule with BaseInteroperableModule
 import {
-	validator,
-	BaseInteroperableModule,
+    validator,
+    BaseInteroperableModule,
     // ...
 } from 'lisk-sdk';
 // Import the newly created cc_method
@@ -46,12 +46,12 @@ import { HelloInteroperableMethod } from './cc_method';
 
 export class HelloModule extends BaseInteroperableModule {
        public endpoint = new HelloEndpoint(this.stores, this.offchainStores);
-	public method = new HelloMethod(this.stores, this.events);
-	public commands = [new CreateHelloCommand(this.stores, this.events)];
+    public method = new HelloMethod(this.stores, this.events);
+    public commands = [new CreateHelloCommand(this.stores, this.events)];
        // Assign HelloInteroperableMethod to crossChainMethod
-	public crossChainMethod = new HelloInteroperableMethod(this.stores, this.events);
+    public crossChainMethod = new HelloInteroperableMethod(this.stores, this.events);
 
-	// ...
+    // ...
 }
 ----
 =====
@@ -70,43 +70,43 @@ Add the schema and the corresponding interface to the `schemas.ts` file inside t
  */
 export interface CCReactMessageParams {
     /**
-	 * A number indicating the type of the reaction.
-	 */
-	reactionType: number;
+     * A number indicating the type of the reaction.
+     */
+    reactionType: number;
     /**
      * ID of the message.
      */
-	helloMessageID: string;
+    helloMessageID: string;
     /** Optional field for data / messages. */
-	data: string;
+    data: string;
 }
 
 /**
  * Schema for the parameters of the reactCrossChain CCM
  */
 export const CCReactMessageParamsSchema = {
-	/** The unique identifier of the schema. */
-	$id: '/lisk/hello/ccReactParams',
-	type: 'object',
-	/** The required parameters for the command. */
-	required: ['reactionType', 'helloMessageID', 'data'],
-	/** A list describing the available parameters for the command. */
-	properties: {
-		reactionType: {
-			dataType: 'uint32',
-			fieldNumber: 1,
-		},
-		helloMessageID: {
-			dataType: 'string',
-			fieldNumber: 2,
-		},
-		data: {
-			dataType: 'string',
-			fieldNumber: 3,
-			minLength: 0,
-			maxLength: 64,
-		},
-	},
+    /** The unique identifier of the schema. */
+    $id: '/lisk/hello/ccReactParams',
+    type: 'object',
+    /** The required parameters for the command. */
+    required: ['reactionType', 'helloMessageID', 'data'],
+    /** A list describing the available parameters for the command. */
+    properties: {
+        reactionType: {
+            dataType: 'uint32',
+            fieldNumber: 1,
+        },
+        helloMessageID: {
+            dataType: 'string',
+            fieldNumber: 2,
+        },
+        data: {
+            dataType: 'string',
+            fieldNumber: 3,
+            minLength: 0,
+            maxLength: 64,
+        },
+    },
 };
 ----
 
@@ -129,34 +129,34 @@ Create a new store to store the reactions.
 import { BaseStore } from 'lisk-sdk';
 
 export interface ReactionStoreData {
-	reactions: {
-		like: Buffer[];
-	};
+    reactions: {
+        like: Buffer[];
+    };
 }
 
 export const reactionStoreSchema = {
-	$id: '/hello/reaction',
-	type: 'object',
-	required: ['reactions'],
-	properties: {
-		reactions: {
-			type: 'object',
-			fieldNumber: 1,
-			properties: {
-				like: {
-					type: 'array',
-					fieldNumber: 1,
-					items: {
-						dataType: 'bytes',
-					},
-				},
-			},
-		},
-	},
+    $id: '/hello/reaction',
+    type: 'object',
+    required: ['reactions'],
+    properties: {
+        reactions: {
+            type: 'object',
+            fieldNumber: 1,
+            properties: {
+                like: {
+                    type: 'array',
+                    fieldNumber: 1,
+                    items: {
+                        dataType: 'bytes',
+                    },
+                },
+            },
+        },
+    },
 };
 
 export class ReactionStore extends BaseStore<ReactionStoreData> {
-	public schema = reactionStoreSchema;
+    public schema = reactionStoreSchema;
 }
 ----
 
@@ -192,11 +192,11 @@ import { ReactionStore, ReactionStoreData } from '../stores/reaction';
 import { MessageStore } from '../stores/message';
 
 export class ReactCCCommand extends BaseCCCommand {
-	public schema = CCReactMessageParamsSchema;
+    public schema = CCReactMessageParamsSchema;
 
-	public get name(): string {
-		return CROSS_CHAIN_COMMAND_NAME_REACT;
-	}
+    public get name(): string {
+        return CROSS_CHAIN_COMMAND_NAME_REACT;
+    }
 }
 ----
 
@@ -244,52 +244,52 @@ The <<create-a-store-for-reactions, Reaction Store>> is used to save the reactio
 [source,typescript]
 ----
 public async execute(ctx: CrossChainMessageContext): Promise<void> {
-		const { ccm, logger } = ctx;
-		logger.info('Executing React CCM');
-		// const { sendingChainID, status, receivingChainID } = ccm;
-		// Decode the provided CCM parameters
-		const params = codec.decode<CCReactMessageParams>(CCReactMessageParamsSchema, ccm.params);
-		logger.info(params, 'parameters');
-		// Get helloMessageID and reactionType from the parameters
-		const { helloMessageID, reactionType } = params;
-		const reactionSubstore = this.stores.get(ReactionStore);
-		const messageCreatorAddress = cryptography.address.getAddressFromLisk32Address(helloMessageID);
-		let msgReactions: ReactionStoreData;
+        const { ccm, logger } = ctx;
+        logger.info('Executing React CCM');
+        // const { sendingChainID, status, receivingChainID } = ccm;
+        // Decode the provided CCM parameters
+        const params = codec.decode<CCReactMessageParams>(CCReactMessageParamsSchema, ccm.params);
+        logger.info(params, 'parameters');
+        // Get helloMessageID and reactionType from the parameters
+        const { helloMessageID, reactionType } = params;
+        const reactionSubstore = this.stores.get(ReactionStore);
+        const messageCreatorAddress = cryptography.address.getAddressFromLisk32Address(helloMessageID);
+        let msgReactions: ReactionStoreData;
 
-		// Get existing reactions for a Hello message, or initialize an empty reaction object, if none exists,yet.
-		try {
-			msgReactions = await reactionSubstore.get(ctx, messageCreatorAddress);
-		} catch (error) {
-			if (!(error instanceof db.NotFoundError)) {
-				logger.info({ helloMessageID, crossChainCommand: this.name }, (error as Error).message);
-				logger.error({ error }, 'Error when getting the reaction substore');
-				throw error;
-			}
-			logger.info(
-				{ helloMessageID, crossChainCommand: this.name },
-				`No entry exists for given helloMessageID ${helloMessageID}. Creating a default entry.`,
-			);
-			msgReactions = { reactions: { like: [] } };
-		}
+        // Get existing reactions for a Hello message, or initialize an empty reaction object, if none exists,yet.
+        try {
+            msgReactions = await reactionSubstore.get(ctx, messageCreatorAddress);
+        } catch (error) {
+            if (!(error instanceof db.NotFoundError)) {
+                logger.info({ helloMessageID, crossChainCommand: this.name }, (error as Error).message);
+                logger.error({ error }, 'Error when getting the reaction substore');
+                throw error;
+            }
+            logger.info(
+                { helloMessageID, crossChainCommand: this.name },
+                `No entry exists for given helloMessageID ${helloMessageID}. Creating a default entry.`,
+            );
+            msgReactions = { reactions: { like: [] } };
+        }
 
-		// Check if the reactions is a like
-		if (reactionType === 0) {
-			const hasLiked = msgReactions.reactions.like.indexOf(ctx.transaction.senderAddress);
-			// If the sender has already liked the message
-			if (hasLiked > -1) {
-				// Remove the sender address from the likes for the message
-				msgReactions.reactions.like = msgReactions.reactions.like.splice(hasLiked, 1);
-			// If the sender has not liked the message yet
-			} else {
-				// Add the sender address to the likes of the message
-				msgReactions.reactions.like.push(ctx.transaction.senderAddress);
-			}
-		} else {
-			logger.error({ reactionType }, 'invalid reaction type');
-		}
-		// Update the reaction store with the reactions for the specified Hello message
-		await reactionSubstore.set(ctx, messageCreatorAddress, msgReactions);
-	}
+        // Check if the reactions is a like
+        if (reactionType === 0) {
+            const hasLiked = msgReactions.reactions.like.indexOf(ctx.transaction.senderAddress);
+            // If the sender has already liked the message
+            if (hasLiked > -1) {
+                // Remove the sender address from the likes for the message
+                msgReactions.reactions.like = msgReactions.reactions.like.splice(hasLiked, 1);
+            // If the sender has not liked the message yet
+            } else {
+                // Add the sender address to the likes of the message
+                msgReactions.reactions.like.push(ctx.transaction.senderAddress);
+            }
+        } else {
+            logger.error({ reactionType }, 'invalid reaction type');
+        }
+        // Update the reaction store with the reactions for the specified Hello message
+        await reactionSubstore.set(ctx, messageCreatorAddress, msgReactions);
+    }
 ----
 
 == Final updates of the module and app.ts
@@ -308,28 +308,28 @@ import { ReactInteroperableMethod } from './cc_method';
 import { InteroperabilityMethod } from './types';
 
 export class ReactModule extends BaseInteroperableModule {
-	public endpoint = new ReactEndpoint(this.stores, this.offchainStores);
-	public method = new ReactMethod(this.stores, this.events);
-	public commands = [new ReactCrossChainCommand(this.stores, this.events)];
-	public crossChainMethod = new ReactInteroperableMethod(this.stores, this.events);
+    public endpoint = new ReactEndpoint(this.stores, this.offchainStores);
+    public method = new ReactMethod(this.stores, this.events);
+    public commands = [new ReactCrossChainCommand(this.stores, this.events)];
+    public crossChainMethod = new ReactInteroperableMethod(this.stores, this.events);
     // Create a private member to store the methods of the interoperability module
-	private _interoperabilityMethod!: InteroperabilityMethod;
+    private _interoperabilityMethod!: InteroperabilityMethod;
 
-	// ...
+    // ...
 
     // Assign the methods of the interoperability module to _interoperabilityMethod
-	public addDependencies(interoperabilityMethod: InteroperabilityMethod) {
-		this._interoperabilityMethod = interoperabilityMethod;
-	}
+    public addDependencies(interoperabilityMethod: InteroperabilityMethod) {
+        this._interoperabilityMethod = interoperabilityMethod;
+    }
 
-	// Lifecycle hooks
-	// eslint-disable-next-line @typescript-eslint/require-await
-	public async init(_args: ModuleInitArgs) {
+    // Lifecycle hooks
+    // eslint-disable-next-line @typescript-eslint/require-await
+    public async init(_args: ModuleInitArgs) {
         // Pass the methods of the interoperability module to the reactCrossChain command
-		this.commands[0].init({
-			interoperabilityMethod: this._interoperabilityMethod,
-		});
-	}
+        this.commands[0].init({
+            interoperabilityMethod: this._interoperabilityMethod,
+        });
+    }
 }
 ----
 
@@ -350,16 +350,16 @@ import { registerPlugins } from './plugins';
 import { ReactModule } from './modules/react/module';
 
 export const getApplication = (config: PartialApplicationConfig): Application => {
-	const { app, method } = Application.defaultApplication(config);
-	const reactModule = new ReactModule();
-	app.registerModule(reactModule);
-	app.registerInteroperableModule(reactModule);
-	reactModule.addDependencies(method.interoperability);
+    const { app, method } = Application.defaultApplication(config);
+    const reactModule = new ReactModule();
+    app.registerModule(reactModule);
+    app.registerInteroperableModule(reactModule);
+    reactModule.addDependencies(method.interoperability);
 
-	registerModules(app);
-	registerPlugins(app);
+    registerModules(app);
+    registerPlugins(app);
 
-	return app;
+    return app;
 };
 ----
 

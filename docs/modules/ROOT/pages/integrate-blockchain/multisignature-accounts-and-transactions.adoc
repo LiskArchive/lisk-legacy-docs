@@ -23,6 +23,7 @@
 :url_accounts: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/guides/register-multi-sig-accounts/accounts.json
 :url_account_registration_script: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/guides/register-multi-sig-accounts/register-multiSig-account.js
 :url_multiSig_reg_directory: https://github.com/LiskHQ/lisk-sdk-examples/tree/development/guides/register-multi-sig-accounts
+:url_multiSigtx_creation_signing_directory: https://github.com/LiskHQ/lisk-sdk-examples/tree/development/guides/multiSigtx-creation-signing
 
 
 ====
@@ -269,7 +270,7 @@ They will be replaced automatically with the correct signatures, once the member
 Lisk SDK::
 +
 --
-Let's prepare a script which takes the accounts data and uses it to create and later sign a `registerMultisignature` transaction.
+Let's prepare a script that takes the accounts' data and uses it to create and later sign a `registerMultisignature` transaction.
 
 NOTE: The {url_account_registration_script}[register-multiSig-account.js^] script can be found in the {url_multiSig_reg_directory}[register-multi-sig-accounts^] folder.
 
@@ -294,7 +295,7 @@ const RPC_ENDPOINT = 'ws://127.0.0.1:7887/rpc-ws';
     const chainID = Buffer.from('00000001', 'hex');
 ----
 +
-. Add details such as sender of the transaction, all the optional keys and mandatory keys in sorted form.
+. Add details such as the sender of the transaction, all the optional keys, and mandatory keys in sorted form.
 +
 [source,js]
 ----
@@ -309,7 +310,7 @@ const RPC_ENDPOINT = 'ws://127.0.0.1:7887/rpc-ws';
     const sortedOptionalKeys = [Buffer.from(optionalAccount1.publicKey, 'hex'), Buffer.from(optionalAccount2.publicKey, 'hex'), Buffer.from(optionalAccount3.publicKey, 'hex')].sort((a, b) => a.compare(b));
 ----
 +
-. Retrieve `nonce` of the sender account from the xref:{url_getAuthAccount}[auth_getAuthAccount], and create an `unSignedData` object.
+. Retrieve the `nonce` of the sender account from the xref:{url_getAuthAccount}[auth_getAuthAccount], and create an `unSignedData` object.
 +
 [source,js]
 ----
@@ -533,7 +534,7 @@ Now either send the JSON back to the person who shared the JSON with you, or for
 Lisk SDK::
 +
 --
-. Use each optional account's details to add signature for each account.
+. Use each optional account's details to add a signature for each account.
 To add a signature to a transaction, use the `ed.signDataWithPrivateKey()` method of the {url_typedoc_crypto}[lisk-cryptography^] package.
 This package is also part of the `lisk-sdk` package.
 +
@@ -563,7 +564,7 @@ This object will be added to the transaction in the next step.
     console.log('Transaction params in script-------->', transactionParams);
 ----
 +
-. Using the `Transaction` class, initialize a new object which takes all the details mentioned earlier as part of the registration transaction.
+. Using the `Transaction` class, initialize a new object that takes all the details mentioned earlier as part of the registration transaction.
 +
 [source,js]
 ----
@@ -1070,10 +1071,10 @@ image:integrate-blockchain/multisig/19-confirmation.png[]
 Node CLI::
 +
 --
-The transaction:sign command is used to sign a multi-sig transaction. 
+The `transaction:sign` command is used to sign a multi-signature transaction. 
 Paste the transaction hash retrieved in the previous step.
 Since the multi-signature account set up in this guide requires two signatures, two public keys should be mentioned after the `--optional-keys` flag.
-Also mention the `--key-derivation-path` of the signatory account.
+Also, mention the `--key-derivation-path` of the signatory account.
 
 ----
 lisk-core transaction:sign 0a05746f6b656e12087472616e73666572180120c0843d2a20e98e8a6325730be6bf2644af83d5a0b004bb31c15858fedbd0ac2c1f89e2eece32270a0800000001000000001080dac4091a14f94b4fc46a71d7c913d89cbf30cc698f3ee3120d2200 --optional-keys c61cd862a8b7f73857b248a4358a7b35c29ca273d76ba3819e8c54b62801f16e e98e8a6325730be6bf2644af83d5a0b004bb31c15858fedbd0ac2c1f89e2eece --key-derivation-path "m/44'/134'/0'" --json --pretty
@@ -1085,11 +1086,11 @@ Enter the account's passphrase:
 ? Please enter passphrase:  [hidden]
 ----
 
-The node will respond with an updated transaction hash string and also the same transaction in JSON format as well.
+The node will respond with an updated transaction hash string and the same transaction in JSON format as well.
 Notice the `signatures` array in the JSON formatted transaction, it contains placeholders for three signatures.
-The aforementioned `sign` transaction add a single signature as per the lexicographical order of the public keys.
+The aforementioned `sign` transaction adds a single signature as per the lexicographical order of the public keys.
 
-.Transaction with single signature
+.Transaction with a single signature
 [,json]
 ----
 {
@@ -1167,10 +1168,58 @@ The balance of both accounts should have changed.
 Lisk SDK::
 +
 --
-To collect the signature for a multi-signature transaction, run the create-multiSig-transaction.js file.
-
-The main thing that needs to be updated in the script are the `module`, `command`, and `params` properties of the transaction.
-
-Once all required signatures for the respective multi-sig transaction are collected, it can be sent like a normal transaction, as described here: xref:{url_integrate_posttxs_apiclient}[WS & IPC API example with API client].
+. To collect the signature for a multi-signature transaction, the first signatory should run the `create-multiSig-transaction.js` file by passing their private key:
++
+[,bash]
+----
+node create-multiSig-transaction.js df4f52c787f9cb993384c42c2c146bd1d4d433790d1e175baa03c484543bf760c61cd862a8b7f73857b248a4358a7b35c29ca273d76ba3819e8c54b62801f16ey
+----
++
+. Confirm signing the transaction by passing `yes` or `y`.
++
+----
+Do you want to sign the transaction? 'yes'
+----
++
+. Transaction signed successfully by the first signatory.
+The CLI will display the following message:
++
+----
+The file is written successfully
+Please now sign the transaction with a different Private Key!
+----
++
+. Check the `signedTx.json` file now, it will have a transaction object with a single signature.
++
+.signedTx.json
+[,json]
+----
+{"module":"token","command":"transfer","params":{"tokenID":{"type":"Buffer","data":[0,0,0,1,0,0,0,0]},"recipientAddress":{"type":"Buffer","data":[249,75,79,196,106,113,215,201,19,216,156,191,48,204,105,143,62,227,18,13]},"amount":"20000000","data":"Hello!"},"nonce":"3","fee":"1000000","senderPublicKey":"e98e8a6325730be6bf2644af83d5a0b004bb31c15858fedbd0ac2c1f89e2eece","signatures":["ab75da7fd2259685f612fdb2524857ab41e41b72ba12d3261ff8d0f6869ee07c658455c68a791b71fefa5699e19c986cce3c87e752fc4271c3fe9c62071e9c0d","",""],"id":"9ed3ae5e7c5270fc9f8aaa6043c63d24c5da21cb501c6d4a7c399b2bd2cdddd8"}
+----
++
+. Pass the {url_multiSigtx_creation_signing_directory}[multiSigtx-creation-signing^] folder to the other signatory so that they can use the same script and transaction with a single signature to sign the transaction.
++
+. The second signatory will repeat the same process by passing their private key whilst running the script.
++
+[,bash]
+----
+node create-multiSig-transaction.js 5f6b8fab4419d78e7e5620c03dd4c54dbf82e14f7b18e68b983c1c1884252dd8e98e8a6325730be6bf2644af83d5a0b004bb31c15858fedbd0ac2c1f89e2eecey
+----
++
+. Confirm signing the transaction by passing `yes` or `y`.
++
+----
+Do you want to sign the transaction? 'yes'
+----
++
+. After signing the transaction again, the script will output the signed transaction hash, which can be used to dry run or post the transaction to the node.
++
+.Signed transaction HEX string, ready to be dry-run or sent to the node
+----
+0a05746f6b656e12087472616e73666572180320c0843d2a20e98e8a6325730be6bf2644af83d5a0b004bb31c15858fedbd0ac2c1f89e2eece322d0a0800000001000000001080dac4091a14f94b4fc46a71d7c913d89cbf30cc698f3ee3120d220648656c6c6f213a40ab75da7fd2259685f612fdb2524857ab41e41b72ba12d3261ff8d0f6869ee07c658455c68a791b71fefa5699e19c986cce3c87e752fc4271c3fe9c62071e9c0d3a402db446f6d9e0d0dfb07fc8fd4e3fc433c6daff5245fe56af35528cb8efc05db0fd9c0f7cec324fc28e067850ea8eda13b96cb27398a24484ed639b8c5fdb0d083a00
+----
+. Post the transaction to the node by either using the xref:{url_posting_transaction_node}[transaction:send] command or xref:{url_posting_transaction_curl}[txpool_postTransaction] endpoint.
+Once the transaction is executed, check the account balance of the sender (the multi-signature account) and the receiver.
+The balance of both accounts should have changed.
 --
 =====

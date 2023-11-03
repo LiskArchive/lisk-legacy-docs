@@ -804,7 +804,234 @@ Now copy the transaction hex as it will be used in the signing the multi-signatu
 Lisk SDK::
 +
 --
-Create a transaction like normally for example with the API client, as explained here: xref:{url_integrate_createtxs_apiclient}[How to create a transaction via API client].
+To create a multi-signature transaction an unsigned transaction object is created first without any signatures, similar to how it is done with the CLI.
+Then, the transaction is signed individually by the required signatories and later it can be sent to the node for execution.
+A sample script is available in the lisk-sdk-examples repository where a token transfer transaction is first created and signed by a signatory.
+This signed transaction can be then passed to the other signatory and a different private key can be used to sign the transaction again.
+To create a transaction, do the following steps:
+
+. Create an `accounts.json` file and add the following accounts into it.
+The accounts are the same ones that we have used earlier in the registration of a multi-signature account.
++
+.accounts.json
+[,json]
+----
+{
+    "accounts": [
+        {
+            "address": "lsk6oqambp2mgqvqxxxm5aohs6s6329sgwftax2rf",
+            "keyPath": "m/44'/134'/0'",
+            "publicKey": "e98e8a6325730be6bf2644af83d5a0b004bb31c15858fedbd0ac2c1f89e2eece"
+        },
+        {
+            "address": "lskgmmkgyc67n5jrpf2trgtxtc4yjg7bpu992chba",
+            "keyPath": "m/44'/134'/1'",
+            "publicKey": "c61cd862a8b7f73857b248a4358a7b35c29ca273d76ba3819e8c54b62801f16e"
+        },
+        {
+            "address": "lskrw8gmg6fgdkkgj48q364quzkoqzya479x7rc3d",
+            "keyPath": "m/44'/134'/2'",
+            "publicKey": "fad413df3fe5e7961b81ee8dc168d13d7e1f5cccdd062ed77da77142c7d571f0"
+        }
+    ]
+}
+----
++
+. Create a `create-multiSig-transaction.js` file and import the necessary libraries to it.
++
+.create-multiSig-transaction.js
+[,js]
+----
+const { apiClient, cryptography, codec, Transaction, transactions } = require('lisk-sdk');
+const { transferParamsSchema } = require('lisk-framework/dist-node/modules/token/schemas');
+const { accounts } = require('./accounts.json');
+const signedTX = require('./signedTx.json');
+const readline = require("readline");
+const fs = require("fs");
+----
++
+. Define all the variables such as chain ID, optional accounts, mandatory accounts, transaction sender, nonce, and the combination of both mandatory and optional keys.
+The credentials defined below should match the multi-signature account.
++
+[,js]
+----
+const RPC_ENDPOINT = 'ws://127.0.0.1:7887/rpc-ws';
+let privateKeyStr;
+let existingSignedTx;
+const chainID = Buffer.from('00000001', 'hex');
+const optionalAccount1 = accounts[0];
+const optionalAccount2 = accounts[1];
+const optionalAccount3 = accounts[2];
+const sortedOptionalKeys = [Buffer.from(optionalAccount1.publicKey, 'hex'), Buffer.from(optionalAccount2.publicKey, 'hex'), Buffer.from(optionalAccount3.publicKey, 'hex')].sort((a, b) => a.compare(b));
+const sortedMandatoryKeys = [];
+const senderKeyInfo = accounts[0];
+const latestNonce = BigInt(3);
+
+const keys = {
+    mandatoryKeys: sortedMandatoryKeys,
+    optionalKeys: sortedOptionalKeys,
+};
+----
++
+. Prepare a tokenTransferParams object and encode it using the `transferParamsSchema`.
++
+[,js]
+----
+const tokenTransferParams = {
+    tokenID: Buffer.from('0000000100000000', 'hex'),
+    recipientAddress: cryptography.address.getAddressFromLisk32Address(accounts[1].address),
+    amount: BigInt(20000000),
+    data: 'Hello!',
+};
+
+const encodedTransferParams = codec.encode(transferParamsSchema, tokenTransferParams);
+----
++
+. Create an un-signed transaction by mentioning the values of all the fields except for the `signatures` property.
+For now, assign an empty array to it.
++
+[,js]
+----
+const unSignedTx = new Transaction({
+    module: 'token',
+    command: 'transfer',
+    nonce: latestNonce,
+    senderPublicKey: Buffer.from(senderKeyInfo.publicKey, 'hex'),
+    fee: BigInt(1000000),
+    params: tokenTransferParams,
+    signatures: [],
+});
+----
++
+. Create a `readline` interface to input private keys from the signatories.
++
+[,js]
+----
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
+
+if (process.argv.length < 3) {
+    console.log("Please provide all the required parameter when executing the script:");
+    console.log("node create-multiSig-transaction-offline.js PRIVATEKEY");
+    process.exit(1);
+}
+----
++
+. Create a separate file: `signedTx.json` and add two curly brackets `{}` in it to signify that it is an empty JSON file.
+Now, come back to the `create-multiSig-transaction.js` file and add the logic to read data from the `signedTx.json` file.
++
+[,js]
+----
+fs.readFile('signedTx.json', (err, data) => {
+    if (err) {
+        existingSignedTx = '';
+    }
+    else {
+        existingSignedTx = data.byteLength;
+    }
+})
+----
++
+. We would like the user to be asked to confirm the private key that they will enter whilst running the script so let's add a `readline` question.
++
+[,js]
+----
+rl.question("Do you want to sign the transaction? 'yes'", function (confirmed) {
+    confirmed = confirmed.toLowerCase();
+    if (confirmed == "yes" || confirmed == "y") {
+        process.argv.forEach(function (val, index) {
+            if (index === 2) {
+                privateKeyStr = val;
+            }
+        });
+----
++
+. Since our `signedTx.json` file is empty at this moment, we want the following logic to only run when there are no signatures for a transaction.
++
+[,js]
+----
+        if (existingSignedTx == 2) {
+
+            // Take all the variables defined earlier and sign the transaction with the provided private key
+            let txWithOneSig = transactions.signMultiSignatureTransaction(unSignedTx, chainID, Buffer.from(privateKeyStr, 'hex'), keys, transferParamsSchema);
+
+            // Convert the signed transaction object into a JSON object
+            txWithOneSig['senderPublicKey'] = unSignedTx.senderPublicKey.toString('hex');
+            txWithOneSig['signatures'][0] = unSignedTx.signatures[0].toString('hex');
+            txWithOneSig['signatures'][1] = unSignedTx.signatures[1].toString('hex');
+            txWithOneSig['signatures'][2] = unSignedTx.signatures[2].toString('hex');
+            // txWithOneSig['params'] = unSignedTx.params.toString('hex');
+            txWithOneSig['id'] = txWithOneSig.id.toString('hex');
+            try {
+                // Write the JSON object to the 'signedTx.json' file so that it can be shared with the other signatory.
+                fs.writeFileSync('signedTx.json', JSON.stringify(txWithOneSig, (_, v) => typeof v === 'bigint' ? v.toString() : v));
+                console.log('File written successfully');
+                console.log("Please now sign the transaction with a different Private Key!")
+            } catch (err) {
+                console.error('Error writing the file:', err);
+            }
+            process.exit(0);
+        }
+----
++
+. The logic for retrieving the first signature is complete.
+Let's add the code for the second signatory.
++
+[,js]
+----
+        else {
+            // Convert the JSON object read on the 7th step back to the Lisk accepted format, for the signing process.
+            signedTX['nonce'] = BigInt(signedTX.nonce);
+            signedTX['fee'] = BigInt(signedTX.fee);
+            signedTX['senderPublicKey'] = Buffer.from(signedTX.senderPublicKey, 'hex');
+            signedTX['signatures'][0] = Buffer.from(signedTX.signatures[0], 'hex');
+            signedTX['signatures'][1] = Buffer.from(signedTX.signatures[1], 'hex');
+            signedTX['signatures'][2] = Buffer.from(signedTX.signatures[2], 'hex');
+            signedTX['params']['tokenID'] = unSignedTx.params['tokenID'];
+            signedTX['params']['recipientAddress'] = unSignedTx.params['recipientAddress'];
+            signedTX['params']['amount'] = unSignedTx.params['amount'];
+            signedTX['id'] = Buffer.from(signedTX.id, 'hex');
+
+            // Sign the transaction using the second signatory's private key
+            transactions.signMultiSignatureTransaction(signedTX, chainID, Buffer.from(privateKeyStr, 'hex'), keys, transferParamsSchema);
+            const fullySignedTx = new Transaction(signedTX)
+            fullySignedTx.params = encodedTransferParams
+
+            // Get the hex string of the transaction which will be used in either dry running or sending the transaction to the node
+            const fullySignedTxHex = fullySignedTx.getBytes().toString('hex');
+            console.log(fullySignedTxHex);
+
+            // Un-comment either function call to run the desired function
+            // dryRun(fullySignedTxHex);
+            // postTransaction(fullySignedTxHex);
+            process.exit(0);
+        }
+----
++
+. Define the functions for dry running or posting the transaction:
++
+[,js]
+----
+async function dryRun(fullySignedTxHex) {
+    const appClient = await apiClient.createWSClient(RPC_ENDPOINT);
+    const result = await appClient.invoke('txpool_dryRunTransaction', {
+        transaction: fullySignedTxHex,
+    });
+    console.log('Result from dry running the transaction is: ', result);
+}
+async function postTransaction(fullySignedTxHex) {
+    const appClient = await apiClient.createWSClient(RPC_ENDPOINT);
+    const result = await appClient.invoke('txpool_postTransaction', {
+        transaction: fullySignedTxHex,
+    });
+    console.log('Result from posting the transaction is: ', result);
+    process.exit(0);
+}
+----
+
+The script is ready and it can be used to either dry run or send the transaction to the node after properly signing the token transfer transaction.
 --
 =====
 
@@ -940,7 +1167,7 @@ The balance of both accounts should have changed.
 Lisk SDK::
 +
 --
-To collect all required signatures for a transaction from a multi-signature account, you can use a similar script as the {url_github_guides_multisig}[multisig.js^], which was used in step <<collecting-signatures>> above.
+To collect the signature for a multi-signature transaction, run the create-multiSig-transaction.js file.
 
 The main thing that needs to be updated in the script are the `module`, `command`, and `params` properties of the transaction.
 

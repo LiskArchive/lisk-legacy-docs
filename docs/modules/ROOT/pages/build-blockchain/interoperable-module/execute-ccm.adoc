@@ -110,7 +110,7 @@ export const CCReactMessageParamsSchema = {
 };
 ----
 
-Create a new file `constants.ts` inside the `hello` module, to store required constants.
+Create a new file `constants.ts` inside the `hello` module, to store the required constants.
 
 .hello/constants.ts
 [source,typescript]
@@ -180,7 +180,7 @@ Next, update the following properties of the command:
 * Replace `CommandVerifyContext` and `CommandExecuteContext,` with `CrossChainMessageContext`
 //TODO: Is it required that the command names for commands creating and executing a specific CCM must match?
 * Set the name of the command to `reactCrossChain`.
-* Set the command schema to equal `CCReactMessageParamsSchema`.
+* Set the command schema to match `CCReactMessageParamsSchema`.
 
 .hello/cc_commands/react_command.ts
 [source,typescript]
@@ -244,52 +244,52 @@ The <<create-a-store-for-reactions, Reaction Store>> is used to save the reactio
 [source,typescript]
 ----
 public async execute(ctx: CrossChainMessageContext): Promise<void> {
-        const { ccm, logger } = ctx;
-        logger.info('Executing React CCM');
-        // const { sendingChainID, status, receivingChainID } = ccm;
-        // Decode the provided CCM parameters
-        const params = codec.decode<CCReactMessageParams>(CCReactMessageParamsSchema, ccm.params);
-        logger.info(params, 'parameters');
-        // Get helloMessageID and reactionType from the parameters
-        const { helloMessageID, reactionType } = params;
-        const reactionSubstore = this.stores.get(ReactionStore);
-        const messageCreatorAddress = cryptography.address.getAddressFromLisk32Address(helloMessageID);
-        let msgReactions: ReactionStoreData;
+    const { ccm, logger } = ctx;
+    logger.info('Executing React CCM');
+    // const { sendingChainID, status, receivingChainID } = ccm;
+    // Decode the provided CCM parameters
+    const params = codec.decode<CCReactMessageParams>(CCReactMessageParamsSchema, ccm.params);
+    logger.info(params, 'parameters');
+    // Get helloMessageID and reactionType from the parameters
+    const { helloMessageID, reactionType } = params;
+    const reactionSubstore = this.stores.get(ReactionStore);
+    const messageCreatorAddress = cryptography.address.getAddressFromLisk32Address(helloMessageID);
+    let msgReactions: ReactionStoreData;
 
-        // Get existing reactions for a Hello message, or initialize an empty reaction object, if none exists,yet.
-        try {
-            msgReactions = await reactionSubstore.get(ctx, messageCreatorAddress);
-        } catch (error) {
-            if (!(error instanceof db.NotFoundError)) {
-                logger.info({ helloMessageID, crossChainCommand: this.name }, (error as Error).message);
-                logger.error({ error }, 'Error when getting the reaction substore');
-                throw error;
-            }
-            logger.info(
-                { helloMessageID, crossChainCommand: this.name },
-                `No entry exists for given helloMessageID ${helloMessageID}. Creating a default entry.`,
-            );
-            msgReactions = { reactions: { like: [] } };
+    // Get existing reactions for a Hello message, or initialize an empty reaction object, if none exists,yet.
+    try {
+        msgReactions = await reactionSubstore.get(ctx, messageCreatorAddress);
+    } catch (error) {
+        if (!(error instanceof db.NotFoundError)) {
+            logger.info({ helloMessageID, crossChainCommand: this.name }, (error as Error).message);
+            logger.error({ error }, 'Error when getting the reaction substore');
+            throw error;
         }
-
-        // Check if the reactions is a like
-        if (reactionType === 0) {
-            const hasLiked = msgReactions.reactions.like.indexOf(ctx.transaction.senderAddress);
-            // If the sender has already liked the message
-            if (hasLiked > -1) {
-                // Remove the sender address from the likes for the message
-                msgReactions.reactions.like = msgReactions.reactions.like.splice(hasLiked, 1);
-            // If the sender has not liked the message yet
-            } else {
-                // Add the sender address to the likes of the message
-                msgReactions.reactions.like.push(ctx.transaction.senderAddress);
-            }
-        } else {
-            logger.error({ reactionType }, 'invalid reaction type');
-        }
-        // Update the reaction store with the reactions for the specified Hello message
-        await reactionSubstore.set(ctx, messageCreatorAddress, msgReactions);
+        logger.info(
+            { helloMessageID, crossChainCommand: this.name },
+            `No entry exists for given helloMessageID ${helloMessageID}. Creating a default entry.`,
+        );
+        msgReactions = { reactions: { like: [] } };
     }
+
+    // Check if the reactions is a like
+    if (reactionType === 0) {
+        const hasLiked = msgReactions.reactions.like.indexOf(ctx.transaction.senderAddress);
+        // If the sender has already liked the message
+        if (hasLiked > -1) {
+            // Remove the sender address from the likes for the message
+            msgReactions.reactions.like = msgReactions.reactions.like.splice(hasLiked, 1);
+        // If the sender has not liked the message yet
+        } else {
+            // Add the sender address to the likes of the message
+            msgReactions.reactions.like.push(ctx.transaction.senderAddress);
+        }
+    } else {
+        logger.error({ reactionType }, 'invalid reaction type');
+    }
+    // Update the reaction store with the reactions for the specified Hello message
+    await reactionSubstore.set(ctx, messageCreatorAddress, msgReactions);
+}
 ----
 
 == Final updates of the module and app.ts
@@ -337,7 +337,7 @@ Open the `app.ts` file, and register the module to the application.
 
 Because the `ReactModule` is an *interoperable module*, it is required to call `app.registerInteroperableModule()` additionally.
 
-Last but not least, call the `addDependencies()` method of the `ReactModule` with the methods of the interoperability module as parameter.
+Last but not least, call the `addDependencies()` method of the `ReactModule` with the methods of the interoperability module as a parameter.
 
 IMPORTANT: Please remove the redundant registration of the `ReactModule` in the `modules.ts` file. It was added automatically during the command initialization.
 
@@ -365,4 +365,5 @@ export const getApplication = (config: PartialApplicationConfig): Application =>
 
 The implementation of a cross-chain command in the Hello module is now completed.
 
-An example implementation of the interoperable modules React and Hello on two different sidechain is available in the Lisk SDK repository under {url_github_sdk_interop}[examples/interop^]
+An example implementation of the interoperable modules React and Hello on two different sidechains is available in the Lisk SDK repository under {url_github_sdk_interop}[examples/interop^].
+Feel free to check it out.

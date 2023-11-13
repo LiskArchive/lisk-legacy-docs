@@ -120,6 +120,10 @@ export const MAX_RESERVED_ERROR_STATUS = 63;
 
 Create a new store to store the reactions.
 
+The store will be used in the <<ccm-execution>> to get and set the reactions for a specific Hello message.
+
+In this example, we store the reactions for a Hello message und the sender address of the Hello message, because it is a unique identifier for a Hello message.
+
 .hello/stores/reaction.ts
 [source,typescript]
 ----
@@ -286,6 +290,34 @@ public async execute(ctx: CrossChainMessageContext): Promise<void> {
     }
     // Update the reaction store with the reactions for the specified Hello message
     await reactionSubstore.set(ctx, messageCreatorAddress, msgReactions);
+}
+----
+
+== Creating a new endpoint for getting reactions for a Hello message
+
+Last but not least, let's create a new endpoint in the `endpoints.ts` file of the Hello module, to be able to get the reactions for a specific Hello message from the blockchain.
+
+The only required parameter for the request is the sender address of the respective Hello message.
+It is used as unique identifier of a Hello message, to get the corresponding reactions from the <<create-a-store-for-reactions,store>>.
+
+.hello/endpoint.ts
+[source,typescript]
+----
+public async getReactions(ctx: ModuleEndpointContext): Promise<ReactionStoreData> {
+    const reactionSubStore = this.stores.get(ReactionStore);
+
+    const { address } = ctx.params;
+    if (typeof address !== 'string') {
+        throw new Error('Parameter address must be a string.');
+    }
+    cryptography.address.validateLisk32Address(address);
+
+    const reactions = await reactionSubStore.get(
+        ctx,
+        cryptography.address.getAddressFromLisk32Address(address),
+    );
+
+    return reactions;
 }
 ----
 

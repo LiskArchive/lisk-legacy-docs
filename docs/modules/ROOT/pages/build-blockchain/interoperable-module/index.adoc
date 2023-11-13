@@ -5,8 +5,9 @@ Mona Bärenfänger <mona@lightcurve.io>
 :idseparator: -
 :sectnums:
 // URLs
-:url_github_sdk_interop: https://github.com/LiskHQ/lisk-sdk/tree/release/6.0.0/examples/interop
+:url_github_sdk_interop: https://github.com/LiskHQ/lisk-sdk/tree/release/6.1.0/examples/interop
 :url_github_sdk_interop_cctransfer: {url_github_sdk_interop}#transfer-from-mainchain-to-sidechain-two
+:url_github_sdk_interop_sc1_passphrase: {url_github_sdk_interop}/pos-sidechain-example-one/config/default/passphrase.json
 // Project URLs
 :url_understand_interopcommunication: understand-blockchain/interoperability/communication.adoc
 :url_build_createccm: build-blockchain/interoperable-module/create-ccm.adoc
@@ -106,10 +107,12 @@ As the response shows, the account has more than enough sidechain and mainchain 
 }
 ----
 
-Now, to test the newly implemented interoperable modules, the setup is ready to proceed with the testing of the **React cross-chain command**.
-
 --
 === Create a Hello message on sidechain 1
+
+Now, as it is verified, that the sending account has enough tokens to pay the fees for the transaction and the CCM, we can proceed to send a new Hello message on sidechain 1.
+
+Navigate into the folder `pos-sidechain-example-one` and use the node CLI to create a new Hello message.
 
 .pos-sidechain-example-one
 [source,bash]
@@ -117,10 +120,17 @@ Now, to test the newly implemented interoperable modules, the setup is ready to 
 ./bin/run transaction:create hello createHello 10000000 --json --pretty --key-derivation-path="m/44'/134'/12'" --send
 ----
 
-----
-? Please enter passphrase:  [hidden]
-? Please enter: message:  Hello sidechain 2! :-)
-----
+You will be prompted for the accounts' passphrase.
+Sign the transaction with the passphrase stored in {url_github_sdk_interop_sc1_passphrase}[passphrase.json^] in the `config` folder.
+
+ ? Please enter passphrase:  [hidden]
+
+Next you will be prompted for a Hello message. This can be any string with a minimum length of 3, and a maximum of 256 characters.
+
+ ? Please enter: message:  Hello sidechain 2! :-)
+
+Because we added the `--json` flag to the command, the transaction is also printed in human-readable JSON format, which allows us to verify all properties of the transaction again.
+The `--pretty` flag formats the JSON with proper indents.
 
 .Response
 [source,json]
@@ -143,14 +153,23 @@ Now, to test the newly implemented interoperable modules, the setup is ready to 
 }
 ----
 
+Because we added the `--send` flag to the `transaction:create` command, the transaction is sent to the node directly, after it is created.
+If the node accepted the transaction, it should respond with the corresponding transaction ID.
+
  Transaction with id: 'cbd493f4e554c4ffde09a8a0d641164439d5ef9e7605c84d52d2d25248a897a7' received by node.
 
+
+==== Get the Hello message
+
+To verify that the Hello message was in fact created on the blockchain, use the `hello_getHello` endpoint to get the Hello message for the sending account:
 
 .pos-sidechain-example-one
 [source,bash]
 ----
 ./bin/run endpoint:invoke hello_getHello '{"address":"lskmjwp8z88avvxn4voktmx8cu9wk4opjkna5owt5"}'
 ----
+
+If all works correctly, the node should respond with the Hello message that was created in the previous step.
 
 .Response
 [source,json]
@@ -159,12 +178,62 @@ Now, to test the newly implemented interoperable modules, the setup is ready to 
 ----
 === Create Reaction on sidechain 2
 
+Now that a Hello message exists on sidechain 1, we want to react to this message with an account on sidechain 2.
+
+For this, the user who wishes to react will send a transaction on sidechain 2.
+
+This transaction will create a CCM which is collected by a relayer, and posted to the mainchain.
+On the mainchain, it is collected again by a relayer, and posted to the receiving chain, which is sidechain 1 in this case.
+
+To observe the cross-chain communication, please open the Dashboards for sidechain 1 and sidechain 2 in the browser.
+
+Dashboards::
+* Sidechain 1: http://localhost:4006[^]
+* Sidechain 2: http://localhost:4007[^]
+
+Scroll down on the Dashboards for to the "Events" section, and filter for the following events: `CCM Processed`, `CCMSendSuccess`, `CCMSentFailed`
+
+Additionally, it can be beneficial to also observe the logs of the different sidechain nodes.
+Open two different terminal windows and display the live node logs inside:
+
+Logs::
+* Sidechain 1: `pm2 log 2`
+* Sidechain 2: `pm2 log 3`
+
+Now, in a third terminal window, run the following command to create and directly send a reaction to the Hello message on sidechain 1.
+
+We define the following params:
+
+. `reactionType`: The type of the reactions represented as in integer.
+We have only implemented type 0 in the example, which represents a like, so we choose `0` here.
+. `helloMessageID`: We use the address of the account who created the Hello message to identify the Hello message.
+. `receivingChainID`: Chain ID of the receiving chain (= Sidechain 1 in this example).
+This property is required to create the CCM.
+. `messageFee`: Fee that is paid for the execution of the CCM.
+This property is required to create the CCM.
+. `messageFeeTokenID`: Token ID of the tokens being used to pay the `messageFee`.
+By default, this is the Token ID of the native mainchain Token.
+This property is required to create the CCM.
+
+.pos-sidechain-example-two
 [source,bash]
 ----
-pos-sidechain-example-two % ./bin/run transaction:create react reactCrossChain 1000000 --json --pretty --key-derivation-path="m/44'/134'/12'" --params='{"reactionType":0,"helloMessageID":"lskmjwp8z88avvxn4voktmx8cu9wk4opjkna5owt5","receivingChainID":"04000001","data":"","messageFee":"2100000","messageFeeTokenID":"0400000000000000"}' -p "crack tide merry unit rival joke drum private object top obey twelve exit scale sure pipe apple view forward surge aspect farm meat farm" --send
+./bin/run transaction:create react reactCrossChain 1000000 --json --pretty --key-derivation-path="m/44'/134'/12'" --params='{"reactionType":0,"helloMessageID":"lskmjwp8z88avvxn4voktmx8cu9wk4opjkna5owt5","receivingChainID":"04000001","data":"","messageFee":"2100000","messageFeeTokenID":"0400000000000000"}' -p "crack tide merry unit rival joke drum private object top obey twelve exit scale sure pipe apple view forward surge aspect farm meat farm" --send
+----
+
+TIP: In the above example, we provide the passphrase directly in the command via the `-p` flag, therefore we are not prompted for the passphrase, and the transaction is signed directly.
+
+.Output: Transaction in Hex format
+[source,json]
+----
 {
   "transaction": "0a057265616374120f726561637443726f7373436861696e180020c0843d2a20c94952af78216ff92d615f4eb566726693d05df2d0b82f7fce26fc1f0e6e8724323a080012296c736b6d6a7770387a3838617676786e34766f6b746d7838637539776b346f706a6b6e61356f7774351a0022040400000128a09680013a404f68f83f8e32aadba4b2bb465ac0b09ca6a1c0ca247750e21d22cbd0fc53a5684fc3d4185d47e69e6e85a818ef04a61430dcadc096813cb205f735d04e3c4901"
 }
+----
+
+.Output: Transaction in JSON format
+[source,json]
+----
 {
   "transaction": {
     "module": "react",
@@ -185,13 +254,14 @@ pos-sidechain-example-two % ./bin/run transaction:create react reactCrossChain 1
     "id": "5043174c97f508b711d9be0ec57ed60009ea83b57b2a665cef8c99420b9fcbb2"
   }
 }
-Transaction with id: '5043174c97f508b711d9be0ec57ed60009ea83b57b2a665cef8c99420b9fcbb2' received by node.
 ----
-=== Observe the execution of the CCM
 
-Sidechain 2::
-* http://localhost:4007[^]
-* `pm2 log 3`
+If the node accepted the transaction, it should respond with the corresponding transaction ID.
+
+ Transaction with id: '5043174c97f508b711d9be0ec57ed60009ea83b57b2a665cef8c99420b9fcbb2' received by node.
+
+
+=== Observe the execution of the CCM
 
 Go to the events of the Dashboard and look for the following event:
 

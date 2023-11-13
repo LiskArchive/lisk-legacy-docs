@@ -263,10 +263,13 @@ If the node accepted the transaction, it should respond with the corresponding t
 
 === Observe the execution of the CCM
 
-Go to the events of the Dashboard and look for the following event:
+Now go directly to the Dashboard events of *sidechain 2* and look for the following event:
+
+If you see the `ccmSendSuccess` event in the events logs, it means, the CCM was sent successfully on sidechain 2.
 
  interoperability_ccmSendSuccess (height: 772 index: 8 topics: 045043174c97f508b711d9be0ec57ed60009ea83b57b2a665cef8c99420b9fcbb2, 04000002, 04000001, 5fc4e869feb87e83801adee1c5ca44a9c71fa10b6668021abed48d73864bd69f)
 
+.Dashboard sidechain 2
 [source,json]
 ----
 {
@@ -283,14 +286,11 @@ Go to the events of the Dashboard and look for the following event:
 }
 ----
 
-Sidechain 1::
-* http://localhost:4006[^]
-* `pm2 log 2`
-
-Go to the events of the Dashboard and look for the following event:
+Next, go to the events of the Dashboard of *sidechain 1* and look for the following event:
 
  interoperability_ccmProcessed (height: 335 index: 3 topics: ab36b23bce5e2a0cebe9131c5b3bddfd8132e9367f1cf9a95875ae74b8ca3909, f092606d704d8a205bf2d702119c4761e3cb8cc22197fd28411f28fae9aa4d98, 04000002, 04000001)
 
+.Dashboard sidechain 1
 [source,json]
 ----
 {
@@ -309,7 +309,17 @@ Go to the events of the Dashboard and look for the following event:
 }
 ----
 
-=== Debugging
+If there is an event similar to the above example, it means that the CCM from sidechain 2 was successfully processed on sidechain 1.
+
+
+=== Tips for debugging the interoperability example
+
+==== How to get the last sent CCM
+
+To get the last sent CCM on a chain, invoke the `chainConnector_getLastSentCCM` endpoint.
+
+TIP: Remember to adjust the value `--data-path` to the correct path for the respective node.
+The command can be run from any node CLI, and will always respond with data from the node specified in the `data-path`.
 
 .pos-sidechain-example-two
 [source,bash]
@@ -317,10 +327,64 @@ Go to the events of the Dashboard and look for the following event:
 ./bin/run endpoint:invoke chainConnector_getLastSentCCM --pretty --data-path=/Users/mona/.lisk/mainchain-node-one
 ----
 
+==== How to authorize the chain connector plugin
+
+In case it is necessary to restart the nodes, it is necessary to manually authorize the chain connector plugin again.
+Otherwise, it will not be possible to send CCUs between chains.
+
+.Authorize sidechain 2
 [source,bash]
 ----
-pos-sidechain-example-two % ./bin/run endpoint:invoke 'chainConnector_authorize' '{"password": "lisk", "enable": true }' --data-path=/Users/mona/.lisk/pos-sidechain-example-two
-pos-sidechain-example-two % ./bin/run endpoint:invoke 'chainConnector_authorize' '{"password": "lisk", "enable": true }' --data-path=/Users/mona/.lisk/pos-sidechain-example-one
-pos-sidechain-example-two % ./bin/run endpoint:invoke 'chainConnector_authorize' '{"password": "lisk", "enable": true }' --data-path=/Users/mona/.lisk/mainchain-node-one
-pos-sidechain-example-two % ./bin/run endpoint:invoke 'chainConnector_authorize' '{"password": "lisk", "enable": true }' --data-path=/Users/mona/.lisk/mainchain-node-two
+./bin/run endpoint:invoke 'chainConnector_authorize' '{"password": "lisk", "enable": true }' --data-path=/Users/mona/.lisk/pos-sidechain-example-two
+----
+
+.Authorize sidechain 1
+[source,bash]
+----
+./bin/run endpoint:invoke 'chainConnector_authorize' '{"password": "lisk", "enable": true }' --data-path=/Users/mona/.lisk/pos-sidechain-example-one
+----
+
+.Authorize mainchain 1
+[source,bash]
+----
+./bin/run endpoint:invoke 'chainConnector_authorize' '{"password": "lisk", "enable": true }' --data-path=/Users/mona/.lisk/mainchain-node-one
+----
+
+.Authorize mainchain 2
+[source,bash]
+----
+./bin/run endpoint:invoke 'chainConnector_authorize' '{"password": "lisk", "enable": true }' --data-path=/Users/mona/.lisk/mainchain-node-two
+----
+
+==== How to reset the interoperability example
+
+To completely reset the interop example, and start from fresh, there is a very handy command which will perform all necessary steps for you:
+
+[source,bash]
+----
+./start_example --reset
+----
+
+==== How to monitor the nodes
+
+This small script monitors the connections between mainchain and sidechain nodes.
+
+[source,bash]
+----
+./start_example --reset
+----
+
+.Example output
+----
+Captured At: 12:49:26
+- Mainchain_1:
+"sidechain_example_one" : Height: 10 | Status: 1
+"sidechain_example_two" : Height: 10 | Status: 1
+- Mainchain_2:
+"sidechain_example_one" : Height: 10 | Status: 1
+"sidechain_example_two" : Height: 10 | Status: 1
+- Sidechain_1:
+"lisk_mainchain" : Height: 10 | Status: 1
+- Sidechain 2:
+"lisk_mainchain" : Height: 10 | Status: 1
 ----

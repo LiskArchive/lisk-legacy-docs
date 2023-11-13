@@ -563,7 +563,8 @@
 <li><a href="#initialize-the-cc_command">4. Initialize the cc_command</a></li>
 <li><a href="#ccm-verification">5. CCM verification</a></li>
 <li><a href="#ccm-execution">6. CCM execution</a></li>
-<li><a href="#final-updates-of-the-module-and-app-ts">7. Final updates of the module and app.ts</a></li>
+<li><a href="#creating-a-new-endpoint-for-getting-reactions-for-a-hello-message">7. Creating a new endpoint for getting reactions for a Hello message</a></li>
+<li><a href="#final-updates-of-the-module-and-app-ts">8. Final updates of the module and app.ts</a></li>
 </ul>
 </div>
 <div class="sect1">
@@ -694,6 +695,12 @@ export const MAX_RESERVED_ERROR_STATUS = 63;</code></pre>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Create a new store to store the reactions.</p>
+</div>
+<div class="paragraph">
+<p>The store will be used in the <a href="#ccm-execution">CCM execution</a> to get and set the reactions for a specific Hello message.</p>
+</div>
+<div class="paragraph">
+<p>In this example, we store the reactions for a Hello message und the sender address of the Hello message, because it is a unique identifier for a Hello message.</p>
 </div>
 <div class="listingblock">
 <div class="title">hello/stores/reaction.ts</div>
@@ -900,7 +907,40 @@ export class ReactCCCommand extends BaseCCCommand {
 </div>
 </div>
 <div class="sect1">
-<h2 id="final-updates-of-the-module-and-app-ts"><a class="anchor" href="#final-updates-of-the-module-and-app-ts"></a>7. Final updates of the module and app.ts</h2>
+<h2 id="creating-a-new-endpoint-for-getting-reactions-for-a-hello-message"><a class="anchor" href="#creating-a-new-endpoint-for-getting-reactions-for-a-hello-message"></a>7. Creating a new endpoint for getting reactions for a Hello message</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Last but not least, let&#8217;s create a new endpoint in the <code>endpoints.ts</code> file of the Hello module, to be able to get the reactions for a specific Hello message from the blockchain.</p>
+</div>
+<div class="paragraph">
+<p>The only required parameter for the request is the sender address of the respective Hello message.
+It is used as unique identifier of a Hello message, to get the corresponding reactions from the <a href="#create-a-store-for-reactions">store</a>.</p>
+</div>
+<div class="listingblock">
+<div class="title">hello/endpoint.ts</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async getReactions(ctx: ModuleEndpointContext): Promise&lt;ReactionStoreData&gt; {
+    const reactionSubStore = this.stores.get(ReactionStore);
+
+    const { address } = ctx.params;
+    if (typeof address !== 'string') {
+        throw new Error('Parameter address must be a string.');
+    }
+    cryptography.address.validateLisk32Address(address);
+
+    const reactions = await reactionSubStore.get(
+        ctx,
+        cryptography.address.getAddressFromLisk32Address(address),
+    );
+
+    return reactions;
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="final-updates-of-the-module-and-app-ts"><a class="anchor" href="#final-updates-of-the-module-and-app-ts"></a>8. Final updates of the module and app.ts</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Go back to the file <code>hello/module.ts</code> and update it as described in the code comments.</p>

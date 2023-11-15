@@ -277,6 +277,7 @@ NOTE: The {url_account_registration_script}[register-multiSig-account.js^] scrip
 . Create a `register-multiSig-account.js` file.
 Import all the relevant classes and schemas.
 +
+.register-multiSig-account.js
 [source,js]
 ----
 const { apiClient, cryptography, codec, Transaction, multisigRegMsgSchema } = require('lisk-sdk');
@@ -336,8 +337,36 @@ const RPC_ENDPOINT = 'ws://127.0.0.1:7887/rpc-ws';
     const msgBytes = codec.encode(multisigRegMsgSchema, unSignedData);
 
     var signatures = [];
+
+})();
 ----
-In the next step, we will collect signatures from each optional account.
++
+. In the next step, we will collect signatures from each optional account.
+But before that, run the script to see if the unsigned transaction object looks correct or not.
++
+[,bash]
+----
+node register-multiSig-account.js 
+----
++
+.Response
+[%collapsible]
+====
+----
+Unsigned data --------> {
+  address: <Buffer 53 2b 92 98 98 2f ea 2a 84 21 2a f2 ce ed 5b 52 30 dd fe fe>,
+  nonce: 2n,
+  numberOfSignatures: 2,
+  mandatoryKeys: [],
+  optionalKeys: [
+    <Buffer c6 1c d8 62 a8 b7 f7 38 57 b2 48 a4 35 8a 7b 35 c2 9c a2 73 d7 6b a3 81 9e 8c 54 b6 28 01 f1 6e>,
+    <Buffer e9 8e 8a 63 25 73 0b e6 bf 26 44 af 83 d5 a0 b0 04 bb 31 c1 58 58 fe db d0 ac 2c 1f 89 e2 ee ce>,
+    <Buffer fa d4 13 df 3f e5 e7 96 1b 81 ee 8d c1 68 d1 3d 7e 1f 5c cc dd 06 2e d7 7d a7 71 42 c7 d5 71 f0>
+  ]
+}
+----
+====
+
 --
 =====
 
@@ -537,7 +566,9 @@ Lisk SDK::
 . Use each optional account's details to add a signature for each account.
 To add a signature to a transaction, use the `ed.signDataWithPrivateKey()` method of the {url_typedoc_crypto}[lisk-cryptography^] package.
 This package is also part of the `lisk-sdk` package.
+Add the following after the `var signatures = [];` line of code.
 +
+.register-multiSig-account.js
 [source,js]
 ----
     for (const account of [optionalAccount1, optionalAccount2, optionalAccount3].sort((a, b) => Buffer.from(a.publicKey, 'hex').compare(Buffer.from(b.publicKey, 'hex')))) {
@@ -561,7 +592,7 @@ This object will be added to the transaction in the next step.
         optionalKeys: sortedOptionalKeys,   // Contains public keys of all three optional accounts
         signatures,                         // Contains signatures from all three optional accounts
     };
-    console.log('Transaction params in script-------->', transactionParams);
+    console.log('Transaction params with signatures for all the given keys-------->', transactionParams);
 ----
 +
 . Using the `Transaction` class, initialize a new object that takes all the details mentioned earlier as part of the registration transaction.
@@ -588,7 +619,61 @@ After signing the transaction, the transaction is ready to be sent to the node f
         chainID,
         Buffer.from(senderKeyInfo.privateKey, 'hex'),
     );
+
+    console.log("Signed Transaction with the sender's key ------->", transactionObject)
 ----
++
+. Let's execute the script again.
+The code should now prepare the registration parameters correctly including the signatures for each optional key.
+It should also sign the transaction object with the sender's private key and make the transaction ready to be sent to the node.
++
+[,bash]
+----
+node register-multiSig-account.js 
+----
++
+.Response
+[%collapsible]
+====
+----
+Unsigned data --------> {
+  address: <Buffer 53 2b 92 98 98 2f ea 2a 84 21 2a f2 ce ed 5b 52 30 dd fe fe>,
+  nonce: 2n,
+  numberOfSignatures: 2,
+  mandatoryKeys: [],
+  optionalKeys: [
+    <Buffer c6 1c d8 62 a8 b7 f7 38 57 b2 48 a4 35 8a 7b 35 c2 9c a2 73 d7 6b a3 81 9e 8c 54 b6 28 01 f1 6e>,
+    <Buffer e9 8e 8a 63 25 73 0b e6 bf 26 44 af 83 d5 a0 b0 04 bb 31 c1 58 58 fe db d0 ac 2c 1f 89 e2 ee ce>,
+    <Buffer fa d4 13 df 3f e5 e7 96 1b 81 ee 8d c1 68 d1 3d 7e 1f 5c cc dd 06 2e d7 7d a7 71 42 c7 d5 71 f0>
+  ]
+}
+Transaction params with signatures for all the given keys--------> {
+  numberOfSignatures: 2,
+  mandatoryKeys: [],
+  optionalKeys: [
+    <Buffer c6 1c d8 62 a8 b7 f7 38 57 b2 48 a4 35 8a 7b 35 c2 9c a2 73 d7 6b a3 81 9e 8c 54 b6 28 01 f1 6e>,
+    <Buffer e9 8e 8a 63 25 73 0b e6 bf 26 44 af 83 d5 a0 b0 04 bb 31 c1 58 58 fe db d0 ac 2c 1f 89 e2 ee ce>,
+    <Buffer fa d4 13 df 3f e5 e7 96 1b 81 ee 8d c1 68 d1 3d 7e 1f 5c cc dd 06 2e d7 7d a7 71 42 c7 d5 71 f0>
+  ],
+  signatures: [
+    <Buffer 7d 20 6e b6 2d b0 32 a6 17 47 dd 93 82 a2 84 c3 78 2e a2 64 7c 10 30 f7 47 d8 fd e9 76 be fe e3 74 e9 dc 7a 17 58 fc 9b c3 94 04 ed e3 c4 53 7a 1f 8f ... 14 more bytes>,
+    <Buffer 80 01 12 b7 c2 3b 38 d0 a8 82 f4 c5 37 3a 71 eb 7e 80 cb ea b2 8e af a1 16 2d e4 bb a0 e4 9b 13 75 bd 5a f4 6d 3d 08 a1 4c 5e 3f 63 8c 93 ea c3 f6 ab ... 14 more bytes>,
+    <Buffer 26 b8 e1 f1 8d 51 69 78 74 bc 04 4a 6c d6 02 78 98 43 9d 16 e7 a5 36 f9 a9 42 eb b2 16 38 05 7b 1c e5 5c 8b c6 4c 98 e7 5b f7 48 28 76 f1 e0 62 79 59 ... 14 more bytes>
+  ]
+}
+Signed Transaction with the sender's key -------> Transaction {
+  module: 'auth',
+  command: 'registerMultisignature',
+  params: <Buffer 08 02 1a 20 c6 1c d8 62 a8 b7 f7 38 57 b2 48 a4 35 8a 7b 35 c2 9c a2 73 d7 6b a3 81 9e 8c 54 b6 28 01 f1 6e 1a 20 e9 8e 8a 63 25 73 0b e6 bf 26 44 af ... 252 more bytes>,
+  nonce: 2n,
+  fee: 200000000n,
+  senderPublicKey: <Buffer e9 8e 8a 63 25 73 0b e6 bf 26 44 af 83 d5 a0 b0 04 bb 31 c1 58 58 fe db d0 ac 2c 1f 89 e2 ee ce>,
+  signatures: [
+    <Buffer ba 8b df e6 1c 51 ad 83 36 dd 6d f6 87 df 29 be d2 c3 09 51 ed be ac 6c a4 53 ae 23 78 8c 80 31 8f 45 68 30 67 fc b6 f6 ef 95 85 84 cf 50 63 a3 7e e9 ... 14 more bytes>
+  ]
+}
+----
+====
 
 // Extend the script from <<converting-a-user-account-into-a-multi-signature-account>> and append some code that asks for the private key of a user, and uses it to sign the prepared transaction JSON.
 
@@ -1013,6 +1098,7 @@ Let's add the code for the second signatory.
 +
 . Define the functions for dry running or posting the transaction:
 +
+.create-multiSig-transaction.js
 [,js]
 ----
 async function dryRun(fullySignedTxHex) {
@@ -1194,7 +1280,7 @@ Please now sign the transaction with a different Private Key!
 .signedTx.json
 [,json]
 ----
-{"module":"token","command":"transfer","params":{"tokenID":{"type":"Buffer","data":[0,0,0,1,0,0,0,0]},"recipientAddress":{"type":"Buffer","data":[249,75,79,196,106,113,215,201,19,216,156,191,48,204,105,143,62,227,18,13]},"amount":"20000000","data":"Hello!"},"nonce":"3","fee":"1000000","senderPublicKey":"e98e8a6325730be6bf2644af83d5a0b004bb31c15858fedbd0ac2c1f89e2eece","signatures":["ab75da7fd2259685f612fdb2524857ab41e41b72ba12d3261ff8d0f6869ee07c658455c68a791b71fefa5699e19c986cce3c87e752fc4271c3fe9c62071e9c0d","",""],"id":"9ed3ae5e7c5270fc9f8aaa6043c63d24c5da21cb501c6d4a7c399b2bd2cdddd8"}
+{"module":"token","command":"transfer","params":{"tokenID":"0000000100000000","recipientAddress":"f94b4fc46a71d7c913d89cbf30cc698f3ee3120d","amount":"20000000","data":"Hello!"},"nonce":"3","fee":"1000000","senderPublicKey":"e98e8a6325730be6bf2644af83d5a0b004bb31c15858fedbd0ac2c1f89e2eece","signatures":["","2db446f6d9e0d0dfb07fc8fd4e3fc433c6daff5245fe56af35528cb8efc05db0fd9c0f7cec324fc28e067850ea8eda13b96cb27398a24484ed639b8c5fdb0d08",""],"id":"697696fd2b4369deb859efcc3b4ab9eaf63651f8726f48ca3005451f28ebcf05"}
 ----
 +
 . Pass the {url_multiSigtx_creation_signing_directory}[multiSigtx-creation-signing^] folder to the other signatory so that they can use the same script and transaction with a single signature to sign the transaction.

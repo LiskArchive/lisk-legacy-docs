@@ -23,20 +23,20 @@ The steps apply to all the blockchain clients developed with the Lisk SDK, inclu
 ====
 On this page, you'll learn:
 
-* [x] How to create and sign a multi-signature transaction in an entirely offline environment.
-* [x] How to verify the transaction by performing a dry-run.
+* [x] How to *create* a multi-signature transaction in an entirely offline environment.
+* [x] How to *sign* a multi-signature transaction in an entirely offline environment.
 ====
 
 == Prerequisites
 To use this guide, ensure the following criteria below have been fulfilled:
 
 * A multi-signature account with sufficient balance exists.
-To learn more about creating a multi-signature account, see the guide on: xref:{url_multiSig_guide}[].
+To learn more about creating a multi-signature account, see the guide on xref:{url_multiSig_guide}[].
 
 As the name suggests, a multi-signature transaction requires multiple signatures on a transaction for it to be accepted and processed successfully.
-For the sake of this guide, we are using a multi-signature account which requires signatures from *two* `*mandatoryKeys*` and no `optionalKeys`.
+For the sake of this guide, we are using a multi-signature account which requires two signatures from a set of *three* `optionalKeys` and no `mandatoryKeys`.
 
-In case, you have a different setup for the multi-signature account, where the account requires different number of mandatory and optional keys, adjust the following process accordingly.
+In case, you have a different setup for the multi-signature account, where the account requires a different number of mandatory and optional keys, adjust the following process accordingly.
 The basic steps will remain the same regardless of the number of mandatory and optional keys.
 
 == Option 1: Using the node CLI
@@ -52,16 +52,20 @@ The flag `--offline` is used here, so that the transaction can be signed, even i
 
 The `--offline` flag also requires the flags `--chain-id` and `--nonce` to be specified.
 
-The `passphrase` of an account is used by Lisk to identify the creator of a transaction.
+The `--no-signature` flag ensures that the transaction is created without any signatures.
 
-In case of accounts created through the same passphrase, always specify the `--key-derivation-path` of the account.
+Without signatures, a transaction should be created by mentioning the sender's public key after its flag: `--sender-public-key`.
 
-To also see the decoded transaction object on creation, add the `--json` parameter:
+The `passphrase` of an account is used by Lisk to identify the creator and signer of a transaction.
+
+Although, it isn't mandatory, however, to also see the decoded transaction object on creation, add the `--json` parameter.
+
+To acquire a readable response add the `--pretty` flag as well.
 ====
 
-Create a transaction via the CLI, and add the `--no-signature` and the `--sender-public-key` flag.
-A multi-signature transaction requires individual signatures from the owners of the multi-signature account, hence whilst creating such a transaction, the aforementioned flags should be used.
-Since it is an offline transaction, add the `--offline` flag along with the `chainID` of the node and a `nonce` value.
+A multi-signature transaction requires individual signatures from the owners of the multi-signature account, hence while creating such a transaction, the aforementioned flags should be used.
+
+Create a transaction via the CLI like this:
 
 [source,bash]
 ----
@@ -111,16 +115,15 @@ After all relevant information about the transaction is given, the transaction i
 
 === Signing a transaction offline
 
-Once a transaction is created in the aforementioned manner, Lisk automatically signs the transaction using the creator's account.
-You can see that the `signatures` array contains a signature now, which means that we need one additional signature for our transaction to be ready for processing.
-Since, our multi-signature account requires two signatures, we will sign the transaction hash received above with the second mandatory key. 
+Once a transaction is created in the aforementioned manner, the transaction is ready to be signed by the required number of signatories.
+Since the multi-signature account considered in this guide requires two signatures from a set of three optional keys, we will sign the transaction hash received above with the first optional key. 
 
-To sign a transaction, use the `transaction:sign` command. Pass the above mentioned transaction hash, all the mandatory and optional keys with their respective flags: `--mandatory-keys` and `--optional-keys`.
-Also mention the `--chain-id` and the `--key-derivation-path` in case, you are using the same passphrase to identify the signatory account.
+To sign a transaction, use the `transaction:sign` command.
+Pass the above-mentioned transaction hash, all the mandatory (in case your multi-signature account requires mandatory keys as well) and optional keys with their respective flags: `--mandatory-keys` and `--optional-keys`.
+Also, mention the `--chain-id` and `--offline` flag.
+You can also add the `--json` and `--pretty` flags to retrieve a more readable signed transaction, however, that is optional.
 
-Lastly, mention the `--offline` flag. You can also add the `--json` and `--pretty` flag to retrieve a more readable signed transaction.
-
-.Sign transaction using keys
+.Sign the transaction using keys
 [source,bash]
 ----
 ./bin/run transaction:sign 0a05746f6b656e12087472616e73666572180320c0843d2a20e98e8a6325730be6bf2644af83d5a0b004bb31c15858fedbd0ac2c1f89e2eece32270a0800000001000000001080dac4091a14f94b4fc46a71d7c913d89cbf30cc698f3ee3120d2200 --optional-keys c61cd862a8b7f73857b248a4358a7b35c29ca273d76ba3819e8c54b62801f16e e98e8a6325730be6bf2644af83d5a0b004bb31c15858fedbd0ac2c1f89e2eece --chain-id 00000001 --offline --pretty --json
@@ -131,11 +134,11 @@ The signatory will enter their passphrase:
 ? Please enter passphrase:  [hidden]
 ----
 
-The node will respond with an updated transaction hash string and also the same transaction in JSON format as well.
+The node will respond with an updated transaction hash string and the same transaction in JSON format as well.
 Notice the `signatures` array in the JSON formatted transaction, it contains placeholders for two signatures.
-The aforementioned `sign` transaction add a single signature as per the lexicographical order of the public keys.
+The aforementioned `sign` transaction adds a single signature as per the lexicographical order of the public keys.
 
-.Transaction with single signature
+.Transaction with a single signature
 [,json]
 ----
 {
@@ -163,7 +166,7 @@ The aforementioned `sign` transaction add a single signature as per the lexicogr
 }
 ----
 Take the transaction hash above and send it to the second signatory. 
-The second signatory should repeat the same process with two changes, update the transaction hash with the recently signed transaction, and update the key derivation path to match the second signatory's account, like this:
+The second signatory should repeat the same process with a single change; update the transaction hash with the recently signed transaction hash, like this:
 
 [source,bash]
 ----
@@ -203,6 +206,7 @@ Enter the account's passphrase:
 ----
 The transaction has the required number of signatures and is ready to be dry-run or to be sent to the node, which can only happen when the node is online.
 Once online, you can post the transaction to the node by either using the xref:{url_posting_transaction_node}[transaction:send] command or xref:{url_posting_transaction_curl}[txpool_postTransaction] endpoint.
+
 Once the transaction is executed, check the account balance of the sender (the multi-signature account) and the receiver.
 The balance of both accounts should have changed.
 
@@ -217,4 +221,4 @@ The process of creating and signing a transaction with Lisk SDK has already been
 * xref:{url_create_multiSig_tx}[How to create a multi-signature transaction]
 * xref:{url_sign_multiSig_tx}[How to sign a multi-signature transaction]
 
-IMPORTANT: Beware that, whilst you can create and sign a transaction using Lisk SDK, it is not possible to dry-run or post a transaction without a up and running node.
+IMPORTANT: Beware that, whilst you can create and sign a transaction using Lisk SDK, it is not possible to dry-run or post a transaction without an up-and-running node.

@@ -4,6 +4,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 :toc: preamble
 :idprefix:
 :idseparator: -
+:sectnums:
 // Project URLs
 :url_build_module_try: build-blockchain/module/command.adoc#try-the-new-command-out
 :url_build_module_stores: build-blockchain/module/stores.adoc
@@ -163,15 +164,68 @@ export class HelloMethod extends BaseMethod {
 }
 ----
 
+== Add endpoint schemas to the module metadata
+Don't forget to update the module metadata with information about the newly created module endpoints.
+This information will be used by Lisk Service and similar software, to fetch information about the available API endpoints of the blockchain client.
+
+First, import the related schemas into `module.ts`:
+
+[source,typescript]
+-----
+import {
+	configSchema,
+	getHelloRequestSchema,
+	getHelloCounterResponseSchema,
+	getHelloResponseSchema,
+} from './schema';
+-----
+
+Then update the `metadata` of the module as follows:
+
+./hello_client/src/app/modules/hello/module.ts
+[source,typescript]
+-----
+public metadata(): ModuleMetadata {
+	return {
+		endpoints: [
+			{
+				name: this.endpoint.getHello.name,
+				request: getHelloRequestSchema,
+				response: getHelloResponseSchema,
+			},
+			{
+				name: this.endpoint.getHelloCounter.name,
+				response: getHelloCounterResponseSchema,
+			},
+		],
+		commands: this.commands.map(command => ({
+			name: command.name,
+			params: command.schema,
+		})),
+		events: this.events.values().map(v => ({
+			name: v.name,
+			data: v.schema,
+		})),
+		assets: [],
+		stores: [],
+	};
+}
+-----
+
 == Requesting data from the module
 
 . Rebuild the client:
-
-  npm run build
-
++
+[source,bash]
+----
+npm run build
+----
 . Start the client:
-
- ./bin/run start --config=config/custom_config.json
++
+[source,bash]
+----
+./bin/run start --config=config/custom_config.json
+----
 
 . Send at least one "Create Hello" transaction to the node, as explained in xref:{url_build_module_try}[How to create a command -> Try the new command out]
 . Sent RPC requests
@@ -179,55 +233,26 @@ export class HelloMethod extends BaseMethod {
 +
 [source,bash]
 ----
-curl --location --request GET 'http://localhost:7887/rpc' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "jsonrpc": "2.0",
-    "id": "1",
-    "method": "hello_getHello",
-    "params": {
-        "address": "lskuz5p98kz3mqzxnu68qdrjxtvdvr2o7pprtj4yv"
-    }
-}'
+./bin/run endpoint:invoke hello_getHello '{"address": "lskuz5p98kz3mqzxnu68qdrjxtvdvr2o7pprtj4yv"}'
 ----
 +
 When the request is successful, the node will reply with the following:
 +
 [source,json]
 ----
-{
-    "id": "1",
-    "jsonrpc": "2.0",
-    "result": {
-        "message": "Hello Lisk SDKv6!"
-    }
-}
+{"message": "Hello Lisk SDKv6!"}
 ----
 
 .. `hello_getHelloCounter`
 +
 [source,bash]
 ----
-curl --location --request GET 'http://localhost:7887/rpc' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "jsonrpc": "2.0",
-    "id": "1",
-    "method": "hello_getHelloCounter",
-    "params": {
-    }
-}'
+./bin/run endpoint:invoke hello_getHelloCounter
 ----
 +
 When the request is successful, the node will return the current counter value:
 +
 [source,json]
 ----
-{
-    "id": "1",
-    "jsonrpc": "2.0",
-    "result": {
-        "counter": 1
-    }
-}
+{"counter": 1}
 ----

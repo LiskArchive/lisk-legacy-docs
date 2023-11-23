@@ -3,11 +3,10 @@
 :toc:
 :idprefix:
 :idseparator: -
-:fn_gpk: footnote:generatorPublicKey[Previously the `generatorPublicKey` property (see https://github.com/LiskHQ/lips/blob/main/proposals/lip-0055.md#change-generator-public-key-to-generator-address[LIP 0055^] for more information).]
-:fn_eventroot: footnote:eventroot[See https://github.com/LiskHQ/lips/blob/main/proposals/lip-0065.md[LIP 0065^] for the reason why it needs to be included in a block header.]
-:fn_stateroot: footnote:stateroot[See https://github.com/LiskHQ/lips/blob/main/proposals/lip-0040.md[LIP 0040^] for the reason why it needs to be included in a block header.]
-:fn_aggregate: footnote:aggregate[See https://github.com/LiskHQ/lips/blob/main/proposals/lip-0061.md[LIP 0061^] for more details.]
 // URLs
+:url_lip14_reduction: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0014.md#incentivizing-lisk-bft-protocol-participation
+:url_lip42_constants: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0042.md#constants
+:url_lip71_rewardcomputation: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0071.md#reward-computation
 :url_lip55: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0055.md
 :url_typedoc_command_registervalidator: {site-url}/lisk-sdk/v6/references/typedoc/classes/lisk_framework.ValidatorRegistrationCommand.html
 :url_typedoc_command_registersc: {site-url}/lisk-sdk/v6/references/typedoc/classes/lisk_framework.RegisterSidechainCommand.html
@@ -21,6 +20,14 @@
 :url_understand_state_machine_tree: understand-blockchain/state-machine.adoc#the-blockchain-state-as-sparse-merkle-tree
 :url_understand_sdk_commands: understand-blockchain/sdk/modules-commands.adoc#commands
 :url_understand_sdk_modules: understand-blockchain/sdk/modules-commands.adoc
+//Footnotes
+:fnlip42: footnote:lip42[To learn more about the different reasons that can lead to a reduction of block rewards, please refer to {url_lip42_constants}[LIP 0042 - Define state transitions of Reward module^] and {url_lip14_reduction}[LIP 0014 - Introduce BFT consensus protocol^].]
+:fnlip71: footnote:lip71[To see how the rewards are calculated, please refer to {url_lip71_rewardcomputation}[LIP 0071 - Introduce dynamic block rewards module^].]
+:fn_gpk: footnote:generatorPublicKey[Previously the `generatorPublicKey` property (see https://github.com/LiskHQ/lips/blob/main/proposals/lip-0055.md#change-generator-public-key-to-generator-address[LIP 0055^] for more information).]
+:fn_eventroot: footnote:eventroot[See https://github.com/LiskHQ/lips/blob/main/proposals/lip-0065.md[LIP 0065^] for the reason why it needs to be included in a block header.]
+:fn_stateroot: footnote:stateroot[See https://github.com/LiskHQ/lips/blob/main/proposals/lip-0040.md[LIP 0040^] for the reason why it needs to be included in a block header.]
+:fn_aggregate: footnote:aggregate[See https://github.com/LiskHQ/lips/blob/main/proposals/lip-0061.md[LIP 0061^] for more details.]
+
 
 == Blocks
 
@@ -259,6 +266,165 @@ blockAssetSchema = {
 ----
 ====
 
+=== Block rewards
+Validators receive a dynamic reward for generating a block.
+
+//TODO: Add link to module typedocs
+This is performed by the `Dynamic Reward` module, whose main purpose is to compute the block rewards according to the validator weight for active validators as explained below.
+//This is performed by the xref:{}[Dynamic Rewards module], whose main purpose is to compute the block rewards according to the validator weight for active validators:
+
+==== Minimum reward for active validators
+A minimum reward i.e., `minimumRewardActiveValidators` is assigned per round to all active validators to cover the minimal operational cost to run a validator.
+
+factorMinRewardActiveValidators::
+It determines the percentage of rewards assigned equally to all active validators.
+The percentage can be obtained by dividing the value by 100, i.e., a value of 1000 corresponds to 10%.
+In principle, if the percentage of rewards shared equally among the active validators is set to 0%, then it will be a proof-of-stake system where the rewards are proportional to the validator weight.
+On the other hand, if the percentage of rewards shared equally among the active validators is set to 100%, it will be the previous proof-of-stake (PoS) system where each validator received the same reward for generating a block irrespective of their weights.
++
+For the Lisk mainchain, the factor is: 1000 (10%).
+
+minimumRewardActiveValidators::
+The minimum reward per round for an active validator.
++
+----
+factorMinRewardActiveValidators * (getDefaultRewardAtHeight(blockHeader.height)) / 10000)
+----
++
+`blockHeader.height` corresponds to the current block height and `getDefaultRewardAtHeight` returns the <<default-block-reward>> for the respective height.
++
+For the Lisk mainchain, the minimum reward is calculated like this:
++
+----
+10^7^ Beddows or 0.1 LSK = 1000 * (100000000 / 10000) = 1000 * 10000
+----
+
+==== Rewards proportional to the validators weight
+The remaining stake rewards i.e., `stakeRewardActiveValidators` are distributed proportional to the validators weight.
+It is given to the active validators (per round) after giving the <<minimum-reward-for-active-validators,minimum reward>>.
+
+For the Lisk mainchain, the total rewards are calculated like this{fnlip71}:
+
+[NOTE]
+====
+For all calculation below we define the following variables:
+
+* `blockHeader.height` corresponds to the current block height and
+* `getDefaultRewardAtHeight()` returns the <<default-block-reward>> for the respective height.
+====
+
+totalRewardActiveValidators::
+The total reward per round for active validators.
++
+----
+Pos.getActiveValidatorsNumber * getDefaultRewardAtHeight(blockHeader.height)
+----
+* `Pos.getActiveValidatorsNumber` corresponds to the number of active validators in the network.
++
+For the Lisk mainchain, the total reward per round is calculated like this:
++
+----
+101 * 10^8^ Beddows or 101 LSK = 101 * 100000000 Beddows
+----
+
+stakeRewardActiveValidators::
+The remaining rewards for active validators (per round) after giving the minimum reward.
++
+----
+totalRewardActiveValidators - Pos.getActiveValidatorsNumber * minimumRewardActiveValidators
+----
++
+For the Lisk mainchain, the total reward per round is calculated like this:
++
+----
+90.9 * 10^8^ Beddows or 90.9 LSK = 10100000000 - (101 * 10000000) = 101 * 10^8 - 101 * 10^7^
+----
+
+==== Default reward for standby validators
+The default reward `defaultRewardStandByValidators` is assigned to all stand-by validators i.e., there is a fixed reward irrespective of the validator weight.
+
+
+This helps stand-by validators to cover the costs of running a node even though the probability of the selection is low in a round.
+
+defaultRewardStandByValidators::
+The default reward per round for standby validators irrespective of their validator weight.
++
+----
+getDefaultRewardAtHeight(blockHeader.height)
+----
++
+For the Lisk mainchain, the default reward for standby validators is: 10^8^ Beddows or 1 LSK.
+
+==== Default block reward
+The amount for the default block reward depends on the block height according to the table shown below:
+
+.Default block reward milestones on the Lisk Mainnet
+[cols="1,1",options="header",stripes="hover"]
+|===
+|Heights
+|Reward
+
+|From 1,451,520 to 4,451,519
+|5 LSK
+
+|From 4,451,520 to 7,451,519
+|4 LSK
+
+|From 7,451,520 to 10,451,519
+|3 LSK
+
+|From 10,451,520 to 13,451,519
+|2 LSK
+
+|From 13,451,520 onwards
+|1 LSK
+|===
+
+==== Minting of the rewards
+After applying the block, a certain quantity of the native token of the blockchain is minted.
+The exact amount assigned to the block generator.
+
+Currently, in the Lisk mainchain, the inflation is limited to a maximum minting of `6 * 60 * 24 * 365 = 3153600 LSK` per year.
+Every time a validator misses their block, 1 LSK less is minted per year.
+
+==== Reward for missed blocks
+Validators get rewards proportional to the validator weight.
+If a validator misses a block, then another validator will be chosen to generate the block.
+
+To respect the maximum of 3153600 newly minted LSK per year, and to ensure it will not be profitable for any validator if any other validator misses a block, validators who generate blocks for the second time in the round, get the <<minimum-reward-for-active-validators,minimumRewardActiveValidators>> for the second block.
+
+==== Reward reduction
+The reward can be reduced for various reasons{fnlip42}, specifically for not participating in BFT block finalization or failure to properly reveal the random seed.
+
+[cols="1,1",options="header"]
+|===
+|Reason
+|Reduction of the block reward
+
+|Invalid seed reveal
+|100%
+
+|Not participating in BFT block finalization
+|75%
+
+|No account in user substore
+|100%
+|===
+
+==== Transaction rewards
+Each transaction included in a block contains its own <<transaction-fees>>, which were paid by the transaction sender.
+
+A part of the transaction fees is directly burned: <<minimum-transaction-fee>>.
+
+The unburned part of the <<transaction-fees>> is added together with the block reward to the balance of the validator who generated the block.
+This is completed after all transactions in the payload have been applied.
+It should be noted that a validator cannot receive and spend the reward in the same block.
+
+=== Projected token supply
+Blockchains following the Lisk protocol do not have a bounded token supply.
+For every block generated, the amount of available tokens increases, as new tokens are minted for the <<block-rewards>>.
+This increase is obtained by subtracting the <<minimum-transaction-fee,burned fees>> from the block reward.
+
 == Transactions
 
 Transactions are sent to the blockchain by its users to trigger state mutations on the blockchain.
@@ -309,6 +475,7 @@ This results in maximum 100 token transfer transactions per block:
 
 === Transaction fees
 
+Transactions also include fees.
 In order to send and process a transaction, it is required to pay a small fee.
 
 Fees can be defined dynamically for every transaction.
@@ -317,6 +484,7 @@ So by choosing a higher fee, it can be ensured that the transaction is executed 
 
 This mechanism can also be used to overwrite existing transactions in the pool, by using the same nonce, but a higher fee than the transaction that should be overwritten.
 
+==== Minimum transaction fee
 For every transaction, there is a minimum fee that needs to be paid in order for the transaction to be successfully processed.
 The minimum fee required is calculated in the following way:
 

@@ -15,8 +15,10 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_guides_module: build-blockchain/module/index.adoc
 :url_guides_module_config: build-blockchain/module/configuration.adoc
 :url_guides_module_stores: build-blockchain/module/stores.adoc
+:url_guides_module_event: build-blockchain/module/blockchain-event.adoc
 :url_guides_module_endpoints_methods: build-blockchain/module/endpoints-methods.adoc
 :url_understand_modules: understand-blockchain/sdk/modules-commands.adoc
+:url_understand_modules_cmdname: {url_understand_modules}#command-name
 :url_understand_modules_commands: {url_understand_modules}#commands
 // :url_sdk_references_commander: {docs_sdk}references/lisk-commander/cli.adoc#generate
 
@@ -30,15 +32,15 @@ On this page, you'll learn how to:
 * [x] Use module config values for command verification
 * [x] Write execution logic for a command
 * [x] Get and set data from module stores
+====
 
 .Sample code
 [NOTE]
 =====
 View the complete sample code of this guide on GitHub in the {url_github_hello_command}[Lisk SDK examples repository^].
 =====
-====
 
-As defined on the xref:{url_guides_module}[] page, the xref:{url_understand_modules_commands}[command] shall provide the following functionality:
+As defined on the xref:{url_guides_module}[] page, the xref:{url_understand_modules_commands}[command] shall provide the following functionalities:
 
 * A Hello message shall be stored in the user accounts.
 ** The Hello message has to be of type `string`.
@@ -53,8 +55,8 @@ In the root folder of the blockchain client, generate a skeleton for the new com
 The command `lisk generate:command` expects two arguments:
 
 . *Module name*: The name of the module the command belongs to.
-. *Command name*: The name of the new command.
-It needs to be a string that only consists of lower case and upper case letters [a-z, A-Z].
+. xref:{url_understand_modules_cmdname}[Command name]: The name of the new command.
+It needs to be a string in camelCase, and always starts with a lower case letter.
 No numbers, hyphens, etc., are allowed.
 
 // For a complete overview of all available options of `lisk generate:command`, see the xref:{url_sdk_references_commander}[Lisk Commander reference] or type `lisk generate:command --help`.
@@ -123,6 +125,23 @@ export class HelloModule extends BaseModule {
     // [...]
 }
 ----
+
+[NOTE]
+====
+To avoid errors when <<try-the-new-command-out, trying out>> the new command, adjust the `verifyTransaction()` hook of the module to the following:
+
+[source,typescript]
+----
+public async verifyTransaction(context: TransactionVerifyContext): Promise<VerificationResult> {
+    // Verify transaction will be called multiple times in the transaction pool
+    context.logger.info('TX VERIFICATION');
+    const result = {
+        status: 1,
+    };
+    return result;
+}
+----
+====
 
 == Command class & skeleton
 
@@ -208,7 +227,7 @@ export const createHelloSchema = {
 };
 ----
 
-Note that we add two additional properties to the schema: {url_json_schema_length}[minLength & maxLength].
+Note that we add two additional properties to the schema: {url_json_schema_length}[minLength & maxLength^].
 These properties define the minimum and maximum length of the message, according to the *JSON schema*.
 
 By setting these properties already in the schema, we don't need to validate these properties later in the <<command-verification>>.
@@ -366,6 +385,8 @@ Following this, the general business logic of the `execute()` method looks like 
 
 The corresponding code is shown below:
 
+NOTE: The code already includes a blockchain event, which is created and described in the following guide xref:{url_guides_module_event}[].
+
 .hello_client/src/app/modules/hello/commands/create_hello_command.ts
 [source,typescript]
 ----
@@ -438,17 +459,27 @@ As a final step, let's try out the command that we just created, by posting a "C
 In the root folder of the Hello client, execute the following steps in the terminal:
 
 . Rebuild the client:
-
-  npm run build
++
+[source,bash]
+----
+npm run build
+----
 [#start-client]
 . Start the client:
 +
 [[create-transaction]]
- ./bin/run start --config=config/custom_config.json
+[source,bash]
+----
+./bin/run start --config=config/custom_config.json
+----
 +
 . In another terminal window, create the transaction:
 
- % ./bin/run transaction:create hello createHello 10000000 --params='{"message":"Hello Lisk SDK v6!"}' --json --pretty
++
+[source,bash]
+----
+./bin/run transaction:create hello createHello 10000000 --params='{"message":"Hello Lisk SDK v6!"}' --json --pretty
+----
 +
 [TIP]
 ====
@@ -457,14 +488,17 @@ The default key derivation path is `m/44'/134'/0`, which always corresponds to t
 
 If you want to use another account, for example the second account of the `dev-validators.json` file, you need to specify the corresponding key derivation path by using the flag `--key-derivation-path` like so:
 
- % ./bin/run transaction:create hello createHello 10000000 --params='{"message":"Hello Lisk SDK v6!"}' --json --key-derivation-path="m/44'/134'/1'" --pretty
+[source,bash]
+----
+./bin/run transaction:create hello createHello 10000000 --params='{"message":"Hello Lisk SDK v6!"}' --json --key-derivation-path="m/44'/134'/1'" --pretty
+----
 ====
 +
 Use the passphrase contained in the file `config/default/passphrase.json` when prompted for it.
 You can ignore the warning `Warning: Passphrase contains 24 words instead of expected 12. Passphrase contains 23 whitespaces instead of expected 11.`
 The output of the command looks like this:
 +
-[source,bash]
+[source,json]
 ----
 {
   "transaction": "0a0568656c6c6f120b63726561746548656c6c6f18002080ade2042a205412b41c5bf15b68c779c87fc44baafdf5d2301556227a91a60599b86b4ab51e322b0a2968692c2074686973206973206120746573742c20696c6c6567616c576f726420616e6420736f206f6e3a400cd91d8980e057b87186563def7ec3c33d4c00cab40dcaadd222d8e4ddc95402edfafd6e4f387ef7cb4eca88b36c8dd774448163388d08c4c1522efd5bc23102"
@@ -492,33 +526,27 @@ The first object is the transaction in binary format, and the second object is t
 +
 . *Send the transaction:*
 Use the transaction in binary format to post the transaction to the node as shown below.
-Note: When you use `curl`, make sure you have `http` enabled in the config under `rpc.modes`.
 +
 [source,bash]
 ----
-curl --location --request POST 'http://localhost:7887/rpc' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "jsonrpc": "2.0",
-    "id": "1",
-    "method": "txpool_postTransaction",
-    "params": {
-        "transaction": "0a0568656c6c6f120b63726561746548656c6c6f18002080ade2042a205412b41c5bf15b68c779c87fc44baafdf5d2301556227a91a60599b86b4ab51e322b0a2968692c2074686973206973206120746573742c20696c6c6567616c576f726420616e6420736f206f6e3a400cd91d8980e057b87186563def7ec3c33d4c00cab40dcaadd222d8e4ddc95402edfafd6e4f387ef7cb4eca88b36c8dd774448163388d08c4c1522efd5bc23102"
-    }
-}'
+./bin/run transaction:send 0a0568656c6c6f120b63726561746548656c6c6f18002080ade2042a205412b41c5bf15b68c779c87fc44baafdf5d2301556227a91a60599b86b4ab51e322b0a2968692c2074686973206973206120746573742c20696c6c6567616c576f726420616e6420736f206f6e3a400cd91d8980e057b87186563def7ec3c33d4c00cab40dcaadd222d8e4ddc95402edfafd6e4f387ef7cb4eca88b36c8dd774448163388d08c4c1522efd5bc23102
 ----
 If the transaction was posted successfully, it will respond with the transaction ID.
 
 . *Check the logs of the node:*
 To verify that the transaction was included in a block, check for the corresponding node logs:
 +
-Transaction was included in Transaction pool:
-
- 2022-11-04T10:18:47.826Z INFO engine 33965 [id=7ffb4283f0ecc765b7ddb1494e97c22471e136824b437594945f0a8224bc7abf nonce=0 senderPublicKey=5412b41c5bf15b68c779c87fc44baafdf5d2301556227a91a60599b86b4ab51e] Added transaction to pool
+.Transaction was included in Transaction pool:
 +
-Transaction was included in a block:
-
- 2022-11-04T10:18:50.422Z INFO engine 33965 [id=a58eed5296010bb0fbd8ae4118b101d137c24697c457f86dab9ac29879b2ab8f height=99 generator=lskaz4tmrvjnuz5fx956mh8b6x6g4d8fr5vdnk3ha numberOfTransactions=1 numberOfAssets=1 numberOfEvents=5] Block executed
+----
+2022-11-04T10:18:47.826Z INFO engine 33965 [id=7ffb4283f0ecc765b7ddb1494e97c22471e136824b437594945f0a8224bc7abf nonce=0 senderPublicKey=5412b41c5bf15b68c779c87fc44baafdf5d2301556227a91a60599b86b4ab51e] Added transaction to pool
+----
++
+.Transaction was included in a block:
++
+----
+2022-11-04T10:18:50.422Z INFO engine 33965 [id=a58eed5296010bb0fbd8ae4118b101d137c24697c457f86dab9ac29879b2ab8f height=99 generator=lskaz4tmrvjnuz5fx956mh8b6x6g4d8fr5vdnk3ha numberOfTransactions=1 numberOfAssets=1 numberOfEvents=5] Block executed
+----
 
 But how to actually get the hello messages back?
 Right now, there is only one way to post a hello message.
@@ -539,8 +567,10 @@ Therefore, it should violate at least one of the three command validations:
 
 For example, create the following Hello transaction, which is violating the third requirement by including a blacklisted word:
 
-  % ./bin/run transaction:create hello createHello 10000000 --params='{"message":"Hello this is an illegalWord1"}' --json --pretty
-
+[source,bash]
+----
+./bin/run transaction:create hello createHello 10000000 --params='{"message":"Hello this is an illegalWord1"}' --json --pretty
+----
 Then, <<send-transaction,send the transaction>> to the node, and wait for the response.
 
 //TODO: Update this section + code example, once the error message includes the command verification error message

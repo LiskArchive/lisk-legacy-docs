@@ -1,0 +1,693 @@
+= How to create multi-signature accounts and transactions
+:toc: preamble
+:experimental:
+:idprefix:
+:idseparator: -
+:source-language: bash
+:toclevels: 6
+// URLs
+:url_typedoc_crypto: {site-url}/lisk-sdk/v6/references/typedoc/modules/_liskhq_lisk_cryptography.html
+:url_lisk_learn_create_account: https://lisk.com/learn/undefined/create-an-account
+:url_github_guides_multisig: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/guides/tx-creation-and-signing/multisig.js
+// Project URLs
+:url_sdk_commander: v6@lisk-sdk::references/lisk-commander/index.adoc
+:url_core: v4@lisk-core::index.adoc
+:url_run_accounts: run-blockchain/account-management.adoc
+:url_integrate_accounts: integrate-blockchain/integrate-ui/create-get-account.adoc
+:url_integrate_posttxs_apiclient: integrate-blockchain/posting-transactions.adoc#ws-ipc-api-example-with-api-client
+:url_integrate_createtxs_apiclient: integrate-blockchain/create-sign-transactions.adoc#via-api-client
+
+====
+On this page, you'll learn:
+
+* [x] How to create a multi-signature user account that is managed by multiple users
+* [x] How to create and sign multi-signature transactions
+====
+
+== Intro
+Multi-signature accounts are user accounts which are managed by a group of users.
+
+As the name suggests, multi-signature accounts need multiple signatures of different members of the multi-signature group to send any transaction.
+
+How many and which members exactly need to sign a transaction is defined during the <<how-to-create-a-multi-signature-account,registration>> of the multi-signature account.
+
+NOTE: A multi-signature account can have 2-64 members.
+
+== Use cases for multi-signature accounts
+The uses for multi-signature accounts are numerous and the below examples are only a small selection of the potential possibilities.
+
+=== Escrow Transactions
+In case two users get into a dispute, a multi-signature account could be created to solve it.
+
+For example, Alice makes the payment but Bob does not provide the services or goods as promised.
+In such a scenario, to resolve the dispute between users, a mutually trusted third party/arbiter steps in.
+
+Considering the wallet is configured to be a 2-of-3 multi-sig wallet, the third key in the above case is given to the arbiter.
+Based on the arbiter’s judgment the funds can be given either to Alice or to Bob.
+
+=== Joint Account
+A 1-out-of-2 account with no mandatory key can be shared by partners.
+Each has a key allowing them to spend the tokens in the account.
+In this way, it is clear who has signed which transaction.
+
+
+=== Community Accounts
+An account with 1 mandatory signature and 1 optional out-of-N could be used by a social club.
+The account would require the signature of the accountant and one other member.
+This way the accountant approves every transaction, which in turn allows them to keep an eye on all the club's expenditures.
+Additionally, each transaction is also signed by one member of the club, prohibiting the accountant from stealing any of the funds.
+
+=== Validator pools
+Another use case is of "validator pools".
+Securing enough self-votes to be an active validator might be easier to achieve for a group than for a single individual.
+Users could combine their tokens in a multi-signature account in order to reach the required self-stake to be an active validator in the network.
+
+For example, three people could each participate in a multi-signature account with three mandatory keys and register this account as a validator.
+Now the block generating node can safely be operated by any of the participants without risk of losing any funds.
+
+This way, no single individual controls the account.
+Instead, the account is controlled together by the members of the multi-signature group.
+Therefore, a single person can't issue any transactions for the validator, like staking, changing the commission, or transferring tokens as they would require the authorization of other members of the group.
+
+=== Two-Factor Authentication
+If Alice creates a multi-sig wallet that requires two keys, Alice creates a two-factor authentication mechanism to access the funds.
+Alice can store the private keys on two different devices and the funds stored in Alice’s multi-signature account can be accessed only if both the keys are provided.
+
+CAUTION: However, using multi-signature as two-factor authentication can be risky, especially if it is a set of 2-of-2 multi-sig addresses.
+If one of the keys is lost, you will not be able to access your funds.
+Thus, it is safer to use a 2-of-3 setup.
+
+=== Decision Uniformity
+A possible use case for multi-signature might be a family account, where family members manage the funds in the account collaboratively.
+Or consider a corporation with a board of four directors.
+Each board member gains access to one private key.
+No individual member can misuse the funds.
+Thus, only the decisions agreed upon by majority members can be executed.
+
+== How to create a multi-signature account
+
+//TODO: Add link to typedocs Register multisig command once available
+//A multi-signature account is created by sending a {}[Register Multisignature] transaction.
+A multi-signature account is created by sending a "Register Multisignature" transaction.
+This transaction has to be sent from the account that is supposed to be converted.
+
+NOTE: Multi-signature Registration Transactions from multi-signature accounts are *invalid*.
+
+[#parameters]
+The following parameters are required to send a "Register Multisignature" transaction:
+
+. `numberOfSignatures`: The number of private keys that must sign a transaction.
+. `mandatoryKeys`: An array of public keys in lexicographical order.
+Once the account is registered as a multi-signature account, every outgoing transaction requires a signature for every public key in `mandatoryKeys`.
+. `optionalKeys`: An array of public keys in lexicographical order.
+Once the account is registered as a multi-signature account, every outgoing transaction requires some signatures for some public keys in `optionalKeys` (the number of needed signatures depends on the `numberOfSignatures` property and may also be zero).
+. `signatures`: An array of signatures, corresponding to the public keys contained in `mandatoryKeys` and `optionalKeys`.
+All public keys must have a corresponding signature.
+The signatures corresponding to `mandatoryKeys` are appended first, followed by those corresponding to `optionalKeys`, where the order of signatures is the same as the order of public keys in the respective array.
+
+Considering the use case example <<escrow-transactions>> from above, the multi-signature registration parameters would look like this:
+
+. `numberOfSignatures`: 2
+. `mandatoryKeys`: []
+. `optionalKeys`: [AliceKey, BobKey, ArbiterKey]
+. `signatures`: [AliceSignature, BobSignature, ArbiterSignature]
+
+=== Pick an account to become multi-signature
+Please be aware that the address of the multi-signature account is the same as the one before the multi-signature registration.
+Depending on the use case, you might want to turn one of your existing accounts into a multi-signature account or create a new account that will be used as a multi-signature account.
+
+IMPORTANT: If you create a *new account*, don't forget to send over *sufficient tokens* to send the multi-signature registration.
+
+[tabs]
+=====
+Lisk Desktop::
++
+--
+For a step-by-step guide about how to create a new account with Lisk Desktop, please refer to: {url_lisk_learn_create_account}[Create an Account^].
+
+--
+Lisk Elements::
++
+--
+For a step-by-step guide on creating a new account with Lisk Elements, please refer to the xref:{url_integrate_accounts}[] guide.
+--
+=====
+
+////
+--
+Node CLI::
++
+--
+For a step-by-step guide regarding how to create a new account with the node CLI, please refer to the xref:{url_run_accounts}[] guide.
+////
+
+=== Converting a user account into a multi-signature account
+
+[tabs]
+=====
+Lisk Desktop::
++
+--
+Click on the "Register multisignature account" button in the top left menu::
++
+To convert the current account into a multi-signature account, click on the top-left menu and select kbd:[Register multisignature account].
++
+image:integrate-blockchain/multisig/01-register.png["Register button",300]
+
+
+Define required signatures and group members::
++
+This will open a new window where it is possible to define all required parameters like the required amount of signatures and the members of the group.
++
+image:integrate-blockchain/multisig/02-add-keys.png["Add public keys",300]
++
+Members are added by pasting their respective public keys and selecting kbd:[Mandatory] or kbd:[Optional] for the specific member.
++
+When all parameters are defined, click on the kbd:[Go to confirmation] button to proceed with the next step.
+
+Verify correct parameters and sign::
++
+On the confirmation page, it is possible to verify all provided parameters, before the transaction object is created.
++
+image:integrate-blockchain/multisig/03-verify.png["Verify parameters", 300]
++
+If you wish to edit any of the values, click the kbd:[Edit] button.
+Otherwise, confirm the correctness of the values by clicking the kbd:[Sign] button.
+
+Share the transaction::
++
+After all necessary parameters are defined, it is required that *all* members of the group (this includes *all* mandatory and *all* optional group members) verify the correctness of the transaction by signing it.
++
+This is done to ensure that no account is added to a multi-signature group without their consent.
++
+The transaction to be signed is provided as a JSON file or can be directly copied to the clipboard.
++
+image:integrate-blockchain/multisig/05-share.png["Share",300]
++
+Share the transaction off-chain with the group members as described in the next section <<collecting-signatures>>.
++
+.Transaction to be signed by all group members
+[,json]
+----
+{
+   "module":"auth",
+   "command":"registerMultisignature",
+   "nonce":"0",
+   "fee":"443000",
+   "senderPublicKey":"e57a23f897b13bdeef27439bb9f4e29ac0828018d27d6b39ade342879928b46a",
+   "params":{
+      "mandatoryKeys":[],
+      "optionalKeys":[
+         "61d320f822fcc163489499200ae6c99a66296513b1ca1066e49a37a026434ac0",
+         "dfbe4e3999138d62047c23f61f222a91b24d9d056db055be24f9ab6d95d7aa78",
+         "e57a23f897b13bdeef27439bb9f4e29ac0828018d27d6b39ade342879928b46a"
+      ],
+      "numberOfSignatures":2,
+      "signatures":[
+         "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+         "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+         "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      ]
+   },
+   "signatures":[],
+   "id":""
+}
+----
+
+NOTE: The `000..0` signatures are placeholders for the pending signatures from the members of the multi-signature group.
+They will be replaced automatically with the correct signatures, once the members sign the transaction.
+
+--
+Lisk Elements::
++
+--
+Prepare a script with a JSON object that contains all required <<parameters,parameters>> for sending a multi-signature registration.
+
+[,js]
+----
+let paramsStr = {
+	"numberOfSignatures": 2,
+	"mandatoryKeys": [],
+	"optionalKeys": [
+		"61d320f822fcc163489499200ae6c99a66296513b1ca1066e49a37a026434ac0",
+		"dfbe4e3999138d62047c23f61f222a91b24d9d056db055be24f9ab6d95d7aa78",
+		"e57a23f897b13bdeef27439bb9f4e29ac0828018d27d6b39ade342879928b46a"
+	],
+	"signatures": []
+};
+----
+--
+=====
+
+////
+--
+Node CLI::
++
+--
+Create the transaction via the CLI and provide all required parameters:
+
+----
+lisk-core transacrion:create auth registerMultisignature 100000000 --json --pretty
+----
+
+Provide the required parameters, when prompted for them:
+
+----
+? Please enter passphrase:  [hidden]
+? Please enter: numberOfSignatures:  2
+? Please enter: mandatoryKeys(comma separated values (a,b)):
+? Please enter: optionalKeys(comma separated values (a,b)):  61d320f822fcc163489499200ae6c99a66296513b1ca1066e49a37a026434ac0,dfbe4e3999138d62047c23f61f222a91b24d9d056db055be24f9ab6d95d7aa78,6290c8b58de8b71fedb7e3cb9a6ee9426aa3e7ac0141f278526375d46705b546
+? Please enter: signatures(comma separated values (a,b)):
+----
+
+When prompted for the `mandatoryKeys` and/or `optionalKeys`, provide the public keys of the respective user accounts that should be included as mandatory/optional members of the group.
+
+When prompted for the `signatures`, leave it empty for now -  the signatures will be added gradually, as all members of the multi-signature group need to provide their own signature for the transaction.
+
+After providing all necessary parameters, the transaction is returned:
+
+[,json]
+----
+{
+  "transaction": {
+    "module": "auth",
+    "command": "registerMultisignature",
+    "fee": "100000000",
+    "nonce": "8",
+    "senderPublicKey": "83eac294606806e0f4125203e2d0dac5ef1fc8730d5ec12e77e94f823f2262fa",
+    "signatures": [
+      "9a2c36568b3d211d2ad3de77ce528e1fc68d42f81862d421166317f282d5e282699ca78e15f94398ffe638a90a130886c65304e362c83fe00b60402983f80c0a"
+    ],
+    "params": {
+      "numberOfSignatures": 2,
+      "mandatoryKeys": [],
+      "optionalKeys": [
+        "61d320f822fcc163489499200ae6c99a66296513b1ca1066e49a37a026434ac0",
+        "dfbe4e3999138d62047c23f61f222a91b24d9d056db055be24f9ab6d95d7aa78",
+        "6290c8b58de8b71fedb7e3cb9a6ee9426aa3e7ac0141f278526375d46705b546"
+      ],
+      "signatures": []
+    },
+    "id": "4e559f9b9d9e120d967be7b5bda177aaaef76b8cb7c8ab8d72e522c63dd5de91"
+  }
+}
+----
+////
+
+=== Collecting signatures
+How to create and collect the signatures from other members of the multi-sig group.
+
+To share the generated JSON with the multi-signature registration with all group members, the JSON should be shared *off-chain*, e.g. by sending the JSON file to a group member via email.
+
+[NOTE]
+====
+The same transaction object should be signed by all members consecutively.
+Therefore, it is recommended to choose the first member of the group to share the transaction, and as soon as the member has signed the transaction, pass the resulting JSON on to the next member.
+====
+
+[tabs]
+=====
+Lisk Desktop::
++
+--
+When the member receives the JSON, they can use Lisk Desktop to sign the JSON like so:
+
+. After logging in to your account, click on the kbd:[Sign multisignature] button in the navigation.
++
+image:integrate-blockchain/multisig/06-sign-multisig.png["Sign button",300]
+. This will open a new window where you are able to paste the JSON you received.
++
+image:integrate-blockchain/multisig/07-add-json.png["Add JSON",200]
+. On the next page, you have the opportunity to review the respective parameters for the multi-signature registration.
++
+image:integrate-blockchain/multisig/08-review-params.png["Confirmation",200]
++
+Double-check that all values are set correctly, before signing the transaction in the next step.
++
+If you spot anything that should be changed in the transaction, or if you want to reject it entirely, simply click the kbd:[Reject] button and communicate your reason to the person who shared the JSON with you, if needed.
++
+If all values are correct, proceed to sign the transaction by clicking the kbd:[Sign] button.
++
+. As a result, you will receive the new JSON which has your signature appended.
++
+image:integrate-blockchain/multisig/09-share.png["Share",200]
+
+Now either send the JSON back to the person who shared the JSON with you, or forward it directly to one of the remaining group members, whose signature is still missing.
+
+.After Alice signed the transaction
+[%collapsible]
+====
+[,json]
+----
+{
+   "module":"auth",
+   "command":"registerMultisignature",
+   "nonce":"0",
+   "fee":"443000",
+   "senderPublicKey":"e57a23f897b13bdeef27439bb9f4e29ac0828018d27d6b39ade342879928b46a",
+   "params":{
+      "mandatoryKeys":[],
+      "optionalKeys":[
+         "61d320f822fcc163489499200ae6c99a66296513b1ca1066e49a37a026434ac0",
+         "dfbe4e3999138d62047c23f61f222a91b24d9d056db055be24f9ab6d95d7aa78",
+         "e57a23f897b13bdeef27439bb9f4e29ac0828018d27d6b39ade342879928b46a"
+      ],
+      "numberOfSignatures":2,
+      "signatures":[
+         "34ce00321ddb124c37cb02074fe260bd8c13aed902f64e7b67af23a523a7ebc2b4c6710bbd8da6a43959e3424a5d405852f161241e270a0562056a8e62da7b05",
+         "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+         "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      ]
+   },
+   "signatures":[],
+   "id":""
+}
+----
+====
+
+.After Bob signed the transaction
+[%collapsible]
+====
+[,json]
+----
+{
+   "module":"auth",
+   "command":"registerMultisignature",
+   "nonce":"0",
+   "fee":"443000",
+   "senderPublicKey":"e57a23f897b13bdeef27439bb9f4e29ac0828018d27d6b39ade342879928b46a",
+   "params":{
+      "mandatoryKeys":[],
+      "optionalKeys":[
+         "61d320f822fcc163489499200ae6c99a66296513b1ca1066e49a37a026434ac0",
+         "dfbe4e3999138d62047c23f61f222a91b24d9d056db055be24f9ab6d95d7aa78",
+         "e57a23f897b13bdeef27439bb9f4e29ac0828018d27d6b39ade342879928b46a"
+      ],
+      "numberOfSignatures":2,
+      "signatures":[
+         "34ce00321ddb124c37cb02074fe260bd8c13aed902f64e7b67af23a523a7ebc2b4c6710bbd8da6a43959e3424a5d405852f161241e270a0562056a8e62da7b05",
+         "bbf06d1edddeb097943816e5d261b9d470f252143e62226f28c17ff94db4dd7dedf8888fae3a21abcdf745645d2de6ea90938dbc9bed11556de97efe85735000",
+         "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      ]
+   },
+   "signatures":[],
+   "id":""
+}
+----
+====
+
+.After the arbiter signed the transaction
+[%collapsible]
+====
+[,json]
+----
+{
+   "module":"auth",
+   "command":"registerMultisignature",
+   "nonce":"0",
+   "fee":"443000",
+   "senderPublicKey":"e57a23f897b13bdeef27439bb9f4e29ac0828018d27d6b39ade342879928b46a",
+   "params":{
+      "mandatoryKeys":[],
+      "optionalKeys":[
+         "61d320f822fcc163489499200ae6c99a66296513b1ca1066e49a37a026434ac0",
+         "dfbe4e3999138d62047c23f61f222a91b24d9d056db055be24f9ab6d95d7aa78",
+         "e57a23f897b13bdeef27439bb9f4e29ac0828018d27d6b39ade342879928b46a"
+      ],
+      "numberOfSignatures":2,
+      "signatures":[
+         "34ce00321ddb124c37cb02074fe260bd8c13aed902f64e7b67af23a523a7ebc2b4c6710bbd8da6a43959e3424a5d405852f161241e270a0562056a8e62da7b05",
+         "bbf06d1edddeb097943816e5d261b9d470f252143e62226f28c17ff94db4dd7dedf8888fae3a21abcdf745645d2de6ea90938dbc9bed11556de97efe85735000",
+         "f930c51abf5b4a9254e5fd0f36d1c2efd644c38835ff437117678f1fdb6d1ef55da6456f56ee1b9c83c9c4f25d2d7a3044561498c8412393e19063cf2049330e"
+      ]
+   },
+   "signatures":[
+      "355727c5a2e144e714303fb3ed37113c2245b4a2e5fbb938979e747036cfdd3b618ec58ca58ffa98f0da6662ab58d1f81113950c25af9e89824b80ba16057404"
+   ],
+   "id":"46335ce10e8c8b01162b9b4da0bd48ed253ab68afdcaa043487c54e115427149"
+}
+----
+====
+--
+Lisk Elements::
++
+--
+Extend the script from <<converting-a-user-account-into-a-multi-signature-account>> and append some code that asks for the private key of a user, and uses it to sign the prepared transaction JSON.
+
+To add a signature to a transaction, use the `ed.signDataWithPrivateKey()` method of the {url_typedoc_crypto}[lisk-cryptography^] package.
+
+Don't forget to specify the other required parameters for `ed.signDataWithPrivateKey()`, especially `chainID` should be the correct chain ID for the account, and the `tag` for multi-signature registrations should always be `LSK_RMSG_`.
+
+An example script can be found in the lisk-sdk-examples repository: {url_github_guides_multisig}[multisig.js^]
+
+When using this script for several members, the `paramsStr` variable should be updated to the params that were returned from running `node multisig.js PRIVATEKEY`.
+This way all required signatures will be added to the parameters one after another.
+
+When all required signatures are added, the parameters can be used to xref:{url_integrate_createtxs_apiclient}[create] a multi-signature registration transaction from the account that should be converted to a multi-signature account.
+How to send the transaction is described in the next step.
+--
+=====
+
+////
+--
+Node CLI::
++
+--
+
+Log in to Lisk Desktop with your account that is defined as part of the new multi-sig group.
+
+Copy the transaction from above in JSON string format and proceed to sign the transaction object in Lisk Desktop, as explained in <<collecting-signatures>>.
+////
+
+=== How to send the multi-signature registration
+
+[tabs]
+=====
+Lisk Desktop::
++
+--
+After all group members have signed the transaction object, it is possible to send it to the network:
+
+image:integrate-blockchain/multisig/12-send.png[,200]
+
+If the transaction was sent successfully, it will show a confirmation message.
+--
+Lisk Elements::
++
+--
+For a step-by-step guide on sending a transaction with Lisk Elements, please refer to the xref:{url_integrate_posttxs_apiclient}[How to post a transaction] guide.
+--
+=====
+
+////
+--
+Node CLI::
++
+--
+If you used Lisk Desktop to collect the required signatures, it is possible to directly send it from Lisk Desktop, after the last required signature was added to the transaction.
+
+In case you want to send the transaction via CLI, download or copy the JSON from Lisk Desktop and send it like this:
+
+Use the console of xref:{url_core}[Lisk Core] or xref:{url_sdk_commander}[Lisk Commander] to encode the transaction JSON;
+
+----
+lisk console
+----
+
+Assign the transaction JSON to a variable.
+
+[,js]
+----
+lisk-core > const tx = {
+...   module: 'token',
+...   command: 'transfer',
+...   params: {
+...     tokenID: '0300000800000000',
+...     amount: '100000000',
+...     recipientAddress: 'lskycz7hvr8yfu74bcwxy2n4mopfmjancgdvxq8xz',
+...     data: 'Hello World!'
+...   },
+...   nonce: '2',
+...   fee: '176000',
+...   senderPublicKey: 'ec10255d3e78b2977f04e59ea9afd3e9a2ce9a6b44619ef9f6c47c29695b1df3',
+...   signatures: [
+...     '866c4a96e8d9dd27100520759e1974cea8db52bf0df4b7660b5a87c6e4cd4488c6c71ac6f6ebbd57188a355a331d10f318f814eae63fb966e4f8cea25530480f'
+        'bbf06d1edddeb097943816e5d261b9d470f252143e62226f28c17ff94db4dd7dedf8888fae3a21abcdf745645d2de6ea90938dbc9bed11556de97efe85735000',
+        'f930c51abf5b4a9254e5fd0f36d1c2efd644c38835ff437117678f1fdb6d1ef55da6456f56ee1b9c83c9c4f25d2d7a3044561498c8412393e19063cf2049330e',
+...   ],
+...   id: '6ffb10cf563b809618a079f07791f2699be6989935e2582d5e5f4cc7afd2b4f9'
+... }
+----
+
+Encode the transaction by using the API client.
+
+----
+lisk-core > let hexTx
+lisk-core > api.then((client) => {
+... const decodedTx = client.transaction.fromJSON(tx);
+... const encodedTx = client.transaction.encode(decodedTx);
+... hexTx = encodedTx.toString('hex');
+... });
+----
+
+----
+lisk-core > hexTx
+'0a05746f6b656e12087472616e7366657218022080df0a2a20ec10255d3e78b2977f04e59ea9afd3e9a2ce9a6b44619ef9f6c47c29695b1df332330a0803000008000000001080c2d72f1a1488c0ee8a4f8fa0e498770c70749584f179938ffa220c48656c6c6f20576f726c64213a40866c4a96e8d9dd27100520759e1974cea8db52bf0df4b7660b5a87c6e4cd4488c6c71ac6f6ebbd57188a355a331d10f318f814eae63fb966e4f8cea25530480f'
+----
+
+Copy the resulting hex string, close the console, and send the transaction as usual via node CLI:
+
+----
+lisk-core transaction:send 0a05746f6b656e12087472616e7366657218022080df0a2a20ec10255d3e78b2977f04e59ea9afd3e9a2ce9a6b44619ef9f6c47c29695b1df332330a0803000008000000001080c2d72f1a1488c0ee8a4f8fa0e498770c70749584f179938ffa220c48656c6c6f20576f726c64213a40866c4a96e8d9dd27100520759e1974cea8db52bf0df4b7660b5a87c6e4cd4488c6c71ac6f6ebbd57188a355a331d10f318f814eae63fb966e4f8cea25530480f
+----
+////
+
+Once the transaction is included in a block, the account is converted into a multi-signature account, and it is possible to <<how-to-create-a-multi-signature-transaction,create and sign multi-signature transactions>>.
+
+== How to create a multi-signature transaction
+
+This section describes how to create a transaction for a multi-signature account.
+
+The transaction creation is basically analog to normal transactions.
+
+One difference is, that for multi-sig transactions, it will not be possible to send the created transaction right away.
+First, all required signatures need to be collected, as explained in <<how-to-sign-a-multi-signature-transaction>>.
+That is why you want the transaction to be returned in JSON format in most cases, so all data to be signed is human-readable and can be reviewed and verified by the respective group members.
+
+For Lisk Desktop, it is important to note that the transaction object can only be created from the multi-signature account itself (not its other members).
+
+[tabs]
+=====
+Lisk Desktop::
++
+--
+In Lisk Desktop, it is only possible to create a multi-signature transaction by the account owner of the multi-sig account, i.e. the person owning the passphrase/private key of the account.
+Only when you log in to the original multi-sig account, it is possible to create the transaction object as described below.
+
+If you are a member of a multi-sig account, but you don't personally have the passphrase for the multi-sig account, it is still possible to create transaction objects for the account, that you can sign and share with other group members.
+For this, please refer to the examples in the "Node CLI" and "Lisk Elements" tabs.
+
+Prepare a transaction, for example, a token transfer::
+From Lisk Desktop, click on the kbd:[Send] button as you would normally to create a token transfer.
+image:integrate-blockchain/multisig/14-create-tx.png[]
+
+Confirm the transaction parameters::
+Please note it is not immediately possible to send the transaction.
+First, the required signatures need to be collected.
+In this case, the minimum required signatures are two, which is also displayed in the transaction details.
+image:integrate-blockchain/multisig/15-review.png[]
+
+Download and share the transaction object::
+Sign the transaction object.
+In this example, three external accounts manage the multi-sig account, so it will only create the JSON with placeholders for the signatures, which can then be shared with the group members in order to add the required signatures.
+If the multi-sig-account itself is a member of the group, one signature will be appended under signatures, and additionally, there will be two placeholders for the remaining signatures of other members.
+image:integrate-blockchain/multisig/15-signed.png[]
+--
+Lisk Elements::
++
+--
+Create a transaction like normally for example with the API client, as explained here: xref:{url_integrate_createtxs_apiclient}[How to create a transaction via API client].
+--
+=====
+
+////
+--
+Node CLI::
++
+--
+Create a normal transaction via the CLI, and add the `--json` flag, so that it will return the transaction in JSON format.
+
+----
+lisk-core transaction:create token transfer 100000000 --json
+----
+
+Define the transaction params and sign the transaction with your passphrase:
+
+----
+? Please enter passphrase:  [hidden]
+? Please enter: tokenID:  0400000000000000
+? Please enter: amount:  800000000
+? Please enter: recipientAddress:  lskt8ovj2shbxrtno8xqqt7cnmzzygdkbt6brnvmj
+? Please enter: data:  Happy birthday!
+----
+
+Now copy the transaction in JSON format and share it with the next member of the multi-signature group, so they can sign it as well.
+
+.Result
+[,json]
+----
+{
+   "transaction":{
+      "module":"token",
+      "command":"transfer",
+      "fee":"100000000",
+      "nonce":"4",
+      "senderPublicKey":"3972849f2ab66376a68671c10a00e8b8b67d880434cc65b04c6ed886dfa91c2c",
+      "signatures":[
+         "c06cd0ef375911528d491971296532dbd58725f0fccc0f23e6c0656c43e75ecd12635616117e64d005f1c9f2a55de7cf2d8f5cb961927d839d141a18faa80e08"
+      ],
+      "params":{
+         "tokenID":"0400000000000000",
+         "amount":"800000000",
+         "recipientAddress":"lskt8ovj2shbxrtno8xqqt7cnmzzygdkbt6brnvmj",
+         "data":"Happy birthday!"
+      },
+      "id":"f3f537bbd52464d2f97c02f5ef0f9a805d19ad4f8ef1c7efa1da17cef0e5036a"
+   }
+}
+----
+--
+////
+
+== How to sign a multi-signature transaction
+As the name suggests, a multi-signature transaction requires signatures from multiple accounts to be valid.
+
+Therefore, it is necessary that the group collects all necessary signatures offline, for example by sharing the respective transaction object as JSON with all members.
+They can then consecutively add their signatures if they approve the transaction.
+
+Once the required signatures are reached for a transaction, it is possible to send it to the network, like a normal transaction.
+
+[tabs]
+=====
+Lisk Desktop::
++
+--
+Import the transaction::
+In Lisk Desktop, click on the kbd:[Sign multisignature] button in the left menu.
+This will open a new window, where it is possible to paste the JSON of the multi-sig transaction that the account intends to sign.
+image:integrate-blockchain/multisig/16-import-tx.png[]
+
+Confirm the transaction parameters::
+Review the parameters of the transaction, and confirm the correctness with your signature by clicking on kbd:[Sign], or reject the transaction by clicking on kbd:[Reject].
+image:integrate-blockchain/multisig/17-review.png[]
+
+Send the transaction::
+When the minimum required signatures for a multi-signature transaction are reached, it is possible to directly post the transaction by hitting the kbd:[Send] button.
+Otherwise, you can download the new JSON with your signature appended, and pass it to the next member of the multi-signature group.
+image:integrate-blockchain/multisig/18-send.png[]
++
+When the transaction is accepted, the following confirmation message will be displayed.
++
+image:integrate-blockchain/multisig/19-confirmation.png[]
+--
+Lisk Elements::
++
+--
+To collect all required signatures for a transaction from a multi-signature account, you can use a similar script as the {url_github_guides_multisig}[multisig.js^], which was used in step <<collecting-signatures>> above.
+
+The main thing that needs to be updated in the script are the `module`, `command`, and `params` properties of the transaction.
+
+Once all required signatures for the respective multi-sig transaction are collected, it can be sent like a normal transaction, as described here: xref:{url_integrate_posttxs_apiclient}[WS & IPC API example with API client].
+--
+=====
+
+////
+--
+Node CLI::
++
+--
+Log into Lisk Desktop with your account that is defined as part of the new multi-sig group.
+
+Copy the transaction from the last step in JSON string format and proceed to sign the transaction object in Lisk Desktop, as explained in <<how-to-sign-a-multi-signature-transaction>>.
+--
+////

@@ -751,16 +751,16 @@ export class ReactionStore extends BaseStore&lt;ReactionStoreData&gt; {
 </div>
 </div>
 <div class="paragraph">
-<p>To indicate that this command will accept and execute a CCM, move it to a new folder <code>cc_commands</code>.</p>
+<p>To indicate that this command will accept and execute a CCM, move it to a new folder <code>cc_commands</code> and rename the file to <code>react_cc_command.ts</code>.</p>
 </div>
 <div class="paragraph">
-<p>Now, open the file <code>hello/cc_commands/react_command.ts</code> and import the constants, schemas, and types defined above.</p>
-</div>
-<div class="paragraph">
-<p>Next, update the following properties of the command:</p>
+<p>Now, open the file and update the following properties of the command:</p>
 </div>
 <div class="ulist">
 <ul>
+<li>
+<p>Replace <code>ReactCommand</code> with <code>ReactCCCommand</code></p>
+</li>
 <li>
 <p>Replace <code>BaseCommand</code> with <code>BaseCCCommand</code></p>
 </li>
@@ -776,7 +776,7 @@ export class ReactionStore extends BaseStore&lt;ReactionStoreData&gt; {
 </ul>
 </div>
 <div class="listingblock">
-<div class="title">hello/cc_commands/react_command.ts</div>
+<div class="title">hello/cc_commands/react_cc_command.ts</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import { BaseCCCommand, CrossChainMessageContext, codec, cryptography, db } from 'lisk-sdk';
 import { CCReactMessageParamsSchema, CCReactMessageParams } from '../schemas';
@@ -784,7 +784,7 @@ import { MAX_RESERVED_ERROR_STATUS, CROSS_CHAIN_COMMAND_REACT } from '../constan
 import { ReactionStore, ReactionStoreData } from '../stores/reaction';
 import { MessageStore } from '../stores/message';
 
-export class ReactCommand extends BaseCCCommand {
+export class ReactCCCommand extends BaseCCCommand {
     public schema = CCReactMessageParamsSchema;
 
     public get name(): string {
@@ -811,18 +811,21 @@ export class ReactCommand extends BaseCCCommand {
 <p>Extend the <code>verify()</code> hook to include more checks for the other parameters as well, as desired.</p>
 </div>
 <div class="listingblock">
-<div class="title">hello/cc_commands/react_command.ts</div>
+<div class="title">hello/cc_commands/react_cc_command.ts</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async verify(ctx: CrossChainMessageContext): Promise&lt;void&gt; {
     const { ccm } = ctx;
 
     if (ccm.status &gt; MAX_RESERVED_ERROR_STATUS) {
-        throw new Error(`Invalid CCM status code. Must be &lt;= ${MAX_RESERVED_ERROR_STATUS}.`);
+        throw new Error('Invalid CCM status code.');
     }
 
-    const params = codec.decode&lt;CCReactMessageParams&gt;(CCReactMessageParamsSchema, ccm.params);
+    const ccReactMessageParams = codec.decode&lt;CCReactMessageParams&gt;(
+        CCReactMessageParamsSchema,
+        ccm.params,
+    );
     const messageCreatorAddress = cryptography.address.getAddressFromLisk32Address(
-        params.helloMessageID,
+        ccReactMessageParams.helloMessageID,
     );
     if (!(await this.stores.get(MessageStore).has(ctx, messageCreatorAddress))) {
         throw new Error('Message ID does not exists.');
@@ -848,38 +851,48 @@ export class ReactCommand extends BaseCCCommand {
 <p>The <a href="#create-a-store-for-reactions">Reaction Store</a> is used to save the reactions for Hello messages.</p>
 </div>
 <div class="listingblock">
-<div class="title">hello/cc_commands/react_command.ts</div>
+<div class="title">hello/cc_commands/react_cc_command.ts</div>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async execute(ctx: CrossChainMessageContext): Promise&lt;void&gt; {
-    const { ccm, logger } = ctx;
+    const { ccm, logger, transaction } = ctx;
     logger.info('Executing React CCM');
-    // const { sendingChainID, status, receivingChainID } = ccm;
-    // Decode the provided CCM parameters
-    const params = codec.decode&lt;CCReactMessageParams&gt;(CCReactMessageParamsSchema, ccm.params);
-    logger.info(params, 'parameters');
-    // Get helloMessageID and reactionType from the parameters
-    const { helloMessageID, reactionType } = params;
-    const reactionSubstore = this.stores.get(ReactionStore);
-    const messageCreatorAddress = cryptography.address.getAddressFromLisk32Address(helloMessageID);
-    let msgReactions: ReactionStoreData;
 
+    // Decode the provided CCM parameters
+    const ccReactMessageParams = codec.decode&lt;CCReactMessageParams&gt;(
+        CCReactMessageParamsSchema,
+        ccm.params,
+    );
+    logger.info(ccReactMessageParams, 'parameters');
+
+    // Get helloMessageID and reactionType from the parameters
+    const { helloMessageID, reactionType } = ccReactMessageParams;
+    const { senderAddress } = transaction;
+    const reactionSubstore = this.stores.get(ReactionStore);
+    const msgCreatorAddress = cryptography.address.getAddressFromLisk32Address(helloMessageID);
+
+    let msgReactions: ReactionStoreData;
     // Get existing reactions for a Hello message, or initialize an empty reaction object, if none exists,yet.
     try {
-        msgReactions = await reactionSubstore.get(ctx, messageCreatorAddress);
+        msgReactions = await reactionSubstore.get(ctx, msgCreatorAddress);
     } catch (error) {
         if (!(error instanceof db.NotFoundError)) {
-            logger.info({ helloMessageID, crossChainCommand: this.name }, (error as Error).message);
-            logger.error({ error }, 'Error when getting the reaction substore');
+            logger.error(
+                {
+                    helloMessageID,
+                    crossChainCommand: this.name,
+                    error,
+                },
+                'Error when getting the reaction substore',
+            );
             throw error;
         }
         logger.info(
             { helloMessageID, crossChainCommand: this.name },
             `No entry exists for given helloMessageID ${helloMessageID}. Creating a default entry.`,
         );
-        msgReactions = { reactions: { like: [] } };
+        msgReactions = { reactions: { likes: [] } };
     }
 
-    // Check if the reactions is a like
     let { likes } = msgReactions.reactions;
     // Check if the reactions is a like
     if (reactionType === 0) {
@@ -896,9 +909,10 @@ export class ReactCommand extends BaseCCCommand {
     } else {
         logger.error({ reactionType }, 'invalid reaction type');
     }
+
     msgReactions.reactions.likes = likes;
     // Update the reaction store with the reactions for the specified Hello message
-    await reactionSubstore.set(ctx, messageCreatorAddress, msgReactions);
+    await reactionSubstore.set(ctx, msgCreatorAddress, msgReactions);
 }</code></pre>
 </div>
 </div>
@@ -924,7 +938,6 @@ It is used as unique identifier of a Hello message, to get the corresponding rea
     if (typeof address !== 'string') {
         throw new Error('Parameter address must be a string.');
     }
-    cryptography.address.validateLisk32Address(address);
 
     const reactions = await reactionSubStore.get(
         ctx,
@@ -949,30 +962,31 @@ It is used as unique identifier of a Hello message, to get the corresponding rea
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import {
-    validator,
-    BaseInteroperableModule,
-    BlockAfterExecuteContext,
-    BlockExecuteContext,
-    BlockVerifyContext,
-    GenesisBlockExecuteContext,
-    InsertAssetContext,
-    ModuleInitArgs,
-    ModuleMetadata,
-    TransactionExecuteContext,
-    TransactionVerifyContext,
-    utils,
-    VerificationResult,
+	validator,
+	BaseInteroperableModule,
+	BlockAfterExecuteContext,
+	BlockExecuteContext,
+	BlockVerifyContext,
+	GenesisBlockExecuteContext,
+	InsertAssetContext,
+	ModuleInitArgs,
+	ModuleMetadata,
+	TransactionExecuteContext,
+	TransactionVerifyContext,
+	utils,
+	VerificationResult,
+	VerifyStatus,
 } from 'lisk-sdk';
 import { CreateHelloCommand } from './commands/create_hello_command';
-import { ReactCommand } from './cc_commands/react_command';
+import { ReactCCCommand } from './cc_commands/react_cc_command';
 import { HelloEndpoint } from './endpoint';
 import { NewHelloEvent } from './events/new_hello';
 import { HelloMethod } from './method';
 import {
-    configSchema,
-    getHelloCounterResponseSchema,
-    getHelloRequestSchema,
-    getHelloResponseSchema,
+	configSchema,
+	getHelloCounterResponseSchema,
+	getHelloRequestSchema,
+	getHelloResponseSchema,
 } from './schemas';
 import { CounterStore } from './stores/counter';
 import { MessageStore } from './stores/message';
@@ -990,7 +1004,7 @@ export class HelloModule extends BaseInteroperableModule {
     public endpoint = new HelloEndpoint(this.stores, this.offchainStores);
     public method = new HelloMethod(this.stores, this.events);
     public commands = [new CreateHelloCommand(this.stores, this.events)];
-    public reactCCCommand = new ReactCommand(this.stores, this.events);
+    public reactCCCommand = new ReactCCCommand(this.stores, this.events);
     public crossChainMethod = new HelloInteroperableMethod(this.stores, this.events);
     public crossChainCommand = [this.reactCCCommand];
 
@@ -1063,8 +1077,8 @@ export class HelloModule extends BaseInteroperableModule {
     public async verifyTransaction(_context: TransactionVerifyContext): Promise&lt;VerificationResult&gt; {
         // verify transaction will be called multiple times in the transaction pool
         const result = {
-            status: 1,
-        };
+			status: VerifyStatus.OK,
+		};
         return result;
     }
 

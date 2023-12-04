@@ -277,20 +277,28 @@
     <a class="nav-link" href="../../build-blockchain/using-dashboard.html">Using the Dashboard with a blockchain client</a>
   </li>
   <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../build-blockchain/enable-faucet.html">How to enable a Faucet for testing</a>
+  </li>
+  <li class="nav-item" data-depth="2">
     <a class="nav-link" href="../../build-blockchain/create-genesis-block.html">How to create a new genesis block</a>
   </li>
   <li class="nav-item" data-depth="2">
     <a class="nav-link" href="../../build-blockchain/register-sidechain.html">How to register a sidechain</a>
   </li>
   <li class="nav-item" data-depth="2">
-    <a class="nav-link" href="../../build-blockchain/enable-faucet.html">How to enable a Faucet for testing</a>
-  </li>
-</ul>
-  </li>
-</ul>
-  </li>
-  <li class="nav-item" data-depth="0">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../../build-blockchain/interoperable-module/index.html">How to implement cross-chain communication</a>
 <ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../build-blockchain/interoperable-module/create-ccm.html">How to create a CCM</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../build-blockchain/interoperable-module/execute-ccm.html">How to execute a CCM</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
   <li class="nav-item" data-depth="1">
     <button class="nav-item-toggle"></button>
     <a class="nav-link" href="../../run-blockchain/index.html">Run Blockchain</a>
@@ -516,9 +524,6 @@
         <li class="version is-latest">
           <a href="../../../lisk-service/index.html">0.6.6 (latest)</a>
         </li>
-        <li class="version">
-          <a href="../../../lisk-service/0.7/index.html">0.7 (beta)</a>
-        </li>
       </ul>
     </li>
   </ul>
@@ -593,6 +598,12 @@ For successful registration, each module needs to follow the expected module str
 </li>
 <li><a href="#module-name">Module name</a></li>
 <li><a href="#module-constructor">Module constructor</a></li>
+<li><a href="#module-dependencies">Module dependencies</a>
+<ul class="sectlevel2">
+<li><a href="#adddependencies">addDependencies</a></li>
+<li><a href="#init">Init</a></li>
+</ul>
+</li>
 <li><a href="#module-metadata">Module metadata</a>
 <ul class="sectlevel2">
 <li><a href="#defining-the-module-metadata">Defining the module metadata</a></li>
@@ -604,13 +615,7 @@ For successful registration, each module needs to follow the expected module str
 <li><a href="#off-chain-store">Off-chain Store</a></li>
 </ul>
 </li>
-<li><a href="#module-configuration">Module configuration</a>
-<ul class="sectlevel2">
-<li><a href="#config-schema">Config schema</a></li>
-<li><a href="#default-configuration">Default configuration</a></li>
-<li><a href="#config-initialization">Config initialization</a></li>
-</ul>
-</li>
+<li><a href="#module-configuration">Module configuration</a></li>
 <li><a href="#endpoints">Endpoints</a>
 <ul class="sectlevel2">
 <li><a href="#how-to-define-module-endpoints">How to define module endpoints</a></li>
@@ -626,9 +631,6 @@ For successful registration, each module needs to follow the expected module str
 <li><a href="#blockchain-events">Blockchain Events</a>
 <ul class="sectlevel2">
 <li><a href="#standard-event">Standard event</a></li>
-<li><a href="#creating-new-blockchain-event-types">Creating new blockchain event types</a></li>
-<li><a href="#registering-events">Registering events</a></li>
-<li><a href="#publishing-events">Publishing events</a></li>
 </ul>
 </li>
 <li><a href="#commands">Commands</a>
@@ -678,16 +680,13 @@ For successful registration, each module needs to follow the expected module str
 <div class="ulist">
 <ul>
 <li>
-<p><a href="#calling-a-module-method-from-another-module">addDependencies()</a></p>
+<p><a href="#adddependencies">addDependencies</a></p>
 </li>
 <li>
-<p><a href="#module-constructor">Module constructor</a></p>
+<p><a href="#module-constructor">constructor</a></p>
 </li>
 <li>
-<p><a href="#config-initialization">Config initialization</a></p>
-</li>
-<li>
-<p><a href="#config-schema">Config schema</a></p>
+<p><a href="#init">Init</a></p>
 </li>
 </ul>
 </div>
@@ -902,14 +901,106 @@ class HelloModule extends BaseModule {
 export class HelloModule extends BaseModule {
     // ...
     public constructor() {
-		super();
-		// registration of stores and events
-		this.stores.register(CounterStore, new CounterStore(this.name));
-		this.stores.register(MessageStore, new MessageStore(this.name));
-		this.events.register(NewHelloEvent, new NewHelloEvent(this.name));
-	}
+        super();
+        // registration of stores and events
+        this.stores.register(CounterStore, new CounterStore(this.name));
+        this.stores.register(MessageStore, new MessageStore(this.name));
+        this.events.register(NewHelloEvent, new NewHelloEvent(this.name));
+    }
     // ...
 }</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="module-dependencies"><a class="anchor" href="#module-dependencies"></a>Module dependencies</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="adddependencies"><a class="anchor" href="#adddependencies"></a>addDependencies</h3>
+<div class="paragraph">
+<p>If a module has dependencies on other modules, these can be injected in the <code>addDependencies()</code> method.</p>
+</div>
+<div class="listingblock">
+<div class="title">module.ts</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export class ReactModule extends BaseInteroperableModule {
+    // ...
+
+    public addDependencies(interoperabilityMethod: InteroperabilityMethod) {
+        this._interoperabilityMethod = interoperabilityMethod;
+    }
+    // ...
+
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><code>addDependencies()</code> is not part of the module lifecycle and needs to be called manually, ideally right after registering the module to the client, like shown below:</p>
+</div>
+<div class="listingblock">
+<div class="title">app.ts</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import { Application, PartialApplicationConfig } from 'lisk-sdk';
+import { registerModules } from './modules';
+import { registerPlugins } from './plugins';
+import { ReactModule } from './modules/react/module';
+
+export const getApplication = (config: PartialApplicationConfig): Application =&gt; {
+    const { app, method } = Application.defaultApplication(config);
+    const reactModule = new ReactModule();
+    app.registerModule(reactModule);
+    app.registerInteroperableModule(reactModule);
+    reactModule.addDependencies(method.interoperability);
+
+    registerModules(app);
+    registerPlugins(app);
+
+    return app;
+};</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="init"><a class="anchor" href="#init"></a>Init</h3>
+<div class="paragraph">
+<p>The <code>init()</code> method is part of the module lifecycle and gets called when the module initializes.</p>
+</div>
+<div class="paragraph">
+<p>If a module needs to access certain <a href="#module-configuration">configuration options</a>, it is required to validate and cache the respective configurations in the <code>init()</code> method of a module.
+The <code>init()</code> hook can also be used to pass required config options or methods to the module commands.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example: Hello module init() hook</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export class HelloModule extends BaseModule {
+    // ...
+    public async init(args: ModuleInitArgs): Promise&lt;void&gt; {
+        // Get the module config defined in the config.json file
+        const { moduleConfig } = args;
+        // Overwrite the default module config with values from config.json, if set
+        const config = utils.objects.mergeDeep({}, defaultConfig, moduleConfig) as ModuleConfigJSON;
+        // Validate the provided config with the config schema
+        validator.validator.validate&lt;ModuleConfigJSON&gt;(configSchema, config);
+        // Call the command init() method with config values as parameters
+        this.commands[0].init(config).catch(err =&gt; {
+            // eslint-disable-next-line no-console
+            console.log('Error: ', err);
+        });
+    }
+    // ...
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Example: React module init() hook</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public async init(_args: ModuleInitArgs) {
+        this.commands[0].init({
+            interoperabilityMethod: this._interoperabilityMethod,
+        });
+    }</code></pre>
+</div>
 </div>
 </div>
 </div>
@@ -1367,95 +1458,6 @@ The data stored in the off-chain store is not part of the blockchain protocol, a
 <div class="paragraph">
 <p>For more information on how to configure a module, read the guide <a href="../../build-blockchain/module/configuration.html" class="xref page">How to create a module configuration</a>.</p>
 </div>
-<div class="sect2">
-<h3 id="config-schema"><a class="anchor" href="#config-schema"></a>Config schema</h3>
-<div class="paragraph">
-<p>If the module expects certain options to be present in the configuration, it is recommended to define a configuration schema to validate the module options that the node operator provided in the node configuration file.</p>
-</div>
-<details>
-<summary class="title">Example: Module config schema</summary>
-<div class="content">
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export const configSchema = {
-    $id: '/hello/config',
-    type: 'object',
-    properties: {
-         maxMessageLength: {
-            type: 'integer',
-            format: 'uint32',
-        },
-        minMessageLength: {
-            type: 'integer',
-            format: 'uint32',
-        },
-        blacklist: {
-            type: 'array',
-            items: {
-                type: 'string',
-                minLength: 1,
-                maxLength: 40,
-            },
-        },
-    },
-    required: [
-        'maxMessageLength',
-        'minMessageLength',
-        'blacklist'
-    ],
-};</code></pre>
-</div>
-</div>
-</div>
-</details>
-</div>
-<div class="sect2">
-<h3 id="default-configuration"><a class="anchor" href="#default-configuration"></a>Default configuration</h3>
-<div class="paragraph">
-<p>If the module expects certain options to be present in the configuration, it is recommended to define a default configuration that is used, if no config options are set in the <code>config.json</code> file by the user.</p>
-</div>
-<details>
-<summary class="title">Example: Default module config</summary>
-<div class="content">
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export const defaultConfig = {
-	maxMessageLength: 256,
-	minMessageLength: 3,
-	blacklist: ["illegalWord1"]
-};</code></pre>
-</div>
-</div>
-</div>
-</details>
-</div>
-<div class="sect2">
-<h3 id="config-initialization"><a class="anchor" href="#config-initialization"></a>Config initialization</h3>
-<div class="paragraph">
-<p>If a module needs to access certain configuration options, it is required to validate and cache the respective configurations in the <code>init()</code> method of a module, as described in the code snippet below:</p>
-</div>
-<div class="listingblock">
-<div class="title">Example: Module init() hook</div>
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export class HelloModule extends BaseModule {
-    // ...
-	public async init(args: ModuleInitArgs): Promise&lt;void&gt; {
-		// Get the module config defined in the config.json file
-		const { moduleConfig } = args;
-		// Overwrite the default module config with values from config.json, if set
-		const config = utils.objects.mergeDeep({}, defaultConfig, moduleConfig) as ModuleConfigJSON;
-		// Validate the provided config with the config schema
-		validator.validate&lt;ModuleConfigJSON&gt;(configSchema, config);
-		// Call the command init() method with config values as parameters
-		this.commands[0].init(config).catch(err =&gt; {
-			console.log("Error: ", err);
-		});
-	}
-    // ...
-}</code></pre>
-</div>
-</div>
-</div>
 </div>
 </div>
 <div class="sect1">
@@ -1673,7 +1675,7 @@ export class TokenModule extends BaseInteroperableModule {
 This method is called to verify if the sender of a transaction has enough balance to pay the transaction fee.</p>
 </div>
 <div class="paragraph">
-<p>Methods from other modules are made available to the module by importing them, and adding them as private properties in the <code>addDependencies()</code> method, as shown in the code snippet below.</p>
+<p>Methods from other modules are provided to the module by importing them, and adding them as properties in the <a href="#adddependencies">addDependencies</a> method, as shown in the code snippet below.</p>
 </div>
 <div class="listingblock">
 <div class="title">fee/module.ts</div>
@@ -1729,7 +1731,20 @@ Events occur per block, and are stored in the respective block header, from wher
 </td>
 <td class="content">
 <div class="title">Do not confuse blockchain events with RPC events.</div>
-In contrast to <a href="rpc.html#events" class="xref page">RPC events</a>, Blockchain events are part of the on-chain logic: Each block includes the <strong>event root in the block header</strong>, which is the root of a Sparse-Merkle-Tree of all blockchain events, that occur in that particular block.
+<div class="paragraph">
+<p>In contrast to <a href="rpc.html#events" class="xref page">RPC events</a>,</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Blockchain events are part of the on-chain logic:
+Each block includes the <strong>event root in the block header</strong>, which is the root of a Sparse-Merkle-Tree of all blockchain events, that occur in that particular block.</p>
+</li>
+<li>
+<p>If not configured differently, blockchain events are only kept for the last 300 blocks, to not pollute the blockchain unnecessarily.</p>
+</li>
+</ul>
+</div>
 </td>
 </tr>
 </table>
@@ -1774,6 +1789,19 @@ In contrast to <a href="rpc.html#events" class="xref page">RPC events</a>, Block
 </div>
 </div>
 </details>
+<div class="paragraph">
+<p>For more information on how to &#8230;&#8203;</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>create</strong> and <strong>emit</strong> blockchain events, read the guide <a href="../../build-blockchain/module/configuration.html" class="xref page">How to create a module configuration</a>.</p>
+</li>
+<li>
+<p><strong>listen</strong> to blockchain events, read the guide <a href="../../build-blockchain/plugin/plugin-class.html#sync-and-store-new-event" class="xref page">How to create a plugin</a>.</p>
+</li>
+</ul>
+</div>
 <div class="sect2">
 <h3 id="standard-event"><a class="anchor" href="#standard-event"></a>Standard event</h3>
 <div class="paragraph">
@@ -1816,178 +1844,6 @@ The standard event is therefore the only blockchain event, that is not defined m
 		},
 	},
 };</code></pre>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="creating-new-blockchain-event-types"><a class="anchor" href="#creating-new-blockchain-event-types"></a>Creating new blockchain event types</h3>
-<div class="paragraph">
-<p>New event types that complement the on-chain business logic of the module can be created by extending from the <code>BaseEvent</code> class.</p>
-</div>
-<div class="paragraph">
-<p>The only mandatory property to define in the event is the <code>schema</code>, which defines what custom <code>data</code> is required by the event to publish the correct information.</p>
-</div>
-<div class="paragraph">
-<p>For example, the following data is required by the <code>TransferEvent</code> of the Token module:</p>
-</div>
-<details>
-<summary class="title">TransferEventData</summary>
-<div class="content">
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export interface TransferEventData {
-	senderAddress: Buffer;
-	tokenID: Buffer;
-	amount: bigint;
-	recipientAddress: Buffer;
-}</code></pre>
-</div>
-</div>
-</div>
-</details>
-<div class="paragraph">
-<p>The corresponding schema for the <code>TransferEvent</code> data interface defined above looks as follows:</p>
-</div>
-<details>
-<summary class="title">transferEventSchema</summary>
-<div class="content">
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export const transferEventSchema = {
-	$id: '/token/events/transfer',
-	type: 'object',
-	required: ['senderAddress', 'recipientAddress', 'tokenID', 'amount', 'result'],
-	properties: {
-		senderAddress: {
-			dataType: 'bytes',
-			format: 'lisk32',
-			fieldNumber: 1,
-		},
-		tokenID: {
-		recipientAddress: {
-			dataType: 'bytes',
-			format: 'lisk32',
-			fieldNumber: 2,
-		},
-		amount: {
-			dataType: 'uint64',
-		tokenID: {
-			dataType: 'bytes',
-			minLength: TOKEN_ID_LENGTH,
-			maxLength: TOKEN_ID_LENGTH,
-			fieldNumber: 3,
-		},
-		recipientAddress: {
-			dataType: 'bytes',
-		amount: {
-			dataType: 'uint64',
-			fieldNumber: 4,
-		},
-		result: {
-			dataType: 'uint32',
-			fieldNumber: 5,
-		},
-	},
-};</code></pre>
-</div>
-</div>
-</div>
-</details>
-<div class="admonitionblock tip">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-tip" title="Tip"></i>
-</td>
-<td class="content">
-The only limitation to what <code>data</code> can be included in the event is the data size:
-<strong>The maximum size of the event data is 1 kB.</strong>
-</td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-<p>Besides the event <code>data</code>, <code>topics</code> are the second property that can be defined by the developer, when emitting/ publishing a blockchain event.
-Topics are similar to tags or labels, categorizing the event by a list of the relevant keywords.</p>
-</div>
-<div class="paragraph">
-<p>Both <code>data</code> and <code>topics</code> are passed as parameters to the <code>add()</code> method of a blockchain event:</p>
-</div>
-<div class="listingblock">
-<div class="title">events/transfer.ts</div>
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">this.add(context, data, topics[]);</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Add utility functions like <code>log()</code> and <code>error()</code> to omit duplicate code and/or to simplify the publishing of the event later.</p>
-</div>
-<div class="listingblock">
-<div class="title">Example: TransferEvent of the Token module</div>
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export class TransferEvent extends BaseEvent&lt;TransferEventData &amp; { result: TokenEventResult }&gt; {
-	public schema = transferEventSchema;
-
-	public log(ctx: EventQueuer, data: TransferEventData): void {
-		this.add(ctx, { ...data, result: TokenEventResult.SUCCESSFUL }, [
-			data.senderAddress,
-			data.recipientAddress,
-		]);
-	}
-
-	public error(ctx: EventQueuer, data: TransferEventData, result: TokenErrorEventResult): void {
-		this.add(ctx, { ...data, result }, [data.senderAddress, data.recipientAddress], true);
-	}
-}</code></pre>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="registering-events"><a class="anchor" href="#registering-events"></a>Registering events</h3>
-<div class="paragraph">
-<p>To make an event available in the module, register it to <code>this.events</code> in the <a href="#module-constructor">Module constructor</a>.</p>
-</div>
-<div class="listingblock">
-<div class="title">module.ts</div>
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">public constructor() {
-		super();
-		this.events.register(TransferEvent, new TransferEvent(this.name));
-	}</code></pre>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="publishing-events"><a class="anchor" href="#publishing-events"></a>Publishing events</h3>
-<div class="paragraph">
-<p>To emit or publish the event, add the following code snippet to the intended place, e.g. inside a module method:</p>
-</div>
-<div class="listingblock">
-<div class="title">method.ts</div>
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">import { TransferEvent, TransferEventResult } from './events/transfer';
-// ...
-export class TokenMethod extends BaseMethod {
-    // ...
-    public async transfer(
-		methodContext: MethodContext,
-		senderAddress: Buffer,
-		recipientAddress: Buffer,
-		tokenID: TokenID,
-		amount: bigint,
-	): Promise&lt;void&gt; {
-        // ...
-        const transferEvent = this.events.get(TransferEvent);
-        transferEvent.log(methodContext, {
-            amount,
-            recipientAddress,
-            result: TransferEventResult.SUCCESSFUL,
-            senderAddress,
-            tokenID,
-        });
-	}
-    // ...
-}</code></pre>
 </div>
 </div>
 </div>
@@ -2153,8 +2009,8 @@ It also defines their data type, order, and additional properties like min and m
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export class TransferCommand extends BaseCommand {
-	// ...
-	public schema = {
+    // ...
+    public schema = {
         $id: '/lisk/transferParams',
         title: 'Transfer transaction params',
         type: 'object',
@@ -2208,10 +2064,10 @@ It also defines their data type, order, and additional properties like min and m
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export class TransferCommand extends BaseCommand {
     // ...
-	private _methods!: TokenMethods;
-	public init(args: { methods: TokenMethods }) {
-		this._methods = args.methods;
-	}
+    private _methods!: TokenMethods;
+    public init(args: { methods: TokenMethods }) {
+        this._methods = args.methods;
+    }
     // ...
 }</code></pre>
 </div>
@@ -2238,22 +2094,22 @@ In this hook, the <strong>state cannot be mutated</strong> and events cannot be 
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export class TransferCommand extends BaseCommand {
-	// ...
-	public async verify(context: CommandVerifyContext&lt;Params&gt;): Promise&lt;VerificationResult&gt; {
-		const { params } = context;
+    // ...
+    public async verify(context: CommandVerifyContext&lt;Params&gt;): Promise&lt;VerificationResult&gt; {
+        const { params } = context;
 
-		try {
-			validator.validate(transferParamsSchema, params);
-		} catch (err) {
-			return {
-				status: VerifyStatus.FAIL,
-				error: err as Error,
-			};
-		}
-		return {
-			status: VerifyStatus.OK,
-		};
-	}
+        try {
+            validator.validate(transferParamsSchema, params);
+        } catch (err) {
+            return {
+                status: VerifyStatus.FAIL,
+                error: err as Error,
+            };
+        }
+        return {
+            status: VerifyStatus.OK,
+        };
+    }
     // ...
 }</code></pre>
 </div>
@@ -2294,12 +2150,12 @@ In this hook, the <strong>state cannot be mutated</strong> and events cannot be 
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export interface CommandVerifyContext&lt;T = undefined&gt; {
-	logger: Logger;
-	chainID: Buffer;
-	transaction: Transaction; // without decoding params
-	params: T;
-	getMethodContext: () =&gt; ImmutableMethodContext;
-	getStore: (moduleID: Buffer, storePrefix: Buffer) =&gt; ImmutableSubStore;
+    logger: Logger;
+    chainID: Buffer;
+    transaction: Transaction; // without decoding params
+    params: T;
+    getMethodContext: () =&gt; ImmutableMethodContext;
+    getStore: (moduleID: Buffer, storePrefix: Buffer) =&gt; ImmutableSubStore;
 }</code></pre>
 </div>
 </div>
@@ -2332,17 +2188,17 @@ In this hook, the <strong>state can be mutated</strong> and events can be emitte
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export class TransferCommand extends BaseCommand {
-	// ...
-	public async execute(context: CommandExecuteContext&lt;Params&gt;): Promise&lt;void&gt; {
-		const { params } = context;
-		await this._api.transfer(
-			context.getAPIContext(),
-			context.transaction.senderAddress,
-			params.recipientAddress,
-			params.tokenID,
-			params.amount,
-		);
-	}
+    // ...
+    public async execute(context: CommandExecuteContext&lt;Params&gt;): Promise&lt;void&gt; {
+        const { params } = context;
+        await this._api.transfer(
+            context.getAPIContext(),
+            context.transaction.senderAddress,
+            params.recipientAddress,
+            params.tokenID,
+            params.amount,
+        );
+    }
 }</code></pre>
 </div>
 </div>
@@ -2404,19 +2260,19 @@ See <a href="#blockchain-events">Blockchain Events</a> for more information.</p>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-typescript hljs" data-lang="typescript">export interface CommandExecuteContext&lt;T = undefined&gt; {
-	logger: Logger;
-	chainID: Buffer;
-	eventQueue: EventQueue;
-	header: BlockHeader;
-	assets: BlockAssets;
-	currentValidators: Validator[];
-	impliesMaxPrevote: boolean;
-	maxHeightCertified: number;
-	certificateThreshold: bigint;
-	transaction: Transaction; // without decoding params
-	params: T;
-	getMethodContext: () =&gt; MethodContext;
-	getStore: (moduleID: Buffer, storePrefix: Buffer) =&gt; SubStore;
+    logger: Logger;
+    chainID: Buffer;
+    eventQueue: EventQueue;
+    header: BlockHeader;
+    assets: BlockAssets;
+    currentValidators: Validator[];
+    impliesMaxPrevote: boolean;
+    maxHeightCertified: number;
+    certificateThreshold: bigint;
+    transaction: Transaction; // without decoding params
+    params: T;
+    getMethodContext: () =&gt; MethodContext;
+    getStore: (moduleID: Buffer, storePrefix: Buffer) =&gt; SubStore;
 }</code></pre>
 </div>
 </div>
@@ -2482,15 +2338,15 @@ The assets added during the execution of this hook can be used in all the execut
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">{
-	logger: Logger;
-	networkIdentifier: Buffer;
-	getAPIContext: () =&gt; APIContext;
-	getStore: (moduleID: Buffer, storePrefix: Buffer) =&gt; ImmutableSubStore;
-	header: BlockHeader;
-	assets: WritableBlockAssets;
-	getGeneratorStore: (moduleID: Buffer) =&gt; SubStore;
-	getOffchainStore: (moduleID: Buffer, storePrefix: Buffer) =&gt; SubStore;
-	getFinalizedHeight(): number;
+    logger: Logger;
+    networkIdentifier: Buffer;
+    getAPIContext: () =&gt; APIContext;
+    getStore: (moduleID: Buffer, storePrefix: Buffer) =&gt; ImmutableSubStore;
+    header: BlockHeader;
+    assets: WritableBlockAssets;
+    getGeneratorStore: (moduleID: Buffer) =&gt; SubStore;
+    getOffchainStore: (moduleID: Buffer, storePrefix: Buffer) =&gt; SubStore;
+    getFinalizedHeight(): number;
 }</code></pre>
 </div>
 </div>
@@ -2533,12 +2389,12 @@ In this hook, the <strong>state cannot be mutated</strong> and events cannot be 
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">{
-	logger: Logger;
-	networkIdentifier: Buffer;
-	getAPIContext: () =&gt; ImmutableAPIContext;
-	getStore: (moduleID: Buffer, storePrefix: Buffer) =&gt; ImmutableSubStore;
-	header: BlockHeader;
-	assets: BlockAssets;
+    logger: Logger;
+    networkIdentifier: Buffer;
+    getAPIContext: () =&gt; ImmutableAPIContext;
+    getStore: (moduleID: Buffer, storePrefix: Buffer) =&gt; ImmutableSubStore;
+    header: BlockHeader;
+    assets: BlockAssets;
 }</code></pre>
 </div>
 </div>
@@ -2573,17 +2429,17 @@ In this hook, the <strong>state can be mutated</strong> and events can be emitte
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">{
-	logger: Logger;
-	networkIdentifier: Buffer;
-	eventQueue: EventQueue;
-	getAPIContext: () =&gt; APIContext;
-	getStore: (moduleID: Buffer, storePrefix: Buffer) =&gt; SubStore;
-	header: BlockHeader;
-	assets: BlockAssets;
-	currentValidators: Validator[];
-	impliesMaxPrevote: boolean;
-	maxHeightCertified: number;
-	certificateThreshold: bigint;
+    logger: Logger;
+    networkIdentifier: Buffer;
+    eventQueue: EventQueue;
+    getAPIContext: () =&gt; APIContext;
+    getStore: (moduleID: Buffer, storePrefix: Buffer) =&gt; SubStore;
+    header: BlockHeader;
+    assets: BlockAssets;
+    currentValidators: Validator[];
+    impliesMaxPrevote: boolean;
+    maxHeightCertified: number;
+    certificateThreshold: bigint;
 }</code></pre>
 </div>
 </div>
@@ -2623,11 +2479,11 @@ In this hook, the <strong>state cannot be mutated</strong> and events cannot be 
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">{
-	networkIdentifier: Buffer;
-	logger: Logger;
-	transaction: Transaction;
-	getAPIContext: () =&gt; ImmutableAPIContext;
-	getStore: (moduleID: Buffer, storePrefix: Buffer) =&gt; ImmutableSubStore;
+    networkIdentifier: Buffer;
+    logger: Logger;
+    transaction: Transaction;
+    getAPIContext: () =&gt; ImmutableAPIContext;
+    getStore: (moduleID: Buffer, storePrefix: Buffer) =&gt; ImmutableSubStore;
 }</code></pre>
 </div>
 </div>
@@ -2666,18 +2522,18 @@ In this hook, the <strong>state can be mutated</strong> and events can be emitte
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">{
-	logger: Logger;
-	networkIdentifier: Buffer;
-	eventQueue: EventQueueAdder;
-	getAPIContext: () =&gt; APIContext;
-	getStore: (moduleID: Buffer, storePrefix: Buffer) =&gt; SubStore;
-	header: BlockHeader;
-	assets: BlockAssets;
-	transaction: Transaction;
-	currentValidators: Validator[];
-	impliesMaxPrevote: boolean;
-	maxHeightCertified: number;
-	certificateThreshold: bigint;
+    logger: Logger;
+    networkIdentifier: Buffer;
+    eventQueue: EventQueueAdder;
+    getAPIContext: () =&gt; APIContext;
+    getStore: (moduleID: Buffer, storePrefix: Buffer) =&gt; SubStore;
+    header: BlockHeader;
+    assets: BlockAssets;
+    transaction: Transaction;
+    currentValidators: Validator[];
+    impliesMaxPrevote: boolean;
+    maxHeightCertified: number;
+    certificateThreshold: bigint;
 }</code></pre>
 </div>
 </div>
@@ -2716,18 +2572,18 @@ In this hook, the <strong>state can be mutated</strong> and events can be emitte
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">{
-	logger: Logger;
-	networkIdentifier: Buffer;
-	eventQueue: EventQueueAdder;
-	getAPIContext: () =&gt; APIContext;
-	getStore: (moduleID: Buffer, storePrefix: Buffer) =&gt; SubStore;
-	header: BlockHeader;
-	assets: BlockAssets;
-	transaction: Transaction;
-	currentValidators: Validator[];
-	impliesMaxPrevote: boolean;
-	maxHeightCertified: number;
-	certificateThreshold: bigint;
+    logger: Logger;
+    networkIdentifier: Buffer;
+    eventQueue: EventQueueAdder;
+    getAPIContext: () =&gt; APIContext;
+    getStore: (moduleID: Buffer, storePrefix: Buffer) =&gt; SubStore;
+    header: BlockHeader;
+    assets: BlockAssets;
+    transaction: Transaction;
+    currentValidators: Validator[];
+    impliesMaxPrevote: boolean;
+    maxHeightCertified: number;
+    certificateThreshold: bigint;
 }</code></pre>
 </div>
 </div>
@@ -2766,23 +2622,23 @@ In this hook, the <strong>state can be mutated</strong> and events can be emitte
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">{
-	logger: Logger;
-	networkIdentifier: Buffer;
-	eventQueue: EventQueue;
-	getAPIContext: () =&gt; APIContext;
-	getStore: (moduleID: Buffer, storePrefix: Buffer) =&gt; SubStore;
-	header: BlockHeader;
-	assets: BlockAssets;
-	currentValidators: Validator[];
-	impliesMaxPrevote: boolean;
-	maxHeightCertified: number;
-	certificateThreshold: bigint;
-	transactions: ReadonlyArray&lt;Transaction&gt;;
-	setNextValidators: (
-		preCommitThreshold: bigint,
-		certificateThreshold: bigint,
-		validators: Validator[],
-	) =&gt; void;
+    logger: Logger;
+    networkIdentifier: Buffer;
+    eventQueue: EventQueue;
+    getAPIContext: () =&gt; APIContext;
+    getStore: (moduleID: Buffer, storePrefix: Buffer) =&gt; SubStore;
+    header: BlockHeader;
+    assets: BlockAssets;
+    currentValidators: Validator[];
+    impliesMaxPrevote: boolean;
+    maxHeightCertified: number;
+    certificateThreshold: bigint;
+    transactions: ReadonlyArray&lt;Transaction&gt;;
+    setNextValidators: (
+        preCommitThreshold: bigint,
+        certificateThreshold: bigint,
+        validators: Validator[],
+    ) =&gt; void;
 }</code></pre>
 </div>
 </div>
@@ -2809,17 +2665,17 @@ Each module must initialize its state using an associated block asset.</p>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">{
-	logger: Logger;
-	eventQueue: EventQueueAdder;
-	getAPIContext: () =&gt; APIContext;
-	getStore: (moduleID: Buffer, storePrefix: Buffer) =&gt; SubStore;
-	header: BlockHeader;
-	assets: BlockAssets;
-	setNextValidators: (
-		preCommitThreshold: bigint,
-		certificateThreshold: bigint,
-		validators: Validator[],
-	) =&gt; void;
+    logger: Logger;
+    eventQueue: EventQueueAdder;
+    getAPIContext: () =&gt; APIContext;
+    getStore: (moduleID: Buffer, storePrefix: Buffer) =&gt; SubStore;
+    header: BlockHeader;
+    assets: BlockAssets;
+    setNextValidators: (
+        preCommitThreshold: bigint,
+        certificateThreshold: bigint,
+        validators: Validator[],
+    ) =&gt; void;
 }</code></pre>
 </div>
 </div>
@@ -2845,17 +2701,17 @@ Each module must initialize its state using an associated block asset.</p>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-js hljs" data-lang="js">{
-	logger: Logger;
-	eventQueue: EventQueueAdder;
-	getAPIContext: () =&gt; APIContext;
-	getStore: (moduleID: Buffer, storePrefix: Buffer) =&gt; SubStore;
-	header: BlockHeader;
-	assets: BlockAssets;
-	setNextValidators: (
-		preCommitThreshold: bigint,
-		certificateThreshold: bigint,
-		validators: Validator[],
-	) =&gt; void;
+    logger: Logger;
+    eventQueue: EventQueueAdder;
+    getAPIContext: () =&gt; APIContext;
+    getStore: (moduleID: Buffer, storePrefix: Buffer) =&gt; SubStore;
+    header: BlockHeader;
+    assets: BlockAssets;
+    setNextValidators: (
+        preCommitThreshold: bigint,
+        certificateThreshold: bigint,
+        validators: Validator[],
+    ) =&gt; void;
 }</code></pre>
 </div>
 </div>

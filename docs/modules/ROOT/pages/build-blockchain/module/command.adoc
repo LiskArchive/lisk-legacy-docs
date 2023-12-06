@@ -1,0 +1,589 @@
+= How to create a command
+Mona Bärenfänger <mona@lightcurve.io>
+// Settings
+:toc: preamble
+:idprefix:
+:idseparator: -
+:sectnums:
+:docs_sdk: v6@lisk-sdk::
+// URLs
+:url_json_schema: https://json-schema.org/understanding-json-schema/reference/index.html
+:url_json_schema_length: https://json-schema.org/understanding-json-schema/reference/string.html#length
+:url_github_hello_command: https://github.com/LiskHQ/lisk-sdk-examples/tree/development/tutorials/hello/hello_client/src/app/modules/hello/commands/create_hello_command.ts
+// Project URLs
+:url_guides_setup: build-blockchain/create-blockchain-client.adoc
+:url_guides_module: build-blockchain/module/index.adoc
+:url_guides_module_config: build-blockchain/module/configuration.adoc
+:url_guides_module_stores: build-blockchain/module/stores.adoc
+:url_guides_module_event: build-blockchain/module/blockchain-event.adoc
+:url_guides_module_endpoints_methods: build-blockchain/module/endpoints-methods.adoc
+:url_understand_modules: understand-blockchain/sdk/modules-commands.adoc
+:url_understand_modules_cmdname: {url_understand_modules}#command-name
+:url_understand_modules_commands: {url_understand_modules}#commands
+// :url_sdk_references_commander: {docs_sdk}references/lisk-commander/cli.adoc#generate
+
+// TODO: Update the page by uncommenting the hyperlinks once the updated pages are available. 
+
+====
+On this page, you'll learn how to:
+
+* [x] Create a new command
+* [x] Write verification for a command
+* [x] Use module config values for command verification
+* [x] Write execution logic for a command
+* [x] Get and set data from module stores
+====
+
+.Sample code
+[NOTE]
+=====
+View the complete sample code of this guide on GitHub in the {url_github_hello_command}[Lisk SDK examples repository^].
+=====
+
+As defined on the xref:{url_guides_module}[] page, the xref:{url_understand_modules_commands}[command] shall provide the following functionalities:
+
+* A Hello message shall be stored in the user accounts.
+** The Hello message has to be of type `string`.
+** The Hello message shall have a minimum and maximum length.
+** A blacklist of excluded words should exist.
+The Hello message should be rejected, if it includes one of the words in the blacklist.
+
+== Generating the command skeleton
+
+In the root folder of the blockchain client, generate a skeleton for the new command with Lisk Commander.
+
+The command `lisk generate:command` expects two arguments:
+
+. *Module name*: The name of the module the command belongs to.
+. xref:{url_understand_modules_cmdname}[Command name]: The name of the new command.
+It needs to be a string in camelCase, and always starts with a lower case letter.
+No numbers, hyphens, etc., are allowed.
+
+// For a complete overview of all available options of `lisk generate:command`, see the xref:{url_sdk_references_commander}[Lisk Commander reference] or type `lisk generate:command --help`.
+For a complete overview of all available options of `lisk generate:command`, see the Lisk Commander reference or type `lisk generate:command --help`.
+
+For our example, we choose `createHello` as the command name, and `hello`  as the module name:
+
+[[generate-command]]
+.hello/hello_client/
+[source,bash]
+----
+lisk generate:command hello createHello
+----
+
+This will generate the following files:
+
+.hello/hello_client/
+----
+├── bin/
+├── config/
+├── src/
+│    ├── app/
+│    │    ├── app.ts
+│    │    ├── index.ts
+│    │    ├── modules/
+│    │    │   └── hello/
+│    │    │      ├── commands/ <1>
+│    │    │      │     └──  create_hello_command.ts <2>
+│    │    │      ├── endpoint.ts
+│    │    │      ├── events/
+│    │    │      ├── method.ts
+│    │    │      ├── module.ts
+│    │    │      └── stores/
+│    │    ├── modules.ts
+│    │    ├── plugins/
+│    │    └── plugins.ts
+│    └── commands/
+└── test/
+    ├── integration/
+    ├── network/
+    └── unit/
+        ├── modules/
+        │    └── hello/
+        │       ├── commands/
+        │       │     └──  create_hello_command.ts <3>
+        │       └── modules.spec.ts
+        └── plugins/
+----
+
+<1> The `commands/` folder contains the xref:{url_understand_modules_commands}[commands] of the module.
+<2> Will contain the code for the command.
+Currently, it contains the auto-generated command skeleton.
+<3> Will contain unit tests for the command.
+Currently, it contains the auto-generated test skeletons.
+
+Additionally, it will already import and register the new command in the Hello module:
+
+.hello_client/src/app/modules/hello/module.ts
+[source,typescript]
+----
+import { CreateHelloCommand } from "./commands/create_hello_command";
+// [...]
+export class HelloModule extends BaseModule {
+    // [...]
+	public commands = [new CreateHelloCommand(this.stores, this.events)];
+    // [...]
+}
+----
+
+[NOTE]
+====
+To avoid errors when <<try-the-new-command-out, trying out>> the new command, adjust the `verifyTransaction()` hook of the module to the following:
+
+[source,typescript]
+----
+public async verifyTransaction(context: TransactionVerifyContext): Promise<VerificationResult> {
+    // Verify transaction will be called multiple times in the transaction pool
+    context.logger.info('TX VERIFICATION');
+    const result = {
+        status: 1,
+    };
+    return result;
+}
+----
+====
+
+== Command class & skeleton
+
+The command `lisk generate:command` already created the class `CreateHelloCommand` which contains skeletons for the most important components of the command.
+
+The command class always extends from the `BaseCommand`, which is imported from the `lisk-sdk` package.
+
+However, this command is not performing any functions yet.
+To change this, we implement the methods of the command in the following chapters.
+
+Open the command skeleton in `create_hello_command.ts`:
+
+.hello_client/src/app/modules/hello/commands/create_hello_command.ts
+[source,typescript]
+----
+import {
+    BaseCommand,
+    CommandVerifyContext,
+    CommandExecuteContext,
+    VerificationResult,
+    VerifyStatus,
+} from 'lisk-sdk';
+
+interface Params {
+}
+
+export class CreateHelloCommand extends BaseCommand {
+	public schema = {
+		$id: 'CreateHelloCommand',
+		type: 'object',
+		properties: {},
+	};
+
+	// eslint-disable-next-line @typescript-eslint/require-await
+	public async verify(_context: CommandVerifyContext<Params>): Promise<VerificationResult> {
+		return { status: VerifyStatus.OK };
+	}
+
+	public async execute(_context: CommandExecuteContext<Params>): Promise<void> {
+	}
+}
+----
+
+== Command params & schema
+
+The command parameters are data that is provided by the transaction, that is required by the command to execute its business logic.
+The parameters interface and schema define the data type, and order of the command.
+
+The command schema can also define additional properties like min and max length of a parameter.
+
+For creating a Hello message, define the parameters like so:
+
+.hello_client/src/app/modules/hello/commands/create_hello_command.ts
+[source,typescript]
+----
+interface Params {
+	message: string;
+}
+----
+
+The only property needed by the module is the `message` that the sender posted.
+
+For the corresponding schema, create a new file `schema.ts` in the root folder of the Hello module.
+
+This file will be used to store all schemas that the module requires, for a better overview.
+
+.hello_client/src/app/modules/hello/schema.ts
+[source,typescript]
+----
+export const createHelloSchema = {
+	$id: 'hello/createHello-params',
+	title: 'CreateHelloCommand transaction parameter for the Hello module',
+	type: 'object',
+	required: ['message'],
+	properties: {
+		message: {
+			dataType: 'string',
+			fieldNumber: 1,
+			minLength: 3,
+			maxLength: 256,
+		},
+	},
+};
+----
+
+Note that we add two additional properties to the schema: {url_json_schema_length}[minLength & maxLength^].
+These properties define the minimum and maximum length of the message, according to the *JSON schema*.
+
+By setting these properties already in the schema, we don't need to validate these properties later in the <<command-verification>>.
+Please check the {url_json_schema}[JSON schema reference^] for information about other available keywords.
+
+Now, import the schema to the Hello module and use it for the `schema` attribute of the module.:
+
+.hello_client/src/app/modules/hello/commands/create_hello_command.ts
+[source,typescript]
+----
+import { createHelloSchema } from '../schema';
+// [...]
+export class CreateHelloCommand extends BaseCommand {
+    public schema = createHelloSchema;
+    // [...]
+}
+----
+
+== Getting the module config
+
+Next, we need to get the blacklist, because it is required in the next step during the <<command-verification>>.
+The blacklist can be retrieved from the module config, which was defined in the guide on xref:{url_guides_module_config}[].
+Also, we want to update the minimum and maximum message length of the command schema with the values from the module configuration.
+
+To do this, create a new method `init()` in the command, that can be called in the `init()` function of the module, after the module received the values from the config:
+
+.hello_client/src/app/modules/hello/commands/create_hello_command.ts
+[source,typescript]
+----
+// [...]
+export class CreateHelloCommand extends BaseCommand {
+    public schema = createHelloSchema;
+	private _blacklist!: string[];
+
+    public async init(config: ModuleConfig): Promise<void> {
+		// Set _blacklist to the value of the blacklist defined in the module config
+		this._blacklist = config.blacklist;
+		// Set the max message length to the value defined in the module config
+		this.schema.properties.message.maxLength = config.maxMessageLength;
+		// Set the min message length to the value defined in the module config
+		this.schema.properties.message.minLength = config.minMessageLength;
+	}
+    // [...]
+}
+----
+
+To store the blacklisted words from the module config in the command, create a new private command attribute `_blacklist`.
+Inside the `init()` method of the command, assign the blacklist defined in the module config to `this._blacklist`, and also update the command schema with the minimum and maximum message length values defined in the config.
+
+Then, call the method at the bottom of the `init()` method of the module and use the respective config values as parameters:
+
+.hello_client/src/app/modules/hello/module.ts
+[source,typescript]
+----
+// [...]
+export class HelloModule extends BaseModule {
+    // [...]
+    public async init(args: ModuleInitArgs): Promise<void> {
+        // Get the module config defined in the config.json file
+        const { moduleConfig } = args;
+        // Overwrite the default module config with values from config.json, if set
+        const config = utils.objects.mergeDeep({}, defaultConfig, moduleConfig) as ModuleConfigJSON;
+        // Validate the provided config with the config schema
+        validator.validate<ModuleConfigJSON>(configSchema, config);
+        // Call the command init() method with config as parameter
+        this.commands[0].init(config).catch(err => {
+            console.log("Error: ", err);
+        });
+    }
+    // [...]
+}
+----
+
+Now, the `blacklist`, `minMessageLength`, and `maxMessageLength`, which are defined in the **config.json** file, are available in the command, and we can move on to implement the <<command-verification>>.
+
+== Command verification
+
+The command is always verified before it is executed by the node as defined in the <<command-execution>>.
+The verification of the command is defined in the `verify()` method of the command.
+
+The `CreateHello` command expects only one single parameter inside the transaction, and this is the Hello message.
+Therefore, only the message needs to be verified here.
+
+The following points should be validated:
+
+. The message should not be shorter than the minimum message length defined in the command schema.
+. The message should not be longer than the maximum message length defined in the command schema.
+. The message should not contain any of the words defined in the blacklist of module config.
+
+We don't need to validate points 1. and 2. in the `verify()` method, because they are already validated by the schema.
+
+For point 3. however, the blacklisted words, cannot be checked with the schema.
+So let's implement the `verify()` method to filter the message for words in the blacklist, and throw an error if any word is found.
+
+.hello_client/src/app/modules/hello/commands/create_hello_command.ts
+[source,typescript]
+----
+// [...]
+export class CreateHelloCommand extends BaseCommand {
+    public schema = createHelloSchema;
+    private _blacklist!: string[];
+
+    public async init(config: ModuleConfig): Promise<void> {
+        // [...]
+    }
+
+    public async verify(context: CommandVerifyContext<Params>): Promise<VerificationResult> {
+        let validation: VerificationResult;
+        const wordList = context.params.message.split(" ");
+        const found = this._blacklist.filter(value => wordList.includes(value));
+        if (found.length > 0) {
+            context.logger.info("==== FOUND: Message contains a blacklisted word ====");
+            throw new Error(
+                `Illegal word in hello message: ${  found.toString()}`
+            );
+        } else {
+            context.logger.info("==== NOT FOUND: Message contains no blacklisted words ====");
+            validation = {
+                status: VerifyStatus.OK
+            };
+        }
+        return validation;
+    }
+    // [...]
+}
+----
+
+The `context` of the `verify(context)` method contains the parameters of the command to be verified.
+So first, access the `message` parameter through `context.params.message`, split the different words of the message by space, and save the resulting words in a word list.
+Now, filter the blacklisted words, and store any word which is also present in the message word list in a new list called `found`.
+
+Next, check the length of the `found` list. If it is greater than 0, it means, the message contains at least one word that is also included in the blacklist.
+In that case, set the status to `VerifyStatus.FAIL` and include a descriptive error message under the `error` property as well.
+
+If no blacklisted words are found, set the status to `VerifyStatus.OK`.
+
+== Command execution
+
+The `execute()` function is the place in the command where the state changes on the blockchain are made.
+
+A command will only be executed, if the <<command-verification>> was successful.
+
+The purpose of this command is to save a Hello message for the corresponding sender account.
+Also, we need to increment the Hello counter by one, each time a command is executed.
+
+Following this, the general business logic of the `execute()` method looks like this:
+
+. Get the account data of the sender of the "Create Hello" transaction.
+. Get the message and counter stores, that we created in the example in xref:{url_guides_module_stores}[].
+. Save the Hello message to the message store, using the `senderAddress` as the key, and the `message` as the value.
+. Get the Hello counter from the counter store.
+. Increment the Hello counter +1.
+. Save the Hello counter to the counter store.
+. Emit a "New Hello" event.
+
+The corresponding code is shown below:
+
+NOTE: The code already includes a blockchain event, which is created and described in the following guide xref:{url_guides_module_event}[].
+
+.hello_client/src/app/modules/hello/commands/create_hello_command.ts
+[source,typescript]
+----
+import {
+	BaseCommand,
+	CommandVerifyContext,
+	CommandExecuteContext,
+	VerificationResult,
+	VerifyStatus,
+} from 'lisk-sdk';
+import { createHelloSchema } from '../schema';
+import { MessageStore } from '../stores/message';
+import { counterKey, CounterStore, CounterStoreData } from '../stores/counter';
+import { ModuleConfig } from '../types';
+import { NewHelloEvent } from '../events/new_hello';
+
+export class CreateHelloCommand extends BaseCommand {
+    public schema = createHelloSchema;
+    private _blacklist!: string[];
+    public async init(config: ModuleConfig): Promise<void> {
+        // [...]
+    }
+
+	// eslint-disable-next-line @typescript-eslint/require-await
+    public async verify(context: CommandVerifyContext<Params>): Promise<VerificationResult> {
+        // [...]
+    }
+
+    public async execute(context: CommandExecuteContext<Params>): Promise<void> {
+        // 1. Get account data of the sender of the Hello transaction.
+        const { senderAddress } = context.transaction;
+        // 2. Get message and counter stores.
+        const messageSubstore = this.stores.get(MessageStore);
+        const counterSubstore = this.stores.get(CounterStore);
+
+        // 3. Save the Hello message to the message store, using the senderAddress as key, and the message as value.
+        await messageSubstore.set(context, senderAddress, {
+            message: context.params.message,
+        });
+
+        // 3. Get the Hello counter from the counter store.
+        let helloCounter: CounterStoreData;
+        try {
+            helloCounter = await counterSubstore.get(context, counterKey);
+        } catch (error) {
+            helloCounter = {
+                counter: 0,
+            }
+        }
+        // 5. Increment the Hello counter +1.
+        helloCounter.counter+=1;
+
+        // 6. Save the Hello counter to the counter store.
+        await counterSubstore.set(context, counterKey, helloCounter);
+
+        // 7. Emit a "New Hello" event
+        const newHelloEvent = this.events.get(NewHelloEvent);
+        newHelloEvent.add(context, {
+            senderAddress: context.transaction.senderAddress,
+            message: context.params.message
+        },[context.transaction.senderAddress]);
+    }
+}
+----
+
+== Try the new command out
+
+As a final step, let's try out the command that we just created, by posting a "Create Hello" transaction to the node.
+
+In the root folder of the Hello client, execute the following steps in the terminal:
+
+. Rebuild the client:
++
+[source,bash]
+----
+npm run build
+----
+[#start-client]
+. Start the client:
++
+[[create-transaction]]
+[source,bash]
+----
+./bin/run start --config=config/custom_config.json
+----
++
+. In another terminal window, create the transaction:
+
++
+[source,bash]
+----
+./bin/run transaction:create hello createHello 10000000 --params='{"message":"Hello Lisk SDK v6!"}' --json --pretty
+----
++
+[TIP]
+====
+The `transaction:create` command uses the default key derivation path by default.
+The default key derivation path is `m/44'/134'/0`, which always corresponds to the first account listed in `dev-validators.json`.
+
+If you want to use another account, for example the second account of the `dev-validators.json` file, you need to specify the corresponding key derivation path by using the flag `--key-derivation-path` like so:
+
+[source,bash]
+----
+./bin/run transaction:create hello createHello 10000000 --params='{"message":"Hello Lisk SDK v6!"}' --json --key-derivation-path="m/44'/134'/1'" --pretty
+----
+====
++
+Use the passphrase contained in the file `config/default/passphrase.json` when prompted for it.
+You can ignore the warning `Warning: Passphrase contains 24 words instead of expected 12. Passphrase contains 23 whitespaces instead of expected 11.`
+The output of the command looks like this:
++
+[source,json]
+----
+{
+  "transaction": "0a0568656c6c6f120b63726561746548656c6c6f18002080ade2042a205412b41c5bf15b68c779c87fc44baafdf5d2301556227a91a60599b86b4ab51e322b0a2968692c2074686973206973206120746573742c20696c6c6567616c576f726420616e6420736f206f6e3a400cd91d8980e057b87186563def7ec3c33d4c00cab40dcaadd222d8e4ddc95402edfafd6e4f387ef7cb4eca88b36c8dd774448163388d08c4c1522efd5bc23102"
+}
+{
+  "transaction": {
+    "module": "hello",
+    "command": "createHello",
+    "fee": "10000000",
+    "nonce": "0",
+    "senderPublicKey": "5412b41c5bf15b68c779c87fc44baafdf5d2301556227a91a60599b86b4ab51e",
+    "signatures": [
+      "0cd91d8980e057b87186563def7ec3c33d4c00cab40dcaadd222d8e4ddc95402edfafd6e4f387ef7cb4eca88b36c8dd774448163388d08c4c1522efd5bc23102"
+    ],
+    "params": {
+      "message": "Hello Lisk SDK v6!"
+    },
+    "id": "7ffb4283f0ecc765b7ddb1494e97c22471e136824b437594945f0a8224bc7abf"
+  }
+}
+----
++
+[#send-transaction]
+The first object is the transaction in binary format, and the second object is the same transaction in JSON format, because we added the flags `--json` and `pretty`.
++
+. *Send the transaction:*
+Use the transaction in binary format to post the transaction to the node as shown below.
++
+[source,bash]
+----
+./bin/run transaction:send 0a0568656c6c6f120b63726561746548656c6c6f18002080ade2042a205412b41c5bf15b68c779c87fc44baafdf5d2301556227a91a60599b86b4ab51e322b0a2968692c2074686973206973206120746573742c20696c6c6567616c576f726420616e6420736f206f6e3a400cd91d8980e057b87186563def7ec3c33d4c00cab40dcaadd222d8e4ddc95402edfafd6e4f387ef7cb4eca88b36c8dd774448163388d08c4c1522efd5bc23102
+----
+If the transaction was posted successfully, it will respond with the transaction ID.
+
+. *Check the logs of the node:*
+To verify that the transaction was included in a block, check for the corresponding node logs:
++
+.Transaction was included in Transaction pool:
++
+----
+2022-11-04T10:18:47.826Z INFO engine 33965 [id=7ffb4283f0ecc765b7ddb1494e97c22471e136824b437594945f0a8224bc7abf nonce=0 senderPublicKey=5412b41c5bf15b68c779c87fc44baafdf5d2301556227a91a60599b86b4ab51e] Added transaction to pool
+----
++
+.Transaction was included in a block:
++
+----
+2022-11-04T10:18:50.422Z INFO engine 33965 [id=a58eed5296010bb0fbd8ae4118b101d137c24697c457f86dab9ac29879b2ab8f height=99 generator=lskaz4tmrvjnuz5fx956mh8b6x6g4d8fr5vdnk3ha numberOfTransactions=1 numberOfAssets=1 numberOfEvents=5] Block executed
+----
+
+But how to actually get the hello messages back?
+Right now, there is only one way to post a hello message.
+Also, although the counter is created and incremented, however, there is no way for an external service to request the data.
+
+To get Hello messages and the counter from the module, implement xref:{url_guides_module_endpoints_methods}[Endpoints and Methods] as explained in the next chapter.
+
+=== Testing the command verification
+
+To verify, if the verification of the command works as expected, create a transaction, similar to how it is done in the previous section <<try-the-new-command-out>>.
+
+But in this case, we want the transaction to be invalid, to verify it is using the values defined in the `custom_config.json`, that we created in guide xref:{url_guides_module_config}[].
+Therefore, it should violate at least one of the three command validations:
+
+. Minimum Hello message length: 5.
+. Maximum Hello message length: 300.
+. The Hello message contains none of the blacklisted words.
+
+For example, create the following Hello transaction, which is violating the third requirement by including a blacklisted word:
+
+[source,bash]
+----
+./bin/run transaction:create hello createHello 10000000 --params='{"message":"Hello this is an illegalWord1"}' --json --pretty
+----
+Then, <<send-transaction,send the transaction>> to the node, and wait for the response.
+
+//TODO: Update this section + code example, once the error message includes the command verification error message
+//Because the message contains `badWord2`, which is also inlcuded in the blacklisted words of the module, the command verification fails and the node returns the following response, indicating that the transaction was not accepted:
+If the message violates one of the three requirements, the command verification fails and the node returns the following response, indicating that the transaction was not accepted:
+[source,json]
+----
+{
+    "jsonrpc": "2.0",
+    "id": "1",
+    "error": {
+        "message": "Transaction verification failed.",
+        "code": -32600
+    }
+}
+----

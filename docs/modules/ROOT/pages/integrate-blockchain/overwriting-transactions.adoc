@@ -1,0 +1,112 @@
+= How to overwrite a transaction in the transaction pool
+Mona Bärenfänger <mona@lightcurve.io>
+:toc: preamble
+// URLs
+// Project URLs
+:url_network_txpool: understand-blockchain/network.adoc#transaction-pool
+
+====
+On this page, you'll learn:
+
+* [x] How to overwrite a transaction in the transaction pool
+* [x] How to increase the priority of a transaction in the transaction pool
+====
+
+== Intro
+
+When a transaction is sent to a node, it is first included in the xref:{url_network_txpool}[transaction pool].
+Transactions in the transaction pool wait to be included in a block on the blockchain.
+
+It is possible that the sender of the transaction has the intention of modifying/updating the transaction before it gets included in a block.
+This could involve updating certain parameters of the transaction, completely replacing the transaction, or expediting its inclusion into a block by offering a higher fee.
+
+This can be achieved by resending the updated transaction with a higher fee while using the same nonce, as explained in the following steps.
+
+.This only works for transactions in the transaction pool
+IMPORTANT: Overwriting a transaction is only possible for transactions which have not yet been included in a block.
+
+When the updated transaction is accepted by the node, it will be added to the transaction pool.
+If the transaction pool already includes the original transaction with the same nonce and sender account, validators have the option to select which transaction to include in the upcoming block.
+Generally, a validator will always choose to include the transactions with the highest transaction fees, to maximize their rewards for generating new blocks.
+Hence, if two transactions from the same sender with the same nonce exist in the pool, the transaction with the higher fee will be picked preferably to be included into a block.
+
+Once the updated transaction is incorporated into a block, the remaining original transaction will be invalidated due to its outdated nonce.
+As a result, the transaction will be removed from the transaction pool.
+
+== Example: Original transaction
+
+Let's assume we have sent the following transaction to the node, but it is currently pending in the transaction pool as there are already too many other transactions waiting in the pool with higher fees:
+
+[source,json]
+----
+{
+   "module":"token",
+   "command":"transfer",
+   "fee":"10000000",
+   "nonce":"4",
+   "senderPublicKey":"3972849f2ab66376a68671c10a00e8b8b67d880434cc65b04c6ed886dfa91c2c",
+   "signatures":[
+      "c06cd0ef375911528d491971296532dbd58725f0fccc0f23e6c0656c43e75ecd12635616117e64d005f1c9f2a55de7cf2d8f5cb961927d839d141a18faa80e08"
+   ],
+   "params":{
+      "tokenID":"0400000000000000",
+      "amount":"800000000",
+      "recipientAddress":"lskt8ovj2shbxrtno8xqqt7cnmzzygdkbt6brnvmj",
+      "data":"Happy birthday!"
+   },
+   "id":"f3f537bbd52464d2f97c02f5ef0f9a805d19ad4f8ef1c7efa1da17cef0e5036a"
+}
+----
+
+To speed up the inclusion of our transaction into the blockchain, we intend to recreate the exact same transaction with a higher fee.
+
+== Recreating the transaction
+
+Create a new transaction with the same nonce and a higher fee.
+
+A slightly higher fee than specified in the original transaction will suffice, so that validators will prefer to include the new transaction instead of the old one with a lower fee.
+
+NOTE: If the network is currently experiencing high congestion, increasing the fee even further can prove beneficial, ensuring its faster inclusion into a block compared to other transactions in the transaction pool.
+
+TIP: Make sure to use the `--nonce` flag to specify the same nonce as in the transaction you wish to overwrite.
+
+[source,bash]
+----
+lisk-core transaction:create token transfer 25000000 --nonce 4 --json ---pretty
+----
+
+.The updated transaction in JSON format
+[%collapsible]
+====
+[source,json]
+----
+{
+  "transaction": {
+    "module": "token",
+    "command": "transfer",
+    "fee": "25000000",
+    "nonce": "4",
+    "senderPublicKey": "61d320f822fcc163489499200ae6c99a66296513b1ca1066e49a37a026434ac0",
+    "signatures": [
+      "fca7710c74b9d13ef954be1128a1069bc8b50dbb9f410ddfe62d7d580920e685cb6efbf1b801e86b11839eb5e286ef70d3b6ab725e6d521a6377b6bf5f079203"
+    ],
+    "params": {
+      "tokenID": "0200000000000000",
+      "amount": "1",
+      "recipientAddress": "lskt8ovj2shbxrtno8xqqt7cnmzzygdkbt6brnvmj",
+      "data": "Happy birthday!"
+    },
+    "id": "78d041e4e9c55fb0c232fcefcb712cb2abb09101dc27281a88e6180a726486d2"
+  }
+}
+----
+====
+
+Finally, send the new transaction to the node to overwrite the original transaction:
+
+[source,bash]
+----
+lisk-core transaction:send 0a05746f6b656e12087472616e73666572180420c0f0f50b2a2061d320f822fcc163489499200ae6c99a66296513b1ca1066e49a37a026434ac032330a08020000000000000010011a149bd82e637d306533b1e1ad66e19ca0047faa1a6a220f4861707079206269727468646179213a40fca7710c74b9d13ef954be1128a1069bc8b50dbb9f410ddfe62d7d580920e685cb6efbf1b801e86b11839eb5e286ef70d3b6ab725e6d521a6377b6bf5f079203
+----
+
+

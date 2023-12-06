@@ -1,0 +1,317 @@
+= How to enable/disable block generation
+:toc: preamble
+:idprefix:
+:idseparator: -
+:docs_sdk: v6@lisk-sdk::
+// URLs
+:url_sdk_cli_generatorenable: {docs_sdk}client-cli.adoc#generatorenable
+:url_sdk_cli_generatordisable: {docs_sdk}client-cli.adoc#generatordisable
+:url_run_validator: run-blockchain/become-a-validator.adoc
+:url_run_validator_set_hashonion: {url_run_validator}#set-the-hash-onion
+:url_run_validator_get_hashonion: {url_run_validator}#get-the-hash-onion
+:url_run_validator_import: {url_run_validator}#import-the-validator-keys
+:url_run_validator_validator_keys: {url_run_validator}#creating-the-validator-keys
+:url_run_validator_init_info: {url_run_validator}#initial-validator-info-data
+:url_staking: run-blockchain/staking.adoc
+
+
+====
+On this page, you'll learn how to enable and disable block generation for a validator on a blockchain that uses the Lisk PoS module, like the Lisk Mainnet.
+
+This includes how to:
+
+* [x] Enable block generation
+* [x] Disable block generation
+* [x] Safely re-enable block generation on another node
+* [x] Estimate the <<validator-info-data>>, in case it is lost
+====
+
+== How to enable block generation on a node
+
+[CAUTION]
+====
+. The blockchain application needs to be running to successfully enable block generation on the node.
+. Ensure the node is **fully synchronized** with the network, before enabling block generation on this node.
+. To enable block generation for a validator for the **first time**, check out the dedicated guide: xref:{url_run_validator}[].
+. Ensure to adhere to the following points to avoid being punished by the network:
+.. Never use outdated <<validator-info-data>>.
+.. Never activate block generation for the same validator on two or more nodes at the same time.
+====
+
+=== Validator info data
+
+The validator info data is required for enabling block generation for the corresponding validator.
+
+It consists of the following three properties:
+
+* `height`: Last generated block height.
+* `maxHeightGenerated`: Validator's largest previously generated height.
+* `maxHeightPrevoted`: Validator's largest prevoted height for a block.
+
+=== Get the validator info data
+
+WARNING: Don't trust any <<validator-info-data>> from public APIs or explorers, make sure to always use your local data!
+
+NOTE: This command returns the validator info data only for validators, who *generated at least one block* on the node.
+If you newly enabled block generation, it will return an empty array whilst requesting `generator:status`.
+That means, your validator info data is still `0` for all values.
+See xref:{url_run_validator_init_info}[Initial validator info] for more information.
+
+[tabs]
+=====
+Lisk Core::
++
+--
+[source,bash]
+----
+lisk-core generator:status --pretty
+----
+--
+Sidechain node::
++
+--
+[source,bash]
+----
+./bin/run generator:status --pretty
+----
+--
+=====
+
+This will return the following information for a validator who imported her/his keys to the node:
+
+* `address`: The Lisk32 address of the validator.
+* `enabled`: `true`, if the validator has block generation enabled, `false` if not.
+* The <<validator-info-data>>.
+
+.Example output
+[source,json]
+----
+{
+  "info": {
+    "status":
+    [{
+        "address": "lskzpvesvp7p9odszcp3s4dffnj4ozqz7b79tonqp",
+        "height": 574,
+        "maxHeightPrevoted": 487,
+        "maxHeightGenerated": 459,
+        "enabled": true
+      }
+  ]}
+}
+----
+
+=== Enable block generation
+
+Use the xref:{url_sdk_cli_generatorenable}[generator:enable] command to enable block generation on your node.
+
+[tabs]
+=====
+Lisk Core::
++
+--
+//TODO: Verify Lisk Core command
+.Enable block generation
+[source,bash]
+----
+lisk-core generator:enable lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3 --height=123 --max-height-generated=101 --max-height-prevoted=101
+----
+--
+Sidechain node::
++
+--
+.Enable block generation
+[source,bash]
+----
+./bin/run generator:enable lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3 --height=123 --max-height-generated=101 --max-height-prevoted=101
+----
+--
+=====
+
+Replace `lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3` with your validator address.
+
+Verify the correctness of the values: `height`, `max-height-prevoted`, and `max-height-generated` by answering `yes`, and use your password created in step xref:{url_run_validator_validator_keys}[Creating the validator keys] to enable block generation.
+
+[TIP]
+====
+To prefill the validator info data as stored on the node, automatically, add the flag `--use-status-value` to the `generator:enable` command.
+
+[source,bash]
+----
+lisk-core generator:enable lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3 --use-status-value
+----
+
+//TODO: Verify correctness of snippet
+[source,bash]
+----
+ Current block generation status for validator account lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3 is:
+{"height":14814092,"maxHeightPrevoted":14814017,"maxHeightGenerated":14814025}
+? Do you want to use the above values to enable block generation? yes
+? Enter password to decrypt the encrypted passphrase:  ********
+----
+
+The node will then enable block generation for the validator and respond with the following message:
+
+----
+Updated block generation status:
+{"address":"lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3","enabled":true}
+----
+====
+
+== How to disable block generation on a node
+
+If you wish to disable block generation on the node for a validator, follow the steps described below.
+
+[WARNING]
+====
+If you would like to *completely stop block generation* without being punished by the network, make sure to xref:{url_staking}[unstake] all self-stakes for a validator, before you disable block generation on the node.
+====
+
+Use the xref:{url_sdk_cli_generatordisable}[generator:disable] command to disable block generation on your node.
+
+[tabs]
+=====
+Lisk Core::
++
+--
+//TODO: Verify Lisk Core command
+.Disable block generation
+[source,bash]
+----
+lisk-core generator:disable lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3
+----
+--
+Sidechain node::
++
+--
+.Disable block generation
+[source,bash]
+----
+./bin/run generator:disable lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3
+----
+--
+=====
+
+Replace `lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3` with the address of your validator.
+
+When prompted for a password, use the password that you defined while xref:{url_run_validator_validator_keys}[creating the validator keys].
+
+----
+? Enter password to decrypt the encrypted passphrase:  ********
+----
+
+The node will then disable block generation for the validator and respond with the following message:
+
+----
+Disabled block generation for lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3
+----
+
+== Safely enabling block generation on another node
+
+Sometimes it is desired or necessary to move to a new/different node, to generate blocks with a particular validator.
+
+To safely enable block generation on another node, please ensure to follow the steps below:
+
+. Install a new node on another server.
+. Start the node and let it synchronize with the network.
+If available, it is recommended to synchronize from a snapshot, to speed up the synchronization process.
+. Login to the server with the old node.
+. <<how-to-disable-block-generation-on-a-node,Disable block generation>> on the old node.
+. xref:{url_run_validator_get_hashonion}[Export the hash onion seed] used by the validator.
+. After securely storing the hash onion of the old node, stop the old node.
+. Export the validator info data from the old node.
++
+[source,bash]
+----
+lisk-core generator:export --output genInfo.json
+----
+. Login to the server with the new node.
+. Restore the validator info data.
++
+[source,bash]
+----
+lisk-core generator:import ./genInfo.json
+----
+. xref:{url_run_validator_import}[Import the validator keys].
+. xref:{url_run_validator_set_hashonion}[Import the hash onion seed] used by the validator.
+. Ensure the node is fully synchronized with the network.
+Synchronization ensures that the new node is up-to-date and has the latest blocks and transactions from the network.
+After sync, the height of the newer node should be equal to the current network height.
++
+[source,bash]
+----
+lisk-core node:info
+----
+. <<get-the-validator-info-data>> to fetch the validator info data.
+. <<how-to-enable-block-generation-on-a-node,Enable block generation>>.
+
+== Estimating the validator info data in case it is lost
+
+A validator can lose their <<validator-info-data>>, for example, if their server crashes, or if general access to the node is lost.
+
+In these cases, it is possible to estimate the validator info data, to enable block generation on another node safely.
+
+=== Automatic estimation with the `estimateSafeStatus` endpoint (recommended)
+
+It is recommended to use the endpoint `generator_estimateSafeStatus` to estimate the validator info data safely.
+
+The only input required is the `timeShutdown`, which is a Unix timestamp of the last time a validator was active and created a block in the network.
+
+.Never underestimate the shutdown time
+[WARNING]
+====
+Underestimating the `timeShutdown` value will violate the Lisk BFT protocol if this info data is used to enable block generation.
+The validator will be punished by the network as a consequence.
+
+To avoid this, if you are unsure about the exact shutdown time, *always overestimate*, to be on the safe side.
+If you overestimate, you will never break the Lisk BFT protocol -  in the worst case, you will lose a few block rewards.
+====
+
+[source,bash]
+----
+curl --location --request POST 'http://localhost:7887/rpc' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "jsonrpc": "2.0",
+    "id": "1",
+    "method": "generator_estimateSafeStatus",
+    "params": {
+         "timeShutdown": 1675259371
+    }
+}'
+----
+
+This will respond with the estimated validator info data, which can now be used to enable block generation on a node:
+
+[source,json]
+----
+{"id":"1","jsonrpc":"2.0","result":{"height":61837,"maxHeightGenerated":61837,"maxHeightPrevoted":61837}}
+----
+
+=== Manual estimation of the validator info data
+
+Required Delegate Input::
+
+* `timeShutdown`: Unix timestamp of the last height when the validator node could have possibly been active and forging (over-estimate with a larger number when uncertain about the exact time).
+
+Configurable Constants::
+
+* `BLOCK_TIME = 10`: The block time of the considered blockchain in seconds, i.e., 10 for Lisk Mainnet.
+* `MAX_FORK_DEPTH = 8640`: An upper boundary on the largest chain of off-chain blocks for which the validator generated a block, i.e., for every block at height `h` generated by the validator, the parent block at height `h - MAX_FORK_DEPTH` must be contained in the canonical chain that is eventually finalized.
+It is recommended to use `MAX_FORK_DEPTH` = 8640 = 24*60 *6 (number of blocks generated in 24 h).
+
+Instructions::
+. Start a new node with block generation disabled.
+. Synchronize with the Lisk blockchain until there is a finalized block: `finalizedBlock` with a block header timestamp greater than the last active height: `finalizedBlock.header.timestamp > timeShutdown`.
+. Obtain a block `parentBlock` which is a parent block of `finalizedBlock` at height `finalizedBlock.header.height - MAX_FORK_DEPTH`.
+
+ parentBlock.header.height = finalizedBlock.header.height - MAX_FORK_DEPTH
+
+. Compute the number of missed blocks in the current chain between the `finalizedBlock` and the `parentBlock`, i.e., as shown below:
+
+ missedBlocks = ceil((finalizedBlock.header.timestamp - parentBlock.header.timestamp)/BLOCK_TIME) - (finalizedBlock.header.height - parentBlock.header.height)
+
+. Use the following forging configuration and activate forging:
+
+ height = finalizedBlock.header.height
+ maxHeightPreviouslyForged = finalizedBlock.header.height + missedBlocks
+ heightPrevoted = finalizedBlock.header.height

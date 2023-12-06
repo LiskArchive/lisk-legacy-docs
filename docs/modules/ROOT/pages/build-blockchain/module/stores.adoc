@@ -1,0 +1,209 @@
+= How to create stores
+Mona Bärenfänger <mona@lightcurve.io>
+// Settings
+:toc: preamble
+:sectnums:
+// URLs
+// Project URLs
+:url_understand_modules: understand-blockchain/sdk/modules-commands.adoc
+:url_understand_modules_stores: {url_understand_modules}#stores
+:url_understand_modules_on_stores: {url_understand_modules}#on-chain-store
+:url_understand_modules_off_stores: {url_understand_modules}#off-chain-store
+:url_understand_modules_methods: {url_understand_modules}#methods
+:url_understand_statemachine: understand-blockchain/state-machine.adoc
+:url_build_command: build-blockchain/module/command.adoc
+:url_build_endoint_method: build-blockchain/module/endpoints-methods.adoc
+
+====
+On this page, you'll learn:
+
+* [x] When to use on-chain vs off-chain stores
+* [x] How to create on-chain stores for a module.
+====
+
+Often, modules need to get and set data on the blockchain.
+To do this, they use xref:{url_understand_modules_stores}[stores].
+
+For security reasons, every module maintains its own stores.
+If a module A wants to get or set any data in the store of another module B, it can do this only, if module B is offering the corresponding xref:{url_understand_modules_methods}[methods].
+Only the module B itself can get and set data in its own stores.
+
+Therefore, module-specific stores need to be created, to store the module-related data.
+
+== On-chain vs off-chain stores
+
+Before you start creating a store, you need to decide if the data is on-chain or off-chain data.
+Generally, there are two different types of stores that can be created: xref:{url_understand_modules_on_stores}[on-chain] & xref:{url_understand_modules_off_stores}[off-chain stores].
+
+Both stores are included in the xref:{url_understand_statemachine}[] of the blockchain client, though *only the data on the on-chain stores is shared and synchronized with other nodes in the network.*
+
+That means, every time the data should be part of the blockchain, it should be in an on-chain store (this is generally the default case).
+
+If it is not needed or desired to synchronize the data with other nodes, it should be stored in an off-chain store instead.
+
+== Creating stores for the Hello module
+
+For the Hello module, we need two different types of data to store:
+
+. Message data: The Hello messages of the different accounts
+. Counter data: The global Hello counter, counts the total number of sent Hello messages.
+
+The data should be stored *on-chain*.
+
+=== Message Store
+
+Starting with the store for the Hello messages, create a new file `message.ts` in the `stores/` folder of the Hello module.
+
+The first thing we need to think about is, what data do we want to store here?
+
+The answer, in this case, is pretty simple: For every account, we want to store their corresponding Hello message, if they send one to the network.
+Every store is storing data in key/value pairs.
+So we choose to use the "sender's account address" as the key and the "Hello message" as value.
+
+We define the interface for the data in the message store as follows:
+
+//TODO: Clarify, why isn't the key(account address) included in the schema?
+.hello_client/src/app/modules/hello/stores/message.ts
+[source,typescript]
+----
+export interface MessageStoreData {
+	message: string;
+}
+----
+
+Then create a corresponding schema to the interface:
+
+.hello_client/src/app/modules/hello/stores/message.ts
+[source,typescript]
+----
+export const messageStoreSchema = {
+	$id: '/hello/message',
+	type: 'object',
+	required: ['message'],
+	properties: {
+		message: {
+			dataType: 'string',
+			fieldNumber: 1,
+		},
+	},
+};
+----
+
+Now, import the `BaseStore` from the `lisk-sdk`
+
+.hello_client/src/app/modules/hello/stores/message.ts
+[source,typescript]
+----
+import { BaseStore } from 'lisk-sdk';
+----
+
+and create the message store class like this:
+
+.hello_client/src/app/modules/hello/stores/message.ts
+[source,typescript]
+----
+export class MessageStore extends BaseStore<MessageStoreData> {
+	public schema = messageStoreSchema;
+}
+----
+
+Inside the class, set the `schema` attribute to the value of `messageStoreSchema`.
+
+The complete message store looks like this:
+
+.hello_client/src/app/modules/hello/stores/message.ts
+[source,typescript]
+----
+import { BaseStore } from 'lisk-sdk';
+
+export interface MessageStoreData {
+	message: string;
+}
+
+export const messageStoreSchema = {
+	$id: '/hello/message',
+	type: 'object',
+	required: ['message'],
+	properties: {
+		message: {
+			dataType: 'string',
+			fieldNumber: 1,
+		},
+	},
+};
+
+export class MessageStore extends BaseStore<MessageStoreData> {
+	public schema = messageStoreSchema;
+}
+----
+
+=== Counter Store
+
+Just like the message store, create a second store for the counter.
+
+Here we only want to save an integer, which is the total number of sent Hello messages.
+
+The respective counter store looks like this:
+
+.hello_client/src/app/modules/hello/stores/counter.ts
+[source,typescript]
+----
+import { BaseStore } from 'lisk-sdk';
+
+export interface CounterStoreData {
+	counter: number;
+}
+
+export const counterKey = Buffer.alloc(0);
+
+export const counterStoreSchema = {
+	$id: '/hello/counter',
+	type: 'object',
+	required: ['counter'],
+	properties: {
+		counter: {
+			dataType: 'uint32',
+			fieldNumber: 1,
+		},
+	},
+};
+
+export class CounterStore extends BaseStore<CounterStoreData> {
+	public schema = counterStoreSchema;
+}
+----
+
+== Adding the stores to the module
+
+To include the stores in the module, it is required to register them in the module constructor.
+
+Open `module.ts`, import
+
+.hello_client/src/app/modules/hello/module.ts
+[source,typescript]
+----
+import { CounterStore } from './stores/counter';
+import { MessageStore } from './stores/message';
+
+// [...]
+
+export class HelloModule extends BaseModule {
+    // [...]
+
+    public constructor() {
+        super();
+        // registration of stores and events
+        this.stores.register(CounterStore, new CounterStore(this.name, 0));
+	this.stores.register(MessageStore, new MessageStore(this.name, 1));
+    }
+    // [...]
+ }
+
+----
+
+From now on, the stores are usable inside the module to get and set the intended data.
+
+If you want to see how the stores are used, please check out the following guides:
+
+* xref:{url_build_command}[]
+* xref:{url_build_endoint_method}[]

@@ -1,0 +1,1544 @@
+= Modules and Commands
+Mona Bärenfänger <mona@lightcurve.io>
+//Settings
+:toc: preamble
+:toclevels: 2
+:idprefix:
+:idseparator: -
+// URLs
+:url_json_schema: https://json-schema.org/specification.html
+:url_json_schema_id: https://json-schema.org/understanding-json-schema/structuring.html#id
+// Project URLs
+:url_understand_block_generation: understand-blockchain/blocks-txs.adoc#block-generation
+:url_understand_block_execution: understand-blockchain/blocks-txs.adoc#block-execution
+:url_understand_genesis_block_execution: understand-blockchain/blocks-txs.adoc#genesis-block-execution
+:url_understand_valid_invalid_txs: understand-blockchain/blocks-txs.adoc#valid-vs-invalid-transactions
+:url_understand_blockstxs_assets: understand-blockchain/blocks-txs.adoc#block-assets
+:url_understand_blockstxs_json: understand-blockchain/blocks-txs.adoc#json-schema
+:url_understand_statemachine: understand-blockchain/state-machine.adoc
+:url_understand_rpc_events: understand-blockchain/sdk/rpc.adoc#events
+:url_understand_rpc_request: understand-blockchain/sdk/rpc.adoc#how-to-invoke-endpoints
+:url_build_app: build-blockchain/create-blockchain-client.adoc
+:url_build_module: build-blockchain/module/index.adoc
+:url_build_module_config: build-blockchain/module/configuration.adoc
+:url_build_plugin_event: build-blockchain/plugin/plugin-class.adoc#sync-and-store-new-event
+// Footnotes
+:fn_jsonschema: footnote:jsonSchema[See the {url_json_schema}[^] for more information about the JSON schema.]
+:fn_random: footnote:randomModule[See LIP 0046 https://github.com/LiskHQ/lips/blob/main/proposals/lip-0046.md[Define state and state transitions of Random module^] for more information about the Random module.]
+
+A module is a discrete component that contains blockchain-related business logic.
+This logic can be related to a specific domain or a topic of a Lisk blockchain client.
+
+Modules can be added by registering them to the blockchain client.
+For successful registration, each module needs to follow the expected module structure, which is described on this page.
+
+All modules collectively define the *on-chain logic* of a Lisk application.
+
+Modules perform state changes on the blockchain by::
+* Defining logic that is executed per block.
+* Defining logic that is executed per transaction.
+
+[IMPORTANT]
+====
+Modules are a central part of the on-chain logic of a Lisk application, and any code changes inside of a module which is registered in a running blockchain client, will most likely result in a hardfork of the network.
+
+Therefore, changing the module logic of a running client should always be done in consensus and coordination of the majority of active validators of the blockchain, if it is required.
+====
+
+
+== Module overview
+
+=== Module anatomy
+
+All important parts of a module are shown in the diagram below.
+
+.Anatomy of a module
+image::understand-blockchain/sdk/module.png["Module Anatomy",400]
+
+For more information about the different module components, check out the corresponding sub-sections:
+
+Initialization::
+* <<adddependencies>>
+* <<module-constructor,constructor>>
+* <<init>>
+Name & Metadata::
+* <<module-name>>
+* <<module-metadata>>
+State changes::
+* <<methods>>
+* <<blockchain-events>>
+* <<commands>>
+* <<lifecycle-hooks>>
+Public API::
+* <<endpoints>>
+Datastores::
+* <<stores>>
+
+=== Module file structure
+
+The default file structure for modules looks as follows:
+
+.blockchain-client/src/app/
+----
+├── app.ts
+├── index.ts
+├── modules
+│   ├──  module1
+│   │   ├── commands
+│   │   │   ├── some_command.ts
+│   │   │   └── another_command.ts
+│   │   ├── endpoint.ts
+│   │   ├── events
+│   │   │   └── some_event.ts
+│   │   ├── method.ts
+│   │   ├── module.ts
+│   │   └── stores
+│   │       ├── some_store.ts
+│   │       └── another_store.ts
+│   └── module2
+│       ├── commands
+│       │   └── example_command.ts
+│       ├── endpoint.ts
+│       ├── events
+│       │   └── some_event.ts
+│       ├── method.ts
+│       ├── module.ts
+│       └── stores
+│           └── example_store.ts
+├── modules.ts
+├── plugins
+└── plugins.ts
+----
+
+TIP: The default file structure of a module is automatically created for the developer, if the module is generated using Lisk Commander.
+
+For a more detailed description of the different folders and files of a module, please check out the corresponding guides xref:{url_build_app}[] and xref:{url_build_module}[].
+
+=== The `BaseModule`
+Each module is constructed as a class that extends from the **BaseModule** class.
+
+The `BaseModule` class defines all optional and required properties and hooks of a module:
+
+.The BaseModule
+[source,typescript]
+----
+export abstract class BaseModule {
+	public commands: BaseCommand[] = [];
+	public events: NamedRegistry = new NamedRegistry();
+	public stores: NamedRegistry = new NamedRegistry();
+	public offchainStores: NamedRegistry = new NamedRegistry();
+
+	public get name(): string {
+		const name = this.constructor.name.replace('Module', '');
+		return name.charAt(0).toLowerCase() + name.substr(1);
+	}
+
+	public abstract endpoint: BaseEndpoint;
+	public abstract method: BaseMethod;
+
+	public async init?(args: ModuleInitArgs): Promise<void>;
+	public async insertAssets?(context: InsertAssetContext): Promise<void>;
+	public async verifyAssets?(context: BlockVerifyContext): Promise<void>;
+	public async verifyTransaction?(context: TransactionVerifyContext): Promise<VerificationResult>;
+	public async beforeCommandExecute?(context: TransactionExecuteContext): Promise<void>;
+	public async afterCommandExecute?(context: TransactionExecuteContext): Promise<void>;
+	public async initGenesisState?(context: GenesisBlockExecuteContext): Promise<void>;
+	public async finalizeGenesisState?(context: GenesisBlockExecuteContext): Promise<void>;
+	public async beforeTransactionsExecute?(context: BlockExecuteContext): Promise<void>;
+	public async afterTransactionsExecute?(context: BlockAfterExecuteContext): Promise<void>;
+
+	public abstract metadata(): ModuleMetadata;
+}
+----
+
+== Module name
+
+The module name is the unique identifier for the module.
+
+The module name is automatically calculated from the class name of the module, if it extends from the <<the-basemodule,BaseModule>>:
+The `Module` suffix of the class name is removed, and the first character is converted to lowercase.
+
+TIP: For example, the module class `HelloModule` will have the module name `hello`.
+
+The module name can be accessed inside the module via `this.name`.
+
+In case it is desired to choose a different name for the module, a custom module name can be defined by implementing a getter `name` that returns the custom module name.
+
+.Example: Choosing a custom module name
+[source,js]
+----
+import { BaseModule } from 'lisk-sdk';
+
+class HelloModule extends BaseModule {
+    // ...
+    public get name() {
+      return 'newName';
+    }
+    // ...
+}
+----
+
+== Module constructor
+
+<<blockchain-events>> and <<stores>> of the module are registered in the constructor of a module, for later use in the module.
+
+.Example: Module constructor, registering stores and events to the module
+[source,typescript]
+----
+import { BaseModule } from 'lisk-sdk';
+
+export class HelloModule extends BaseModule {
+    // ...
+    public constructor() {
+        super();
+        // registration of stores and events
+        this.stores.register(CounterStore, new CounterStore(this.name));
+        this.stores.register(MessageStore, new MessageStore(this.name));
+        this.events.register(NewHelloEvent, new NewHelloEvent(this.name));
+    }
+    // ...
+}
+----
+
+== Module dependencies
+
+=== addDependencies
+
+If a module has dependencies on other modules, these can be injected in the `addDependencies()` method.
+
+.module.ts
+[source,typescript]
+----
+export class ReactModule extends BaseInteroperableModule {
+    // ...
+
+    public addDependencies(interoperabilityMethod: InteroperabilityMethod) {
+        this._interoperabilityMethod = interoperabilityMethod;
+    }
+    // ...
+
+}
+----
+
+`addDependencies()` is not part of the module lifecycle and needs to be called manually, ideally right after registering the module to the client, like shown below:
+
+.app.ts
+[source,typescript]
+----
+import { Application, PartialApplicationConfig } from 'lisk-sdk';
+import { registerModules } from './modules';
+import { registerPlugins } from './plugins';
+import { ReactModule } from './modules/react/module';
+
+export const getApplication = (config: PartialApplicationConfig): Application => {
+    const { app, method } = Application.defaultApplication(config);
+    const reactModule = new ReactModule();
+    app.registerModule(reactModule);
+    app.registerInteroperableModule(reactModule);
+    reactModule.addDependencies(method.interoperability);
+
+    registerModules(app);
+    registerPlugins(app);
+
+    return app;
+};
+----
+
+=== Init
+
+The `init()` method is part of the module lifecycle and gets called when the module initializes.
+
+If a module needs to access certain <<module-configuration,configuration options>>, it is required to validate and cache the respective configurations in the `init()` method of a module.
+The `init()` hook can also be used to pass required config options or methods to the module commands.
+
+.Example: Hello module init() hook
+[source,typescript]
+----
+export class HelloModule extends BaseModule {
+    // ...
+    public async init(args: ModuleInitArgs): Promise<void> {
+        // Get the module config defined in the config.json file
+        const { moduleConfig } = args;
+        // Overwrite the default module config with values from config.json, if set
+        const config = utils.objects.mergeDeep({}, defaultConfig, moduleConfig) as ModuleConfigJSON;
+        // Validate the provided config with the config schema
+        validator.validator.validate<ModuleConfigJSON>(configSchema, config);
+        // Call the command init() method with config values as parameters
+        this.commands[0].init(config).catch(err => {
+            // eslint-disable-next-line no-console
+            console.log('Error: ', err);
+        });
+    }
+    // ...
+}
+----
+
+.Example: React module init() hook
+[source,typescript]
+----
+public async init(_args: ModuleInitArgs) {
+        this.commands[0].init({
+            interoperabilityMethod: this._interoperabilityMethod,
+        });
+    }
+----
+
+== Module metadata
+
+The metadata of a module provides information about the module to external services like UIs.
+
+It provides information about the following module properties:
+
+* *endpoints*: A list of <<endpoints>> of the respective module.
+Each item has the following properties:
+** `name`: The name of the endpoint.
+** `request`: Required parameters for the endpoint (optional).
+** `response`: A schema of the expected response to a request to the endpoint.
+* *commands*: The list of <<commands>> belonging to the module.
+Each item has the following properties:
+** `name`: The command name.
+** `params`: The required and optional parameters to execute the command (optional).
+* *events*: A list of <<blockchain-events>> that are emitted by the module.
+Each item has the following properties:
+** `typeId`: The event type ID.
+** `data`: The event data.
+* *assets*: The schemas to decode xref:{url_understand_blockstxs_assets}[block assets] that are relevant to the module.
+Each item has the following properties:
+** `version`: The block version.
+** `data`: The asset schema.
+
+//TODO: Add link to the respective rpc endpoint
+The metadata can be obtained by requesting the metadata from the blockchain client via RPC request to the `system_getMetadata` endpoint.
+
+[[interface-metadata]]
+.Module metadata interface
+[%collapsible]
+====
+[source,typescript]
+----
+export interface ModuleMetadata {
+	endpoints: {
+		name: string;
+		request?: Schema;
+		response: Schema;
+	}[];
+	events: {
+		typeID: string;
+		data: Schema;
+	}[];
+	commands: {
+		name: string;
+		params?: Schema;
+	}[];
+	assets: {
+		version: number;
+		data: Schema;
+	}[];
+}
+
+export interface Schema {
+	readonly $id: string;
+	readonly type: string;
+	readonly properties: Record<string, unknown>;
+	readonly required?: string[];
+}
+----
+====
+
+=== Defining the module metadata
+
+The module metadata follows the format of the <<interface-metadata,module metadata interface>> and is returned in the `metadata()` function of a module.
+
+.Example: Module metadata
+[%collapsible]
+====
+[source,typescript]
+----
+const { BaseModule } = require('lisk-sdk');
+
+class HelloModule extends BaseModule {
+    // ...
+
+	public metadata(): ModuleMetadata {
+		return {
+			endpoints: [
+				{
+					name: this.endpoint.getHello.name,
+					request: getHelloRequestSchema,
+					response: getHelloResponseSchema,
+				},
+				{
+					name: this.endpoint.getHelloCounter.name,
+					response: getHelloCounterResponseSchema,
+				},
+			],
+			commands: this.commands.map(command => ({
+				name: command.name,
+				params: command.schema,
+			})),
+			events: this.events.values().map(v => ({
+				name: v.name,
+				data: v.schema,
+			})),
+			assets: [],
+			stores: [],
+		};
+	}
+
+    // ...
+}
+----
+
+.Example: Response schema of the 'getHelloCounter' endpoint of the Hello module
+[source,typescript]
+----
+export const getHelloCounterResponseSchema = {
+	$id: 'modules/hello/endpoint/getHelloCounter',
+	type: 'object',
+	required: ['counter'],
+	properties: {
+		counter: {
+			type: 'number',
+			format: 'uint32'
+		},
+	},
+};
+----
+====
+
+== Stores
+
+Modules have access to two kinds of data stores:
+
+. An <<on-chain-store>>
+. An <<off-chain-store>>
+
+Both stores are included in the xref:{url_understand_statemachine}[] of the blockchain client, though only the data on the on-chain stores is shared and synchronized with other nodes in the network.
+
+=== On-chain Store
+
+A module can define one or multiple **on-chain stores**, to store data in the blockchain, i.e. to include it in the blockchain state.
+
+For example, data such as _account balances_, _validator's names_, and _multisignature keys_ are values that are stored in the on-chain module store.
+
+Every module store is extended from the `BaseStore` class:
+
+.The BaseStore class
+[%collapsible]
+====
+[source,typescript]
+----
+export abstract class BaseStore<T> {
+	private readonly _version: number;
+	private readonly _storePrefix: Buffer;
+	private readonly _subStorePrefix: Buffer;
+
+	public abstract schema: Schema;
+
+	public get storePrefix(): Buffer {
+		return this._storePrefix;
+	}
+
+	public get subStorePrefix(): Buffer {
+		return this._subStorePrefix;
+	}
+
+	public get key(): Buffer {
+		return Buffer.concat([this._storePrefix, this._subStorePrefix]);
+	}
+
+	public get name(): string {
+		const name = this.constructor.name.replace('Store', '');
+		return name.charAt(0).toLowerCase() + name.substr(1);
+	}
+
+	public constructor(moduleName: string, version = 0) {
+		this._version = version;
+		this._storePrefix = utils.hash(Buffer.from(moduleName, 'utf-8')).slice(0, 4);
+		// eslint-disable-next-line no-bitwise
+		this._storePrefix[0] &= 0x7f;
+		const versionBuffer = Buffer.alloc(2);
+		versionBuffer.writeUInt16BE(this._version, 0);
+		this._subStorePrefix = utils
+			.hash(Buffer.concat([Buffer.from(this.name, 'utf-8'), versionBuffer]))
+			.slice(0, 2);
+	}
+
+	public async get(ctx: ImmutableStoreGetter, key: Buffer): Promise<T> {
+		if (!this.schema) {
+			throw new Error('Schema is not set');
+		}
+		const subStore = ctx.getStore(this._storePrefix, this._subStorePrefix);
+		return subStore.getWithSchema<T>(key, this.schema);
+	}
+
+	public async has(ctx: ImmutableStoreGetter, key: Buffer): Promise<boolean> {
+		if (!this.schema) {
+			throw new Error('Schema is not set');
+		}
+		const subStore = ctx.getStore(this._storePrefix, this._subStorePrefix);
+		return subStore.has(key);
+	}
+
+	public async iterate(
+		ctx: ImmutableStoreGetter,
+		options: IterateOptions,
+	): Promise<{ key: Buffer; value: T }[]> {
+		if (!this.schema) {
+			throw new Error('Schema is not set');
+		}
+		const subStore = ctx.getStore(this._storePrefix, this._subStorePrefix);
+		return subStore.iterateWithSchema<T>(options, this.schema);
+	}
+
+	public async set(ctx: StoreGetter, key: Buffer, value: T): Promise<void> {
+		if (!this.schema) {
+			throw new Error('Schema is not set');
+		}
+		const subStore = ctx.getStore(this._storePrefix, this._subStorePrefix);
+		return subStore.setWithSchema(key, value as Record<string, unknown>, this.schema);
+	}
+
+	public async del(ctx: StoreGetter, key: Buffer): Promise<void> {
+		if (!this.schema) {
+			throw new Error('Schema is not set');
+		}
+		const subStore = ctx.getStore(this._storePrefix, this._subStorePrefix);
+		return subStore.del(key);
+	}
+}
+----
+====
+
+=== Off-chain Store
+
+In a module, the off-chain store is available in: <<insertAssets>> & <<endpoints>>.
+
+It complements the on-chain module store, by allowing to store various additional data in the blockchain client, that does not need to be included in the on-chain store.
+
+IMPORTANT: The data stored in the off-chain store is not part of the blockchain protocol, and it may differ from machine to machine.
+
+Every off-chain store is extended from the `BaseOffchainStore`:
+
+.The BaseOffchainStore class
+[%collapsible]
+====
+[source,js]
+----
+export abstract class BaseOffchainStore<T> {
+	private readonly _version: number;
+	private readonly _storePrefix: Buffer;
+	private readonly _subStorePrefix: Buffer;
+
+	public abstract schema: Schema;
+
+	public get key(): Buffer {
+		return Buffer.concat([this._storePrefix, this._subStorePrefix]);
+	}
+
+	public get name(): string {
+		const name = this.constructor.name.replace('Store', '');
+		return name.charAt(0).toLowerCase() + name.substr(1);
+	}
+
+	public constructor(moduleName: string, version = 0) {
+		this._version = version;
+		this._storePrefix = utils.hash(Buffer.from(moduleName, 'utf-8')).slice(0, 4);
+		// eslint-disable-next-line no-bitwise
+		this._storePrefix[0] &= 0x7f;
+		const versionBuffer = Buffer.alloc(2);
+		versionBuffer.writeUInt16BE(this._version, 0);
+		this._subStorePrefix = utils
+			.hash(Buffer.concat([Buffer.from(this.name, 'utf-8'), versionBuffer]))
+			.slice(0, 2);
+	}
+
+	public async get(ctx: ImmutableStoreGetter, key: Buffer): Promise<T> {
+		if (!this.schema) {
+			throw new Error('Schema is not set');
+		}
+		const subStore = ctx.getOffchainStore(this._storePrefix, this._subStorePrefix);
+		return subStore.getWithSchema<T>(key, this.schema);
+	}
+
+	public async has(ctx: ImmutableStoreGetter, key: Buffer): Promise<boolean> {
+		if (!this.schema) {
+			throw new Error('Schema is not set');
+		}
+		const subStore = ctx.getOffchainStore(this._storePrefix, this._subStorePrefix);
+		return subStore.has(key);
+	}
+
+	public async iterate(
+		ctx: ImmutableStoreGetter,
+		options: IterateOptions,
+	): Promise<{ key: Buffer; value: T }[]> {
+		if (!this.schema) {
+			throw new Error('Schema is not set');
+		}
+		const subStore = ctx.getOffchainStore(this._storePrefix, this._subStorePrefix);
+		return subStore.iterateWithSchema<T>(options, this.schema);
+	}
+
+	public async set(ctx: StoreGetter, key: Buffer, value: T): Promise<void> {
+		if (!this.schema) {
+			throw new Error('Schema is not set');
+		}
+		const subStore = ctx.getOffchainStore(this._storePrefix, this._subStorePrefix);
+		return subStore.setWithSchema(key, value as Record<string, unknown>, this.schema);
+	}
+
+	public async del(ctx: StoreGetter, key: Buffer): Promise<void> {
+		if (!this.schema) {
+			throw new Error('Schema is not set');
+		}
+		const subStore = ctx.getOffchainStore(this._storePrefix, this._subStorePrefix);
+		return subStore.del(key);
+	}
+}
+----
+====
+
+== Module configuration
+
+A module can access specific configuration options of the blockchain client:
+
+. Module-specific configuration options, defined under `modules.MODULENAME`, where `MODULENAME` is the name of the specific module, that the config options belong to.
+. Genesis config options, defined under `genesis` are config options available to the blockchain client.
+
+Both configuration options are defined by the blockchain developer in the `config.json` file, generally located in the `config/default/` directory.
+
+.config.json structure
+[source,js]
+----
+{
+    // ...
+    "genesis": {
+		"block": {
+			"fromFile": "./config/genesis_block.blob"
+		},
+		"blockTime": 10,
+		"bftBatchSize": 103,
+		"maxTransactionsSize": 15 * 1024, // Kilo Bytes,
+		"minFeePerByte": 1000
+	},
+	"generator": {
+		"keys": {
+			"fromFile": "./config/dev-validators.json"
+		}
+	},
+	"modules": {
+        "hello": {
+          "maxMessageLength": 300,
+          "minMessageLength": 5,
+          "blacklist": ["illegalWord1", "badWord2", "censoredWord3"]
+        }
+	},
+	"plugins": {}
+}
+----
+
+For more information on how to configure a module, read the guide xref:{url_build_module_config}[].
+
+
+== Endpoints
+
+An endpoint is an *interface between a module and an external system.*
+Lisk endpoints support RPC communication.
+The module-specific RPC endpoints can be invoked by external services, like UIs, to get relevant data from the application.
+
+The endpoints are defined individually for each module, depending on the module's purpose.
+
+IMPORTANT: Endpoints allow us to conveniently *get data from the blockchain*.
+It is never possible to set data / mutate the state via module endpoints.
+
+Every module endpoint always extends from the `BaseEndpoint` class.
+
+.The BaseEndpoint class
+[source,typescript]
+----
+export abstract class BaseEndpoint {
+	[key: string]: unknown;
+	protected moduleID: Buffer;
+	public constructor(moduleID: Buffer) {
+		this.moduleID = moduleID;
+	}
+}
+----
+
+=== How to define module endpoints
+
+The module endpoints are usually defined in a file called `endpoint.ts` inside of the root folder of the respective module.
+
+.Example: `endpoint.ts` of the Hello module
+[%collapsible]
+====
+[source,typescript]
+----
+import { BaseEndpoint, ModuleEndpointContext, cryptography } from 'lisk-sdk';
+import { CounterStore, CounterStoreData } from './stores/counter';
+import { MessageStore, MessageStoreData } from './stores/message';
+
+export class HelloEndpoint extends BaseEndpoint {
+
+	public async getHelloCounter(ctx: ModuleEndpointContext): Promise<CounterStoreData> {
+		const counterSubStore = this.stores.get(CounterStore);
+
+		const helloCounter = await counterSubStore.get(
+			ctx,
+			Buffer.from('hello','utf8'),
+		);
+
+		return helloCounter;
+	}
+
+	public async getHello(ctx: ModuleEndpointContext): Promise<MessageStoreData> {
+		const messageSubStore = this.stores.get(MessageStore);
+
+		const { address } = ctx.params;
+		if (typeof address !== 'string') {
+			throw new Error('Parameter address must be a string.');
+		}
+		cryptography.address.validateLisk32Address(address);
+		const helloMessage = await messageSubStore.get(
+			ctx,
+			cryptography.address.getAddressFromLisk32Address(address),
+		);
+		return helloMessage;
+	}
+}
+----
+====
+
+All module endpoints have access to the on-chain and off-chain <<stores>> of a module and can receive data from there, to answer RPC requests with the expected data.
+
+The parameter `ctx` of an endpoint is expected to be of type `ModuleEndpointContext`.
+Meaning, `ctx` provides the following methods for the endpoint:
+
+.`ModuleEndpointContext` interface
+[%collapsible]
+====
+[source,typescript]
+----
+export interface ModuleEndpointContext extends PluginEndpointContext {
+	getStore: (moduleID: Buffer, storePrefix: Buffer) => ImmutableSubStore;
+	getOffchainStore: (moduleID: Buffer, storePrefix: Buffer) => SubStore;
+	getImmutableMethodContext: () => ImmutableMethodContext;
+	chainID: Buffer;
+}
+----
+====
+
+Once the module endpoints are defined in `endpoints.ts`, they can be added to the module under the `endpoint` attribute:
+
+.How to add endpoints to a module
+[source,typescript]
+----
+import { HelloEndpoint } from './endpoint';
+
+export class HelloModule extends BaseModule {
+	// ...
+	public endpoint = new HelloEndpoint(this.stores, this.offchainStores);
+    // ...
+}
+----
+
+=== Calling a module endpoint
+
+To call an endpoint of a module, simply send the respective RPC request.
+
+A convenient way to send RPC requests to the node is the *API client*.
+See section xref:{url_understand_rpc_request}[How to invoke endpoints] of the page "Communicating to a Lisk node via RPC".
+
+== Methods
+
+A method is an interface for module-to-module communication, and *can perform state mutations* on the blockchain.
+
+To get or set module-specific data in the blockchain, methods are either called by other modules or by the module itself. 
+For example, the `transfer` method from the `Token` module is called by a module, if it needs to transfer tokens from one account to the other.
+
+Every module method always extends from the `BaseMethod` class.
+
+.The BaseMethod class
+[source,typescript]
+----
+export abstract class BaseMethod {
+	protected moduleID: Buffer;
+	public constructor(moduleID: Buffer) {
+		this.moduleID = moduleID;
+	}
+}
+----
+
+=== How to define module methods
+
+The module methods are usually defined in a file called `methods.ts` inside of the folder of the respective module.
+
+.Example: `getHello` method of the Hello module
+[%collapsible]
+====
+[source,typescript]
+----
+import { BaseMethod, ImmutableMethodContext } from 'lisk-sdk';
+import { MessageStore, MessageStoreData } from './stores/message';
+
+export class HelloMethod extends BaseMethod {
+
+	public async getHello(
+		methodContext: ImmutableMethodContext,
+		address: Buffer,
+	): Promise<MessageStoreData> {
+        // 1. Get message store
+		const messageSubStore = this.stores.get(MessageStore);
+        // 2. Get the Hello message for the address from the message store
+		const helloMessage = await messageSubStore.get(methodContext, address);
+        // 3. Return the Hello message
+		return helloMessage;
+	}
+}
+----
+====
+
+Once the module methods are defined in `methods.ts`, they can be added to the module under the `method` attribute:
+
+.How to add methods to a module
+[source,typescript]
+----
+import { TokenMethod } from './method';
+
+export class TokenModule extends BaseInteroperableModule {
+	public method = new TokenMethod(this.stores, this.events, this.name);
+    // ...
+}
+----
+
+=== Calling a module method from another module
+
+A module method can be called from another module.
+
+For example, the method `getAvailableBalance` of the **Token** module is called from the **Fee** module in the transaction verification hook.
+This method is called to verify if the sender of a transaction has enough balance to pay the transaction fee.
+
+Methods from other modules are provided to the module by importing them, and adding them as properties in the <<adddependencies>> method, as shown in the code snippet below.
+
+.fee/module.ts
+[source,typescript]
+----
+export class FeeModule extends BaseInteroperableModule {
+    // ...
+
+    public addDependencies(tokenMethod: TokenMethod, interopMethod: InteroperabilityMethod) {
+		this._tokenMethod = tokenMethod;
+		this.crossChainMethod.addDependencies(interopMethod, tokenMethod);
+	}
+    // ...
+
+    public async verifyTransaction(context: TransactionVerifyContext): Promise<VerificationResult> {
+		const { getMethodContext, transaction, header } = context;
+
+		const minFee = this._getMinFee(header.height, transaction.getBytes().length);
+		if (transaction.fee < minFee) {
+			throw new Error(`Insufficient transaction fee. Minimum required fee is ${minFee}.`);
+		}
+
+		const balance = await this._tokenMethod.getAvailableBalance(
+			getMethodContext(),
+			transaction.senderAddress,
+			this._tokenID,
+		);
+		if (transaction.fee > balance) {
+			throw new Error(`Insufficient balance.`);
+		}
+
+		return { status: VerifyStatus.OK };
+	}
+
+    // ...
+}
+----
+
+== Blockchain Events
+
+Blockchain events, or module events, are logs of events that occur in the blockchain network during block execution.
+Events occur per block, and are stored in the respective block header, from where they can be queried.
+
+.Do not confuse blockchain events with RPC events.
+
+[IMPORTANT]
+====
+In contrast to xref:{url_understand_rpc_events}[RPC events],
+
+* Blockchain events are part of the on-chain logic:
+Each block includes the **event root in the block header**, which is the root of a Sparse-Merkle-Tree of all blockchain events, that occur in that particular block.
+* If not configured differently, blockchain events are only kept for the last 300 blocks, to not pollute the blockchain unnecessarily.
+====
+
+Every module event always extends from the `BaseEvent` class.
+
+.The BaseEvent class
+[%collapsible]
+====
+[source,typescript]
+----
+export abstract class BaseEvent<T> {
+	public schema: Schema = emptySchema;
+
+	private readonly _moduleName: string;
+
+	public get key(): Buffer {
+		return Buffer.from(this._moduleName + this.name, 'utf-8');
+	}
+
+	public get name(): string {
+		const name = this.constructor.name.replace('Event', '');
+		return name.charAt(0).toLowerCase() + name.substr(1);
+	}
+
+	public constructor(moduleName: string) {
+		this._moduleName = moduleName;
+	}
+
+	public add(ctx: EventQueuer, data: T, topics?: Buffer[], noRevert?: boolean): void {
+		ctx.eventQueue.add(
+			this._moduleName,
+			this.name,
+			this.schema ? codec.encode(this.schema, data as Record<string, unknown>) : Buffer.alloc(0),
+			topics,
+			noRevert,
+		);
+	}
+}
+----
+====
+
+For more information on how to ...
+
+* *create* and *emit* blockchain events, read the guide xref:{url_build_module_config}[].
+* *listen* to blockchain events, read the guide xref:{url_build_plugin_event}[How to create a plugin].
+
+
+=== Standard event
+
+The standard event is indicating the result of a transaction processing (success/failure).
+It is automatically emitted every time a transaction is processed by a module.
+
+Only valid transactions are processed, and therefore *only valid transactions emit the standard event.*
+See the section xref:{url_understand_valid_invalid_txs}[Valid vs invalid transactions] for more information.
+
+NOTE: The standard event is therefore the only blockchain event, that is not defined manually by the developer of a module.
+
+The standard event is added to the event queue in the state machine during the `executeTransaction` xref:{url_understand_block_execution}[lifecycle hook].
+
+If the transaction execution as successful, the `success` property is set to `true`, otherwise, it is set to `false`.
+
+.Schema for the standard event
+[source,typescript]
+----
+export const standardEventDataSchema = {
+	$id: '/block/event/standard',
+	type: 'object',
+	required: ['success'],
+	properties: {
+		success: {
+			dataType: 'boolean',
+			fieldNumber: 1,
+		},
+	},
+};
+----
+
+== Commands
+
+A command is a group of *state-transition logic triggered by a transaction* and is identified by the module and command name of the transaction.
+
+.Anatomy of a Command
+image::understand-blockchain/sdk/command.png["Command anatomy",400]
+
+Every module command always extends from the `BaseCommand` class.
+
+.The BaseCommand class
+[source,typescript]
+----
+export abstract class BaseCommand<T = unknown> {
+	public schema?: Schema;
+
+	public get name(): string {
+		const name = this.constructor.name.replace('Command', '');
+		return name.charAt(0).toLowerCase() + name.substr(1);
+	}
+
+	// eslint-disable-next-line no-useless-constructor
+	public constructor(protected stores: NamedRegistry, protected events: NamedRegistry) {}
+
+	public verify?(context: CommandVerifyContext<T>): Promise<VerificationResult>;
+
+	public abstract execute(context: CommandExecuteContext<T>): Promise<void>;
+}
+----
+
+=== Command name
+
+The command name is the unique identifier for the command. 
+It needs to be unique within the module the command belongs to.
+
+The command name is automatically calculated from the class name of the command, if it extends from the <<commands,BaseCommand>>:
+The `Command` suffix of the class name is removed, and the first character is converted to lowercase.
+
+TIP: For example, the module class `CreateHelloCommand` will have the command name `createHello`.
+
+The command name can be accessed inside the command via `this.name`.
+
+In case it is desired to choose a different name for the command, a custom command name can be defined by implementing a getter `name` that returns the custom command name.
+
+.Example: Choosing a custom command name
+[source,typescript]
+----
+import { BaseCommand } from 'lisk-sdk';
+
+export class TransferCommand extends BaseCommand {
+    // ...
+    public get name() {
+      return 'newName';
+    }
+    // ...
+}
+----
+
+=== Command parameters schema
+
+If a command expects parameters, the parameters schema is defined in the `schema` property of the command.
+It defines which parameters are required in the transaction, and also which data types are to be expected.
+
+If the parameters of a transaction object do not match the corresponding schema, the transaction will not be accepted by the node.
+The schema follows the format of a modified JSON schema{fn_jsonschema}, and should contain the following properties:
+
+$id::
+Unique identifier of the schema throughout the system.
+
+The `$id` property is directly inherited from the JSON-schema.
+You can read more about the id property in the {url_json_schema_id}[JSON schema documentation^].
+
+In general, adhere to the following criteria:
+
+* Use unique IDs across the system.
+* It is recommended to use a path like format for easy readability, but it is not an actual requirement.
+
+To avoid mixing any schema with other registered schemas, use a fixed identifier for your app in each ID.
+
+title:: A short description of the schema.
+type or dataType::
+If the data type of a property is either an `object` or an `array`, the `type` property must be used instead of `dataType`.
+The root type of the schema must be of type `object`.
+required::
+A list of all required parameters.
+
+TIP: If the schema is used for serialization, it is recommended to put all properties as required to guarantee the uniqueness of encoding.
+
+properties::
+A list of the command parameters.
+It also defines their data type, order, and additional properties like min and max length.
+
+.Example: Command parameters schema
+[%collapsible]
+====
+[source,typescript]
+----
+export class TransferCommand extends BaseCommand {
+    // ...
+    public schema = {
+        $id: '/lisk/transferParams',
+        title: 'Transfer transaction params',
+        type: 'object',
+        required: ['tokenID', 'amount', 'recipientAddress', 'data'],
+        properties: {
+            tokenID: {
+                dataType: 'bytes',
+                fieldNumber: 1,
+                minLength: TOKEN_ID_LENGTH,
+                maxLength: TOKEN_ID_LENGTH,
+            },
+            amount: {
+                dataType: 'uint64',
+                fieldNumber: 2,
+            },
+            recipientAddress: {
+                dataType: 'bytes',
+                fieldNumber: 3,
+                minLength: ADDRESS_LENGTH,
+                maxLength: ADDRESS_LENGTH,
+            },
+            data: {
+                dataType: 'string',
+                fieldNumber: 4,
+                minLength: 0,
+                maxLength: MAX_DATA_LENGTH,
+            },
+        },
+    };
+    // ...
+}
+----
+====
+
+=== Command Lifecycle Hooks
+
+Each command has the following <<lifecycle-hooks>>, which are executed separately for each command in a block.
+
+==== Command initialization
+
+The `init()` hook of a command is called by the Lisk Framework when the node starts.
+
+Here, you can validate and cache the module config or do initializations which should only happen once per node starts.
+
+[source,typescript]
+----
+export class TransferCommand extends BaseCommand {
+    // ...
+    private _methods!: TokenMethods;
+    public init(args: { methods: TokenMethods }) {
+        this._methods = args.methods;
+    }
+    // ...
+}
+----
+
+==== Command verification
+The hook `Command.verify` is called only for the command that is referenced by the module name and the command name in the transaction.
+Similar to the `verifyTransaction` hook, `Command.verify` will be called also in the transaction pool, and it is to ensure the verification defined in this hook is respected when the transactions are included in a block.
+
+NOTE: In this hook, the *state cannot be mutated* and events cannot be emitted.
+
+[source,typescript]
+----
+export class TransferCommand extends BaseCommand {
+    // ...
+    public async verify(context: CommandVerifyContext<Params>): Promise<VerificationResult> {
+        const { params } = context;
+
+        try {
+            validator.validate(transferParamsSchema, params);
+        } catch (err) {
+            return {
+                status: VerifyStatus.FAIL,
+                error: err as Error,
+            };
+        }
+        return {
+            status: VerifyStatus.OK,
+        };
+    }
+    // ...
+}
+----
+
+===== Command verification context
+
+The `context` is available in every `Command.execute()` hook.
+
+It allows convenient access to:
+
+* `logger`: Logger interface, to create log messages.
+* `chainID`: The identifier of the blockchain network, in which this command is executed.
+* `transaction`: The transaction triggering the command.
+* `params`: The command params, which were attached to the transaction.
+* `getMethodContext`: Module method interface, to invoke modules methods.
+* `getStore`: State store interface, to get and set data from/to the module stores.
+
+.CommandVerifyContext interface
+[%collapsible]
+====
+[source,typescript]
+----
+export interface CommandVerifyContext<T = undefined> {
+    logger: Logger;
+    chainID: Buffer;
+    transaction: Transaction; // without decoding params
+    params: T;
+    getMethodContext: () => ImmutableMethodContext;
+    getStore: (moduleID: Buffer, storePrefix: Buffer) => ImmutableSubStore;
+}
+----
+====
+
+==== Command execution
+
+Applies the state changes through the state machine.
+The hook `Command.execute` is triggered by a transaction identified by the module name and the command name.
+
+If the hook execution fails, the transaction that triggered this command is still valid, but the state changes applied during this hook are reverted.
+Additionally, an event will be emitted that provides the information on whether a command is executed successfully or failed.
+
+NOTE: In this hook, the *state can be mutated* and events can be emitted.
+
+[source,typescript]
+----
+export class TransferCommand extends BaseCommand {
+    // ...
+    public async execute(context: CommandExecuteContext<Params>): Promise<void> {
+        const { params } = context;
+        await this._api.transfer(
+            context.getAPIContext(),
+            context.transaction.senderAddress,
+            params.recipientAddress,
+            params.tokenID,
+            params.amount,
+        );
+    }
+}
+----
+
+===== Command execution context
+
+The `context` is available in every `Command.execute()` hook.
+
+It allows convenient access to:
+
+* `logger`: Logger interface, to create log messages.
+* `chainID`: The identifier of the blockchain network, in which this command is executed.
+* `eventQueue`: The event queue.
+See <<blockchain-events>> for more information.
+* `header`: Block header.
+* `assets`: Block assets.
+//TODO: Update/review term `block generation round` (former forging-round)
+* `currentValidators`: Validators of the current block generation round.
+* `impliesMaxPrevote`: `true` if the block header which includes this transaction has prevotes which follow the BFT protocol.
+* `maxHeightCertified`: Current height of the block in this chain which is certified.
+* `certificateThreshold`: BFT vote weight required to generate a certificate.
+* `transaction`: The transaction triggering the command.
+* `params`: The command params, which were attached to the transaction.
+* `getMethodContext`: Module method interface, to invoke modules methods.
+* `getStore`: State store interface, to get and set data from/to the module stores.
+
+.Interface: CommandExecuteContext
+[%collapsible]
+====
+[source,typescript]
+----
+export interface CommandExecuteContext<T = undefined> {
+    logger: Logger;
+    chainID: Buffer;
+    eventQueue: EventQueue;
+    header: BlockHeader;
+    assets: BlockAssets;
+    currentValidators: Validator[];
+    impliesMaxPrevote: boolean;
+    maxHeightCertified: number;
+    certificateThreshold: bigint;
+    transaction: Transaction; // without decoding params
+    params: T;
+    getMethodContext: () => MethodContext;
+    getStore: (moduleID: Buffer, storePrefix: Buffer) => SubStore;
+}
+----
+====
+
+== Lifecycle Hooks
+
+The module hooks are called in a specific order during block creation and execution.
+
+More information can be found regarding the block lifecycle in the following sections:
+
+. xref:{url_understand_genesis_block_execution}[Lisk key concepts > Genesis block execution]
+. xref:{url_understand_block_generation}[Lisk key concepts > Block generation]
+. xref:{url_understand_block_execution}[Lisk key concepts > Block processing]
+
+IMPORTANT: Never include external dynamic data to state changes in the lifecycle hooks.
+It will create inconsistencies/forks for nodes when syncing to the current height.
+
+=== insertAssets
+The hook `insertAssets` is called at the very beginning of the xref:{url_understand_block_generation}[block generation].
+The assets added during the execution of this hook can be used in all the execution hooks afterwards.
+
+//TODO: Add link to random module
+For example, the `seedReveal` property is added to the block asset in this hook by the Random module{fn_random}.
+
+[source,typescript]
+----
+public async insertAssets(context: InsertAssetContext): Promise<void> {}
+----
+
+.`InsertAssetContext` interface
+[%collapsible]
+====
+[source,js]
+----
+{
+    logger: Logger;
+    networkIdentifier: Buffer;
+    getAPIContext: () => APIContext;
+    getStore: (moduleID: Buffer, storePrefix: Buffer) => ImmutableSubStore;
+    header: BlockHeader;
+    assets: WritableBlockAssets;
+    getGeneratorStore: (moduleID: Buffer) => SubStore;
+    getOffchainStore: (moduleID: Buffer, storePrefix: Buffer) => SubStore;
+    getFinalizedHeight(): number;
+}
+----
+====
+
+=== verifyAssets
+The hook `verifyAssets` is only called before xref:{url_understand_block_execution}[executing a block].
+
+If this stage fails, the block is considered invalid and will be rejected.
+In particular, the following hooks will not get executed.
+
+This hook is used for verification before any state changes.
+For example, at this stage, each module checks if the expected assets exist in the block.
+
+NOTE: In this hook, the *state cannot be mutated* and events cannot be emitted.
+
+[source,typescript]
+----
+public async verifyAssets(context: BlockVerifyContext): Promise<void> {}
+----
+
+.Interface for `verifyAssets` context
+[%collapsible]
+====
+[source,js]
+----
+{
+    logger: Logger;
+    networkIdentifier: Buffer;
+    getAPIContext: () => ImmutableAPIContext;
+    getStore: (moduleID: Buffer, storePrefix: Buffer) => ImmutableSubStore;
+    header: BlockHeader;
+    assets: BlockAssets;
+}
+----
+====
+
+=== beforeTransactionsExecute
+
+The hook `beforeTransactionsExecute` is triggered before any of the transactions of the block are processed.
+
+NOTE: In this hook, the *state can be mutated* and events can be emitted.
+
+[source,typescript]
+----
+public async beforeTransactionsExecute(context: BlockExecuteContext): Promise<void> {}
+----
+
+.Interface for `beforeTransactionsExecute` context
+[%collapsible]
+====
+[source,js]
+----
+{
+    logger: Logger;
+    networkIdentifier: Buffer;
+    eventQueue: EventQueue;
+    getAPIContext: () => APIContext;
+    getStore: (moduleID: Buffer, storePrefix: Buffer) => SubStore;
+    header: BlockHeader;
+    assets: BlockAssets;
+    currentValidators: Validator[];
+    impliesMaxPrevote: boolean;
+    maxHeightCertified: number;
+    certificateThreshold: bigint;
+}
+----
+====
+
+=== verifyTransaction
+
+The hook `verifyTransaction` is called for all the transactions within a block regardless of the command they trigger.
+This ensures that all transactions included in a block satisfy the verifications defined in this hook.
+
+This hook is used also for transaction verification in the transaction pool to reject invalid transactions early before transmitting them to the network.
+For example, signature verification is done in this hook.
+
+NOTE: In this hook, the *state cannot be mutated* and events cannot be emitted.
+
+[source,typescript]
+----
+public async verifyTransaction(context: TransactionVerifyContext): Promise<void> {}
+----
+
+.Interface for `verifyTransaction` context
+[%collapsible]
+====
+[source,js]
+----
+{
+    networkIdentifier: Buffer;
+    logger: Logger;
+    transaction: Transaction;
+    getAPIContext: () => ImmutableAPIContext;
+    getStore: (moduleID: Buffer, storePrefix: Buffer) => ImmutableSubStore;
+}
+----
+====
+
+=== beforeCommandExecute
+The hook `beforeCommandExecute` allows adding business logic before the execution of a command.
+It is called for all the transactions within a block regardless of the command they trigger.
+
+If the hook fails during the execution, the transaction becomes invalid and the block containing this transaction will be invalid.
+
+NOTE: In this hook, the *state can be mutated* and events can be emitted.
+
+[source,typescript]
+----
+public async beforeCommandExecute(context: TransactionExecuteContext): Promise<void> {}
+----
+
+.Interface for `beforeCommandExecute` context
+[%collapsible]
+====
+[source,js]
+----
+{
+    logger: Logger;
+    networkIdentifier: Buffer;
+    eventQueue: EventQueueAdder;
+    getAPIContext: () => APIContext;
+    getStore: (moduleID: Buffer, storePrefix: Buffer) => SubStore;
+    header: BlockHeader;
+    assets: BlockAssets;
+    transaction: Transaction;
+    currentValidators: Validator[];
+    impliesMaxPrevote: boolean;
+    maxHeightCertified: number;
+    certificateThreshold: bigint;
+}
+----
+====
+
+=== afterCommandExecute
+The hook `afterCommandExecute` allows adding business logic after the execution of a command.
+It is called for all the transactions within a block regardless of the command they trigger.
+
+If the hook fails during the execution, the transaction becomes invalid and the block containing this transaction will be invalid.
+
+NOTE: In this hook, the *state can be mutated* and events can be emitted.
+
+[source,typescript]
+----
+public async afterCommandExecute(context: TransactionExecuteContext): Promise<void> {}
+----
+
+.Interface for `afterCommandExecute` context
+[%collapsible]
+====
+[source,js]
+----
+{
+    logger: Logger;
+    networkIdentifier: Buffer;
+    eventQueue: EventQueueAdder;
+    getAPIContext: () => APIContext;
+    getStore: (moduleID: Buffer, storePrefix: Buffer) => SubStore;
+    header: BlockHeader;
+    assets: BlockAssets;
+    transaction: Transaction;
+    currentValidators: Validator[];
+    impliesMaxPrevote: boolean;
+    maxHeightCertified: number;
+    certificateThreshold: bigint;
+}
+----
+====
+
+=== afterTransactionsExecute
+The hook `afterTransactionsExecute` is the last hook allowed to define state changes that are triggered by the block.
+
+Additionally, when defining the `afterTransactionsExecute` logic for a module, the transactions included in the block are available in that context and can be used in this logic.
+For example, this hook can be used to sum the fees of the transactions included in a block and transfer them to the block generator.
+
+NOTE: In this hook, the *state can be mutated* and events can be emitted.
+
+[source,typescript]
+----
+public async afterTransactionsExecute(context: BlockAfterExecuteContext): Promise<void> {}
+----
+
+.Interface for `afterTransactionsExecute` context
+[%collapsible]
+====
+[source,js]
+----
+{
+    logger: Logger;
+    networkIdentifier: Buffer;
+    eventQueue: EventQueue;
+    getAPIContext: () => APIContext;
+    getStore: (moduleID: Buffer, storePrefix: Buffer) => SubStore;
+    header: BlockHeader;
+    assets: BlockAssets;
+    currentValidators: Validator[];
+    impliesMaxPrevote: boolean;
+    maxHeightCertified: number;
+    certificateThreshold: bigint;
+    transactions: ReadonlyArray<Transaction>;
+    setNextValidators: (
+        preCommitThreshold: bigint,
+        certificateThreshold: bigint,
+        validators: Validator[],
+    ) => void;
+}
+----
+====
+
+=== initGenesisState
+The hook `initGenesisState` is called at the beginning of the xref:{url_understand_genesis_block_execution}[genesis block execution].
+Each module must initialize its state using an associated block asset.
+
+It is recommended not to use methods from other modules because their state might not be initialized yet depending on the order of the hook execution.
+
+[source,typescript]
+----
+public async initGenesisState(context: GenesisBlockExecuteContext): Promise<void> {}
+----
+
+.Interface for `initGenesisState` context
+[%collapsible]
+====
+[source,js]
+----
+{
+    logger: Logger;
+    eventQueue: EventQueueAdder;
+    getAPIContext: () => APIContext;
+    getStore: (moduleID: Buffer, storePrefix: Buffer) => SubStore;
+    header: BlockHeader;
+    assets: BlockAssets;
+    setNextValidators: (
+        preCommitThreshold: bigint,
+        certificateThreshold: bigint,
+        validators: Validator[],
+    ) => void;
+}
+----
+====
+
+=== finalizeGenesisState
+The hook `finalizeGenesisState` is called at the end of the xref:{url_understand_genesis_block_execution}[genesis block execution].
+
+In this hook, it can be assumed that the state initialization via `initGenesisState` of every module is completed and therefore methods from other modules can be used.
+
+[source,typescript]
+----
+public async finalizeGenesisState(context: GenesisBlockExecuteContext): Promise<void> {}
+----
+
+.Interface for `finalizeGenesisState` context
+[%collapsible]
+====
+[source,js]
+----
+{
+    logger: Logger;
+    eventQueue: EventQueueAdder;
+    getAPIContext: () => APIContext;
+    getStore: (moduleID: Buffer, storePrefix: Buffer) => SubStore;
+    header: BlockHeader;
+    assets: BlockAssets;
+    setNextValidators: (
+        preCommitThreshold: bigint,
+        certificateThreshold: bigint,
+        validators: Validator[],
+    ) => void;
+}
+----
+====

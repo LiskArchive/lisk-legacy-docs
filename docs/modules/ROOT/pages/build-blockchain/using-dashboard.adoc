@@ -1,201 +1,277 @@
-= Using dashboard with the blockchain application
-Mona Bärenfänger <mona@lightcurve.io>
+= Using the Dashboard with a blockchain client
+Mona Bärenfänger <mona@lightcurve.io> Muhammad Talha <muhammad.talha@lightcurve.io>
 // Settings
 :toc: preamble
+:toclevels: 5
+:page-toclevels: 3
 :idprefix:
 :idseparator: -
 :sectnums:
 :experimental:
-:figure-caption!:
+
 :docs_sdk: lisk-sdk::
 // Project URLS
-:advanced_rpc_appactions: api/lisk-node-rpc.adoc#actions
-:url_guides_asset: build-blockchain/create-asset.adoc
-:url_guides_config: build-blockchain/configure-app.adoc
-:url_guides_config_hello: {url_guides_config}#example-configuration-of-the-hello-world-application
-:url_guides_genesisblock: build-blockchain/create-genesis-block.adoc
-:url_guides_module: build-blockchain/create-module.adoc
-:url_guides_module_actions: {url_guides_module}#actions
-:url_guides_plugin: build-blockchain/create-plugin.adoc
-:url_guides_plugin_actions: {url_guides_plugin}#actions
-:url_guides_setup: build-blockchain/create-blockchain-app.adoc
-:url_intro_plugins: understand-blockchain/plugins.adoc
-:url_references_dashboard_plugin: {docs_sdk}plugins/dashboard-plugin.adoc
 
-How to conveniently interact with a blockchain application during development, by using the xref:{url_references_dashboard_plugin}[].
+:url_network_page: understand-blockchain/network.adoc
+:url_mainchain_page: understand-blockchain/mainchain.adoc
+:url_coreIndex_page: v4@lisk-core::index.adoc
 
-.Prerequisites
-[NOTE]
+
+:url_guides_config: build-blockchain/configuration.adoc
+:url_guides_config_hello: {url_guides_config}#example-configuration-for-the-hello-world-client
+:url_guides_module: build-blockchain/module/index.adoc
+:url_guides_module_endpoints: build-blockchain/module/endpoints-methods.adoc#endpoints
+:url_guides_module_getHello: build-blockchain/module/endpoints-methods.adoc#get-a-hello-message-by-address
+:url_guides_module_getHelloCounter: build-blockchain/module/endpoints-methods.adoc#get-hello-counter
+:url_guides_plugin_getMessageList: build-blockchain/plugin/plugin-endpoints.adoc#querying-saved-events
+:url_guides_plugin: build-blockchain/plugin/index.adoc
+:url_guides_setup: build-blockchain/create-blockchain-client.adoc
+
+:url_references_dashboard_plugin: {site-url}/lisk-sdk/v6/references/typedoc/modules/_liskhq_lisk_framework_dashboard_plugin.html
+:url_gitHub_passphrase: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/hello/hello_client/config/default/passphrase.json
+:url_typedoc_crypto: {site-url}/lisk-sdk/v6/references/typedoc/functions/_liskhq_lisk_cryptography.address.getLisk32AddressFromAddress.html
+:url_dev_validator: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/hello/hello_client/config/default/dev-validators.json
+
+The {url_references_dashboard_plugin}[Dashboard plugin^] offers various features that facilitate interaction with a Lisk application.
+The Dashboard can be registered with any Lisk Application.
+
+For this guide, the Dashboard plugin is registered to the xref:{url_guides_setup}[Hello World application], though the steps mentioned below can be applied to any Lisk-based blockchain client.
+
 ====
-To use this guide, it is assumed that the following criteria have been met:
+On this page, you'll learn:
 
-. Lisk Commander is installed, and a basic blockchain application is already initialized, as explained in the guide xref:{url_guides_setup}[].
-. A new module `HelloModule` is created, as explained in the guide xref:{url_guides_module}[].
-. A new asset `HelloAsset` is created, as explained in the guide xref:{url_guides_asset}[].
-. A new plugin `LatestHelloPlugin` is created, as explained in the guide xref:{url_guides_plugin}[].
+* [x] Registration of the Dashboard plugin to a blockchain client.
+* [x] Interacting with a node via the Dashboard plugin such as invoking commands, endpoints and subscribing to events, etc.
 ====
 
 == Plugin registration
 
-Install the dashboard plugin:
+With Lisk v6, the default plugins come pre-installed after an application is initiated.
+You can check the `package.json` file of the blockchain client to ensure the installation.
+
+.hello_client/package.json
+[source,json]
+----
+"dependencies": {
+	"@liskhq/lisk-framework-dashboard-plugin": "0.2.0",
+	//[...]
+},
+----
+
+Otherwise, you can install the Dashboard plugin like this:
 
 [source,bash]
 ----
 npm i @liskhq/lisk-framework-dashboard-plugin
 ----
 
-Now open `plugins.ts`, import the Dashboard plugin, and register it with the application as shown below:
+Now open the `plugins.ts` file, import the Dashboard plugin, and register it with the application as shown below:
 
 .src/app/plugins.ts
 [source,typescript]
 ----
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { Application } from 'lisk-sdk';
-import { LatestHelloPlugin } from "./plugins/latest_hello/latest_hello_plugin";
-import { DashboardPlugin } from "@liskhq/lisk-framework-dashboard-plugin";
+import { DashboardPlugin } from '@liskhq/lisk-framework-dashboard-plugin';
+//[...]
 
-// @ts-expect-error Unused variable error happens here until at least one module is registered
 export const registerPlugins = (app: Application): void => {
-
-    app.registerPlugin(LatestHelloPlugin);
-    app.registerPlugin(DashboardPlugin);
+   	//[...]
+    app.registerPlugin(new DashboardPlugin());
 };
 ----
 
-Save and close `plugins.ts` and start the blockchain application again:
+Save and close the `plugins.ts` file.
+
+[IMPORTANT]
+====
+It is essential to enable WS API and configure the `allowedMethods` property before registering the `DashboardPlugin`.
+For more information, see the configurations described in the xref:{url_guides_config_hello}[configuration guide].
+====
+
+After updating the *custom_config.json* file, build the blockchain client again:
 
 [source,bash]
 ----
-./bin/run start
+npm run build
+----
+
+== Starting the node
+
+[TIP]
+====
+It is also possible to enable the Dashboard plugin without updating the `plugins.ts` file as suggested in the aforementioned steps.
+Once the plugin is installed, you can add the `--enable-dashboard-plugin` flag to the `start` command to run the node.
+
+[tabs]
+=====
+Sidechain::
++
+--
+* Start the blockchain client with designated flags on a `sidechain` node.
++
+[source,bash]
+----
+./bin/run start --config=config/custom_config.json --enable-dashboard-plugin
+----
+--
+Mainchain::
++
+--
+* *Or*, start the blockchain client with designated flags on a `mainchain` node.
+For more information, see xref:{url_network_page}[Networks], xref:{url_mainchain_page}[Mainchain] and the xref:{url_coreIndex_page}[Lisk Core] docs.
++
+[source,bash]
+----
+lisk-core start --network testnet --enable-dashboard-plugin
+----
+--
+=====
+====
+
+If you registered the Dashboard via `plugins.ts`, then perform the following:
+
+.Start the blockchain client with 'custom_config.json' without any flag
+[source,bash]
+----
+./bin/run start --config=config/custom_config.json 
 ----
 
 Wait until the application start has been completed.
-Now it is possible to access the dashboard on the browser under `localhost: 4005`
+Now it is possible to access the Dashboard on the browser under `localhost: 4005`
 
-[IMPORTANT]
+You can also see the blockchain client logs to confirm the registration of the Dashboard plugin.
 
-====
-If the WS API hasn't been configured in the config as described in the xref:{url_guides_config_hello}[Config guide], it is also possible to enable the WS API via the following flags:
-
-[source,bash]
 ----
-./bin/run start --api-ws
+2023-07-28T08:42:18.189Z INFO XYZ.local application 92756 dashboard Loading in-memory plugin
 ----
-====
 
 == Dashboard walkabout
 
-Go to http://localhost:4005 to access the dashboard.
+Go to http://localhost:4005[^] to access the Dashboard.
 
-.Dashbobard overview
-image::guides/dashboard/dashboard2.png[]
+.Dashboard overview
+image::guides/dashboard/dashboard.gif["Dashboard Plugin", 1000,align="center"]
 
-//=== Creating new accounts
 
-=== Subscribing to events
 
-At the bottom of the dashboard is the "Recent events" window, which allows the possibility to subscribe to various events by selecting them from a dropdown box.
+=== Invoke command
 
-It is now possible to subscribe to the newly created event `hello:newHello`
+The Dashboard plugin allows you to invoke various commands via the *Invoke command* section.
 
-image:guides/dashboard/subscribe_event.png[]
+The *Invoke command* section lists all the module-based commands registered to a node. 
 
-Once a new hello transaction is posted, the event is published and will show up in the window "Recent events".
+The command type is selected from the dropdown box.
 
-NOTE: It can happen that the same event is received multiple times, as shown in the example below where the `hello:newHello` was received 3 times.
+As we registered the `DashboardPlugin` with the `hello_client`, it is possible to send a hello message via the Dashboard.
 
-image:guides/dashboard/receive_newHello_event.png[]
+.Select the 'hello_createHello' command.
+image::guides/dashboard/send_tx_dropdown.png["Transaction dropdown",750,align="center"]
 
-=== Sending transactions
+Once the desired command type is selected, provide the `passphrase` of the sender account and the hello `message`.
 
-An additional very useful component of the Dashboard is the "Send transaction" section.
+The passphrase is present in the `passphrase.json` file, which is located in the `config/default` directory of the blockchain client.
 
-The transaction type is selected from the dropdown box.
-It is now possible to try out the newly created hello asset from the guide xref:{url_guides_asset}[]: `hello:createHello`.
+You can use the {url_gitHub_passphrase}[passphrase^] of the `genesis` account of `hello_client`.
 
-image::guides/dashboard/send_tx_dropdown.png["Transaction dropdown",400]
+The hello message can be:
 
-Once the desired transaction type is selected, provide the passphrase of the sender account and the hello transaction asset as described below:
-
-The passphrase is retrieved from the file `accounts.json`, which contains the account credentials of all genesis delegates of the hello world blockchain application.
-
-NOTE: The accounts in your `accounts.json` file will be different, because the file was newly created before in the guide xref:{url_guides_genesisblock}[].
-
-.config/accounts.json
-[source,js]
+[source,json]
 ----
-[
-	{
-		"passphrase": "wait yellow stage simple immune primary when digital bounce coin draft life",
-		"address": "92ff111dfc904d1d8b077bf6e815fd21d881b005"
-	},
-	{
-		"passphrase": "transfer alien ticket whisper face ability rally planet town brick profit solution",
-		"address": "80bd220ff01b6a248822b337a11be79da7fb43d2"
-	},
-	{
-		"passphrase": "broccoli coast fade over atom chimney skate symptom ten rug pave marble",
-		"address": "252eeaf82f6d713501e561ddd437bf00a903f415"
-	},
-
-	// ...
-]
+{
+	"message": "Greetings from Lisk!"
+}
 ----
 
-image::guides/dashboard/send_tx_asset2.png["Send transaction",400]
+Once all the necessary parameters are input, click on the kbd:[Submit] button.
 
-Once all the necessary parameters are provided, click on the kbd:[Submit] button.
+.Enter information about the hello message
+image::guides/dashboard/send_tx_hello.png["Send transaction",750,align="center"]
 
 If the transaction was successfully accepted, you will see the following confirmation:
 
-image::guides/dashboard/send_tx_success2.png[]
+.Send 'createHello' transaction to node
+image::guides/dashboard/send_tx_success.png["Transaction Sent successfully",1000,align="center"]
 
-To verify that the hello message was updated in the sender account, select the action `app:getAccount` from the section "Call action".
+Once the transaction is confirmed and added to the chain, it can be seen in the *Recent Transaction* section.
 
-The action `app:getAccount` is part of the xref:{advanced_rpc_appactions}[application actions] and returns the account data for the account address that is specified in the action input.
+.Recent transactions
+image::guides/dashboard/recent_transactions.png["Recent transactions",750,align="center"]
 
-Provide the address which is belonging to the passphrase that was used to create the hello transaction in the action input field, and click on the kbd:[Submit] button.
+=== Call endpoints
 
-image::guides/dashboard/call_action.png["Invoke get account",400]
+It is possible to invoke endpoints of registered Modules and Plugins via the Dashboard.
+Endpoints can be invoked from the *Call endpoint* section. 
 
-In the response, it can be seen that the hello message of the account was updated successfully.
+In the previous guides, the following endpoints were created:
 
-image::guides/dashboard/call_action_success2.png["Get account action success",400]
+.*For Module:*
+. The endpoint `hello_getHello` is for xref:{url_guides_module_getHello}[Getting the latest Hello for an address].
 
-=== Invoking actions
+.*For Plugin:*
+. The endpoint `helloInfo_getMessageList` is for xref:{url_guides_plugin_getMessageList}[Getting a list of all Hello messages sent on-chain].
 
-Actions are invoked in the "Call action" section.
+To invoke an endpoint through the Dashboard, refer to the following section:
 
-In the previous guides the following two new actions were created:
+==== Invoking `hello_getHello`
 
-. The action `hello:amountOfHellos` of the xref:{url_guides_module_actions}[hello module]
-. The action `latestHello:getLatestHello` of the xref:{url_guides_plugin_actions}[latest hello plugin]
+To verify that the hello message was sent successfully, select the `hello_getHello` endpoint from the section *Call endpoint*.
 
-==== Invoking `hello:amountOfHellos`
+The `hello_getHello` endpoint is part of the xref:{url_guides_module_endpoints}[HelloModule endpoints] and it returns the last sent hello message for the account address that is specified in the endpoint input.
 
-Select `hello:amountOfHellos` from the dropdown menu.
+Provide the `address` to which the passphrase belongs.
+For `hello_client` the passphrase points to the first account in the {url_dev_validator}[dev-validators.json^] file, which is located in the `config/default` directory of the hello client.
+
+.Enter an address to fetch the latest hello message
+image::guides/dashboard/call_action.png["Invoke hello_getHello",750,align="center"]
+
+In response, the Dashboard will display the latest hello message sent from the specified account.
+
+.Latest hello message from the given account
+image::guides/dashboard/call_action_success.png["Get latest hello message for the given account",1000,align="center"]
+
+
+==== Invoking `helloInfo_getMessageList`
+
+Select `helloInfo_getMessageList` from the dropdown menu.
+
+.Select the 'helloInfo_getMessageList' endpoint
+image::guides/dashboard/call_pluginaction.png["Invoke plugin action",750]
 
 You can directly click on the kbd:[Submit] button to view the results.
-It is not necessary to provide any input, because the action doesn't require any.
+The endpoint doesn't require any input for the request to proceed.
 
-image::guides/dashboard/call_moduleaction.png["Invoke module action",400]
+.List of all the hello messages sent on-chain
+image::guides/dashboard/call_pluginaction_success.png["Plugin action success",1000]
 
-As two hello transactions were already sent, the action responds as shown in the illustration below:
+As expected, the Dashboard responds with a list of hello messages that were posted to the Lisk application.
 
-image::guides/dashboard/call_moduleaction_success.png["Module action success",400]
+=== Subscribing to events
 
-==== Invoking `latestHello:getLatestHello`
+At the bottom of the Dashboard is the *Recent events* window, which allows the possibility to subscribe to various events by selecting them from a dropdown box.
 
-Select `latestHello:getLatestHello` from the dropdown menu.
+Select the `hello_newHello` event.
 
-You can directly click on the kbd:[Submit] button to view the results.
-Again, it is not necessary to provide any input, because the action doesn't require any.
+.Subscribe to the 'newHello' event
+image::guides/dashboard/subscribe_event.jpg["Subscribe to newHello event", 1000,align="center"]
 
-image::guides/dashboard/call_pluginaction.png["Invoke plugin action",400]
+Once a new hello transaction is posted, the `newHello` event is also published, and will subsequently appear in the *Recent events* window.
 
-As expected, the plugin responds with the latest hello message that was posted to the blockchain application.
+image::guides/dashboard/receive_newHello_event.png[]
 
-image::guides/dashboard/call_pluginaction_success.png["Plugin action success",400]
+[TIP]
+==== 
+The value of the `senderAddress` retrieved in the `hello_newHello` event is in the `hex` format, which can be easily converted to the Lisk32 format through the `cryptography` package.
+For example:
 
-The Dashboard plugin provides more features, and most of them are very self-explanatory.
-For example, you can create new accounts, see all incoming transactions and forged blocks, or see general node and network information.
+.Converting a binary address into lisk32 format via 'lisk console'
+[source,bash]
+----
+lisk.cryptography.address.getLisk32AddressFromAddress(Buffer.from("8ebe46d631ae4cc7ad14ba5235edde56c5f34ec6", 'hex'));
+----
+For more information, see {url_typedoc_crypto}[getLisk32AddressFromAddress^].
+====
+
+The Dashboard plugin provides various other features as well, most of which are very self-explanatory.
+For example, you can create new accounts, see unconfirmed transactions, and see recently generated blocks.
+It is also possible to view the general node and network information, etc., through the Dashboard plugin.

@@ -1,0 +1,356 @@
+= Retrieving on-chain events
+Muhammad Talha <muhammad.talha@lightcurve.io>
+:toc: preamble
+:toclevels: 5
+:page-toclevels: 4
+:idprefix:
+:idseparator: -
+:imagesdir: ../../assets/images
+
+:docs_sdk: v6@lisk-sdk::
+//External URLs
+:url_npm_lisk_sdk: https://www.npmjs.com/package/lisk-sdk
+:url_lip_65: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0065.md
+:JSON_RPC_Specs: https://www.jsonrpc.org/specification
+:url_lisk_service_repo: https://github.com/LiskHQ/lisk-service/blob/v0.7.0-beta.3/docs/api/websocket_subscribe_api.md#lisk-service-subscribe-api-documentation
+// Project URLs
+:url_advanced_rpc: api/lisk-node-rpc.adoc
+
+:url_advanced_rpc_endpoints: {url_advanced_rpc}#endpoints
+:url_lisk_service_pubsub: api/lisk-service-pubsub.adoc
+:url_sdk_config_system: {docs_sdk}config.adoc#system
+:url_understand_events: {url_advanced_rpc}#events
+:url_chain_get_event: {url_advanced_rpc}#chain_getevents
+:url_understand_rpc_events: understand-blockchain/sdk/rpc.adoc#rpc-events
+:url_understand_blockchain_events: understand-blockchain/sdk/modules-commands.adoc#blockchain-events
+:url_understand_ws_events: understand-blockchain/sdk/rpc.adoc#rpc-events
+:url_sync_store: build-blockchain/plugin/plugin-class.adoc#sync-and-store-new-event
+:url_create_blockchain_event: build-blockchain/module/blockchain-event.adoc
+:url_lisk_blockchain: understand-blockchain/index.adoc#what-is-the-lisk-blockchain
+:url_events: api/lisk-node-rpc.adoc#events
+
+
+// TODO: Update the page by uncommenting the hyperlinks once the updated pages are available.
+
+====
+On this page, you'll learn about how events can be subscribed to, or retrieved from a Lisk blockchain.
+
+Specifically, the following topics are covered:
+
+* Events of Lisk Application
+** [x] The difference between JSON-RPC events and Blockchain events.
+** [x] Subscribing to a JSON-RPC event.
+** [x] Retrieving a Blockchain event.
+* Events of Lisk Service
+** [x] Subscribing to WS events.
+====
+
+== Lisk Application
+
+=== The difference between JSON-RPC events and Blockchain events
+
+The xref:{url_lisk_blockchain}[Lisk blockchain] generates various events that emit on-chain data.
+
+// update the following links etc., regarding RPC : now JSON-RPC and not RPC
+// The emitted events can either be xref:{url_understand_rpc_events}[JSON-RPC Events] or xref:{url_understand_blockchain_events}[Blockchain Events].
+The emitted events can either be xref:{url_understand_ws_events}[JSON-RPC] or xref:{url_understand_blockchain_events}[Blockchain] events.
+The aforementioned events are different in terms of when and how they are *generated*, and also how these events can be *accessed*.
+
+// Lisk makes *JSON-RPC events* accessible to everyone by offering xref:{url_understand_events}[a range of JSON-RPC-based events].
+
+The Lisk API client makes *JSON-RPC events* easily accessible to everyone.
+These events can be subscribed to by anyone in the network.
+The subscribers can then get real-time information about the subscribed event, for example, the generation of a new block on the network, the addition of a new transaction in the transaction pool, a round state change event, etc.
+There are only eight known `JSON-RPC events` that can be emitted, and these are described in more detail in the xref:{url_events}[events section] of the RPC API for the Lisk nodes page.
+
+JSON-RPC events offered by Lisk can be subscribed to directly by any plugin, external service, or application.
+
+The other type of event emitted by Lisk is *blockchain events*. 
+Such events cannot be directly subscribed to with the RPC protocol. 
+Blockchain events are usually emitted at a modular level, during block execution and they reside in the event log.
+The event log keeps the blockchain events emitted from the latest set of blocks.
+Blockchain events can have information about a successful or failed transaction, among other information. 
+For more information on events and events root, see {url_lip_65}[LIP 65^].
+
+[NOTE]
+====
+The number of events stored by the event log depends on the configuration of the node. 
+By default, a node is *configured to store the blockchain events from the latest 300 blocks* in the event log. 
+Due to this, events from only those 300 blocks can be retrieved, by default. 
+This can be changed by updating the `*keepEventsForHeights*` property in the xref:{url_sdk_config_system}[node configuration].
+
+To store the blockchain events on a node permanently, set `*keepEventsForHeights*` to `-1` in the node configuration.
+====
+
+=== Subscribing to a JSON-RPC event
+
+The API client simplifies the JSON-RPC event subscription process not only for a blockchain client but also for external plugins and services.
+With the Lisk API client, it is possible to subscribe to the *JSON-RPC events* both over IPC and WS.
+
+An API client can be imported into any JS client application as shown in the following snippets.
+
+// TIP: To conveniently communicate with a blockchain node, use the `apiClient` included in the xref:{url_references_elements_client}[@liskhq/lisk-client] and the {url_npm_lisk_sdk}[lisk-sdk^] packages.
+TIP: To conveniently communicate with a blockchain node, use the `apiClient` included in the `@liskhq/lisk-client` and the `lisk-sdk` packages.
+
+[tabs]
+
+=====
+WS API client example::
++
+--
+[source,js]
+----
+const { apiClient } = require('@liskhq/lisk-client');
+let clientCache;
+const nodeAPIURL = 'ws://localhost:7887/rpc-ws';
+
+const getClient = async () => {
+    if (!clientCache) {
+        clientCache = await apiClient.createWSClient(nodeAPIURL);
+    }
+    return clientCache;
+};
+
+getClient().then((client) => {
+    client.subscribe('network_newBlock', (data) => {
+    console.log('new block: ', data);
+    });
+});
+----
+--
+IPC API client example::
++
+--
+[source,js]
+----
+const { apiClient } = require('@liskhq/lisk-client');
+let clientCache;
+const nodePath = '~/.lisk/my-app';
+
+const getClient = async () => {
+    if (!clientCache) {
+        clientCache = await apiClient.createIPCClient(nodePath);
+    }
+    return clientCache;
+};
+
+getClient().then((client) => {
+    client.subscribe('network_newBlock', (data) => {
+    console.log('new block: ', data);
+    });
+});
+----
+--
+=====
+
+=== Retrieving a Blockchain event
+
+With each block execution, various events are generated and stored in the event log, and can offer various insights.
+For example, the `reward` module emits the `rewardMinted` event after each block execution. It offers information about the exact reward earned for block generation by the block generator.
+
+NOTE: In contrast to JSON-RPC events, Blockchain events cannot be directly subscribed to.
+Instead, *Blockchain events are requested for a particular block height*, which must be provided as a parameter in the request.
+
+To fetch such an event, we can use the xref:{url_chain_get_event}[chain_getEvents] endpoint, as shown below:
+
+[source,js]
+----
+const { apiClient } = require('@liskhq/lisk-client');
+const { codec } = require('@liskhq/lisk-codec');
+let clientCache;
+const nodeAPIURL = 'ws://127.0.0.1:7887/rpc-ws'
+
+const getClient = async () => {
+    if (!clientCache) {
+        clientCache = await apiClient.createWSClient(nodeAPIURL);
+    }
+    return clientCache;
+};
+
+const rewardMintedDataSchema = {
+    $id: '/reward/events/rewardMintedData',
+    type: 'object',
+    required: ['amount', 'reduction'],
+    properties: {
+        amount: {
+            dataType: 'uint64',
+            fieldNumber: 1,
+        },
+        reduction: {
+            dataType: 'uint32',
+            fieldNumber: 2,
+        },
+    },
+};
+
+getClient().then((client) => {
+    // Returns the encoded event based on the 'height' passed
+    client.invoke(
+        "chain_getEvents",
+        { height: 60 },
+    ).then(events =>
+        // Filter out the 'rewardMinted' event
+        const rewardMintedEvent = events.find(e => e.name === 'rewardMinted');
+
+        // Decode the aforementioned event's data by passing relevant schema and the encoded 'data'
+        const parsedEventData = codec.decode(rewardMintedDataSchema, Buffer.from(rewardMintedEvent.data, 'hex'));
+
+        // Print the event and the contained data
+        console.log("Reward minted event: ", rewardEvent);
+        console.log("Reward minted event data: ", parsedEventData);
+    });
+});
+----
+Once an event is retrieved from the event log, its `data` property can be decoded by using the `codec.decode()` function. This function takes in the encoded data and the relevant schema as arguments. 
+
+The `codec.decode()` function is available inside the *@liskhq/lisk-codec* package.
+
+[TIP]
+====
+A detailed example of xref:{url_create_blockchain_event}[emitting a blockchain event], xref:{url_sync_store}[fetching it, and decoding it] is available in the Hello World blockchain example.
+====
+
+.Response
+[%collapsible]
+====
+.Make sure your blockchain client is running before executing the script
+[source,bash]
+----
+Reward minted event: {
+  data: '08001000',
+  index: 0,
+  module: 'reward',
+  name: 'rewardMinted',
+  topics: [ '03', 'aa84845c4bc4e75802921fc315a01576c75ade73' ],
+  height: 60
+}
+Reward minted event data: { amount: 0n, reduction: 0 }
+----
+====
+
+== Lisk Service
+=== Subscribing to WS events
+
+The Lisk Service Subscribe API allows subscribing to the WS events to receive real-time updates or notifications, as shown in the example below.
+A detailed list of all available emitted events is available on the xref:{url_lisk_service_pubsub}[Publish/Subscribe API (Lisk Service)] page.
+Lisk Service utilizes the WebSocket library to facilitate two-way communication, ensuring users are kept informed about a blockchain network and market changes.
+
+Further updated information regarding WS events generated by Lisk Service can also be found here in the {url_lisk_service_repo}[Lisk Service^] GitHub repository.
+
+[source,js]
+----
+
+const io = require('socket.io-client');
+
+const subscriptionEndpoint = 'wss://service.lisk.com/blockchain';
+
+const socket = io(
+ 	subscriptionEndpoint,
+ 	{
+ 		forceNew: true,
+ 		transports: ['websocket'],
+ 	},
+ );
+
+const { onevent } = socket;
+socket.onevent = function (packet) {
+    const args = packet.data || [];
+    onevent.call(this, packet);
+    packet.data = ['*'].concat(args);
+    onevent.call(this, packet);
+};
+
+const subscribe = subscribeEvent => {
+	socket.on(
+		subscribeEvent,
+		(...args) => {
+			let eventName;
+			let eventPayload;
+
+			if (subscribeEvent === '*') {
+				[eventName, eventPayload] = args;
+			} else {
+				eventName = subscribeEvent;
+				[eventPayload] = args;
+			}
+
+			console.log(`Event: ${eventName}`);
+			console.log('Payload:', JSON.stringify(eventPayload, null, 2), '\n');
+		},
+	);
+};
+
+/* Subscribe to all the events */
+subscribe('*');
+
+/* Subscribe to specific events */
+// subscribe('new.block');
+----
+
+.Response
+[%collapsible]
+====
+[source,bash]
+----
+Event: update.fee_estimates
+Payload: {
+  "data": {
+    "feeEstimatePerByte": {
+      "low": 0,
+      "medium": 0,
+      "high": 0
+    },
+    "minFeePerByte": 1000,
+    "feeTokenID": "0200000000000000"
+  },
+  "meta": {
+    "lastUpdate": 1691395460,
+    "lastBlockHeight": 161915,
+    "lastBlockID": "b3f6e25af83400cc743ed9c7b2160f4264110cfffd7217432d8dc024b466bfb9"
+  }
+}
+
+Event: new.block
+Payload: {
+  "data": [
+    {
+      "id": "b3f6e25af83400cc743ed9c7b2160f4264110cfffd7217432d8dc024b466bfb9",
+      "version": 2,
+      "timestamp": 1691395460,
+      "height": 161915,
+      "previousBlockID": "9b8128127d97b8838b320be1969b3c20f17ceb48754885e6394208ec60f167c8",
+      "generator": {
+        "address": "lskq3c6z24ogq7xce9y9xy78qbn76a8vuawtjzrt8",
+        "name": "genesis_16",
+        "publicKey": null
+      },
+      "transactionRoot": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assetRoot": "5317c4f6d181c5dbe0f7dc3cf6c099d865658c42475c6f73bbefe7798398df96",
+      "stateRoot": "6f1b8fc8b7986cab5b641b20288e8032f0d4e78e6921469b2fc5224b4c61524a",
+      "maxHeightPrevoted": 161853,
+      "maxHeightGenerated": 161711,
+      "validatorsHash": "0c1482fc969ac42b1f70e01cb493402ab92272dd417ade02c955ef54e34394fa",
+      "aggregateCommit": {
+        "height": 161762,
+        "aggregationBits": "fffffffffffffffffffdffff7f",
+        "certificateSignature": "ae20c2003e60a09a88e469853a9e071b45116ea61d3c3f00b89813bcb9d53fcb1faf9f43f05f9b42158a34eee826c09a04c22a37c6a4b7d3462aded47d54296b45b6434998a78290808de0028f8e5d7fc60cd2a328893a25493206a5ea321773"
+      },
+      "numberOfTransactions": 0,
+      "numberOfAssets": 1,
+      "numberOfEvents": 2,
+      "totalForged": "341346153",
+      "totalBurnt": "0",
+      "networkFee": "0",
+      "signature": "bcf97dc119fdf472759bb54bec257f0fe06742403a532004d9bc0f61eccde8d72b255dfd62a77e9b7aeac812bf6504765bf0c76ca52d996b88ec01a1b3f1720f",
+      "reward": "341346153",
+      "isFinal": false
+    }
+  ],
+  "meta": {
+    "count": 1,
+    "offset": 0,
+    "total": 1
+  }
+}
+----
+====

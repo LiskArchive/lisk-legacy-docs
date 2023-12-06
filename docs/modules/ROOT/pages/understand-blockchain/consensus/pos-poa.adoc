@@ -1,0 +1,214 @@
+= Proof of Stake (PoS) & Proof of Authority (PoA) in Lisk
+:toc: preamble
+// URLs
+:url_github_lip_22: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0022.md
+:url_github_lip_23: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0023.md
+:url_lip23_weight: {url_github_lip_23}#new-delegate-weight
+:url_github_lip_24: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0024.md
+:url_github_lip_34: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0034.md
+:url_github_lip_35: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0035.md
+:url_github_lip_42: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0042.md
+:url_github_lip_71: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0071.md
+:url_arxiv: https://arxiv.org/abs/1903.11434
+:url_github_poa: https://github.com/ethereum/guide/blob/master/poa.md
+:url_blog_poa: https://lisk.com/blog/posts/proof-authority-consensus-sidechains
+//Project URLs
+:url_blocks_genesis: understand-blockchain/index.adoc#genesis-block
+:url_run_validator: run-blockchain/become-a-validator.adoc
+:url_run_staking: run-blockchain/staking.adoc
+// Footnotes
+:fn_weight: footnote:weight[See {url_lip23_weight}[LIP23^] for more details about the validator weight calculation.]
+
+====
+On this page, you'll learn about:
+
+* The main characteristics of Lisk PoS
+** [x] What projects should choose PoS blockchains
+** [x] How validators are selected
+** [x] What are active and standby validators
+** [x] How staking works
+** [x] Banning mechanisms for unproductive validators
+* The main characteristics of Lisk PoA
+** [x] What projects should choose PoA blockchains
+** [x] How to update the list of authorities
+====
+
+== PoS
+
+In Proof-of-Stake (PoS) blockchains, validators stake tokens to increase their weight in the network.
+The higher the stake of a validator, the higher the probability to reach a spot as an active validator, who is allowed to generate new blocks in the network.
+
+The highest stakeholders are expected to have a high motivation to keep the network secure and healthy, as users with the highest amount of tokens or coins have the most to lose if something goes wrong in the network.
+Subsequently, it is in their interest to ensure the network continues to grow.
+Therefore, the PoS algorithm favors users with high amounts of tokens and provides them with a much higher chance of being selected as the next validator, as compared to users with a smaller stake of tokens.
+
+The PoS consensus algorithm provides higher decentralization than <<poa>>, and a much lower computation effort than PoW (Proof of Work), and therefore, provides a good middle ground between decentralization and scalability.
+
+At the same time, the maintenance effort of PoS blockchains is significantly higher than for PoA blockchains, making it more suitable for middle-sized and big projects.
+
+=== Validator selection
+
+Blocks in the Lisk PoS protocol are grouped together into batches of 103 consecutive blocks, which are referred to as a *round*.
+
+A *validator* is any account that successfully submits a Register Validator transaction.
+
+TIP: For more info on how to become a validator, check out the corresponding guide: xref:{url_run_validator}[]
+
+Every round, a new *validator list* is generated, which is an ordered list of 103 validators who are allowed to generate a block in that round.
+The order of the validators in the list is completely random.
+
+The top 101 validators with the most <<validator-weight>> are also called *active validators*.
+To become an active validator, a validator needs to increase their validator weight, until they are among the top 101 validators with the most validator weight.
+
+The remaining 2 validator spots in each round are given to two randomly selected *standby validators*.
+
+Starting with the first validator on the validator list, every validator has a *10 second block slot window* in which they can generate a block and broadcast it to the network.
+
+[NOTE]
+====
+If every validator on the list manages to generate a block in their block slot building on the block by the previous validator, a round lasts 1,030 seconds (around 17 minutes).
+
+It can happen that a validator *misses the block slot*, meaning that there is no block added to the chain by the validator in their designated block slot.
+Consequently, the end of the validator list is reached before 103 blocks are added to the chain.
+In this case, block slots are assigned again from the beginning of the validator list until 103 blocks are generated.
+====
+
+=== Staking and validator weight
+
+By registering as a validator, it is possible to *receive stakes* from other accounts.
+Any account can stake for any validator using a Stake transaction.
+
+Depending on the stakes, every validator has an associated <<validator-weight>>, which is an indicator of the support for this validator in the network.
+
+==== Staking
+[#locked-tokens]
+*Staked tokens are locked* inside the account that is performing the staking.
+That means, the tokens used for staking stay in the account of the staker, but while they are used for staking, they cannot be used for any other purposes, for example, for token transfers, etc.
+The staked tokens can be un-staked partially or completely again, if the account owner wishes to unlock the tokens.
+
+[#self-stake]
+Staking is particularly important for validators because they need to stake a significant number of their own tokens for their validator account.
+This is also called *self-staking*.
+
+Apart from self-staking, it is also beneficial to stake tokens for a different validator as well.
+Staking for the most trustful and helpful validators in the community increases the decentralization and security of the network.
+It also allows stakers to earn rewards as a lot of validators reward stakers with a share of their block rewards.
+This creates a financial incentive for users to stake their unused tokens and receive regular payouts as a reward.
+
+TIP: For more info on how to stake tokens, check out the corresponding guide: xref:{url_run_staking}[]
+
+==== Validator weight
+
+Every validator has an associated *validator weight*.
+A high validator weight will put a validator in an active position to generate new blocks for the blockchain.
+
+IMPORTANT: The *minimum validator weight required* to be selected as a block generator is 1000 LSK in the Lisk Mainnet.
+
+Formally, the validator weight is defined as the following:
+
+.Formula for calculating the validator weight
+----
+validatorWeight = minimum ( 10 * selfStake , totalStakeReceived )
+----
+
+* `selfStake` is the number of tokens the validator staked for themselves.
+* `totalStakeReceived` is the sum of all staked tokens (including self-stakes) for a specific validator.
+
+NOTE: This definition implies that *at least 10% of the validator weight always consists of self-stakes*{fn_weight}.
+
+=== How the validator list is generated
+
+The validator list for a round assigns a block generation position for each validator eligible to generate a block in the round.
+
+Each active validator and the selected 2 random standby validators get exactly one spot on the validator list.
+Validators get a new random position on the list for each round.
+
+The list is generated as follows:
+
+. Compute two values `randomSeed1` and `randomSeed2` from the values provided by the validators in the `seedReveal` property of the block headers of the previous 3 rounds.
+. Add the 101 active validators to the list.
+Moreover, add 2 standby validators to the list using a random selection proportional to the validator weight.
+The random selection utilizes `randomSeed1` and `randomSeed2`, respectively.
+The computation of 101 active validators as well as the standby validator selection is based on the validator weights from two rounds before.
+. Shuffle the list using `randomSeed1`.
+
+.How the validator list is generated for a round
+image::understand-blockchain/validator-list.jpeg[validator list]
+
+The random selection of two standby validators and the commit-reveal scheme that the `seedReveal` values provided by the validators in the block header must follow are described in detail in {url_github_lip_22}[LIP 0022^].
+
+=== Banning of unproductive validators
+
+As a fail-safe mechanism, a validator that does not generate blocks for an extended period is banned.
+This is to avoid the situation where a validator who is not running a node leads to frequently missing block slots.
+More specifically, a validator is banned in case they miss 50 consecutive blocks, and the height of the last block they generated differs by more than 260,000 from the current height of the chain (the block is 30 days old).
+As soon as a validator is banned, they are excluded from the validator weight snapshots used for the validator list computation.
+The ban is permanent, but the validator account holder can move their funds to a different account and register a new validator.
+
+== PoA
+
+PoA is an alternative consensus mechanism to PoS in the Lisk SDK.
+In {url_blog_poa}[Proof-of-Authority (PoA)^] blockchains, only a pre-defined set of validators, called the *authorities*, can propose blocks.
+Authorities are selected based on off-chain information such as their reputation or identity.
+
+PoA trades the decentralization of the network (arbitrarily selected authorities) for efficiency and performance.
+This mechanism was first proposed by {url_github_poa}[Gavin Wood in 2015^].
+
+The security of PoA relies on the staked reputation of the block generators instead of the staked tokens of the block generators and their voters.
+A PoA blockchain is especially attractive for small projects or blockchain apps where the project owners are expected to run the network nodes.
+Additionally, PoA is suitable for blockchains where the expected staked capital in the case of PoS would not provide enough security, but staking the reputations of the active authorities would do so.
+Due to the simplicity of its validator selection algorithm, it is also suitable for applications where a high transaction per second throughput is important.
+
+=== How to update the list of active authorities
+
+Only active authorities can update the list of active authorities.
+
+The following values can be updated:
+
+. Remove/Add authorities (the length of the list of authorities can change as a result).
+. Change the BFT weight of authorities.
+. Update threshold for finality.
+
+NOTE: The maximum amount of authorities for a chain is 199.
+
+The PoA module, which must be used by PoA blockchains built with the Lisk SDK version 6, implements the following commands which facilitate the authority updates:
+
+* *Authority Registration Command*: This command is similar to the validator registration command in Lisk PoS.
+An account willing to become an active authority must first send an authority registration transaction.
+The registration fee for an authority registration can be defined in the PoA module configuration.
+* *Update Authority Command*: This command updates the set of active authorities as mentioned above.
+An update authority transaction must contain the following parameters:
++
+. `newValidators`: The updated list of authorities and their associated BFT weights.
+. `threshold`: The finality threshold.
+. `validatorsUpdateNonce`: Increments +1 for each executed Update Authority transaction.
+. An _aggregate multi-signature_ whereby enough active authorities have contributed to, such that the sum of the corresponding BFT weights meets the finality threshold.
+
+Let us consider the example where the current set of active authorities consists of 10 authorities where each has the BFT weight of 1 and the finality threshold is 7.
+If one authority is supposed to be removed from the set of active authorities, then this update must be approved by at least 7 active authorities.
+
+NOTE: The number of active authorities is also determining the length of a round.
+For example, if there are 10 active authorities, then a round consists of 10 blocks.
+
+=== Rewards and banning mechanisms
+
+Typically, PoA systems do not define any reward system.
+However, sidechain developers may choose to have a reward system in the chain native token to incentivize the authorities.
+In this case, the Reward module specified in {url_github_lip_42}[LIP 0042^] can be used to define block rewards for PoA blockchains.
+Note that the Dynamic block rewards module as defined in {url_github_lip_71}[LIP 0071^] depends on the PoS information to properly function and thus can not be implemented on PoA blockchains.
+
+Moreover, the banning mechanism (as defined in {url_github_lip_23}[LIP 0023^]) and the punishment of BFT violations (as defined in {url_github_lip_24}[LIP 0024^] for the Lisk-BFT protocol) are not necessary for a functional PoA blockchain.
+
+=== Migration from PoA to PoS
+At one point, there may be an interest for some projects that started as a PoA chain to migrate to PoS.
+If this is the case, the developers and the future network validators have two choices:
+
+. After launching the project, if there is a need for a more decentralized approach:
+Hard-fork the chain to include the PoS module instead of PoA.
+This can be eased by following a snapshot mechanism similar to the one specified in {url_github_lip_35}[LIP 0035^].
+When transitioning to PoS consensus, it is recommended that the block reward payout scheme is updated to the Dynamic block rewards module (see {url_github_lip_71}[LIP 0071^]).
+PoA chains could implement no rewards at all, or block rewards as defined in {url_github_lip_42}[LIP 0042^], however, PoS chains could profit from dynamic rewards proportional to the weight of the generator.
+. If during the development phase, it is decided that the application should start on a PoA chain and then run on a PoS chain for the long term:
+The sidechain developers can define an arbitrarily long bootstrapping period for the PoS chain in the genesis block as explained in {url_github_lip_34}[LIP 0034^].
+This bootstrapping period effectively mimics a PoA chain where there is a fixed set of validators given by the public keys in the `initValidators` property of the block header asset.
+This will allow it to first have a preparatory phase of the application, so it can mature sufficiently before transferring to a PoS chain.

@@ -37,6 +37,8 @@ s| [[site]]site
 | site.url
 | The base URL of the site, if specified in the playbook.
 If a site start page is defined, the visitor will be redirected from this location to the start page.
+Includes the value of `site.path`.
+Can be prepended to `page.url` to create an absolute URL for a page (e.g., `+{{{site.url}}}{{{page.url}}}+`).
 
 | site.path
 | The pathname (i.e., subpath) of the site.url under which the site is hosted (e.g., /docs).
@@ -132,8 +134,8 @@ Each navigation item contains the property `content` as well as the optional pro
 
 | page.url
 | The URL for the current page.
-This value is a root-relative path.
-It's often used as the base URL to generate relative URLs from this page.
+This URL is a root-relative path (i.e., it begins with `/`), where root refers to where Antora published the files.
+The value is most often used by the `relativize` helper to generate relative URLs from this page.
 
 | page.canonicalUrl
 | The canonical URL for the current page.
@@ -146,7 +148,7 @@ If there's only a single version of the component, the canonical URL is the qual
 This value is derived automatically for the hosts github.com, gitlab.com, pagure.io, and bitbucket.org, even if the repository is private.
 If the host is not recognized, or you want to customize the value, you can use the `edit_url` key on the content source in the playbook.
 
-The default UI shows an "Edit this Page" link that points to this URL unless the repository is private (i.e., `page.origin.private` is true) or `page.fileUri` is set.
+The default UI shows an "Edit this Page" link that points to this URL unless the repository is private (i.e., `page.origin.private` is truthy) or `page.fileUri` is set.
 You can force this link to be shown by setting the environment variable `FORCE_SHOW_EDIT_PAGE_LINK` (e.g., `FORCE_SHOW_EDIT_PAGE_LINK=true`) or by customizing the logic in the UI template.
 
 | page.fileUri
@@ -155,10 +157,14 @@ You can force this link to be shown by setting the environment variable `FORCE_S
 If this property is set, the default UI shows an "Edit this Page" link that points to this URI (instead of the `page.editUrl` value) unless the `CI` environment variable is set (e.g., `CI=true`).
 When the `CI` environment variable is set, the default UI ignores this property (since linking to a local file:// URI in a published site doesn't make any sense).
 
+| page.origin
+| Information about the content source from which the current page was taken.
+Properties include url, reftype (since 3.1), refname, branch, tag, refhash (since 2.3), startPath, worktree, webUrl, fileUriPattern, editUrlPattern, private.
+
 | page.origin.private
-| This value will be true if the repository requires authentication or the repository URL embeds credentials.
-In the default UI, if this value is `true`, the "Edit this Page" link is disabled.
-A quick way to force this property to be `true` (even if the repository is public) is to begin the content source URL in the playbook with empty credentials, as in `\https://@`.
+| This value will be `auth-required` if the git server requests authentication credentials, otherwise `auth-embedded` if credentials are embedded in the content source URL in the playbook, otherwise unset.
+In the default UI, if this value is truthy, the "Edit this Page" link is not shown.
+A quick way to force this property to be truthy (even if the repository is public) is to begin the content source URL in the playbook with empty credentials, as in `\https://@`.
 Then, the "Edit the Page" link will not appear.
 
 | page.home
@@ -183,12 +189,19 @@ s| siteRootPath
 | The relative path to the root of the published site.
 If a site start page is defined, the visitor will be redirected from this location to the start page.
 Can be used as a fallback when a site URL is not set.
+This value is _root-relative_ in the 404 page template, which is required for the 404 page to work correctly when served by the web server. 
 
 s| uiRootPath
 | The relative path to the root directory of the UI.
+This value is _root-relative_ in the 404 page template, which is required for the 404 page to work correctly when served by the web server. 
 
 s| antoraVersion
 | The version of Antora used to build the site (specifically the version of the @antora/page-composer package).
+
+s| contentCatalog
+| A proxy object around Antora's virtual content catalog, which provides access to components, component versions, pages, and resource files.
+Exposes the following methods: `findBy`, `getById`, `getComponent`, `getComponentVersion`, `getComponents`, `getComponentsSortedBy`, `getFiles`, `getPages`, `getSiteStartPage`, `resolvePage`, and `resolveResource`.
+*This object should only be used from a UI helper.*
 |===
 
 This model is likely to grow over time.

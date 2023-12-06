@@ -1,0 +1,243 @@
+= Setting up an Off-chain database
+Muhammad Talha <muhammad.talha@lightcurve.io>
+:toc: preamble
+:idprefix:
+:idseparator: -
+:sectnums:
+:docs_sdk: v6@lisk-sdk::
+// URLs
+:url_github_db: https://github.com/LiskHQ/lisk-sdk-examples/tree/development/tutorials/hello/hello_client/src/app/plugins/hello_info/db.ts
+:url_rocks_db: https://rocksdb.org/
+
+// Project URLS
+// :url_lisk_db: {docs_sdk}references/lisk-elements/db.adoc
+:url_plugin_schema: build-blockchain/plugin/schema-types.adoc#NewHelloEvent
+
+// TODO: Update the page by uncommenting the hyperlinks once the updated pages are available.
+
+====
+On this page, you'll learn:
+
+* [x] Defining method for initiating database.
+* [x] Defining methods for storing data in the database.
+* [x] Defining methods for retrieving data from the database.
+====
+
+Plugins can use any database for their off-chain data storage needs, contrary to modules that use both on-chain and off-chain data stores offered by the Lisk SDK.
+
+A plugin's data store stays only on the node that registers it to the blockchain and is not shared with other nodes.
+
+//TODO: Add back link once the related content is updated
+// For this guide, we want to store the NewHelloEvent's data in an off-chain store by using xref:{url_lisk_db}[lisk-db]. 
+
+For this guide, we want to store the NewHelloEvent's data in an off-chain store by using `lisk-db`. 
+Lisk-db is a key-value store based on {url_rocks_db}[RocksDB^].
+
+The database-related operations will exist in a `db.ts` file which will be located in the plugin's root folder: `hello_info`. 
+Create the new file in the aforementioned directory.
+
+TIP: The relevant file discussed in this guide is {url_github_db}[db.ts^].
+
+== Getting the database's instance
+A `lisk-db` instance requires a *data path* and the *name* of the database.
+The data path of a plugin inherits the data path of the blockchain client and is mentioned in the _config.json_ or _custom_config.json_ file.
+
+Add the following code to your `db.ts` for getting a database instance.
+
+.getDBInstance
+[source,typescript]
+----
+import { codec, db as liskDB, cryptography } from 'lisk-sdk';
+import * as os from 'os';
+import { join } from 'path';
+import { ensureDir } from 'fs-extra';
+
+// [...]
+
+const { Database } = liskDB;
+type KVStore = liskDB.Database;
+
+// Returns DB's instance.
+export const getDBInstance = async (
+	dataPath: string,
+	dbName = 'lisk-framework-helloInfo-plugin.db',
+): Promise<KVStore> => {
+	const dirPath = join(dataPath.replace('~', os.homedir()), 'database', dbName);
+	await ensureDir(dirPath);
+	return new Database(dirPath);
+};
+
+// [...]
+----
+
+== Getting and Setting event data
+Now that we have our function to get a db instance, let's create functions for setting and getting data from the database.
+
+=== Setting event data
+
+As mentioned in the xref:{url_plugin_schema}[newHello] event's schema, we need to store the _senderAddress_, the hello _message_ sent, and the _height_ of the block where a `newHello` event was found.
+
+Along with passing the aforementioned to our `setEventHelloInfo()`, we also need to pass a _counter_ value. 
+This counter will be converted into a Buffer and will be concatenated with the Buffer value of our constant `DB_KEY_ADDRESS_INFO` to form a unique key for each `newHello` event.
+
+.setEventHelloInfo
+[source,typescript]
+----
+// [...]
+
+// Import required "Schemas", "Types" and "Constants"
+import { offChainEventSchema, counterSchema, heightSchema } from './schemas';
+import { Event, Counter, Height } from './types';
+import { DB_KEY_EVENT_INFO, DB_LAST_COUNTER_INFO, DB_LAST_HEIGHT_INFO } from './constants';
+
+// [...]
+
+// Stores event data in the database.
+export const setEventHelloInfo = async (
+	db: KVStore,
+	_lskAddress: Buffer,
+	_message: string,
+	_eventHeight: number,
+	lastCounter: number,
+): Promise<void> => {
+	const encodedAddressInfo = codec.encode(offChainEventSchema, {
+		senderAddress: _lskAddress,
+		message: _message,
+		height: _eventHeight,
+	});
+	// Creates a unique key for each event
+	const dbKey = Buffer.concat([DB_KEY_EVENT_INFO, cryptography.utils.intToBuffer(lastCounter, 4)]);
+	await db.set(dbKey, encodedAddressInfo);
+	console.log('** Event data saved successfully in the database **');
+};
+
+// [...]
+----
+
+=== Getting events data
+Getting the stored events data is fairly simple.  
+A ReadStream will be created by passing the starting and ending clauses to the `createReadStream()`.
+
+Once the stream gets all the stored data, the data will be filtered out one by one for each event and each event will be pushed into an array of objects.
+Finally, the array containing all the `newHello` events will be returned.
+
+.getEventHelloInfo
+[source,typescript]
+----
+// [...]
+
+// Returns event's data stored in the database.
+export const getEventHelloInfo = async (db: KVStore): Promise<(Event & { id: Buffer })[]> => {
+	// 1. Look for all the given key-value pairs in the database
+	const stream = db.createReadStream({
+		gte: Buffer.concat([DB_KEY_EVENT_INFO, Buffer.alloc(4, 0)]),
+		lte: Buffer.concat([DB_KEY_EVENT_INFO, Buffer.alloc(4, 255)]),
+	});
+	// 2. Get event's data out of the collected stream and push it in an array.
+	const results = await new Promise<(Event & { id: Buffer })[]>((resolve, reject) => {
+		const events: (Event & { id: Buffer })[] = [];
+		stream
+			.on('data', ({ key, value }: { key: Buffer; value: Buffer }) => {
+				events.push({
+					...codec.decode<Event>(offChainEventSchema, value),
+					id: key.slice(DB_KEY_EVENT_INFO.length),
+				});
+			})
+			.on('error', error => {
+				reject(error);
+			})
+			.on('end', () => {
+				resolve(events);
+			});
+	});
+	return results;
+};
+
+// [...]
+----
+
+== Getting and Setting Counter
+After implementing the getter and setter for the event's data, we also want functions for getting and setting the counter.
+
+=== Setting last counter
+Every time an event's data is stored in the database, we intend to also store the *number of total events stored + 1* as a counter inside the database. 
+For that, add the `setLastCounter()` function to our `db.ts` file.
+
+Since we only intend to store a single value, there is no need to create a series of unique keys so we will use our `DB_LAST_COUNTER_INFO` constant as the key for storing the last counter.
+
+.setLastCounter
+[source,typescript]
+----
+// [...]
+
+// Stores lastCounter for key generation.
+export const setLastCounter = async (db: KVStore, lastCounter: number): Promise<void> => {
+	const encodedCounterInfo = codec.encode(counterSchema, { counter: lastCounter });
+	await db.set(DB_LAST_COUNTER_INFO, encodedCounterInfo);
+	console.log('** Counter saved successfully in the database **');
+};
+
+// [...]
+----
+
+=== Getting last counter
+The function will fetch the last stored value of the counter from the database. 
+The counter value is incremented based on the last stored value of the counter.
+
+.getLastCounter
+[source,typescript]
+----
+// [...]
+
+// Returns lastCounter.
+export const getLastCounter = async (db: KVStore): Promise<Counter> => {
+	const encodedCounterInfo = await db.get(DB_LAST_COUNTER_INFO);
+	return codec.decode<Counter>(counterSchema, encodedCounterInfo);
+};
+// [...]
+----
+
+== Getting and Setting Height
+To ensure efficiency, the `HelloInfoPlugin` should only look for `newHello` event in blocks previously unchecked.
+For that, we will store the last checked block height in the plugin's database.
+
+=== Setting Height
+Similarly to the counter, we intend to store only the last checked block height which is a single value. 
+So, we will use the `DB_LAST_HEIGHT_INFO` constant as the key.
+
+.setLastEventHeight
+[source,typescript]
+----
+// [...]
+
+// Stores height of block where hello event exists.
+export const setLastEventHeight = async (db: KVStore, lastHeight: number): Promise<void> => {
+	const encodedHeightInfo = codec.encode(heightSchema, { height: lastHeight });
+	await db.set(DB_LAST_HEIGHT_INFO, encodedHeightInfo);
+	console.log('**Height saved successfully in the database **');
+};
+
+// [...]
+----
+
+=== Getting Height
+As the name suggests, the `getLastEventHeight()` will return the last stored value of block height. 
+This value will be used in the search of `newHello` event.
+
+.getLastEventHeight
+[source,typescript]
+----
+// [...]
+
+// Returns height of block where hello event exists.
+export const getLastEventHeight = async (db: KVStore): Promise<Height> => {
+	const encodedHeightInfo = await db.get(DB_LAST_HEIGHT_INFO);
+	return codec.decode<Height>(heightSchema, encodedHeightInfo);
+};
+
+// [...]
+----
+
+The database logic completes here, now we should add configuration to `HelloInfoPlugin`, as described in the next guide.
+
+

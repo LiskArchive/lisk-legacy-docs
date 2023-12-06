@@ -1,0 +1,282 @@
+= Lisk Interoperability
+Mona Bärenfänger <mona@lightcurve.io>
+:toc: preamble
+:idprefix:
+:idseparator: -
+:docs_sdk: v6@lisk-sdk::
+// URLs
+:url_yt_lisk: https://www.youtube.com/c/LiskHQ
+:url_yt_playlist: https://www.youtube.com/playlist?list=PLixm1arf_lEyET_m03E77iNfOffM17Ajt
+:url_blog_research: https://lisk.com/blog?categories=Research
+:url_blog_interop_intro: https://lisk.io/blog/research/introduction-blockchain-interoperability
+:url_wiki_topologies_star: https://en.wikipedia.org/wiki/Network_topology#Star
+:url_chain_id: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0043.md
+:url_muzikie: https://muzikie.com/
+:url_enevti: https://enevti.com/
+// Project URLs
+:url_sdk_config_genesis: {docs_sdk}config.adoc#genesis
+:url_understand_sapp: understand-blockchain/index.adoc#what-are-lisk-applications
+:url_understand_tx: understand-blockchain/blocks-txs.adoc#transactions
+:url_understand_command: understand-blockchain/sdk/modules-commands.adoc#commands
+:url_understand_ccc: understand-blockchain/interoperability/communication.adoc
+:url_understand_sidechainlifecycle: understand-blockchain/interoperability/sidechain-registration-and-recovery.adoc
+// footnotes
+:fn_wiki_topology: footnote:topology[See {url_wiki_topologies_star}[^] for more information about network topologies.]
+:fn_tx: footnote:tx[See xref:{url_understand_tx}[Understand blockchain, Transactions] for more information about transactions.]
+:fn_command: footnote:command[See xref:{url_understand_command}[Modules and commands] for more information about commands.]
+
+====
+On this page, we discuss the Lisk interoperability protocol.
+Specifically, you'll learn about the following:
+
+* [x] How Lisk facilitates communication across chains?
+* [x] General terminology related to interoperability across chains.
+* [x] What is a mainchain?
+* [x] What is a sidechain?
+====
+
+== Overview
+
+.Overview about the Lisk Interoperability solution
+video::BTtLbhSgubA[youtube,align=center,width=100%,height=400]
+
+TIP: A comprehensive playlist of all the videos presenting the entire Lisk Interoperability solution can be found on the {url_yt_playlist}[Lisk youtube channel^].
+
+//TODO: Add link to certificate explanations
+The Lisk interoperability solution allows blockchain to blockchain communication by using the paradigm of *cross-chain certification*.
+
+Cross-chain certificates are a scalable and efficient solution that facilitates the transfer of all kinds of information between chains.
+
+Basically, cross-chain certification means that information from one chain is authenticated and included in another chain utilizing a signed object called a *certificate*.
+This information is transmitted across chains by issuing a Cross-Chain Update transaction, aka CCU.
+
+The CCU includes the certificate and the cross-chain messages coming from the sending chain.
+Cross-chain messages contain cross-chain commands which are executed on the receiving chain.
+This can mutate the state of the receiving chain in response to state changes that occurred on the sending chain.
+
+.Example: Transferring tokens across different blockchains
+image::understand-blockchain/interop/cc-transfer-example.png[,600]
+
+In the diagram above, Alice performs a cross-chain token transfer from her account on the sending chain to Bob’s account on the receiving chain.
+
+To achieve this, she sends a cross-chain token transfer transaction, `t`, on the sending chain.
+When this transaction is included, her account on the sending chain is debited.
+
+Simultaneously, a corresponding cross-chain token transfer message, `m`, containing all the relevant information is emitted.
+This message is included in a cross-chain update transaction (*CCU*), which is sent to the receiving chain.
+When the transaction is included, Bob’s account is credited.
+
+Cross-chain messages are, however, not limited to token transfers.
+Similar to transactions, cross-chain messages have a `params` property.
+Therefore, when building a xref:{url_understand_sapp}[Lisk application] with the Lisk SDK, you can create custom cross-chain messages by defining the content of the `params` property as needed.
+For example, you could create a custom cross-chain message that contains some authenticated information from an oracle chain in its `params` property.
+
+== Terminology summary
+
+[[tx]]
+Transaction{fn_tx}::
+An envelope object for a <<command,command>>.
+[[cct]]
+Cross-chain transaction (CCT)::
+Transaction generating one or more <<ccm,cross-chain messages>>.
+[[ccm]]
+Cross-chain message (CCM)::
+An envelope object for a <<ccc,cross-chain command>>.
+[[ccu]]
+Cross-chain update (CCU)::
+A CCU, aka "Cross-chain update transaction" is a special transaction containing <<ccm,cross-chain messages>>, <<cert,certified by validators>>.
+It is used to transfer CCMs from one chain to another.
+[[command]]
+Command{fn_command}::
+Trigger of a state transition in the same chain.
+[[ccc]]
+Cross-chain command (CCC)::
+Trigger of a state transition coming from another chain.
+[[cert]]
+Certificates::
+Certificates contain information from finalized block headers that are signed by a large portion of validators from a certain chain, and thus authenticate a finalized state of that chain.
+They are the fundamental components of the cross-chain certification paradigm for the Lisk ecosystem.
+
+== Cross-chain network topology
+
+The cross-chain network topology is organized as a **star topology** and describes arrangements of blockchains within the Lisk ecosystem.{fn_wiki_topology}
+
+//TODO: Add link to network page, explaining network topology for Lisk blockchains
+
+.Network topology of the Lisk blockchain ecosystem
+image::understand-blockchain/interop/cross-chain-topology.png[,500]
+
+As shown by the image above, a Lisk blockchain can become interoperable with any other blockchain in the Lisk ecosystem including the Lisk Mainchain, simply by registering itself on the mainchain.
+All communication to other sidechains is routed through the mainchain.
+
+.What is the maximum number of connected sidechains to the Lisk Mainchain?
+[NOTE]
+====
+The maximum number of sidechains that can be registered in the Lisk ecosystem is only capped by the maximum number of CCU transactions that the Lisk Mainchain can process.
+In this sense, it is practically unlimited.
+====
+
+== Mainchain & sidechains
+
+As explained in section <<cross-chain-network-topology>> above, the Lisk blockchain network is structured in two types of network participants:
+
+* The *Lisk Mainchain*:  Follows the Lisk Mainchain protocol and cannot be modified by a blockchain application developer, and
+
+[#sidechain]
+* *Sidechains*: Blockchains built with the Lisk SDK.
+//TODO: Add link to Interoperability module
+To become part of the Lisk blockchain ecosystem, a sidechain needs to include the Lisk Interoperability module.
+All additional parts of the sidechain protocol are defined by the sidechain developer.
+
+In the Lisk ecosystem, sidechains are connected to each other via the mainchain.
+Because sidechains communicate through the mainchain with other sidechains, they only need to maintain one connection to the mainchain, which will significantly reduce both the complexity and the point-of-failure.
+
+To become a sidechain in the Lisk ecosystem, a blockchain needs to perform the following two simple steps:
+
+. Register on the mainchain.
+. Register the mainchain on the sidechain.
+
+****
+Each step of the lifecycle of a sidechain is explained in further detail on the page xref:{url_understand_sidechainlifecycle}[].
+****
+
+The mainchain forwards all cross-chain communication happening between registered sidechains in the network.
+
+//Commented out, because it is not yet true in the Sapphire phase
+////
+Structurally, the mainchain is not any different from any other sidechain.
+This means that any sidechain could be used as the mainchain, as long as it integrates the interoperability module.
+Furthermore, this also means that sidechains can also register directly on another sidechain, and therefore break the star topology.
+Basically, this approach has the disadvantage that for each communication with another sidechain, a new registration process needs to be started, and the different connections need to be maintained continuously.
+////
+
+=== The Role of the LSK Token
+
+The token used on the mainchain, LSK, has a special role in the ecosystem:
+
+LSK is used to pay transaction fees on the mainchain, where all CCUs from the sidechains have to be posted.
+Additionally, all transaction fees in sidechains are paid in LSK by default (however, it is possible to configure a sidechain token for the transaction fees).
+
+The LSK token is the only token that can be transferred to every chain within the Lisk ecosystem.
+As the LSK token is listed on several exchanges and there are fiat on-ramps available, it will in most cases be the initial token that a user acquires within the Lisk ecosystem.
+Once a user possesses some LSK tokens, they can exchange them for other sidechain tokens, e.g., on a decentralized exchange (DEX) sidechain.
+
+=== Cross-chain communication
+
+Due to the topology of the network, there are two different ways for cross-chain communication:
+
+Sidechain-to-Mainchain (& vice versa)::
+Involves the creation of one CCU on the sending chain, that is posted to the receiving chain.
+Sidechain-to-Sidechain::
+Involves the creation of two CCUs:
++
+. CCU from sending chain to mainchain
+. CCU from mainchain to receiving chain
+
+.Sidechain-to-Sidechain communication via the mainchain: The color of a transaction or cross-chain message is always the one of the receiving chain, except for a cross-chain update transaction whose color is the one of the sending chain.
+image::understand-blockchain/interop/s2s.png[,600]
+
+* On `sidechain X`, three transactions are included, where each one emits one cross-chain message, denoted by `CCM1`, `CCM2`, and `CCM3`.
+* All three cross-chain messages are delivered in one cross-chain update transaction, `CCU1`, to the mainchain, where `CCM1` and `CCM3` are processed, but not `CCM2`.
+* Later on, `CCM2` is delivered to `sidechain Y` by a cross-chain update transaction, `CCU2`, from the mainchain to `sidechain Y`.
+* This cross-chain update transaction contains an additional cross-chain message, `CCM4`, emitted by the transaction `CCT4` included in the mainchain.
+
+****
+The cross-chain communication is explained in further detail on the page xref:{url_understand_ccc}[].
+****
+
+=== Chain Identifiers
+
+A unique identifier for a specific chain.
+
+Chain IDs serve two purposes:
+
+. They are prepended to the input of the signing function of every transaction, block, or message of the chain to avoid transaction replays between different chains in the ecosystem.
+. They uniquely identify a chain in the Lisk ecosystem.
+
+In the Interoperability module, it serves a similar purpose for chains as addresses do for user accounts, as it is used to identify the chain account in the Interoperability module store.
+Furthermore, the chain ID has to be stated in every cross-chain interaction.
+For example, it has to be specified in the `receivingChainID` property of a CCM to a sidechain and in the `sendingChainId` property of a cross-chain update command from a sidechain.
+
+Chain identifiers are 4-byte values that follow a specific format:
+
+. The *network-specific prefix*:
+The first byte is used to identify the mainchain and its corresponding network of blockchains to which the chain wishes to connect.
+It is included explicitly to ensure that a chain does not use the same chain identifier in the test network as in the mainnet.
+. The *chain-specific suffix*:
+The other 3 bytes identify the chain within the network.
+Must be unique within the network.
+
+TIP: By checking the chain ID, users can easily verify that they are signing a transaction for the correct blockchain.
+
+The chain ID is defined directly in the xref:{url_sdk_config_genesis}[config.json] file of the blockchain client.
+
+.Network-specific prefixes for the chain ID
+[cols="1h,1m,1m,1m" options="header"]
+|===
+| Network | Name | Type | ChainID Prefix
+
+|Mainnet
+| `CHAIN_ID_PREFIX_MAINNET`
+| bytes
+| 0x00
+
+|Testnet
+| `CHAIN_ID_PREFIX_TESTNET`
+|bytes
+| 0x01
+
+|===
+
+
+//The Chain ID is chosen by the sidechain, and has to be specified in the `receivingChainID` property of a CCM to this sidechain, and also in the `sendingChainId` property of a cross-chain update command from this same sidechain.
+Further details regarding the chain ID can be found in the {url_chain_id}[LIP 43].
+
+== Example of interoperability usage
+
+Let’s look at an example to illustrate the capabilities of the Lisk interoperability solution, and how sidechains can interact together.
+
+In this case we are going to use an example with two functioning applications, and the steps of how interoperability can be achieved using this example are depicted in the illustration below.
+
+Firstly, the {url_muzikie}[Muzikie^] App is a decentralized music streaming platform that allows users to listen to music and podcasts from an ever-expanding list of audio files, whilst simultaneously supporting the artists with access to a fair and transparent economy.
+The Muzikie App is connected to the Lisk mainchain, and in order to function as a sidechain, the Muzikie App also has its own set of applications consisting of auditable, democratic, and futuristic solutions developed to manage music and its associated data.
+Furthermore, also connected to the Lisk mainchain is the {url_enevti}[Enevti^] App, a decentralized social media platform that enables users to create, manage, and trade their own NFTs.
+
+In order to connect the Muzikie and Enevti sidechains, we can use a <<Cross-chain communication>> protocol that allows them to exchange data and transactions.
+For example, a user holding LSK tokens may decide to create an audio NFT on the Muzikie app, transfer it from the sidechain through the Lisk mainchain to the Enevti app, and then sell this NFT for ENVT tokens.
+Finally, that same user could then sell/convert their ENVT tokens back to LSK tokens.
+Conversely, it is also possible for LSK tokens to be converted/sold to ENVT tokens.
+
+So to perform this action, the user would first have to sell/convert their LSK tokens to MZK tokens, then create an audio NFT.
+This would be followed by initiating the transaction on the Muzikie App, whereby the user defines the specifications/details of the audio file such as the name, description, genre, and more, including paying a network fee.
+Once the transaction is confirmed on the Muzikie sidechain, the audio NFT will be created and accessible for streaming to users with a valid subscription.
+
+The owner may decide to sell their audio NFT on an NFT market.
+A good example would be the Enevti App.
+In order to achieve this, the user would have to specify the destination address, namely the user’s address on the Enevti sidechain, and the amount of LSK tokens required, including any transaction fees.
+Once confirmed, the NFT would be transferred to the Enevti App sidechain.
+The user could then list the NFT for sale on the Enevti App’s marketplace, and state the asking price in ENVT tokens.
+Once a buyer agrees and purchases the NFT and the sale is completed, the agreed amount of ENVT tokens would be transferred to the user’s Enevti wallet.
+Finally, the user could then convert/sell the ENVT tokens back to LSK tokens, at the current market price, which, for example in the future, could be achieved using a  DEX application, and then transferred back to the Lisk wallet.
+
+.Lisk blockchain interoperability: Use case example
+// image::understand-blockchain/interop/high-level-overview-interoperability-fig_42x.png[,600]
+image::understand-blockchain/interop/sidechain-interoperability-example.png[, 800]
+Example of interoperability between the Lisk mainchain and sidechains.
+
+// * The steps `2)`, `4)`, and `6)` are transactions performed within a single chain.
+// * The steps `1)`, `3)`, and `5)` are cross-chain messages.
+// * The cross-chain messages `3)` and `5)` are sidechain-to-sidechain cross-chain messages which are routed via the mainchain.
+// * The cross-chain message `1)` is a mainchain-to-sidechain cross-chain token transfer message.
+
+//Another example use case for Lisk interoperability was presented at Lisk.js 2021 by Alessandro Ricottone:
+
+//video::BTtLbhSgubA?t=827[youtube,500,300,align=center]
+
+.Additional educational resources to learn about the Lisk interoperability solution
+[TIP]
+====
+Check out the {url_yt_lisk}[Lisk YouTube channel^] to see more videos about Lisk's interoperability solution.
+
+The Lisk blog provides additional resources about the Lisk interoperability solution, structured in blog posts: {url_blog_research}[Lisk Blog > Research^]
+====

@@ -1,0 +1,182 @@
+= How to create a blockchain event
+Mona Bärenfänger <mona@lightcurve.io>
+:toc: preamble
+:idprefix:
+:idseparator: -
+:sectnums:
+// URLs
+// Project URLS
+:url_build_plugin: build-blockchain/plugin/index.adoc
+
+====
+On this page, you'll learn how to:
+
+* [x] Create a new blockchain event
+* [x] Register the event in the module
+* [x] Emit the event in the command execution hook
+* [ ] Listen to the event.
+For an example of how to listen to the event, check out the guide xref:{url_build_plugin}[]
+====
+
+Blockchain events, or module events, are logs of events that occur in the blockchain network during block execution.
+Events occur per block, and are stored in the respective block header, from where they can be queried.
+
+[CAUTION]
+====
+By default, a blockchain event is only stored for 300 blocks on-chain, then it is removed, to reduce the overall database size and increase scalability.
+
+If desired, the number of blocks for which events are kept in the database can be increased in the node config under `system.keepEventsForHeights`.
+====
+
+For the Hello module, we implement a simple blockchain event as an example: The "New Hello" event.
+
+This event should be emitted every time a new "Create Hello" command is executed on a node.
+
+== Create a new event type
+
+First, define the corresponding interface for the event.
+Create a new file called `new_hello.ts` inside the `events/` folder of the module.
+
+The event data shall contain the address of the sender of the Hello message, and the Hello message which was sent.
+
+.hello_client/src/app/modules/hello/events/new_hello.ts
+[source,typescript]
+----
+export interface NewHelloEventData {
+	senderAddress: Buffer;
+	message: string;
+}
+----
+
+Define the corresponding schema directly below.
+
+[#helloEvent]
+.hello_client/src/app/modules/hello/events/new_hello.ts
+[source,typescript]
+----
+export const newHelloEventSchema = {
+	$id: '/hello/events/new_hello',
+	type: 'object',
+	required: ['senderAddress', 'message'],
+	properties: {
+		senderAddress: {
+			dataType: 'bytes',
+			fieldNumber: 1,
+		},
+		message: {
+			dataType: 'string',
+			fieldNumber: 2,
+		},
+	},
+};
+----
+
+To create the event class, import the `BaseEvent` from the `lisk-sdk`.
+
+.hello_client/src/app/modules/hello/events/new_hello.ts
+[source,typescript]
+----
+import { BaseEvent } from 'lisk-sdk';
+
+export interface NewHelloEventData {
+    //...
+};
+
+export const newHelloEventSchema = {
+    //...
+};
+
+export class NewHelloEvent extends BaseEvent<NewHelloEventData> {
+	public schema = newHelloEventSchema;
+}
+----
+
+The new event class is created by extending from the `BaseEvent`.
+
+Inside the event class, set the schema of the event data to `newHelloEventSchema`, which is defined above.
+
+The `BaseEvent` class implements already a method `add()`, which can be used to emit the event, so there is nothing else required to be defined in the event.
+
+The `schema` property is optional as well, and only required, if the event emits custom data.
+Even without schema, it is still possible to signal that something happened, by logging an event.
+
+== Register the event
+
+Now that we created a new event type, import it into the `module.ts` file, and register the event in the module constructor.
+
+.hello_client/src/app/modules/hello/module.ts
+[source,typescript]
+----
+import { NewHelloEvent } from './events/new_hello';
+// [...]
+
+export class HelloModule extends BaseModule {
+    // [...]
+
+    public constructor() {
+        super();
+        // registration of stores and events
+        // [...]
+        this.events.register(NewHelloEvent, new NewHelloEvent(this.name));
+    }
+    // [...]
+}
+----
+
+== Emit the event
+
+Now that the event is registered with the module, you can call the `add()` method of the event at any time inside the module.
+
+Besides the event `data`, `topics` are the second property that can be defined by the developer, when emitting/ publishing a blockchain event.
+Topics are similar to tags or labels, categorizing the event by a list of the relevant keywords.
+
+TIP:  The only limitation to what `data` can be included in the event is the data size:
+*The maximum size of the event data is 1 kB.*
+
+Both `data` and `topics` are passed as parameters to the `add()` method of a blockchain event:
+
+In this example, we want to emit the "New Hello" event every time a "Create Hello" command was executed, so we add the corresponding logic at the end of the `execute()` command hook.
+
+.hello_client/src/app/modules/hello/commands/create_hello_command.ts
+[source,typescript]
+----
+// [...]
+import { NewHelloEvent } from '../events/new_hello';
+
+interface Params {
+	message: string;
+}
+
+export class CreateHelloCommand extends BaseCommand {
+	public schema = createHelloSchema;
+	private _blacklist!: string[];
+
+	// eslint-disable-next-line @typescript-eslint/require-await
+	public async init(config: ModuleConfig): Promise<void> {
+        // [...]
+	}
+
+	// eslint-disable-next-line @typescript-eslint/require-await
+	public async verify(context: CommandVerifyContext<Params>): Promise<VerificationResult> {
+        // [...]
+	}
+
+	public async execute(context: CommandExecuteContext<Params>): Promise<void> {
+		// [...]
+
+		// 6. Save the Hello counter to the counter store.
+		await counterSubstore.set(context, helloCounterBuffer, helloCounter);
+
+		// 7. Emit a "New Hello" event
+		const newHelloEvent = this.events.get(NewHelloEvent);
+		newHelloEvent.add(context, {
+			senderAddress: context.transaction.senderAddress,
+			message: context.params.message
+		},[context.transaction.senderAddress]);
+	}
+}
+----
+
+Now, the module will create a new event every time a "Create Hello" command is executed, and the event will include the sender address and the Hello message which has been sent.
+
+NOTE: An example of how to listen to a specific event, can be found in the guide xref:{url_build_plugin}[].

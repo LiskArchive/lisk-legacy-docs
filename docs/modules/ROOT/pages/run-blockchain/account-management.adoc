@@ -2,21 +2,201 @@
 Mona Bärenfänger <mona@lightcurve.io>
 :description: How to create and manage accounts including creating and sending transactions, transferring tokens & voting.
 // Settings
-:toc:
+:idprefix:
+:idseparator: -
+:toc: preamble
+//URLs
+:url_wiki_Ed25519: https://en.wikipedia.org/wiki/EdDSA#Ed25519
+:url_eip2334: https://eips.ethereum.org/EIPS/eip-2334
+:url_eip2333: https://eips.ethereum.org/EIPS/eip-2333
+:url_rfc8032: https://datatracker.ietf.org/doc/html/rfc8032#section-5.1.5
+:url_lisk_wallet: https://lisk.com/wallet
+:url_github_bip_39: https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#generating-the-mnemonic
+:url_github_bip_173: https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki
+:url_github_lip_18: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0018.md
+:url_github_lip_18_base32: {url_github_lip_18}#step-3-base32
+:url_github_lip_18_computation: {url_github_lip_18}#address-representation-for-user-interface-level
+:url_github_lip_66_getprivatekeyfromphraseandpath: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0066.md#getprivatekeyfromphraseandpath
+:url_wallet_types: https://blockchain-council.org/blockchain/types-of-crypto-wallets-explained/
+:url_mnemonic_passphrase: https://droomdroom.com/a-guide-to-mnemonic-phrase-and-passphrase/#:~:text=Mnemonic%20phrases%20are%20words%2C%20usually,ownership%20of%20its%20crypto%20assets
+
 // Project URLs
-:url_sdk_guide_txoffline: integrate-blockchain/create-tx-offline.adoc
-:url_sdk_guide_txs: integrate-blockchain/create-send-transactions.adoc
-:url_core_cli: lisk-core::reference/cli.adoc
-:url_sdk_cli: lisk-sdk::application-cli.adoc
+:url_core_cli: v4@lisk-core::core-cli.adoc
+:url_sdk_cli: v6@lisk-sdk::client-cli.adoc
+:url_sdk_keyscreate: {url_sdk_cli}#keyscreate
+//Footnotes
+:fn_bip173: footnote:bip173[See {url_github_bip_173}[BIP173^]]
 
-The most convenient way to manage your account is to use a user interface, such as Lisk Desktop.
-However, it is possible to manage your account directly from the command-line with the CLI of a Lisk node.
+====
+On this page, you'll learn how to manage your account directly from the command-line with the CLI of a Lisk node.
 
-The most important interactions are described below.
+Specifically, the following topics below will be covered in detail:
 
-TIP: For more information about the available Lisk Core commands, check the CLI references for xref:{url_core_cli}[Lisk Core] and xref:{url_sdk_cli}[Lisk SDK].
+* [x] The different credentials for an account
+* [x] How to create new account credentials
+* [x] How to create multiple accounts with a single passphrase
+* [x] How a new account is initialized on the blockchain
+* [x] Methods used for managing account credentials
+* [x] Lisk wallet passphrase and security
+====
 
-== Creating a new account
+TIP: If you prefer a graphical user interface to manage your account, it is possible to use supported wallets such as {url_lisk_wallet}[Lisk Wallet^].
+
+== Overview of the account credentials
+
+.General account credentials
+[cols="1,1,3",options="header",stripes="hover"]
+|===
+|Name
+|Example
+|Description
+
+|`passphrase`
+|"anger system news one finger rifle kiss expect arena swift spirit decline"
+|Human-readable representation of the `privateKey`.
+A 12 word mnemonic passphrase.
+Together with the `keyPath`, it identifies an account on the blockchain.
+
+|`keyPath`
+|"m/44'/134'/0'"
+|<<managing-multiple-accounts-with-a-single-passphrase,Key derivation>> allows multiple key pairs to be derived from the same passphrase.
+
+|`address`
+|lsk7dqp2w7447pqhuzmhx
+sxr65qeoq7nbfox28wxc
+a|The address is the main public identifier of the account and the human-readable representation of the `publicKey`.
+
+Depending on the context, the address is represented in <<lisk32-address-format,different formats>>.
+
+|`publicKey`
+|0ca6a5d44cc366de186a2589e3e51849272fa0ae9c52646766ddb7820dfe770c
+|A {url_wiki_Ed25519}[Ed25519^] public key.
+The public identifier of the account.
+Derived from the `passphrase`, together with the `keyPath`.
+The first part of the public key is used to derive the `address` for an account.
+
+|`privateKey`
+|bd7e42529df375cb9133ddf299641d38975fa4d0930eff6e7c072d4d3ff190830ca6a5d44cc366de186a2589e3e51849272fa0ae9c52646766ddb7820dfe770c
+|{url_wiki_Ed25519}[Ed25519^] private key
+The private identifier of the account.
+Derived from the `passphrase`, together with the `keyPath`.
+|===
+
+.Credentials required for block generation
+[cols="1,1,3",options="header",stripes="hover"]
+|===
+|`generatorKeyPath`
+|"m/25519'/134'/0'/0'"
+|The derivation path for the <<generator-keys>>.
+
+|`generatorKey`
+|e59f2f603b84b9cd91e2
+67240a342ba09adaad348e
+b984cc6e21c14fd02f28e7
+a|The public <<generator-keys,generator key>>.
+[#generator-keys]
+An extra {url_wiki_Ed25519}[Ed25519^] key pair, the generator keys, is added to a validator account to sign blocks.
+A validator node only requires access to the private generator key, but not to the private key that is used for signing transactions.
+This mitigates the risk, whereby an attacker could acquire the encrypted passphrase and the password used for encryption, and gain full control over the validator account.
+
+|`generatorPrivateKey`
+|398a04e2a001dc4580bb1
+fab2c6e71dbbbd81c9f221
+70eb073cd4084dd15884fe
+59f2f603b84bac491e2672
+40a3425a09adaad348b984
+cc6e21c14fd02f28e7e
+|The private <<generator-keys,generator key>>.
+
+|`blsKeyPath`
+|"m/12381/134/0/0"
+|Similarly to the specifications of {url_eip2334}[EIP 2334^], Lisk uses the path `m/12381/134/chainIDConverted/0` for the BLS key derived for a chain, where `chainIDConverted = bytesToUint(chainID)`.
+
+|`blsKey`
+|95c7a571ecf569f91fc99
+5f9a8dba2e70904cb0793
+50372bc6d8a2b698678af
+6d4589ca9fffefd952deb
+c96a17317e18
+a|The public <<bls-keys,BLS key>>.
+[#bls-keys]
+An extra key pair, the BLS keys, is added to a validator account, following the key derivation method described in {url_eip2333}[EIP 2333^].
+BLS keys are used by validators to create aggregated signatures for commits in Lisk blockchains, among other functions.
+
+|`blsProofOfPossession`
+|a02f2672621b3adcd2507
+9c6646e751517c514c70d
+11ec4ec4846310f5f7cdd
+edd598ade849496bcfe15
+d3baa554d06b148a2e9f2
+d349e2010df2a17d7a3d5
+7f13ab9bf290042c552d4a
+7d925c0877596ca8865b9c
+6ba2972eea5ce7831b014c
+|The proof that a validator owns the private key for the corresponding BLS public key.
+The proof-of-possession is important to prevent "rogue key" attacks, whereby attackers forge aggregate signatures on behalf of other participants.
+
+|`blsPrivateKey`
+|4ce94dc439152ec5e0ae8
+8a5cd7c12cf0b5d930411
+135dc5f42b49050342ac26
+|The private <<bls-keys,BLS key>>
+|===
+
+=== Passphrases
+
+As previously discussed, Lisk accounts employ a 12-word {url_mnemonic_passphrase}[Mnemonic Passphrase^] to ensure robust security.
+It is a sequence of carefully chosen words that acts as a human-readable representation of a complex cryptographic key, as in the example displayed in the <<Creating a new passphrase>> section.
+This passphrase is indispensable for accessing any Lisk wallet and conducting transactions from your account.
+
+Using a 12-word seed phrase encompasses 128 bits of entropy, a metric that gauges the level of unpredictability or randomness in the data employed for generating the phrase.
+This is due to the fact that each term within the {url_github_bip_39}[BIP 39^] mnemonic phrase embodies 11 bits of entropy, resulting in a cumulative 132 bits for a 12-word sequence.
+This overall entropy amalgamates 128 bits of inherent entropy and an additional 4 bits designated for the checksum.
+
+Nevertheless, the BIP39 seed phrase relies on a finite pool of 2,048 words, which in turn restricts the potential permutations that can be produced.
+Conversely, a 24-word seed phrase comprises 256 bits of entropy, as each term encapsulates 11 bits, culminating in a total of 264 bits, including the checksum.
+
+The same rationale holds true for the 256 bits of entropy plus an extra 8 bits for the checksum.
+While a 12-word phrase offers greater memorability and ease of input, it concurrently becomes more susceptible to guessing or brute-force attacks by malicious actors.
+
+Given the mere 128 bits of entropy, deciphering a 12-word seed phrase would necessitate significantly less time and resources compared to a 24-word counterpart with 256 bits of entropy.
+Nevertheless, even in the face of heightened susceptibility to guessing, the task of brute-forcing remains nearly insurmountable.
+
+With 12 words offering a staggering 2^128^ potential combinations, the probability of arriving at the correct combination is exceedingly remote.
+
+
+== Key pair and address creation
+
+A *private key* is derived, as defined in {url_rfc8032}[RFC 8032^], from a {url_github_bip_39}[BIP 39^] *mnemonic passphrase* and a <<key-derivation-path>>.
+
+.Generating multiple private keys from 1 passphrase with key derivation
+image::run-blockchain/key_derivation.png[addressCreation]
+
+NOTE: Any of the child keys could be used to create a {url_wiki_Ed25519}[Ed25519^] private key. However, by default only the child key at the end of the path is used to create the Ed25519 private key.
+
+The corresponding *public key* can then be obtained following the key generation section of {url_rfc8032}[RFC 8032^].
+
+Finally, the *address* is generated by taking the first 20 bytes of the public key.
+
+=== Key Derivation path
+
+The *key derivation path* allows to derive a specific key from within a tree of keys.
+
+The derivation path is an array of non-negative integers smaller than 2^32^.
+To make it easier to read a derivation path, they are often written in a form that omits a large constant.
+For example, the path `44'/134'/0'` (notice the apostrophe after each number) represents the array `[44+2^31^, 134+2^31^, 2^31^]`.
+
+The whole derivation path is then written as `m/44'/134'/0'`, indicating that we start by deriving a master key before deriving successive child keys.
+
+=== Creating a new passphrase
+
+A 12 word mnemonic passphrase is required as an input to generate all corresponding account credentials for an account.
+
+You may choose the passphrase for yourself, or generate a new random passphrase.
+
+The node CLI can be utilized to auto-generate the passphrase quickly from the command-line.
+
+First, start the console:
 
 [tabs]
 =====
@@ -25,7 +205,7 @@ Lisk Core::
 --
 [source,bash]
 ----
-lisk-core account:create
+lisk-core console
 ----
 --
 Lisk app::
@@ -33,279 +213,280 @@ Lisk app::
 --
 [source,bash]
 ----
-./bin/run account:create
+./bin/run console
 ----
 --
 =====
 
-.Example output
-[source,json]
+Generate a new mnemonic passphrase using the Lisk Passphrase library:
+
 ----
-[
-  {
-   "passphrase": "meadow lesson tomato satisfy shield number zone symptom sad equip faculty piece",
-   "privateKey": "9f6014a246cb91abeaec400e77a79c6ec29898c85bf934c2d176c13df58e1ef34c5b08a8eec74c79a6c6ec66ce229c03afdcb50ccd6e5c43e916875fb03b4948",
-   "publicKey": "4c5b08a8eec74c79a6c6ec66ce229c03afdcb50ccd6e5c43e916875fb03b4948",
-   "binaryAddress": "3fb0d5fb064d3ad6f09263eaae04e666ae4a0e52",
-   "address": "lsknf295f2b4kh99jpro8q6jxnbodwpkcrrw4nwwa"
-  }
-]
+ > lisk.passphrase.Mnemonic.generateMnemonic()
 ----
 
-.`account:create` reference
-[%collapsible]
-====
+This will return a randomly generated 12 word mnemonic passphrase.
+
+----
+'anger system news one finger rifle kiss expect arena swift spirit decline'
+----
+
+=== Creating the other credentials
+
+Next, use the xref:{url_sdk_keyscreate}[keys:create] command to generate all relevant account credentials:
+
+IMPORTANT: The creation of new account credentials always happens off-chain.
+To put the new account on-chain, it is necessary to <<account-initialization,initialize>> the new account by sending some initial tokens to the address and paying the account initialization fee.
+
+[tabs]
+=====
+Lisk Core::
++
+--
 [source,bash]
 ----
-Return randomly-generated mnemonic passphrase with its corresponding public/private key pair and Lisk address
+lisk-core keys:create
+----
+--
+Lisk app::
++
+--
+[source,bash]
+----
+./bin/run keys:create
+----
+--
+=====
 
-USAGE
-  $ lisk-core account:create
+When asked for the passphrase, enter the passphrase previously created in the step <<creating-a-new-passphrase>>.
 
-OPTIONS
-  -c, --count=count  [default: 1] Number of accounts to create
+----
+? Please enter passphrase:  [hidden]
+? Please re-enter passphrase:  [hidden]
+----
 
-EXAMPLES
-  account:create
-  account:create --count=3
+Next, you will be also asked for a password.
+This password will be used to encrypt your account credentials symmetrically.
+
+The encrypted credentials are used for example in the config, when the node needs account information to generate new blocks for a validator.
+
+TIP: If you do not wish to encrypt your credentials, it is possible to skip this step by adding the `--no-encryption` flag to the `keys:create` command.
+
+The password will be required everytime the credentials need to be decrypted, for example when enabling block generation on a node.
+Hence, it is advisable to store and maintain the password in a secure location similar to the passphrase of the account.
+
+----
+? Please enter password:  [hidden]
+? Please re-enter password:  [hidden]
+----
+
+This will then return the credentials for the account:
+
+.Example output
+[%collapsible]
+====
+[source,json]
+----
+{
+  "keys": [
+    {
+      "address": "lskp24b6ev62w67v8qvk8wnvkhh2gv3hcoohes5z3",
+      "keyPath": "m/44'/134'/0'",
+      "publicKey": "83eac294606806e0f4125203e2d0dac5ef1fc8730d5ec12e77e94f823f2262fa",
+      "privateKey": "eafb0bc7f148e60f69fda52e0cc862071871bbfff884aad095ae84bdde8d298283eac294606806e0f4125203e2d0dac5ef1fc8730d5ec12e77e94f823f2262fa",
+      "plain": {
+        "generatorKeyPath": "m/25519'/134'/0'/0'",
+        "generatorKey": "97fe3280b25ca122cf91eb891c157c939becd75a7fed394254b1005608c3bffc",
+        "generatorPrivateKey": "67afd3d3eda7c060f8f4e19540a5416c2d29a6dc687b47a5bebcd41d9d0df1e897fe3280b25ca122cf91eb891c157c939becd75a7fed394254b1005608c3bffc",
+        "blsKeyPath": "m/12381/134/0/0",
+        "blsKey": "a3dcd6dedf3a0cf45608f9e1f3844e8b30c033c186851671ea1a655541b3fda482e4617f67367438012cf0855fadda13",
+        "blsProofOfPossession": "954f4f6be134626367353d68cd19d00a3475dd0cb0961605ec925c659c581c0a91e6223715eba261cca817aca134078e014d1f340aac32e21038a861708e8b2c33190d0dc32902fde8b270490a7f81a8ea5736bfcaaaf502704f0d9573623dd3",
+        "blsPrivateKey": "07dec698f9b62092196c15b8074dc6a0366722cd77b351f968b2291c1fbcc699"
+      },
+      "encrypted": {
+        "ciphertext": "4e9c24db810fb641d9ad148e0a9c461db5c52b001592c910b2b11a4f4ce9bf271d530d2bfd9a6b50c59b09a4e872ef7a0ff65802e0bde6e685dd07db6b9b4f365b24af0488a5fdb3d4688b5c5a4ffbf302573a53219a1ec120bd1b1bc602e356bdb910ab7be245e7488409fc1ea059ffcb4382cfb309d5673a258cd2cf4114a39ffbb0097f3bef6985c45ea3ffbc2f7b793a2366d9e5921d3ba8490906a17bf458a85c19100834877fde498fc3165a02f68a72e1b6e8509f",
+        "mac": "1730decdc41721e0156f9aaad0685b1a65c0edc56d653c0ae6266f08826b13f3",
+        "kdf": "argon2id",
+        "kdfparams": {
+          "parallelism": 4,
+          "iterations": 1,
+          "memorySize": 2097023,
+          "salt": "34ac1bfb751d5f78"
+        },
+        "cipher": "aes-128-gcm",
+        "cipherparams": {
+          "iv": "9c6903d0c6e6ab900e9389d8466dd8ff",
+          "tag": "8e21a9239cb4d5855e54cf9da34bc5ce"
+        },
+        "version": "1"
+      }
+    }
+  ]
+}
 ----
 ====
 
-== Creating transactions
+== Managing multiple accounts with a single passphrase
+
+Key derivation allows multiple key pairs to be derived from the same secret passphrase as a tree of keys.
+
+This ensures that a user can manage multiple different accounts with ease, as they are only required to remember a single passphrase.
+
+To generate multiple accounts from the same passphrase, use the `--count` flag of the `keys:create` command, and set it to the number of accounts that you wish to create.
+
+The key path for the new accounts will always start with the default key-derivation path and increment by +1 onwards.
+If you wish to start from a different key path, you can specify an `--offset`.
+
+[tabs]
+=====
+Lisk Core::
++
+--
+[source,bash]
+----
+lisk-core keys:create --passphrase your-passphrase --no-encrypt --count 2 --offset 1
+----
+--
+Lisk app::
++
+--
+[source,bash]
+----
+./bin/run keys:create --passphrase your-passphrase --no-encrypt --count 2 --offset 1
+----
+--
+=====
+
+The same passphrase is used for every account, the only change that will occur is the <<key-derivation-path>>, for example when signing transactions.
 
 [NOTE]
 ====
-It is necessary for the Lisk Core node to be running, in order to sign transactions.
-For more information about the different ways to create and send transactions, please check the guide xref:{url_sdk_guide_txs}[].
+If a user uses the *default key-derivation path* `m/44'/134'/0`, it is not necessary to mention it as a parameter when the account credentials are requested.
 
-If you wish to create transactions without having the node running, use the `--offline` flag.
-These transactions need to be signed later with `transaction:sign`.
+If you are using a custom key-derivation path, make sure to always specify the key derivation path when providing the passphrase.
+For example, for the `transaction:create` command, the key derivation path can be specified as shown in the example snippet below:
 
-For more information on this topic, check out this guide, xref:{url_sdk_guide_txoffline}[Creating transactions and signing them offline].
+[source,bash]
+----
+./bin/run transaction:create hello createHello 10000000 --key-derivation-path="m/44'/134'/1'" --params='{"message":"Hello world!"}'
+----
 ====
 
-Start the node, if it is not running already:
+== Account initialization
 
-[tabs]
-=====
-Lisk Core::
-+
---
-[source,bash]
-----
-lisk-core start
-----
---
-Lisk app::
-+
---
-[source,bash]
-----
-./bin/run start
-----
---
-=====
+To create a new account in the blockchain network, it is necessary to initialize the account.
 
-Transactions can be created by using the `transaction:create` command:
+A new account is initialized by sending tokens to an address for the first time.
 
-.`transaction:create` reference
+When tokens are sent to a new address, it is required to pay an *account initialization fee*.
+
+In the Lisk Mainnet, the account initialization fee is 0.05 LSK.
+
+NOTE: The account initialization fee has to be paid on top of the other fees for a transaction, when tokens are sent to a new address for the first time.
+
+Once the address has received its initial tokens, it is then saved in the user substore.
+
+=== User Substore
+The Token module features a user substore that comprises entries exclusively intended for storing user balances for a specific address and tokenID.
+
+The user substore contains the following entries:
+
+* key: the concatenation of an address and a token ID: address + tokenID
+* value: the serialization of an object following the `userStoreSchema`.
+
+.userStoreSchema
 [%collapsible]
 ====
-[source,bash]
-----
-Create a transaction that can be broadcasted to the network. Note: fee and amount should be in Beddows!!
-
-USAGE
-  $ lisk-core transaction:create MODULEID ASSETID FEE
-
-ARGUMENTS
-  MODULEID  Registered transaction module id.
-  ASSETID   Registered transaction asset id.
-  FEE       Transaction fee in Beddows.
-
-OPTIONS
-  -a, --asset=asset                          Creates transaction with specific asset information.
-  -d, --data-path=data-path                  Directory path to specify where node data is stored. Environment variable "LISK_DATA_PATH" can also be used.
-  -j, --json                                 Print the transaction in JSON format
-  -n, --network=network                      [default: mainnet] Default network config to use. Environment variable "LISK_NETWORK" can also be used.
-
-  -p, --passphrase=passphrase                Specifies a source for your secret passphrase. Command will prompt you for input if this option is not set.
-                                             	Examples:
-                                             	- --passphrase='my secret passphrase' (should only be used where security is not important).
-
-  -s, --sender-public-key=sender-public-key  Creates the transaction with provided sender publickey, when passphrase is not provided.
-
-  --network-identifier=network-identifier    Network identifier defined for the network or main | test for the Lisk Network.
-
-  --no-signature                             Creates the transaction without a signature. Your passphrase will therefore not be required.
-
-  --nonce=nonce                              Nonce of the transaction.
-
-  --offline                                  Specify whether to connect to a local node or not.
-
-  --pretty                                   Prints JSON in pretty format rather than condensed.
-
-EXAMPLES
-  transaction:create 2 0 100000000 --asset='{"amount":100000000,"recipientAddress":"ab0041a7d3f7b2c290b5b834d46bdc7b7eb85815","data":"send token"}'
-  transaction:create 2 0 100000000 --asset='{"amount":100000000,"recipientAddress":"ab0041a7d3f7b2c290b5b834d46bdc7b7eb85815","data":"send token"}' --json
-  transaction:create 2 0 100000000 --offline --network mainnet --network-identifier 873da85a2cee70da631d90b0f17fada8c3ac9b83b2613f4ca5fddd374d1034b3 --nonce 1
-  --asset='{"amount":100000000,"recipientAddress":"ab0041a7d3f7b2c290b5b834d46bdc7b7eb85815","data":"send token"}'
-----
-====
-
-=== Transfering tokens to another account
-
-[tabs]
-=====
-Lisk Core::
-+
---
-[source,bash]
-----
-$ lisk-core transaction:create 2 0 100000000 --asset='{"amount":100000000,"recipientAddress":"86555265f0110b4ed5a8cb95dbc732e77732c474","data":"send token"}'
-? Please enter passphrase:  [hidden]
-? Please re-enter passphrase:  [hidden]
-----
---
-Lisk app::
-+
---
-[source,bash]
-----
-$ ./bin/run transaction:create 2 0 100000000 --asset='{"amount":100000000,"recipientAddress":"86555265f0110b4ed5a8cb95dbc732e77732c474","data":"send token"}'
-? Please enter passphrase:  [hidden]
-? Please re-enter passphrase:  [hidden]
-----
---
-=====
-
-.Example output
 [source,json]
 ----
-{"transaction":"0802100018002080c2d72f2a200fe9a3f1a21b5530f27f87a414b549e79a940bf24fdf2b2f05e7f22aeeecc86a32270880c2d72f121486555265f0110b4ed5a8cb95dbc732e77732c4741a0a73656e6420746f6b656e3a40c442cd1311808974d5f41a69dd25b2e3a516e463445a4c5eb292f0c7b7de0b33627a729da7969875d0f659fbe56f3e2ca947bc02873f8ac5a1753ac90fb15605"}
-----
-
-=== Registering a delegate
-
-[tabs]
-=====
-Lisk Core::
-+
---
-[source,bash]
-----
-$ lisk-core transaction:create 5 0 1000130000 --asset='{"username":"lightcurve"}'
-? Please enter passphrase:  [hidden]
-? Please re-enter passphrase:  [hidden]
-----
---
-Lisk app::
-+
---
-[source,bash]
-----
-$ ./bin/run transaction:create 5 0 1000130000 --asset='{"username":"lightcurve"}'
-? Please enter passphrase:  [hidden]
-? Please re-enter passphrase:  [hidden]
-----
---
-=====
-
-.Example output
-[source,json]
-----
-{"transaction":"08051000180020d08bf3dc032a20ae3aa408b5f95d9bb6d304de8f437faf77f8346e948020a10e52ded45a75067d320c0a0a6c6967687463757276653a403bcdbf92d0a138c3baebd2c71b4a4fa0e16e7dd58d99853bcf49e8900f244a6893c701f5366fe8f4b360e64f9ae7267053e1f38f6c18c07cc2e6064bcdf75204"}
-----
-
-=== How to vote/unvote delegates
-
-A positive `amount` votes with the tokens for the respective delegate.
-
-A negative `amount` unvotes the specified amount of tokens for a delegate.
-
-[NOTE]
-====
-Up to 20 votes and unvotes can be included in a single vote transaction.
-====
-
-[tabs]
-=====
-Lisk Core::
-+
---
-[source,bash]
-----
-$ lisk-core transaction:create 5 1 100000000 --asset='{"votes":[{"delegateAddress":"86555265f0110b4ed5a8cb95dbc732e77732c474","amount":1000000000}]}'
-? Please enter passphrase:  [hidden]
-? Please re-enter passphrase:  [hidden]
-----
---
-Lisk app::
-+
---
-[source,bash]
-----
-$ ./bin/run transaction:create 5 1 100000000 --asset='{"votes":[{"delegateAddress":"86555265f0110b4ed5a8cb95dbc732e77732c474","amount":1000000000}]}'
-? Please enter passphrase:  [hidden]
-? Please re-enter passphrase:  [hidden]
-----
---
-=====
-
-.Example output
-[source,json]
-----
-{"transaction":"0805100118022080c2d72f2a200fe9a3f1a21b5530f27f87a414b549e79a940bf24fdf2b2f05e7f22aeeecc86a321e0a1c0a1486555265f0110b4ed5a8cb95dbc732e77732c4741080a8d6b9073a40d8c0cec4ce780af8bb5a883236e6826dbc0b5748f0bde07607a8de508e15b8bda3e15f942b10e034fbdacebd2b4fb035462bd0845f8616a965962c1184729a0e"}
-----
-
-=== Sending transactions to a Lisk node
-
-[tabs]
-=====
-Lisk Core::
-+
---
-[source,bash]
-----
-$ lisk-core transaction:send 0802100018002080c2d72f2a200fe9a3f1a21b5530f27f87a414b549e79a940bf24fdf2b2f05e7f22aeeecc86a32270880c2d72f121486555265f0110b4ed5a8cb95dbc732e77732c4741a0a73656e6420746f6b656e3a40c442cd1311808974d5f41a69dd25b2e3a516e463445a4c5eb292f0c7b7de0b33627a729da7969875d0f659fbe56f3e2ca947bc02873f8ac5a1753ac90fb15605
-----
---
-Lisk app::
-+
---
-[source,bash]
-----
-$ ./bin/run transaction:send 0802100018002080c2d72f2a200fe9a3f1a21b5530f27f87a414b549e79a940bf24fdf2b2f05e7f22aeeecc86a32270880c2d72f121486555265f0110b4ed5a8cb95dbc732e77732c4741a0a73656e6420746f6b656e3a40c442cd1311808974d5f41a69dd25b2e3a516e463445a4c5eb292f0c7b7de0b33627a729da7969875d0f659fbe56f3e2ca947bc02873f8ac5a1753ac90fb15605
-----
---
-=====
-
-.Example output
-[source,bash]
-----
-Transaction with id: '793446f5a5dbd9fbb9b73a7855706193504f08e50eb9d955133682282321a0b0' received by node
-----
-
-.`transaction:send` reference
-[%collapsible]
-====
-[source,bash]
-----
-Send transaction to the local node.
-
-USAGE
-  $ lisk-core transaction:send TRANSACTION
-
-ARGUMENTS
-  TRANSACTION  A transaction to be sent to the node encoded as hex string
-
-OPTIONS
-  -d, --data-path=data-path  Directory path to specify where node data is stored. Environment variable "LISK_DATA_PATH" can also be used.
-  --pretty                   Prints JSON in pretty format rather than condensed.
-
-EXAMPLE
-  transaction:send
-  080810011880cab5ee012220fd061b9146691f3c56504be051175d5b76d1b1d0179c5c4370e18534c58821222a2408641214ab0041a7d3f7b2c290b5b834d46bdc7b7eb858151a0a73656e6420746f6b656e324028edd3601cdc35a4
-  1bb23415a0d9f3c3e9cf188d9971adf18742cea39d58aa84809aa87bcfe6feaac46211c80472ad9297fd87727709f5d7e7b4134caf106b02
+{
+    "type": "object",
+    "required": ["availableBalance", "lockedBalances"],
+    "properties": {
+        "availableBalance": {
+            "dataType": "uint64",
+            "fieldNumber": 1
+        },
+        "lockedBalances": {
+            "type": "array",
+            "fieldNumber": 2,
+            "items": {
+                "type": "object",
+                "required":[ "module", "amount" ],
+                "properties": {
+                    "module": {
+                        "dataType": "string",
+                        "minLength": MIN_MODULE_NAME_LENGTH,
+                        "maxLength": MAX_MODULE_NAME_LENGTH,
+                        "pattern": "^[a-zA-Z0-9]*$",
+                        "fieldNumber": 1
+                    },
+                    "amount": {
+                        "dataType": "uint64",
+                        "fieldNumber": 2
+                    }
+                }
+            }
+        }
+    }
+}
 ----
 ====
+
+== Lisk32 address format
+The *Lisk32 representation* displays addresses as a readable string with a checksum and the "lsk" prefix.
+Lisk32 addresses always have a fix length of 41 characters.
+
+.Automatic detection of address typing errors
+NOTE: A BCH checksum is used for {url_github_lip_18}[detection of small errors^] in the address.
+Any errors in *up to 4 characters* are *guaranteed* to be detected and errors in *more than 5 characters* are *likely* to be detected.
+
+.Lisk32 address example
+ lsk24cd35u4jdq8szo3pnsqe5dsxwrnazyqqqg5eu
+
+TIP: To learn how the Lisk32 is derived from the public key, please go to {url_github_lip_18_computation}[Address Representation for User Interface Level (LIP 0018)^].
+
+== Key Management
+There are two recommended ways to manage the account keys, depending on the use case:
+
+.Account credentials
+[cols="1,2",options="header",stripes="hover"]
+|===
+|Key management method
+|Use Case
+
+|Using a secret passphrase
+|For users that need their key pair only on local machines, e.g., for signing transactions.
+It is necessary to securely store or remember a secret recovery phrase and password. However, it is not necessary to back up and store any encrypted data locally.
+
+|Storing the encrypted secret key
+|For users that solely require the key pair on a remote server, e.g., a validator node on a remote data center.
+Storing and backing up an encrypted file is necessary, but the user only needs to remember or securely store one password.
+|===
+
+== Lisk wallet passphrase and security best practices
+
+Wallets play a crucial role, as they provide a secure means to store, send, and receive both LSK tokens and other tokens/coins.
+Wallets in general come in different forms, including a variety of software wallets, such as hot wallets, custodial/non-custodial, and web wallets; hardware wallets, and even paper wallets.
+They operate using a combination of public and private keys, ensuring the safety and authenticity of transactions on the Lisk blockchain.
+For a more in-depth overview regarding the wallets, see {url_wallet_types}[types of wallets^].
+
+=== Security best practices
+
+Safeguarding this passphrase is of the utmost importance, and sharing it with others must be avoided at all costs.
+If unauthorized access to this passphrase occurs, it could lead to the theft of your funds.
+Regrettably, in such a scenario, the lost funds cannot be recovered.
+
+To summarise, the optimal method for safeguarding your recovery seed involves storing it across multiple physical mediums, and placing these mediums in at least two distinct locations.
+Ideally, these physical storage methods should demonstrate resilience against harsh conditions such as water, fire, and other adverse factors.
+It's crucial to ensure that these duplicates of your recovery seed remain concealed to prevent unintended discovery.
+
+In the case whereby you suspect the security of your mnemonic phrase has been compromised, possibly due to a copy being discovered or stolen, it is prudent to swiftly transfer your funds to an entirely new wallet with a different recovery seed.
+Following this, take the time to assess your storage practices to prevent a recurrence of compromise.
+
+As long as you retain your passphrase, your account access remains intact.
+Furthermore, please note that your passphrase can be used interchangeably within the Lisk ecosystem.
+Hence, it is possible to utilize the same passphrase to log in to both Lisk Desktop and Lisk Mobile, granting access to your account.
+
+
+
+

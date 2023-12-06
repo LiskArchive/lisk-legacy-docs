@@ -1,0 +1,158 @@
+= Defining off-chain data structures
+Muhammad Talha <muhammad.talha@lightcurve.io>
+:toc: preamble
+:idprefix:
+:idseparator: -
+:sectnums:
+// URLs
+:url_github_guides_plugin: https://github.com/LiskHQ/lisk-sdk-examples/tree/development/tutorials/hello/hello_client/src/app/plugins/hello_info
+:url_github_schemas: https://github.com/LiskHQ/lisk-sdk-examples/tree/development/tutorials/hello/hello_client/src/app/plugins/hello_info/schemas.ts
+:url_github_types: https://github.com/LiskHQ/lisk-sdk-examples/tree/development/tutorials/hello/hello_client/src/app/plugins/hello_info/types.ts
+
+The `HelloInfoPlugin` will need to store data of events emitted by the `HelloModule`.
+To achieve this, first, define the desired data structures as described on this page.
+
+====
+On this page, you'll learn:
+
+* [x] Defining types for required data structures.
+* [x] Defining corresponding schemas for encoding/decoding the data.
+* [x] Defining constants required by the plugin.
+====
+
+TIP: The relevant files discussed in this guide are {url_github_schemas}[schemas.ts^] and {url_github_types}[types.ts^].
+
+== Defining Types & Schemas
+To validate and store data, we need to define interfaces and their corresponding schemas for our required data structures.
+
+* *Defining Types:* The interfaces for the `HelloInfoPlugin` will be implemented in a `types.ts` file
+
+* *Defining Schemas:* The corresponding schemas for the interfaces defined in the `types.ts` file will go in a separate file called `schemas.ts`.
+
+=== Events
+The `newHello` event's data will be fetched from the blockchain by the HelloInfoPlugin and will be stored in the plugin's database.
+
+To realize this, we need to create an interface for the `Event`. 
+The interface will have three properties such as a sender address, the hello message, and the block height where the event was found by `HelloInfoPlugin`.
+
+Create the `types.ts` file in the root of the `hello_info` folder.
+Add the following in the `types.ts` file:
+
+.hello_client/src/app/plugins/hello_info/types.ts
+[source,typescript]
+----
+export interface Event {
+    senderAddress: Buffer;
+    message: string;
+    height: number;
+}
+----
+
+Create a `schemas.ts` file in the root of the `hello_info` folder.
+Define the corresponding `offChainEventSchema` in the `schemas.ts` file as well.
+
+.hello_client/src/app/plugins/hello_info/schemas.ts
+[source,typescript]
+----
+export const offChainEventSchema = {
+	$id: '/helloInfo/newHello',
+	type: 'object',
+	required: ['senderAddress', 'message', 'height'],
+	properties: {
+		senderAddress: {
+			dataType: 'bytes',
+			fieldNumber: 1,
+		},
+		message: {
+			dataType: 'string',
+			fieldNumber: 2,
+		},
+		height: {
+			dataType: 'uint32',
+			fieldNumber: 3,
+		},
+	},
+};
+----
+
+The `offChainEventSchema` will be used for encoding, decoding, and storing the sender address, hello message, and block height in the database.
+
+=== Counter
+The HelloInfoPlugin will store a counter for the number of `newHello` event stored in the off-chain database.
+
+Each counter's value will also be used for key generation for our off-chain database.
+So, let's define the `Counter` in the `types.ts` file.
+
+.hello_client/src/app/plugins/hello_info/types.ts
+[source,typescript]
+----
+export interface Counter {
+    counter: number;
+}
+----
+
+Define the corresponding `counterSchema` in the `schemas.ts` file as well.
+
+.hello_client/src/app/plugins/hello_info/schemas.ts
+[source,typescript]
+----
+export const counterSchema = {
+	$id: '/helloInfo/counter',
+	type: 'object',
+	required: ['counter'],
+	properties: {
+		counter: {
+			dataType: 'uint32',
+			fieldNumber: 1,
+		},
+	},
+};
+----
+
+=== Height
+As the name suggests, we want to store the last block height checked by the plugin for `newHello` event retrieval.
+This will enable the plugin to only check newer blocks of the blockchain for any new hello event.
+
+Define the `Height` interface in the `types.ts` file.
+
+.hello_client/src/app/plugins/hello_info/types.ts
+[source,typescript]
+----
+export interface Height {
+    height: number;
+}
+----
+
+For validation, encoding, and decoding purposes, add `heightSchema` in the `schemas.ts` file as well.
+
+.hello_client/src/app/plugins/hello_info/schemas.ts
+[source,typescript]
+----
+export const heightSchema = {
+	$id: '/helloInfo/height',
+	type: 'object',
+	required: ['height'],
+	properties: {
+		height: {
+			dataType: 'uint32',
+			fieldNumber: 1,
+		},
+	},
+};
+----
+
+== Defining Constants
+We plan to use a key-value-based off-chain database for our plugin, which needs a set of unique "key" values. 
+Part of our unique keys will come from constants that we define in a `constants.ts` file.
+
+Create a `constants.ts` file inside the `hello_info` folder and add the following constants to it.
+
+.hello_client/src/app/plugins/hello_info/constants.ts
+[source,typescript]
+----
+export const DB_KEY_EVENT_INFO = Buffer.from([0]);
+export const DB_LAST_COUNTER_INFO = Buffer.from([1]);
+export const DB_LAST_HEIGHT_INFO = Buffer.from([2]);
+----
+
+Now that we have defined the relevant schemas, types, and constants, our plugin is ready to have the database logic, as described in the next guide.

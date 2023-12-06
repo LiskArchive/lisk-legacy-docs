@@ -9,6 +9,7 @@
 
   var articleSelector = 'article.doc'
   var article = document.querySelector(articleSelector)
+  if (!article) return
   var headingsSelector = []
   for (var level = 0; level <= levels; level++) {
     var headingSelector = [articleSelector]

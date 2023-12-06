@@ -1,0 +1,157 @@
+= Integrating with UI
+Muhammad Talha <muhammad.talha@lightcurve.io>
+:toc: preamble
+:toclevels: 5
+:sectnums:
+:page-toclevels: 4
+:idprefix:
+:idseparator: -
+:imagesdir: ../../assets/images
+:sdk_docs: lisk-sdk::
+
+// External URLs
+:url_helloapp_readMe: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/guides/07-ui-boilerplate/hello_frontend#readme
+:url_boilerPlate: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/guides/07-ui-boilerplate/hello_frontend
+:url_api: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/hello/hello_frontend/src/api.js
+:url_frontend: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/hello/hello_frontend
+:url_package: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/hello/hello_frontend/package.json
+
+// Project URLs
+:url_helloapp_overview: integrate-blockchain/index.adoc#integrating-a-user-interface
+:url_helloClient_overview: build-blockchain/index.adoc#the-hello-world-client
+:url_guides_setup: build-blockchain/create-blockchain-client.adoc
+:url_guides_module: build-blockchain/module/index.adoc
+:url_guides_plugin: build-blockchain/plugin/index.adoc
+
+In this chapter, you'll learn how to integrate a user interface with the Hello Lisk application.
+
+As defined in the xref:{url_helloapp_overview}[Hello World application overview], this UI example should provide the following functionalities:
+
+[#ui-features]
+====
+* The UI should allow the user to send and later list all the Hello messages sent on the blockchain.
+* The UI should provide the account creation feature, along with fetching the details of any account.
+* The UI should have a page to transfer tokens to any account on the blockchain.
+* The UI should also provide a faucet screen, where an account can be seeded with tokens.
+* The UI should also inform the user about any errors that might occur during the aforementioned processes.
+====
+
+TIP: The relevant files & folders discussed in this guide are the {url_api}[api.js^], the {url_package}[package.json^], and the {url_frontend}[hello_frontend^], respectively.
+
+== Preliminaries and directory structure
+
+To jump-start with the integration directly, we have created a {url_boilerPlate}[boilerplate UI^] project for you.
+
+Throughout this guide, we will build on top of the aforementioned boilerplate UI, and integrate the <<ui-features, features>> listed earlier into it.
+
+.Prerequisites
+[NOTE]
+====
+To use this guide, it is assumed that the following criteria have been met:
+
+. The `hello_client` has been created along with the functionalities mentioned in the xref:{url_helloClient_overview}["Hello World" client] section. 
+. The UI template: `hello_frontend` which is based on the React.js and semantic-UI frameworks, has been created as described in the boilerplate's {url_helloapp_readMe}[README.md^] file.
+====
+
+Once all the aforementioned pre-requisites have been met, the `hello` directory should look like the following:
+
+.hello/
+----
+hello/
+├── hello_client/
+└── hello_frontend/
+    ├── public/
+    ├── src/
+    │    ├── components/ <1>
+    │    │    ├── faucet.js
+    │    │    ├── getAccountDetails.js
+    │    │    ├── getHello.js
+    │    │    ├── home.js 
+    │    │    ├── messageTimeline.js
+    │    │    ├── newAccount.js
+    │    │    ├── sendHello.js
+    │    │    └── transfer.js
+    │    ├── layout/
+    │    │    └── header.js
+    │    ├── App.css
+    │    ├── App.js
+    │    ├── App.test.js
+    │    ├── index.css
+    │    ├── index.js
+    │    ├── logo.png
+    │    ├── reportWebVitals.js
+    │    └── setupTest.ts
+    ├── package-lock.json 
+    └── package.json
+----
+
+<1> Contains all the web pages, that will provide the  <<ui-features, aforementioned functionalities>>.
+
+== Installing dependencies
+Now, navigate to the `hello_frontend` folder and install the `@liskhq/lisk-client` package.
+Through `lisk-client`, the UI will communicate with the *hello_client*.
+
+[source, bash]
+----
+npm install @liskhq/lisk-client --save
+----
+
+Next, install `buffer` to *hello_frontend*.
+[source, bash]
+----
+npm install --save buffer
+----
+
+Our frontend will use the `BigInt` type in the transaction creation process, therefore it is required to update the `eslintConfig` object in the *package.json* to match the following:
+
+.hello_frontend/package.json
+[source,json]
+----
+{
+  // [...]
+    "eslintConfig": {
+    "extends": [
+        "react-app",
+        "react-app/jest"
+    ],
+    "env": {
+        "es2020": true,
+        "browser": true,
+        "node": true,
+        "mocha": true
+        }
+    },
+  // [...]
+}
+----
+
+After updating the `package.json` file, install the dependencies in the `hello_frontend`:
+
+[source,bash]
+----
+npm install
+----
+
+== Creating api.js
+Inside the *hello_frontend/src* directory, create a file called `api.js`. 
+This script file will contain the code to fetch an instance of `apiClient`.
+With `apiClient`, the frontend will be able to invoke endpoints, create and send transactions, etc.
+
+.hello_frontend/src/api.js
+[source,javascript]
+----
+// Always use the browser version of the '@liskhq/lisk-client' for UI projects.
+import { apiClient } from '@liskhq/lisk-client/browser'; 
+
+const RPC_ENDPOINT = 'ws://localhost:7887/rpc-ws';
+
+let clientCache;
+
+export const getClient = async () => {
+    if (!clientCache) {
+        clientCache = await apiClient.createWSClient(RPC_ENDPOINT);
+    }
+    return clientCache;
+};
+----
+

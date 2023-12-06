@@ -1,0 +1,258 @@
+= How to create endpoints and methods
+Mona Bärenfänger <mona@lightcurve.io>
+// Settings
+:toc: preamble
+:idprefix:
+:idseparator: -
+:sectnums:
+// Project URLs
+:url_build_module_try: build-blockchain/module/command.adoc#try-the-new-command-out
+:url_build_module_stores: build-blockchain/module/stores.adoc
+
+====
+On this page, you'll learn how to:
+
+* [x] Create endpoints for a module
+* [x] Create a method for a module
+* [x] Request endpoints of a module
+====
+
+Modules introduce new data structures and manage their state changes on the blockchain.
+But by default, all data in the module stores is only accessible through the respective module itself.
+So how can other external services/tools access the data?
+For this, a module needs to provide dedicated <<endpoints>>.
+
+Modules can get data from other module stores via <<methods>>, similar to <<endpoints>>.
+Moreover, methods also allow other modules to introduce state changes to the stores of another module.
+For example, the Token module includes the `transfer` method, that can be used by other modules to transfer tokens from one account to another.
+
+== Endpoints
+
+For the Hello module, we want to implement the following two endpoints:
+
+. Two RPC endpoints:
+** `hello_getHello`: Returns the Hello message of an account.
+Expects account `address` as parameter
+** `hello_getHelloCounter`: Returns the counter of total Hello messages sent in the network.
+Doesn't expect any parameters.
+
+All endpoints for the module are defined in the file `endpoint.ts` inside the root folder of the module.
+Initially, the modules don't include any endpoints:
+
+.hello_client/src/app/modules/hello/endpoint.ts
+[source,typescript]
+----
+import { BaseEndpoint } from 'lisk-sdk';
+
+export class HelloEndpoint extends BaseEndpoint {
+
+}
+----
+
+=== Get a Hello message by address
+
+To create the endpoint for getting a Hello message by address, import the following libraries and classes:
+
+* `ModuleEndpointContext`: Each endpoint typically has one parameter of type `ModuleEndpointContext`.
+* `cryptography`: to validate the address and convert the address format.
+* `MessageStore` & `MessageStoreData`: The message store which was created in the xref:{url_build_module_stores}[] guide.
+
+.hello_client/src/app/modules/hello/endpoint.ts
+[source,typescript]
+----
+import { BaseEndpoint, ModuleEndpointContext, cryptography } from 'lisk-sdk';
+import { MessageStore, MessageStoreData } from './stores/message';
+
+export class HelloEndpoint extends BaseEndpoint {
+    public async getHello(ctx: ModuleEndpointContext): Promise<MessageStoreData> {
+        // 1. Get message store
+        const messageSubStore = this.stores.get(MessageStore);
+        // 2. Get the address from the endpoint params
+        const { address } = ctx.params;
+        // 3. Validate address
+        if (typeof address !== 'string') {
+            throw new Error('Parameter address must be a string.');
+        }
+        cryptography.address.validateLisk32Address(address);
+        // 4. Get the Hello message for the address from the message store
+        const helloMessage = await messageSubStore.get(
+            ctx,
+            cryptography.address.getAddressFromLisk32Address(address),
+        );
+        // 5. Return the Hello message
+        return helloMessage;
+    }
+}
+----
+
+=== Get Hello counter
+
+To create the endpoint for getting the Hello counter, import the following:
+
+* `CounterStore` & `CounterStoreData`: The counter store which was created in the xref:{url_build_module_stores}[] guide.
+
+.hello_client/src/app/modules/hello/endpoint.ts
+[source,typescript]
+----
+import { BaseEndpoint, ModuleEndpointContext, cryptography } from 'lisk-sdk';
+import { MessageStore, MessageStoreData } from './stores/message';
+import { counterKey, CounterStore, CounterStoreData } from './stores/counter';
+
+export class HelloEndpoint extends BaseEndpoint {
+    public async getHello(ctx: ModuleEndpointContext): Promise<MessageStoreData> {
+        // [...]
+	}
+
+    public async getHelloCounter(ctx: ModuleEndpointContext): Promise<CounterStoreData> {
+		const counterSubStore = this.stores.get(CounterStore);
+
+		const helloCounter = await counterSubStore.get(
+			ctx,
+			counterKey,
+		);
+
+		return helloCounter;
+	}
+}
+----
+
+== Methods
+
+For the Hello module, we implement the following method:
+
+* `hello_getHello`: Works equally to the corresponding endpoint, but can be used by other modules.
+
+All methods for the module are defined in the file `method.ts` inside the root folder of the module.
+Initially, the modules don't include any methods:
+
+.hello_client/src/app/modules/hello/method.ts
+[source,typescript]
+----
+import { BaseMethod } from 'lisk-sdk';
+
+export class HelloMethod extends BaseMethod {
+
+}
+----
+
+=== Get a Hello message by address
+
+To create the endpoint for getting a Hello message by address, import the following:
+
+* `MessageStore` & `MessageStoreData`: The message store which was created in the xref:{url_build_module_stores}[] guide.
+* `ImmutableMethodContext` from the `lisk-sdk` package.
+
+.hello_client/src/app/modules/hello/method.ts
+[source,typescript]
+----
+import { BaseMethod, ImmutableMethodContext } from 'lisk-sdk';
+import { MessageStore, MessageStoreData } from './stores/message';
+
+export class HelloMethod extends BaseMethod {
+
+	public async getHello(
+		methodContext: ImmutableMethodContext,
+		address: Buffer,
+	): Promise<MessageStoreData> {
+        // 1. Get message store
+		const messageSubStore = this.stores.get(MessageStore);
+        // 2. Get the Hello message for the address from the message store
+		const helloMessage = await messageSubStore.get(methodContext, address);
+        // 3. Return the Hello message
+		return helloMessage;
+	}
+}
+----
+
+== Add endpoint schemas to the module metadata
+Don't forget to update the module metadata with information about the newly created module endpoints.
+This information will be used by Lisk Service and similar software, to fetch information about the available API endpoints of the blockchain client.
+
+First, import the related schemas into `module.ts`:
+
+[source,typescript]
+-----
+import {
+	configSchema,
+	getHelloRequestSchema,
+	getHelloCounterResponseSchema,
+	getHelloResponseSchema,
+} from './schema';
+-----
+
+Then update the `metadata` of the module as follows:
+
+./hello_client/src/app/modules/hello/module.ts
+[source,typescript]
+-----
+public metadata(): ModuleMetadata {
+	return {
+		endpoints: [
+			{
+				name: this.endpoint.getHello.name,
+				request: getHelloRequestSchema,
+				response: getHelloResponseSchema,
+			},
+			{
+				name: this.endpoint.getHelloCounter.name,
+				response: getHelloCounterResponseSchema,
+			},
+		],
+		commands: this.commands.map(command => ({
+			name: command.name,
+			params: command.schema,
+		})),
+		events: this.events.values().map(v => ({
+			name: v.name,
+			data: v.schema,
+		})),
+		assets: [],
+		stores: [],
+	};
+}
+-----
+
+== Requesting data from the module
+
+. Rebuild the client:
++
+[source,bash]
+----
+npm run build
+----
+. Start the client:
++
+[source,bash]
+----
+./bin/run start --config=config/custom_config.json
+----
+
+. Send at least one "Create Hello" transaction to the node, as explained in xref:{url_build_module_try}[How to create a command -> Try the new command out]
+. Sent RPC requests
+.. `hello_getHello`
++
+[source,bash]
+----
+./bin/run endpoint:invoke hello_getHello '{"address": "lskuz5p98kz3mqzxnu68qdrjxtvdvr2o7pprtj4yv"}'
+----
++
+When the request is successful, the node will reply with the following:
++
+[source,json]
+----
+{"message": "Hello Lisk SDKv6!"}
+----
+
+.. `hello_getHelloCounter`
++
+[source,bash]
+----
+./bin/run endpoint:invoke hello_getHelloCounter
+----
++
+When the request is successful, the node will return the current counter value:
++
+[source,json]
+----
+{"counter": 1}
+----

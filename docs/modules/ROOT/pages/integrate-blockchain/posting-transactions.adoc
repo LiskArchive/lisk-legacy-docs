@@ -1,0 +1,212 @@
+= How to post a transaction
+:toc: preamble
+:idprefix:
+:idseparator: -
+// URLs
+:url_integrate_decoding: integrate-blockchain/encode-decode.adoc
+:url_integrate_createtx: integrate-blockchain/create-sign-transactions.adoc
+:url_integrate_createtx_hex: {url_integrate_createtx}#hex-string
+:url_integrate_createtx_json: {url_integrate_createtx}#json-compatible-object
+:url_sdk_cli_txsend: v6@lisk-sdk::client-cli.adoc#transactionsend
+
+This guide provides an overview of the different options for sending a transaction to a node.
+
+[TIP]
+====
+* If the existing data needs to be encoded/decoded before posting, check the guide xref:{url_integrate_decoding}[].
+* Check out the guide xref:{url_integrate_createtx}[] to learn about the different possibilities to create transactions.
+====
+
+== Posting transaction with the node CLI
+
+If you are managing a node, it is possible to send transaction directly via the node CLI with the xref:{url_sdk_cli_txsend}[transaction:send] command.
+[source,bash]
+----
+lisk-core transaction:send 0802100018022080c2d72f2a20e03c09bdc8c023d94cf66a5d352e6258380210d97d545abbf75668ea3736e3123229088094ebdc031214ab0041a7d3f7b2c290b5b834d46bdc7b7eb858151a0b73656e6420746f6b656e733a40faa2626d7306506b1999f48aa2f4b1ffdee01e641fa76d37a9d1d6fd8c225a81065c856ea625c52d138a7e3ba86b62913dc8e5aef8b5e307641ab66e0277a60b
+----
+
+== WS & IPC API example with API client
+
+The Lisk API client is a JS package that allows connecting to a node API through WS and IPC protocols.
+
+It can be used inside of a JS or a TS script to connect to a blockchain node API in order to post transactions to the node.
+
+To use the Lisk API client, install the lisk-client package with NPM:
+
+[source,bash]
+----
+npm install @liskhq/lisk-client
+----
+
+[tabs]
+=====
+WS API client example::
++
+--
+Create a file `api-client.js` which will export the function `getClient()`.
+
+Adjust the `RPC_ENDPOINT` to point to the node you want to post the transaction to.
+
+.api-client.js
+[source,js]
+----
+const { apiClient } = require('@liskhq/lisk-client');
+
+const RPC_ENDPOINT = 'ws://localhost:7887/rpc-ws';
+let clientCache;
+
+const getClient = async () => {
+  if (!clientCache) {
+    clientCache = await apiClient.createWSClient(RPC_ENDPOINT);
+  }
+  return clientCache;
+};
+
+module.exports = { getClient };
+----
+--
+IPC API client example::
++
+--
+Create a file `api-client.js` which will export the function `getClient()`.
+
+Adjust the `DATA_PATH` to point to the blockchain client data path.
+
+.api-client.js
+[source,js]
+----
+const { apiClient } = require('@liskhq/lisk-client');
+
+const DATA_PATH = '~/.lisk/hello_client';
+let clientCache;
+
+const getClient = async () => {
+    if (!clientCache) {
+        clientCache = await apiClient.createIPCClient(DATA_PATH);
+    }
+    return clientCache;
+};
+
+module.exports = { getClient };
+----
+--
+=====
+
+Create a new script `post-transaction.js` to post the transaction.
+
+Import the `getClient()` function and execute it to use the API client to broadcast the transaction, as shown in the snippet below.
+
+Use the `client.transaction.send()` function to post the transaction.
+It expects a signed transaction in the xref:{url_integrate_createtx_json}[JSON-compatible object format] as parameter.
+
+.post-transaction.js
+[source,js]
+----
+const { getClient } = require('./api-client');
+
+const signedTransaction = {
+    module: 'token',
+    command: 'transfer',
+    fee: '1000000',
+    params: {
+        tokenID: '0400000000000000',
+        amount: '800000000',
+        recipientAddress: 'lskt8ovj2shbxrtno8xqqt7cnmzzygdkbt6brnvmj',
+        data: 'Happy birthday!'
+    },
+    nonce: '0',
+    senderPublicKey: '3972849f2ab66376a68671c10a00e8b8b67d880434cc65b04c6ed886dfa91c2c',
+    signatures: [
+        '960a67e3047dbc1bd2e2d1306d473674867eb81fdf90ec65f5759c1a1ec407f5baf9871ca76375557c7b23e225ae60cdda65fdce385bae076131ad5f7e39df0b'
+    ]
+}
+
+// Use the API client to send the transaction to a node
+getClient().then(async client => {
+  try {
+    const res = await client.transaction.send(signedTransaction);
+    console.log(res);
+  } catch (error) {
+    console.log(error);
+  }
+});
+----
+
+== HTTP API example with cURL
+
+If a node has HTTP API enabled, it is possible to post HTTP requests to the node as shown in the example below.
+
+The `transaction` is expected as parameter in the xref:{url_integrate_createtx_hex}[hex string format].
+
+[source,bash]
+----
+curl --location --request POST 'http://localhost:7887/rpc' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "jsonrpc": "2.0",
+    "id": "1",
+    "method": "txpool_postTransaction",
+    "params": {
+        "transaction": "08021000180d2080c2d72f2a200fe9a3f1a21b5530f27f87a414b549e79a940bf24fdf2b2f05e7f22aeeecc86a32270880c2d72f12144fd8cc4e27a3489b57ed986efe3d327d3de40d921a0a73656e6420746f6b656e3a4069242925e0e377906364fe6c2eed67f419dfc1a757f73e848ff2f1ff97477f90263487d20aedf538edffe2ce5b3e7601a8528e5cd63845272e9d79c294a6590a"
+    }
+}'
+----
+
+//TODO: Comment back in and update once Lisk Service v0.7 docs are updated
+////
+== Via Lisk Service WS API
+
+If you prefer to use the RPC WebSocket API of Lisk Service to post transactions, this can be achieved for example by writing a small JS script, using the `socket.io-client` package.
+The `transaction` is expected as parameter in the xref:{url_integrate_createtx_hex}[hex string format].
+
+[source,js]
+----
+// 1. Require the dependencies
+const io = require('socket.io-client'); // The socket.io client
+const jsome = require('jsome'); // Prettifies the JSON output
+
+jsome.params.colored = true;
+
+// Use local Service node
+const WS_RPC_ENDPOINT = 'ws://localhost:9901/rpc-v3';
+//Use public Service node
+//const WS_RPC_ENDPOINT = "wss://service.lisk.com/rpc-v3";
+
+// 2. Connect to Lisk Service via WebSockets
+const socket = io(WS_RPC_ENDPOINT, {
+  forceNew: true,
+  transports: ['websocket']
+});
+
+// 3. Emit the remote procedure call
+socket.emit('request', {
+  jsonrpc: '2.0',
+  method: 'post.transactions',
+  payload: {"transaction":"08021000180d2080c2d72f2a200fe9a3f1a21b5530f27f87a414b549e79a940bf24fdf2b2f05e7f22aeeecc86a32270880c2d72f12144fd8cc4e27a3489b57ed986efe3d327d3de40d921a0a73656e6420746f6b656e3a4069242925e0e377906364fe6c2eed67f419dfc1a757f73e848ff2f1ff97477f90263487d20aedf538edffe2ce5b3e7601a8528e5cd63845272e9d79c294a6590a"}
+},
+  answer => {
+    // console.log(answer);
+    jsome(answer);
+    process.exit(0);
+});
+----
+
+== HTTP Lisk Service API example with cURL
+
+cURL is one of the tools that can be used to send HTTP API requests to Lisk Service as shown below:
+
+The `transaction` is expected as parameter in the xref:{url_integrate_createtx_hex}[hex string format].
+
+[source,bash]
+----
+curl -X POST -H "Content-Type: application/json" \
+-d '{ "transaction": "0802100018022080c2d72f2a20e03c09bdc8c023d94cf66a5d352e6258380210d97d545abbf75668ea3736e3123229088094ebdc031214ab0041a7d3f7b2c290b5b834d46bdc7b7eb858151a0b73656e6420746f6b656e733a40faa2626d7306506b1999f48aa2f4b1ffdee01e641fa76d37a9d1d6fd8c225a81065c856ea625c52d138a7e3ba86b62913dc8e5aef8b5e307641ab66e0277a60b"}' \
+"http://localhost:9901/api/v3/transactions"
+----
+
+The following response will be displayed if the transaction was posted successfully:
+
+----
+{"message":"Transaction payload was successfully passed to the network node","transactionId":"8a503843942e7d47ba0bef83fe735d26381f32a6ca6c96fb1cde902315f6220c"}
+----
+////

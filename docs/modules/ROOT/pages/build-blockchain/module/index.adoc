@@ -1,0 +1,267 @@
+= How to create a module
+Mona Bärenfänger <mona@lightcurve.io>
+:toc:
+:idprefix:
+:idseparator: -
+:sectnums:
+:docs_sdk: v6@lisk-sdk::
+// URLs
+:url_github_guides_module: https://github.com/LiskHQ/lisk-sdk-examples/tree/development/tutorials/hello/
+
+// Project URLS
+:url_build_blockchain_event: build-blockchain/module/blockchain-event.adoc
+:url_build_endpoints_methods: build-blockchain/module/endpoints-methods.adoc
+:url_build: build-blockchain/index.adoc
+:url_build_init: build-blockchain/create-blockchain-client.adoc
+:url_build_config: build-blockchain/module/configuration.adoc
+:url_build_stores: build-blockchain/module/stores.adoc
+:url_build_setup: build-blockchain/create-blockchain-client.adoc
+:url_build_index_helloapp: build-blockchain/index.adoc#the-hello-world-application
+:url_build_command: build-blockchain/module/command.adoc
+:url_guides_genesis: build-blockchain/create-genesis-block.adoc
+:url_guides_testing: build-blockchain/test-app.adoc
+:url_intro_modules: understand-blockchain/sdk/modules-commands.adoc
+:url_intro_modules_name: {url_intro_modules}#module-name
+:url_intro_modules_endpoints: {url_intro_modules}#endpoints
+:url_intro_modules_stores: {url_intro_modules}#stores
+:url_intro_modules_methods: {url_intro_modules}#methods
+:url_intro_modules_event: {url_intro_modules}#blockchain-events
+// :url_references_commander: {docs_sdk}references/lisk-commander/cli.adoc#generate
+
+// TODO: Update the page by uncommenting the hyperlinks once the updated pages are available.
+
+How to create a new xref:{url_intro_modules}[module] for a Lisk blockchain client.
+
+.Complete application code
+[TIP]
+====
+View the complete sample code of the complete "Hello World" Lisk app on GitHub in the {url_github_guides_module}[Lisk SDK examples repository^].
+====
+
+****
+As defined on the xref:{url_build}[] page, the Hello module shall provide the following functionalities:
+
+. A "Create Hello" command that stores the Hello message for the sender.
+** The Hello message has to be of type `string`.
+** The Hello message shall have a minimum and maximum length.
+** A blacklist of excluded words should exist.
+The hello message should be rejected if it includes one of the words in the blacklist.
+. A module config, where the node operator can define:
+** maximum message length
+** minimum message length
+** word blacklist
+. A counter, counting the total number of sent Hello messages.
+Anyone can request the current value of the Hello counter.
+. Emit blockchain event immediately when a new Hello message was sent.
+The event includes information about the sender's address and the Hello message.
+. Two RPC endpoints:
+** `hello_getHello`: Returns the Hello message of an account.
+Expects the account's `address` as a parameter.
+** `hello_getHelloCounter`: Returns the counter of total Hello messages sent in the network.
+Doesn't expect any parameters.
+. One module method:
+** `hello_getHello`: Works equally to the corresponding endpoint, but can be used by other modules.
+****
+
+== Generating the module file- & folder structure
+
+.Prerequisites
+[NOTE]
+====
+To use this guide, the following criteria is assumed:
+
+* Lisk Commander is installed, and a basic blockchain client is already initialized, as explained in the previous guide xref:{url_build_init}[].
+====
+
+While in the root folder of the client, generate a skeleton for the new module with Lisk Commander.
+
+The command `lisk generate:module` expects one argument:
+
+. The xref:{url_intro_modules_name}[module name].
+It needs to be a string in camelCase, and always starts with a lower case letter.
+No numbers, hyphens, etc., are allowed.
+Needs to be unique within the client.
+
+For a complete overview of all available options of the `generate:module` command, type `generate:module --help`.
+//, or visit the xref:{url_references_commander}[Lisk Commander command reference]
+
+As an example, we use the module name `hello`:
+
+[[generate-module]]
+./hello/hello_client/
+[source,bash]
+----
+lisk generate:module hello
+----
+
+NOTE: The module name should contain only characters from the set `*[a-z0-9!@$&_.]*`.
+
+This will generate the following file- & folder structure:
+
+.hello/hello_client/src/app/
+----
+├── bin/
+├── config/
+├── src/
+│    ├── app/
+│    │    ├── app.ts
+│    │    ├── index.ts
+│    │    ├── modules/
+│    │    │   └──  hello/ <1>
+│    │    │      ├── endpoint.ts <2>
+│    │    │      ├── events/ <3>
+│    │    │      ├── method.ts <4>
+│    │    │      ├── module.ts <5>
+│    │    │      └── stores/ <6>
+│    │    ├── modules.ts
+│    │    ├── plugins/
+│    │    └── plugins.ts
+│    └── commands/
+└── test/
+    ├── integration/
+    ├── network/
+    └── unit/
+        ├── modules/
+        │    └── hello/
+        │        └── modules.spec.ts <7>
+        └── plugins/
+----
+
+<1> The root folder `hello/` for the module is created under `src/app/modules/`.
+<2> `endpoint.ts`: Contains the xref:{url_intro_modules_endpoints}[module endpoints].
+For more information on how to create endpoints for a module, check out the guide: xref:{url_build_endpoints_methods}[].
+<3> `events/`: Contains the xref:{url_intro_modules_event}[blockchain events] of the module.
+This folder is empty at first.
+For more information on how to create a blockchain event, check out the guide: xref:{url_build_blockchain_event}[].
+<4> `method.ts`: Contains the xref:{url_intro_modules_methods}[module methods].
+For more information on how to create module methods, check out the guide: xref:{url_build_endpoints_methods}[].
+<5> `module.ts`: Contains the class of the Hello module.
+<6> `stores/`: Contains on-chain and off-chain xref:{url_intro_modules_stores}[stores] of the module.
+This folder is empty at first.
+For more information on how to create a module store, check out the guide: xref:{url_build_stores}[].
+<7> `modules.spec.ts`: Will contain unit tests for the module.
+For more information on how to write a unit test for a module, check out the xref:{url_guides_testing}[] guide.
+
+Lisk Commander will also automatically register the module to the client, by adding it to the file `src/app/modules.ts`:
+
+.hello_client/src/app/modules.ts
+[source,typescript]
+----
+import { Application } from 'lisk-sdk';
+import { HelloModule } from "./modules/hello/module";
+
+export const registerModules = (app: Application): void => {
+    app.registerModule(new HelloModule());
+};
+----
+
+Now, let's take a look at the module skeleton:
+
+== Module class & skeleton
+
+The command `generate:module` already created the class `HelloModule` which contains skeletons for the most important components of the module.
+
+The module class always extends from the `BaseModule`, which is imported from the `lisk-sdk` package.
+
+However, this module is not performing any functions yet.
+To give the module a purpose, it is necessary to implement certain logic inside of the module.
+
+The following guides explain how the different components of a module can be used to implement the desired logic for the module.
+
+. xref:{url_build_config}[]
+. xref:{url_build_stores}[]
+. xref:{url_build_command}[]
+. xref:{url_build_endpoints_methods}[]
+. xref:{url_build_blockchain_event}[]
+
+[#module-skeleton]
+.Module skeleton of the Hello module
+[%collapsible]
+====
+.hello_client/src/app/modules/hello/module.ts
+[source,typescript]
+----
+import {
+    BaseModule,
+    ModuleInitArgs,
+    InsertAssetContext,
+	BlockVerifyContext,
+	TransactionVerifyContext,
+	VerificationResult,
+	TransactionExecuteContext,
+	GenesisBlockExecuteContext,
+	ModuleMetadata,
+	BlockExecuteContext,
+	BlockAfterExecuteContext,
+} from 'lisk-sdk';
+import { HelloEndpoint } from './endpoint';
+import { HelloMethod } from './method';
+
+export class HelloModule extends BaseModule {
+    public endpoint = new HelloEndpoint(this.stores, this.offchainStores);
+    public method = new HelloMethod(this.stores, this.events);
+    public commands = [];
+
+	public constructor() {
+		super();
+		// registration of stores and events
+	}
+
+	public metadata(): ModuleMetadata {
+		return {
+			name: '',
+			endpoints: [],
+			commands: this.commands.map(command => ({
+				name: command.name,
+				params: command.schema,
+			})),
+			events: this.events.values().map(v => ({
+				name: v.name,
+				data: v.schema,
+			})),
+			assets: [],
+		};
+	}
+
+    // Lifecycle hooks
+    public async init(_args: ModuleInitArgs): Promise<void> {
+		// initialize this module when starting a node
+	}
+
+	public async insertAssets(_context: InsertAssetContext) {
+		// initialize block generation, add asset
+	}
+
+	public async verifyAssets(_context: BlockVerifyContext): Promise<void> {
+		// verify block
+	}
+
+    // Lifecycle hooks
+	public async verifyTransaction(_context: TransactionVerifyContext): Promise<VerificationResult> {
+		// verify transaction will be called multiple times in the transaction pool
+	}
+
+	public async beforeCommandExecute(_context: TransactionExecuteContext): Promise<void> {
+	}
+
+	public async afterCommandExecute(_context: TransactionExecuteContext): Promise<void> {
+
+	}
+	public async initGenesisState(_context: GenesisBlockExecuteContext): Promise<void> {
+
+	}
+
+	public async finalizeGenesisState(_context: GenesisBlockExecuteContext): Promise<void> {
+
+	}
+
+	public async beforeTransactionsExecute(_context: BlockExecuteContext): Promise<void> {
+
+	}
+
+	public async afterTransactionsExecute(_context: BlockAfterExecuteContext): Promise<void> {
+
+	}
+}
+----
+====

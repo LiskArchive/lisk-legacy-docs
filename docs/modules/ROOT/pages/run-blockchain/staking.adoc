@@ -1,0 +1,378 @@
+= How to stake and un-stake tokens
+:toc: preamble
+:idprefix:
+:idseparator: -
+:docs_sdk: v6@lisk-sdk::
+// URLs
+:url_lisk_wallet: https://lisk.com/wallet
+
+// Project URLs
+:url_sdk_elements: {docs_sdk}references/lisk-elements/index.adoc
+:url_sdk_cli_txsend: {docs_sdk}client-cli.adoc#transactionsend
+:url_run_validator_details: run-blockchain/become-a-validator.adoc#check-validator-details
+:url_validator_weight: understand-blockchain/consensus/pos-poa.adoc#validator-weight
+
+
+====
+On this page, you'll learn how to stake and un-stake tokens for a validator on a blockchain that uses the Lisk PoS module, like the Lisk Mainnet.
+
+This includes, how to...
+
+* [x] Retrieve the stakes of an account.
+* [x] Stake tokens for a validator.
+* [x] Un-stake tokens.
+* [x] Unlock tokens after un-stake.
+====
+
+== Introduction
+Any account with sufficient tokens can use them to "vote" with their tokens for one or multiple validators.
+This voting process is also called *staking* in PoS blockchains.
+An account performing staking is also called a *staker*.
+
+== Checking the current stakes of an account
+
+To retrieve the current stakes of an account, query the `pos_getStaker` endpoint.
+
+The endpoint expects a single parameter:
+
+* `address`: The address of the staker.
+
+[source,bash]
+----
+curl --location --request POST 'http://localhost:7887/rpc' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "jsonrpc": "2.0",
+    "id": "1",
+    "method": "pos_getStaker",
+    "params": {
+         "address": "lskrkhrkm25u5vqxayy3nu9ommt693vwrb546vefj"
+    }
+}'
+----
+
+The response will summarize all stakes that the account made.
+
+This includes:
+
+. A list of the validators that the account staked for, including the validator address and the amount of tokens used for the stake.
+. A list of <<checking-for-pending-tokens-ready-to-be-unlocked,pending tokens>>, ready to be <<unlocking-tokens-after-un-stake, unlocked>>.
+
+.Example output
+[source,json]
+----
+{
+    "id": "1",
+    "jsonrpc": "2.0",
+    "result": {
+        "stakes": [
+            {
+                "validatorAddress": "lsk9grkenp3hw8y7hyf3nzbs2r2fuqmbno8duy9m6",
+                "amount": "1000000000",
+                "sharingCoefficients": []
+            }
+        ],
+        "pendingUnlocks": []
+    }
+}
+----
+
+== How to retrieve the current weight of a validator
+
+To verify the concrete weight of your validator account or any other validator, it is possible to directly request the required information via the RPC endpoint.
+
+. xref:{url_run_validator_details}[Check the validator details].
+. Use the values `totalStakeReceived` and `selfStake` to calculate the xref:{url_validator_weight}[validator weight].
+
+== Staking
+
+Create a transaction to stake tokens for one or multiple validators.
+
+* Up to *20 stakes and/or un-stakes* can be included in a single Stake transaction.
+* Staking must be done in a *multiple of 10 LSK*.
+
+The following parameter is required:
+
+* `stakes`: An array of items with the following two properties:
+** `amount`: Number of tokens to stake or un-stake.
+** `validatorAddress`: The address of the validator to stake or un-stake the tokens to.
+
+=== Create a Stake transaction
+
+There are various services and tools to stake tokens, for example, {url_lisk_wallet}[Lisk Desktop^], xref:{url_sdk_elements}[Lisk Elements], or the node CLI.
+
+In the following examples, the node CLI is used to create and send the respective Stake transaction.
+
+.Performing a token stake
+[tabs]
+=====
+Lisk Core::
++
+--
+//TODO: Verify Lisk Core command
+[source,bash]
+----
+lisk-core transaction:create pos stake 100000000 --pretty --json --params='{"stakes":[{"validatorAddress":"lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3","amount":15000000000}]}'
+----
+--
+Sidechain node::
++
+--
+[source,bash]
+----
+./bin/run transaction:create pos stake 100000000 --pretty --json --params='{"stakes":[{"validatorAddress":"lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3","amount":15000000000}]}'
+----
+--
+=====
+
+Next, you will be prompted for the passphrase of your account.
+
+----
+? Please enter passphrase:  [hidden]
+? Please re-enter passphrase:  [hidden]
+----
+
+The CLI will return the transaction already in hex format, ready to be posted to a node.
+
+[source,json]
+----
+{
+  "transaction": "0a03706f7312057374616b6518002080c2d72f2a206290c8b58de8b71fedb7e3cb9a6ee9426aa3e7ac0141f278526375d46705b546323c0a1c0a14ae4212f1cff485f273f717931af3941ca4d8f4f81080d88ee16f0a1c0a14b2f75b6968f687b495b69e1fec51d06fa8ae9d8d10ffc7afa0253a404874cf879737b25f0bab462ccbfd08f0a7add0cc1d70c422a62b8d701f45036be5dd50f5e616725729ce2bc95b8f8c9095040086dc6136d26c8daf1d8a40020a"
+}
+----
+
+TIP: To return the transaction in JSON format as well, add the flags `--json` and  `--pretty` to the command.
+
+[source,json]
+----
+{
+  "transaction": {
+    "module": "pos",
+    "command": "stake",
+    "fee": "100000000",
+    "nonce": "0",
+    "senderPublicKey": "6290c8b58de8b71fedb7e3cb9a6ee9426aa3e7ac0141f278526375d46705b546",
+    "signatures": [
+      "4874cf879737b25f0bab462ccbfd08f0a7add0cc1d70c422a62b8d701f45036be5dd50f5e616725729ce2bc95b8f8c9095040086dc6136d26c8daf1d8a40020a"
+    ],
+    "params": {
+      "stakes": [
+        {
+          "validatorAddress": "lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3",
+          "amount": "15000000000"
+        },
+        {
+          "validatorAddress": "lske5sqed53fdcs4m9et28f2k7u9fk6hno9bauday",
+          "amount": "-5000000000"
+        }
+      ]
+    },
+    "id": "4e9db70299c15a93e56e2a3159a94b3510c6581ff7d57d5cb54b876f7fbedf57"
+  }
+}
+----
+
+=== Send the Stake transaction
+
+Use the xref:{url_sdk_cli_txsend}[transaction:send] command to send the transaction to your node.
+
+[tabs]
+=====
+Lisk Core::
++
+--
+//TODO: Verify Lisk Core command
+[source,bash]
+----
+lisk-core transaction:send 0a03706f7312057374616b6518002080c2d72f2a206290c8b58de8b71fedb7e3cb9a6ee9426aa3e7ac0141f278526375d46705b546323c0a1c0a14ae4212f1cff485f273f717931af3941ca4d8f4f81080d88ee16f0a1c0a14b2f75b6968f687b495b69e1fec51d06fa8ae9d8d10ffc7afa0253a404874cf879737b25f0bab462ccbfd08f0a7add0cc1d70c422a62b8d701f45036be5dd50f5e616725729ce2bc95b8f8c9095040086dc6136d26c8daf1d8a40020a
+----
+--
+Sidechain node::
++
+--
+[source,bash]
+----
+./bin/run transaction:send 0a03706f7312057374616b6518002080c2d72f2a206290c8b58de8b71fedb7e3cb9a6ee9426aa3e7ac0141f278526375d46705b546323c0a1c0a14ae4212f1cff485f273f717931af3941ca4d8f4f81080d88ee16f0a1c0a14b2f75b6968f687b495b69e1fec51d06fa8ae9d8d10ffc7afa0253a404874cf879737b25f0bab462ccbfd08f0a7add0cc1d70c422a62b8d701f45036be5dd50f5e616725729ce2bc95b8f8c9095040086dc6136d26c8daf1d8a40020a
+----
+--
+=====
+
+If the sending process was successful, it will return the following message, including the respective transaction ID.
+
+----
+Transaction with id: '1809da284fe26dba90d34dc3aab837a32d3c291a4ca78a9bfa263f927c69598a' received by node.
+----
+
+== Un-staking
+
+The process of removing staked tokens for a validator account is called *un-staking*.
+
+The un-staking process works analog to the <<staking>> process:
+You send a Stake transaction to perform an un-stake.
+The only difference is, that you define a *negative* amount of tokens in the Stake transaction, instead of a positive amount.
+
+TIP: It is possible to perform stakes and un-stakes for validators in a single Stake transaction (maximum 20 stakes or un-stakes per transaction).
+
+.Performing a token un-stake
+[tabs]
+=====
+Lisk Core::
++
+--
+//TODO: Verify Lisk Core command
+[source,bash]
+----
+lisk-core transaction:create pos stake 100000000 --pretty --json --params='{"stakes":[{"validatorAddress":"lske5sqed53fdcs4m9et28f2k7u9fk6hno9bauday","amount":-5000000000}]}'
+----
+--
+Sidechain node::
++
+--
+[source,bash]
+----
+./bin/run transaction:create pos stake 100000000 --pretty --json --params='{"stakes":[{"validatorAddress":"lske5sqed53fdcs4m9et28f2k7u9fk6hno9bauday","amount":-5000000000}]}'
+----
+--
+=====
+
+Next, send the transaction as described in <<send-the-stake-transaction>>.
+
+[IMPORTANT]
+====
+Please beware that the un-staked tokens will be in a *locked* state and such tokens won’t be freely usable directly even after they are un-staked.
+
+Please read the next section <<unlocking-tokens-after-un-stake>> for more information.
+====
+
+== Unlocking tokens after un-stake
+
+In case you un-staked tokens from one or multiple validators and wish to be able to freely use the tokens for other purposes than staking, it is required to unlock the tokens.
+
+The Unlock transaction will unlock all tokens which are *pending*, i.e. currently locked in the account, without being used for staking.
+
+=== Checking for pending tokens ready to be unlocked
+
+If you wish to check the `amount` of tokens that are ready to be unlocked in an account, query the `pos_getPendingUnlocks` RPC endpoint:
+
+[tabs]
+=====
+Lisk Core::
++
+--
+//TODO: Verify Lisk Core command
+[source,bash]
+----
+lisk-core endpoint:invoke pos_getPendingUnlocks '{ "address":"lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3"}' --pretty
+----
+--
+Sidechain node::
++
+--
+[source,bash]
+----
+./bin/run endpoint:invoke pos_getPendingUnlocks '{ "address":"lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3"}' --pretty
+----
+--
+=====
+
+This will return the total amount of pending tokens:
+
+[source,json]
+-----
+{
+  "pendingUnlocks": [
+    {
+      "validatorAddress": "lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3",
+      "amount": "1000000000",
+      "unstakeHeight": 348,
+      "unlockable": false,
+      "expectedUnlockableHeight": 26348
+    }
+  ]
+}
+-----
+
+* `validatorAddress`: The address of the validator from whom the tokens got unstaked.
+* `amount`: Number of unstaked tokens.
+* `unstakeHeight`: Height of block at which the unstake happened.
+* `unlockable`: `true` if tokens can be unlocked, `false` if not.
+* `expectedUnlockableHeight`: Lowest block height in the network for a successful Unlock transaction.
+
+
+=== Create the Unlock transaction
+
+[CAUTION]
+====
+To send an Unlock transaction, wait until the unlockable block height is reached in the network.
+If you send the transaction too early, the token unlock will fail.
+
+To verify, if tokens are ready to be unlocked, check the `unlockable` property in the <<checking-for-pending-tokens-ready-to-be-unlocked,pending token status>>.
+====
+
+Create an Unlock transaction with the following command:
+
+//TODO: Test this when bug is fixed
+[tabs]
+=====
+Lisk Core::
++
+--
+//TODO: Verify Lisk Core command
+[source,bash]
+----
+lisk-core transaction:create pos unlock 100000000 --pretty --json
+----
+--
+Sidechain node::
++
+--
+[source,bash]
+----
+./bin/run transaction:create pos unlock 100000000 --pretty --json
+----
+--
+=====
+
+Next, you will be prompted for the passphrase of your account.
+
+----
+? Please enter passphrase:  [hidden]
+? Please re-enter passphrase:  [hidden]
+----
+
+The CLI will return the transaction already in hex format, ready to be posted to a node.
+//TODO: Add example Output here
+
+=== Send the Unlock transaction
+
+Next, post the transaction to the node, e.g. by using the node CLI as explained below:
+
+[tabs]
+=====
+Lisk Core::
++
+--
+[source,bash]
+----
+lisk-core transaction:send 0805100018032080d6c28c042a20bad983c72bed43fd274f852658c298b74c71ab6fc50508879fef309e3836384b32080a066d796e616d653a4045afdd04d0c0bc6e548c0915d5fabef1311b1b75b1eb919a43b88dab539e7b6a99b9075f5d6382ec3bbebfca3301651a15d8af3f999d5b6fa7873b3969cd3d0c
+----
+--
+Sidechain node::
++
+--
+Use the xref:{url_sdk_cli_txsend}[transaction:send] command to send the transaction to your node.
+
+[source,bash]
+----
+./bin/run transaction:send 0a0464706f731210726567697374657244656c656761746518002080d6c28c042a206290c8b58de8b71fedb7e3cb9a6ee9426aa3e7ac0141f278526375d46705b54632be010a066d796e616d651220aaecd278a3fadc40a4a824d6f4aa24547d8fb9d075ec4d6967a7084f9a3f25411a30815a9e7643cf2bace98d1337f1dca8e39949592cd3fcb79bf3ab5784981468b9987b3340527bc9ca263a2fd0618120242260add8669bb57f3dceec04dc0f875906cb52a677f1df911536c01f447c8830bf27cd43713af18d84de5a64ec504aeaf9a30521c09438bb5a4d5fd634946c65e0fc4ea3681fdb4f6949cb6c1bc1ac1ddec3df058a13466af5a13d50737938fd7d5f3a40d841c3ea463e2c2fd598bd56c77998241bc86e8143e59baf5f06b11491f3c8557e2d82c1139f927adcb0055256f5a5419a4853950856c2e9ae3588a7885a3f05
+----
+--
+=====
+
+If the sending process was successful, it will return the following message, including the respective transaction ID.
+
+----
+Transaction with id: '1809da284fe26dba90d34dc3aab837a32d3c291a4ca78a9bfa263f927c69598a' received by node.
+----
+
+The tokens will be unlocked again, once the transaction is included in a block.

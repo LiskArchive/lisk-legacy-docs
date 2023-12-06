@@ -1,0 +1,202 @@
+= Creating an endpoint & Testing the plugin
+Muhammad Talha <muhammad.talha@lightcurve.io>
+:toc: preamble
+:idprefix:
+:idseparator: -
+:sectnums:
+// URLs
+:url_github_endpoint: https://github.com/LiskHQ/lisk-sdk-examples/tree/development/tutorials/hello/hello_client/src/app/plugins/hello_info/endpoint.ts
+:url_github_hello_info_plugin: https://github.com/LiskHQ/lisk-sdk-examples/tree/development/tutorials/hello/hello_client/src/app/plugins/hello_info/hello_info_plugin.ts
+
+:url_rocks_db: https://rocksdb.org/
+:url_send_transaction: build-blockchain/module/command.adoc#try-the-new-command-out
+
+// Project URLS
+:url_plugin_schema: build-blockchain/plugin/schema-types.adoc#NewHelloEvent
+
+Now that we have our core logic in place, it is time to create an endpoint for the HelloInfoPlugin.
+The endpoint will fetch all the NewHello _messages_, _sender addresses_, and corresponding _height_ of the block for each event, as stored in the database.
+
+====
+On this page, you'll learn:
+
+* [x] Creating an endpoint for the plugin.
+* [x] Testing the plugin.
+====
+
+TIP: The relevant files discussed in this guide are {url_github_endpoint}[endpoint.ts^] and {url_github_hello_info_plugin}[hello_info_plugin.ts^].
+
+== Creating an Endpoint
+
+The endpoints of a plugin exist in an `endpoint.ts` file.
+So, let's create an `endpoint.ts` file in the `hello_info` directory. 
+
+This file will contain the `Endpoint` class and an endpoint `getMessageList()`.
+
+The `Endpoint` class is based on the `BasePluginEndpoint` class, which is available in the `lisk-sdk` package.
+
+.hello_client/src/app/plugins/hello_info/endpoint.ts
+[source,typescript]
+----
+import {
+    BasePluginEndpoint,
+    PluginEndpointContext,
+    db as liskDB,
+    cryptography,
+} from 'lisk-sdk';
+import {
+    getEventHelloInfo,
+} from './db';
+
+export class Endpoint extends BasePluginEndpoint {
+    private _pluginDB!: liskDB.Database;
+
+    // Initialize the database instance here
+    public init(db: liskDB.Database) {
+        this._pluginDB = db;
+    }
+
+    // [...]
+}
+----
+
+Since the events data exists on an off-chain database, we must have an instance of the plugin's database inside the `Endpoint` class.
+
+The way to do that is to create an instance of the `Endpoint` class inside the `HelloInfoPlugin` class and pass the database instance to the `endpoint.init()` method in the `load()` function.
+
+.hello_client/src/app/plugins/hello_info/endpoint.ts
+[source,typescript]
+----
+// [...]
+import { Endpoint } from './endpoint';
+
+export class HelloInfoPlugin extends BasePlugin<HelloInfoPluginConfig> {
+	// [...]
+
+    public endpoint = new Endpoint();
+
+    // [...]
+
+    // loads DB instance and initiates endpoint.
+	public async load(): Promise<void> {
+		// [...]
+
+		this.endpoint.init(this._pluginDB);
+
+		// [...]
+	}
+
+    // [...]
+}
+----
+
+Next up is the endpoint function, every `public` function present in the `Endpoint` class gets registered to the blockchain client.
+Since the endpoint will return a list of all the hello messages, we call it `getMessageList()`.
+
+The `getMessageList()` will have a `messageList` and a `data[]` which will contain the information retrieved from the database.
+
+.hello_client/src/app/plugins/hello_info/endpoint.ts
+[source,typescript]
+----
+export class Endpoint extends BasePluginEndpoint {
+    // [...]
+
+    // Returns all Sender Addresses, Hello Messages, and Block Height of the block where the Hello Event was emitted.
+    public async getMessageList(_context: PluginEndpointContext): Promise<unknown[]> {
+        const data: {
+            ID: number;
+            senderAddress: string;
+            message: string;
+            blockHeight;
+        }[] = [];
+        // 1. Get all the stored events from the database.
+        const messageList = await getEventHelloInfo(this._pluginDB);
+        // 2. Push them into an array for presentation.
+        for (const helloMessage of messageList) {
+            data.push({
+                ID: helloMessage.id.readUInt32BE(0),
+                senderAddress: cryptography.address.getLisk32AddressFromAddress(helloMessage['senderAddress']),
+                message: helloMessage['message'],
+                blockHeight: helloMessage['height'],
+            })
+        }
+        return data;
+    }
+}
+----
+
+The `getEventHelloInfo()` will return all the `newHello` events stored inside the database.
+Once received, the endpoint will push each event's data into an array of objects and will return this array as a response.
+
+[TIP]
+====
+It is worth mentioning that an endpoint can also have various input arguments. 
+These arguments are passed via the `PluginEndpointContext` class available in `lisk-sdk`. If the endpoint doesn't require any arguments then, the request `"params": {}` property can be left empty.
+The arguments passed can be accessed via `_context.ARGUMENT_EXAMPLE`, etc.
+====
+
+
+== Testing HelloInfoPlugin
+
+Our implementation of HelloInfoPlugin is complete and it is time to test it out.
+Create and send a hello message as described in xref:{url_send_transaction}[How to create a command → Try the new command out].
+
+Once a transaction is verified and becomes part of the block, wait for your plugin's sync interval to kick in. 
+In our case, since we set the `syncInterval` configuration to 30 seconds (60000 milliseconds) in the *custom_config.json*, the sync will happen after every 30 seconds.
+
+. If you started your node for the first time, you'll see that the plugin instantiates the _height_ in the database as shown in the following message:
++
+----
+** Height saved successfully in the database **
+----
+
+. After that, you should see that the plugin will set the initial value for the _counter_ as well.
++
+----
+** Counter saved successfully in the database **
+----
+
+. The `_syncChainEvents()` will then store the event, update the counter, and set the height of the block where it found an event.
++
+----
+** Event Data saved successfully in the database **
+** Counter saved successfully in the database **
+** Height saved successfully in the database **
+----
+
+. At the end of the loop, the `_syncChainEvents()` will again update the height as per the last checked block height.
++
+----
+** Height saved successfully in the database **
+----
+
+After the first initiation, the plugin will repeat step 3 in each sync interval if it finds a `newHello` event(s) to store.
+
+=== Querying Saved Events
+The former log messages suggest that the plugin has stored a few events in its database, so let's query them.
+While the client is running, let's make an RPC request to the `helloInfo_getMessageList` endpoint.
+
+[source,bash]
+----
+./bin/run endpoint:invoke helloInfo_getMessageList --pretty
+----
+
+When the request is successful, the node will reply with something similar to the following:
+
+[source,json]
+----
+[
+    {
+        "ID": 1,
+        "senderAddress": "lsko5v2u2wjswjogxgxdr79c45kewprypouyaky76",
+        "message": "Hello from Lisk.",
+        "blockHeight": 22
+    },
+    {
+        "ID": 2,
+        "senderAddress": "lsko5v2u2wjswjogxgxdr79c45kewprypouyaky76",
+        "message": "Hello from Lightcurve.",
+        "blockHeight": 54
+    }
+]
+----

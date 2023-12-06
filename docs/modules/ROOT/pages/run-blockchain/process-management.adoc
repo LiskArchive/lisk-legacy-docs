@@ -1,0 +1,243 @@
+= Process management with PM2
+Muhammad Talha <muhammad.talha@lightcurve.io>
+//Settings
+:toc: preamble
+
+// External URLs
+:url_pm2_docs: https://pm2.keymetrics.io/docs/usage/quick-start/
+:url_PM2_article: https://futurestud.io/tutorials/pm2-advanced-app-configuration-with-json-file
+:url_mainchain_client: https://github.com/LiskHQ/lisk-core#example-using-pm2
+
+:url_global_cli: build-blockchain/create-blockchain-client.adoc#using-the-client-cli-globally
+:url_build_hello_client: build-blockchain/index.adoc#the-hello-world-client
+:url_core_client: run-blockchain/index.adoc#how-to-set-up-a-lisk-mainnet-node
+:url_startup: https://pm2.keymetrics.io/docs/usage/startup/
+
+// footnotes
+// :fn_sidechain_client_glossary: footnote:client[See xref:{url_mainchain_client}[Running Lisk Core with PM2] for more details.]
+
+// It is recommended to set up an additional process management tool to run a blockchain client{fn_sidechain_client_glossary}.
+It is recommended to set up an additional process management tool to run a blockchain client.
+Any process management tool can be used to manage the blockchain client.
+However, we recommend using PM2 to manage the instance.
+
+== Setup
+
+Install PM2 globally:
+
+[source,bash]
+----
+npm i -g pm2
+----
+
+Once PM2 is installed, you can start your blockchain client via the following two methods:
+
+. <<using-a-bash-script>>
+. <<using-a-json-config-file>>
+
+== Running a blockchain client
+
+=== Using a bash script
+A script containing the `./bin/run start` command can be passed to PM2 to initiate the blockchain client on a sidechain node.
+Similarly, the blockchain client of the mainchain can be run via `lisk-core start --network mainnet`.
+
+Let's create a script for the blockchain node.
+Create a `run_blockchain_client.sh` file inside the blockchain client's root directory and then copy and paste the following command into it.
+
+[tabs]
+=====
+Sidechain::
++
+--
+[source,json]
+----
+./bin/run start --config=config/custom_config.json
+----
+--
++
+Mainchain::
++
+--
+[source,bash]
+----
+lisk-core start --network mainnet
+----
+--
+=====
+
+Now, execute the PM2 `start` command by passing the `run_blockchain_client.sh` script to it.
+
+[source,bash]
+----
+pm2 start run_blockchain_client.sh
+----
+
+.Response
+----
+┌---------------------------------------------------------------------------------------------------------------------------------------------------┐
+│ id  │ name                  │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu    │ mem    │ user   │ watching│
+├---------------------------------------------------------------------------------------------------------------------------------------------------┤
+│ 0   │ run_blockchain_client │ default     │ 0.1.0   │ fork    │ 55569    │ 21s    │ 30   │ online    │ 0%     │ 1.7mb  │ XYZ    │ disabled│
+└---------------------------------------------------------------------------------------------------------------------------------------------------┘
+----
+
+
+=== Using a JSON config file
+For advanced node operators, PM2 also accepts a configuration file that can have a range of options for various blockchain clients.
+
+Create a PM2 config in the sidechain client's root directory, for example as shown below:
+
+
+[tabs]
+=====
+Sidechain::
++
+--
+.pm2.conf.json
+[source,json]
+----
+{
+  "apps": [
+    {
+      "name": "hello_client",
+      "script": "./bin/run start --config=config/custom_config.json"
+    }
+  ]
+}
+----
+--
++
+Mainchain::
++
+--
+.pm2.conf.json
+[source,json]
+----
+{
+  "apps": [
+    {
+      "name": "lisk-core",
+      "script": "lisk-core start --network mainnet"
+    }
+  ]
+}
+----
+--
+=====
+
+
+
+TIP: All available options for `script` and other PM2 commands can be found in `pm2 --help`. For more information on using JSON files for PM2, see the {url_PM2_article}[PM2 — Advanced App Configuration with JSON File^].
+
+To add the process to PM2 and start it directly, execute the following command:
+
+[source,bash]
+----
+pm2 start pm2.conf.json
+----
+
+[tabs]
+=====
+Sidechain::
++
+--
+.Response
+----
+┌------------------------------------------------------------------------------------------------------------------------------------------------┐
+│ id  │ name             │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu    │ mem     │ user  │ watching  │
+├------------------------------------------------------------------------------------------------------------------------------------------------┤
+│ 0   │ hello_client     │ default     │ N/A     │ fork    │ 55594    │ 0 s    │ 0    │ online    │ 0%     │ 640.0kb │ XYZ   │ disabled  │
+└------------------------------------------------------------------------------------------------------------------------------------------------┘
+----
+--
++
+Mainchain::
++
+--
+.Response
+----
+┌------------------------------------------------------------------------------------------------------------------------------------------------┐
+│ id  │ name             │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu    │ mem     │ user  │ watching  │
+├------------------------------------------------------------------------------------------------------------------------------------------------┤
+│ 0   │ lisk-core        │ default     │ N/A     │ fork    │ 55594    │ 0 s    │ 0    │ online    │ 0%     │ 640.0kb │ XYZ   │ disabled  │
+└------------------------------------------------------------------------------------------------------------------------------------------------┘
+----
+--
+=====
+
+
+TIP: You can create the *`pm2.conf.json`* or *`run_blockchain_client.sh`* files anywhere on the disk and point it to the *`start`* command using an absolute path.
+
+== Various PM2 commands
+A few important PM2 commands are covered in this section, for more information please refer to {url_pm2_docs}[PM2 docs^].
+
+
+=== Show status
+
+View the status of the blockchain client in the list of PM2 processes:
+
+[source,bash]
+----
+pm2 ls
+----
+
+----
+┌-----------------------------------------------------------------------------------------------------------------------------------------------------------┐
+│ id  │ name                   │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├-----------------------------------------------------------------------------------------------------------------------------------------------------------┤
+│ 1   │ hello_client           │ default     │ N/A     │ fork    │ 55594    │ 0s     │ 0    │ online    │ 0%       │ 640.0kb  │ XYZ      │ disabled │
+│ 0   │ run_blockchain_client  │ default     │ 0.1.0   │ fork    │ 0        │ 0      │ 30   │ stopped   │ 0%       │ 0b       │ XYZ      │ disabled │
+└-----------------------------------------------------------------------------------------------------------------------------------------------------------┘
+
+----
+
+=== View logs
+You can view the logs generated by a running blockchain client using PM2.
+
+[source,bash]
+----
+pm2 logs run_blockchain_client
+----
+
+=== Saving the app list to be restored at reboot
+
+Once a blockchain client has started, it is convenient to save the app list so it will respawn after rebooting:
+
+[source,bash]
+----
+pm2 save
+----
+
+NOTE: You can set up a `start` script for PM2 so that the process list stays intact in case of expected or unexpected restarts.
+For more information, see {url_startup}[Persistent applications: Startup Script Generator^].
+
+
+=== Stopping a blockchain client
+
+Execute the following command to stop a blockchain client node:
+[source,bash]
+----
+pm2 stop run_blockchain_client
+----
+
+=== Refreshing a node
+To refresh a node after changing the configuration, delete the existing process with PM2, and then use the PM2 *script/config* file to restart the process.
+
+.Delete the existing process
+[source,bash]
+----
+pm2 delete run_blockchain_client
+----
+
+.Start a new process
+[source,bash]
+----
+pm2 start run_blockchain_client
+----
+
+=== Restarting a node
+Execute the following command to restart a blockchain client:
+[source,bash]
+----
+pm2 restart run_blockchain_client
+----

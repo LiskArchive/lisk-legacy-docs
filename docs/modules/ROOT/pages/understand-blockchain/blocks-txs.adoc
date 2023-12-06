@@ -1,0 +1,733 @@
+= Blocks and Transactions
+//Settings
+:toc:
+:idprefix:
+:idseparator: -
+// URLs
+:url_lip14_reduction: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0014.md#incentivizing-lisk-bft-protocol-participation
+:url_lip42_constants: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0042.md#constants
+:url_lip71_rewardcomputation: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0071.md#reward-computation
+:url_lip55: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0055.md
+:url_typedoc_command_registervalidator: {site-url}/lisk-sdk/v6/references/typedoc/classes/lisk_framework.ValidatorRegistrationCommand.html
+:url_typedoc_command_registersc: {site-url}/lisk-sdk/v6/references/typedoc/classes/lisk_framework.RegisterSidechainCommand.html
+:url_typedoc_command_transfer: {site-url}/lisk-sdk/v6/references/typedoc/classes/lisk_framework.TransferCommand.html
+// Project URLs
+:url_what_is_blockchain: intro/what-is-blockchain.adoc
+:url_intro_consensus: intro/how-blockchain-works.adoc#consensus-mechanisms
+:url_understand_state_machine: understand-blockchain/state-machine.adoc
+:url_understand_consensus: understand-blockchain/consensus/index.adoc
+:url_understand_network: understand-blockchain/lisk-protocol/network.adoc
+:url_understand_state_machine_tree: understand-blockchain/state-machine.adoc#the-blockchain-state-as-sparse-merkle-tree
+:url_understand_sdk_commands: understand-blockchain/sdk/modules-commands.adoc#commands
+:url_understand_sdk_modules: understand-blockchain/sdk/modules-commands.adoc
+//Footnotes
+:fnlip42: footnote:lip42[To learn more about the different reasons that can lead to a reduction of block rewards, please refer to {url_lip42_constants}[LIP 0042 - Define state transitions of Reward module^] and {url_lip14_reduction}[LIP 0014 - Introduce BFT consensus protocol^].]
+:fnlip71: footnote:lip71[To see how the rewards are calculated, please refer to {url_lip71_rewardcomputation}[LIP 0071 - Introduce dynamic block rewards module^].]
+:fn_gpk: footnote:generatorPublicKey[Previously the `generatorPublicKey` property (see https://github.com/LiskHQ/lips/blob/main/proposals/lip-0055.md#change-generator-public-key-to-generator-address[LIP 0055^] for more information).]
+:fn_eventroot: footnote:eventroot[See https://github.com/LiskHQ/lips/blob/main/proposals/lip-0065.md[LIP 0065^] for the reason why it needs to be included in a block header.]
+:fn_stateroot: footnote:stateroot[See https://github.com/LiskHQ/lips/blob/main/proposals/lip-0040.md[LIP 0040^] for the reason why it needs to be included in a block header.]
+:fn_aggregate: footnote:aggregate[See https://github.com/LiskHQ/lips/blob/main/proposals/lip-0061.md[LIP 0061^] for more details.]
+
+
+== Blocks
+
+Blocks following the Lisk protocol have three main properties:
+
+. <<block-header>>: includes properties relevant to the consensus domain.
+. <<block-assets>>: an array of objects containing data injected during the block creation.
+. <<transactions>>: The transactions included in the block.
+Each block can include a maximum of 15 kB of transactions.
+
+.Anatomy of a block
+image::understand-blockchain/block.png["Anatomy of a Lisk block",300,align="center"]
+
+Detailed descriptions of the main properties of a block are provided in the following sections.
+
+.Block JSON schema
+[%collapsible]
+====
+Blocks are serialized and deserialized accordingly to the following JSON schema.
+
+[source,js]
+----
+blockSchema = {
+  "type": "object",
+  "required": ["header", "transactions", "assets"],
+  "properties": {
+    "header": {
+      "dataType": "bytes",
+      "fieldNumber": 1
+    },
+    "transactions": {
+      "type": "array",
+      "fieldNumber": 2,
+      "items": {
+        "dataType": "bytes"
+      }
+    },
+    "assets": {
+      "type": "array",
+      "fieldNumber": 3,
+      "items": {
+        "dataType": "bytes"
+      }
+    }
+  }
+}
+----
+====
+
+=== Block header
+
+//TODO: Uncomment once the consensus content is created
+//Properties handled by the xref:{url_understand_consensus}[consensus] domain are added to the block header.
+Properties handled by the consensus domain are added to the block header.
+
+.Block ID
+NOTE: The block ID is calculated by hashing the complete block header of a signed block.
+
+The most important properties of the block header are:
+
+* `timestamp`: Time the block was created as Unix timestamp.
+* `height`: The height of a block is always `= height of the previous block + 1`.
+* `previousBlockID`: The ID of the previous block.
+* `generatorAddress`: The address of the block generator{fn_gpk}.
+* `transactionRoot`: The transaction root is the root of the Merkle tree built from the ID of the <<transactions,transactions contained in the block>>.
+* `stateRoot`: The root of the Sparse Merkle Tree that is computed from the state of the blockchain.
+The state root is the root of the Sparse Merkle Tree built from the state of the chain after the block has been processed{fn_stateroot}.
+
+Besides the above properties, each block header contains various additional properties, required for deeper technical aspects of the Lisk blockchain.
+Expand below boxes for a description of the additional properties, and see the JSON schema for an overview of all properties included in the header.
+Check {url_lip55}[LIP 0055^] for additional information about the block header.
+
+.Remaining properties of the block header
+[%collapsible]
+====
+* `version`: The block header version must be equal the value of a block of the previous protocol plus one.
+* `assetRoot`: The root of the Merkle tree computed from the <<block-assets>> array.
+* `eventRoot`: The root of the Sparse Merkle Tree that is computed from the events emitted during the block processing{fn_eventroot}.
+//TODO: Add link to Lisk BFT explanation
+* `maxHeightPrevoted`: This property is related to the Lisk-BFT protocol and is used for the fork choice rule.
+//TODO: Add link to Lisk BFT explanation
+* `maxHeightGenerated`: This property is related to the Lisk-BFT protocol and is used to check for contradicting block headers.
+//TODO: Add link to Lisk interoperability explanation about certificates
+* `validatorsHash`: This property authenticates the set of validators active from the next block onward.
+It is important for cross-chain certification and included in certificates.
+* `aggregateCommit`: This property contains the aggregate BLS signature for a certificate and the height of the certified block.
+It attests that all signing validators consider the corresponding block final.
+Based on this, any node can create a certificate for the given height{fn_aggregate}.
+* `signature`: Signature of the validator who created the block.
+====
+
+.Block header JSON schema
+[%collapsible]
+====
+Block headers are serialized and deserialized accordingly to the following JSON schema.
+
+[source,js]
+----
+blockHeaderSchema = {
+  "type": "object",
+  "required": [
+    "version",
+    "timestamp",
+    "height",
+    "previousBlockID",
+    "generatorAddress",
+    "transactionRoot",
+    "assetRoot",
+    "eventRoot",
+    "stateRoot",
+    "maxHeightPrevoted",
+    "maxHeightGenerated",
+    "validatorsHash",
+    "aggregateCommit",
+    "signature"
+  ],
+  "properties": {
+    "version": {
+      "dataType": "uint32",
+      "fieldNumber": 1
+    },
+    "timestamp": {
+      "dataType": "uint32",
+      "fieldNumber": 2
+    },
+    "height": {
+      "dataType": "uint32",
+      "fieldNumber": 3
+    },
+    "previousBlockID": {
+      "dataType": "bytes",
+      "fieldNumber": 4
+    },
+    "generatorAddress": {
+      "dataType": "bytes",
+      "fieldNumber": 5
+    },
+    "transactionRoot": {
+      "dataType": "bytes",
+      "fieldNumber": 6
+    },
+    "assetRoot": {
+      "dataType": "bytes",
+      "fieldNumber": 7
+    },
+    "eventRoot": {
+      "dataType": "bytes",
+      "fieldNumber": 8
+    },
+    "stateRoot": {
+      "dataType": "bytes",
+      "fieldNumber": 9
+    },
+    "maxHeightPrevoted": {
+      "dataType": "uint32",
+      "fieldNumber": 10
+    },
+    "maxHeightGenerated": {
+      "dataType": "uint32",
+      "fieldNumber": 11
+    },
+    "validatorsHash": {
+      "dataType": "bytes",
+      "fieldNumber": 12
+    },
+    "aggregateCommit": {
+      "type": "object",
+      "fieldNumber": 13,
+      "required": [
+        "height",
+        "aggregationBits",
+        "certificateSignature"
+      ],
+      "properties": {
+        "height": {
+          "dataType": "uint32",
+          "fieldNumber": 1
+        },
+        "aggregationBits": {
+          "dataType": "bytes",
+          "fieldNumber": 2
+        },
+        "certificateSignature": {
+          "dataType": "bytes",
+          "fieldNumber": 3
+        }
+      }
+    },
+    "signature": {
+      "dataType": "bytes",
+      "fieldNumber": 14
+    }
+  }
+}
+----
+====
+
+=== Block assets
+
+Block assets allow the blockchain to store specific data inside of each block.
+
+//TODO: Add link to state-machine page, merkle trees
+Each entry of the block assets is then inserted in a Merkle tree, whose root is included in the <<block-header>> as the `assetRoot` property.
+
+NOTE: Inserting the assets root rather than the full assets allows to bound the size of the block header to a fixed size, while still authenticating the content of the block assets.
+
+As an example, blockchains created with the Lisk SDK that implements the Random module will insert the seed reveal property in the block assets.
+
+==== JSON schema
+
+The schema for the block assets allows each xref:{url_understand_sdk_modules}[module] to include its serialized data individually, which makes the inclusion of module data very flexible.
+
+Each module can insert a single entry in the assets.
+This entry is an object containing a `module` property, indicating the name of the module handling it, and a generic data property that can contain arbitrary serialized data.
+
+.Block asset schema
+[%collapsible]
+====
+[source,js]
+----
+blockAssetSchema = {
+	$id: '/block/asset/3',
+	type: 'object',
+	required: ['module', 'data'],
+	properties: {
+		module: {
+			dataType: 'string',
+			fieldNumber: 1,
+		},
+		data: {
+			dataType: 'bytes',
+			fieldNumber: 2,
+		},
+	},
+};
+----
+====
+
+=== Block rewards
+Validators receive a dynamic reward for generating a block.
+
+//TODO: Add link to module typedocs
+This is performed by the `Dynamic Reward` module, whose main purpose is to compute the block rewards according to the validator weight for active validators as explained below.
+//This is performed by the xref:{}[Dynamic Rewards module], whose main purpose is to compute the block rewards according to the validator weight for active validators:
+
+==== Minimum reward for active validators
+A minimum reward i.e., `minimumRewardActiveValidators` is assigned per round to all active validators to cover the minimal operational cost to run a validator.
+
+factorMinRewardActiveValidators::
+It determines the percentage of rewards assigned equally to all active validators.
+The percentage can be obtained by dividing the value by 100, i.e., a value of 1000 corresponds to 10%.
+In principle, if the percentage of rewards shared equally among the active validators is set to 0%, then it will be a proof-of-stake system where the rewards are proportional to the validator weight.
+On the other hand, if the percentage of rewards shared equally among the active validators is set to 100%, it will be the previous proof-of-stake (PoS) system where each validator received the same reward for generating a block irrespective of their weights.
++
+For the Lisk mainchain, the factor is: 1000 (10%).
+
+minimumRewardActiveValidators::
+The minimum reward per round for an active validator.
++
+----
+factorMinRewardActiveValidators * (getDefaultRewardAtHeight(blockHeader.height)) / 10000)
+----
++
+`blockHeader.height` corresponds to the current block height and `getDefaultRewardAtHeight` returns the <<default-block-reward>> for the respective height.
++
+For the Lisk mainchain, the minimum reward is calculated like this:
++
+----
+10^7^ Beddows or 0.1 LSK = 1000 * (100000000 / 10000) = 1000 * 10000
+----
+
+==== Rewards proportional to the validators weight
+The remaining stake rewards i.e., `stakeRewardActiveValidators` are distributed proportional to the validators weight.
+It is given to the active validators (per round) after giving the <<minimum-reward-for-active-validators,minimum reward>>.
+
+For the Lisk mainchain, the total rewards are calculated like this{fnlip71}:
+
+[NOTE]
+====
+For all calculation below we define the following variables:
+
+* `blockHeader.height` corresponds to the current block height and
+* `getDefaultRewardAtHeight()` returns the <<default-block-reward>> for the respective height.
+====
+
+totalRewardActiveValidators::
+The total reward per round for active validators.
++
+----
+Pos.getActiveValidatorsNumber * getDefaultRewardAtHeight(blockHeader.height)
+----
+* `Pos.getActiveValidatorsNumber` corresponds to the number of active validators in the network.
++
+For the Lisk mainchain, the total reward per round is calculated like this:
++
+----
+101 * 10^8^ Beddows or 101 LSK = 101 * 100000000 Beddows
+----
+
+stakeRewardActiveValidators::
+The remaining rewards for active validators (per round) after giving the minimum reward.
++
+----
+totalRewardActiveValidators - Pos.getActiveValidatorsNumber * minimumRewardActiveValidators
+----
++
+For the Lisk mainchain, the total reward per round is calculated like this:
++
+----
+90.9 * 10^8^ Beddows or 90.9 LSK = 10100000000 - (101 * 10000000) = 101 * 10^8 - 101 * 10^7^
+----
+
+==== Default reward for standby validators
+The default reward `defaultRewardStandByValidators` is assigned to all stand-by validators i.e., there is a fixed reward irrespective of the validator weight.
+
+
+This helps stand-by validators to cover the costs of running a node even though the probability of the selection is low in a round.
+
+defaultRewardStandByValidators::
+The default reward per round for standby validators irrespective of their validator weight.
++
+----
+getDefaultRewardAtHeight(blockHeader.height)
+----
++
+For the Lisk mainchain, the default reward for standby validators is: 10^8^ Beddows or 1 LSK.
+
+==== Default block reward
+The amount for the default block reward depends on the block height according to the table shown below:
+
+.Default block reward milestones on the Lisk Mainnet
+[cols="1,1",options="header",stripes="hover"]
+|===
+|Heights
+|Reward
+
+|From 1,451,520 to 4,451,519
+|5 LSK
+
+|From 4,451,520 to 7,451,519
+|4 LSK
+
+|From 7,451,520 to 10,451,519
+|3 LSK
+
+|From 10,451,520 to 13,451,519
+|2 LSK
+
+|From 13,451,520 onwards
+|1 LSK
+|===
+
+==== Minting of the rewards
+After applying the block, a certain quantity of the native token of the blockchain is minted.
+The exact amount assigned to the block generator.
+
+Currently, in the Lisk mainchain, the inflation is limited to a maximum minting of `6 * 60 * 24 * 365 = 3153600 LSK` per year.
+Every time a validator misses their block, 1 LSK less is minted per year.
+
+==== Reward for missed blocks
+Validators get rewards proportional to the validator weight.
+If a validator misses a block, then another validator will be chosen to generate the block.
+
+To respect the maximum of 3153600 newly minted LSK per year, and to ensure it will not be profitable for any validator if any other validator misses a block, validators who generate blocks for the second time in the round, get the <<minimum-reward-for-active-validators,minimumRewardActiveValidators>> for the second block.
+
+==== Reward reduction
+The reward can be reduced for various reasons{fnlip42}, specifically for not participating in BFT block finalization or failure to properly reveal the random seed.
+
+[cols="1,1",options="header"]
+|===
+|Reason
+|Reduction of the block reward
+
+|Invalid seed reveal
+|100%
+
+|Not participating in BFT block finalization
+|75%
+
+|No account in user substore
+|100%
+|===
+
+==== Transaction rewards
+Each transaction included in a block contains its own <<transaction-fees>>, which were paid by the transaction sender.
+
+A part of the transaction fees is directly burned: <<minimum-transaction-fee>>.
+
+The unburned part of the <<transaction-fees>> is added together with the block reward to the balance of the validator who generated the block.
+This is completed after all transactions in the payload have been applied.
+It should be noted that a validator cannot receive and spend the reward in the same block.
+
+=== Projected token supply
+Blockchains following the Lisk protocol do not have a bounded token supply.
+For every block generated, the amount of available tokens increases, as new tokens are minted for the <<block-rewards>>.
+This increase is obtained by subtracting the <<minimum-transaction-fee,burned fees>> from the block reward.
+
+== Transactions
+
+Transactions are sent to the blockchain by its users to trigger state mutations on the blockchain.
+
+To be accepted by the blockchain, the transactions must be transmitted in the expected format, including all the required properties of a transaction, and pass the transaction & command verification steps explained in the <<block-execution>> process description.
+
+Valid transactions trigger the corresponding xref:{url_understand_sdk_commands}[command] of a module that accepts this transaction type.
+Therefore, each transaction always needs to include the IDs of the module and command that the transaction wants to trigger.
+If any specific data input from the user is needed to complete the command, they are included under the `params` property of a transaction.
+Besides this, there are a few additional properties that every transaction should contain, which are described in image _Figure 3_ and below.
+
+//TODO: Add link to tx pool explanation
+After a transaction is sent to a node, it is first added to the transaction pool, waiting to be included in a block.
+The transactions to be included in the block are then always picked from there.
+
+.Properties of a transaction object
+image::understand-blockchain/transaction.png["Transaction properties",400, align="center"]
+
+* `module`: A string identifying the module name the transaction is addressing.
+* `command`: A string identifying the specific command name in the module.
+* `nonce`: An integer that is *unique for each transaction* from the account corresponding to the `senderPublicKey`.
+Increments by `+1` for each transaction.
+* `fee`: An integer that specifies the *fee in Beddows* to be spent by the transaction.
+* `senderPublicKey`: The public key of the account issuing the transaction.
+A valid public key is 32 bytes long.
+* `params`: The *serialized parameters* of the module command.
+* `signatures`: An array with the signatures of the transaction.
+A transaction is signed by the sender account to verify its correctness.
+In the case of a multi-signature transaction, several accounts need to sign a transaction, before it is accepted by a node.
+
+.How many transactions fit in a block?
+[NOTE]
+====
+How many transactions can actually fit into a block?
+The answer to this question very much depends on the size of the particular transactions.
+As every transaction type expects a different set of params to be included in the transaction, the size of transactions can vary significantly between different transaction types.
+
+Let's make an example of simple token transfer transactions.
+If you assume all transactions are the simplest token transfers (Alice sends 5LSK to Bob etc.) then the size of each transaction is 153 Bytes.
+Each block can include a maximum of 15 kB of transactions.
+This results in maximum 100 token transfer transactions per block:
+
+ Total transactions size  = 15360 (15 x 1024)
+ transaction size = 153
+
+ 15360/153 = 100.39 maximum token transfer transactions per block
+====
+
+=== Transaction fees
+
+Transactions also include fees.
+In order to send and process a transaction, it is required to pay a small fee.
+
+Fees can be defined dynamically for every transaction.
+A higher fee will create an incentive for validators to include the transaction in a block as quickly as possible, because most validators prioritize transactions with higher fees in the transaction pool, because it means a personal higher reward for them, if they include these transactions in a block.
+So by choosing a higher fee, it can be ensured that the transaction is executed as quickly as possible, in case the network is crowded.
+
+This mechanism can also be used to overwrite existing transactions in the pool, by using the same nonce, but a higher fee than the transaction that should be overwritten.
+
+==== Minimum transaction fee
+For every transaction, there is a minimum fee that needs to be paid in order for the transaction to be successfully processed.
+The minimum fee required is calculated in the following way:
+
+ minFee = transactionBytes.length * minFeePerByte
+
+As shown in the formula, the minimum fee is directly connected to the size of the transaction object in bytes after it has been encoded.
+
+Some transaction types may also require an additional fee, called the <<command-fee>>.
+The minimum fee for a valid transaction is in this case:
+
+ minFee = transactionBytes.length * minFeePerByte + commandFee
+
+[CAUTION]
+====
+* If a transaction requires a command fee, and the command fee is partially paid or not paid at all, then, the transaction will be <<valid-vs-invalid-transactions,invalid>>.
+* If the transaction is posted with a fee smaller than the required minimum fee, the transaction will <<successful-vs-failed-transactions,fail>>.
+====
+
+=== Minimum fee per byte
+
+The minimum fee per byte is defined in the configuration options of the Fee module.
+
+The default value for `minFeePerByte` is 1000 Beddows, or 0.00001 LSK.
+
+TIP: It is possible to configure a blockchain to have no transaction fee, by setting the `minFeePerByte` to 0 in the config.
+
+=== Command fee
+
+Command fees, or command execution fees, are fees that need to be paid only, if the command execution requires an additional fee - for example, if the execution of the command requires a lot of computational resources.
+
+The following commands require an extra command fee:
+
+* {url_typedoc_command_registervalidator}[Validator Registration^] command: 10 LSK
+* {url_typedoc_command_registersc}[Sidechain registration^] command: 10 LSK
+* {url_typedoc_command_transfer}[Transfer^] command to a new account: 0.05 LSK
+
+=== Transaction JSON schema
+
+//TODO: Add link to https://github.com/LiskHQ/lips/pull/155/files when merged
+
+.Transaction schema
+[%collapsible]
+====
+[source,js]
+----
+transactionSchema = {
+	$id: '/lisk/transaction',
+	type: 'object',
+	required: ['module', 'command', 'nonce', 'fee', 'senderPublicKey', 'params'],
+	properties: {
+		module: {
+			dataType: 'string',
+			fieldNumber: 1,
+			minLength: 1,
+			maxLength: 32,
+		},
+		command: {
+			dataType: 'string',
+			fieldNumber: 2,
+			minLength: 1,
+			maxLength: 32,
+		},
+		nonce: {
+			dataType: 'uint64',
+			fieldNumber: 3,
+		},
+		fee: {
+			dataType: 'uint64',
+			fieldNumber: 4,
+		},
+		senderPublicKey: {
+			dataType: 'bytes',
+			fieldNumber: 5,
+			minLength: 32,
+			maxLength: 32,
+		},
+		params: {
+			dataType: 'bytes',
+			fieldNumber: 6,
+		},
+		signatures: {
+			type: 'array',
+			items: {
+				dataType: 'bytes',
+			},
+			fieldNumber: 7,
+		},
+	},
+};
+----
+====
+
+=== Valid vs invalid transactions
+
+Only valid transactions should be added to a block during the block generation, as an invalid transaction makes the whole block invalid, meaning that it would be discarded by any node in the network.
+
+A transaction is *valid*, if the following stages associated with the transaction of <<block-execution>> are executed successfully without errors:
+
+* "transaction verification"
+* "command verification"
+* "before command execution" and
+* "after command execution"
+
+Otherwise, a transaction is *invalid*.
+
+=== Successful vs failed transactions
+A valid transaction is executed *successfully* if additionally the "command execution" stage of <<block-execution>> is executed successfully without errors.
+
+A valid transaction *fails* if on the other hand an error occurs during the command execution.
+In this case, all state transitions of the "command execution" stage are reverted.
+This means that the transaction has no effect except for those defined in "before command execution" and "after command execution".
+The result of the transaction execution is logged using an event emitted at the end of the "after transaction execution" stage, indicating whether the transaction was processed successfully or an error occurred.
+
+== Block generation
+
+The block generation flow offers a lot of flexibility for custom business logic by providing hooks for executing additional custom logic before and after each execution of a transaction and/or command.
+The gradual steps make all important verification steps explicit and obvious.
+
+.Block generation steps
+image::understand-blockchain/block-generation.png["Block generation steps",500, align="center"]
+
+The full generation of a block is organized as follows.
+
+. **Header initialization**: Block header properties that require access to the state store before any state transitions implied by the block are executed are inserted in this stage.
++
+Sets the `version`, `timestamp`, `height`, `previousBlockID`, `generatorAddress`, `maxHeightPrevoted`, `maxHeightGenerated`, and `aggregateCommit` properties of the <<block-header>>.
+. **Assets insertion**: Each module can insert information in the block assets.
+. **Before transactions execution**: Each module can define protocol logic that is executed before the transactions contained in the block are processed.
+After this stage has been completed, transactions are selected one-by-one from a transaction pool.
+. **Transaction verification**: Each module can define protocol logic that verifies a transaction, possibly by accessing the state store.
+If an error occurs, the transaction is invalid and it is not included in the block.
+The transaction processing stages (steps 4 to 8) are repeated for each transaction selected.
+If steps 4, 5, 6, and 8 are executed successfully, the transaction is valid and it is included in the block, otherwise, it is invalid and therefore discarded.
+. **Command verification**: The command corresponding to the `module`-`command` combination is verified.
+If an error occurs, the transaction is invalid and it is not included in the block.
+. **Before command execution**: Each module can define protocol logic that is processed before the command has been executed.
+If an error occurs, the transaction is invalid, it is not included in the block, and all state transitions induced by the transaction are reverted.
+In that case, the block generation continues with step 4 for another transaction from the transaction pool or step 9.
+. **Command execution**: The command corresponding to the `module`-`command` combination is executed.
+If an error occurs, the transaction is failed and all state transitions performed in this stage are reverted.
+In any case, afterward, the processing continues with the next stage.
+. **After command execution**: Each module can define protocol logic that is processed after the command has been executed.
+If an error occurs, the transaction is invalid, it is not included in the block, and all state transitions induced by the transaction performed up to this stage are reverted.
+In that case, the block generation continues with step 4 for another transaction from the transaction pool or step 9.
+. **After transactions execution**: Each module can define protocol logic that is executed after all the transactions contained in the block have been processed.
+. **Header finalization**: Block header properties, which require accessing the state store after all state transitions implied by the block have been executed, are inserted.
++
+Sets the `transactionRoot`, `assetRoot`, `eventRoot`, `stateRoot`, `validatorsHash`, and `signature` properties of the <<block-header>>.
+. **Block processing**: The block goes through the <<block-execution>> stages.
+
+== Block execution
+
+Block execution happens when the consensus domain receives a new block from a peer.
+
+The block execution flow offers a lot of flexibility for custom business logic by providing hooks for executing additional custom logic before and after each execution of a transaction and/or command.
+The gradual steps make all important verification steps explicit and obvious.
+
+.Block execution steps
+image::understand-blockchain/block-processing.png["Block execution steps",500, align="center"]
+
+The full processing of a block is organized as follows:
+
+. **Block reception**: A new block is received from the P2P network.
+//TODO: Add link to definition of the fork choice rule
+. **Fork choice**: Upon receiving a new block, the fork choice rule determines whether the block will be discarded or if the processing continues.
+. **Static validation**: Some initial static checks are done to ensure that the serialized object follows the general structure of a block.
+These checks are performed immediately because they do not require access to the state store and can therefore be done very quickly.
+* Validates, if:
+** the block follows the block schema.
+** the total size of the serialized transactions contained in the block is at most the maximum allowed size for transactions per block.
+** the block header is valid:
+*** checks that the block header follows the block header schema.
+*** validates the `version`, `transactionRoot`, and `assetRoot` properties.
+** the block assets are valid:
+*** each entry in the assets array has a `module` property set to the name of a module registered in the chain.
+*** the data property has a size that is at most equal to the max size of an assets entry in bytes.
+*** each module can insert at most one entry in the block assets.
+//*** the entries are sorted by increasing values of `moduleID`.
+. **Header verification**: Block header properties that require access to the state store before any state transitions implied by the block are executed are verified in this stage.
++
+Verifies `timestamp`, `height`, `previousBlockID`, `generatorAddress`, `maxHeightPrevoted`, `maxHeightGenerated`, `aggregateCommit`, and `signature` properties of the <<block-header>>.
+. **Assets verification**: Each module verifies the respective entry in the block assets.
+If any check fails, the block is discarded and has no further effect.
+. **Block forwarding**: After the initial checks, the full block is forwarded to a subset of peers.
+. **Before transactions execution**: Each module can define protocol logic that is executed before the transactions contained in the block are processed.
+. **Transaction verification**: Each module can define protocol logic that verifies a transaction, possibly by accessing the state store.
+If an error occurs, the transaction is *invalid* and the whole block is discarded.
+. **Command verification**: The command corresponding to the `module`-`command` combination is verified.
+If an error occurs, the transaction is *invalid* and the whole block is discarded.
+. **Before command execution**: Each module can define protocol logic that is processed before the command has been executed.
+If an error occurs, the transaction is *invalid* and the whole block is discarded.
+. **Command execution**: The command corresponding to the `module`-`command` combination is executed.
+If an error occurs, the transaction is *failed* and all state transitions performed in this stage are reverted.
+In any case, afterward, the processing continues with the next stage.
+. **After command execution**: Each module can define protocol logic that is processed after the command has been executed.
+If an error occurs, the transaction is *invalid* and the whole block is discarded.
+. **After transactions execution**: Each module can define protocol logic that is executed after all the transactions contained in the block have been processed.
+. **Result verification**: Block header properties, which require accessing the state store after all state transitions implied by the block have been executed, are verified.
++
+Verifies the `stateRoot`, `eventRoot`, and `validatorsHash` properties of the <<block-header>>.
+. **Block storage**: The block is persisted into the database.
+. **Peers notification**: Other peers in the P2P network are notified of the new block.
+
+== Genesis block execution
+
+The genesis block describes the very first block in the blockchain.
+It defines the *initial state* of the blockchain at the start of the network.
+
+[NOTE]
+The genesis block is not generated by a validator, such as all the other blocks which come after the genesis block.
+Instead, it is defined by the developer, when creating the `Application` instance of the blockchain client.
+
+.Genesis block execution steps
+image::understand-blockchain/genesis-block-execution.png["Genesis Block execution steps",500, align="center"]
+
+Each step in the application layer is repeated for each module registered in the application.
+
+////
+=== Default transaction types
+
+The following transaction types are included in every blockchain application by default, if not configured otherwise:
+
+[cols="1,2,1,1,1,6a"]
+|===
+|Module Name|Command Name|Module ID|Command ID|Size(min)|Description
+
+|*Token*|*token transfer transaction*|2|0|153 Bytes|Transmit funds to another Lisk account.
+|*Token*|*cross-chain token transfer transaction*|2|1||Transfers fungible tokens from one chain to another (e.g., mainchain to sidechain).
+
+|*Auth*|*multisignature registration transaction*|12|0|219 Bytes|Registers a multi-signature account.
+
+|*DPoS*|*delegate registration transaction*|13|0|308 Bytes|Registers a delegate for the sending account.
+|*DPoS*|*delegate vote transaction*|13|1|147 Bytes|Submits or removes vote(s) for delegates.
+|*DPoS*|*token unlock transaction*|13|2|117 Bytes|Unlocks locked tokens.
+|*DPoS*|*delegate misbehavior report transaction*|13|3|991 Bytes|Reports a misbehavior of a delegate
+|*DPoS*|*update generator key transaction*|13|4||
+
+|*Interoperability*|*sidechain registration transaction*|64|0||Registers a sidechain/blockchain application.
+|*Interoperability*|*mainchain registration transaction*|64|1||Registers the mainchain on a sidechain.
+|*Interoperability*|*sidechain cross-chain update transaction*|64|2||Submits updates about the state of the sidechain and new cross-chain messages.
+|*Interoperability*|*mainchain cross-chain update transaction*|64|3||Submits updates about the state of the mainchain and new cross-chain messages.
+|*Interoperability*|*state recovery transaction*|64|4||description
+|*Interoperability*|*message recovery transaction*|64|5||description
+|*Interoperability*|*state recovery initialization transaction*|64|6||description
+|===
+////

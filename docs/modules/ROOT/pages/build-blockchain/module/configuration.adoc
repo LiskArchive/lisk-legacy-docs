@@ -1,0 +1,181 @@
+= How to create a module configuration
+Mona Bärenfänger <mona@lightcurve.io>
+:toc: preamble
+:idprefix:
+:idseparator: -
+:sectnums:
+:docs_sdk: v6@lisk-sdk::
+// URLs
+// Project URLS
+:url_build_plugin: build-blockchain/create-plugin.adoc
+:url_build_command: build-blockchain/module/command.adoc
+:url_build_config: build-blockchain/configuration.adoc
+:url_build_command_try: build-blockchain/module/command.adoc#try-the-new-command-out
+
+====
+On this page, you'll learn how to:
+
+* [x] Define a config schema for a module
+* [x] Set a default module config
+* [x] Set custom configurations for a module
+* [x] Make module configurations accessible inside the command of a module
+====
+
+To allow the developer to configure a module in the `config.json` file, create the corresponding configuration schema and pass the values to the module in the `init()` method of the module.
+
+This allows you to overwrite the default configurations of a module conveniently by updating the `config.json` file of the Hello client.
+
+.Who should configure the module?
+IMPORTANT: The module-specific configs should be set by the blockchain developer, and *should not be changed or customized by a node operator*, because it might cause the node to hard fork, as other nodes wouldn't share the same module config values in that case.
+
+== Define a module schema
+
+At first, define a default configuration inside of `module.ts`.
+These configuration values will be used if no custom values are set by the developer in `config.json`.
+
+For the Hello module, we want to provide configuration options for the following values:
+
+. maximum Hello message length
+. minimum Hello message length
+. List of blacklisted words
+
+Therefore, we define the module default config as follows:
+
+.hello_client/src/app/modules/hello/module.ts
+[source,typescript]
+----
+export const defaultConfig = {
+    maxMessageLength: 256,
+    minMessageLength: 3,
+    blacklist: ["illegalWord1"]
+};
+----
+
+In our example, we define the following default config:
+
+.Default config values
+. maximum Hello message length: 256
+. minimum Hello message length: 3
+. List of blacklisted words: "illegalWord1"
+
+Once the default config is created, define the corresponding module config interface in `types.ts`:
+
+.hello_client/src/app/modules/hello/types.ts
+[source,typescript]
+----
+import { JSONObject } from 'lisk-sdk';
+
+export interface ModuleConfig {
+    maxMessageLength: number;
+    minMessageLength: number;
+    blacklist: string[];
+}
+
+export type ModuleConfigJSON = JSONObject<ModuleConfig>;
+----
+
+The config schema is required to validate the module config defined in `config.json`, so add the respective config schema to `schema.ts` as well:
+
+.hello_client/src/app/modules/hello/schema.ts
+[source,typescript]
+----
+export const configSchema = {
+    $id: '/hello/config',
+    type: 'object',
+    properties: {
+         maxMessageLength: {
+            type: 'integer',
+            format: 'uint32',
+        },
+        minMessageLength: {
+            type: 'integer',
+            format: 'uint32',
+        },
+        blacklist: {
+            type: 'array',
+            items: {
+                type: 'string',
+                minLength: 1,
+                maxLength: 40,
+            },
+        },
+    },
+    required: [
+        'maxMessageLength',
+        'minMessageLength',
+        'blacklist'
+    ],
+};
+----
+
+== Define a module configuration file
+
+Open the configuration file that was created in the guide xref:{url_build_config}[], and add the config option for the Hello module like this:
+
+.hello_client/config/custom_config.json
+[source,json]
+----
+{
+  // [...]
+  "modules": {
+    "hello": {
+      "maxMessageLength": 300,
+      "minMessageLength": 5,
+      "blacklist": ["illegalWord1", "badWord2", "censoredWord3"]
+    }
+  },
+  "plugins": {}
+}
+----
+
+In the example, we increase the max message length to `300`, the min message length to `5`, and we add two additional words to the blacklist: `badWord2` and `censoredWord3`
+
+== Initialize the module config
+
+Now, to make the custom config accessible in the module, retrieve the config options in the `init()` method like so:
+
+.hello_client/src/app/modules/hello/module.ts
+[source,typescript]
+----
+import {
+    BaseModule, BlockAfterExecuteContext, BlockExecuteContext, BlockVerifyContext,
+    GenesisBlockExecuteContext, InsertAssetContext, ModuleInitArgs,
+    ModuleMetadata, TransactionExecuteContext, TransactionVerifyContext,
+    VerificationResult, codec, utils
+} from 'lisk-sdk';
+import { validator } from '@liskhq/lisk-validator';
+import { createHelloSchema, CreateHelloParams, configSchema } from './schema';
+import { ModuleConfigJSON } from './types';
+// [...]
+export const defaultConfig = {
+	blacklist: ["illegalWord1"],
+	maxMessageLength: 256,
+	minMessageLength: 3
+};
+
+export class HelloModule extends BaseModule {
+    // [...]
+
+    public async init(args: ModuleInitArgs): Promise<void> {
+        // Get the module config defined in the config.json of the node
+        const { moduleConfig } = args;
+        // Overwrite the default module config with values from config.json, if set
+        const config = utils.objects.mergeDeep({}, defaultConfig, moduleConfig) as ModuleConfigJSON;
+        // Validate the config with the config schema
+        validator.validate<ModuleConfigJSON>(configSchema, config);
+    }
+    // [...]
+}
+----
+
+The configuration options which we defined in the `custom_config.json` file used by the node, are merged with the `defaultConfig` that is defined above the `HelloModule` class.
+This will overwrite every value of the default config with the value of the user-defined config.
+If no value is set in the node config, it will use the value of the `defaultConfig`.
+
+Once the configs are merged, the module config is validated against the config schema defined in step <<define-a-module-schema>>.
+
+== Testing the custom module config
+
+To verify that the config options which we defined in step <<define-a-module-configuration-file>> are really used during the verification of a command, we first need to create the new command type and then send some "Create Hello" transactions to the node.
+
+Please check out the guide xref:{url_build_command}[], especially the section xref:{url_build_command_try}[-> Try the new command out] for further details on how to test and verify the config values.

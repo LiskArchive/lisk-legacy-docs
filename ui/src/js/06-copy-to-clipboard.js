@@ -4,7 +4,11 @@
   var CMD_RX = /^\$ (\S[^\\\n]*(\\\n(?!\$ )[^\\\n]*)*)(?=\n|$)/gm
   var LINE_CONTINUATION_RX = /( ) *\\\n *|\\\n( ?) */g
   var TRAILING_SPACE_RX = / +$/gm
+
   var config = (document.getElementById('site-script') || { dataset: {} }).dataset
+  var uiRootPath = config.uiRootPath == null ? '.' : config.uiRootPath
+  var svgAs = config.svgAs
+  var supportsCopy = window.navigator.clipboard
 
   ;[].slice.call(document.querySelectorAll('.doc pre.highlight, .doc .literalblock pre')).forEach(function (pre) {
     var code, language, lang, copy, toast, toolbox
@@ -28,19 +32,19 @@
     }
     ;(toolbox = document.createElement('div')).className = 'source-toolbox'
     if (lang) toolbox.appendChild(lang)
-    if (window.navigator.clipboard) {
+    if (supportsCopy) {
       ;(copy = document.createElement('button')).className = 'copy-button'
       copy.setAttribute('title', 'Copy to clipboard')
-      if (config.svgAs === 'svg') {
+      if (svgAs === 'svg') {
         var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
         svg.setAttribute('class', 'copy-icon')
         var use = document.createElementNS('http://www.w3.org/2000/svg', 'use')
-        use.setAttribute('href', window.uiRootPath + '/img/octicons-16.svg#icon-clippy')
+        use.setAttribute('href', uiRootPath + '/img/octicons-16.svg#icon-clippy')
         svg.appendChild(use)
         copy.appendChild(svg)
       } else {
         var img = document.createElement('img')
-        img.src = window.uiRootPath + '/img/octicons-16.svg#view-clippy'
+        img.src = uiRootPath + '/img/octicons-16.svg#view-clippy'
         img.alt = 'copy icon'
         img.className = 'copy-icon'
         copy.appendChild(img)
@@ -50,7 +54,7 @@
       copy.appendChild(toast)
       toolbox.appendChild(copy)
     }
-    pre.appendChild(toolbox)
+    pre.parentNode.appendChild(toolbox)
     if (copy) copy.addEventListener('click', writeToClipboard.bind(copy, code))
   })
 

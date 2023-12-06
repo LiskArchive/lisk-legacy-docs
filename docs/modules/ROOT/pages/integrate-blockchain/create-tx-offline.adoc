@@ -1,241 +1,79 @@
 = Creating transactions and signing them offline
+Mona Bärenfänger <mona@lightcurve.io> Muhammad Talha <muhammad.talha@lightcurve.io>
 :toc: preamble
+:toclevels: 5
+:page-toclevels: 4
 :idprefix:
 :idseparator: -
-:docs_sdk: lisk-sdk::
+:docs_sdk: v6@lisk-sdk::
+// URLs
+:url_typedoc_regmc_schema: {site-url}/lisk-sdk/v6/references/typedoc/classes/lisk_framework.RegisterMainchainCommand.html#schema
+:url_typedoc_regsc_schema: {site-url}/lisk-sdk/v6/references/typedoc/classes/lisk_framework.RegisterSidechainCommand.html#schema
+:url_typedoc_regvalidator_schema: {site-url}/lisk-sdk/v6/references/typedoc/classes/lisk_framework.ValidatorRegistrationCommand.html#schema
+:url_typedoc_report_schema: {site-url}/lisk-sdk/v6/references/typedoc/classes/lisk_framework.ReportMisbehaviorCommand.html#schema
+:url_typedoc_stake_schema: {site-url}/lisk-sdk/v6/references/typedoc/classes/lisk_framework.StakeCommand.html#schema
+:url_typedoc_transfer_schema: {site-url}/lisk-sdk/v6/references/typedoc/classes/lisk_framework.TransferCommand.html#schema
+:url_typedoc_transactions: {site-url}/lisk-sdk/v6/references/typedoc/modules/_liskhq_lisk_transactions.html
+:url_typedoc_validator: {site-url}/lisk-sdk/v6/references/typedoc/modules/_liskhq_lisk_validator.html
+:url_typedoc_tx_schema: {site-url}/lisk-sdk/v6/references/typedoc/variables/_liskhq_lisk_chain.transactionSchema.html
+:url_typedoc_crypto_address: {site-url}/lisk-sdk/v6/references/typedoc/modules/_liskhq_lisk_cryptography.address.html
+
+:url_schemas: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/guides/tx-creation-and-signing/schemas.js
+:url_account: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/guides/tx-creation-and-signing/offline/account.json
+:url_create-offline: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/guides/tx-creation-and-signing/offline/create-offline.js
+:url_sign-offline: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/guides/tx-creation-and-signing/offline/sign-offline.js
+:url_api-client: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/guides/tx-creation-and-signing/api-client.js
+:url_dry-run: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/guides/tx-creation-and-signing/offline/dry-run.js
+:url_index: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/guides/tx-creation-and-signing/offline/index.js
+
+// Project URLs
 :url_guides_decoding: integrate-blockchain/encode-decode.adoc
 :url_transfer_asset: {docs_sdk}modules/token-module.adoc#transferasset
-:url_register_multisig_asset: {docs_sdk}modules/keys-module.adoc#registerasset
 :url_register_delegate_asset: {docs_sdk}modules/dpos-module.adoc#registertransactionasset
 :url_vote_delegate_asset: {docs_sdk}modules/dpos-module.adoc#votetransactionasset
 :url_unlock_asset: {docs_sdk}modules/dpos-module.adoc#unlocktransactionasset
 :url_pom_asset: {docs_sdk}modules/dpos-module.adoc#pomtransactionasset
 :url_framework_httpapi: {docs_sdk}plugins/http-api-plugin.adoc
 :url_service: lisk-service::index.adoc
+:url_create_keys: {docs_sdk}client-cli.adoc#keyscreate
 
-How to create and sign a transaction in an entirely offline environment.
+====
+On this page, you'll learn:
 
-== Creating transactions
+* [x] How to create and sign a transaction in an entirely offline environment.
+* [x] How to verify the transaction by performing a dry-run.
+====
 
-=== Creating transactions with lisk-client
+== Option 1: Using the node CLI to create a transaction offline
 
-==== Require the transaction and asset schema
-
-To create, validate, and sign transactions offline with the lisk-client, it is necessary to access their schemas.
-Create a new file `schemas.js` and add all required schemas in this file, as shown in the snippet below.
-
-In this example, we will send a Token Transfer transaction, therefore two different schemas are required:
-
-. The transaction schema (always required).
-. The Token Transfer asset schema.
-
-The corresponding schemas can be found in the module reference pages listed below:
-
-* xref:{url_transfer_asset}[Token Transfer schema]
-* xref:{url_register_multisig_asset}[Register Multisignature Account schema]
-* xref:{url_register_delegate_asset}[Register Delegate schema]
-* xref:{url_vote_delegate_asset}[Cast Votes schema]
-* xref:{url_unlock_asset}[Unlock Tokens schema]
-* xref:{url_pom_asset}[Report Delegate Misbehavior schema]
-
-.schemas.js
-[source,typescript]
-----
-export const transactionSchema = {
-     "$id":"lisk/transaction",
-     "type":"object",
-     "required":[
-        "moduleID",
-        "assetID",
-        "nonce",
-        "fee",
-        "senderPublicKey",
-        "asset"
-     ],
-     "properties":{
-        "moduleID":{
-           "dataType":"uint32",
-           "fieldNumber":1,
-           "minimum":2
-        },
-        "assetID":{
-           "dataType":"uint32",
-           "fieldNumber":2
-        },
-        "nonce":{
-           "dataType":"uint64",
-           "fieldNumber":3
-        },
-        "fee":{
-           "dataType":"uint64",
-           "fieldNumber":4
-        },
-        "senderPublicKey":{
-           "dataType":"bytes",
-           "fieldNumber":5,
-           "minLength":32,
-           "maxLength":32
-        },
-        "asset":{
-           "dataType":"bytes",
-           "fieldNumber":6
-        },
-        "signatures":{
-           "type":"array",
-           "items":{
-              "dataType":"bytes"
-           },
-           "fieldNumber":7
-        }
-     }
-};
-
-export const transferAssetSchema = {
-    $id: 'lisk/transfer-asset',
-    title: 'Transfer transaction asset',
-    type: 'object',
-    required: ['amount', 'recipientAddress', 'data'],
-    properties: {
-        amount: {
-            dataType: 'uint64',
-            fieldNumber: 1,
-        },
-        recipientAddress: {
-            dataType: 'bytes',
-            fieldNumber: 2,
-            minLength: 20,
-            maxLength: 20,
-        },
-        data: {
-            dataType: 'string',
-            fieldNumber: 3,
-            minLength: 0,
-            maxLength: 64,
-        },
-    },
-};
-----
-
-==== Creating and signing the transaction
-
-[source,typescript]
-----
-const { validator, transactions } = require('@liskhq/lisk-client');
-const { transactionSchema, transferAssetSchema } = require('./schemas');
-
-// Example account credentials
-const account = {
-  "passphrase": "chalk story jungle ability catch erupt bridge nurse inmate noodle direct alley",
-  "privateKey": "713406a2cf2bdf6b951c1bcba85d44eddbc06d003e8d3faf433b22be28333d97840c66741a76f936bed0a4c308e4f670156e1e1f6b91640bb8d3dd0ae2b3581e",
-  "publicKey": "840c66741a76f936bed0a4c308e4f670156e1e1f6b91640bb8d3dd0ae2b3581e",
-  "binaryAddress": "85c12d39041bc09e1f89dfeffe4b87cfcfe79fb2",
-  "address": "lskuwzrd73pc8z4jnj4sgwgjrjnagnf8nhrovbwdn"
-};
-
-// Create the unsigned transaction object manually
-const unsignedTransaction = {
-  moduleID: Number(2),
-  assetID: Number(0), // aka Token Transfer transaction
-  fee: BigInt(10000000),
-  nonce: BigInt(23),
-  senderPublicKey: Buffer.from(account.publicKey,'hex'),
-  asset: Buffer.alloc(0),
-  signatures: [],
-};
-
-// Validate the transaction oject
-const transactionErrors = validator.validator.validate(transactionSchema, unsignedTransaction);
-
-if (transactionErrors.length) {
-  throw new validator.LiskValidationError([...transactionErrors]);
-}
-
-// Create the asset for the Token Transfer transaction
-const transferAsset = {
-  amount: BigInt(2000000000),
-  recipientAddress: Buffer.from(account.binaryAddress,'hex'),
-  data: 'Happy birthday!'
-};
-
-// Add the transaction asset to the transaction object
-unsignedTransaction.asset = transferAsset;
-
-console.log(unsignedTransaction);
-/*
-{
-  moduleID: 2,
-  assetID: 0,
-  nonce: 1n,
-  fee: 10000000n,
-  senderPublicKey: <Buffer 84 0c 66 74 1a 76 f9 36 be d0 a4 c3 08 e4 f6 70 15 6e 1e 1f 6b 91 64 0b b8 d3 dd 0a e2 b3 58 1e>,
-  asset: {
-    amount: 20n,
-    recipientAddress: <Buffer 85 c1 2d 39 04 1b c0 9e 1f 89 df ef fe 4b 87 cf cf e7 9f b2>,
-    data: 'Happy birthday!'
-  },
-  signatures: []
-}
-*/
-
-// Sign the transaction
-const networkIdTestnet = '15f0dacc1060e91818224a94286b13aa04279c640bd5d6f193182031d133df7c';
-
-const signedTransaction = transactions.signTransaction(
-  transferAssetSchema,
-  unsignedTransaction,
-  Buffer.from(networkIdTestnet, 'hex'),
-  account.passphrase,
-);
-
-console.log(signedTransaction);
-
-/*
-{
-  moduleID: 2,
-  assetID: 0,
-  fee: 10000000n,
-  nonce: 23n,
-  senderPublicKey: <Buffer 84 0c 66 74 1a 76 f9 36 be d0 a4 c3 08 e4 f6 70 15 6e 1e 1f 6b 91 64 0b b8 d3 dd 0a e2 b3 58 1e>,
-  asset: {
-    amount: 2000000000n,
-    recipientAddress: <Buffer 3e 56 5c 6f 2d 22 e0 a3 c1 e4 71 76 72 ec 8a c6 1c 26 60 f2>,
-    data: 'Happy birthday!'
-  },
-  signatures: [
-    <Buffer 3c 77 8c e7 b9 8e 72 e6 6b e1 83 86 b4 c1 97 b0 79 3d dc 33 ac ad 8d df 38 d3 52 9f 6a 76 ba 5e 5a ed 54 22 3f b8 36 81 61 b0 2c 71 68 88 3b 09 df b3 ... 14 more bytes>
-  ],
-  id: <Buffer 95 d2 d3 29 90 cd c7 f3 ae e5 54 b3 f5 23 7b fb f3 4c 33 48 e5 83 72 7a ce dd e5 b3 b6 e3 e7 25>
-}
-*/
-----
-
-=== Using the CLI to create a transaction
-
-The CLI  of a node can be used to create a sendable transaction object.
+The CLI  of a node can be used to create a transaction, even if the node is currently offline.
 
 [NOTE]
 ====
 The flag `--offline` is used here, so that the transaction can be signed, even if the node is not connected to any network at the moment.
 
-The `--offline` flag also requires the flags `--network-identifier` and `--nonce` to be specified.
+The `--offline` flag also requires the flags `--chain-id` and `--nonce` to be specified.
 ====
 
 [source,bash]
 ----
-$ ./bin/run transaction:create 2 0 100000000 \
---network-identifier=15f0dacc1060e91818224a94286b13aa04279c640bd5d6f193182031d133df7c \
---nonce=2 --offline
+./bin/run transaction:create token transfer 10000000 --chain-id 00000001 --nonce 0 --offline
+----
+
+[source,bash]
+----
+? Please enter: tokenID:  0000000100000000
 ? Please enter: amount:  1000000000
-? Please enter: recipientAddress:  ab0041a7d3f7b2c290b5b834d46bdc7b7eb85815
-? Please enter: data:  send tokens
+? Please enter: recipientAddress: lskg6prjbqpm6m8rsvmsg6dgyx3e89drknbvxg7x8
+? Please enter: data:  Happy Birthday!
 ? Please enter passphrase:  [hidden]
-? Please re-enter passphrase:  [hidden]
 ----
 
-After all relevant information about the transaction is given, the already encoded transaction object is returned:
+After all relevant information about the transaction is given, the transaction is created and returned in hex format:
 
+[source,json]
 ----
-{"transaction":"0802100018022080c2d72f2a20e03c09bdc8c023d94cf66a5d352e6258380210d97d545abbf75668ea3736e3123229088094ebdc031214ab0041a7d3f7b2c290b5b834d46bdc7b7eb858151a0b73656e6420746f6b656e733a40faa2626d7306506b1999f48aa2f4b1ffdee01e641fa76d37a9d1d6fd8c225a81065c856ea625c52d138a7e3ba86b62913dc8e5aef8b5e307641ab66e0277a60b"}
+{"transaction":"0a05746f6b656e12087472616e7366657218002080ade2042a20eef0f24cc71fe2bd48a2b8c10b9a44fa304674069230a25b11ee82d8638ab363322d0a0800000001000000001080c8afa0251a14fa892e1aa42a8af96c45dfd5afc428b3dba950e6220548656c6c6f3a40c536e178e4000c6631f099f7f7af3ea12d89fef0b11e8ac5cb9ff025283849a8ab9fa03ac8542dd36f5eda8af48a279569d67943dc9faf385040d03375ecc201"}
 ----
 
 .How to additionally return the transaction in JSON format
@@ -245,64 +83,316 @@ To also see the decoded transaction object on creation, add the `--json` paramet
 
 [source,bash]
 ----
-$ ./bin/run transaction:create 2 0 100000000 \
---network-identifier=15f0dacc1060e91818224a94286b13aa04279c640bd5d6f193182031d133df7c \
---nonce=2 --offline --json --pretty
-? Please enter: amount:  1000000000
-? Please enter: recipientAddress:  ab0041a7d3f7b2c290b5b834d46bdc7b7eb85815
-? Please enter: data:  send tokens
-? Please enter passphrase:  [hidden]
-? Please re-enter passphrase:  [hidden]
+./bin/run transaction:create token transfer 10000000 --chain-id 00000001 --nonce 0 --offline --json
+----
+
+This creates a response as seen below:
+
+[source,json]
+----
 {
-  "transaction": "0802100018022080c2d72f2a20e03c09bdc8c023d94cf66a5d352e6258380210d97d545abbf75668ea3736e3123229088094ebdc031214ab0041a7d3f7b2c290b5b834d46bdc7b7eb858151a0b73656e6420746f6b656e733a40faa2626d7306506b1999f48aa2f4b1ffdee01e641fa76d37a9d1d6fd8c225a81065c856ea625c52d138a7e3ba86b62913dc8e5aef8b5e307641ab66e0277a60b"
+  "transaction": "0a05746f6b656e12087472616e7366657218002080ade2042a20eef0f24cc71fe2bd48a2b8c10b9a44fa304674069230a25b11ee82d8638ab363322d0a0800000001000000001080c8afa0251a14fa892e1aa42a8af96c45dfd5afc428b3dba950e6220548656c6c6f3a40c536e178e4000c6631f099f7f7af3ea12d89fef0b11e8ac5cb9ff025283849a8ab9fa03ac8542dd36f5eda8af48a279569d67943dc9faf385040d03375ecc201"
 }
+----
+
+[source,json]
+----
 {
   "transaction": {
-    "moduleID": 2,
-    "assetID": 0,
-    "nonce": "2",
-    "fee": "100000000",
-    "senderPublicKey": "e03c09bdc8c023d94cf66a5d352e6258380210d97d545abbf75668ea3736e312",
+    "module": "token",
+    "command": "transfer",
+    "fee": "10000000",
+    "nonce": "0",
+    "senderPublicKey": "eef0f24cc71fe2bd48a2b8c10b9a44fa304674069230a25b11ee82d8638ab363",
     "signatures": [
-      "faa2626d7306506b1999f48aa2f4b1ffdee01e641fa76d37a9d1d6fd8c225a81065c856ea625c52d138a7e3ba86b62913dc8e5aef8b5e307641ab66e0277a60b"
+      "c536e178e4000c6631f099f7f7af3ea12d89fef0b11e8ac5cb9ff025283849a8ab9fa03ac8542dd36f5eda8af48a279569d67943dc9faf385040d03375ecc201"
     ],
-    "asset": {
-      "amount": "1000000000",
-      "recipientAddress": "ab0041a7d3f7b2c290b5b834d46bdc7b7eb85815",
-      "data": "send tokens"
-    }
+    "params": {
+      "tokenID": "0000000100000000",
+      "amount": "10000000000",
+      "recipientAddress": "lskg6prjbqpm6m8rsvmsg6dgyx3e89drknbvxg7x8",
+      "data": "Hello"
+    },
+    "id": "a01f5a6e5e753a872652cbefc1578bcf90b99a89cbfc522b4afded53ce344cbc"
   }
 }
 ----
 ====
 
-== Broadcasting/sending a signed transaction
-
-A transaction can be posted to a node in the following ways:
-
-* <<via-api-client>>
-* <<via-rpc-api>>
-* <<via-cli>>
-* <<via-lisk-service-http-api>>
-* <<via-lisk-core-http-api>>
+== Option 2: Creating transactions offline with Lisk Elements
 
 [NOTE]
 ====
-If the existing data needs to be encoded/decoded before posting, check the guide xref:{url_guides_decoding}[]
+The relevant files discussed in this guide are {url_schemas}[schemas.js^], {url_account}[account.json^], {url_create-offline}[create-offline.js^], {url_sign-offline}[sign-offline.js^], {url_api-client}[api-client.js^], {url_dry-run}[dry-run.js^] and {url_index}[index.js^].
 ====
 
-=== Via API client
+The following Lisk Elements packages are required to create and sign a transaction offline:
 
-Create a file `api-client.js` which will export the function `getClient()`.
+* `@liskhq/lisk-client`, including the following libraries:
+** {url_typedoc_transactions}[@liskhq/lisk-transactions^]
+** {url_typedoc_validator}[@liskhq/lisk-validator^] (optional)
 
-Adjust the RPC (Remote-Procedure-Call), endpoint to point to the node you want to broadcast the transaction to.
+=== Provide the transaction schema and params schema
+
+To create, validate, and sign transactions offline with Lisk Elements, it is necessary to access their schemas.
+
+The corresponding param schemas can be found in the module reference pages listed below:
+
+* {url_typedoc_regmc_schema}[Register Mainchain^]
+* {url_typedoc_regsc_schema}[Register Sidechain^]
+* {url_typedoc_regvalidator_schema}[Register Validator^]
+* {url_typedoc_report_schema}[Report Delegate Misbehavior^]
+* {url_typedoc_stake_schema}[Stake^]
+* {url_typedoc_transfer_schema}[Transfer Token^]
+
+Create a new file `schemas.js` and add all required schemas in this file, as shown in the snippet below.
+
+In this example, we will send a Transfer Token transaction, therefore two different schemas are required:
+
+. The {url_typedoc_tx_schema}[Transaction Schema^] (always required).
+. The {url_typedoc_transfer_schema}[Transfer Token params schema^].
+
+.schemas.js
+[source,js]
+----
+const transactionSchema = {
+    $id: '/lisk/transaction',
+    type: 'object',
+    required: ['module', 'command', 'nonce', 'fee', 'senderPublicKey', 'params'],
+    properties: {
+        module: {
+            dataType: 'string',
+            fieldNumber: 1,
+            minLength: 1,
+            maxLength: 32,
+        },
+        command: {
+            dataType: 'string',
+            fieldNumber: 2,
+            minLength: 1,
+            maxLength: 32,
+        },
+        nonce: {
+            dataType: 'uint64',
+            fieldNumber: 3,
+        },
+        fee: {
+            dataType: 'uint64',
+            fieldNumber: 4,
+        },
+        senderPublicKey: {
+            dataType: 'bytes',
+            fieldNumber: 5,
+            minLength: 32,
+            maxLength: 32,
+        },
+        params: {
+            dataType: 'bytes',
+            fieldNumber: 6,
+        },
+        signatures: {
+            type: 'array',
+            items: {
+                dataType: 'bytes',
+            },
+            fieldNumber: 7,
+        },
+    },
+};
+
+const transferParamsSchema = {
+    $id: '/lisk/transferParams',
+    title: 'Transfer transaction params',
+    type: 'object',
+    required: ['tokenID', 'amount', 'recipientAddress', 'data'],
+    properties: {
+        tokenID: {
+            dataType: 'bytes',
+            fieldNumber: 1,
+            minLength: 8,
+            maxLength: 8,
+        },
+        amount: {
+            dataType: 'uint64',
+            fieldNumber: 2,
+        },
+        recipientAddress: {
+            dataType: 'bytes',
+            fieldNumber: 3,
+            format: 'lisk32',
+        },
+        data: {
+            dataType: 'string',
+            fieldNumber: 4,
+            minLength: 0,
+            maxLength: 64,
+        },
+    },
+};
+
+module.exports = { transferParamsSchema, transactionSchema };
+----
+
+=== Providing the account credentials
+
+To create and sign the transaction, the credentials of the account sending the transactions are required.
+
+In particular, the following account credentials are required:
+
+. `publicKey`: To create the transaction
+. `privateKey`: To sign the transaction
+
+Create a file `account.json` and add all relevant account credentials into this file.
+You can also create a new account using the xref:{url_create_keys}[keys:create] CLI command.
+
+In this example, we use the following example account credentials:
+
+.account.json
+[source,json]
+----
+{
+  "address": "lskg6prjbqpm6m8rsvmsg6dgyx3e89drknbvxg7x8",
+  "keyPath": "m/44'/134'/0'",
+  "publicKey": "ec10255d3e78b2977f04e59ea9afd3e9a2ce9a6b44619ef9f6c47c29695b1df3",
+  "privateKey": "ac3e34eb369d52a3cddf0bc4312d9b0aa3625b04721039bb114f4c607fb5256eec10255d3e78b2977f04e59ea9afd3e9a2ce9a6b44619ef9f6c47c29695b1df3",
+  "binaryAddress": "fa892e1aa42a8af96c45dfd5afc428b3dba950e6"
+}
+----
+
+==== Retrieving `binaryAddress`
+Each account's credential contains an `address` in the Lisk32 format.
+To convert an address into a binary string format, you can use `lisk-console`.
+
+. Start a Lisk console session.
++
+[source,bash]
+----
+lisk-console
+----
++
+. Pass the Lisk32 address to the `getAddressFromLisk32Address` function:
++
+[source,bash]
+----
+lisk.cryptography.address.getAddressFromLisk32Address('lskg6prjbqpm6m8rsvmsg6dgyx3e89drknbvxg7x8').toString('hex')
+----
++
+. The console will output the resultant binary address, as shown below:
++
+[source,bash]
+----
+'fa892e1aa42a8af96c45dfd5afc428b3dba950e6'
+----
+
+For all the available conversions, please refer to the {url_typedoc_crypto_address}[lisk.cryptography.address^] package.
+
+
+=== Creating the transaction
+
+Create a new file `create-offline.js` to create the unsigned transaction object.
+
+Define the unsigned transaction object manually by following the <<provide-the-transaction-schema-and-params-schema,transaction schema>>.
+
+It is recommended to verify the correct format of the transaction with the `validator.validate()` function of the `@liskhq/lisk-validator` package afterwards.
+
+Then, manually define the parameters for the *Token Transfer* command, and add them to the unsigned transaction.
+
+.create-offline.js
+[source,js]
+----
+const { validator } = require('@liskhq/lisk-client');
+const { transactionSchema } = require('./schemas');
+// Example account credentials
+const account = require('./account.json');
+
+const createTxOffline = () => {
+	// Adjust the values of the unsigned transaction manually
+	const unsignedTransaction = {
+		module: "token",
+		command: "transfer",
+		fee: BigInt(10000000),
+		nonce: BigInt(23),
+		senderPublicKey: Buffer.from(account.publicKey, 'hex'),
+		params: Buffer.alloc(0),
+		signatures: [],
+	};
+
+	// Validate the transaction
+	validator.validator.validate(transactionSchema, unsignedTransaction);
+
+	// Create the asset for the Token Transfer transaction
+	const transferParams = {
+		tokenID: Buffer.from('0000000100000000', 'hex'),
+		amount: BigInt(1000),
+		recipientAddress: Buffer.from(account.binaryAddress, 'hex'),
+		data: 'Happy birthday!'
+	};
+
+	// Add the transaction params to the transaction object
+	unsignedTransaction.params = transferParams;
+
+	// Return the unsigned transaction object
+	return unsignedTransaction;
+}
+
+module.exports = { createTxOffline }
+----
+
+IMPORTANT: For an offline transaction to dry-run successfully, the `tokenID` and `chainID` of the node must be the same as the ones used in the creation of an offline transaction.
+
+The transaction object is now returned, and ready to be signed by the sender in the next step.
+
+=== Signing the transaction
+
+Create a new file `sign-offline.js` to create a script that will sign a given unsigned transaction object.
+
+To sign the transaction, use the `signTransaction()` function of the `@liskhq/lisk-transactions` package.
+It requires the following parameters:
+
+. The unsigned transaction
+. The chain ID
+. The private key of the account signing the transaction
+. The params schema for the command addressed in the transaction
+
+.sign-offline.js
+[source,js]
+----
+const { transactions } = require('@liskhq/lisk-client');
+const { transferParamsSchema } = require('./schemas');
+const account = require('./account.json');
+
+const chainID = '00000001';
+
+const signTx = (unsignedTransaction) => {
+	const signedTransaction = transactions.signTransaction(
+		unsignedTransaction,
+		Buffer.from(chainID, 'hex'),
+		Buffer.from(account.privateKey, 'hex'),
+		transferParamsSchema
+	);
+
+	return signedTransaction;
+}
+
+module.exports = { signTx }
+----
+
+=== Verifying the transaction
+//TODO: Add link to section explaining dry-runs
+A transaction dry-run can only be performed *online*, by connecting to a node.
+
+Without dry-running the transaction, its validity cannot be verified, and the transaction might fail.
+
+To connect to a node, create a function `getClient()` which provides an instance of the Lisk API client.
+
+Create a new file `api-client.js` and paste the following code:
 
 .api-client.js
 [source,js]
 ----
- const { apiClient } = require('@liskhq/lisk-client');
+const { apiClient } = require('@liskhq/lisk-client');
 
-const RPC_ENDPOINT = 'ws://localhost:8080/ws';
+const RPC_ENDPOINT = 'ws://127.0.0.1:7887/rpc-ws';
 let clientCache;
 
 const getClient = async () => {
@@ -315,104 +405,163 @@ const getClient = async () => {
 module.exports = { getClient };
 ----
 
-Import the `getClient()` function and execute it to use the API client to broadcast the transaction, as shown in below snippet.
+Create a new file `dry-run.js` to create a function that performs a dry-run for a given transaction.
 
+Require the function `getClient()` to retrieve the API client, and use it to perform a dry-run of the transaction.
+
+.dry-run.js
 [source,js]
 ----
 const { getClient } = require('./api-client');
 
-// ...
+const dryRun = async (signedTransaction) => {
+	const client = await getClient();
+	const encTx = client.transaction.encode(signedTransaction);
+	const result = await client.invoke('txpool_dryRunTransaction', { "transaction": encTx.toString("hex") });
 
-// Use the API client to send the transaction to a node
-getClient().then(async client => {
-  try {
-    res = await client.transaction.send(signedTransaction);
-    console.log(res);
-  } catch (error) {
-    console.log(error);
-  }
-});
+	return result;
+}
+
+module.exports = { dryRun };
 ----
 
-=== Via RPC API
+=== Executing the script
 
-If you prefer to use the RPC WebSocket API of Lisk Service to post transactions, this can be achieved for example by writing a small JS script, and using the API client of the `socket.io-client` package:
+Finally, create a new file `index.js` to execute the scripts we defined above one after another.
 
+.index.js
 [source,js]
 ----
-// 1. Require the dependencies
-const io = require('socket.io-client'); // The socket.io client
-const jsome = require('jsome'); // Prettifies the JSON output
+const { createTxOffline } = require('./create-offline');
+const { signTx } = require('./sign-offline');
+const { dryRun } = require('./dry-run');
 
-jsome.params.colored = true;
+(async () => {
+	// 1. Create an unsigned transaction
+	const tx = createTxOffline();
+	console.log("Unsigned Transaction: ", tx);
 
-// Use local Service node
-const WS_RPC_ENDPOINT = 'ws://localhost:9901/rpc-v2';
-//Use public Service node
-//const WS_RPC_ENDPOINT = "wss://service.lisk.com/rpc-v2";
+	// 2. Sign the transaction
+	const signedTx = signTx(tx);
+	console.log("Signed Transaction: ", signedTx);
 
-// 2. Connect to Lisk Service via WebSockets
-const socket = io(WS_RPC_ENDPOINT, {
-  forceNew: true,
-  transports: ['websocket']
-});
+	// 3. Perform a dry-run for the signed transaction
+	const dryRunResult = await dryRun(signedTx)
+	console.log("Dry-Run Result: ", dryRunResult);
 
-// 3. Emit the remote procedure call
-socket.emit('request', {
-  jsonrpc: '2.0',
-  method: 'post.transactions',
-  payload: {"transaction":"08021000180d2080c2d72f2a200fe9a3f1a21b5530f27f87a414b549e79a940bf24fdf2b2f05e7f22aeeecc86a32270880c2d72f12144fd8cc4e27a3489b57ed986efe3d327d3de40d921a0a73656e6420746f6b656e3a4069242925e0e377906364fe6c2eed67f419dfc1a757f73e848ff2f1ff97477f90263487d20aedf538edffe2ce5b3e7601a8528e5cd63845272e9d79c294a6590a"}
-},
-  answer => {
-    // console.log(answer);
-    jsome(answer);
-    process.exit(0);
-});
+	process.exit(0);
+})();
 ----
 
-=== Via CLI
+An unsigned Transaction looks like this:
 
+.Unsigned Transaction
 [source,bash]
 ----
-$ lisk-core transaction:send 0802100018022080c2d72f2a20e03c09bdc8c023d94cf66a5d352e6258380210d97d545abbf75668ea3736e3123229088094ebdc031214ab0041a7d3f7b2c290b5b834d46bdc7b7eb858151a0b73656e6420746f6b656e733a40faa2626d7306506b1999f48aa2f4b1ffdee01e641fa76d37a9d1d6fd8c225a81065c856ea625c52d138a7e3ba86b62913dc8e5aef8b5e307641ab66e0277a60b
+Unsigned Transaction:  {
+  module: 'token',
+  command: 'transfer',
+  fee: 10000000n,
+  nonce: 23n,
+  senderPublicKey: <Buffer ec 10 25 5d 3e 78 b2 97 7f 04 e5 9e a9 af d3 e9 a2 ce 9a 6b 44 61 9e f9 f6 c4 7c 29 69 5b 1d f3>,
+  params: {
+    tokenID: <Buffer 00 00 00 01 00 00 00 00>,
+    amount: 1000n,
+    recipientAddress: <Buffer fa 89 2e 1a a4 2a 8a f9 6c 45 df d5 af c4 28 b3 db a9 50 e6>,
+    data: 'Happy birthday!'
+  },
+  signatures: []
+}
 ----
 
-=== Via Lisk Service HTTP API
+Values for the properties `signatures` and `id` are added to a transaction when it is signed by a user.
 
-IMPORTANT: xref:{url_service}[Lisk Service] needs to be installed in order to post a transaction via the Lisk Service HTTP API.
-
-cURL is one of the tools that can be used to send HTTP API requests to Lisk Service as shown below:
-
+.Signed Transaction
 [source,bash]
 ----
-curl -X POST -H "Content-Type: application/json" \
--d '{ "transaction": "0802100018022080c2d72f2a20e03c09bdc8c023d94cf66a5d352e6258380210d97d545abbf75668ea3736e3123229088094ebdc031214ab0041a7d3f7b2c290b5b834d46bdc7b7eb858151a0b73656e6420746f6b656e733a40faa2626d7306506b1999f48aa2f4b1ffdee01e641fa76d37a9d1d6fd8c225a81065c856ea625c52d138a7e3ba86b62913dc8e5aef8b5e307641ab66e0277a60b"}' \
-"http://localhost:9901/api/v2/transactions"
+Signed Transaction:  {
+  module: 'token',
+  command: 'transfer',
+  fee: 10000000n,
+  nonce: 23n,
+  senderPublicKey: <Buffer ec 10 25 5d 3e 78 b2 97 7f 04 e5 9e a9 af d3 e9 a2 ce 9a 6b 44 61 9e f9 f6 c4 7c 29 69 5b 1d f3>,
+  params: {
+    tokenID: <Buffer 00 00 00 01 00 00 00 00>,
+    amount: 1000n,
+    recipientAddress: <Buffer fa 89 2e 1a a4 2a 8a f9 6c 45 df d5 af c4 28 b3 db a9 50 e6>,
+    data: 'Happy birthday!'
+  },
+  signatures: [
+    <Buffer 64 08 a2 9d 7f 39 55 ed 5e 47 9f a6 90 b1 c2 61 8f 07 ab cc 70 bd 10 05 44 2f 89 b5 74 9f b7 b5 16 1d 73 db 79 9e ab e7 07 7e f5 40 bd e3 91 de 99 33 ... 14 more bytes>
+  ],
+  id: <Buffer ea 7e a3 a8 dd bf 9f 88 0a da eb 17 5a 47 d5 b8 bf 70 39 80 09 63 66 a7 be 7f 9d eb 01 43 73 b3>
+}
 ----
 
-The following response will be displayed if the transaction was posted successfully:
+If the dry-run result is `1`, the transaction is valid.
 
-----
-{"message":"Transaction payload was successfully passed to the network node","transactionId":"8a503843942e7d47ba0bef83fe735d26381f32a6ca6c96fb1cde902315f6220c"}
-----
-
-=== Via Lisk Core HTTP API
-
-IMPORTANT: The xref:{url_framework_httpapi}[] needs to be enabled on the node in order to post a transaction via the node HTTP API.
-
-cURL is one of the tools that can be used to send HTTP API requests to Lisk Core as shown below:
-
+.Dry-Run Result
 [source,bash]
 ----
-curl -X POST -H "Content-Type: application/json" \
--d '{ "transaction": "0802100018022080c2d72f2a20e03c09bdc8c023d94cf66a5d352e6258380210d97d545abbf75668ea3736e3123229088094ebdc031214ab0041a7d3f7b2c290b5b834d46bdc7b7eb858151a0b73656e6420746f6b656e733a40faa2626d7306506b1999f48aa2f4b1ffdee01e641fa76d37a9d1d6fd8c225a81065c856ea625c52d138a7e3ba86b62913dc8e5aef8b5e307641ab66e0277a60b"}' \
-"http://localhost:4000/api/transactions"
+Dry-Run Result:  {
+  result: 1,
+  events: [
+    {
+      data: '0a14fa892e1aa42a8af96c45dfd5afc428b3dba950e612036665651a0800000001000000002080ade2042800',
+      index: 0,
+      module: 'token',
+      name: 'lock',
+      topics: [Array],
+      height: 2940
+    },
+    {
+      data: '0a14fa892e1aa42a8af96c45dfd5afc428b3dba950e61214fa892e1aa42a8af96c45dfd5afc428b3dba950e61a08000000010000000020e8072800',
+      index: 1,
+      module: 'token',
+      name: 'transfer',
+      topics: [Array],
+      height: 2940
+    },
+    {
+      data: '0a14fa892e1aa42a8af96c45dfd5afc428b3dba950e612036665651a0800000001000000002080ade2042800',
+      index: 2,
+      module: 'token',
+      name: 'unlock',
+      topics: [Array],
+      height: 2940
+    },
+    {
+      data: '0a14fa892e1aa42a8af96c45dfd5afc428b3dba950e6121403cb3daae6009976ebac3b8935444bc3677b68821a08000000010000000020b0bed7042800',
+      index: 3,
+      module: 'token',
+      name: 'transfer',
+      topics: [Array],
+      height: 2940
+    },
+    {
+      data: '0a14fa892e1aa42a8af96c45dfd5afc428b3dba950e61208000000010000000018d0ee0a2000',
+      index: 4,
+      module: 'token',
+      name: 'burn',
+      topics: [Array],
+      height: 2940
+    },
+    {
+      data: '0a14fa892e1aa42a8af96c45dfd5afc428b3dba950e6121403cb3daae6009976ebac3b8935444bc3677b688218d0ee0a20b0bed704',
+      index: 5,
+      module: 'fee',
+      name: 'generatorFeeProcessed',
+      topics: [Array],
+      height: 2940
+    },
+    {
+      data: '0801',
+      index: 6,
+      module: 'token',
+      name: 'commandExecutionResult',
+      topics: [Array],
+      height: 2940
+    }
+  ]
+}
 ----
-
-The following response will be displayed if the transaction was posted successfully:
-
-----
-{"message":"Transaction payload was successfully passed to the network node","transactionId":"8a503843942e7d47ba0bef83fe735d26381f32a6ca6c96fb1cde902315f6220c"}
-----
-
-

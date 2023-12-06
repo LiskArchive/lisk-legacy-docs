@@ -1,0 +1,443 @@
+= Plugins
+Mona Bärenfänger <mona@lightcurve.io> Muhammad Talha <muhammad.talha@lightcurve.io>
+//Settings
+:toc: preamble
+:toclevels: 5
+:page-toclevels: 4
+:idprefix:
+:idseparator: -
+:imagesdir: ../../assets/images
+:docs_sdk: v6@lisk-sdk::
+// URLs
+:url_github_hello_plugin: https://github.com/LiskHQ/lisk-sdk-examples/tree/development/tutorials/hello/hello_client/src/app/plugins/hello_info
+:url_github_nft_plugin: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/nft/blockchain_app/nft_api_plugin/index.js
+:url_github_srs_api_plugin: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/social-recovery/blockchain_app/plugins/srs_api_plugin/index.js
+:url_github_srs_data_plugin: https://github.com/LiskHQ/lisk-sdk-examples/blob/development/tutorials/social-recovery/blockchain_app/plugins/srs_data_plugin/index.js
+:url_github_base_plugin: https://github.com/LiskHQ/lisk-sdk/blob/development/framework/src/plugins/base_plugin.ts
+:url_github_base_endpoint: https://github.com/LiskHQ/lisk-sdk/blob/development/framework/src/plugins/base_plugin_endpoint.ts
+:url_github_faucet_endpoints: https://github.com/LiskHQ/lisk-sdk/blob/development/framework-plugins/lisk-framework-faucet-plugin/src/plugin/endpoint.ts
+
+// Project URLs
+:url_advanced_architecture_config: understand-blockchain/sdk/architecture.adoc#configuration
+:url_advanced_communication: understand-blockchain/sdk/rpc.adoc
+:url_subscribe_events: understand-blockchain/sdk/rpc.adoc#how-to-subscribe-to-events
+:url_advanced_communication_pluginschannel: {url_advanced_communication}#channel-for-plugins
+:url_advanced_communication_alias: {url_advanced_communication}#alias
+:url_advanced_communication_interfaces: {url_advanced_communication}#interfaces
+:url_advanced_communication_invoke_endpoints: {url_advanced_communication}#how-to-invoke-endpoints
+:url_guides_setup: build-blockchain/create-blockchain-client.adoc
+:url_guides_setup_helloapp: {url_guides_setup}#the-hello-world-client
+:url_guides_plugin: build-blockchain/plugin/index.adoc
+:url_introduction_modules: understand-blockchain/sdk/modules-commands.adoc
+:url_references_config: {docs_sdk}config.adoc
+:url_references_config_default: {docs_sdk}config.adoc#configuration
+:url_lisk_commander: {docs_sdk}references/lisk-commander/index.adoc
+:url_rpc_endpoints: understand-blockchain/sdk/rpc.adoc
+:url_tutorials_nft: tutorial/nft.adoc
+:url_tutorials_srs: tutorial/srs.adoc
+
+// TODO: Update the page by uncommenting the hyperlinks once the updated pages are available.
+
+Plugins are part of the off-chain logic, and are implemented inside the blockchain client.
+
+In other words, a plugin will never change the state of the blockchain itself, contrary to xref:{url_introduction_modules}[modules], which hold the on-chain logic of the blockchain client.
+
+.When to create a plugin
+****
+Plugins can perform the following:
+
+* Search the blockchain data.
+* Aggregate the blockchain data.
+* Automate the blockchain logic, such as automatically sending transactions.
+* Add a proxy to the application interfaces.
+****
+
+== Creating a Plugin
+// Lisk provides an extremely simple and user-friendly method to create a plugin using xref:{url_lisk_commander}[Lisk Commander]. 
+Lisk provides an extremely simple and user-friendly method to create a plugin using Lisk Commander. 
+By executing the following command in a terminal, a plugin can be created and registered to a blockchain client.
+
+[source,bash]
+----
+lisk generate:plugin NAME_OF_PLUGIN
+----
+
+[TIP]
+====
+For more practical guidance on how to create a new plugin, check out the guide xref:{url_guides_plugin}[].
+
+If you wish to view an example of a fully implemented plugin, check out the following examples:
+
+* The {url_github_hello_plugin}[HelloInfo plugin^] from the xref:{url_guides_setup_helloapp}[Hello] client.
+* The {url_github_nft_plugin}[NFT plugin^] from the xref:{url_tutorials_nft}[].
+* The {url_github_srs_api_plugin}[SRS API plugin^] and the {url_github_srs_data_plugin}[SRS data plugin^] from the xref:{url_tutorials_srs}[].
+====
+
+Each plugin can have a set of files for defining the schemas, types, and endpoints of a plugin.
+By default, Lisk Commander only creates the plugin's class file such as *example_plugin.ts*, and registers it into the *plugins.ts* file. 
+The structure of the plugins folder can be similar to the one displayed below:
+
+.Sample "plugins" directory inside a blockchain application
+----
+src/
+├── plugins/
+│   ├── example/
+│   │   ├── example_plugin.ts
+│   │   ├── types.ts
+│   │   ├── endpoint.ts
+│   │   └── schemas.ts
+│   └── faucet/
+│   │   ├── faucet_plugin.ts
+│   │   ├── types.ts
+│   │   ├── endpoint.ts
+│   │   └── schemas.ts
+└── plugins.ts
+----
+
+It's worth noting that the directory structure of a plugin can be customized as per the requirement of the Lisk application.
+The separation of *types*, *schemas*, and *endpoints* is purely made to segregate different parts of a plugin.
+
+As mentioned earlier, a part of the plugin's bootstrapping process is to create a new class such as the `ExamplePlugin` in the *example_plugin.ts* file. 
+For a plugin to work correctly, it is mandatory to include the following functions, `nodeModulePath()`, `load()`, and `unload()`.
+These functions are automatically created during the bootstrapping process.
+
+The following code snippet below shows a bare-bone plugin class:
+
+.src/plugins/example/example_plugin.ts
+[source,typescript]
+----
+import { BasePlugin } from 'lisk-sdk';
+
+export class ExamplePlugin extends BasePlugin {
+
+	public name: 'example';
+	//Mandatory
+	public get nodeModulePath(): string {
+		return __filename;
+	}
+
+	//Mandatory
+	public async load(): Promise<void> {}
+
+	//Mandatory
+	public async unload(): Promise<void> {}
+
+}
+----
+
+Once a plugin is bootstrapped, it is registered inside the *plugins.ts* file automatically by the Lisk Commander.
+
+.src/plugins.ts
+[source,typescript]
+----
+import { Application } from 'lisk-sdk';
+import { ExamplePlugin } from "./plugins/example/example_plugin";
+
+export const registerPlugins = (app: Application): void => {
+    app.registerPlugin(new ExamplePlugin());
+};
+----
+
+== Plugin Anatomy
+Every plugin must extend from the `BasePlugin` class.
+The `BasePlugin` class provides a basic skeleton for what is required of a plugin.
+For more information, check out the {url_github_base_plugin}[*base_plugin.ts*^] file on GitHub.
+
+Every plugin has three essential parts:
+
+. <<execution-logic>>
+. <<interface>>
+. <<other-properties>>
+
+.Anatomy of an "ExamplePlugin" class based on the "BasePlugin" class
+image::intro/plugin-diagram.png[plugin-diagram, 1000 ,align="center"]
+
+=== Execution Logic
+The execution logic consists of functions that execute the business logic for a plugin.
+By default, a bootstrapped plugin has the `load()` and `unload()` functions.
+Additional functions can be added if needed, and all the functions have access to the methods and properties defined in the `BasePlugin` class.
+The aforementioned can be accessed using `this.variable` or `this.function()` from within the plugin class.
+
+==== load()
+
+The `load()` method will be invoked by the controller to load the plugin.
+It contains the plugin logic that is executed when the plugin is loaded in the blockchain client.
+
+It can be used to retrieve, mutate, store and/or publish data in a specific manner, depending on the purpose of the plugin.
+
+.Example: load() function of the "faucet" plugin
+[source,typescript]
+----
+public async load(): Promise<void> {
+    const app = express();
+    app.get('/api/config', (_req, res) => {
+        const config = {
+            applicationUrl: this.config.applicationUrl,
+            amount: this.config.amount,
+            tokenPrefix: this.config.tokenPrefix,
+            captchaSitekey: this.config.captchaSitekey,
+            logoURL: this.config.logoURL,
+            faucetAddress: this._state.publicKey
+                ? cryptography.address.getLisk32AddressFromPublicKey(this._state.publicKey)
+                : undefined,
+        };
+        res.json(config);
+    });
+    app.use(express.static(join(__dirname, '../../build')));
+    this._server = app.listen(this.config.port, this.config.host);
+}
+----
+
+==== unload()
+
+The `unload()` method will be invoked by the controller to unload the plugin correctly.
+It is executed on node shutdown.
+
+.Example: unload() function of the "faucet" plugin
+[source,typescript]
+----
+public async unload(): Promise<void> {
+    return new Promise((resolve, reject) => {
+        this._server.close(err => {
+            if (err) {
+                reject(err);
+                return;
+            }
+            resolve();
+        });
+    });
+}
+----
+
+=== Interface
+
+Plugins can...
+
+. ...expose <<endpoints>>, which allows other plugins and external tools to interact with the plugin.
+. ...invoke endpoints of other modules and plugins as well.
+. ...subscribe to <<events>> emitted by the blockchain.
+
+TIP: View the "Interfaces" section of the xref:{url_advanced_communication_interfaces}[Communication] page to see an overview of the different interfaces and their accessibility in modules, plugins, and external services.
+
+==== Endpoints
+
+Endpoints are functions that can be xref:{url_advanced_communication_invoke_endpoints}[invoked] via Remote-Procedure-Calls (RPC) by other plugins and external services, to request data from a plugin.
+
+The endpoints of a plugin should be defined in the `Endpoint` class.
+The `Endpoint` class usually resides in the *endpoint.ts* file inside each plugin's directory and it inherits from the `BasePluginEndpoint` class.
+For more information, check out the {url_github_base_endpoint}[*base_plugin_endpoint.ts*^] file on GitHub.
+A {url_github_faucet_endpoints}[sample endpoint class^] and one of its endpoints are available in the following code snippet below:
+
+.Example: plugins/faucet/endpoint.ts
+[source,typescript]
+----
+
+export class Endpoint extends BasePluginEndpoint {
+
+    // ...
+
+    public async authorize(context: PluginEndpointContext): Promise<{ result: string }> {
+		validator.validate(authorizeParamsSchema, context.params);
+		const { enable, password } = context.params;
+		try {
+			const parsedEncryptedPassphrase = cryptography.encrypt.parseEncryptedMessage(
+				this._config.encryptedPassphrase,
+			);
+			const passphrase = await cryptography.encrypt.decryptMessageWithPassword(
+				parsedEncryptedPassphrase,
+				password as string,
+				'utf-8',
+			);
+			const { publicKey } = cryptography.legacy.getPrivateAndPublicKeyFromPassphrase(passphrase);
+			this._state.publicKey = enable ? publicKey : undefined;
+			this._state.passphrase = enable ? passphrase : undefined;
+			const changedState = enable ? 'enabled' : 'disabled';
+			return {
+				result: `Successfully ${changedState} the faucet.`,
+			};
+		} catch (error) {
+			throw new Error('Password given is not valid.');
+		}
+	}
+
+    // ...
+}
+----
+
+==== Events
+A plugin can subscribe to RPC events emitted by the blockchain.
+To subscribe to an event, see xref:{url_subscribe_events}[How to subscribe to events].
+
+=== Other properties
+
+==== nodeModulePath()
+Whenever a plugin is bootstrapped with the Lisk Commander, a `nodeModulePath()` function is created automatically.
+This function returns the path of the *plugin.ts* file.
+The `plugin.ts` file contains information on all the plugins registered with a blockchain client.
+
+.Example: nodeModulePath() function of a plugin
+[source,typescript]
+----
+public get nodeModulePath(): string {
+    return __filename;
+}
+----
+
+==== name()
+The `name()` function returns the name of the Plugin.
+It is inherited from the `BasePlugin` class.
+The plugin name is used for routing RPC requests to or from the plugin.
+
+.Example: name() function of the BasePlugin class
+[source,typescript]
+----
+public get name(): string {
+    const name = this.constructor.name.replace('Plugin', '');
+    return name.charAt(0).toLowerCase() + name.substr(1);
+}
+----
+
+==== dataPath()
+Lisk stores the node's data in the `~/.lisk/CLIENT_NAME` directory.
+
+.Example: dataPath() function of the BasePlugin class
+[source,typescript]
+----
+public get dataPath(): string {
+    const dirs = systemDirs(this.appConfig.system.dataPath);
+    return join(dirs.plugins, this.name, 'data');
+}
+----
+
+==== Plugin configuration
+A plugin can have its own set of configurations that are passed to it as shown in the following code snippet below:
+
+."FaucetPlugin" class with the custom configurations
+[source,typescript]
+----
+import { BasePlugin, PluginInitContext, cryptography } from 'lisk-sdk';
+import { configSchema } from './schemas'; //Configuration Schema
+import { FaucetPluginConfig, State } from './types'; // Types Object
+import { Endpoint } from './endpoint';
+
+// A plugin with Custom Plugin configuration needs a configuration schema and types objects.
+export class FaucetPlugin extends BasePlugin<FaucetPluginConfig> { //Config Type Object
+    public configSchema = configSchema; //Schema Object
+
+}
+----
+Each custom configuration's schema and type of values must be defined for each plugin and should be passed to the plugin class.
+
+==== Plugin schemas
+A schema of a plugin contains the structural information of the data accepted by a plugin.
+A schema can be for a custom configuration or for a specific kind of data that must be passed to a plugin to accommodate the business logic.
+Schemas are passed to the plugin class and are later verified by the Lisk framework.
+Usually, schemas are present inside the *schemas.ts* file located inside a plugin's folder.
+The contents of the `schemas.ts` file are described below:
+
+.Example: plugins/faucet/schemas.ts
+[source,typescript]
+----
+export const configSchema = {
+	$id: '#/plugins/liskFaucet/config',
+	type: 'object',
+	properties: {
+		port: {
+			type: 'integer',
+			minimum: 1,
+			maximum: 65535,
+		},
+		host: {
+			type: 'string',
+			format: 'ip',
+		},
+		encryptedPassphrase: {
+			type: 'string',
+			format: 'encryptedPassphrase',
+			description: 'Encrypted passphrase of the genesis account',
+		},
+		applicationUrl: {
+			type: 'string',
+			format: 'uri',
+			description: 'URL to connect',
+		},
+		fee: {
+			type: 'string',
+			description: 'The transaction fee used to faucet an account',
+		},
+		amount: {
+			type: 'string',
+			description: 'Number of tokens to fund an account per request',
+		},
+		tokenPrefix: {
+			type: 'string',
+			description: 'The token prefix associated with your application',
+		},
+		logoURL: {
+			type: 'string',
+			format: 'uri',
+			description: 'The URL of the logo used on the UI',
+		},
+		captchaSecretkey: {
+			type: 'string',
+			description: 'The re-captcha secret key',
+		},
+		captchaSitekey: {
+			type: 'string',
+			description: 'The re-captcha site key',
+		},
+	},
+	required: ['encryptedPassphrase', 'captchaSecretkey', 'captchaSitekey'],
+	default: {
+		port: 4004,
+		host: '127.0.0.1',
+		applicationUrl: 'ws://localhost:8080/ws',
+		fee: '0.1',
+		amount: '100',
+		tokenPrefix: 'lsk',
+	},
+};
+
+export const fundParamsSchema = {
+	$id: '/lisk/faucet/fund',
+	type: 'object',
+	required: ['address'],
+	properties: {
+		address: {
+			type: 'string',
+			format: 'hex',
+		},
+		token: {
+			type: 'string',
+		},
+	},
+};
+
+----
+
+==== Types
+All the types of variables used by a plugin are usually defined in the `types.ts` file.
+Whilst schemas describe the outline and structure of the data, the `types.ts` file contains the definitions of all the variables that are used by a plugin.
+
+.Example: plugins/faucet/types.ts
+[source,typescript]
+----
+export interface FaucetPluginConfig {
+	port: number;
+	host: string;
+	encryptedPassphrase: string;
+	captchaSitekey: string;
+	captchaSecretkey: string;
+	applicationUrl: string;
+	fee: string;
+	amount: string;
+	tokenPrefix: string;
+	captchaSecret: string;
+	logoURL?: string;
+}
+
+export interface State {
+	publicKey?: Buffer;
+	passphrase?: string;
+}
+----

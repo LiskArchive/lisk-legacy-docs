@@ -1,0 +1,361 @@
+= Schemas & Codec
+Mona Bärenfänger <mona@lightcurve.io> Muhammad Talha <muhammad.talha@lightcurve.io>
+// Settings
+:toc: preamble
+
+// URLs
+:url_json_schema: https://json-schema.org/specification.html
+:url_json_schema_id: https://json-schema.org/understanding-json-schema/structuring.html#id
+:url_lip27_uniqueness: https://github.com/LiskHQ/lips/blob/master/proposals/lip-0027.md#uniqueness-of-encoding
+:url_token_schema: https://github.com/LiskHQ/lisk-sdk/blob/development/framework/src/modules/token/schemas.ts
+:url_faucet_schema: https://github.com/LiskHQ/lisk-sdk/blob/development/framework-plugins/lisk-framework-faucet-plugin/src/plugin/schemas.ts
+:url_type_keyword: https://json-schema.org/understanding-json-schema/reference/type.html#type
+:url_required_keyword: https://json-schema.org/understanding-json-schema/reference/object.html#required-properties
+:url_properties_keyword: https://json-schema.org/understanding-json-schema/reference/object.html#properties
+
+:url_typedoc_validator: {site-url}/lisk-sdk/v6/references/typedoc/modules/_liskhq_lisk_validator.html
+:url_typedoc_codec: {site-url}/lisk-sdk/v6/references/typedoc/modules/_liskhq_lisk_codec.html
+
+// Project URLs
+:url_introduction_modules_accountschema: understand-blockchain/sdk/modules-commands.adoc#account-schema
+:url_introduction_modules_assetschema: understand-blockchain/sdk/modules-commands.adoc#transaction-asset-schema
+:url_guides_decode: integrate-blockchain/encode-decode.adoc
+
+:fn_account: footnote:AccountCodec[Check out the sample usage of the account schemas with a codec: https://github.com/LiskHQ/lisk-sdk/blob/development/elements/lisk-codec/benchmark/encode_decode_account.js[Encode & decode an account's schema^].]
+
+:fn_block: footnote:blockCodec[Check out the sample usage of block schemas with a codec: https://github.com/LiskHQ/lisk-sdk/blob/development/elements/lisk-codec/benchmark/encode_decode_full_block.js[Encode & decode a block's schema^].]
+
+:fn_transaction: footnote:transactionCodec[Check out the sample usage of transaction schemas with a codec: https://github.com/LiskHQ/lisk-sdk/blob/development/elements/lisk-codec/benchmark/encode_decode_small_lisk_transaction.js[Encode & decode a transaction's schema^].]
+
+
+
+
+// TODO: Uncomment the URL once updated content is available.
+A "schema" is just a declarative format for describing the structure of data.
+Since data can be of various types, such as personal data, financial data, etc., it is essential for a software to pre-define the types of data it will process.
+With schemas, custom properties can be defined to fulfill various configuration and business logic requirements.
+
+Schemas play a vital role within the Lisk SDK, as they are utilized in different areas to encode and decode data that is retrieved or pushed to the blockchain.
+Schemas also provide the ability to validate diverse types of data in the Lisk blockchain.
+
+In Lisk SDK, schemas are mainly used in the following:
+
+* *Modules:* whereby modules can have various data structures which are used for storing, validating, and configuring the business logic of a module. 
+** For example, the {url_token_schema}[schema of the Token module^] defines properties used by the *Token* module commands, the configurations applied to the module, and the request and response schemas for the endpoints among various other properties.
+* *Plugins:* whereby plugins can also have similar needs of storing data in variables, validating it, or using schema to configure a plugin.
+ ** For example, the *Faucet* plugin used to seed newly created accounts uses various schemas as defined in its particular {url_faucet_schema}[schemas.ts^] file. 
+* *Codec:* Schemas are also used to encode or decode data such as blocks, transactions, account state, blockchain state data, etc.
+For more information, see the {url_typedoc_validator}[Lisk Validator reference^].
+* *Lisk Validator:* The Lisk validator also relies on pre-defined schemas.
+It used each schema to validate the data passed to it according to its pre-defined schema.
+For more information, see the {url_typedoc_codec}[Lisk Codec reference^].
+
+// for the xref:{url_introduction_modules_assetschema}[schema], which defines the data structure and formats of the transaction asset.
+// * modules and/or assets, to <<decoding-and-encoding-data,decode/encode>> other specific data from the database, such as blocks, transactions, account state, and chain state data.
+
+== Data types
+A schema always defines the data types that will be used to store specific data.
+When the data is retrieved from the data store by a module or from an external database by a plugin, it is returned as a JavaScript object or JSON (JavaScript Object Notation), depending on the context:
+
+* *JavaScript object:* These data types are used *internally* in the Lisk application to handle data from the data stores.
+* *JSON:* Data that is provided by *actions* and *events* is always returned in JSON format.
+
+.Data types of the different data structures
+[cols=",,",options="header",stripes="hover"]
+|===
+|Data type
+|JavaScript object
+|JSON
+
+|string
+|string
+|string
+
+|uint32
+|number
+|number
+
+|sint32
+|number
+|number
+
+|uint64
+|BigInt
+|string
+
+|sint64
+|BigInt
+|string
+
+|bytes
+|Buffer
+|string in hex format
+
+|boolean
+|boolean
+|boolean
+
+|===
+
+
+== Schema Format
+Schemas can be defined as shown below.
+For more information, see the {url_json_schema}[JSON schema reference^].
+
+
+[NOTE]
+====
+Please note the following:
+
+* It is required to use *camelCase* for the key naming.
+* If the data type of a property is either an `object` or an `array`, the `type` property must be used instead of `dataType`.
+====
+
+.Example of a token-transfer transaction schema from the Token module
+[source,js]
+----
+export const transferParamsSchema = {
+	$id: '/lisk/transferParams',
+	title: 'Transfer transaction params',
+	type: 'object',
+	required: ['tokenID', 'amount', 'recipientAddress', 'data'],
+	properties: {
+		tokenID: {
+			dataType: 'bytes',
+			fieldNumber: 1,
+			minLength: TOKEN_ID_LENGTH,
+			maxLength: TOKEN_ID_LENGTH,
+		},
+		amount: {
+			dataType: 'uint64',
+			fieldNumber: 2,
+		},
+		recipientAddress: {
+			dataType: 'bytes',
+			fieldNumber: 3,
+			format: 'lisk32',
+		},
+		data: {
+			dataType: 'string',
+			fieldNumber: 4,
+			minLength: 0,
+			maxLength: MAX_DATA_LENGTH,
+		},
+	},
+};
+----
+
+=== $id
+
+Unique identifier of the schema throughout the system.
+
+The `$id` property is directly inherited from the JSON schema.
+You can read more about the `id` property on {url_json_schema_id}[JSON $id^] reference page.
+
+Whilst defining IDs, adhere to the following criteria:
+
+* Use unique IDs across the system.
+* Use the path-like format for readability; while this may not be a necessary convention to follow, it does however aid in defining unique IDs.
+You can also create a series of unique IDs as well.
+* To avoid overlapping schemas with each other, use a fixed identifier for your app in each ID e.g. `/lisk/`, etc.
+
+.Example of $id
+[source,js]
+----
+$id: '/lisk/transferParams'
+----
+
+=== type
+
+The root type of the schema must be type `object`.
+Inside the object, the properties can be of any type as mentioned in <<data-types>>.
+For more information, see {url_type_keyword}[the "type" keyword^].
+
+.Example of type
+[source,js]
+----
+type: 'object'
+----
+
+=== required
+
+By default, the properties defined by the `properties` keyword are not required. 
+However, one can provide a list of required properties using the `required` keyword.
+For more information, see {url_required_keyword}[the "required" keyword^].
+
+.Example of required
+[source,js]
+----
+required: ['tokenID', 'amount', 'recipientAddress', 'data']
+----
+
+IMPORTANT: If the schema is used for serialization it is recommended to put all properties as `required` to guarantee the {url_lip27_uniqueness}[uniqueness of encoding^].
+
+=== properties
+
+The properties (key-value pairs) on an object are defined using the `properties` keyword.
+The value of properties is an object, where each key is the name of a property and each value is a schema used to validate that property.
+For more information, see {url_properties_keyword}[the "properties" keyword^]. 
+
+.Example of properties
+[source,js]
+----
+properties: {
+    myCounter: {
+        dataType: "uint32",
+        fieldNumber: 1,
+    },
+},
+----
+
+=== default
+Defines the default values of properties.
+
+.Example of default
+[source,js]
+----
+properties: {
+    myCounter: {
+        dataType: "uint32",
+        fieldNumber: 1,
+    },
+},
+default: {
+  myCounter: 0
+}
+----
+
+== Codec
+
+A codec is a device or computer program that encodes or decodes a data stream or signal.
+In Lisk, the codec is essential for validating, transforming, encoding, and decoding data for the Lisk protocol.
+
+Lisk uses the `lisk-codec` package to encode, decode  and perform the aforementioned operations on different objects such as the following:
+
+* Accounts {fn_account}
+* Transactions {fn_transaction}
+* Blocks {fn_block}
+* Multi-signature registration
+* Validator info and validator keys
+* Modules
+* Plugins
+* ... and many more.
+
+By default, the `lisk-codec` package can be found in the following NPM packages:
+
+* `lisk-sdk`
+* `@liskhq/lisk-client`
+* `@liskhq/lisk-codec`
+
+TIP: To see a complete reference of the `*lisk-codec*` package, see {url_typedoc_codec}[Lisk Codec reference^].
+
+In case, it is required to install `lisk-codec`, the following command can be used:
+
+[source,bash]
+----
+npm install --save @liskhq/lisk-codec
+----
+
+TIP: To learn about how codec and schemas are used to encode and decode data, checkout out our dedicated guide: xref:{url_guides_decode}[].
+
+
+
+//TODO: Should be merged with the integrate-blockchain/encode-decode.adoc page.
+
+// == Decoding and encoding data
+
+// // === With the API client
+
+// // Please refer to the dedicated guide xref:{url_guides_decode}[].
+
+// === With lisk-codec
+
+// To conveniently decode and encode the data structures stored on the blockchain, such as blocks, transactions, account state, and chain state, use the `codec` library.
+// The library can be imported from the following NPM packages:
+
+// * `lisk-sdk`
+// * `@liskhq/lisk-client`
+// * `@liskhq/lisk-codec`
+
+// .Example: Importing the codec library from the lisk-sdk package
+// [source,js]
+// ----
+// const {
+//     codec,
+// } = require('lisk-sdk');
+
+// const CHAIN_STATE_KEY = "myContext:moreContext";
+
+// const schema = {
+//     $id: "lisk/myContext/moreContext",
+//     type: "object",
+//     required: ["myCounter"],
+//     properties: {
+//         myCounter: {
+//             dataType: "uint32",
+//             fieldNumber: 1,
+//         },
+//     },
+//     default: {
+//       myCounter: 0
+//     }
+// };
+
+// // Get data from the database
+// let counterBuffer = await stateStore.chain.get(
+//     CHAIN_STATE_KEY
+// );
+
+// // Decode the retrieved data with the schema
+// let counter = codec.decode(
+//     schema,
+//     counterBuffer
+// );
+
+// // Mutate the retrieved data
+// counter.myCounter++;
+
+// // Post the data back to the database
+// await stateStore.chain.set(
+//     CHAIN_STATE_KEY,
+//     // Encode the data again before sending it to the DB
+//     codec.encode(schema, counter)
+// );
+// ----
+
+// == Converting between formats
+
+// Account addresses are stored as binary data in the database.
+// However, in other parts of the application, the data is expected as a hexadecimal string, which is more human-readable.
+
+// On the other hand, the node API always returns the data such as blocks and transactions in hex string. However, please be aware that to decode transactions or blocks, they need to be in `Buffer` format.
+
+// In these cases, it is necessary to convert between `Buffer` and `String` as described below:
+
+// === String to Buffer
+
+// Use `Buffer.from(data, 'hex')` to convert a hex string to a Buffer.
+
+// [source,js]
+// ----
+// this._channel.subscribe('app:block:new', async (data) => {
+//   const { block } = data;
+//   const { payload } = codec.decode(
+//     this.schemas.block,
+//     Buffer.from(block, 'hex'),
+//   );
+//   // ...
+// });
+// ----
+
+// === Buffer to String
+
+// Use `.toString('hex')` to convert a Buffer to a hex string.
+
+// [source,js]
+// ----
+// this._channel.publish('srs:configCreated', {
+//   address: transaction._senderAddress.toString('hex'),
+//   // ...
+// });
+// ----

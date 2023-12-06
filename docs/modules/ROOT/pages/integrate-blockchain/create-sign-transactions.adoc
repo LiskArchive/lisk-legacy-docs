@@ -1,0 +1,280 @@
+= How to create and sign a transaction
+:toc: preamble
+:toclevels: 3
+:idprefix:
+:idseparator: -
+:sdk_docs: v6@lisk-sdk::
+:docs_core: v4@lisk-core::
+:url_sdk_client: lisk-sdk::references/lisk-elements/client.adoc
+:url_integrate_tx_offline: integrate-blockchain/create-tx-offline.adoc
+:url_protocol_txs: understand-blockchain/blocks-txs.adoc#transactions
+//:url_sdk_cli: v6@lisk-sdk::client-cli.adoc
+//:url_sdk_httpapi: lisk-sdk::plugins/http-api-plugin.adoc
+//:url_core_cli: lisk-core::reference/cli.adoc
+//:url_transaction_send: integrate-blockchain/integrate-ui/faucet-transfer.adoc#transfer-tokens
+:url_integrate_decoding: integrate-blockchain/encode-decode.adoc
+:url_api_node_rpc: api/lisk-node-rpc.adoc
+:url_api_service_http: api/lisk-service-http.adoc
+:url_api_service_rpc: api/lisk-service-rpc.adoc
+:url_migration_guide: {sdk_docs}references/migration.adoc
+:url_protocol_transactions: understand-blockchain/lisk-protocol/transactions.adoc#types
+:url_modules: {sdk_docs}modules/index.adoc
+:url_api_client: understand-blockchain/sdk/rpc.adoc#the-api-client
+:url_references_elements: {sdk_docs}references/lisk-elements/index.adoc
+:url_lisk_node: understand-blockchain/sdk/rpc.adoc
+
+This guide describes different methods of creating and signing transactions.
+The steps apply to all the blockchain clients developed with the Lisk SDK, including Lisk Core.
+// [v6](https://www.npmjs.com/package/lisk-sdk/v/latest), including the Lisk Core.
+
+//TODO: Update the default transactions
+// == Default transactions
+
+// The default modules already come with a set of xref:{url_protocol_transactions}[default transactions] out of the box, which can be sent to the blockchain application without writing any custom code.
+
+// Each transaction type is defined in a module.
+// More information regarding the different modules listed below can be found here on the xref:{url_module}[modules overview] page.
+
+// * The Token module
+// * The PoS module
+// * The Interoperability module
+// * The Auth module
+// * The Legacy module
+
+//TODO: Update the modules overview page to add the other modules, and links to the respective pages when they are completed, .eg. auth, interop, legacy modules.
+
+
+== Transaction formats
+
+A transaction can be represented in different formats.
+
+Below is an overview of all existing transaction formats and their use cases.
+
+=== Buffer
+
+The representation of the transaction binary data as a Buffer.
+
+This format is used for application-internal processes.
+
+[source,bash]
+----
+<Buffer 08 02 10 00 18 04 20 c0 84 3d 2a 20 51 33 af 79 44 ac f5 27 8b 03 10 a1 1c 06 13 4f 80 ab 45 46 d7 7d 1b 0e 02 7c 84 30 a7 d2 bb 92 32 2d 08 80 90 bc ... 107 more bytes>
+----
+
+=== Hex string
+
+This is the hex string representation of the Buffer data.
+
+It is sometimes used as an input or output format in the CLI when sending or creating transactions via the node CLI.
+
+[source,bash]
+----
+'08021000180420c0843d2a205133af7944acf5278b0310a11c06134f80ab4546d77d1b0e027c8430a7d2bb92322d088090bcfd0212149bd82e637d306533b1e1ad66e19ca0047faa1a6a1a0f4861707079206269727468646179213a4098a9ee2cde8354d014cfe6367d430be2713e102f37d92ab91f03db780407e5bf6d818a45c21c9f5518638dfc3c5365fc2d497b928e0b9d6337988df46a663a02'
+----
+
+=== Decoded object
+
+The decoded transaction object.
+
+Used as an input/output format for functions in xref:{url_references_elements}[Lisk Elements], for example for the API client.
+
+[source,bash]
+----
+{
+  module: 'token',
+  command: 'transfer',
+  fee: 1000000n,
+  params: {
+    tokenID: <Buffer 04 00 00 00 00 00 00 00>,
+    amount: 800000000n,
+    recipientAddress: 'lskt8ovj2shbxrtno8xqqt7cnmzzygdkbt6brnvmj',
+    data: 'Happy birthday!'
+  },
+  nonce: 0n,
+  senderPublicKey: <Buffer 39 72 84 9f 2a b6 63 76 a6 86 71 c1 0a 00 e8 b8 b6 7d 88 04 34 cc 65 b0 4c 6e d8 86 df a9 1c 2c>,
+  signatures: [
+    <Buffer 96 0a 67 e3 04 7d bc 1b d2 e2 d1 30 6d 47 36 74 86 7e b8 1f df 90 ec 65 f5 75 9c 1a 1e c4 07 f5 ba f9 87 1c a7 63 75 55 7c 7b 23 e2 25 ae 60 cd da 65 ... 14 more bytes>
+  ],
+  id: <Buffer 08 de 6d b3 66 28 b1 f3 a7 17 5b 1b 88 9f 66 1f 9f 18 4a fa 3d f4 ee b0 15 69 8c 4a c2 de 0d 38>
+}
+----
+
+=== JSON-compatible object
+
+A representation of the decoded transaction in a JSON-compatible format.
+
+For example, this is used for displaying the details of a transaction in the UI to the user.
+
+[source,bash]
+----
+{
+  module: 'token',
+  command: 'transfer',
+  fee: '1000000',
+  params: {
+    tokenID: '0400000000000000',
+    amount: '800000000',
+    recipientAddress: 'lskt8ovj2shbxrtno8xqqt7cnmzzygdkbt6brnvmj',
+    data: 'Happy birthday!'
+  },
+  nonce: '0',
+  senderPublicKey: '3972849f2ab66376a68671c10a00e8b8b67d880434cc65b04c6ed886dfa91c2c',
+  signatures: [
+    '960a67e3047dbc1bd2e2d1306d473674867eb81fdf90ec65f5759c1a1ec407f5baf9871ca76375557c7b23e225ae60cdda65fdce385bae076131ad5f7e39df0b'
+  ],
+  id: '08de6db36628b1f3a7175b1b889f661f9f184afa3df4eeb015698c4ac2de0d38'
+}
+----
+
+== How to create and sign a transaction
+
+For convenience, it is recommended to use the API client or the node CLI to communicate to a node for creating and signing transactions.
+
+In the case whereby a higher level of security is desired, it is also possible to create the transaction in a completely stand-alone offline environment.
+Please check out the guide xref:{url_integrate_tx_offline}[] for more information.
+
+.Transaction properties
+[TIP]
+====
+The properties of a transaction are described in detail on the xref:{url_protocol_txs}[Transactions] page.
+====
+
+=== via API client
+
+// The API client allows connecting to a particular node API, and enables to get and post data to the node.
+// It is part of the `lisk-api-client` package and is also included in the `lisk-client` and `lisk-sdk` packages.
+// An example script how to create a transaction object via the API client is described in the code snippet below:
+
+The API client allows external services and applications to connect and interact with a particular blockchain node.
+
+The API client is part of the `@liskhq/lisk-api-client` package, and is also included in the `@liskhq/lisk-client` and `lisk-sdk` packages.
+
+[NOTE]
+====
+The API client can be instantiated using both `WS` and `IPC`.
+
+The API client can also be used to query information from the node by invoking the supported endpoints over RPC.
+For more information regarding this topic, please check the xref:{url_api_client}[RPC - The API client] page.
+====
+
+An example script depicting how to create a transaction object via the API client is described in the code snippet below:
+
+[source,js]
+----
+const { apiClient, cryptography, transactions } = require('@liskhq/lisk-client');
+
+// For the apiClient to work in the WebSocket mode, the node must have the WebSocket mode enabled. This is true for IPC mode as well.
+const RPC_ENDPOINT = 'ws://localhost:7887/rpc-ws';
+// const IPC_ENDPOINT = '~/.lisk/lisk-core';`
+let clientCache;
+
+// Replace with the recipient address
+const recipientAddress = 'lskt8ovj2shbxrtno8xqqt7cnmzzygdkbt6brnvmj';
+
+// Replace with the sender passphrase
+const passphrase = 'attract squeeze option inflict dynamic end evoke love proof among random blanket table pumpkin general impose access toast undo extend fun employ agree dash';
+
+const getClient = async () => {
+	if (!clientCache) {
+		clientCache = await apiClient.createWSClient(RPC_ENDPOINT);
+		// clientCache = await apiClient.createIPCClient(IPC_ENDPOINT);
+	}
+	return clientCache;
+};
+
+getClient().then(async (apiClient) => {
+	const privateKey = await cryptography.ed.getPrivateKeyFromPhraseAndPath(passphrase, "m/44'/134'/0'");
+	constTx = await apiClient.transaction.create({
+		module: 'token',
+		command: 'transfer',
+		fee: BigInt(transactions.convertLSKToBeddows('0.01')),
+		params: {
+			tokenID: Buffer.from('0400000000000000', 'hex'),
+			amount: BigInt(transactions.convertLSKToBeddows('8')),
+			recipientAddress,
+			data: 'Happy birthday!'
+		}
+	}, privateKey);
+	console.log('Signed transaction object: ', signedTx);
+
+	process.exit(0);
+});
+----
+
+.Example output
+[%collapsible]
+====
+.Transaction object
+[source,bash]
+----
+Signed transaction object: {
+  module: 'token',
+  command: 'transfer',
+  fee: '1000000',
+  params: {
+      tokenID: '0400000000000000',
+      amount: '800000000',
+      recipientAddress: 'lskt8ovj2shbxrtno8xqqt7cnmzzygdkbt6brnvmj',
+      data: 'Happy birthday!'
+  },
+  nonce: '0',
+  senderPublicKey: '3972849f2ab66376a68671c10a00e8b8b67d880434cc65b04c6ed886dfa91c2c',
+  signatures: [
+      '960a67e3047dbc1bd2e2d1306d473674867eb81fdf90ec65f5759c1a1ec407f5baf9871ca76375557c7b23e225ae60cdda65fdce385bae076131ad5f7e39df0b'
+  ],
+  id: '08de6db36628b1f3a7175b1b889f661f9f184afa3df4eeb015698c4ac2de0d38'
+}
+----
+====
+
+=== via CLI
+
+The node CLI can be used to create a sendable transaction object to any running node.
+An example of creating and sending a transfer transaction with the Lisk Core CLI is displayed below:
+
+IMPORTANT: When using the CLI please ensure that the API is enabled over IPC.
+
+[source,bash]
+----
+lisk-core transaction:create token transfer 100000000
+? Please enter passphrase:  [hidden]
+Warning: Passphrase contains 24 words instead of expected 12. Passphrase contains 23 whitespaces instead of expected 11.
+? Please enter: tokenID:  0400000000000000
+? Please enter: amount:  800000000
+? Please enter: recipientAddress:  lskt8ovj2shbxrtno8xqqt7cnmzzygdkbt6brnvmj
+? Please enter: data:  Happy birthday!
+----
+
+NOTE: When creating the transaction against a sidechain node, the same command (`transaction:create`) can be used.
+Please replace `lisk-core` with the corresponding application's CLI tool or use `./bin/run` as the CLI tool, when building the application binary from the source code.
+
+After entering all relevant information for the required transaction, the encoded transaction is then returned:
+
+.Example output
+[%collapsible]
+====
+[source,json]
+----
+{"transaction":"0a05746f6b656e12087472616e7366657218012080c2d72f2a203972849f2ab66376a68671c10a00e8b8b67d880434cc65b04c6ed886dfa91c2c32370a080400000000000000108090bcfd021a149bd82e637d306533b1e1ad66e19ca0047faa1a6a220f4861707079206269727468646179213a40ab69eabe03d73a69a867104a6e5eb820563921cf61ef6b7c036098ae46ac5a1c6311bae6006b55618f1c2b8288454a7d51eb2f10e1d4282a452ea35125bfd109"}
+----
+====
+
+[TIP]
+====
+To also see the decoded transaction object on creation, add the `--json` parameter:
+
+.Transaction in binary and JSON format
+[source,bash]
+----
+$ lisk-core transaction:create token transfer 100000000 --json
+? Please enter passphrase:  [hidden]
+Warning: Passphrase contains 24 words instead of expected 12. Passphrase contains 23 whitespaces instead of expected 11.
+? Please enter: tokenID:  0400000000000000
+? Please enter: amount:  800000000
+? Please enter: recipientAddress:  lskt8ovj2shbxrtno8xqqt7cnmzzygdkbt6brnvmj
+? Please enter: data:  Happy birthday!
+{"transaction":"0a05746f6b656e12087472616e7366657218042080c2d72f2a203972849f2ab66376a68671c10a00e8b8b67d880434cc65b04c6ed886dfa91c2c32370a080400000000000000108090bcfd021a149bd82e637d306533b1e1ad66e19ca0047faa1a6a220f4861707079206269727468646179213a40c06cd0ef375911528d491971296532dbd58725f0fccc0f23e6c0656c43e75ecd12635616117e64d005f1c9f2a55de7cf2d8f5cb961927d839d141a18faa80e08"}
+{"transaction":{"module":"token","command":"transfer","fee":"100000000","nonce":"4","senderPublicKey":"3972849f2ab66376a68671c10a00e8b8b67d880434cc65b04c6ed886dfa91c2c","signatures":["c06cd0ef375911528d491971296532dbd58725f0fccc0f23e6c0656c43e75ecd12635616117e64d005f1c9f2a55de7cf2d8f5cb961927d839d141a18faa80e08"],"params":{"tokenID":"0400000000000000","amount":"800000000","recipientAddress":"lskt8ovj2shbxrtno8xqqt7cnmzzygdkbt6brnvmj","data":"Happy birthday!"},"id":"f3f537bbd52464d2f97c02f5ef0f9a805d19ad4f8ef1c7efa1da17cef0e5036a"}}
+----
+====
+

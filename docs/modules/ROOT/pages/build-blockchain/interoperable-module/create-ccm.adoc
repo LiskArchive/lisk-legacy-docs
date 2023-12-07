@@ -1,0 +1,445 @@
+= How to create a CCM
+Mona Bärenfänger <mona@lightcurve.io>
+:toc:
+:idprefix:
+:idseparator: -
+:sectnums:
+// URLs
+:url_github_sdk_interop: https://github.com/LiskHQ/lisk-sdk/tree/release/6.0.0/examples/interop
+:url_github_sdk_interop_sc2: {url_github_sdk_interop}/pos-sidechain-example-two/src/app
+// Project URLs
+:url_run_relayer: run-blockchain/setup-relayer.adoc
+:url_build_module: build-blockchain/module/index.adoc
+:url_build_interop_module: build-blockchain/interoperable-module/index.adoc
+:url_build_execccm: build-blockchain/interoperable-module/execute-ccm.adoc
+:url_build_init: build-blockchain/create-blockchain-client.adoc#initializing-a-new-blockchain-client
+:url_understand_interop_ccm: understand-blockchain/interoperability/communication.adoc#inducing-state-changes-across-chains-with-ccms
+
+How to create a xref:{url_understand_interop_ccm}[cross-chain message] inside a command, in order to send it to another blockchain.
+
+== Create the React module
+
+In order to send cross-chain messages from sidechain to sidechain, it is required to create the corresponding CCM in a module command.
+To achieve this, create a new module(or adjust an existing module) which will be registered on the sidechain intending to communicate with an interoperable module of another chain.
+
+Because we want to send reactions to Hello messages cross-chain, we call it the "React" module.
+
+NOTE: Check out the complete working {url_github_sdk_interop_sc2}[example implementation^] of the React module inside the interoperability example.
+
+Assuming the sidechain is already xref:{url_build_init}[initialized], move into the root folder of the sidechain client, and generate the skeleton for the new module as usual:
+
+[source,bash]
+----
+lisk generate:module react
+----
+
+Currently, there is no way to generate an interoperable module directly, so we need to make certain modifications to the module after generating it, in order to make it interoperable.
+
+Inside the `react/module.ts` file, replace the class `BaseModule` with `BaseInteroperableModule`.
+
+.react/module.ts
+[source,typescript]
+----
+import { BaseInteroperableModule, ModuleMetadata, ModuleInitArgs } from 'lisk-sdk';
+
+export class ReactModule extends BaseInteroperableModule {
+    // ...
+}
+----
+
+Additionally, create a new file called `cc_method.ts`, and add a skeleton for potential cross-chain methods the module is offering.
+
+[source,typescript]
+----
+import { BaseCCMethod } from 'lisk-sdk';
+
+export class ReactInteroperableMethod extends BaseCCMethod {}
+----
+
+Now import the `ReactInteroperableMethod` and use it to create a new method called `crossChainMethod` inside the module.
+
+In the end, the module should look similar to the example below:
+
+.react/module.ts
+[source,typescript]
+----
+/* eslint-disable class-methods-use-this */
+/* eslint-disable @typescript-eslint/member-ordering */
+import { BaseInteroperableModule, ModuleMetadata, ModuleInitArgs } from 'lisk-sdk';
+import { ReactEndpoint } from './endpoint';
+import { ReactMethod } from './method';
+import { ReactInteroperableMethod } from './cc_method';
+
+export class ReactModule extends BaseInteroperableModule {
+    public endpoint = new ReactEndpoint(this.stores, this.offchainStores);
+    public method = new ReactMethod(this.stores, this.events);
+    public commands = [];
+    public crossChainMethod = new ReactInteroperableMethod(this.stores, this.events);
+
+    public metadata(): ModuleMetadata {
+        return {
+            ...this.baseMetadata(),
+            endpoints: [],
+            commands: this.commands.map(command => ({
+                name: command.name,
+                params: command.schema,
+            })),
+            assets: [],
+        };
+    }
+
+}
+----
+
+Now that the interoperable module is initialized, let's create the command which will be used to create the CCM on the sidechain.
+
+== Add required schemas and constants
+
+Create a new file `react/constants.ts` and export a constant `CROSS_CHAIN_COMMAND_REACT` representing the name of the new command.
+
+.react/constants.ts
+[source,typescript]
+----
+export const CROSS_CHAIN_COMMAND_REACT = 'crossChainReact';
+----
+
+Now, let's think about what data exactly we want to send in the CCM.
+
+For the simplicity of this example, the `react` CCM includes the following parameters:
+
+Create a new file `react/schemas.ts` and export a corresponding interface for the CCM parameters.
+
+[#ccm-params]
+.Parameters for the react CCM
+. `reactionType`: A number indicating the type of the reaction.
+In this example, we will only implement type `0`, which is representing a like.
+. `helloMessageID`: The ID of the hello message to react to.
+As there is always only one Hello message per account maximum, we can use the account address of the sender of the Hello message as unique ID for a Hello message.
+. `data`: An additional property allowing to send a specific string.
+Could be used to send custom data or a reaction, like small replies.
+
+The parameters for the `crossChainReact` command therefore include the <<ccm-params,Parameters for the react CCM>>, and two additional parameters:
+
+.Additional parameters for the crossChainReact command
+. `receivingChainID`: The chain ID of the chain the CCM is sent to.
+. `messageFee`: The fee for sending the CCM across chains.
+
+Additionally, export corresponding schemas for the parameters of the React CCM.
+
+.react/schemas.ts
+[source,typescript]
+----
+const reactionType = {
+	dataType: 'uint32',
+	fieldNumber: 1,
+};
+
+const helloMessageID = {
+	dataType: 'string',
+	fieldNumber: 2,
+};
+
+const data = {
+	dataType: 'string',
+	fieldNumber: 3,
+	minLength: 0,
+	maxLength: 64,
+};
+
+// Schema for the parameters of the crossChainReact CCM
+export const CCReactMessageParamsSchema = {
+	// The unique identifier of the schema.
+	$id: '/lisk/react/ccReactMessageParams',
+	type: 'object',
+	// The required parameters for the CCM.
+	required: ['reactionType', 'helloMessageID', 'data'],
+	// A list describing the required parameters for the CCM.
+	properties: {
+		reactionType,
+		helloMessageID,
+		data,
+	},
+};
+
+// Schema for the parameters of the react crossChainReact command
+export const CCReactCommandParamsSchema = {
+	// The unique identifier of the schema.
+	$id: '/lisk/react/ccReactCommandParams',
+	type: 'object',
+	// The required parameters for the command.
+	required: [...CCReactMessageParamsSchema.required, 'messageFee'],
+	// A list describing the available parameters for the command.
+	properties: {
+		reactionType,
+		helloMessageID,
+		data,
+		receivingChainID: {
+			dataType: 'bytes',
+			fieldNumber: 4,
+			minLength: 4,
+			maxLength: 4,
+		},
+		messageFee: {
+			dataType: 'uint64',
+			fieldNumber: 5,
+		},
+	},
+};
+----
+
+Create a new file `react/types.ts`, to define types that we will need when implementing the cross-chain command in the next step.
+
+Export the types as shown in the example below:
+
+.react/types.ts
+[source,typescript]
+----
+import {
+    MethodContext,
+    ImmutableMethodContext,
+    CCMsg,
+    ChannelData,
+    OwnChainAccount,
+} from 'lisk-sdk';
+
+export type TokenID = Buffer;
+
+// Parameters of the crossChainReact CCM
+export interface CCReactMessageParams {
+    // A number indicating the type of the reaction.
+    reactionType: number;
+    // ID of the Hello message being reacted to.
+    helloMessageID: string;
+    // Optional field for data / messages.
+    data: string;
+}
+
+// Parameters of the crossChainReact command
+export interface CCReactCommandParams extends CCReactMessageParams {
+    // The chain ID of the receiving chain.
+    receivingChainID: Buffer;
+    // The fee for sending the CCM across chains.
+    messageFee: bigint;
+}
+
+export interface InteroperabilityMethod {
+    getOwnChainAccount(methodContext: ImmutableMethodContext): Promise<OwnChainAccount>;
+    send(
+        methodContext: MethodContext,
+        feeAddress: Buffer,
+        module: string,
+        crossChainCommand: string,
+        receivingChainID: Buffer,
+        fee: bigint,
+        parameters: Buffer,
+        timestamp?: number,
+    ): Promise<void>;
+    error(methodContext: MethodContext, ccm: CCMsg, code: number): Promise<void>;
+    terminateChain(methodContext: MethodContext, chainID: Buffer): Promise<void>;
+    getChannel(methodContext: MethodContext, chainID: Buffer): Promise<ChannelData>;
+    getMessageFeeTokenID(methodContext: ImmutableMethodContext, chainID: Buffer): Promise<Buffer>;
+    getMessageFeeTokenIDFromCCM(methodContext: ImmutableMethodContext, ccm: CCMsg): Promise<Buffer>;
+}
+
+----
+
+== Initialize the cross-chain command
+
+Now create a new command called `crossChainReact`:
+
+[source,bash]
+----
+lisk generate:command react crossChainReact
+----
+
+To indicate that this command will create a new CCM, update the file name to `react_cc_command.ts`.
+
+Now open the file and import the constants, schemas, and types defined above.
+
+Next, define the following properties of the command:
+
+* `name`: Define a method to get the name of the command and set it to the `CROSS_CHAIN_COMMAND_REACT` constant.
+The same name will be used for the cross-chain command which will accept the CCM.
+* `schema`: Set the command schema to equal `CCReactCommandParamsSchema`.
+* `init()`: To initialize the module, we need access to the methods of the interoperability module.
+Update the methods to expect the `interoperabilityMethod` as an argument, and assign it to the private property `_interoperabilityMethod` of the `crossChainReact` command.
+
+.react/commands/react_cc_command.ts
+[source,typescript]
+----
+import {
+    BaseCommand,
+    CommandVerifyContext,
+    CommandExecuteContext,
+    VerificationResult,
+    VerifyStatus,
+    codec,
+} from 'lisk-sdk';
+import { CROSS_CHAIN_COMMAND_REACT } from '../constants';
+import { CCReactCommandParamsSchema, CCReactMessageParamsSchema } from '../schemas';
+import { CCReactMessageParams, CCReactCommandParams, InteroperabilityMethod } from '../types';
+
+export class CrossChainReactCommand extends BaseCommand {
+    private _interoperabilityMethod!: InteroperabilityMethod;
+    public schema = CCReactCommandParamsSchema;
+
+    public get name(): string {
+        return CROSS_CHAIN_COMMAND_REACT;
+    }
+
+    public init(args: { interoperabilityMethod: InteroperabilityMethod }) {
+        this._interoperabilityMethod = args.interoperabilityMethod;
+    }
+}
+----
+
+== Command verification
+
+In the `react_cc_command.ts` file, implement the command verification.
+
+To keep the example simple, we only check if the `receivingChainID` parameter isn't equal to the value of the sending chain.
+
+As desired, extend the `verify()` hook to include more checks for the other parameters as well.
+
+.react/commands/react_cc_command.ts
+[source,typescript]
+----
+public async verify(
+    context: CommandVerifyContext<CCReactCommandParams>,
+): Promise<VerificationResult> {
+    const { params, logger } = context;
+
+    logger.info('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++');
+    logger.info(params);
+    logger.info('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++');
+
+    try {
+        if (params.receivingChainID.equals(context.chainID)) {
+            throw new Error('Receiving chain cannot be the sending chain.');
+        }
+    } catch (err) {
+        return {
+            status: VerifyStatus.FAIL,
+            error: err as Error,
+        };
+    }
+
+    return {
+        status: VerifyStatus.OK,
+    };
+}
+----
+
+Once it is verified that the parameters are valid, we can create and send the corresponding CCM.
+
+== Command execution
+
+For this, adjust the `execute()` method as shown in the snippet below.
+
+Use the `.send()` method of the Interoperability module to send the prepared CCM.
+
+.react/commands/react_cc_command.ts
+[source,typescript]
+----
+public async execute(context: CommandExecuteContext<CCReactCommandParams>): Promise<void> {
+    const {
+        params,
+        transaction: { senderAddress },
+    } = context;
+
+    const ccReactMessageParams: CCReactMessageParams = {
+        reactionType: params.reactionType,
+        data: params.data,
+        helloMessageID: params.helloMessageID,
+    };
+
+    await this._interoperabilityMethod.send(
+        context.getMethodContext(),
+        senderAddress,
+        'hello',
+        CROSS_CHAIN_COMMAND_REACT,
+        params.receivingChainID,
+        params.messageFee,
+        codec.encode(CCReactMessageParamsSchema, ccReactMessageParams),
+        context.header.timestamp,
+    );
+}
+----
+
+== Final updates of the module and app.ts
+
+Go back to the file `react/module.ts` and update it as described in the code comments.
+
+.react/module.ts
+[source,typescript]
+----
+import { BaseInteroperableModule, ModuleMetadata, ModuleInitArgs } from 'lisk-sdk';
+import { CrossChainReactCommand } from './commands/react_cc_command';
+import { ReactEndpoint } from './endpoint';
+import { ReactMethod } from './method';
+import { ReactInteroperableMethod } from './cc_method';
+// Import the type for the InteroperabilityMethod
+import { InteroperabilityMethod } from './types';
+
+export class ReactModule extends BaseInteroperableModule {
+    public endpoint = new ReactEndpoint(this.stores, this.offchainStores);
+    public method = new ReactMethod(this.stores, this.events);
+    public commands = [new CrossChainReactCommand(this.stores, this.events)];
+    public crossChainMethod = new ReactInteroperableMethod(this.stores, this.events);
+    // Create a private member to store the methods of the interoperability module
+    private _interoperabilityMethod!: InteroperabilityMethod;
+
+    // ...
+
+    // Assign the methods of the interoperability module to _interoperabilityMethod
+    public addDependencies(interoperabilityMethod: InteroperabilityMethod) {
+        this._interoperabilityMethod = interoperabilityMethod;
+    }
+
+    // Lifecycle hooks
+    // eslint-disable-next-line @typescript-eslint/require-await
+    public async init(_args: ModuleInitArgs) {
+        // Pass the methods of the interoperability module to the crossChainReact command
+        this.commands[0].init({
+            interoperabilityMethod: this._interoperabilityMethod,
+        });
+    }
+}
+----
+
+Open the `app.ts` file, and register the module to the application.
+
+As the `ReactModule` is an *interoperable module*, it is required to call `app.registerInteroperableModule()` additionally.
+
+Last but not least, call the `addDependencies()` method of the `ReactModule` with the methods of the interoperability module as a parameter.
+
+IMPORTANT: Please remove the redundant registration of the `ReactModule` in the `modules.ts` file.
+It was added automatically during the command initialization.
+
+.app.ts
+[source,typescript]
+----
+import { Application, PartialApplicationConfig } from 'lisk-sdk';
+import { registerModules } from './modules';
+import { registerPlugins } from './plugins';
+import { ReactModule } from './modules/react/module';
+
+export const getApplication = (config: PartialApplicationConfig): Application => {
+    const { app, method } = Application.defaultApplication(config);
+    const reactModule = new ReactModule();
+    app.registerModule(reactModule);
+    app.registerInteroperableModule(reactModule);
+    reactModule.addDependencies(method.interoperability);
+
+    registerModules(app);
+    registerPlugins(app);
+
+    return app;
+};
+----
+
+When a user posts a `crossChainReact` transaction on a sidechain that registered the React module, a corresponding CCM is sent to the mainchain by a xref:{url_run_relayer}[relayer node], where it will be forwarded to the designated receiving sidechain.
+
+For the other sidechain to be able to accept this CCM, we need to add a corresponding cross-chain command to the Hello module of the receiving chain.
+
+To learn how to implement cross-chain commands on the receiving chain, check out the next guide: xref:{url_build_execccm}[].

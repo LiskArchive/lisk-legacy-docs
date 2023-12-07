@@ -3,6 +3,8 @@ Mona Bärenfänger <mona@lightcurve.io>
 //Settings
 :toc: preamble
 :toclevels: 2
+:idprefix:
+:idseparator: -
 // URLs
 :url_json_schema: https://json-schema.org/specification.html
 :url_json_schema_id: https://json-schema.org/understanding-json-schema/structuring.html#id
@@ -19,6 +21,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_build_app: build-blockchain/create-blockchain-client.adoc
 :url_build_module: build-blockchain/module/index.adoc
 :url_build_module_config: build-blockchain/module/configuration.adoc
+:url_build_plugin_event: build-blockchain/plugin/plugin-class.adoc#sync-and-store-new-event
 // Footnotes
 :fn_jsonschema: footnote:jsonSchema[See the {url_json_schema}[^] for more information about the JSON schema.]
 :fn_random: footnote:randomModule[See LIP 0046 https://github.com/LiskHQ/lips/blob/main/proposals/lip-0046.md[Define state and state transitions of Random module^] for more information about the Random module.]
@@ -55,10 +58,9 @@ image::understand-blockchain/sdk/module.png["Module Anatomy",400]
 For more information about the different module components, check out the corresponding sub-sections:
 
 Initialization::
-* <<calling-a-module-method-from-another-module,addDependencies()>>
-* <<module-constructor>>
-* <<config-initialization>>
-* <<config-schema>>
+* <<adddependencies>>
+* <<module-constructor,constructor>>
+* <<init>>
 Name & Metadata::
 * <<module-name>>
 * <<module-metadata>>
@@ -188,14 +190,97 @@ import { BaseModule } from 'lisk-sdk';
 export class HelloModule extends BaseModule {
     // ...
     public constructor() {
-		super();
-		// registration of stores and events
-		this.stores.register(CounterStore, new CounterStore(this.name));
-		this.stores.register(MessageStore, new MessageStore(this.name));
-		this.events.register(NewHelloEvent, new NewHelloEvent(this.name));
-	}
+        super();
+        // registration of stores and events
+        this.stores.register(CounterStore, new CounterStore(this.name));
+        this.stores.register(MessageStore, new MessageStore(this.name));
+        this.events.register(NewHelloEvent, new NewHelloEvent(this.name));
+    }
     // ...
 }
+----
+
+== Module dependencies
+
+=== addDependencies
+
+If a module has dependencies on other modules, these can be injected in the `addDependencies()` method.
+
+.module.ts
+[source,typescript]
+----
+export class ReactModule extends BaseInteroperableModule {
+    // ...
+
+    public addDependencies(interoperabilityMethod: InteroperabilityMethod) {
+        this._interoperabilityMethod = interoperabilityMethod;
+    }
+    // ...
+
+}
+----
+
+`addDependencies()` is not part of the module lifecycle and needs to be called manually, ideally right after registering the module to the client, like shown below:
+
+.app.ts
+[source,typescript]
+----
+import { Application, PartialApplicationConfig } from 'lisk-sdk';
+import { registerModules } from './modules';
+import { registerPlugins } from './plugins';
+import { ReactModule } from './modules/react/module';
+
+export const getApplication = (config: PartialApplicationConfig): Application => {
+    const { app, method } = Application.defaultApplication(config);
+    const reactModule = new ReactModule();
+    app.registerModule(reactModule);
+    app.registerInteroperableModule(reactModule);
+    reactModule.addDependencies(method.interoperability);
+
+    registerModules(app);
+    registerPlugins(app);
+
+    return app;
+};
+----
+
+=== Init
+
+The `init()` method is part of the module lifecycle and gets called when the module initializes.
+
+If a module needs to access certain <<module-configuration,configuration options>>, it is required to validate and cache the respective configurations in the `init()` method of a module.
+The `init()` hook can also be used to pass required config options or methods to the module commands.
+
+.Example: Hello module init() hook
+[source,typescript]
+----
+export class HelloModule extends BaseModule {
+    // ...
+    public async init(args: ModuleInitArgs): Promise<void> {
+        // Get the module config defined in the config.json file
+        const { moduleConfig } = args;
+        // Overwrite the default module config with values from config.json, if set
+        const config = utils.objects.mergeDeep({}, defaultConfig, moduleConfig) as ModuleConfigJSON;
+        // Validate the provided config with the config schema
+        validator.validator.validate<ModuleConfigJSON>(configSchema, config);
+        // Call the command init() method with config values as parameters
+        this.commands[0].init(config).catch(err => {
+            // eslint-disable-next-line no-console
+            console.log('Error: ', err);
+        });
+    }
+    // ...
+}
+----
+
+.Example: React module init() hook
+[source,typescript]
+----
+public async init(_args: ModuleInitArgs) {
+        this.commands[0].init({
+            interoperabilityMethod: this._interoperabilityMethod,
+        });
+    }
 ----
 
 == Module metadata
@@ -555,86 +640,6 @@ Both configuration options are defined by the blockchain developer in the `confi
 
 For more information on how to configure a module, read the guide xref:{url_build_module_config}[].
 
-=== Config schema
-
-If the module expects certain options to be present in the configuration, it is recommended to define a configuration schema to validate the module options that the node operator provided in the node configuration file.
-
-.Example: Module config schema
-[%collapsible]
-====
-[source,typescript]
-----
-export const configSchema = {
-    $id: '/hello/config',
-    type: 'object',
-    properties: {
-         maxMessageLength: {
-            type: 'integer',
-            format: 'uint32',
-        },
-        minMessageLength: {
-            type: 'integer',
-            format: 'uint32',
-        },
-        blacklist: {
-            type: 'array',
-            items: {
-                type: 'string',
-                minLength: 1,
-                maxLength: 40,
-            },
-        },
-    },
-    required: [
-        'maxMessageLength',
-        'minMessageLength',
-        'blacklist'
-    ],
-};
-----
-====
-
-=== Default configuration
-
-If the module expects certain options to be present in the configuration, it is recommended to define a default configuration that is used, if no config options are set in the `config.json` file by the user.
-
-.Example: Default module config
-[%collapsible]
-====
-[source,typescript]
-----
-export const defaultConfig = {
-	maxMessageLength: 256,
-	minMessageLength: 3,
-	blacklist: ["illegalWord1"]
-};
-----
-====
-
-=== Config initialization
-
-If a module needs to access certain configuration options, it is required to validate and cache the respective configurations in the `init()` method of a module, as described in the code snippet below:
-
-.Example: Module init() hook
-[source,typescript]
-----
-export class HelloModule extends BaseModule {
-    // ...
-	public async init(args: ModuleInitArgs): Promise<void> {
-		// Get the module config defined in the config.json file
-		const { moduleConfig } = args;
-		// Overwrite the default module config with values from config.json, if set
-		const config = utils.objects.mergeDeep({}, defaultConfig, moduleConfig) as ModuleConfigJSON;
-		// Validate the provided config with the config schema
-		validator.validate<ModuleConfigJSON>(configSchema, config);
-		// Call the command init() method with config values as parameters
-		this.commands[0].init(config).catch(err => {
-			console.log("Error: ", err);
-		});
-	}
-    // ...
-}
-----
 
 == Endpoints
 
@@ -814,7 +819,7 @@ A module method can be called from another module.
 For example, the method `getAvailableBalance` of the **Token** module is called from the **Fee** module in the transaction verification hook.
 This method is called to verify if the sender of a transaction has enough balance to pay the transaction fee.
 
-Methods from other modules are made available to the module by importing them, and adding them as private properties in the `addDependencies()` method, as shown in the code snippet below.
+Methods from other modules are provided to the module by importing them, and adding them as properties in the <<adddependencies>> method, as shown in the code snippet below.
 
 .fee/module.ts
 [source,typescript]
@@ -858,7 +863,15 @@ Blockchain events, or module events, are logs of events that occur in the blockc
 Events occur per block, and are stored in the respective block header, from where they can be queried.
 
 .Do not confuse blockchain events with RPC events.
-IMPORTANT: In contrast to xref:{url_understand_rpc_events}[RPC events], Blockchain events are part of the on-chain logic: Each block includes the **event root in the block header**, which is the root of a Sparse-Merkle-Tree of all blockchain events, that occur in that particular block.
+
+[IMPORTANT]
+====
+In contrast to xref:{url_understand_rpc_events}[RPC events],
+
+* Blockchain events are part of the on-chain logic:
+Each block includes the **event root in the block header**, which is the root of a Sparse-Merkle-Tree of all blockchain events, that occur in that particular block.
+* If not configured differently, blockchain events are only kept for the last 300 blocks, to not pollute the blockchain unnecessarily.
+====
 
 Every module event always extends from the `BaseEvent` class.
 
@@ -898,6 +911,12 @@ export abstract class BaseEvent<T> {
 ----
 ====
 
+For more information on how to ...
+
+* *create* and *emit* blockchain events, read the guide xref:{url_build_module_config}[].
+* *listen* to blockchain events, read the guide xref:{url_build_plugin_event}[How to create a plugin].
+
+
 === Standard event
 
 The standard event is indicating the result of a transaction processing (success/failure).
@@ -926,155 +945,6 @@ export const standardEventDataSchema = {
 		},
 	},
 };
-----
-
-=== Creating new blockchain event types
-
-New event types that complement the on-chain business logic of the module can be created by extending from the `BaseEvent` class.
-
-The only mandatory property to define in the event is the `schema`, which defines what custom `data` is required by the event to publish the correct information.
-
-For example, the following data is required by the `TransferEvent` of the Token module:
-
-.TransferEventData
-[%collapsible]
-====
-[source,typescript]
-----
-export interface TransferEventData {
-	senderAddress: Buffer;
-	tokenID: Buffer;
-	amount: bigint;
-	recipientAddress: Buffer;
-}
-----
-====
-
-The corresponding schema for the `TransferEvent` data interface defined above looks as follows:
-
-.transferEventSchema
-[%collapsible]
-====
-[source,typescript]
-----
-export const transferEventSchema = {
-	$id: '/token/events/transfer',
-	type: 'object',
-	required: ['senderAddress', 'recipientAddress', 'tokenID', 'amount', 'result'],
-	properties: {
-		senderAddress: {
-			dataType: 'bytes',
-			format: 'lisk32',
-			fieldNumber: 1,
-		},
-		tokenID: {
-		recipientAddress: {
-			dataType: 'bytes',
-			format: 'lisk32',
-			fieldNumber: 2,
-		},
-		amount: {
-			dataType: 'uint64',
-		tokenID: {
-			dataType: 'bytes',
-			minLength: TOKEN_ID_LENGTH,
-			maxLength: TOKEN_ID_LENGTH,
-			fieldNumber: 3,
-		},
-		recipientAddress: {
-			dataType: 'bytes',
-		amount: {
-			dataType: 'uint64',
-			fieldNumber: 4,
-		},
-		result: {
-			dataType: 'uint32',
-			fieldNumber: 5,
-		},
-	},
-};
-----
-====
-
-TIP:  The only limitation to what `data` can be included in the event is the data size:
-*The maximum size of the event data is 1 kB.*
-
-Besides the event `data`, `topics` are the second property that can be defined by the developer, when emitting/ publishing a blockchain event.
-Topics are similar to tags or labels, categorizing the event by a list of the relevant keywords.
-
-Both `data` and `topics` are passed as parameters to the `add()` method of a blockchain event:
-
-.events/transfer.ts
-[source,js]
-----
-this.add(context, data, topics[]);
-----
-
-Add utility functions like `log()` and `error()` to omit duplicate code and/or to simplify the publishing of the event later.
-
-.Example: TransferEvent of the Token module
-[source,typescript]
-----
-export class TransferEvent extends BaseEvent<TransferEventData & { result: TokenEventResult }> {
-	public schema = transferEventSchema;
-
-	public log(ctx: EventQueuer, data: TransferEventData): void {
-		this.add(ctx, { ...data, result: TokenEventResult.SUCCESSFUL }, [
-			data.senderAddress,
-			data.recipientAddress,
-		]);
-	}
-
-	public error(ctx: EventQueuer, data: TransferEventData, result: TokenErrorEventResult): void {
-		this.add(ctx, { ...data, result }, [data.senderAddress, data.recipientAddress], true);
-	}
-}
-----
-
-=== Registering events
-
-To make an event available in the module, register it to `this.events` in the <<module-constructor>>.
-
-.module.ts
-[source,typescript]
-----
-public constructor() {
-		super();
-		this.events.register(TransferEvent, new TransferEvent(this.name));
-	}
-----
-
-=== Publishing events
-
-To emit or publish the event, add the following code snippet to the intended place, e.g. inside a module method:
-
-.method.ts
-[source,typescript]
-----
-import { TransferEvent, TransferEventResult } from './events/transfer';
-// ...
-export class TokenMethod extends BaseMethod {
-    // ...
-    public async transfer(
-		methodContext: MethodContext,
-		senderAddress: Buffer,
-		recipientAddress: Buffer,
-		tokenID: TokenID,
-		amount: bigint,
-	): Promise<void> {
-        // ...
-        const transferEvent = this.events.get(TransferEvent);
-        transferEvent.log(methodContext, {
-            amount,
-            recipientAddress,
-            result: TransferEventResult.SUCCESSFUL,
-            senderAddress,
-            tokenID,
-        });
-	}
-    // ...
-}
-
 ----
 
 == Commands
@@ -1174,8 +1044,8 @@ It also defines their data type, order, and additional properties like min and m
 [source,typescript]
 ----
 export class TransferCommand extends BaseCommand {
-	// ...
-	public schema = {
+    // ...
+    public schema = {
         $id: '/lisk/transferParams',
         title: 'Transfer transaction params',
         type: 'object',
@@ -1224,10 +1094,10 @@ Here, you can validate and cache the module config or do initializations which s
 ----
 export class TransferCommand extends BaseCommand {
     // ...
-	private _methods!: TokenMethods;
-	public init(args: { methods: TokenMethods }) {
-		this._methods = args.methods;
-	}
+    private _methods!: TokenMethods;
+    public init(args: { methods: TokenMethods }) {
+        this._methods = args.methods;
+    }
     // ...
 }
 ----
@@ -1241,22 +1111,22 @@ NOTE: In this hook, the *state cannot be mutated* and events cannot be emitted.
 [source,typescript]
 ----
 export class TransferCommand extends BaseCommand {
-	// ...
-	public async verify(context: CommandVerifyContext<Params>): Promise<VerificationResult> {
-		const { params } = context;
+    // ...
+    public async verify(context: CommandVerifyContext<Params>): Promise<VerificationResult> {
+        const { params } = context;
 
-		try {
-			validator.validate(transferParamsSchema, params);
-		} catch (err) {
-			return {
-				status: VerifyStatus.FAIL,
-				error: err as Error,
-			};
-		}
-		return {
-			status: VerifyStatus.OK,
-		};
-	}
+        try {
+            validator.validate(transferParamsSchema, params);
+        } catch (err) {
+            return {
+                status: VerifyStatus.FAIL,
+                error: err as Error,
+            };
+        }
+        return {
+            status: VerifyStatus.OK,
+        };
+    }
     // ...
 }
 ----
@@ -1280,12 +1150,12 @@ It allows convenient access to:
 [source,typescript]
 ----
 export interface CommandVerifyContext<T = undefined> {
-	logger: Logger;
-	chainID: Buffer;
-	transaction: Transaction; // without decoding params
-	params: T;
-	getMethodContext: () => ImmutableMethodContext;
-	getStore: (moduleID: Buffer, storePrefix: Buffer) => ImmutableSubStore;
+    logger: Logger;
+    chainID: Buffer;
+    transaction: Transaction; // without decoding params
+    params: T;
+    getMethodContext: () => ImmutableMethodContext;
+    getStore: (moduleID: Buffer, storePrefix: Buffer) => ImmutableSubStore;
 }
 ----
 ====
@@ -1303,17 +1173,17 @@ NOTE: In this hook, the *state can be mutated* and events can be emitted.
 [source,typescript]
 ----
 export class TransferCommand extends BaseCommand {
-	// ...
-	public async execute(context: CommandExecuteContext<Params>): Promise<void> {
-		const { params } = context;
-		await this._api.transfer(
-			context.getAPIContext(),
-			context.transaction.senderAddress,
-			params.recipientAddress,
-			params.tokenID,
-			params.amount,
-		);
-	}
+    // ...
+    public async execute(context: CommandExecuteContext<Params>): Promise<void> {
+        const { params } = context;
+        await this._api.transfer(
+            context.getAPIContext(),
+            context.transaction.senderAddress,
+            params.recipientAddress,
+            params.tokenID,
+            params.amount,
+        );
+    }
 }
 ----
 
@@ -1345,19 +1215,19 @@ See <<blockchain-events>> for more information.
 [source,typescript]
 ----
 export interface CommandExecuteContext<T = undefined> {
-	logger: Logger;
-	chainID: Buffer;
-	eventQueue: EventQueue;
-	header: BlockHeader;
-	assets: BlockAssets;
-	currentValidators: Validator[];
-	impliesMaxPrevote: boolean;
-	maxHeightCertified: number;
-	certificateThreshold: bigint;
-	transaction: Transaction; // without decoding params
-	params: T;
-	getMethodContext: () => MethodContext;
-	getStore: (moduleID: Buffer, storePrefix: Buffer) => SubStore;
+    logger: Logger;
+    chainID: Buffer;
+    eventQueue: EventQueue;
+    header: BlockHeader;
+    assets: BlockAssets;
+    currentValidators: Validator[];
+    impliesMaxPrevote: boolean;
+    maxHeightCertified: number;
+    certificateThreshold: bigint;
+    transaction: Transaction; // without decoding params
+    params: T;
+    getMethodContext: () => MethodContext;
+    getStore: (moduleID: Buffer, storePrefix: Buffer) => SubStore;
 }
 ----
 ====
@@ -1393,15 +1263,15 @@ public async insertAssets(context: InsertAssetContext): Promise<void> {}
 [source,js]
 ----
 {
-	logger: Logger;
-	networkIdentifier: Buffer;
-	getAPIContext: () => APIContext;
-	getStore: (moduleID: Buffer, storePrefix: Buffer) => ImmutableSubStore;
-	header: BlockHeader;
-	assets: WritableBlockAssets;
-	getGeneratorStore: (moduleID: Buffer) => SubStore;
-	getOffchainStore: (moduleID: Buffer, storePrefix: Buffer) => SubStore;
-	getFinalizedHeight(): number;
+    logger: Logger;
+    networkIdentifier: Buffer;
+    getAPIContext: () => APIContext;
+    getStore: (moduleID: Buffer, storePrefix: Buffer) => ImmutableSubStore;
+    header: BlockHeader;
+    assets: WritableBlockAssets;
+    getGeneratorStore: (moduleID: Buffer) => SubStore;
+    getOffchainStore: (moduleID: Buffer, storePrefix: Buffer) => SubStore;
+    getFinalizedHeight(): number;
 }
 ----
 ====
@@ -1428,12 +1298,12 @@ public async verifyAssets(context: BlockVerifyContext): Promise<void> {}
 [source,js]
 ----
 {
-	logger: Logger;
-	networkIdentifier: Buffer;
-	getAPIContext: () => ImmutableAPIContext;
-	getStore: (moduleID: Buffer, storePrefix: Buffer) => ImmutableSubStore;
-	header: BlockHeader;
-	assets: BlockAssets;
+    logger: Logger;
+    networkIdentifier: Buffer;
+    getAPIContext: () => ImmutableAPIContext;
+    getStore: (moduleID: Buffer, storePrefix: Buffer) => ImmutableSubStore;
+    header: BlockHeader;
+    assets: BlockAssets;
 }
 ----
 ====
@@ -1455,17 +1325,17 @@ public async beforeTransactionsExecute(context: BlockExecuteContext): Promise<vo
 [source,js]
 ----
 {
-	logger: Logger;
-	networkIdentifier: Buffer;
-	eventQueue: EventQueue;
-	getAPIContext: () => APIContext;
-	getStore: (moduleID: Buffer, storePrefix: Buffer) => SubStore;
-	header: BlockHeader;
-	assets: BlockAssets;
-	currentValidators: Validator[];
-	impliesMaxPrevote: boolean;
-	maxHeightCertified: number;
-	certificateThreshold: bigint;
+    logger: Logger;
+    networkIdentifier: Buffer;
+    eventQueue: EventQueue;
+    getAPIContext: () => APIContext;
+    getStore: (moduleID: Buffer, storePrefix: Buffer) => SubStore;
+    header: BlockHeader;
+    assets: BlockAssets;
+    currentValidators: Validator[];
+    impliesMaxPrevote: boolean;
+    maxHeightCertified: number;
+    certificateThreshold: bigint;
 }
 ----
 ====
@@ -1491,11 +1361,11 @@ public async verifyTransaction(context: TransactionVerifyContext): Promise<void>
 [source,js]
 ----
 {
-	networkIdentifier: Buffer;
-	logger: Logger;
-	transaction: Transaction;
-	getAPIContext: () => ImmutableAPIContext;
-	getStore: (moduleID: Buffer, storePrefix: Buffer) => ImmutableSubStore;
+    networkIdentifier: Buffer;
+    logger: Logger;
+    transaction: Transaction;
+    getAPIContext: () => ImmutableAPIContext;
+    getStore: (moduleID: Buffer, storePrefix: Buffer) => ImmutableSubStore;
 }
 ----
 ====
@@ -1519,18 +1389,18 @@ public async beforeCommandExecute(context: TransactionExecuteContext): Promise<v
 [source,js]
 ----
 {
-	logger: Logger;
-	networkIdentifier: Buffer;
-	eventQueue: EventQueueAdder;
-	getAPIContext: () => APIContext;
-	getStore: (moduleID: Buffer, storePrefix: Buffer) => SubStore;
-	header: BlockHeader;
-	assets: BlockAssets;
-	transaction: Transaction;
-	currentValidators: Validator[];
-	impliesMaxPrevote: boolean;
-	maxHeightCertified: number;
-	certificateThreshold: bigint;
+    logger: Logger;
+    networkIdentifier: Buffer;
+    eventQueue: EventQueueAdder;
+    getAPIContext: () => APIContext;
+    getStore: (moduleID: Buffer, storePrefix: Buffer) => SubStore;
+    header: BlockHeader;
+    assets: BlockAssets;
+    transaction: Transaction;
+    currentValidators: Validator[];
+    impliesMaxPrevote: boolean;
+    maxHeightCertified: number;
+    certificateThreshold: bigint;
 }
 ----
 ====
@@ -1554,18 +1424,18 @@ public async afterCommandExecute(context: TransactionExecuteContext): Promise<vo
 [source,js]
 ----
 {
-	logger: Logger;
-	networkIdentifier: Buffer;
-	eventQueue: EventQueueAdder;
-	getAPIContext: () => APIContext;
-	getStore: (moduleID: Buffer, storePrefix: Buffer) => SubStore;
-	header: BlockHeader;
-	assets: BlockAssets;
-	transaction: Transaction;
-	currentValidators: Validator[];
-	impliesMaxPrevote: boolean;
-	maxHeightCertified: number;
-	certificateThreshold: bigint;
+    logger: Logger;
+    networkIdentifier: Buffer;
+    eventQueue: EventQueueAdder;
+    getAPIContext: () => APIContext;
+    getStore: (moduleID: Buffer, storePrefix: Buffer) => SubStore;
+    header: BlockHeader;
+    assets: BlockAssets;
+    transaction: Transaction;
+    currentValidators: Validator[];
+    impliesMaxPrevote: boolean;
+    maxHeightCertified: number;
+    certificateThreshold: bigint;
 }
 ----
 ====
@@ -1589,23 +1459,23 @@ public async afterTransactionsExecute(context: BlockAfterExecuteContext): Promis
 [source,js]
 ----
 {
-	logger: Logger;
-	networkIdentifier: Buffer;
-	eventQueue: EventQueue;
-	getAPIContext: () => APIContext;
-	getStore: (moduleID: Buffer, storePrefix: Buffer) => SubStore;
-	header: BlockHeader;
-	assets: BlockAssets;
-	currentValidators: Validator[];
-	impliesMaxPrevote: boolean;
-	maxHeightCertified: number;
-	certificateThreshold: bigint;
-	transactions: ReadonlyArray<Transaction>;
-	setNextValidators: (
-		preCommitThreshold: bigint,
-		certificateThreshold: bigint,
-		validators: Validator[],
-	) => void;
+    logger: Logger;
+    networkIdentifier: Buffer;
+    eventQueue: EventQueue;
+    getAPIContext: () => APIContext;
+    getStore: (moduleID: Buffer, storePrefix: Buffer) => SubStore;
+    header: BlockHeader;
+    assets: BlockAssets;
+    currentValidators: Validator[];
+    impliesMaxPrevote: boolean;
+    maxHeightCertified: number;
+    certificateThreshold: bigint;
+    transactions: ReadonlyArray<Transaction>;
+    setNextValidators: (
+        preCommitThreshold: bigint,
+        certificateThreshold: bigint,
+        validators: Validator[],
+    ) => void;
 }
 ----
 ====
@@ -1627,17 +1497,17 @@ public async initGenesisState(context: GenesisBlockExecuteContext): Promise<void
 [source,js]
 ----
 {
-	logger: Logger;
-	eventQueue: EventQueueAdder;
-	getAPIContext: () => APIContext;
-	getStore: (moduleID: Buffer, storePrefix: Buffer) => SubStore;
-	header: BlockHeader;
-	assets: BlockAssets;
-	setNextValidators: (
-		preCommitThreshold: bigint,
-		certificateThreshold: bigint,
-		validators: Validator[],
-	) => void;
+    logger: Logger;
+    eventQueue: EventQueueAdder;
+    getAPIContext: () => APIContext;
+    getStore: (moduleID: Buffer, storePrefix: Buffer) => SubStore;
+    header: BlockHeader;
+    assets: BlockAssets;
+    setNextValidators: (
+        preCommitThreshold: bigint,
+        certificateThreshold: bigint,
+        validators: Validator[],
+    ) => void;
 }
 ----
 ====
@@ -1658,17 +1528,17 @@ public async finalizeGenesisState(context: GenesisBlockExecuteContext): Promise<
 [source,js]
 ----
 {
-	logger: Logger;
-	eventQueue: EventQueueAdder;
-	getAPIContext: () => APIContext;
-	getStore: (moduleID: Buffer, storePrefix: Buffer) => SubStore;
-	header: BlockHeader;
-	assets: BlockAssets;
-	setNextValidators: (
-		preCommitThreshold: bigint,
-		certificateThreshold: bigint,
-		validators: Validator[],
-	) => void;
+    logger: Logger;
+    eventQueue: EventQueueAdder;
+    getAPIContext: () => APIContext;
+    getStore: (moduleID: Buffer, storePrefix: Buffer) => SubStore;
+    header: BlockHeader;
+    assets: BlockAssets;
+    setNextValidators: (
+        preCommitThreshold: bigint,
+        certificateThreshold: bigint,
+        validators: Validator[],
+    ) => void;
 }
 ----
 ====

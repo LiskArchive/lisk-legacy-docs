@@ -16,22 +16,23 @@ Muhammad Talha <muhammad.talha@lightcurve.io>
 :url_prometheus: https://prometheus.io/docs/introduction/overview/
 :url_monitor_endpoints: https://github.com/LiskHQ/lisk-sdk/blob/development/framework-plugins/lisk-framework-monitor-plugin/src/endpoint.ts
 :url_grafana: https://prometheus.io/docs/visualization/grafana/
+:url_prometheus_configuration: https://prometheus.io/docs/prometheus/latest/configuration/configuration/
 
 // Project URLs
 :url_guides_config: build-blockchain/configuration.adoc
 :url_guides_config_hello: {url_guides_config}#example-configuration-for-the-hello-world-client
 :url_core_index: lisk-core::index.adoc
 
-The *Monitor plugin* provides insights about a running node, for example, it provide developers with vital information on blocks processing and network performance.
-It also provides information to determine machine performance relative to network activity.
-The Monitor plugin gives hints for debugging the network, and if there is an attack on the network.
-One can also receive information about the performance of the custom module via the Monitor plugin.
+The *Monitor plugin* provides insights about a running node, for example:
+
+* It provides developers with vital information on block processing and network performance.
+* It also provides information to determine machine performance relative to network activity.
+* The Monitor plugin gives hints for debugging the network, and if there is an attack on the network.
+* One can also receive information about the performance of the custom module via the Monitor plugin.
+
 The Monitor plugin monitors a node's activity and stores this data in the plugin's store.
 It then exposes the aforementioned data using the endpoints as described in the <<retrieving-data>> section.
-
 The Monitor plugin also exports this data in the Prometheus format for the {url_prometheus}[Prometheus toolkit (an open-source systems monitoring and alerting toolkit)^].
-The data in prometheus format is exported via the `/api/prometheus/metrics` and the data received can be visualized by plugging it into tools like Grafana.
-For more information, see {url_grafana}[Grafana's support for Prometheus^].
 
 ====
 On this page, you'll learn:
@@ -216,6 +217,9 @@ Usage::
 
 
 == Retrieving data
+The data recorded by the Monitor plugin can be retrieved via RPC endpoints or in Prometheus format, as described in the following sub-sections.
+
+=== Via RPC endpoints
 The monitor plugin exposes four endpoints that return important data about a validator's node.
 The following table briefly describes each:
 
@@ -224,19 +228,71 @@ The following table briefly describes each:
 |Name
 |Description
 
-|monitor_getTransactionStats
+|*monitor_getTransactionStats*
 |Returns the data about the number of times a transaction is received on an average from the network for a given number of connected peers.
 
-|monitor_getBlockStats
+|*monitor_getBlockStats*
 |Returns the data about the number of times a block is received on an average from the network for a given number of connected peers.
 
-|monitor_getNetworkStats
+|*monitor_getNetworkStats*
 |Returns the data about the number of connected/disconnected peers, and the number of outgoing/incoming connections with several peers at a certain height.
 
-|monitor_getForkStats
+|*monitor_getForkStats*
 |Returns the data about the number of fork events and related block headers.
 |===
 
 Once the Monitor plugin is enabled on a node, the aforementioned endpoints can be invoked to get the latest status of a node.
-For more information about each endpoint, see {url_monitor_endpoints}[lisk-framework-monitor-plugin/src
-/endpoint.ts^].
+For more information about each endpoint, see {url_monitor_endpoints}[lisk-framework-monitor-plugin/src/endpoint.ts^].
+
+
+=== Data in Prometheus format
+The data in Prometheus format is exported via the `/api/prometheus/metrics` handle, and the data received can be visualized by plugging it into tools like Grafana.
+For more information, see {url_grafana}[Grafana's support for Prometheus^].
+
+To retrieve data in Prometheus format, you can perform a GET request to the `api/prometheus/metrics` of the Monitor plugin.
+By default, the Plugin host address is `localhost` or `127.0.0.1` and the port is `4003`.
+These parameters can be changed as described in the <<configuring-the-monitor-plugin>> section.
+
+.CURL request to the Monitor plugin to retrieve data in Prometheus format
+[source,bash]
+----
+curl --location 'http://127.0.0.1:4003/api/prometheus/metrics'
+----
+
+.Monitoring data in the Prometheus format
+[source,bash]
+----
+# HELP lisk_avg_times_blocks_received_info Average number of times blocks received
+# TYPE lisk_avg_times_blocks_received_info gauge
+lisk_avg_times_blocks_received_info 1
+
+# HELP lisk_avg_times_transactions_received_info Average number of times transactions received
+# TYPE lisk_avg_times_transactions_received_info gauge
+lisk_avg_times_transactions_received_info 0
+
+# HELP lisk_node_height_total Node Height
+# TYPE lisk_node_height_total gauge
+lisk_node_height_total 17268
+
+# HELP lisk_finalized_height_total Finalized Height
+# TYPE lisk_finalized_height_total gauge
+lisk_finalized_height_total 17267
+
+# HELP lisk_unconfirmed_transactions_total Unconfirmed transactions
+# TYPE lisk_unconfirmed_transactions_total gauge
+lisk_unconfirmed_transactions_total 0
+
+# HELP lisk_peers_total Total number of peers
+# TYPE lisk_peers_total gauge
+lisk_peers_total{state="connected"} 0
+lisk_peers_total{state="disconnected"} 0
+
+# HELP lisk_fork_events_total Fork events
+# TYPE lisk_fork_events_total gauge
+lisk_fork_events_total 0
+----
+
+You can configure Prometheus to automatically invoke the aforementioned endpoint after regular intervals.
+For more information, see the {url_prometheus_configuration}[Configuration^] section of the Prometheus documentation.
+
+Configuring the Prometheus to automatically invoke the aforementioned endpoint and then, plugging such data to visualizing tools like Grafana can enable a node operator to stay up to date with the latest status of their node.

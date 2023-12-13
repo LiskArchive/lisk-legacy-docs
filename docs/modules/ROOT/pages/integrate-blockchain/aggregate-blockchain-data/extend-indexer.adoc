@@ -7,27 +7,50 @@ Muhammad Talha <muhammad.talha@lightcurve.io>
 :idprefix:
 :idseparator: -
 
+//External URLs
 :url_token: https://github.com/LiskHQ/lisk-service/tree/development/services/blockchain-indexer/shared/indexer/transactionProcessor/token
 :url_transfer: https://github.com/LiskHQ/lisk-service/blob/development/services/blockchain-indexer/shared/indexer/transactionProcessor/token/transfer.js
 :url_index: https://github.com/LiskHQ/lisk-service/blob/development/services/blockchain-indexer/shared/indexer/transactionProcessor/token/index.js
 :url_sharedIndexer_directory: https://github.com/LiskHQ/lisk-service/tree/development/services/blockchain-indexer/shared/indexer/transactionProcessor
+:url_auth: https://github.com/LiskHQ/lisk-service/tree/development/services/blockchain-indexer/shared/indexer/transactionProcessor/auth
+:url_interoperability: https://github.com/LiskHQ/lisk-service/tree/development/services/blockchain-indexer/shared/indexer/transactionProcessor/interoperability
+:url_legacy: https://github.com/LiskHQ/lisk-service/tree/development/services/blockchain-indexer/shared/indexer/transactionProcessor/legacy
+:url_pos: https://github.com/LiskHQ/lisk-service/tree/development/services/blockchain-indexer/shared/indexer/transactionProcessor/pos
 
+//Internal Docs URLs
+:url_newBlock_event: api/lisk-node-rpc.adoc#chain_newblock
+:url_deleteBlock_event: api/lisk-node-rpc.adoc#chain_deleteblock
 
-The Blockchain Indexer service, in the indexing mode, is primarily responsible to index all the blockchain information, based on the scheduled jobs by the Blockchain Coordinator. In the data service mode, it serves user request queries made via the RESTful API or WebSocket-based RPC calls. It can run both the indexer and data service modes simultaneously, and is enabled by default.
+The Blockchain Indexer service, in the indexing mode, is primarily responsible to index all the blockchain information, based on the scheduled jobs by the Blockchain Coordinator.
+In the data service mode, it serves user request queries made via the RESTful API or WebSocket-based RPC calls. It can run both the indexer and data service modes simultaneously, and is enabled by default.
 
-This microservice encapsulates most of the business logic for the Lisk Service API. By default, it only implements the business logic for all the available commands from the Lisk SDK. The applyTransaction and revertTransaction hooks implement the indexing logic and are specific to each available command. The applyTransaction is triggered when processing an included transaction within a new block while (usually) indexing the chain_newBlock event. The revertTransaction hook is triggered when processing an included transaction within a deleted block while processing the chain_deleteBlock event. All the implemented hooks are grouped here. Command specific hooks are always implemented within a single file and are grouped by the module. When interested in extending Lisk Service and implementing hooks for your custom modules, please check the Extending Indexer section below.
+This microservice encapsulates most of the business logic for the Lisk Service API.
+By default, it only implements the business logic for all the available commands from the Lisk SDK. The `applyTransaction` and `revertTransaction` hooks implement the indexing logic and are specific to each available command.
+
+// The `applyTransaction` is triggered when processing all the transactions within a new block.
+Every time a new block is added to the chain, the xref:{url_newBlock_event}[chain_newBlock] is triggered.
+The `applyTransaction` hook is called in response to the `chain_newBlock` event.
+The data of the new transactions can then be used by Indexer service for any customized logic, for example, in this guide, the `applyTransaction` hook is extended to record the addresses of all accounts that have performed any activity in the network.
+
+The `revertTransaction` hook is triggered when processing an included transaction within a deleted block while processing the xref:{url_deleteBlock_event}[chain_deleteBlock] event.
+The `chain_deleteBlock` event is triggered to cater to the finalized height, for example if the finalized block height of the blockchain is 95 and some nodes are at height 97 then, the `chain_deleteBlock` event will be triggered on such nodes and the additional two blocks will be deleted from the nodes as well to sync with the network.
+The `revertTransaction` hook can then be customized to delete or manipulate the transaction data present in the Indexer service's database.
+
+// All the implemented hooks are grouped here. 
 
 == Extending the Indexer service
-The applyTransaction and revertTransaction hooks are arranged per command in a file and are grouped by the module that they belong to.
-Existing hooks are located in the shared/indexer/transactionProcessor directory.
+The `applyTransaction` and `revertTransaction` hooks are arranged per command in a file and are grouped by the module that they belong to.
+Existing hooks are located in the {url_sharedIndexer_directory}[shared/indexer/transactionProcessor^] directory.
+Command specific hooks are always implemented within a single file and are grouped by the module.
+To extend Lisk Service, and implement hooks for a custom module, see the following steps:
 
-When implementing the custom hooks please adhere to the following:
+// When interested in extending Lisk Service and implementing hooks for your custom modules, please check the Extending Indexer section below.
+// When implementing the custom hooks please adhere to the following:
 
 . Create a sub-directory with the module name. For example: {url_token}[token^].
-
 . Add {url_index}[index.js^] under the above directory.
-
-. Export a MODULE_NAME variable. The value must match the module name as registered within the application.
+. Export a `MODULE_NAME` variable.
+The value must match the module name as registered within the application.
 +
 .index.js
 [source,js]
@@ -39,10 +62,10 @@ module.exports = {
 };
 ----
 +
+. Create a file specific to the command for which there is a need to implement the custom hooks. For example: {url_transfer}[transfer^].
 
-. Create a file specific to the command for which you need to implement the custom hooks. For example: {url_transfer}[transfer^].
-
-. Export a COMMAND_NAME variable. The value must match the command name as registered within the application.
+. Export a `COMMAND_NAME` variable. The value must match the command name as registered within the application.
+You should also define database instance, import constants and logger, etc.
 +
 .transfer.js
 [source,js]
@@ -71,14 +94,81 @@ const getTransactionsTable = () => getTableInstance(transactionsTableSchema, MYS
 const COMMAND_NAME = 'transfer';
 
 const EVENT_NAME_INITIALIZE_USER_ACCOUNT = 'initializeUserAccount';
+
+// [...]
 ----
 +
+. Take out the `recipientAddress` out of the transaction and then store it in the Lisk Indexer service database.
++
+.transfer.js
+[source,js]
+----
+// [...]
 
+const applyTransaction = async (blockHeader, tx, events, dbTrx) => {
+	logger.trace(
+		`Updating index for the account with address ${tx.params.recipientAddress} asynchronously.`,
+	);
+	indexAccountAddress(tx.params.recipientAddress);
 
-Implement the custom logic for the applyTransaction and revertTransaction hooks.
-Export the hooks.
-To aid your development, please use the sample templates here.
+	if (tx.executionStatus !== TRANSACTION_STATUS.SUCCESSFUL) return;
 
+	tx = {
+		...tx,
+		...tx.params,
+	};
 
-To
+	const filterInitializeUserAccountEvent = events.find(
+		event =>
+			event.name === EVENT_NAME_INITIALIZE_USER_ACCOUNT &&
+			event.data.address === tx.params.recipientAddress &&
+			event.topics.includes(tx.id),
+	);
 
+	if (filterInitializeUserAccountEvent) {
+		const formattedTransaction = await requestConnector('formatTransaction', {
+			transaction: tx,
+			additionalFee: filterInitializeUserAccountEvent.data.initializationFee,
+		});
+
+		tx.minFee = formattedTransaction.minFee;
+	}
+
+	const transactionsTable = await getTransactionsTable();
+	logger.trace(`Indexing transaction ${tx.id} contained in block at height ${tx.height}.`);
+	await transactionsTable.upsert(tx, dbTrx);
+	logger.debug(`Indexed transaction ${tx.id} contained in block at height ${tx.height}.`);
+};
+
+// [...]
+----
++
+. In case, the block is deleted, update the Lisk Indexer service database by deleting the corresponding `recipientAddress`.
++
+.transfer.js
+[source,js]
+----
+// [...]
+
+const revertTransaction = async (blockHeader, tx, events, dbTrx) => {
+	logger.trace(
+		`Updating index for the account with address ${tx.params.recipientAddress} asynchronously.`,
+	);
+	indexAccountAddress(tx.params.recipientAddress);
+};
+
+module.exports = {
+	COMMAND_NAME,
+	applyTransaction,
+	revertTransaction,
+};
+----
++ 
+. Now, whenever a token transfer transaction is executed on chain, Lisk Indexer Service will take out the `recipientAddress` of the transaction and will keep it in the list of active accounts, which can be served to applications such as Lisk Wallet upon request.
+
+For more examples of extending the Indexer service for various modules and their commands, see:
+
+* {url_auth}[Auth module]
+* {url_interoperability}[Interoperability module]
+* {url_legacy}[Legacy module]
+* {url_pos}[PoS module]

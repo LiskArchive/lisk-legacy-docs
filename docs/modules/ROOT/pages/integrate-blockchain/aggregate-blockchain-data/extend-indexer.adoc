@@ -1,4 +1,4 @@
-= Extending the Indexer service
+= Extending the Indexer microservice
 Muhammad Talha <muhammad.talha@lightcurve.io>
 :toc: preamble
 :toclevels: 3
@@ -21,8 +21,9 @@ Muhammad Talha <muhammad.talha@lightcurve.io>
 :url_newBlock_event: api/lisk-node-rpc.adoc#chain_newblock
 :url_deleteBlock_event: api/lisk-node-rpc.adoc#chain_deleteblock
 
-The Blockchain Indexer service is primarily responsible for indexing all the blockchain information, based on the scheduled jobs by the Blockchain Coordinator.
-In the data service mode, it serves user request queries made via the RESTful API or WebSocket-based RPC calls. It can run both the indexer and data service modes simultaneously and is enabled by default.
+The Blockchain Indexer microservice is primarily responsible for indexing all the blockchain information, based on the scheduled jobs by the Blockchain Coordinator.
+In the data service mode, it serves user request queries made via the RESTful API or the WebSocket-based RPC calls.
+It can run both the indexer and data service modes simultaneously, both enabled by default.
 
 This microservice encapsulates most of the business logic for the Lisk Service API.
 By default, it only implements the business logic for all the available commands from the Lisk SDK. The `applyTransaction` and `revertTransaction` hooks implement the indexing logic and are specific to each available command.
@@ -30,22 +31,24 @@ By default, it only implements the business logic for all the available commands
 Every time a new block is added to the chain, the xref:{url_newBlock_event}[chain_newBlock] event is triggered.
 The `applyTransaction` hook is called in response to the `chain_newBlock` event.
 The data of the new transactions can then be used by the Indexer service for any customized logic.
-For example, in this guide the `applyTransaction` hook is extended to capture the addresses of all accounts that have engaged in any activity within the network.
+For example, in this guide, we demonstrate the `applyTransaction` hook implemented corresponding to the `transfer` transaction from the `token` module.
+The hook indexes the addresses of all accounts engaged in the transaction.
+This information can help us determine the number of active accounts on the chain.
 
 The `revertTransaction` hook is triggered when processing an included transaction within a deleted block while processing the xref:{url_deleteBlock_event}[chain_deleteBlock] event.
-The `chain_deleteBlock` event is triggered to cater to the finalized height.
+The node triggers the`chain_deleteBlock` event when it deletes blocks from it's current chain to reorganize itself to a different fork on the network.
 For example, if the finalized block height of the blockchain is 95 and some nodes are at a height of 97, then the `chain_deleteBlock` event will be triggered on these nodes, and the additional two blocks will also be deleted from these nodes to sync with the network.
 The `revertTransaction` hook can then be customized to delete or manipulate the transaction data present in the Indexer service's database.
 
-== Extending the Indexer service
+== Extending the Indexer microservice
 The `applyTransaction` and `revertTransaction` hooks are arranged per command in a file and are grouped by the module that they belong to.
-Existing hooks are located in the {url_sharedIndexer_directory}[shared/indexer/transactionProcessor^] directory.
+All the hooks are placed under the {url_sharedIndexer_directory}[shared/indexer/transactionProcessor^] directory.
 Command-specific hooks are always implemented within a single file and are grouped by the module.
 To extend Lisk Service and implement hooks for a custom module, perform the following steps:
 
 . Create a sub-directory with the module name. For example: {url_token}[token^].
 . Add {url_index}[index.js^] under the above directory.
-. Export a `MODULE_NAME` variable.
+. Define and export the `MODULE_NAME` variable.
 The value must match the module name as registered within the application.
 +
 .index.js
@@ -60,31 +63,15 @@ module.exports = {
 +
 . Create a file specific to the command that requires the implementation of custom hooks. For example: {url_transfer}[transfer.js^].
 
-. Export a `COMMAND_NAME` variable. The value must match the command name as registered within the application.
-You should also define database instances, import constants, and logger, etc.
+. Define and export the `COMMAND_NAME` variable.
+The value must exactly match the command name (in camel case) as registered within the application.
 +
 .transfer.js
 [source,js]
 ----
-const {
-	Logger,
-	DB: {
-		MySQL: { getTableInstance },
-	},
-} = require('lisk-service-framework');
-const config = require('../../../../config');
-
-const { TRANSACTION_STATUS } = require('../../../constants');
-const { indexAccountAddress } = require('../../accountIndex');
-const { requestConnector } = require('../../../utils/request');
-
-const logger = Logger();
-
-const MYSQL_ENDPOINT = config.endpoints.mysql;
-
-const transactionsTableSchema = require('../../../database/schema/transactions');
-
-const getTransactionsTable = () => getTableInstance(transactionsTableSchema, MYSQL_ENDPOINT);
+/**
+ * Make necessary imports, and define the necessary helper methods and constants
+*/
 
 // Command specific constants
 const COMMAND_NAME = 'transfer';
@@ -94,7 +81,7 @@ const EVENT_NAME_INITIALIZE_USER_ACCOUNT = 'initializeUserAccount';
 // [...]
 ----
 +
-. Take out the `recipientAddress` of the transaction and then store it in the Lisk Indexer service database via the `applyTransaction` hook.
+. Extract the `recipientAddress` from the transaction and index it in the Lisk Indexer microservice's database via the `applyTransaction` hook.
 +
 .transfer.js
 [source,js]
@@ -139,7 +126,7 @@ const applyTransaction = async (blockHeader, tx, events, dbTrx) => {
 // [...]
 ----
 +
-. In the case whereby the block is deleted, update the Lisk Indexer service database by deleting the corresponding `recipientAddress` through the `revertTransaction` hook.
+. In the case whereby the block is deleted, update the Lisk Indexer microservice database by deleting the corresponding `recipientAddress` through the `revertTransaction` hook.
 +
 .transfer.js
 [source,js]
@@ -160,9 +147,9 @@ module.exports = {
 };
 ----
 + 
-. Now, whenever a token transfer transaction is executed on the chain, Lisk Indexer Service will take out the `recipientAddress` of the transaction and will keep it in the list of active accounts, which can be served to applications such as Lisk Wallet upon request.
+. Now, whenever a token transfer transaction is executed on the chain, Lisk Service's Blockchain Indexer microservice will extract the `recipientAddress` of the transaction and will index it in the list of active accounts, which can be served to applications such as Lisk Wallet upon request.
 
-For more examples of extending the Indexer service for various modules and their commands, see the following list:
+For more examples of extending the Indexer microservice for various modules and their commands, see the following list:
 
 * {url_auth}[Auth module]
 * {url_interoperability}[Interoperability module]

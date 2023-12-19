@@ -1,0 +1,297 @@
+= How to enable the Monitor plugin
+Muhammad Talha <muhammad.talha@lightcurve.io>
+// Settings
+:toc: preamble
+:toclevels: 5
+:page-toclevels: 3
+:idprefix:
+:idseparator: -
+:sectnums:
+:experimental:
+
+// External URLs
+:url_plugin_monitor: {site-url}/lisk-sdk/v6/references/typedoc/modules/_liskhq_lisk_framework_monitor_plugin.html
+:url_plugin_monitor_config: {site-url}/lisk-sdk/v6/references/typedoc/modules/_liskhq_lisk_framework_monitor_plugin.html#$config-options
+:url_cors_intro: https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
+:url_prometheus: https://prometheus.io/docs/introduction/overview/
+:url_monitor_endpoints: https://github.com/LiskHQ/lisk-sdk/blob/development/framework-plugins/lisk-framework-monitor-plugin/src/endpoint.ts
+:url_grafana: https://prometheus.io/docs/visualization/grafana/
+:url_prometheus_configuration: https://prometheus.io/docs/prometheus/latest/configuration/configuration/
+
+// Project URLs
+:url_guides_config: build-blockchain/configuration.adoc
+:url_guides_config_hello: {url_guides_config}#example-configuration-for-the-hello-world-client
+:url_core_index: lisk-core::index.adoc
+
+The *Monitor plugin* provides insights about a running node, for example:
+
+* It provides information about blocks and transactions received from the network.
+* It provides information about connected/disconnected/banned peers and includes data about other network activities.
+* The Monitor plugin gives hints for debugging the network, and detecting any network splits or attacks.
+
+The Monitor plugin monitors a node's activity and stores this data in the plugin's store.
+It then exposes the aforementioned data using the endpoints as described in the <<retrieving-data>> section.
+The Monitor plugin also exports this data in the Prometheus format for the {url_prometheus}[Prometheus toolkit (an open-source systems monitoring and alerting toolkit)^].
+
+====
+On this page, you'll learn how to perform the following:
+
+* [x] Register the Monitor plugin to a blockchain client.
+* [x] Configure the Monitor plugin.
+* [x] Retrieve various types of data from the Monitor plugin.
+====
+
+Using this guide, the Monitor plugin can be registered to a xref:{url_core_index}[Lisk Core] node or any Lisk-based blockchain client.
+
+== Plugin registration
+With the latest version of Lisk Core v4 and Lisk SDK v6, the default plugins come pre-installed after a client is installed or initiated respectively.
+ 
+You can check the `package.json` file of the blockchain client to ensure the installation has been performed correctly.
+
+.hello_client/package.json
+[source,json]
+----
+"dependencies": {
+  //[...]
+	"@liskhq/lisk-framework-monitor-plugin": "0.4.1",
+	//[...]
+},
+----
+
+Otherwise, you can install the Monitor plugin like this:
+ 
+[source,bash]
+----
+npm install --save @liskhq/lisk-framework-monitor-plugin
+----
+
+There are various ways to enable the Monitor plugin.
+You can opt for any of the below-mentioned options to register the plugin to the blockchain client.
+
+[IMPORTANT]
+====
+It is essential to enable the WS API and configure the `allowedMethods` property before registering the `MonitorPlugin`.
+For more information, see the configurations described in the xref:{url_guides_config_hello}[configuration guide].
+====
+
+=== Registering via source
+For blockchain clients that were initialized with Lisk Commander, it is possible to register the plugin through the `plugins.ts` file.
+Open the `plugins.ts` file, import the Monitor plugin, and register it with the application as shown below:
+
+.src/app/plugins.ts
+[source,typescript]
+----
+/* eslint-disable @typescript-eslint/no-empty-function */
+import { MonitorPlugin } from '@liskhq/lisk-framework-monitor-plugin';
+import { Application } from 'lisk-sdk';
+
+export const registerPlugins = (app: Application): void => {
+    app.registerPlugin(new MonitorPlugin ());
+};
+
+----
+
+Save and close the `plugins.ts` file.
+
+After updating the *plugins.ts* file, build the blockchain client again:
+
+[source,bash]
+----
+npm run build
+----
+
+== Starting the node
+Depending on how you chose to register the plugin, start the blockchain client accordingly.
+
+[tabs]
+=====
+Registered via built-in flag::
++
+--
+It is also possible to enable the Monitor plugin without updating the `plugins.ts` file.
+This can be done simply by adding the `--enable-monitor-plugin` flag to the `start` command.
+
+.*Mainchain*
+* Start the blockchain client with designated flags on a `mainchain` node.
++
+[source,bash]
+----
+lisk-core start --network testnet --enable-monitor-plugin
+----
+
+.*Sidechain*
+* *Or*, start the blockchain client with designated flags on a `sidechain` node.
++
+[source,bash]
+----
+./bin/run start --config=config/custom_config.json --enable-monitor-plugin
+----
+--
+Registered via Source::
++
+--
+
+.Start the blockchain client with custom_config.json
+[source,bash]
+----
+./bin/run start --config=config/custom_config.json 
+----
+--
+=====
+
+
+== Configuring the Monitor Plugin
+The Monitor plugin comes with a set of pre-defined configurations, which can be tweaked as per the node operator's requirements.
+
+[tabs]
+=====
+Available Configurations::
++
+--
+[cols="1,1,2,2",options="header",stripes="hover"]
+|===
+|Name
+|Type
+|Description
+|Sample
+
+|`port`
+|string
+|Defines the `port` for a custom express server.
+|`4003`
+
+|`host`
+|string
+|Defines the `host` such as a custom express server.
+|`127.0.0.1`
+
+|`whiteList`
+|string
+|When given a value, only those IPs are allowed to interact with the Monitor plugin.
+|`['127.0.0.1']`
+
+|`cors`
+|string
+|Defines the {url_cors_intro}[CORS^] properties such as origin and allowed methods which should be handled by the Monitor plugin.
+a|
+[source,json]
+----
+"cors": {
+    "origin": '*',
+    "methods": ['GET', 'POST', 'PUT'],
+},
+----
+
+|`limits`
+|string
+|Defines various types of limits for example `max`, `delayMs`, `delayeAfter`, `windowMs`, `headersTimeout`, and `serverSetTimeout` for the monitor plugin.
+a|
+[source,json]
+----
+"limits": {
+    "max": 0,
+    "delayMs": 0,
+    "delayAfter": 0,
+    "windowMs": 60000,
+    "headersTimeout": 5000,
+    "serverSetTimeout": 20000,
+},
+----
+|===
+--
+Usage::
++
+--
+.config.json
+[source,json]
+----
+"plugins": {
+    "monitor": {
+        "port": "9000"
+    }
+}
+----
+--
+=====
+
+
+== Retrieving data
+The data recorded by the Monitor plugin can be retrieved via RPC endpoints or in Prometheus format, as described in the following sub-sections.
+
+=== Via RPC endpoints
+The monitor plugin exposes four endpoints that return important data about a node.
+The following table briefly describes them:
+
+[cols="3,~",options="header",stripes="hover"]
+|===
+|Name
+|Description
+
+|*monitor_getTransactionStats*
+|Returns the data about the number of times a transaction is received on an average from the network for a given number of connected peers.
+
+|*monitor_getBlockStats*
+|Returns the data about the number of times a block is received on an average from the network for a given number of connected peers.
+
+|*monitor_getNetworkStats*
+|Returns the data about the number of connected/disconnected/banned peers, and the number of outgoing/incoming connections with several peers at a certain height.
+
+|*monitor_getForkStats*
+|Returns the data about the number of fork events and related block headers.
+|===
+
+Once the Monitor plugin is enabled on a node, the aforementioned endpoints can be invoked to get the latest status of a node.
+For more information about each endpoint, see {url_monitor_endpoints}[lisk-framework-monitor-plugin/src/endpoint.ts^].
+
+
+=== Data in Prometheus format
+The data in Prometheus format is exported via the `/api/prometheus/metrics` handle, and the data received can be visualized by plugging it into tools like Grafana.
+For more information, see {url_grafana}[Grafana's support for Prometheus^].
+
+To retrieve data in Prometheus format, you can perform a GET request to the `api/prometheus/metrics` of the Monitor plugin.
+By default, the Plugin host address is `localhost` or `127.0.0.1` and the port is `4003`.
+These parameters can be changed as described in the <<configuring-the-monitor-plugin>> section.
+
+.CURL request to the Monitor plugin to retrieve data in Prometheus format
+[source,bash]
+----
+curl --location 'http://127.0.0.1:4003/api/prometheus/metrics'
+----
+
+.Monitoring data in the Prometheus format
+[source,bash]
+----
+# HELP lisk_avg_times_blocks_received_info Average number of times blocks received
+# TYPE lisk_avg_times_blocks_received_info gauge
+lisk_avg_times_blocks_received_info 1
+
+# HELP lisk_avg_times_transactions_received_info Average number of times transactions received
+# TYPE lisk_avg_times_transactions_received_info gauge
+lisk_avg_times_transactions_received_info 0
+
+# HELP lisk_node_height_total Node Height
+# TYPE lisk_node_height_total gauge
+lisk_node_height_total 17268
+
+# HELP lisk_finalized_height_total Finalized Height
+# TYPE lisk_finalized_height_total gauge
+lisk_finalized_height_total 17267
+
+# HELP lisk_unconfirmed_transactions_total Unconfirmed transactions
+# TYPE lisk_unconfirmed_transactions_total gauge
+lisk_unconfirmed_transactions_total 0
+
+# HELP lisk_peers_total Total number of peers
+# TYPE lisk_peers_total gauge
+lisk_peers_total{state="connected"} 0
+lisk_peers_total{state="disconnected"} 0
+
+# HELP lisk_fork_events_total Fork events
+# TYPE lisk_fork_events_total gauge
+lisk_fork_events_total 0
+----
+
+You can configure Prometheus to automatically invoke the aforementioned endpoint after regular intervals.
+For more information, see the {url_prometheus_configuration}[Configuration^] section of the Prometheus documentation.
+
+Configuring the Prometheus to automatically invoke the aforementioned endpoint and then plugging such data into visualizing tools such as Grafana, can enable a node operator to stay up to date with the latest status of their node.

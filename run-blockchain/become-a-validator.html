@@ -127,7 +127,7 @@
     <li><a href="become-a-validator.html">How to become a validator</a></li>
   </ul>
 </nav>
-  <div class="edit-this-page"><a href="https://github.com/LiskHQ/lisk-docs/edit/development/docs/modules/ROOT/pages/run-blockchain/become-a-validator.adoc">Edit this Page</a></div>
+  <div class="edit-this-page"><a href="https://github.com/LiskHQ/lisk-docs/edit/1931-Add-explanations-about-hashonions/docs/modules/ROOT/pages/run-blockchain/become-a-validator.adoc">Edit this Page</a></div>
 </div>
 
 <div class="body">
@@ -608,14 +608,15 @@
 <li><a href="#verifying-correct-import">4.1. Verifying correct import</a></li>
 </ul>
 </li>
-<li><a href="#set-the-hash-onion">5. Set the hash onion</a>
+<li><a href="#generating-the-hash-onion">5. Generating the hash onion</a></li>
+<li><a href="#set-the-hash-onion">6. Set the hash onion</a>
 <ul class="sectlevel2">
-<li><a href="#get-the-hash-onion">5.1. Get the hash onion</a></li>
+<li><a href="#get-the-hash-onion">6.1. Get the hash onion</a></li>
 </ul>
 </li>
-<li><a href="#initial-validator-info-data">6. Initial validator info data</a></li>
-<li><a href="#how-to-enable-block-generation-for-the-first-time">7. How to enable block generation for the first time</a></li>
-<li><a href="#how-to-stake-to-increase-the-validator-weight">8. How to stake to increase the validator weight</a></li>
+<li><a href="#initial-validator-info-data">7. Initial validator info data</a></li>
+<li><a href="#how-to-enable-block-generation-for-the-first-time">8. How to enable block generation for the first time</a></li>
+<li><a href="#how-to-stake-to-increase-the-validator-weight">9. How to stake to increase the validator weight</a></li>
 </ul>
 </div>
 </div>
@@ -1123,7 +1124,86 @@ To return the transaction in JSON format as well, add the flags <code>--json</co
 </div>
 </div>
 <div class="sect1">
-<h2 id="set-the-hash-onion"><a class="anchor" href="#set-the-hash-onion"></a>5. Set the hash onion</h2>
+<h2 id="generating-the-hash-onion"><a class="anchor" href="#generating-the-hash-onion"></a>5. Generating the hash onion</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Each validator generating a block has to set the hash onion value.
+For every block that a validator generates, a hash onion is consumed.
+By default, the maximum count of the hash onions is <code>10000</code>.
+However, it is possible to generate a higher value of hash onion as well.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Create a bash script file, for example, <code>generateHashOnion.sh</code>.</p>
+<div class="listingblock">
+<div class="title">generateHashOnion.sh</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># REPLACE ADDRESS (MANDATORY)
+# REPLACE HASHCOUNT (Optional, cover 5 years at 200000)
+
+ADDRESS="lskcrm3k2t4te2umb6djnbofohzvtmfgbz6h25d4y"
+HASHCOUNT=200000
+
+#---
+
+JSONFILE="$HOME/hash_onion.json"</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Add the following command to create a hash onion file.
+The file will be created in the path mentioned in the <code>JSONFILE</code> variable.</p>
+<div class="listingblock">
+<div class="title">generateHashOnion.sh</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">lisk-core hash-onion --count "$HASHCOUNT" --output "$JSONFILE"</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Next, add the <code>ADDRESS</code> to the hash onion file:</p>
+<div class="listingblock">
+<div class="title">generateHashOnion.sh</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">echo $( cat "$JSONFILE" | jq --arg x $ADDRESS '. + {address: $x}' ) &gt; "$JSONFILE"</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Import the hash onion file created in the last step and pass it to the <code>random_setHashOnion</code> endpoint.</p>
+<div class="listingblock">
+<div class="title">generateHashOnion.sh</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">lisk-core endpoint:invoke random_setHashOnion --file "$JSONFILE"</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Once the hash onion is set, the script should retrieve the recently set hash onion and its usage stats by invoking the following endpoints:</p>
+<div class="listingblock">
+<div class="title">generateHashOnion.sh</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">lisk-core endpoint:invoke random_getHashOnionSeeds "{\"address\":\"$ADDRESS\"}"
+lisk-core endpoint:invoke random_getHashOnionUsage "{\"address\":\"$ADDRESS\"}"</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>In case you want to delete the recently created file, add the following line to the script as well.
+.generateHashOnion.sh</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">rm -f "$JSONFILE"</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="set-the-hash-onion"><a class="anchor" href="#set-the-hash-onion"></a>6. Set the hash onion</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>If the hash onion is absent, a validator will be unable to receive rewards for block generation, even though the blocks would remain valid in such a scenario.
@@ -1207,7 +1287,7 @@ Use the previously stored hash onion seed values such as the <code>address</code
 </table>
 </div>
 <div class="sect2">
-<h3 id="get-the-hash-onion"><a class="anchor" href="#get-the-hash-onion"></a>5.1. Get the hash onion</h3>
+<h3 id="get-the-hash-onion"><a class="anchor" href="#get-the-hash-onion"></a>6.1. Get the hash onion</h3>
 <div class="paragraph">
 <p>Currently, there is nothing else to do with the hash onion, after it is created.
 There are some situations though, where it is needed to get the seed hash onion back, for example, when <a href="enable-block-generation.html#safely-enabling-block-generation-on-another-node" class="xref page">moving from one node to another</a>.
@@ -1266,7 +1346,7 @@ Later on, these values can be used to import hash onions to a newer node.</p>
 </div>
 </div>
 <div class="sect1">
-<h2 id="initial-validator-info-data"><a class="anchor" href="#initial-validator-info-data"></a>6. Initial validator info data</h2>
+<h2 id="initial-validator-info-data"><a class="anchor" href="#initial-validator-info-data"></a>7. Initial validator info data</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>If a validator has never created a block on the blockchain before, the initial values of the <a href="enable-block-generation.html#validator-info-data" class="xref page">validator info data</a> are as follows:</p>
@@ -1287,7 +1367,7 @@ Later on, these values can be used to import hash onions to a newer node.</p>
 </div>
 </div>
 <div class="sect1">
-<h2 id="how-to-enable-block-generation-for-the-first-time"><a class="anchor" href="#how-to-enable-block-generation-for-the-first-time"></a>7. How to enable block generation for the first time</h2>
+<h2 id="how-to-enable-block-generation-for-the-first-time"><a class="anchor" href="#how-to-enable-block-generation-for-the-first-time"></a>8. How to enable block generation for the first time</h2>
 <div class="sectionbody">
 <div class="admonitionblock caution">
 <table>
@@ -1380,7 +1460,7 @@ This is confirmed by the following message:</p>
 </div>
 </div>
 <div class="sect1">
-<h2 id="how-to-stake-to-increase-the-validator-weight"><a class="anchor" href="#how-to-stake-to-increase-the-validator-weight"></a>8. How to stake to increase the validator weight</h2>
+<h2 id="how-to-stake-to-increase-the-validator-weight"><a class="anchor" href="#how-to-stake-to-increase-the-validator-weight"></a>9. How to stake to increase the validator weight</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>If you followed all of the above steps, your node is now well-prepared to start generating blocks in the network.

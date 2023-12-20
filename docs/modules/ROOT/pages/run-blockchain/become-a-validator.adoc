@@ -383,6 +383,70 @@ That will return the validator keys that are currently imported on the node:
 ]}
 ----
 
+== Generating the hash onion
+Each validator generating a block has to set the hash onion value.
+For every block that a validator generates, a hash onion is consumed.
+By default, the maximum count of the hash onions is `10000`.
+However, it is possible to generate a higher value of hash onion as well.
+
+. Create a bash script file, for example, `generateHashOnion.sh`.
++
+.generateHashOnion.sh
+[source,bash]
+----
+# REPLACE ADDRESS (MANDATORY)
+# REPLACE HASHCOUNT (Optional, cover 5 years at 200000)
+
+ADDRESS="lskcrm3k2t4te2umb6djnbofohzvtmfgbz6h25d4y"
+HASHCOUNT=200000
+
+#---
+
+JSONFILE="$HOME/hash_onion.json"
+----
++
+. Add the following command to create a hash onion file.
+The file will be created in the path mentioned in the `JSONFILE` variable.
++
+.generateHashOnion.sh
+[source,bash]
+----
+lisk-core hash-onion --count "$HASHCOUNT" --output "$JSONFILE"
+----
++
+. Next, add the `ADDRESS` to the hash onion file:
++
+.generateHashOnion.sh
+[source,bash]
+----
+echo $( cat "$JSONFILE" | jq --arg x $ADDRESS '. + {address: $x}' ) > "$JSONFILE"
+----
++
+. Import the hash onion file created in the last step and pass it to the `random_setHashOnion` endpoint.
++
+.generateHashOnion.sh
+[source,bash]
+----
+lisk-core endpoint:invoke random_setHashOnion --file "$JSONFILE"
+----
++
+. Once the hash onion is set, the script should retrieve the recently set hash onion and its usage stats by invoking the following endpoints:
++
+.generateHashOnion.sh
+[source,bash]
+----
+lisk-core endpoint:invoke random_getHashOnionSeeds "{\"address\":\"$ADDRESS\"}"
+lisk-core endpoint:invoke random_getHashOnionUsage "{\"address\":\"$ADDRESS\"}"
+----
++
+. In case you want to delete the recently created file, add the following line to the script as well.
+.generateHashOnion.sh
++
+[source,bash]
+----
+rm -f "$JSONFILE"
+----
+
 == Set the hash onion
 
 If the hash onion is absent, a validator will be unable to receive rewards for block generation, even though the blocks would remain valid in such a scenario.

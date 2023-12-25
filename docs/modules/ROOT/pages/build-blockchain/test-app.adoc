@@ -191,7 +191,7 @@ describe('CreateHelloCommand', () => {
 
 == Writing unit tests
 
-This example shows how to write unit tests for the module and asset from the previous guide xref:{url_guides_asset}[].
+This example shows how to write unit tests for the module and command from the previous guide xref:{url_guides_asset}[].
 
 [TIP]
 
@@ -199,44 +199,56 @@ This example shows how to write unit tests for the module and asset from the pre
 For more information about the different features of the test suite, check out the reference page xref:{url_reference_test_suite}[]
 ====
 
-=== Unit tests for the transaction asset
+=== Unit tests for the transaction command
 
 ==== Imports
 
-Add the following lines at the top of `create_hello_asset.spec.ts` to import the required resources for the tests.
+Add the following lines at the top of `create_hello_command.spec.ts` to import the required resources for the tests.
 
 [source,typescript]
 ----
-import { CreateHelloAsset } from '../../../../../src/app/modules/hello/assets/create_hello_asset'; // <1>
-import { testing, StateStore, ReducerHandler, codec } from 'lisk-sdk'; // <2>
-import { HelloModule } from '../../../../../src/app/modules/hello/hello_module'; // <3>
+import { NamedRegistry, testing, codec, cryptography, Transaction, chain, db, VerifyStatus } from 'lisk-sdk';
+import { CreateHelloCommand } from '../../../../../src/app/modules/hello/commands/create_hello_command';
+import { CreateHelloParams, createHelloSchema } from '../../../../../src/app/modules/hello/schema';
+import { ModuleConfig } from '../../../../../src/app/modules/hello/types';
 ----
 
-<1> `CreateHelloAsset`: The asset which is tested here.
-<2> The following is imported from the `lisk-sdk` package:
+// <1> `CreateHelloAsset`: The asset which is tested here.
+// <2> The following is imported from the `lisk-sdk` package:
 
-* `testing` contains the functions of the Lisk SDk test suite.
-* `StateStore`: See xref:{url_intro_modules_statestore}[the state store].
-* `ReducerHandler`: See xref:{url_reducerhandler}[ReducerHandler].
-* `codec`: contains functions for encoding and decoding data.
+// * `testing` contains the functions of the Lisk SDk test suite.
+// * `StateStore`: See xref:{url_intro_modules_statestore}[the state store].
+// * `ReducerHandler`: See xref:{url_reducerhandler}[ReducerHandler].
+// * `codec`: contains functions for encoding and decoding data.
 
 
-<3> `HelloModule`: is used in `createDefaultAccount()` to create a default account with the correct account properties.
+// <3> `HelloModule`: is used in `createDefaultAccount()` to create a default account with the correct account properties.
 
-==== Testing the validate() function
+==== Testing the verify() function
 
-As a reminder, the `validate()` function of the asset `CreateHelloAsset` is shown below:
+As a reminder, the `verify()` function of the command `CreateHelloCommand` is shown below:
 
-.`validate()` function of `create_hello_asset.ts`
+.`validate()` function of `create_hello_command.ts`
 [source,typescript]
 ----
-public validate({ asset }): void {
-      if (asset.helloString == "Some illegal statement") {
-          throw new Error(
-              'Illegal hello message: Some illegal statement'
-          );
-      }
-    }
+	public async verify(context: CommandVerifyContext<Params>): Promise<VerificationResult> {
+		const wordList = context.params.message.split(" ");
+		const found = this._blacklist.filter(value => wordList.includes(value));
+		if (found.length > 0) {
+			context.logger.info("==== FOUND: Message contains a blacklisted word ====");
+			const error = Error(
+				`Illegal word in hello message: ${found.toString()}`
+			);
+			return {
+				status: VerifyStatus.FAIL,
+				error,
+			};
+		}
+		context.logger.info("==== NOT FOUND: Message contains no blacklisted words ====");
+		return {
+			status: VerifyStatus.OK
+		};
+	}
 ----
 
 To verify that the function is implemented correctly, write 2 tests to check if the following occurs:
@@ -252,68 +264,84 @@ After the context is created, both tests will call the `validate()` function wit
 
 If all tests pass, this verifies that the `validate()` function behaves exactly as expected.
 
-.Tests for `validate()`
+.Tests for `verify()`
 [source,typescript]
 ----
-describe('validate', () => {
-    describe('schema validation', () => {
-        it('should throw error if hello message equals some illegal statement', () => {
-            const context = testing.createValidateAssetContext({
-                asset: { helloString: 'Some illegal statement' },
-                transaction: { senderAddress: Buffer.alloc(0) } as any,
-            });
-            expect(() => transactionAsset.validate(context)).toThrow(
-                'Illegal hello message: Some illegal statement',
-            );
-        });
-        it('should be ok for valid schema', () => {
-            const context = testing.createValidateAssetContext({
-                asset: { helloString: 'Some valid statement' },
-                transaction: { senderAddress: Buffer.alloc(0) } as any,
-            });
+	describe('verify', () => {
+		it('Illegal Message', async () => {
+			const IllegalParam = codec.encode(createHelloSchema, { 'message': "badWord2" })
+			const transaction = new Transaction(getSampleTransaction(IllegalParam));
 
-            expect(() => transactionAsset.validate(context)).not.toThrow();
-        });
+			const context = testing
+				.createTransactionContext({
+					stateStore,
+					transaction,
+					header: testing.createFakeBlockHeader({}),
+				})
+				.createCommandVerifyContext<CreateHelloParams>(createHelloSchema);
+
+			const result = await command.verify(context);
+			expect(result.status).toBe(VerifyStatus.FAIL);
+		});
+
+		it('Legal Message', async () => {
+			const LegalParam = codec.encode(createHelloSchema, { 'message': "Hello Lisk v6 " })
+			const transaction = new Transaction(getSampleTransaction(LegalParam));
+
+			const context = testing
+				.createTransactionContext({
+					stateStore,
+					transaction,
+					header: testing.createFakeBlockHeader({}),
+				})
+				.createCommandVerifyContext<CreateHelloParams>(createHelloSchema);
+
+			const result = await command.verify(context);
+			expect(result.status).toBe(VerifyStatus.OK);
+		});
+	});
+----
+
+==== Testing the execute() function
+
+As a reminder, the `execute()` function of the asset `createHelloCommand` is shown below:
+
+.`execute()` function of `create_hello_command.ts`
+[source,typescript]
+----
+public async execute(context: CommandExecuteContext<Params>): Promise<void> {
+    // 1. Get account data of the sender of the Hello transaction.
+    const { senderAddress } = context.transaction;
+    // 2. Get message and counter stores.
+    const messageSubstore = this.stores.get(MessageStore);
+    const counterSubstore = this.stores.get(CounterStore);
+
+    // 3. Save the Hello message to the message store, using the senderAddress as key, and the message as value.
+    await messageSubstore.set(context, senderAddress, {
+        message: context.params.message,
     });
-});
-----
 
-==== Testing the apply() function
+    // 3. Get the Hello counter from the counter store.
+    let helloCounter: CounterStoreData;
+    try {
+        helloCounter = await counterSubstore.get(context, counterKey);
+    } catch (error) {
+        helloCounter = {
+            counter: 0,
+        }
+    }
+    // 5. Increment the Hello counter +1.
+    helloCounter.counter += 1;
 
-As a reminder, the `apply()` function of the asset `createHelloAsset` is shown below:
+    // 6. Save the Hello counter to the counter store.
+    await counterSubstore.set(context, counterKey, helloCounter);
 
-.`apply()` function of `create_hello_asset.ts`
-[source,typescript]
-----
-public async apply({ asset, transaction, stateStore }): Promise<void> {
-    // 1. Get account data of the sender of the hello transaction
-    const senderAddress = transaction.senderAddress;
-    const senderAccount = await stateStore.account.get(senderAddress);
-
-    // 2. Update hello message in the senders account with thehelloString of the transaction asset
-    senderAccount.hello.helloMessage = asset.helloString;
-    stateStore.account.set(senderAccount.address, senderAccount);
-
-    // 3. Get the hello counter from the database
-    let counter;
-    let counterBuffer = await stateStore.chain.get(
-      CHAIN_STATE_HELLO_COUNTER
-    );
-
-    counter = counterBuffer ? codec.decode(
-        helloCounterSchema,
-        counterBuffer
-    ) : { helloCounter: 0 };
-
-
-    // 5. Increment the hello counter +1
-    counter.helloCounter++;
-
-    // 6. Encode the hello counter and save it back to the database
-    await stateStore.chain.set(
-      CHAIN_STATE_HELLO_COUNTER,
-      codec.encode(helloCounterSchema, counter)
-    );
+    // 7. Emit a "New Hello" event
+    const newHelloEvent = this.events.get(NewHelloEvent);
+    newHelloEvent.add(context, {
+        senderAddress: context.transaction.senderAddress,
+        message: context.params.message
+    }, [context.transaction.senderAddress]);
 }
 ----
 

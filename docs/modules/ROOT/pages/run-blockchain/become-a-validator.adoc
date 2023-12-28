@@ -26,6 +26,7 @@ Mona Bärenfänger <mona@lightcurve.io>
 :url_sdk_cli_generatorenable: {docs_sdk}client-cli.adoc#generatorenable
 :url_references_cli_txcreate: {docs_sdk}client-cli.adoc#transactioncreate
 :url_sdk_cli_txsend: {docs_sdk}client-cli.adoc#transactionsend
+:url_getHashOnionUsage: api/module-rpc-api/random-endpoints.adoc#random_gethashonionusage
 
 ====
 On this page, you'll learn how to become a validator for a blockchain that uses the Lisk PoS module, like the Lisk Mainnet.
@@ -386,25 +387,56 @@ That will return the validator keys that are currently imported on the node:
 == Set the hash onion
 
 If the hash onion is absent, a validator will be unable to receive rewards for block generation, even though the blocks would remain valid in such a scenario.
-In order to ensure that no rewards are missed, it is crucial for a validator to set the hash onion before enabling block generation on the node.
+To ensure that no rewards are missed, a validator must set the hash onion before enabling block generation on the node.
 
 [tabs]
 =====
-Lisk Core::
+Setting the default hash onion::
 +
 --
+.Set hash onion on a mainchain node
 [source,bash]
 ----
-lisk-core endpoint:invoke random_setHashOnion '{"address":"lskz45myuptyyjvzc2z7o5344quubyrv6nofffh8e"}'
+lisk-core endpoint:invoke random_setHashOnion '{"address":"lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3"}'
+----
+*OR*
+
+.Set hash onion on a sidechain node
+[source,bash]
+----
+./bin/run endpoint:invoke random_setHashOnion '{"address":"lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3"}'
 ----
 --
-Sidechain node::
+Setting a custom hash onion::
 +
 --
+
+By default, the maximum count of the hash onions is `10000`.
+However, it is possible to generate a higher value of hash onion as well.
+To generate a higher value of hash onion, perform the following steps:
+
+. Use the `hash-onion` command to generate a hash onion and store it in a file such as `hash_onion.json` as shown below.
++
 [source,bash]
 ----
-./bin/run endpoint:invoke random_setHashOnion '{"address":"lskz45myuptyyjvzc2z7o5344quubyrv6nofffh8e"}'
+lisk-core hash-onion --count "200000" --output "$HOME/hash_onion.json"
 ----
++
+. Next, add the `ADDRESS` to the hash onion file, by passing the location of the recently created hash onion and the relevant address:
++
+[source,bash]
+----
+echo $( cat "$HOME/hash_onion.json" | jq --arg x lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3 '. + {address: $x}' ) > "$HOME/hash_onion.json"
+----
++
+. Import the hash onion file created in the last step and pass it to the `random_setHashOnion` endpoint.
++
+[source,bash]
+----
+lisk-core endpoint:invoke random_setHashOnion --file "$HOME/hash_onion.json"
+----
++
+. Once the hash onion is set, retrieve the recently set hash onion and its usage stats as described in the <<get-the-hash-onion>> section.
 --
 =====
 
@@ -416,7 +448,7 @@ If you see the following error after running the command:
 
 [source,bash]
 ----
-$ lisk-core endpoint:invoke random_setHashOnion '{"address":"lskz45myuptyyjvzc2z7o5344quubyrv6nofffh8e"}'
+$ lisk-core endpoint:invoke random_setHashOnion '{"address":"lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3"}'
  ›   Error: Response not received in 3000ms
 ----
 
@@ -433,7 +465,7 @@ Use the previously stored hash onion seed values such as the `address`, `seed`, 
 
 [source,bash]
 ----
-lisk-core endpoint:invoke random_setHashOnion '{"address":"lskz45myuptyyjvzc2z7o5344quubyrv6nofffh8e","seed":"2aa20ce749838a5c6bac8bdf14dcebd8","count":1000000,"distance":1000}'
+lisk-core endpoint:invoke random_setHashOnion '{"address":"lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3","seed":"2aa20ce749838a5c6bac8bdf14dcebd8","count":1000000,"distance":1000}'
 ----
 ====
 
@@ -453,7 +485,7 @@ Lisk Core::
 --
 [source,bash]
 ----
-lisk-core endpoint:invoke random_getHashOnionSeeds --pretty
+lisk-core endpoint:invoke random_getHashOnionSeeds '{"address":"lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3"}' --pretty
 ----
 --
 Sidechain node::
@@ -461,7 +493,7 @@ Sidechain node::
 --
 [source,bash]
 ----
-./bin/run endpoint:invoke random_getHashOnionSeeds --pretty
+./bin/run endpoint:invoke random_getHashOnionSeeds '{"address":"lskqaxxmj78frvgpjgwvf4yqjjkcrr9yhn2sxxwm3"}' --pretty
 ----
 --
 =====
@@ -481,6 +513,8 @@ This will return a list of all hash onion seeds that are stored in the node.
   ]
 }
 -----
+
+You can also retrieve the usage stats of the hash onions of an account by invoking the xref:{url_getHashOnionUsage}[random_getHashOnionUsage] endpoint.
 
 == Initial validator info data
 

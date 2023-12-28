@@ -4,15 +4,17 @@ Muhammad Talha <muhammad.talha@lightcurve.io>
 :toc: preamble
 :docs_sdk: lisk-sdk::
 // URLs
-:url_github_guides_tests: https://github.com/LiskHQ/lisk-sdk-examples/tree/development/guides/04-plugin/hello_app/test
+:url_github_guides_tests: https://github.com/LiskHQ/lisk-sdk-examples/tree/development/tutorials/hello/hello_client/test/unit/modules/hello
 // Project URLs
 :url_reducerhandler: understand-blockchain/sdk/modules-commands.adoc#the-reducerhandler
 :url_guides_setup: build-blockchain/create-blockchain-client.adoc
 :url_guides_module: build-blockchain/module/index.adoc
-:url_guides_asset: build-blockchain/module/command.adoc
+:url_guides_command: build-blockchain/module/command.adoc
 :url_intro_modules_statestore: understand-blockchain/sdk/modules-commands.adoc#the-state-store
 :url_tutorials_nft: tutorial/nft.adoc
 :url_reference_test_suite: {docs_sdk}references/test-utils.adoc
+:url_fee_test: https://github.com/LiskHQ/lisk-sdk/blob/v6.0.1/framework/test/unit/modules/fee/module.spec.ts
+:url_sdk_tests: https://github.com/LiskHQ/lisk-sdk/tree/v6.0.1/framework/test/unit
 
 How to use the test utility of the Lisk SDK to test your application.
 
@@ -29,14 +31,14 @@ To use this guide, it is assumed that the following criteria have been met:
 
 * Lisk Commander is installed, and a basic blockchain application is already initialized, as explained in the guide xref:{url_guides_setup}[].
 * A new module has been generated as described in the guide xref:{url_guides_module}[].
-* A new asset has been generated as described in the guide xref:{url_guides_asset}[].
+* A new command has been generated as described in the guide xref:{url_guides_command}[].
 ====
 
-To conveniently test the functionality of modules, plugins, or assets, adjust the already generated test skeletons in the `test` folder of your application.
+To conveniently test the functionality of modules, plugins, or commands, adjust the already generated test skeletons in the `test` folder of your application.
 
-After generating a new module and asset, the corresponding skeletons for their unit tests can be found under `test/unit/modules/module_name`:
+After generating a new module and command, the corresponding skeletons for their unit tests can be found under `test/unit/modules/module_name`:
 
-./new_app/test/
+./hello_client/test/
 ----
 ├── integration
 ├── network
@@ -62,7 +64,7 @@ It is already possible to run the test at this point, though only the most basic
 
 To run all test suites, execute the following:
 
-./new_app/
+./hello_client/
 [source,bash]
 ----
 yarn run test
@@ -96,11 +98,11 @@ Ran all test suites.
 // [TIP]
 
 // ====
-// If the tests of the asset fails, e.g. with the following error:
+// If the tests of the command fails, e.g. with the following error:
 
-//  'asset' is declared but its value is never read.
+//  'command' is declared but its value is never read.
 
-// This is most likely due to the fact that the `validate()` or `apply()` function of the asset isn't implemented yet.
+// This is most likely due to the fact that the `validate()` or `apply()` function of the command isn't implemented yet.
 // To fix the error, either remove the unused variables or implement logic which uses them in the corresponding function.
 // ====
 
@@ -110,7 +112,7 @@ The test skeleton of a module doesn't contain any real tests in the beginning.
 
 Use the existing structure to implement the tests required for the module, and add more tests as needed.
 
-.test/unit/modules/hello/hello_module.spec.ts
+.test/unit/modules/hello/module.spec.ts
 [source,typescript]
 ----
 // import * as modules from '../../../src/app/modules/hello'
@@ -133,7 +135,7 @@ describe('HelloModule', () => {
 		it.todo('should execute after transaction execute');
 	});
 	describe('beforeTransactionsExecute', () => {
-		it.todo('should execute after genesis execute');
+		it.todo('should execute before genesis execute');
 	});
 	describe('afterTransactionsExecute', () => {
 		it.todo('should execute after genesis execute');
@@ -144,8 +146,8 @@ describe('HelloModule', () => {
 == The command test skeleton
 
 The test skeleton for the command already contains a few simple tests right from the beginning.
-They were automatically created during the xref:{url_guides_asset}[generation of the command].
-The remainder of the tests will need to be created by the developer, in order to test all the custom logic of the command which was implemented after the initialization of the application.
+They are automatically created during the xref:{url_guides_command}[generation of the command].
+The remainder of the tests will need to be created by the developer, to test all the custom logic of the command which was implemented after the initialization of the application.
 
 .test/unit/modules/hello/create_hello_command.spec.ts
 [source,typescript]
@@ -192,7 +194,7 @@ describe('CreateHelloCommand', () => {
 
 == Writing unit tests
 
-This example shows how to write unit tests for the module and command from the previous guide xref:{url_guides_asset}[].
+This example shows how to write unit tests for the command from the previous guide xref:{url_guides_command}[].
 
 [TIP]
 
@@ -219,7 +221,7 @@ import { MessageStore } from '../../../../../src/app/modules/hello/stores/messag
 
 
 
-// <1> `CreateHelloAsset`: The asset which is tested here.
+// <1> `CreateHellocommand`: The command which is tested here.
 // <2> The following is imported from the `lisk-sdk` package:
 
 // * `testing` contains the functions of the Lisk SDk test suite.
@@ -257,16 +259,16 @@ public async verify(context: CommandVerifyContext<Params>): Promise<Verification
 }
 ----
 
-To verify that the function is implemented correctly, write 2 tests to check if the following occurs:
+To verify that the function is implemented correctly, write two tests to check if the following occurs:
 
 . The `VerifyStatus` should fail if  the hello message equals some illegal statement as defined in the module's config.
 . The `VerifyStatus` should pass if the hello message doesn't contain any illegal statement.
 
 The function `createCommandVerifyContext()` is used for both tests to create a context for the `verify()` function.
 
-In the first test, where an error is expected, a context with an invalid `command` parameter with the `helloString: 'badWord2'` is created, whereas in the second test a valid `Hello Lisk v6` property is passed.
+In the first test, where an error is expected, a context with an invalid `command` parameter with the `helloString: 'badWord2'` is created, whereas, in the second test, a valid `Hello Lisk v6` string is passed.
 
-After the context is created, both tests will call the `verify()` function with the context and the result is checked.
+After the context is created, both tests will call the `verify()` function with the context, and the result is checked.
 
 If all tests pass, this verifies that the `verify()` function behaves exactly as expected.
 
@@ -310,19 +312,19 @@ describe('verify', () => {
 
 ==== Testing the execute() function
 
-As a reminder, the `execute()` function of the asset `createHelloCommand` is shown below:
+As a reminder, the `execute()` function of the command `createHelloCommand` is shown below:
 
 .execute() function of create_hello_command.ts
 [source,typescript]
 ----
 public async execute(context: CommandExecuteContext<Params>): Promise<void> {
-    // 1. Get account data of the sender of the Hello transaction.
+    // 1. Get the account data of the sender of the Hello transaction.
     const { senderAddress } = context.transaction;
     // 2. Get message and counter stores.
     const messageSubstore = this.stores.get(MessageStore);
     const counterSubstore = this.stores.get(CounterStore);
 
-    // 3. Save the Hello message to the message store, using the senderAddress as key, and the message as value.
+    // 3. Save the Hello message to the message store, using the senderAddress as the key, and the message as value.
     await messageSubstore.set(context, senderAddress, {
         message: context.params.message,
     });
@@ -354,11 +356,11 @@ public async execute(context: CommandExecuteContext<Params>): Promise<void> {
 To verify that the function is implemented correctly, write 2 tests to check if the following occurs:
 
 . The hello message is updated in the sender account with the specified hello string.
-. The hello counter is incremented by +1.
+. The hello counter is incremented by one.
 
 Similar to the unit tests for the `verify()` function, a context is prepared using `createCommandExecuteContext()` for the `execute()` function which can be passed to the function when calling it in each test.
 
-As the context is the same for every test,  it is recommended to firstly prepare everything before the `beforeEach()` hook and directly call the `execute()` function with the context in each test.
+As the context is the same for every test,  it is recommended to first prepare everything before in the `beforeEach()` hook and directly call the `execute()` function with the context in each test.
 
 .create_hello_command.spec.ts
 [source,typescript]
@@ -399,21 +401,11 @@ describe('CreateHelloCommand', () => {
 });
 ----
 
-// Additionally, add the following interface at the top of the file:
-
-// [source,typescript]
-// ----
-// export interface HelloAccountProps {
-//     hello: {
-//         helloMessage: "Hello World";
-//     };
-// }
-// ----
-
-It is used in the `beforeEach()` hook to create a default account with valid account properties.
+The `beforeEach()` can be used to initialize required values and objects before running the test suite.
 
 The tests for the `valid cases` test are implemented as shown below:
 
+.create_hello_command.spec.ts
 [source,typescript]
 ----
 describe('execute', () => {
@@ -469,8 +461,8 @@ After the tests have been implemented, run the test suite again to check if all 
 yarn run test
 ----
 
-To see the output in the following format, update the `verbose` property to `true` in the jest.config.js file.
-If the logic and the tests of the asset & module were implemented correctly, all tests should pass:
+To see the output in the following format, update the `verbose` property to `true` in the *jest.config.js* file.
+If the logic and the tests of the command are implemented correctly, all tests should pass:
 
 ----
 > hello_client@0.1.0 test
@@ -528,8 +520,6 @@ Ran all test suites.
 
 The implementation of the unit tests for the command `CreateHelloCommand` is now complete.
 
-
-//TODO: Write sections / pages for functional and integration testing
-//== Functional tests
-//== Integration tests
-
+Similarly to commands, it is also possible to write test cases for modules.
+For example, consider the {url_fee_test}[fee module's test script^], where various unit tests are written for different hooks of a fee module.
+For more unit test examples, see the {url_sdk_tests}[lisk-sdk/framework/test/unit^] directory.

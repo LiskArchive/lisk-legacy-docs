@@ -15,6 +15,8 @@ Muhammad Talha <muhammad.talha@lightcurve.io>
 :url_chainConnector_authorize: api/plugin-rpc-api/chain-connector-api.adoc#chainconnector_authorize
 
 // :fn_mainnet: footnote:witness[For more information about setting up a sidechain node, see the xref:{url_mainnet_node}[How to set up a Lisk Mainnet node] section.]
+:url_lip_53: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0053.md#appendix
+:url_lip_43: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0043.md
 
 ====
 On this page, you'll learn:
@@ -43,7 +45,7 @@ To use this guide, it is assumed that the following criteria have been met:
 // . The mainchain has been registered on the sidechain, as described in the guide: xref:{url_guides_reg_mainchain}[How to register the mainchain on the sidechain?] 
 == Installing the Chain Connector plugin
 
-The chain connector plugin comes pre-installed with any chain which has been initialized with Lisk SDK v6.
+The chain connector plugin comes pre-installed with any chain that has been initialized with Lisk SDK v6.
 However, in case it is required to install it manually, run the following command in the root folder of the client.
 
 [source,bash]
@@ -95,7 +97,7 @@ a|
 |`ccuFee`
 |string
 |The fee to be paid for each CCU transaction.
-It's an optional value, and is only used if the user wants to pay fee higher than the minimum calculated fee.
+It's an optional value and is only used if the user wants to pay a fee higher than the minimum calculated fee.
 In that case, the minimum calculated fee is overridden with the value passed with the `ccuFee` property.
 If the user-provided fee is lower than the calculated minimum fee then the calculated minimum fee will be used in that case.
 |100000000
@@ -344,4 +346,58 @@ The messages suggest that the blockchain doesn't have any finalized block height
 
 The relayer node will start relaying CCUs to the receiving chain, once the finalized height is reached.
 
-IMPORTANT: Once the plugin is enabled, it is essential to invoke the xref:{url_chainConnector_authorize}[chainConnector_authorize] endpoint in order to authorize the signing and sending of CCUs.
+IMPORTANT: Once the plugin is enabled, it is essential to invoke the xref:{url_chainConnector_authorize}[chainConnector_authorize] endpoint to authorize the signing and sending of CCUs.
+
+A node can also output various *warnings* or *error* messages as log output; the details of which can be seen in the following tables:
+
+.Various log messages and their descriptions
+[cols="~,~",options="header",stripes="hover"]
+|===
+|Log message
+|Description
+2+^|*Warnings messages*: The following log messages can be considered as warnings and they *don't require restarting a node or plugin* to fix the underlying issue as such messages usually suggest problems with chain registration or `apiClient`.
+
+|`Sending chain is not registered to the receiving chain yet and has no chain data.`
+|As the log suggests, the sending chain is not registered yet on the receiving chain but at the same time, all the data related to CCU creation is saved such as `blockheaders`, `aggregateCommits`, events containing CCM creation, proof of `outboxRootWitness` and `validatorsInfo`, etc.
+For more information read: {url_lip_53}[LIP 53^].
+
+|`No attempt to create CCU either due to ccuFrequency or the node is syncing`
+|In this scenario, the data required for CCU creation is saved and only CCU creation is delayed due to the `ccuFrequency`.
+The user has to wait till the end of node syncing to proceed further.
+
+|`Receiving chain is not registered yet on the sending chain.`
+|In this case, the plugin is running fine and saving data for CCU creation, however, it cannot yet create or send CCU as the user has not yet registered the receiving chain on their own chain.
+For more information, read {url_lip_43}[LIP 43].
+
+|`CCU cant be created as there are no pending CCMs for the last certificate`
+|If no new certificate has been created since the last certificate and no pending CCMs are left then, no CCU can be created and the user needs to wait for the next certificate height on its sending chain.
+
+|`Not able to connect to receivingChainAPIClient. Trying again on next new block.`
+|In this case, the plugin will try again on the next new block if the API issue is resolved to create/send a CCU.
+
+|`Error occurred while submitting CCU for the blockHeader at height:`
+|The log message suggests that the CCU was created successfully but its submission failed for some reason.
+In this case, the user needs to check the error attached to the log to debug further.
+
+|`Error occurred while accessing receivingChainAPIClient but all data is saved on newBlock.`
+|This error occurs when `receivingChainAPIClient` is not working, the user needs to check the `receivingChainAPIClient` or `receivingChain` node if they are working properly or not once they see this error within the logs.
+For example, `receivingChainWsURL` or `receivingChainIPCPath` provided by a user could be incorrect.
+In this case, all the data is saved required for CCU creation which means when the user fixes `apiClient`, the plugin would still be able to create/send CCUs.
+
+2+^|*Error messages*: The following error-related logs should be fixed by the user and *require a node restart*.
+In these cases, the plugin is usually missingß the data required to create CCUs, and that usually happens when something goes wrong while saving data on the plugin.
+Such errors also occur when the user enables the `config.registrationHeight` or the `height` after the height from where the plugin started looking for certificates.
+
+|`No block header found for the last certified height ${lastCertificate.height}.`
+|In this case, the plugin is looking at a different height and when it is unable to find a certificate, it logs out the aforementioned error.
+
+|`No validatorsHash preimage data present for the given validatorsHash`
+|As the error suggests, the node is unable to retrieve the `validatorHash` preimage at the given height.
+
+
+|`No validators data found for the given validatorsHash`
+|If the node is unable to find data based on the given `validatorsHash` on the given height, it will log the aforementioned error.
+
+|`No validators data found for the given last certificate height`
+|If the node is unable to find data based on the given `last certificate height`, it will log the aforementioned error.
+|===

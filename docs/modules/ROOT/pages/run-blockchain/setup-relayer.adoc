@@ -2,21 +2,26 @@
 Muhammad Talha <muhammad.talha@lightcurve.io>
 :description: How to setup a relayer node.
 :toc: preamble
+:toclevels: 5
+:page-toclevels: 4
 :idprefix:
 :idseparator: -
 :sectnums:
 :docs_sdk: lisk-sdk::
 
-// // Project URLS
+// Project URLS
 :url_guides_reg_sidechain: build-blockchain/register-sidechain.adoc
 :url_guides_reg_mainchain: build-blockchain/register-sidechain.adoc#how-to-register-the-mainchain-on-the-sidechain
 :url_relayer_node: run-blockchain/index.adoc#relayer-nodes
 :url_mainnet_node: lisk-core::setup/npm.adoc
 :url_chainConnector_authorize: api/plugin-rpc-api/chain-connector-api.adoc#chainconnector_authorize
+:url_system_getmetadata: api/lisk-node-rpc.adoc#system_getmetadata
 
 // :fn_mainnet: footnote:witness[For more information about setting up a sidechain node, see the xref:{url_mainnet_node}[How to set up a Lisk Mainnet node] section.]
 :url_lip_53: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0053.md#appendix
 :url_lip_43: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0043.md
+:url_lip_40: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0040.md#module-store-prefix
+:url_lip_45: https://github.com/LiskHQ/lips/blob/main/proposals/lip-0045.md#outbox-root-substore
 
 ====
 On this page, you'll learn:
@@ -52,8 +57,10 @@ However, in case it is required to install it manually, run the following comman
 ----
 npm install @liskhq/lisk-framework-chain-connector-plugin
 ----
+== Configuration
+To set up a relayer node, one needs to set up the node according to the following configurations:
 
-== Configuring the Chain Connector plugin
+=== Configuring the Chain Connector plugin
 Once the plugin is installed, various configurations are available for the node operator to set.
 With these configurations, the details such as the receiving chain’s chainID and its IPC path or WS URL, CCU frequency, encrypted private key, etc. can be set.
 
@@ -148,6 +155,148 @@ Sample configuration::
 --
 =====
 IMPORTANT: A node operator must add either the value of `*receivingChainIPCPath*` or `*receivingChainWsURL*` in the chain connector's config.
+
+=== Configuring the `system`
+
+Before we discuss how to set up a node to act as a relayer node, we need to understand the concept of prefixes, how to retrieve them, and how to calculate `inclusionProofKeys`.
+
+==== What are Prefixes and how to get them?
+
+We can get the `MODULE_PREFIX` and the `SUBSTORE_PREFIX` from the xref:{url_system_getmetadata}[system_getMetadata] endpoint.
+For more information, see {url_lip_40}[LIP 40^].
+Each module has a set of `stores` and each store has a unique `key`.
+After invoking the aforementioned endpoint, search for the `"stores"` property of the `interoperability` module.
+
+Then, look for the {url_lip_45}[outbox substore^] of the `interoperability` module and note down the value of the `key` property.
+The following details have been retrieved by invoking the xref:{url_system_getmetadata}[system_getMetadata] endpoint.
+
+.Example of store info retrieved via the "system_getMetadata" endpoint.
+[source,json]
+----
+"stores": [
+    {
+        "key": "83ed0d250000",
+        "data": {
+            "$id": "/modules/interoperability/outbox",
+            "type": "object",
+            "required": [
+                "root"
+            ],
+            "properties": {
+                "root": {
+                    "dataType": "bytes",
+                    "minLength": 32,
+                    "maxLength": 32,
+                    "fieldNumber": 1
+                }
+            }
+        }
+    },
+]
+----
+
+.Properties required to create "inclusionProofKeys"
+[cols="~,~",options="header",stripes="hover"]
+|===
+|Prefix
+|Description
+
+|`MODULE_PREFIX`
+| The first 4 bytes of the `key` value is the `MODULE_PREFIX`.
+For example, in the above-mentioned snippet, the `MODULE_PREFIX` is: `83ed0d25`.
+
+|`SUBSTORE_PREFIX`
+|The last 2 bytes of the `key` value is the `SUBSTORE_PREFIX`.
+For example, in the above-mentioned snippet, the `SUBSTORE_PREFIX` is: `0000`.
+
+|`STORE_KEY`
+|The `STORE_KEY` is a hexadecimal string, calculated based on the Chain ID of the sidechain.
+For example, the Chain ID used in the following example is: `04000001`.
+|===
+
+TIP: The `*MODULE_PREFIX+SUBSTORE_PREFIX*` is already available in the system's metadata and it can be found in the response of xref:{url_system_getmetadata}[system_getMetadata].
+For the example above, the `*"key": "83ed0d250000"*` is equal to `*MODULE_PREFIX+SUBSTORE_PREFIX*`.
+
+==== Calculating `inclusionProofKeys`
+To save inclusion proof of `outboxRoot` for a sidechain on the mainchain on the `outbox` substore, do the following:
+
+.Calculating "inclusionProofKeys"
+[source,javascript]
+----
+
+// 1. Calculate the MODULE_PREFIX using the Interoperability module.
+MODULE_PREFIX = Buffer.from('83ed0d25', 'hex')
+
+// 2. Calculate the SUBSTORE_PREFIX using the Outbox Substore.
+SUBSTORE_PREFIX = Buffer.from('0000', 'hex') ()
+
+// 3. Calculate the STORE_KEY using the Chain ID of a sidechain.
+STORE_KEY = Buffer.from('04000001', 'hex') ()
+
+// 4. Finally, calculate the inclusionProofKeys as described below:
+inclusionProofKeys = Buffer.concat([MODULE_PREFIX, SUBSTORE_PREFIX, cryptography.utils.hash(STORE_KEY)]);
+----
+
+Once the `inclusionProofKeys` value(s) is retrieved, it should be added to the `system` configuration available inside the *config.json* file of a node.
+To save inclusion proof with every new block we need to pass the following configurations:
+
+[tabs]
+=====
+Configuration options::
++
+--
+[cols="2,3,~,~",options="header",stripes="hover"]
+|===
+|Name
+|Type
+|Description
+|Sample
+
+|`keepInclusionProofsForHeights`
+|number
+|Number of blocks for which the inclusion proofs are to be kept.
+By default, inclusion proofs are kept for the latest 300 blocks.
+If `-1` is passed to this property, then it will keep all the inclusion proofs forever.
+|-1
+
+|`inclusionProofKeys`
+|string[]
+|Contains the keys for which we need to store inclusion proofs against the state tree.
+This can be created or deduced by the user by concatenating the following:
+`MODULE_PREFIX` + `SUBSTORE_PREFIX` + `HASH(STORE_KEY)`
+a|
+[source,json]
+----
+"inclusionProofKeys": [
+			"83ed0d250000fb5e512425fc9449316ec95969ebe71e2d576dbab833d61e2a5b9330fd70ee02"
+		]
+----
+|===
+--
+Sample configuration::
++
+--
+[source,json]
+----
+{
+    // Default configurations
+    "system": {
+		"dataPath": "~/.lisk/pos-sidechain-example-one",
+		"keepEventsForHeights": 300,
+		"logLevel": "info",
+        
+        // Properties relevant to setting up a relayer node
+		"keepInclusionProofsForHeights": -1,
+		"inclusionProofKeys": [
+			"83ed0d250000fb5e512425fc9449316ec95969ebe71e2d576dbab833d61e2a5b9330fd70ee02"
+		]
+	},  
+}
+----
+--
+=====
+
+The above approach should be used to configure the Chain connector plugin as the plugin requires the inclusion proof of the outbox root of the receiving chain to calculate `outboxRootWitness` in CCU transaction.
 
 == Enabling the Chain Connector plugin
 A node operator can perform the following steps to enable the chain connector plugin and turn a node into a relayer node.
@@ -361,9 +510,11 @@ A node can also output various *warnings* or *error* messages as log output; the
 |As the log suggests, the sending chain is not registered yet on the receiving chain but at the same time, all the data related to CCU creation is saved such as `blockheaders`, `aggregateCommits`, events containing CCM creation, proof of `outboxRootWitness` and `validatorsInfo`, etc.
 For more information read {url_lip_53}[LIP 53^].
 
-|`No attempt to create CCU either due to ccuFrequency or the node is syncing`
-|In this scenario, the data required for CCU creation is saved and only CCU creation is delayed due to the `ccuFrequency`.
-The user has to wait till the end of node syncing to proceed further.
+|`No CCU generation is possible as the node is syncing.`
+|In this scenario, the node is syncing with the network, hence, it cannot generate a CCU.
+
+|`No attempt to create CCU either due to provided ccuFrequency`
+|In this scenario, the data required for CCU creation is saved and only CCU creation is delayed due to the provided `ccuFrequency`.
 
 |`Receiving chain is not registered yet on the sending chain.`
 |In this case, the plugin is running fine and saving data for CCU creation, however, it cannot yet create or send CCU as the user has not yet registered the receiving chain on their own chain.

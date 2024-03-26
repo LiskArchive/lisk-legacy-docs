@@ -563,7 +563,7 @@
 </div>
 <main class="article">
   <div class="content">
-<aside class="toc sidebar" data-title="Contents" data-levels="2">
+<aside class="toc sidebar" data-title="Contents" data-levels="4">
   <div class="toc-menu"></div>
 </aside>
 <article class="doc">
@@ -627,7 +627,17 @@ The subsequent sections describe the steps to set up a relayer node.</p>
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
 <li><a href="#installing-the-chain-connector-plugin">1. Installing the Chain Connector plugin</a></li>
-<li><a href="#configuring-the-chain-connector-plugin">2. Configuring the Chain Connector plugin</a></li>
+<li><a href="#configuration">2. Configuration</a>
+<ul class="sectlevel2">
+<li><a href="#configuring-the-chain-connector-plugin">2.1. Configuring the Chain Connector plugin</a></li>
+<li><a href="#configuring-the-system">2.2. Configuring the <code>system</code></a>
+<ul class="sectlevel3">
+<li><a href="#what-are-prefixes-and-how-to-get-them">2.2.1. What are Prefixes and how to get them?</a></li>
+<li><a href="#calculating-inclusionproofkeys">2.2.2. Calculating <code>inclusionProofKeys</code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li><a href="#enabling-the-chain-connector-plugin">3. Enabling the Chain Connector plugin</a>
 <ul class="sectlevel2">
 <li><a href="#creating-an-encrypted-private-key">3.1. Creating an encrypted private key</a></li>
@@ -654,8 +664,13 @@ However, in case it is required to install it manually, run the following comman
 </div>
 </div>
 <div class="sect1">
-<h2 id="configuring-the-chain-connector-plugin"><a class="anchor" href="#configuring-the-chain-connector-plugin"></a>2. Configuring the Chain Connector plugin</h2>
+<h2 id="configuration"><a class="anchor" href="#configuration"></a>2. Configuration</h2>
 <div class="sectionbody">
+<div class="paragraph">
+<p>To set up a relayer node, one needs to set up the node according to the following configurations:</p>
+</div>
+<div class="sect2">
+<h3 id="configuring-the-chain-connector-plugin"><a class="anchor" href="#configuring-the-chain-connector-plugin"></a>2.1. Configuring the Chain Connector plugin</h3>
 <div class="paragraph">
 <p>Once the plugin is installed, various configurations are available for the node operator to set.
 With these configurations, the details such as the receiving chain’s chainID and its IPC path or WS URL, CCU frequency, encrypted private key, etc. can be set.</p>
@@ -794,6 +809,199 @@ A node operator must add either the value of <code><strong>receivingChainIPCPath
 </table>
 </div>
 </div>
+<div class="sect2">
+<h3 id="configuring-the-system"><a class="anchor" href="#configuring-the-system"></a>2.2. Configuring the <code>system</code></h3>
+<div class="paragraph">
+<p>Before we discuss how to set up a node to act as a relayer node, we need to understand the concept of prefixes, how to retrieve them, and how to calculate <code>inclusionProofKeys</code>.</p>
+</div>
+<div class="sect3">
+<h4 id="what-are-prefixes-and-how-to-get-them"><a class="anchor" href="#what-are-prefixes-and-how-to-get-them"></a>2.2.1. What are Prefixes and how to get them?</h4>
+<div class="paragraph">
+<p>We can get the <code>MODULE_PREFIX</code> and the <code>SUBSTORE_PREFIX</code> from the <a href="../api/lisk-node-rpc.html#system_getmetadata" class="xref page">system_getMetadata</a> endpoint.
+For more information, see <a href="https://github.com/LiskHQ/lips/blob/main/proposals/lip-0040.md#module-store-prefix" target="_blank" rel="noopener">LIP 40</a>.
+Each module has a set of <code>stores</code> and each store has a unique <code>key</code>.
+After invoking the aforementioned endpoint, search for the <code>"stores"</code> property of the <code>interoperability</code> module.</p>
+</div>
+<div class="paragraph">
+<p>Then, look for the <a href="https://github.com/LiskHQ/lips/blob/main/proposals/lip-0045.md#outbox-root-substore" target="_blank" rel="noopener">outbox substore</a> of the <code>interoperability</code> module and note down the value of the <code>key</code> property.
+The following details have been retrieved by invoking the <a href="../api/lisk-node-rpc.html#system_getmetadata" class="xref page">system_getMetadata</a> endpoint.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example of store info retrieved via the "system_getMetadata" endpoint.</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">"stores": [
+    {
+        "key": "83ed0d250000",
+        "data": {
+            "$id": "/modules/interoperability/outbox",
+            "type": "object",
+            "required": [
+                "root"
+            ],
+            "properties": {
+                "root": {
+                    "dataType": "bytes",
+                    "minLength": 32,
+                    "maxLength": 32,
+                    "fieldNumber": 1
+                }
+            }
+        }
+    },
+]</code></pre>
+</div>
+</div>
+<table class="tableblock frame-all grid-all stripes-hover stretch">
+<caption class="title">Table 1. Properties required to create "inclusionProofKeys"</caption>
+<colgroup>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Prefix</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>MODULE_PREFIX</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The first 4 bytes of the <code>key</code> value is the <code>MODULE_PREFIX</code>.
+For example, in the above-mentioned snippet, the <code>MODULE_PREFIX</code> is: <code>83ed0d25</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>SUBSTORE_PREFIX</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The last 2 bytes of the <code>key</code> value is the <code>SUBSTORE_PREFIX</code>.
+For example, in the above-mentioned snippet, the <code>SUBSTORE_PREFIX</code> is: <code>0000</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>STORE_KEY</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The <code>STORE_KEY</code> is a hexadecimal string, calculated based on the Chain ID of the sidechain.
+For example, the Chain ID used in the following example is: <code>04000001</code>.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+The <code><strong>MODULE_PREFIX+SUBSTORE_PREFIX</strong></code> is already available in the system&#8217;s metadata and it can be found in the response of <a href="../api/lisk-node-rpc.html#system_getmetadata" class="xref page">system_getMetadata</a>.
+For the example above, the <code><strong>"key": "83ed0d250000"</strong></code> is equal to <code><strong>MODULE_PREFIX+SUBSTORE_PREFIX</strong></code>.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="calculating-inclusionproofkeys"><a class="anchor" href="#calculating-inclusionproofkeys"></a>2.2.2. Calculating <code>inclusionProofKeys</code></h4>
+<div class="paragraph">
+<p>To save inclusion proof of <code>outboxRoot</code> for a sidechain on the mainchain on the <code>outbox</code> substore, do the following:</p>
+</div>
+<div class="listingblock">
+<div class="title">Calculating "inclusionProofKeys"</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-javascript hljs" data-lang="javascript">// 1. Calculate the MODULE_PREFIX using the Interoperability module.
+MODULE_PREFIX = Buffer.from('83ed0d25', 'hex')
+
+// 2. Calculate the SUBSTORE_PREFIX using the Outbox Substore.
+SUBSTORE_PREFIX = Buffer.from('0000', 'hex') ()
+
+// 3. Calculate the STORE_KEY using the Chain ID of a sidechain.
+STORE_KEY = Buffer.from('04000001', 'hex') ()
+
+// 4. Finally, calculate the inclusionProofKeys as described below:
+inclusionProofKeys = Buffer.concat([MODULE_PREFIX, SUBSTORE_PREFIX, cryptography.utils.hash(STORE_KEY)]);</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Once the <code>inclusionProofKeys</code> value(s) is retrieved, it should be added to the <code>system</code> configuration available inside the <strong>config.json</strong> file of a node.
+To save inclusion proof with every new block we need to pass the following configurations:</p>
+</div>
+<div class="tabset is-loading">
+<div class="ulist tabs">
+<ul>
+<li>
+<p><a id="tabset2_configuration-options"></a>Configuration options</p>
+</li>
+<li>
+<p><a id="tabset2_sample-configuration"></a>Sample configuration</p>
+</li>
+</ul>
+</div>
+<div class="content">
+<div class="tab-pane" aria-labelledby="tabset2_configuration-options">
+<table class="tableblock frame-all grid-all stripes-hover stretch">
+<colgroup>
+<col style="width: 2%;">
+<col style="width: 3%;">
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">Sample</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>keepInclusionProofsForHeights</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">number</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Number of blocks for which the inclusion proofs are to be kept.
+By default, inclusion proofs are kept for the latest 300 blocks.
+If <code>-1</code> is passed to this property, then it will keep all the inclusion proofs forever.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-1</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>inclusionProofKeys</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Contains the keys for which we need to store inclusion proofs against the state tree.
+This can be created or deduced by the user by concatenating the following:
+<code>MODULE_PREFIX</code> + <code>SUBSTORE_PREFIX</code> + <code>HASH(STORE_KEY)</code></p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">"inclusionProofKeys": [
+			"83ed0d250000fb5e512425fc9449316ec95969ebe71e2d576dbab833d61e2a5b9330fd70ee02"
+		]</code></pre>
+</div>
+</div></div></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="tab-pane" aria-labelledby="tabset2_sample-configuration">
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+    // Default configurations
+    "system": {
+		"dataPath": "~/.lisk/pos-sidechain-example-one",
+		"keepEventsForHeights": 300,
+		"logLevel": "info",
+
+        // Properties relevant to setting up a relayer node
+		"keepInclusionProofsForHeights": -1,
+		"inclusionProofKeys": [
+			"83ed0d250000fb5e512425fc9449316ec95969ebe71e2d576dbab833d61e2a5b9330fd70ee02"
+		]
+	},
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The above approach should be used to configure the Chain connector plugin as the plugin requires the inclusion proof of the outbox root of the receiving chain to calculate <code>outboxRootWitness</code> in CCU transaction.</p>
+</div>
+</div>
+</div>
+</div>
 </div>
 <div class="sect1">
 <h2 id="enabling-the-chain-connector-plugin"><a class="anchor" href="#enabling-the-chain-connector-plugin"></a>3. Enabling the Chain Connector plugin</h2>
@@ -812,15 +1020,15 @@ A node operator can use a REPL session to call the Lisk cryptography libraries.<
 <div class="ulist tabs">
 <ul>
 <li>
-<p><a id="tabset2_sidechain"></a>Sidechain</p>
+<p><a id="tabset3_sidechain"></a>Sidechain</p>
 </li>
 <li>
-<p><a id="tabset2_mainchain"></a>Mainchain</p>
+<p><a id="tabset3_mainchain"></a>Mainchain</p>
 </li>
 </ul>
 </div>
 <div class="content">
-<div class="tab-pane" aria-labelledby="tabset2_sidechain">
+<div class="tab-pane" aria-labelledby="tabset3_sidechain">
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">./bin/run console
@@ -828,7 +1036,7 @@ Entering Lisk REPL: type `Ctrl+C` or `.exit` to exit</code></pre>
 </div>
 </div>
 </div>
-<div class="tab-pane" aria-labelledby="tabset2_mainchain">
+<div class="tab-pane" aria-labelledby="tabset3_mainchain">
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">lisk-core console
@@ -849,15 +1057,15 @@ It accepts two arguments: a <strong>private key</strong> of the account which is
 <div class="ulist tabs">
 <ul>
 <li>
-<p><a id="tabset3_sidechain"></a>Sidechain</p>
+<p><a id="tabset4_sidechain"></a>Sidechain</p>
 </li>
 <li>
-<p><a id="tabset3_mainchain"></a>Mainchain</p>
+<p><a id="tabset4_mainchain"></a>Mainchain</p>
 </li>
 </ul>
 </div>
 <div class="content">
-<div class="tab-pane" aria-labelledby="tabset3_sidechain">
+<div class="tab-pane" aria-labelledby="tabset4_sidechain">
 <div class="listingblock">
 <div class="title">Creating an encrypted key on a sidechain node</div>
 <div class="content">
@@ -871,7 +1079,7 @@ It accepts two arguments: a <strong>private key</strong> of the account which is
 </div>
 </div>
 </div>
-<div class="tab-pane" aria-labelledby="tabset3_mainchain">
+<div class="tab-pane" aria-labelledby="tabset4_mainchain">
 <div class="listingblock">
 <div class="title">Creating an encrypted key on a mainchain node</div>
 <div class="content">
@@ -903,15 +1111,15 @@ It accepts two arguments: a <strong>private key</strong> of the account which is
 <div class="ulist tabs">
 <ul>
 <li>
-<p><a id="tabset4_sidechain"></a>Sidechain</p>
+<p><a id="tabset5_sidechain"></a>Sidechain</p>
 </li>
 <li>
-<p><a id="tabset4_mainchain"></a>Mainchain</p>
+<p><a id="tabset5_mainchain"></a>Mainchain</p>
 </li>
 </ul>
 </div>
 <div class="content">
-<div class="tab-pane" aria-labelledby="tabset4_sidechain">
+<div class="tab-pane" aria-labelledby="tabset5_sidechain">
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">"chainConnector": {
@@ -923,7 +1131,7 @@ It accepts two arguments: a <strong>private key</strong> of the account which is
 </div>
 </div>
 </div>
-<div class="tab-pane" aria-labelledby="tabset4_mainchain">
+<div class="tab-pane" aria-labelledby="tabset5_mainchain">
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">"chainConnector": {
@@ -951,15 +1159,15 @@ The process differs for both sidechain and mainchain.</p>
 <div class="ulist tabs">
 <ul>
 <li>
-<p><a id="tabset5_sidechain"></a>Sidechain</p>
+<p><a id="tabset6_sidechain"></a>Sidechain</p>
 </li>
 <li>
-<p><a id="tabset5_mainchain"></a>Mainchain</p>
+<p><a id="tabset6_mainchain"></a>Mainchain</p>
 </li>
 </ul>
 </div>
 <div class="content">
-<div class="tab-pane" aria-labelledby="tabset5_sidechain">
+<div class="tab-pane" aria-labelledby="tabset6_sidechain">
 <div class="paragraph">
 <p>On a sidechain, the plugin can be enabled using the <code>--enable-chain-connector-plugin</code> flag whilst starting the blockchain client.</p>
 </div>
@@ -1001,7 +1209,7 @@ export const registerPlugins = (app: Application): void =&gt; {
 </div>
 </div>
 </div>
-<div class="tab-pane" aria-labelledby="tabset5_mainchain">
+<div class="tab-pane" aria-labelledby="tabset6_mainchain">
 <div class="paragraph">
 <p>On a mainchain, the plugin can be enabled using the <code>--enable-chain-connector-plugin</code> flag whilst starting the blockchain client.</p>
 </div>
@@ -1026,22 +1234,22 @@ export const registerPlugins = (app: Application): void =&gt; {
 <div class="ulist tabs">
 <ul>
 <li>
-<p><a id="tabset6_sidechain"></a>Sidechain</p>
+<p><a id="tabset7_sidechain"></a>Sidechain</p>
 </li>
 <li>
-<p><a id="tabset6_mainchain"></a>Mainchain</p>
+<p><a id="tabset7_mainchain"></a>Mainchain</p>
 </li>
 </ul>
 </div>
 <div class="content">
-<div class="tab-pane" aria-labelledby="tabset6_sidechain">
+<div class="tab-pane" aria-labelledby="tabset7_sidechain">
 <div class="listingblock">
 <div class="content">
 <pre>2023-03-17T14:42:30.426Z INFO XYZ.local application 96733 No valid CCU can be generated for the height: 58</pre>
 </div>
 </div>
 </div>
-<div class="tab-pane" aria-labelledby="tabset6_mainchain">
+<div class="tab-pane" aria-labelledby="tabset7_mainchain">
 <div class="listingblock">
 <div class="content">
 <pre>2023-03-17T14:42:30.426Z INFO XYZ.local plugin_chainConnector 96899 No valid CCU can be generated for the height: 58</pre>
@@ -1075,7 +1283,7 @@ Once the plugin is enabled, it is essential to invoke the <a href="../api/plugin
 <p>A node can also output various <strong>warnings</strong> or <strong>error</strong> messages as log output; the details of which can be seen in the following tables:</p>
 </div>
 <table class="tableblock frame-all grid-all stripes-hover stretch">
-<caption class="title">Table 1. Various log messages and their descriptions</caption>
+<caption class="title">Table 2. Various log messages and their descriptions</caption>
 <colgroup>
 <col>
 <col>
@@ -1096,9 +1304,12 @@ Once the plugin is enabled, it is essential to invoke the <a href="../api/plugin
 For more information read <a href="https://github.com/LiskHQ/lips/blob/main/proposals/lip-0053.md#appendix" target="_blank" rel="noopener">LIP 53</a>.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>No attempt to create CCU either due to ccuFrequency or the node is syncing</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">In this scenario, the data required for CCU creation is saved and only CCU creation is delayed due to the <code>ccuFrequency</code>.
-The user has to wait till the end of node syncing to proceed further.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>No CCU generation is possible as the node is syncing.</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">In this scenario, the node is syncing with the network, hence, it cannot generate a CCU.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>No attempt to create CCU either due to provided ccuFrequency</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">In this scenario, the data required for CCU creation is saved and only CCU creation is delayed due to the provided <code>ccuFrequency</code>.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>Receiving chain is not registered yet on the sending chain.</code></p></td>
